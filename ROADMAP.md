@@ -62,10 +62,10 @@ Start with the critical path; design in `docs/adr/0003-reconstruct-points-from-e
 
 | Issue | Title | Blocked by | Notes |
 |-------|-------|-----------|-------|
-| #77 | FPL scoring matrix module | — | **Start here.** Foundation; unblocks #83, #84. |
-| #84 | Component model w/ Prior-Season Seed (mid-season) | #77 | Reconstruct xP from events; backtest vs baseline. |
-| #85 | Cold-Start fallback + current-season blend | #84 | Position-Price Prior + blend threshold. |
-| #83 | Long-format Feature Contract (Planning Horizon) | #77 | Fixes GW39-42 inheriting GW38 fixture. |
+| #77 | FPL scoring matrix module | — | ✅ Done. All 12 Event Components; 19 tests. |
+| #84 | Component model w/ Prior-Season Seed (mid-season) | #77 | ✅ Done. `models/component_baseline.py`; per-90 rates in `features/builder.py`. Backtest beats linear_baseline. |
+| #85 | Cold-Start fallback + current-season blend | #84 | ✅ Done. Prior-season seed + Position-Price Prior fallback + appearance blend + GW1-4 cold-start guard. |
+| #83 | Long-format Feature Contract (Planning Horizon) | #77 | **Start here.** Fixes GW39-42 inheriting GW38 fixture. |
 | #86 | Per-component fixture difficulty | #84, #83 | Attack/defence multipliers from FPL API difficulty. |
 | #87 | Fixture difficulty (FDR) report | #83 | Club × horizon-GW difficulty table. |
 | #78 | Auto team_id from /api/me | — | Quick win. |
