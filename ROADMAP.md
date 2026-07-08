@@ -66,9 +66,9 @@ Start with the critical path; design in `docs/adr/0003-reconstruct-points-from-e
 | #84 | Component model w/ Prior-Season Seed (mid-season) | #77 | ✅ Done. `models/component_baseline.py`; per-90 rates in `features/builder.py`. Backtest beats linear_baseline. |
 | #85 | Cold-Start fallback + current-season blend | #84 | ✅ Done. Prior-season seed + Position-Price Prior fallback + appearance blend + GW1-4 cold-start guard. |
 | #83 | Long-format Feature Contract (Planning Horizon) | #77 | **Start here.** Fixes GW39-42 inheriting GW38 fixture. |
-| #86 | Per-component fixture difficulty | #84, #83 | Attack/defence multipliers from FPL API difficulty. |
+| #86 | Per-component fixture difficulty | #83 | Attack/defence multipliers from FPL API difficulty. |
 | #87 | Fixture difficulty (FDR) report | #83 | Club × horizon-GW difficulty table. |
-| #78 | Auto team_id from /api/me | — | Quick win. |
+| #78 | Auto team_id from /api/me | — | ✅ Done. |
 | #79 | Captain & vice report | — | Quick win. |
 | #80 | Chip booking feasibility validation | — | Quick win. |
 | #81 | Price-change tracking | — | Quick win. |

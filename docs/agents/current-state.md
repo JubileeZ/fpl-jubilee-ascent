@@ -43,7 +43,11 @@ Design decisions for the model are recorded in `docs/adr/0003-reconstruct-points
 
 ## What does NOT exist yet (do not assume)
 
-*All planned phases and components have been implemented.*
+Phase 5 pending work remains:
+- #83 long-format Feature Contract (per-GW horizon fixtures)
+- #86 per-component fixture difficulty
+- #87 fixture difficulty (FDR) report
+- #79/#80/#81/#82 quick-win CLI/features
 
 ---
 
@@ -54,6 +58,7 @@ uv run pytest                                          # Run pytest
 uv run ruff check .                                    # Lint code
 uv run python -m commands.refresh_data                 # Ingest current gameweek data
 uv run python -m commands.run_model linear_baseline    # Generate projections
+uv run python -m commands.run_model component_baseline # Generate component projections
 uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
 uv run python -m commands.report                       # Print report
 ```
