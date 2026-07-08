@@ -2,7 +2,26 @@
 
 Read if no prior context. `ROADMAP.md` shows target; this file shows what exists today.
 
-**Active phase:** None — all planned infrastructure, modeling, backtesting, and solver phases are implemented.
+**Active phase:** New-season readiness — see `ROADMAP.md` Phase 5. Tracked as GitHub issues (`JubileeZ/FPL-Jubilee-Ascent`).
+
+## Next work — start here
+
+Critical path (unblocks the new-season model, the reason this phase exists):
+
+1. **#77 — FPL scoring matrix module** ← start here. Unblocked, pure stdlib, no I/O. Everything else on the path depends on it.
+2. #84 — Component model with Prior-Season Seed (blocked by #77)
+3. #85 — Cold-Start fallback + current-season blend (blocked by #84)
+
+Parallel after #77:
+- #83 — Long-format Feature Contract for Planning Horizon (blocked by #77) — fixes the GW39-42-inherit-GW38-fixture bug.
+
+Unblocked quick wins (independent, grab anytime):
+- #78 auto team_id from /api/me · #79 captain/vice report · #80 chip booking validation · #81 price-change tracking · #82 tuning surface
+
+Blocked, wait for deps:
+- #86 per-component fixture difficulty (#84, #83) · #87 FDR report (#83)
+
+Design decisions for the model are recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`; vocabulary in `CONTEXT.md`.
 
 ---
 
@@ -43,10 +62,10 @@ uv run python -m commands.report                       # Print report
 
 ## Agent pitfalls
 
-- In `commands/run_model.py` (L38) and `commands/solve.py` (L117), negating pandas Series with `not` is invalid and raises `ValueError`. Use bitwise `~` instead.
-- In `commands/solve.py` (L50), if the user has wildcard or unlimited transfers, FPL API returns `None` for transfer limit. This crashes the script with a `TypeError`.
-- In `commands/backtest.py` (L99), pandas Spearman correlation calculation requires `scipy` which is not listed in `pyproject.toml` dependencies.
-- Playwright Chromium browser binary must be installed using `.venv/bin/playwright install chromium` to run `refresh_data` or `snapshot_season` commands.
+- Playwright Chromium binary must be installed (`uv run playwright install chromium`) to run `refresh_data`/`snapshot_season` when `FPL_TOKEN` is unset.
+- Windows console is cp1252 by default; `commands.*` reconfigure stdio to UTF-8 via `clients.env_loader.configure_utf8_stdio()`. New commands that `print` non-ASCII (player names) must call it too.
+- Tests rely on `tool.pytest.ini_options.pythonpath = ["."]`; don't remove it or collection breaks with `ModuleNotFoundError: No module named 'clients'`.
+- Don't hardcode `.venv/bin/python` in tests — use `sys.executable` (cross-platform).
 
 ---
 

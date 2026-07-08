@@ -28,7 +28,7 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 
 All commands use `uv run python -m ...`.
 
-> **Fallback:** If `uv` is not installed globally, use `PYTHONPATH=. .venv/bin/python -m ...` instead.
+> **Fallback:** If `uv` is not installed globally, use `PYTHONPATH=. .venv/bin/python -m ...` instead (on Windows the interpreter is `.venv/Scripts/python.exe`).
 
 ### 1. Ingest Data
 

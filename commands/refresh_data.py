@@ -7,8 +7,9 @@ from pathlib import Path
 # Set up path to include root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from clients.env_loader import load_env
+from clients.env_loader import load_env, configure_utf8_stdio
 load_env()
+configure_utf8_stdio()
 
 from clients.fpl_api import (
     fetch_bootstrap_static,

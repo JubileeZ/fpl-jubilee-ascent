@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import pandas as pd
 
 def test_backtest_cli_run(tmp_path):
@@ -29,7 +30,7 @@ def test_backtest_cli_run(tmp_path):
     df_perf.to_parquet(data_dir / "player_performances.parquet")
     
     cmd = [
-        ".venv/bin/python", "-m", "commands.backtest", "linear_baseline",
+        sys.executable, "-m", "commands.backtest", "linear_baseline",
         "--gw_range", "15-15",
         "--data_dir", str(data_dir)
     ]
