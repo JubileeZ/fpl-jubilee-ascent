@@ -21,7 +21,13 @@ Unblocked quick wins (independent, grab anytime):
 Blocked, wait for deps:
 - #86 per-component fixture difficulty (#83) · #87 FDR report (#83)
 
-Design decisions for the model are recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`; vocabulary in `CONTEXT.md`.
+Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md` and `docs/adr/0004-cross-season-player-code-mapping.md`; vocabulary in `CONTEXT.md`.
+
+Recent Session Updates:
+- **Scoring Matrix Realignment**: Corrected `_GOAL_POINTS` per position (Forward=4, Defender=6, GK=6) and red card penalty (-3.0) in `models/scoring_matrix.py` to match official FPL scoring rules.
+- **Hybrid Metrics Component Model (`metrics_component_hybrid`)**: Built custom model combining Attack regression (`xG`/`Threat` and `xA`/`Creativity`), Poisson defence/Clean Sheet model ($P(CS) = e^{-\lambda}$ for $xMins \ge 60$), position-aware Defcon threshold modeling (10 for DEF, 12 for MID/FWD), and Softmax BPS Bonus mapping in `models/metrics_component_hybrid.py`.
+- **ADR 0005 Recorded**: Added [`docs/adr/0005-hybrid-metrics-component-projection-model.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0005-hybrid-metrics-component-projection-model.md).
+- **Pre-season Squad Optimization**: Generated optimal 15-player pre-season squad (47.08 xPts/GW) saved to `data/images/squad_timeline_metrics_component_hybrid.png`.
 
 ---
 

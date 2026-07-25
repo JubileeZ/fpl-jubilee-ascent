@@ -22,7 +22,7 @@ EventComponent = Literal[
     "own_goals",
 ]
 
-_GOAL_POINTS: dict[Position, int] = {"F": 6, "M": 5, "D": 4, "GK": 4}
+_GOAL_POINTS: dict[Position, int] = {"F": 4, "M": 5, "D": 6, "GK": 6}
 _CLEAN_SHEET_POINTS: dict[Position, int] = {"GK": 4, "D": 4, "M": 1, "F": 0}
 # Goals-conceded deduction applies only to keepers and defenders.
 _CONCEDES_POINTS: dict[Position, int] = {"GK": -1, "D": -1, "M": 0, "F": 0}
@@ -55,9 +55,7 @@ def event_points(component: EventComponent, position: Position, quantity: float)
     if component == "yellow_cards":
         return quantity * -1.0
     if component == "red_cards":
-        # ponytail: issue #77 specifies red=-2; official FPL is -3. Revisit if
-        # reconstruction underfits red-card xP.
-        return quantity * -2.0
+        return quantity * -3.0
     if component == "penalties_saved":
         return quantity * 5.0
     if component == "penalties_missed":

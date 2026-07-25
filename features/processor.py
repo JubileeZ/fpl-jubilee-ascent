@@ -63,7 +63,7 @@ def process_directory(input_dir: Path, output_dir: Path):
             "element_type": "position_id"
         })
         keep_player_cols = [
-            "id", "first_name", "second_name", "web_name", "club_id", "position_id",
+            "id", "code", "first_name", "second_name", "web_name", "club_id", "position_id",
             "now_cost", "status", "chance_of_playing_next_round", "chance_of_playing_this_round",
             "news", "news_added", "selected_by_percent",
             "corners_and_indirect_freekicks_order", "direct_freekicks_order", "penalties_order",
@@ -132,7 +132,8 @@ def process_directory(input_dir: Path, output_dir: Path):
             "goals_conceded", "own_goals", "penalties_saved", "penalties_missed",
             "yellow_cards", "red_cards", "saves", "bonus", "bps", "influence",
             "creativity", "threat", "ict_index", "starts", "expected_goals",
-            "expected_assists", "expected_goal_involvements", "expected_goals_conceded"
+            "expected_assists", "expected_goal_involvements", "expected_goals_conceded",
+            "defensive_contribution"
         ]
         df_perf = df_perf[[c for c in keep_perf_cols if c in df_perf.columns]]
         df_perf.to_parquet(output_dir / "player_performances.parquet", index=False)

@@ -13,6 +13,11 @@ EVENT_RATE_MAP = [
     ("red_cards", "per90_red_cards"),
     ("saves", "per90_saves"),
     ("bonus", "per90_bonus"),
+    ("defensive_contribution", "per90_defensive_contribution"),
+    ("expected_goals", "per90_xg"),
+    ("expected_assists", "per90_xa"),
+    ("threat", "per90_threat"),
+    ("creativity", "per90_creativity"),
 ]
 RATE_COLS = [rate_col for _, rate_col in EVENT_RATE_MAP]
 BLEND_START_APPEARANCES = 3
@@ -49,7 +54,8 @@ def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[s
     rates = {}
     for raw_col, rate_col in EVENT_RATE_MAP:
         if raw_col in player_hist.columns and total_minutes > 0:
-            rates[rate_col] = float(player_hist[raw_col].sum()) / total_minutes * 90.0
+            val_sum = float(pd.to_numeric(player_hist[raw_col], errors="coerce").fillna(0.0).sum())
+            rates[rate_col] = val_sum / total_minutes * 90.0
         else:
             rates[rate_col] = 0.0
     return rates, avg_minutes, appearances
@@ -74,7 +80,8 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
         rates = {}
         for raw_col, rate_col in EVENT_RATE_MAP:
             if raw_col in grp.columns and total_minutes > 0:
-                rates[rate_col] = float(grp[raw_col].sum()) / total_minutes * 90.0
+                val_sum = float(pd.to_numeric(grp[raw_col], errors="coerce").fillna(0.0).sum())
+                rates[rate_col] = val_sum / total_minutes * 90.0
             else:
                 rates[rate_col] = 0.0
         priors_by_band[(int(position_id), int(band))] = {
@@ -87,7 +94,8 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
         rates = {}
         for raw_col, rate_col in EVENT_RATE_MAP:
             if raw_col in grp.columns and total_minutes > 0:
-                rates[rate_col] = float(grp[raw_col].sum()) / total_minutes * 90.0
+                val_sum = float(pd.to_numeric(grp[raw_col], errors="coerce").fillna(0.0).sum())
+                rates[rate_col] = val_sum / total_minutes * 90.0
             else:
                 rates[rate_col] = 0.0
         priors_by_position[int(position_id)] = {
@@ -149,13 +157,35 @@ def build_features(processed_dir: Path, target_gw: int) -> pd.DataFrame:
     priors_by_band, priors_by_position = _compute_position_price_priors(df_seed_perf, df_seed_players)
     cold_start_disable_player_seed = target_gw <= 4
 
+    # Build mapping from player code / name to seed player id
+    # ponytail: FPL element IDs change between seasons; permanent `code` preserves identity.
+    # Name fallback omits position_id to handle players whose position changed between seasons (e.g. MID -> FWD).
+    code_to_seed_id = {}
+    if "code" in df_seed_players.columns:
+        code_to_seed_id = df_seed_players.set_index("code")["id"].to_dict()
+
+    name_to_seed_id = {}
+    if "first_name" in df_seed_players.columns and "second_name" in df_seed_players.columns:
+        dedup_players = df_seed_players.drop_duplicates(subset=["first_name", "second_name"])
+        name_to_seed_id = dedup_players.set_index(["first_name", "second_name"])["id"].to_dict()
+
     seed_rows = []
     for _, player_row in df_players.iterrows():
         pid = int(player_row["player_id"])
         position_id = int(player_row["position_id"])
         band = _price_band(player_row.get("now_cost", 0))
 
-        prior_rates, prior_avg_minutes, _ = _compute_player_rates(df_seed_perf, pid)
+        code = player_row.get("code")
+        seed_pid = code_to_seed_id.get(code) if code is not None else None
+        if seed_pid is None:
+            fn = player_row.get("first_name")
+            sn = player_row.get("second_name")
+            if fn and sn:
+                seed_pid = name_to_seed_id.get((fn, sn))
+        if seed_pid is None:
+            seed_pid = pid
+
+        prior_rates, prior_avg_minutes, _ = _compute_player_rates(df_seed_perf, seed_pid)
         has_player_prior = prior_avg_minutes > 0
 
         band_prior = priors_by_band.get((position_id, band))

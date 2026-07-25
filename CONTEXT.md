@@ -67,3 +67,16 @@ _Avoid_: Carryover, history seed
 **Position-Price Prior**:
 A league-wide aggregate of Event Rates grouped by Position and price band, used as the fallback for Players with no Prior-Season Seed (new signings, promoted-Club Players, rookies).
 _Avoid_: Default rate, baseline prior
+
+**Player Code Mapping**:
+The cross-season identity resolution technique that links transient annual FPL element `id` values across seasons using the immutable FPL `code` field (with name/position fallback).
+_Avoid_: ID matching, element_id join
+
+**Defensive Contribution (Defcon)**:
+The FPL metric tracking defensive actions (clearances, blocks, interceptions, tackles, recoveries) used to evaluate position-specific defensive contribution thresholds for bonus/points.
+_Avoid_: Tackles, defensive stat, work rate
+
+**BPS Bonus Model**:
+A statistical or regression model mapping projected Bonus Points System (BPS) totals from event components into expected bonus points (0, 1, 2, or 3).
+_Avoid_: Bonus guess, bonus score
+

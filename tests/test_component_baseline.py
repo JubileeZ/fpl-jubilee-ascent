@@ -28,36 +28,36 @@ def _row(**overrides) -> dict:
     return base
 
 
-def test_forward_goal_reconstructs_to_eight():
-    # 90 min (>=60) = 2 minutes points + 1 goal (F) = 6 -> 8 total.
+def test_forward_goal_reconstructs_to_six():
+    # 90 min (>=60) = 2 minutes points + 1 goal (F) = 4 -> 6 total.
     df = pd.DataFrame([_row(per90_goals=1.0)])
     out = ComponentBaseline().predict(df, horizon=1)
     assert len(out) == 1
     row = out.iloc[0]
     assert int(row["player_id"]) == 1
     assert int(row["gameweek_id"]) == 10
-    assert row["projected_points"] == 8.0
+    assert row["projected_points"] == 6.0
     assert row["projected_minutes"] == 90.0
 
 
 def test_appearance_prob_scales_minutes_and_events():
     # 50% availability halves expected minutes (90->45, <60 so 1 minute pt)
-    # and halves the goal contribution (1 goal/90 over 45 min -> 0.5 goals -> 3 pts).
+    # and halves the goal contribution (1 goal/90 over 45 min -> 0.5 goals -> 2 pts).
     df = pd.DataFrame([_row(per90_goals=1.0, chance_of_playing=50.0)])
     out = ComponentBaseline().predict(df, horizon=1)
     row = out.iloc[0]
     assert row["projected_minutes"] == 45.0
-    # 1 minute pt (45 min played) + 3 goal pts (0.5 goals) = 4.0
-    assert row["projected_points"] == 4.0
+    # 1 minute pt (45 min played) + 2 goal pts (0.5 goals) = 3.0
+    assert row["projected_points"] == 3.0
 
 
 def test_difficulty_multiplier_scales_event_rates():
-    # difficulty 2 -> multiplier max(0.2,(6-2)/3)=1.333; goals 6*1.333=8 + 2 mins = 10.
-    # difficulty 5 -> multiplier max(0.2,(6-5)/3)=0.333; goals 6*0.333=2 + 2 mins = 4.
+    # difficulty 2 -> multiplier max(0.2,(6-2)/3)=1.333; goals 4*1.333=5.333 + 2 mins = 7.333.
+    # difficulty 5 -> multiplier max(0.2,(6-5)/3)=0.333; goals 4*0.333=1.333 + 2 mins = 3.333.
     easy = ComponentBaseline().predict(pd.DataFrame([_row(per90_goals=1.0, difficulty=2.0)]), horizon=1).iloc[0]
     hard = ComponentBaseline().predict(pd.DataFrame([_row(per90_goals=1.0, difficulty=5.0)]), horizon=1).iloc[0]
-    assert easy["projected_points"] == 10.0
-    assert hard["projected_points"] == 4.0
+    assert round(easy["projected_points"], 4) == 7.3333
+    assert round(hard["projected_points"], 4) == 3.3333
 
 
 def test_no_prior_seed_projects_zero():
@@ -94,5 +94,5 @@ def test_horizon_replicates_target_fixture_across_gws():
     out = ComponentBaseline().predict(df, horizon=3)
     assert len(out) == 3
     assert list(out["gameweek_id"]) == [10, 11, 12]
-    assert all(out["projected_points"] == 8.0)
+    assert all(out["projected_points"] == 6.0)
 

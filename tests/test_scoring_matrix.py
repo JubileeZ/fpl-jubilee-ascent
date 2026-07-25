@@ -1,18 +1,18 @@
 from models.scoring_matrix import event_points
 
 
-def test_fwd_goal_worth_six():
-    assert event_points("goals", "F", 1) == 6
+def test_fwd_goal_worth_four():
+    assert event_points("goals", "F", 1) == 4
 
 
 def test_goal_points_per_position():
     assert event_points("goals", "M", 1) == 5
-    assert event_points("goals", "D", 1) == 4
-    assert event_points("goals", "GK", 1) == 4
+    assert event_points("goals", "D", 1) == 6
+    assert event_points("goals", "GK", 1) == 6
 
 
 def test_goal_points_scale_with_quantity():
-    assert event_points("goals", "F", 2) == 12
+    assert event_points("goals", "F", 2) == 8
 
 
 def test_assist_worth_three_for_any_position():
@@ -72,10 +72,8 @@ def test_yellow_card_minus_one():
     assert event_points("yellow_cards", "M", 2) == -2
 
 
-def test_red_card_minus_two():
-    # ponytail: issue #77 specifies red=-2; official FPL is -3. Revisit if
-    # reconstruction underfits red-card xP.
-    assert event_points("red_cards", "F", 1) == -2
+def test_red_card_minus_three():
+    assert event_points("red_cards", "F", 1) == -3
 
 
 def test_penalties_saved_worth_five():
