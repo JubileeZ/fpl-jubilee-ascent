@@ -47,7 +47,10 @@ def export_projections(
     df_pivoted = df_pivoted.reset_index().rename(columns={"player_id": "ID"})
     
     # 3. Merge metadata with pivoted predictions
-    df_out = df_players[["ID", "web_name", "Pos", "Price", "Team"]].merge(df_pivoted, on="ID", how="inner")
+    meta_cols = ["ID", "web_name", "Pos", "Price", "Team"]
+    if "code" in df_players.columns:
+        meta_cols.append("code")
+    df_out = df_players[meta_cols].merge(df_pivoted, on="ID", how="inner")
     df_out = df_out.rename(columns={"web_name": "Name"})
     
     # Save to CSV

@@ -235,6 +235,7 @@ def main() -> None:
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
+    parser.add_argument("--target_gw", type=int, help="Target Gameweek to start optimization from")
     args, unknown = parser.parse_known_args()
     
     # 1. Load configuration settings
@@ -260,19 +261,22 @@ def main() -> None:
     processed_dir = PROJECT_ROOT / "data" / "processed"
     
     # Load target gameweek from processed parquet
-    try:
-        df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-        next_gw_row = df_gw[df_gw["is_next"]]
-        if not next_gw_row.empty:
-            target_gw = int(next_gw_row.iloc[0]["id"])
-        else:
-            unfinished = df_gw[~df_gw["finished"]]
-            if not unfinished.empty:
-                target_gw = int(unfinished.iloc[0]["id"])
+    if args.target_gw is not None:
+        target_gw = args.target_gw
+    else:
+        try:
+            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
+            next_gw_row = df_gw[df_gw["is_next"]]
+            if not next_gw_row.empty:
+                target_gw = int(next_gw_row.iloc[0]["id"])
             else:
-                target_gw = 38
-    except Exception:
-        target_gw = 38
+                unfinished = df_gw[~df_gw["finished"]]
+                if not unfinished.empty:
+                    target_gw = int(unfinished.iloc[0]["id"])
+                else:
+                    target_gw = 1 if options.get("preseason", False) else 38
+        except Exception:
+            target_gw = 1 if options.get("preseason", False) else 38
         
     options["override_next_gw"] = target_gw
     

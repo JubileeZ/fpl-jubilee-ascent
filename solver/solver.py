@@ -135,11 +135,17 @@ def prep_data(my_data, options):
     max_players_from_team = Counter([element_to_team[x["element"]] for x in my_data["picks"]]).most_common(1)[0][1] if my_data["picks"] else 3
     data = read_data(options)
 
-    merged_data = pd.merge(elements_team, data, left_on="id_x", right_on="ID")
+    code_col = "code_x" if "code_x" in elements_team.columns else ("code" if "code" in elements_team.columns else None)
+    if code_col and "code" in data.columns:
+        merged_data = pd.merge(elements_team, data, left_on=code_col, right_on="code", suffixes=("", "_csv"))
+        if "ID" not in merged_data.columns and "id_x" in merged_data.columns:
+            merged_data["ID"] = merged_data["id_x"]
+    else:
+        merged_data = pd.merge(elements_team, data, left_on="id_x", right_on="ID")
     merged_data.set_index(["id_x"], inplace=True)
 
     # Drop duplicates
-    merged_data = merged_data.drop_duplicates(subset=["ID"], keep="first")
+    merged_data = merged_data.drop_duplicates(subset=[code_col if code_col else "ID"], keep="first")
 
     # Check if data exists
     for week in range(gw, min(39, gw + horizon)):

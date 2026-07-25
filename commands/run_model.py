@@ -40,6 +40,11 @@ def main():
         default=Path("data/availability_overrides.csv"),
         help="Optional CSV of source-attributed, expiring player xMins caps",
     )
+    parser.add_argument(
+        "--target_gw",
+        type=int,
+        help="Target Gameweek to start projections from (default: next unfinished GW or GW1)",
+    )
     args = parser.parse_args()
     
     processed_dir = PROJECT_ROOT / "data" / "processed"
@@ -48,21 +53,24 @@ def main():
         sys.exit(1)
         
     # Load gameweeks to determine next GW
-    try:
-        df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-        # Find next gameweek (is_next=True or first unfinished)
-        next_gw_row = df_gw[df_gw["is_next"]]
-        if not next_gw_row.empty:
-            target_gw = int(next_gw_row.iloc[0]["id"])
-        else:
-            unfinished = df_gw[~df_gw["finished"]]
-            if not unfinished.empty:
-                target_gw = int(unfinished.iloc[0]["id"])
+    if args.target_gw is not None:
+        target_gw = args.target_gw
+    else:
+        try:
+            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
+            # Find next gameweek (is_next=True or first unfinished)
+            next_gw_row = df_gw[df_gw["is_next"]]
+            if not next_gw_row.empty:
+                target_gw = int(next_gw_row.iloc[0]["id"])
             else:
-                target_gw = 38 # fallback
-    except Exception as e:
-        logger.warning(f"Failed to load gameweeks, falling back to GW 38: {e}")
-        target_gw = 38
+                unfinished = df_gw[~df_gw["finished"]]
+                if not unfinished.empty:
+                    target_gw = int(unfinished.iloc[0]["id"])
+                else:
+                    target_gw = 1 # preseason fallback
+        except Exception as e:
+            logger.warning(f"Failed to load gameweeks, falling back to GW 1: {e}")
+            target_gw = 1
         
     logger.info(f"Generating projections starting from target Gameweek {target_gw}...")
     
