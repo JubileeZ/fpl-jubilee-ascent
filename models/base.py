@@ -28,6 +28,14 @@ def iter_feature_rows(
             yield row, int(row.get("gameweek_id", 1)) + offset, None
 
 
+def cap_projected_minutes(row: pd.Series, expected_minutes: float) -> float:
+    """Apply an optional availability cap from the Feature Contract."""
+    cap = row.get("xmins_cap")
+    if cap is None or pd.isna(cap):
+        return expected_minutes
+    return min(expected_minutes, float(cap))
+
+
 class BaseModel(abc.ABC):
     @property
     @abc.abstractmethod

@@ -19,6 +19,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SEED_BASED_MODELS = frozenset({"component_baseline", "metrics_component_hybrid"})
 
 
 def _archive_processed_candidates(data_dir: Path) -> list[Path]:
@@ -51,6 +52,20 @@ def resolve_backtest_data_dir(data_dir: Path) -> Path:
         )
         return fallback
     return data_dir
+
+
+def resolve_seed_processed_dir(data_dir: Path, model_name: str, seed_season: str | None) -> Path | None:
+    """Resolve an explicit, distinct prior-season seed for Cold-Start evaluation."""
+    if seed_season is None:
+        return None
+    if model_name in SEED_BASED_MODELS and data_dir.parent.name == seed_season:
+        raise ValueError(
+            f"{model_name} cannot use {seed_season} as both evaluation data and Prior-Season Seed"
+        )
+    seed_dir = PROJECT_ROOT / "data" / "archive" / seed_season / "processed"
+    if not (seed_dir / "player_performances.parquet").exists() or not (seed_dir / "players.parquet").exists():
+        raise FileNotFoundError(f"Prior-season archive not found: {seed_dir}")
+    return seed_dir
 
 
 def main() -> None:
@@ -97,6 +112,11 @@ def main() -> None:
     except Exception as e:
         logger.error(e)
         sys.exit(1)
+    try:
+        seed_processed_dir = resolve_seed_processed_dir(data_dir, args.model, args.seed_season)
+    except (FileNotFoundError, ValueError) as exc:
+        logger.error(exc)
+        sys.exit(1)
         
     logger.info(f"Starting backtesting for model '{args.model}' on GW {start_gw} to {end_gw}...")
     
@@ -111,7 +131,8 @@ def main() -> None:
                 data_dir,
                 target_gw=gw,
                 horizon=1,
-                seed_season=args.seed_season,
+                seed_processed_dir=seed_processed_dir,
+                use_archive_seed=False,
                 as_of_gw=gw,
             )
         except Exception as e:
@@ -187,8 +208,8 @@ def main() -> None:
     )
     print(f"Top-11 Overlap  : {metrics['top_11_overlap']:.4f}")
     print(f"Top-15 Overlap  : {metrics['top_15_overlap']:.4f}")
-    print(f"Seed Season     : {args.seed_season or 'legacy latest archive fallback'}")
-    print("Availability     : point-in-time snapshot, else neutral 100% fallback")
+    print(f"Seed Season     : {args.seed_season or 'none (in-season evaluation)'}")
+    print("Availability     : point-in-time snapshot, else Prior-Season Seed appearance probability")
     print("Evaluation Grain : player/gameweek (fixture rows aggregated)")
     print("="*50 + "\n")
     

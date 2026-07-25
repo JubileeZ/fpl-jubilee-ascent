@@ -51,6 +51,14 @@ def test_appearance_prob_scales_minutes_and_events():
     assert row["projected_points"] == 3.0
 
 
+def test_xmins_cap_scales_minutes_and_events():
+    df = pd.DataFrame([_row(per90_goals=1.0, xmins_cap=45.0)])
+    row = ComponentBaseline().predict(df, horizon=1).iloc[0]
+
+    assert row["projected_minutes"] == 45.0
+    assert row["projected_points"] == 3.0
+
+
 def test_difficulty_multiplier_scales_event_rates():
     # difficulty 2 -> multiplier max(0.2,(6-2)/3)=1.333; goals 4*1.333=5.333 + 2 mins = 7.333.
     # difficulty 5 -> multiplier max(0.2,(6-5)/3)=0.333; goals 4*0.333=1.333 + 2 mins = 3.333.

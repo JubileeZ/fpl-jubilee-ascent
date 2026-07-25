@@ -92,3 +92,24 @@ def test_run_model_gameweeks_negation(tmp_path):
         with patch("commands.run_model.logger.warning") as mock_warn:
             main()
             mock_warn.assert_not_called()
+
+
+def test_linear_model_xmins_cap_scales_points():
+    df = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "gameweek_id": 1,
+                "avg_points_3gw": 6.0,
+                "avg_mins_3gw": 90.0,
+                "difficulty": 3.0,
+                "chance_of_playing": 100.0,
+                "xmins_cap": 45.0,
+            }
+        ]
+    )
+
+    projection = LinearBaseline().predict(df, horizon=1).iloc[0]
+
+    assert projection["projected_minutes"] == 45.0
+    assert projection["projected_points"] == 3.0

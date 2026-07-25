@@ -57,6 +57,18 @@ uv run python -m commands.run_model component_baseline \
   --horizon 5 --blend_start_appearances 3 --blend_full_appearances 8
 ```
 
+For verified preseason availability information, optionally create
+`data/availability_overrides.csv`:
+
+```csv
+player_code,xmins_cap,source,expires_after_gw
+223094,60,https://example.com/team-news,1
+```
+
+Each cap is validated, applies to all models, and expires after its stated
+gameweek. Missing, expired, malformed, duplicate, or unknown-player rows stop
+the projection run.
+
 ### 3. Generate Transfer Plan (Solve MILP)
 
 Compute optimal squad selection and transfer plans over planning horizon using MILP solver.
@@ -113,6 +125,9 @@ processed season archive.
 ```bash
 uv run python -m commands.backtest metrics_component_hybrid --gw_range 20-30 --seed_season 2025-26
 ```
+
+Seed-based Cold-Start backtests require a distinct earlier season archive; a
+season cannot be both evaluation data and its Prior-Season Seed.
 
 ### 6. Season Archiving
 

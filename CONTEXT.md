@@ -64,6 +64,14 @@ _Avoid_: Per-90 average, rate (ambiguous)
 The likelihood a Player features in a fixture, taken from the FPL API `chance_of_playing_next_round` when present, else from prior-season appearance rate.
 _Avoid_: Injury chance, playing chance
 
+**Minutes if Appearance**:
+The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability.
+_Avoid_: Average minutes, expected minutes
+
+**Availability Override**:
+An explicit, source-attributed and time-limited adjustment to a Player's expected availability or minutes when the FPL API has not yet reflected confirmed information.
+_Avoid_: Expert guess, manual prediction
+
 **Cold-Start**:
 The state at the start of a new season where current-season Player performances are empty and Event Rates must be seeded entirely from prior-season history or fallback priors.
 _Avoid_: Preseason (ambiguous), blank season

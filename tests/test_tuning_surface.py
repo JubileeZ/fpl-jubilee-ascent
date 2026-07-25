@@ -45,6 +45,7 @@ def test_run_model_exposes_blend_thresholds(tmp_path: Path) -> None:
         horizon=7,
         blend_start_appearances=2,
         blend_full_appearances=6,
+        availability_overrides=tmp_path / "data" / "availability_overrides.csv",
     )
 
 

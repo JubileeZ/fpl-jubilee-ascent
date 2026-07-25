@@ -1,5 +1,5 @@
 import pandas as pd
-from models.base import BaseModel, iter_feature_rows
+from models.base import BaseModel, cap_projected_minutes, iter_feature_rows
 
 
 def _number(row: pd.Series, column: str, default: float) -> float:
@@ -28,8 +28,9 @@ class LinearBaseline(BaseModel):
                 avail = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
                 avg_pts = _number(row, "avg_points_3gw", 0.0)
                 avg_mins = _number(row, "avg_mins_3gw", 60.0)
-                xp = avg_pts * difficulty_multiplier * avail
-                xmins = avg_mins * avail
+                uncapped_xmins = avg_mins * avail
+                xmins = cap_projected_minutes(row, uncapped_xmins)
+                xp = avg_pts * difficulty_multiplier * avail * (xmins / uncapped_xmins if uncapped_xmins else 0.0)
 
             prediction = {
                 "player_id": int(row["player_id"]),

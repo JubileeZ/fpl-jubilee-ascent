@@ -23,6 +23,9 @@ EVENT_RATE_MAP = [
 RATE_COLS = [rate_col for _, rate_col in EVENT_RATE_MAP]
 BLEND_START_APPEARANCES = 3
 BLEND_FULL_APPEARANCES = 8
+MIN_PRIOR_MINUTES = 450
+MIN_PRIOR_APPEARANCES = 8
+AVAILABILITY_OVERRIDE_COLUMNS = frozenset({"player_code", "xmins_cap", "source", "expires_after_gw"})
 
 
 def _safe_number(value: object, default: float) -> float:
@@ -165,13 +168,50 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
     return pd.DataFrame(fixture_maps, columns=columns)
 
 
-def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[str, float], float, int]:
+def _load_availability_overrides(
+    availability_overrides: Path | None,
+    target_gw: int,
+    player_codes: set[int],
+) -> pd.DataFrame:
+    if availability_overrides is None or not availability_overrides.exists():
+        return pd.DataFrame(columns=["player_code", "xmins_cap", "expires_after_gw"])
+
+    overrides = pd.read_csv(availability_overrides)
+    missing = AVAILABILITY_OVERRIDE_COLUMNS.difference(overrides.columns)
+    if missing:
+        raise ValueError(f"Availability Overrides missing columns: {sorted(missing)}")
+
+    overrides = overrides[list(AVAILABILITY_OVERRIDE_COLUMNS)].copy()
+    for column in ("player_code", "xmins_cap", "expires_after_gw"):
+        overrides[column] = pd.to_numeric(overrides[column], errors="coerce")
+    if overrides[["player_code", "xmins_cap", "expires_after_gw"]].isna().any().any():
+        raise ValueError("Availability Overrides require numeric player_code, xmins_cap, and expires_after_gw")
+    if (overrides["player_code"] % 1 != 0).any() or (overrides["expires_after_gw"] % 1 != 0).any():
+        raise ValueError("Availability Override player_code and expires_after_gw must be integers")
+    overrides[["player_code", "expires_after_gw"]] = overrides[
+        ["player_code", "expires_after_gw"]
+    ].astype(int)
+    if (~overrides["xmins_cap"].between(0.0, 90.0)).any():
+        raise ValueError("Availability Override xmins_cap must be between 0 and 90")
+    if overrides["source"].isna().any() or overrides["source"].astype(str).str.strip().eq("").any():
+        raise ValueError("Availability Overrides require a non-empty source")
+    if overrides["player_code"].duplicated().any():
+        raise ValueError("Availability Overrides must not contain duplicate player_code values")
+    if expired := overrides.loc[overrides["expires_after_gw"] < target_gw, "player_code"].tolist():
+        raise ValueError(f"Availability Overrides expired before GW{target_gw}: {expired}")
+    if unknown := sorted(set(overrides["player_code"]).difference(player_codes)):
+        raise ValueError(f"Availability Overrides contain unknown player_code values: {unknown}")
+    return overrides[["player_code", "xmins_cap", "expires_after_gw"]]
+
+
+def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[str, float], float, float, int]:
     player_hist = df_perf[df_perf["player_id"] == player_id]
     if player_hist.empty:
-        return ({col: 0.0 for col in RATE_COLS}, 0.0, 0)
+        return ({col: 0.0 for col in RATE_COLS}, 0.0, 0.0, 0)
     total_minutes = float(player_hist["minutes"].sum())
     appearances = int((player_hist["minutes"] > 0).sum())
-    avg_minutes = float(player_hist["minutes"].mean()) if len(player_hist) > 0 else 0.0
+    minutes_if_appearance = total_minutes / appearances if appearances else 0.0
+    appearance_probability = appearances / len(player_hist)
     rates = {}
     for raw_col, rate_col in EVENT_RATE_MAP:
         if raw_col in player_hist.columns and total_minutes > 0:
@@ -179,7 +219,7 @@ def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[s
             rates[rate_col] = val_sum / total_minutes * 90.0
         else:
             rates[rate_col] = 0.0
-    return rates, avg_minutes, appearances
+    return rates, minutes_if_appearance, appearance_probability, appearances
 
 
 def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFrame) -> tuple[dict[tuple[int, int], dict], dict[int, dict]]:
@@ -198,6 +238,7 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
 
     for (position_id, band), grp in perf.groupby(["position_id", "price_band"]):
         total_minutes = float(grp["minutes"].sum())
+        appearances = int((grp["minutes"] > 0).sum())
         rates = {}
         for raw_col, rate_col in EVENT_RATE_MAP:
             if raw_col in grp.columns and total_minutes > 0:
@@ -206,12 +247,14 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
             else:
                 rates[rate_col] = 0.0
         priors_by_band[(int(position_id), int(band))] = {
-            "avg_minutes": float(grp["minutes"].mean()) if len(grp) > 0 else 0.0,
+            "minutes_if_appearance": total_minutes / appearances if appearances else 0.0,
+            "appearance_probability": appearances / len(grp) if len(grp) else 0.0,
             "rates": rates,
         }
 
     for position_id, grp in perf.groupby("position_id"):
         total_minutes = float(grp["minutes"].sum())
+        appearances = int((grp["minutes"] > 0).sum())
         rates = {}
         for raw_col, rate_col in EVENT_RATE_MAP:
             if raw_col in grp.columns and total_minutes > 0:
@@ -220,7 +263,8 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
             else:
                 rates[rate_col] = 0.0
         priors_by_position[int(position_id)] = {
-            "avg_minutes": float(grp["minutes"].mean()) if len(grp) > 0 else 0.0,
+            "minutes_if_appearance": total_minutes / appearances if appearances else 0.0,
+            "appearance_probability": appearances / len(grp) if len(grp) else 0.0,
             "rates": rates,
         }
     return priors_by_band, priors_by_position
@@ -230,9 +274,12 @@ def build_features(
     target_gw: int,
     horizon: int = 1,
     seed_season: str | None = None,
+    seed_processed_dir: Path | None = None,
+    use_archive_seed: bool = True,
     as_of_gw: int | None = None,
     blend_start_appearances: int = BLEND_START_APPEARANCES,
     blend_full_appearances: int = BLEND_FULL_APPEARANCES,
+    availability_overrides: Path | None = None,
 ) -> pd.DataFrame:
     """
     Compiles a FeatureContract DataFrame for a target gameweek.
@@ -283,7 +330,14 @@ def build_features(
     # 3. Prior-season seed + Position-Price fallback + current-season blend.
     # ponytail: if archive data exists, use it as the seed source. If missing
     # (tests/sandbox), fallback to current-season pre-target history.
-    archive_processed = _archive_processed_dir(processed_dir, seed_season)
+    archive_processed = seed_processed_dir or (
+        _archive_processed_dir(processed_dir, seed_season) if use_archive_seed else None
+    )
+    if seed_processed_dir is not None and not (
+        (seed_processed_dir / "player_performances.parquet").exists()
+        and (seed_processed_dir / "players.parquet").exists()
+    ):
+        raise FileNotFoundError(f"Prior-season archive not found: {seed_processed_dir}")
     if seed_season and archive_processed is None:
         raise FileNotFoundError(f"Prior-season archive not found: {seed_season}")
     if archive_processed is not None:
@@ -294,8 +348,6 @@ def build_features(
         df_seed_players = df_players.rename(columns={"player_id": "id"}).copy()
 
     priors_by_band, priors_by_position = _compute_position_price_priors(df_seed_perf, df_seed_players)
-    cold_start_disable_player_seed = target_gw <= 4
-
     # Build mapping from player code / name to seed player id
     # ponytail: FPL element IDs change between seasons; permanent `code` preserves identity.
     # Name fallback omits position_id to handle players whose position changed between seasons (e.g. MID -> FWD).
@@ -324,33 +376,49 @@ def build_features(
         if seed_pid is None:
             seed_pid = pid
 
-        prior_rates, prior_avg_minutes, _ = _compute_player_rates(df_seed_perf, seed_pid)
-        has_player_prior = prior_avg_minutes > 0
+        prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = _compute_player_rates(
+            df_seed_perf,
+            seed_pid,
+        )
+        has_player_prior = (
+            prior_minutes_if_appearance > 0
+            and prior_appearances >= MIN_PRIOR_APPEARANCES
+            and prior_minutes_if_appearance * prior_appearances >= MIN_PRIOR_MINUTES
+        )
 
         band_prior = priors_by_band.get((position_id, band))
         pos_prior = priors_by_position.get(position_id)
         fallback_prior = band_prior or pos_prior
 
-        if has_player_prior and not cold_start_disable_player_seed:
+        if has_player_prior:
             base_rates = prior_rates
-            base_minutes = prior_avg_minutes
+            base_minutes_if_appearance = prior_minutes_if_appearance
+            base_appearance_probability = prior_appearance_probability
             seed_source = "player_prior"
         elif fallback_prior is not None:
             base_rates = fallback_prior["rates"]
-            base_minutes = float(fallback_prior["avg_minutes"])
+            base_minutes_if_appearance = float(fallback_prior["minutes_if_appearance"])
+            base_appearance_probability = float(fallback_prior["appearance_probability"])
             seed_source = "position_price_prior"
         else:
             base_rates = {col: 0.0 for col in RATE_COLS}
-            base_minutes = 0.0
+            base_minutes_if_appearance = 0.0
+            base_appearance_probability = 0.0
             seed_source = "none"
 
-        current_rates, current_avg_minutes, appearances = _compute_player_rates(df_hist, pid)
-        if appearances < blend_start_appearances:
+        current_rates, current_minutes_if_appearance, current_appearance_probability, current_appearances = _compute_player_rates(
+            df_hist,
+            pid,
+        )
+        if current_appearances < blend_start_appearances:
             current_weight = 0.0
         else:
             # ponytail: linear blend ramps to full current-season rates by ~8 apps.
             denom = max(1, blend_full_appearances - blend_start_appearances)
-            current_weight = min(1.0, float(appearances - blend_start_appearances) / float(denom))
+            current_weight = min(
+                1.0,
+                float(current_appearances - blend_start_appearances) / float(denom),
+            )
         prior_weight = 1.0 - current_weight
 
         row = {
@@ -359,8 +427,14 @@ def build_features(
             "has_fallback_prior": seed_source == "position_price_prior",
             "has_seed": seed_source != "none",
             "seed_source": seed_source,
-            # Seed/backfill minutes for Cold-Start rows where rolling avg mins is 0.
-            "seed_avg_mins": prior_weight * base_minutes + current_weight * current_avg_minutes,
+            "minutes_if_appearance": (
+                prior_weight * base_minutes_if_appearance
+                + current_weight * current_minutes_if_appearance
+            ),
+            "appearance_probability": (
+                prior_weight * base_appearance_probability
+                + current_weight * current_appearance_probability
+            ),
         }
         for rate_col in RATE_COLS:
             row[rate_col] = prior_weight * float(base_rates.get(rate_col, 0.0)) + current_weight * float(current_rates.get(rate_col, 0.0))
@@ -370,13 +444,7 @@ def build_features(
     df_rolling = df_rolling.merge(df_seed, on="player_id", how="left")
     for rc in RATE_COLS:
         df_rolling[rc] = df_rolling[rc].fillna(0.0)
-    # Keep recent rolling minutes when present; only backfill Cold-Start rows.
-    df_rolling["avg_mins_3gw"] = (
-        df_rolling["avg_mins_3gw"]
-        .where(df_rolling["avg_mins_3gw"] > 0.0, df_rolling["seed_avg_mins"])
-        .fillna(0.0)
-    )
-    df_rolling = df_rolling.drop(columns=["seed_avg_mins"], errors="ignore")
+    df_rolling["avg_mins_3gw"] = df_rolling["minutes_if_appearance"].fillna(0.0)
     df_rolling["has_prior_seed"] = df_rolling["has_prior_seed"].fillna(False)
 
     # 4. Merge player metadata and expand to one row per player/target gameweek.
@@ -401,15 +469,35 @@ def build_features(
     df_feat["opponent_id"] = df_feat["opponent_id"].fillna(0).astype(int)
     
     # Define chance of playing
+    chance_col = "chance_of_playing_next_round"
     if as_of_gw is not None and not has_point_in_time_snapshot:
         # No historical availability snapshot means current mutable injury data
         # cannot be used without look-ahead leakage.
         df_feat["chance_of_playing"] = 100.0
     else:
-        chance_col = "chance_of_playing_next_round"
-        if chance_col in df_feat.columns:
-            df_feat["chance_of_playing"] = df_feat[chance_col].fillna(100.0)
-        else:
-            df_feat["chance_of_playing"] = 100.0
+        api_chance = (
+            pd.to_numeric(df_feat[chance_col], errors="coerce")
+            if chance_col in df_feat.columns
+            else pd.Series(float("nan"), index=df_feat.index)
+        )
+        df_feat["chance_of_playing"] = api_chance.where(
+            api_chance.notna(),
+            df_feat["appearance_probability"].fillna(1.0) * 100.0,
+        )
+
+    player_codes = (
+        set(pd.to_numeric(df_players["code"], errors="coerce").dropna().astype(int))
+        if "code" in df_players.columns
+        else set()
+    )
+    overrides = _load_availability_overrides(availability_overrides, target_gw, player_codes)
+    if not overrides.empty:
+        df_feat = df_feat.merge(overrides, left_on="code", right_on="player_code", how="left")
+        df_feat["xmins_cap"] = df_feat["xmins_cap"].where(
+            df_feat["gameweek_id"] <= df_feat["expires_after_gw"],
+        )
+        df_feat = df_feat.drop(columns=["player_code", "expires_after_gw"])
+    else:
+        df_feat["xmins_cap"] = float("nan")
     
     return df_feat

@@ -7,7 +7,7 @@ through models.scoring_matrix.event_points. Players without any usable seed proj
 
 import pandas as pd
 
-from models.base import BaseModel, iter_feature_rows
+from models.base import BaseModel, cap_projected_minutes, iter_feature_rows
 from models.scoring_matrix import event_points
 
 _POS_CODE = {1: "GK", 2: "D", 3: "M", 4: "F"}
@@ -56,7 +56,10 @@ class ComponentBaseline(BaseModel):
                 continue
 
             avail = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
-            expected_minutes = _number(row, "avg_mins_3gw", 0.0) * avail
+            expected_minutes = cap_projected_minutes(
+                row,
+                _number(row, "avg_mins_3gw", 0.0) * avail,
+            )
             diff = _number(row, "difficulty", 3.0)
             difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
 

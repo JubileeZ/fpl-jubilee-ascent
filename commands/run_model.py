@@ -34,6 +34,12 @@ def main():
         type=int,
         help="Appearances at which current-season rates fully replace the seed (default: 8)",
     )
+    parser.add_argument(
+        "--availability_overrides",
+        type=Path,
+        default=Path("data/availability_overrides.csv"),
+        help="Optional CSV of source-attributed, expiring player xMins caps",
+    )
     args = parser.parse_args()
     
     processed_dir = PROJECT_ROOT / "data" / "processed"
@@ -62,11 +68,15 @@ def main():
     
     # 1. Build fixture-level features for the complete planning horizon
     logger.info("Building features...")
+    availability_overrides = args.availability_overrides
+    if not availability_overrides.is_absolute():
+        availability_overrides = PROJECT_ROOT / availability_overrides
     feature_kwargs = {
         key: value
         for key, value in {
             "blend_start_appearances": args.blend_start_appearances,
             "blend_full_appearances": args.blend_full_appearances,
+            "availability_overrides": availability_overrides,
         }.items()
         if value is not None
     }

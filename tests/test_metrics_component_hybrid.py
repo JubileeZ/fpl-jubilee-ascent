@@ -72,6 +72,15 @@ def test_zero_availability_zeroes_minutes_and_points():
     assert result["projected_points"] == 0.0
 
 
+def test_xmins_cap_limits_projected_minutes():
+    result = MetricsComponentHybridModel().predict(
+        pd.DataFrame([_row(per90_xg=1.0, xmins_cap=45.0)]),
+        horizon=1,
+    ).iloc[0]
+
+    assert result["projected_minutes"] == 45.0
+
+
 def test_defensive_contribution_probability_adds_fpl_points():
     model = MetricsComponentHybridModel()
     without_defcon = model.predict(

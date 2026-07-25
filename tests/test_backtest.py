@@ -1,6 +1,9 @@
 import subprocess
 import sys
 import pandas as pd
+import pytest
+
+from commands.backtest import resolve_seed_processed_dir
 
 def test_backtest_cli_run(tmp_path):
     data_dir = tmp_path / "processed"
@@ -39,3 +42,10 @@ def test_backtest_cli_run(tmp_path):
     assert "BACKTESTING REPORT: LINEAR_BASELINE" in res.stdout
     assert "Points MAE" in res.stdout
     assert "Points RMSE" in res.stdout
+
+
+def test_seed_based_backtest_rejects_its_evaluation_season(tmp_path):
+    evaluation_dir = tmp_path / "data" / "archive" / "2025-26" / "processed"
+
+    with pytest.raises(ValueError, match="both evaluation data and Prior-Season Seed"):
+        resolve_seed_processed_dir(evaluation_dir, "metrics_component_hybrid", "2025-26")
