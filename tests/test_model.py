@@ -37,7 +37,8 @@ def test_modeling_pipeline(tmp_path):
     
     # 3. Run model
     model = LinearBaseline()
-    df_proj = model.predict(df_feat, horizon=3)
+    df_feat_horizon = build_features(processed_dir, target_gw=38, horizon=3)
+    df_proj = model.predict(df_feat_horizon, horizon=3)
     assert len(df_proj) == 3  # 3 weeks predictions for 1 player
     assert list(df_proj["gameweek_id"]) == [38, 39, 40]
     

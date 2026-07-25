@@ -6,7 +6,7 @@
 
 ## Decision
 
-The new model will **not** learn total points as a target. Instead it predicts per-90 Event Rates (minutes/appearance, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, penalty events) and reconstructs projected points by mapping those events through the official FPL scoring matrix (deterministic per Position: a Goal is worth 6/5/4/4 for F/M/D/GK, an Assist 3, a Clean Sheet 4/4/1/0, etc.).
+The new model will **not** learn total points as a target. Instead it predicts per-90 Event Rates (minutes/appearance, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, defensive contributions, penalty events) and reconstructs projected points by mapping those events through the official FPL scoring matrix (deterministic per Position: a Goal is worth 10/6/5/4 for GK/D/M/F, an Assist 3, a Clean Sheet 4/4/1/0, etc.).
 
 Event Rates are seeded from the Prior-Season Seed and blended into current-season data after a threshold of current-season appearances. Clean sheets and goals-conceded are modeled per Player from prior history (Player-level), not per Club. Newcomers with no prior seed fall back to the Position-Price Prior.
 

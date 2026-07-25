@@ -14,6 +14,7 @@ EventComponent = Literal[
     "clean_sheets",
     "goals_conceded",
     "saves",
+    "defensive_contributions",
     "bonus",
     "yellow_cards",
     "red_cards",
@@ -22,10 +23,11 @@ EventComponent = Literal[
     "own_goals",
 ]
 
-_GOAL_POINTS: dict[Position, int] = {"F": 4, "M": 5, "D": 6, "GK": 6}
+_GOAL_POINTS: dict[Position, int] = {"F": 4, "M": 5, "D": 6, "GK": 10}
 _CLEAN_SHEET_POINTS: dict[Position, int] = {"GK": 4, "D": 4, "M": 1, "F": 0}
 # Goals-conceded deduction applies only to keepers and defenders.
 _CONCEDES_POINTS: dict[Position, int] = {"GK": -1, "D": -1, "M": 0, "F": 0}
+_DEFCON_POINTS: dict[Position, int] = {"GK": 0, "D": 2, "M": 2, "F": 2}
 
 
 def event_points(component: EventComponent, position: Position, quantity: float) -> float:
@@ -50,6 +52,8 @@ def event_points(component: EventComponent, position: Position, quantity: float)
     if component == "saves":
         # ponytail: 1 pt per 3 saves, GK only.
         return math.floor(quantity / 3) if position == "GK" else 0.0
+    if component == "defensive_contributions":
+        return quantity * _DEFCON_POINTS[position]
     if component == "bonus":
         return quantity
     if component == "yellow_cards":

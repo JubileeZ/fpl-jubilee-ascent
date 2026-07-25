@@ -19,6 +19,169 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CHIP_KEYS: tuple[str, ...] = ("use_wc", "use_bb", "use_fh", "use_tc")
+SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
+    "allowed_chip_gws",
+    "banned",
+    "banned_next_gw",
+    "bench_weights",
+    "booked_transfers",
+    "chip_limits",
+    "delete_tmp",
+    "double_defense_pick",
+    "ev_per_price_cutoff",
+    "export_debug",
+    "force_ft_state_lb",
+    "force_ft_state_ub",
+    "forced_chip_gws",
+    "ft_use_penalty",
+    "ft_value",
+    "ft_value_list",
+    "future_transfer_limit",
+    "gap",
+    "hit_limit",
+    "hide_transfers",
+    "itb_loss_per_transfer",
+    "itb_value",
+    "iteration_criteria",
+    "iteration_difference",
+    "iteration_target",
+    "keep",
+    "keep_top_ev_percent",
+    "locked",
+    "locked_next_gw",
+    "max_defenders_per_team",
+    "max_players_from_team",
+    "no_chip_gws",
+    "no_future_transfer",
+    "no_opposing_play",
+    "no_transfer_by_position",
+    "no_transfer_gws",
+    "no_transfer_last_gws",
+    "no_trs_except_wc",
+    "num_iterations",
+    "num_transfers",
+    "objective",
+    "only_booked_transfers",
+    "opposing_play_group",
+    "opposing_play_penalty",
+    "pick_prices",
+    "price_changes",
+    "presolve",
+    "random_seed",
+    "randomized",
+    "randomization_seed",
+    "randomization_strength",
+    "report_decay_base",
+    "secs",
+    "solver",
+    "team_id",
+    "team_data",
+    "transfer_itb_buffer",
+    "use_bb",
+    "use_cmd",
+    "use_fh",
+    "use_tc",
+    "use_wc",
+    "vcap_weight",
+    "verbose",
+    "weekly_hit_limit",
+    "xmin_lb",
+})
+BOOLEAN_DYNAMIC_OVERRIDES = frozenset({
+    "delete_tmp",
+    "double_defense_pick",
+    "export_debug",
+    "hide_transfers",
+    "no_future_transfer",
+    "no_opposing_play",
+    "no_trs_except_wc",
+    "only_booked_transfers",
+    "randomized",
+    "use_cmd",
+    "verbose",
+})
+
+
+def _chip_values(value: object, chip_key: str) -> list[object]:
+    if value is None:
+        return []
+    if isinstance(value, (str, int, float)):
+        return [value]
+    try:
+        return list(value)  # type: ignore[arg-type]
+    except TypeError as exc:
+        raise ValueError(f"{chip_key} must be a gameweek list") from exc
+
+
+def validate_booked_chips(options: dict[str, object], next_gw: int, horizon: int) -> None:
+    """Validate booked chips before any solver/API work is started."""
+    if next_gw < 1 or next_gw > 38:
+        raise ValueError(f"next gameweek must be between 1 and 38, got {next_gw}")
+    if horizon < 1:
+        raise ValueError(f"horizon must be at least 1, got {horizon}")
+
+    planning_gameweeks = set(range(next_gw, min(39, next_gw + horizon)))
+    used_gameweeks: dict[int, str] = {}
+    for chip_key in CHIP_KEYS:
+        seen_for_chip: set[int] = set()
+        for raw_gameweek in _chip_values(options.get(chip_key), chip_key):
+            if isinstance(raw_gameweek, bool):
+                raise ValueError(f"{chip_key} contains invalid gameweek {raw_gameweek!r}")
+            try:
+                gameweek = int(raw_gameweek)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{chip_key} contains invalid gameweek {raw_gameweek!r}") from exc
+            if gameweek not in planning_gameweeks:
+                first_gw = min(planning_gameweeks)
+                last_gw = max(planning_gameweeks)
+                raise ValueError(
+                    f"{chip_key} uses GW{gameweek}, outside planning horizon GW{first_gw}-GW{last_gw}"
+                )
+            if gameweek in seen_for_chip:
+                raise ValueError(f"{chip_key} is booked more than once for GW{gameweek}")
+            if gameweek in used_gameweeks:
+                raise ValueError(
+                    f"{chip_key} conflicts with {used_gameweeks[gameweek]}: "
+                    f"at most one chip may be booked in GW{gameweek}"
+                )
+            seen_for_chip.add(gameweek)
+            used_gameweeks[gameweek] = chip_key
+
+
+def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> None:
+    """Apply supported solver overrides and reject typos before solving."""
+    i = 0
+    while i < len(unknown):
+        arg = unknown[i]
+        if not arg.startswith("--"):
+            raise ValueError(f"Unsupported positional argument: {arg}")
+        key = arg[2:]
+        value: str | None = None
+        if "=" in key:
+            key, value = key.split("=", 1)
+        key = key.replace("-", "_")
+        if key not in SUPPORTED_DYNAMIC_OVERRIDES:
+            raise ValueError(f"Unsupported solver option '--{key}'")
+        if value is None and i + 1 < len(unknown) and not unknown[i + 1].startswith("--"):
+            value = unknown[i + 1]
+            i += 1
+        if value is None:
+            if key in BOOLEAN_DYNAMIC_OVERRIDES:
+                options[key] = True
+            else:
+                raise ValueError(f"Solver option '--{key}' requires a value")
+        elif value.lower() in {"true", "false"}:
+            options[key] = value.lower() == "true"
+        elif value.isdigit():
+            options[key] = int(value)
+        else:
+            try:
+                options[key] = float(value)
+            except ValueError:
+                options[key] = value
+        i += 1
+
 
 def build_my_data_from_parquet(processed_dir: Path) -> dict:
     """Loads squad picks and user state from processed Parquet files to form the my_data dict."""
@@ -65,10 +228,12 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
         }
     }
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Run the FPL MILP optimization solver.")
     parser.add_argument("--horizon", type=int, help="Number of gameweeks to optimize")
     parser.add_argument("--model", type=str, help="Projections model name to use as datasource")
+    parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
+    parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
     args, unknown = parser.parse_known_args()
     
@@ -76,39 +241,21 @@ def main():
     options = load_settings()
     
     # Apply CLI overrides
-    if args.horizon:
+    if args.horizon is not None:
         options["horizon"] = args.horizon
     if args.model:
         options["datasource"] = args.model
+    if args.decay_base is not None:
+        options["decay_base"] = args.decay_base
+    if args.hit_cost is not None:
+        options["hit_cost"] = args.hit_cost
     if args.preseason:
         options["preseason"] = True
         
-    # Apply dynamic unknown argument overrides (e.g. --xmin_lb=0 or --xmin_lb 0)
-    # Re-parse unknown args as key-value pairs
-    i = 0
-    while i < len(unknown):
-        arg = unknown[i]
-        if arg.startswith("--"):
-            key = arg[2:]
-            val = None
-            if "=" in key:
-                key, val = key.split("=", 1)
-            elif i + 1 < len(unknown) and not unknown[i+1].startswith("--"):
-                val = unknown[i+1]
-                i += 1
-                
-            if val is not None:
-                # Convert type if numeric/boolean
-                if val.lower() in ["true", "false"]:
-                    options[key] = val.lower() == "true"
-                elif val.isdigit():
-                    options[key] = int(val)
-                else:
-                    try:
-                        options[key] = float(val)
-                    except ValueError:
-                        options[key] = val
-        i += 1
+    try:
+        _apply_dynamic_overrides(options, unknown)
+    except ValueError as exc:
+        parser.error(str(exc))
         
     processed_dir = PROJECT_ROOT / "data" / "processed"
     
@@ -129,6 +276,12 @@ def main():
         
     options["override_next_gw"] = target_gw
     
+    try:
+        validate_booked_chips(options, target_gw, int(options.get("horizon", 3)))
+    except ValueError as exc:
+        logger.error(f"Invalid chip configuration: {exc}")
+        sys.exit(1)
+
     # 2. Compile user team data
     if options.get("preseason", False):
         logger.info(f"Solving for Preseason starting from GW {target_gw}...")

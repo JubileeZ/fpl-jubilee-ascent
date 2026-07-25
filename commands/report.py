@@ -19,7 +19,24 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-def main():
+
+def recommend_captain_vice(
+    projections: pd.DataFrame,
+    points_column: str,
+) -> tuple[pd.Series | None, pd.Series | None]:
+    """Return the top two projected players for the next gameweek."""
+    if projections.empty or points_column not in projections.columns:
+        return None, None
+
+    ranked = projections.copy()
+    ranked["_captain_points"] = pd.to_numeric(ranked[points_column], errors="coerce").fillna(0.0)
+    ranked = ranked.sort_values("_captain_points", ascending=False, kind="stable")
+    captain = ranked.iloc[0] if len(ranked) > 0 else None
+    vice_captain = ranked.iloc[1] if len(ranked) > 1 else None
+    return captain, vice_captain
+
+
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate top-picks rankings report.")
     parser.add_argument("--model", type=str, help="Projections model name to rank (e.g. linear_baseline)")
     parser.add_argument("--horizon", type=int, help="Number of gameweeks to rank over")
@@ -45,6 +62,7 @@ def main():
     # Sort and pick the first N gameweeks based on horizon
     pts_cols = sorted(pts_cols, key=lambda x: int(x.split("_")[0]))[:horizon]
     actual_horizon = len(pts_cols)
+    next_gw_points = pts_cols[0]
     
     logger.info(f"Generating top-picks report for '{model_name}' over next {actual_horizon} gameweeks: {', '.join(pts_cols)}")
     
@@ -88,12 +106,39 @@ def main():
     # Save full report
     df_all_ranks = pd.concat(df_report_list, ignore_index=True)
     df_all_ranks = df_all_ranks.sort_values(by=["Pos", "Total_xP"], ascending=[True, False])
+    captain, vice_captain = recommend_captain_vice(df_proj, next_gw_points)
+    if captain is None:
+        logger.error("No players available for captain recommendation.")
+        sys.exit(1)
+
+    captain_id = captain["ID"]
+    vice_captain_id = vice_captain["ID"] if vice_captain is not None else None
+    df_all_ranks["Captain"] = df_all_ranks["ID"] == captain_id
+    df_all_ranks["Vice_Captain"] = df_all_ranks["ID"] == vice_captain_id
+
+    print("--- Captaincy ---")
+    captain_points = float(captain["_captain_points"])
+    print(
+        f"Captain      : {captain['Name']} ({captain['Team']}) "
+        f"{next_gw_points} xP={captain_points:.2f}, captain return={captain_points * 2:.2f}"
+    )
+    if vice_captain is None:
+        print("Vice-Captain : n/a (fewer than two projected players)")
+    else:
+        vice_points = float(vice_captain["_captain_points"])
+        print(
+            f"Vice-Captain : {vice_captain['Name']} ({vice_captain['Team']}) "
+            f"{next_gw_points} xP={vice_points:.2f}"
+        )
+    print()
     
     reports_dir = PROJECT_ROOT / "data" / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
     report_csv = reports_dir / f"top_picks_{model_name}.csv"
     
-    df_all_ranks[["ID", "Name", "Pos", "Price", "Team", "Total_xP", "Value_xP"]].to_csv(report_csv, index=False)
+    df_all_ranks[
+        ["ID", "Name", "Pos", "Price", "Team", "Total_xP", "Value_xP", "Captain", "Vice_Captain"]
+    ].to_csv(report_csv, index=False)
     logger.info(f"Full top picks report saved to {report_csv}")
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import pandas as pd
+import pytest
 from unittest.mock import patch
-from commands.solve import build_my_data_from_parquet, main
+from commands.solve import build_my_data_from_parquet, main, validate_booked_chips
 
 def test_build_my_data_from_parquet(tmp_path):
     # 1. Create mock processed tables
@@ -51,6 +52,38 @@ def test_build_my_data_with_unlimited_transfers(tmp_path):
     my_data = build_my_data_from_parquet(tmp_path)
     
     assert my_data["transfers"]["limit"] is None
+
+
+def test_validate_booked_chips_accepts_one_chip_per_gameweek():
+    validate_booked_chips(
+        {"use_wc": [3], "use_bb": [4], "use_fh": [], "use_tc": []},
+        next_gw=2,
+        horizon=3,
+    )
+
+
+def test_validate_booked_chips_rejects_duplicate_chip():
+    with pytest.raises(ValueError, match="booked more than once"):
+        validate_booked_chips(
+            {"use_wc": [3, 3], "use_bb": [], "use_fh": [], "use_tc": []},
+            next_gw=2,
+            horizon=3,
+        )
+
+
+def test_validate_booked_chips_rejects_conflict_and_out_of_horizon():
+    with pytest.raises(ValueError, match="at most one chip"):
+        validate_booked_chips(
+            {"use_wc": [3], "use_bb": [3], "use_fh": [], "use_tc": []},
+            next_gw=2,
+            horizon=3,
+        )
+    with pytest.raises(ValueError, match="outside planning horizon"):
+        validate_booked_chips(
+            {"use_wc": [6], "use_bb": [], "use_fh": [], "use_tc": []},
+            next_gw=2,
+            horizon=3,
+        )
 
 def test_solve_cli_prints_summary(capsys):
     mock_settings = {"datasource": "linear_baseline", "horizon": 5, "preseason": True}

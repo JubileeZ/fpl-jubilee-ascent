@@ -20,6 +20,7 @@ from clients.fpl_api import (
 )
 from clients.fpl_auth import get_jwt_token
 from features.processor import process_directory
+from commands.price_report import append_price_snapshot
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -85,6 +86,11 @@ async def main():
         processed_dir = PROJECT_ROOT / "data" / "processed"
         process_directory(raw_dir, processed_dir)
         logger.info("Data processing complete! Parquet tables saved to data/processed/")
+        try:
+            price_history_path = append_price_snapshot(processed_dir)
+            logger.info(f"Price history appended to {price_history_path}")
+        except (FileNotFoundError, ValueError) as e:
+            logger.warning(f"Price history snapshot skipped: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())

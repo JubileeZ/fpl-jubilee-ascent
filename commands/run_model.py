@@ -24,6 +24,16 @@ def main():
     parser = argparse.ArgumentParser(description="Run a scoring model to generate score projections.")
     parser.add_argument("model", type=str, help="Name of the model to run (e.g. linear_baseline)")
     parser.add_argument("--horizon", type=int, default=5, help="Number of gameweeks to predict ahead")
+    parser.add_argument(
+        "--blend_start_appearances",
+        type=int,
+        help="Appearances before current-season rates enter the blend (default: 3)",
+    )
+    parser.add_argument(
+        "--blend_full_appearances",
+        type=int,
+        help="Appearances at which current-season rates fully replace the seed (default: 8)",
+    )
     args = parser.parse_args()
     
     processed_dir = PROJECT_ROOT / "data" / "processed"
@@ -50,9 +60,17 @@ def main():
         
     logger.info(f"Generating projections starting from target Gameweek {target_gw}...")
     
-    # 1. Build features for target gw
+    # 1. Build fixture-level features for the complete planning horizon
     logger.info("Building features...")
-    df_feat = build_features(processed_dir, target_gw)
+    feature_kwargs = {
+        key: value
+        for key, value in {
+            "blend_start_appearances": args.blend_start_appearances,
+            "blend_full_appearances": args.blend_full_appearances,
+        }.items()
+        if value is not None
+    }
+    df_feat = build_features(processed_dir, target_gw, horizon=args.horizon, **feature_kwargs)
     
     # 2. Instantiate and run model
     logger.info(f"Loading model '{args.model}'...")
@@ -62,6 +80,11 @@ def main():
         logger.error(e)
         sys.exit(1)
         
+    perf_path = processed_dir / "player_performances.parquet"
+    if hasattr(model, "fit") and perf_path.exists():
+        df_perf = pd.read_parquet(perf_path)
+        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+
     logger.info("Generating predictions...")
     df_proj = model.predict(df_feat, args.horizon)
     

@@ -2,12 +2,12 @@
 
 Mid-season slice (ADR-0003, issue #84). Per-90 Event Rates are seeded from
 prior history (computed in build_features as per90_* columns) and reconstructed
-through models.scoring_matrix.event_points. Players without a prior seed project 0.
+through models.scoring_matrix.event_points. Players without any usable seed project 0.
 """
 
 import pandas as pd
 
-from models.base import BaseModel
+from models.base import BaseModel, iter_feature_rows
 from models.scoring_matrix import event_points
 
 _POS_CODE = {1: "GK", 2: "D", 3: "M", 4: "F"}
@@ -29,6 +29,11 @@ _COMPONENT_RATES = [
 ]
 
 
+def _number(row: pd.Series, column: str, default: float) -> float:
+    value = row.get(column, default)
+    return default if value is None or pd.isna(value) else float(value)
+
+
 class ComponentBaseline(BaseModel):
     @property
     def name(self) -> str:
@@ -36,35 +41,41 @@ class ComponentBaseline(BaseModel):
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         predictions = []
-        for offset in range(horizon):
-            for _, row in features_df.iterrows():
-                if not row.get("has_prior_seed", False):
-                    predictions.append({
-                        "player_id": int(row["player_id"]),
-                        "gameweek_id": int(row["gameweek_id"]) + offset,
-                        "projected_points": 0.0,
-                        "projected_minutes": 0.0,
-                    })
-                    continue
-
-                avail = row.get("chance_of_playing", 100.0) / 100.0
-                expected_minutes = float(row.get("avg_mins_3gw", 0.0)) * avail
-                diff = row.get("difficulty", 3.0)
-                difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
-
-                pos = _POS_CODE.get(int(row["position_id"]), "M")
-                # Minutes points are a per-match threshold on expected minutes
-                # (not a per-90 rate, not scaled by fixture difficulty).
-                xp = event_points("minutes", pos, expected_minutes)
-                for component, rate_col in _COMPONENT_RATES:
-                    per90 = float(row.get(rate_col, 0.0) or 0.0)
-                    expected_events = per90 * (expected_minutes / 90.0) * difficulty_multiplier
-                    xp += event_points(component, pos, expected_events)
-
-                predictions.append({
+        for row, gameweek_id, fixture_id in iter_feature_rows(features_df, horizon):
+            has_seed = bool(row.get("has_seed", row.get("has_prior_seed", False)))
+            if (fixture_id is not None and fixture_id < 0) or not has_seed:
+                prediction = {
                     "player_id": int(row["player_id"]),
-                    "gameweek_id": int(row["gameweek_id"]) + offset,
-                    "projected_points": float(xp),
-                    "projected_minutes": float(expected_minutes),
-                })
+                    "gameweek_id": gameweek_id,
+                    "projected_points": 0.0,
+                    "projected_minutes": 0.0,
+                }
+                if fixture_id is not None:
+                    prediction["fixture_id"] = fixture_id
+                predictions.append(prediction)
+                continue
+
+            avail = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
+            expected_minutes = _number(row, "avg_mins_3gw", 0.0) * avail
+            diff = _number(row, "difficulty", 3.0)
+            difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
+
+            pos = _POS_CODE.get(int(row["position_id"]), "M")
+            # Minutes points are a per-match threshold on expected minutes
+            # (not a per-90 rate, not scaled by fixture difficulty).
+            xp = event_points("minutes", pos, expected_minutes)
+            for component, rate_col in _COMPONENT_RATES:
+                per90 = _number(row, rate_col, 0.0)
+                expected_events = per90 * (expected_minutes / 90.0) * difficulty_multiplier
+                xp += event_points(component, pos, expected_events)
+
+            prediction = {
+                "player_id": int(row["player_id"]),
+                "gameweek_id": gameweek_id,
+                "projected_points": float(xp),
+                "projected_minutes": float(expected_minutes),
+            }
+            if fixture_id is not None:
+                prediction["fixture_id"] = fixture_id
+            predictions.append(prediction)
         return pd.DataFrame(predictions)

@@ -318,9 +318,6 @@ def solve_multi_period_fpl(data, options):
     fixtures = data["fixtures"]
     if preseason:
         itb = 1000
-        threshold_gw = 2
-    else:
-        threshold_gw = next_gw
 
     # Sets
     players = merged_data.index.to_list()

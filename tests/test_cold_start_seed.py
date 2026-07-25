@@ -48,7 +48,9 @@ def test_new_player_uses_position_price_prior_not_zero(tmp_path):
     _write_archive_seed(tmp_path)
     df = build_features(processed, target_gw=2)
     newcomer = df[df["player_id"] == 2].iloc[0]
-    assert bool(newcomer["has_prior_seed"]) is True
+    assert bool(newcomer["has_prior_seed"]) is False
+    assert bool(newcomer["has_fallback_prior"]) is True
+    assert bool(newcomer["has_seed"]) is True
     # Position/price prior = mean of {1.8, 0.0} = 0.9 goals/90.
     assert newcomer["per90_goals"] == 0.9
     assert newcomer["avg_mins_3gw"] > 0.0
@@ -60,4 +62,5 @@ def test_cold_start_disables_per_player_seed_gw1_to_4(tmp_path):
     df = build_features(processed, target_gw=2)
     player_one = df[df["player_id"] == 1].iloc[0]
     # Cold-start guard should ignore player-specific 1.8/90 and use 0.9 prior.
+    assert bool(player_one["has_prior_seed"]) is False
     assert player_one["per90_goals"] == 0.9

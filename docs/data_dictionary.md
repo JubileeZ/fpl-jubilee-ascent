@@ -73,7 +73,14 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 6. Player Gameweek Performances (`player_performances.parquet`)
+## 6. Point-in-time Player Snapshots (`player_snapshots.parquet`)
+*   **Source:** archived pre-deadline `/bootstrap-static/` snapshots.
+*   **Required keys:** `player_id` or `id`, and `snapshot_gameweek_id`.
+*   **Purpose:** historical position, club, price, and availability metadata as known at the simulated deadline. Backtests use the latest snapshot at or before the target gameweek.
+
+---
+
+## 7. Player Gameweek Performances (`player_performances.parquet`)
 *   **Source:** `/element-summary/{player_id}/` (`history` list) & `/event/{gw_id}/live/`
 *   **Fields Retained:**
     *   `player_id` (`int`): Reference to Player.
@@ -86,12 +93,12 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `price` (`int`): Player price at fixture time (maps to `value` in FPL API).
     *   `selected` (`int`): Ownership count.
     *   `transfers_balance` (`int`), `transfers_in` (`int`), `transfers_out` (`int`).
-    *   **Performance metrics:** `minutes`, `total_points`, `goals_scored`, `assists`, `clean_sheets`, `goals_conceded`, `own_goals`, `penalties_saved`, `penalties_missed`, `yellow_cards`, `red_cards`, `saves`, `bonus`, `bps`, `influence`, `creativity`, `threat`, `ict_index`, `starts`, `expected_goals`, `expected_assists`, `expected_goal_involvements`, `expected_goals_conceded`.
+    *   **Performance metrics:** `minutes`, `total_points`, `goals_scored`, `assists`, `clean_sheets`, `goals_conceded`, `own_goals`, `penalties_saved`, `penalties_missed`, `yellow_cards`, `red_cards`, `saves`, `bonus`, `bps`, `influence`, `creativity`, `threat`, `ict_index`, `starts`, `expected_goals`, `expected_assists`, `expected_goal_involvements`, `expected_goals_conceded`, `defensive_contribution`.
 *   **Discarded:** `modified`.
 
 ---
 
-## 7. User Squad Picks (`user_picks.parquet`)
+## 8. User Squad Picks (`user_picks.parquet`)
 *   **Source:** `/my-team/{entry_id}/` (`picks` list) & `/entry/{entry_id}/event/{gw_id}/picks/`
 *   **Fields Retained:**
     *   `entry_id` (`int`): Manager entry ID.
@@ -105,7 +112,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 8. User State (`user_state.parquet`)
+## 9. User State (`user_state.parquet`)
 *   **Source:** `/my-team/{entry_id}/`
 *   **Fields Retained:**
     *   `entry_id` (`int`).
@@ -114,3 +121,28 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `free_transfers` (`int`): Available free transfers.
     *   `active_chip` (`str`, nullable).
 *   **Discarded:** `cost`, `status`, `limit`, `made`.
+
+---
+
+## 10. Price History (`price_history.parquet`)
+*   **Source:** Processed `players.parquet` after each `refresh_data` run.
+*   **Fields Retained:**
+    *   `player_id` (`int`): Reference to Player.
+    *   `now_cost` (`int`): FPL cost in £0.1m increments at capture time.
+    *   `web_name` (`str`, nullable), `club_id` (`int`, nullable).
+    *   `gameweek_id` (`int`): Current or next Gameweek at capture.
+    *   `captured_at` (`datetime`): UTC snapshot timestamp.
+*   **Append behavior:** Each refresh adds a snapshot; `commands.price_report` compares latest, previous, and first snapshots.
+
+---
+
+## 11. Projection Contract
+Model output is long format with:
+* `player_id`: Player identifier.
+* `fixture_id`: Fixture identifier; `-1` denotes a blank gameweek row.
+* `gameweek_id`: Target gameweek.
+* `projected_points`: Fixture-level expected FPL points.
+* `projected_minutes`: Fixture-level expected minutes.
+
+Solver exports aggregate `projected_points` and `projected_minutes` by
+`player_id` and `gameweek_id`, preserving double-gameweek totals.

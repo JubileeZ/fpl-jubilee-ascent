@@ -50,6 +50,13 @@ uv run python -m commands.run_model <model_name> --horizon <gws>
 uv run python -m commands.run_model linear_baseline --horizon 5
 ```
 
+The component seed/current-season blend can be tuned without editing code:
+
+```bash
+uv run python -m commands.run_model component_baseline \
+  --horizon 5 --blend_start_appearances 3 --blend_full_appearances 8
+```
+
 ### 3. Generate Transfer Plan (Solve MILP)
 
 Compute optimal squad selection and transfer plans over planning horizon using MILP solver.
@@ -62,22 +69,49 @@ Compute optimal squad selection and transfer plans over planning horizon using M
   ```bash
   uv run python -m commands.solve --model linear_baseline --horizon 5
   ```
-  *Note:* CLI accepts options/settings overrides dynamically (e.g. `--xmin_lb 0` or `--decay_base 0.85`).
+  *Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
+  (for example `--horizon 5 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
+  Unsupported solver options fail before solving.
 
 ### 4. Print Report
 
-Produce console ranking tables by position and save full CSV report to `data/reports/top_picks_<model_name>.csv`.
+Produce console ranking tables by position, captain/vice recommendations for the
+next gameweek, and save the full CSV report (including `Captain` and
+`Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`.
 
 ```bash
 uv run python -m commands.report --model linear_baseline --horizon 5
 ```
 
-### 5. Backtest Models
-
-Simulate historical model performance over specified gameweek range using player performances archive.
+Record player prices after each refresh and report risers/fallers:
 
 ```bash
-uv run python -m commands.backtest linear_baseline --gw_range 20-30
+uv run python -m commands.price_report --top 10
+```
+
+Price history is appended to `data/processed/price_history.parquet` with the
+player, gameweek, UTC capture time, and FPL `now_cost`.
+
+Print fixture difficulty for each club across the planning horizon. The report
+reads `data/processed/fixtures.parquet` (and optionally `clubs.parquet`) without
+making an API request, preserves double gameweeks, and sorts by average FDR by
+default.
+
+```bash
+uv run python -m commands.fdr_report --horizon 5 --sort_by average
+```
+
+### 5. Backtest Models
+
+Run a point-in-time walk-forward evaluation over a specified gameweek range.
+Predictions are fixture-level and aggregate to player/gameweek before scoring;
+reports include MAE, RMSE, signed bias, rank validity, position strata, and
+shortlist overlap/regret. If active processed data has no
+`player_performances.parquet`, the command automatically uses the latest
+processed season archive.
+
+```bash
+uv run python -m commands.backtest metrics_component_hybrid --gw_range 20-30 --seed_season 2025-26
 ```
 
 ### 6. Season Archiving
@@ -108,8 +142,9 @@ class MyCustomModel(BaseModel):
         return "my_custom_model"
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
-        # Implement custom projection logic matching ProjectionContract
-        # Returns DataFrame with columns: player_id, gameweek_id, projected_points, projected_minutes
+        # Implement custom projection logic matching ProjectionContract.
+        # Return fixture rows: player_id, fixture_id, gameweek_id,
+        # projected_points, projected_minutes.
         ...
 ```
 

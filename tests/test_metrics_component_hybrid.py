@@ -60,3 +60,48 @@ def test_softmax_bonus_is_bounded():
     model = MetricsComponentHybridModel()
     res = model.predict(pd.DataFrame([_row(per90_xg=1.5, per90_threat=150.0)]), horizon=1).iloc[0]
     assert 0.0 <= res["projected_points"] <= 20.0
+
+
+def test_zero_availability_zeroes_minutes_and_points():
+    model = MetricsComponentHybridModel()
+    result = model.predict(
+        pd.DataFrame([_row(chance_of_playing=0.0, per90_xg=1.0)]),
+        horizon=1,
+    ).iloc[0]
+    assert result["projected_minutes"] == 0.0
+    assert result["projected_points"] == 0.0
+
+
+def test_defensive_contribution_probability_adds_fpl_points():
+    model = MetricsComponentHybridModel()
+    without_defcon = model.predict(
+        pd.DataFrame([_row(position_id=2, per90_defensive_contribution=0.0)]),
+        horizon=1,
+    ).iloc[0]
+    with_defcon = model.predict(
+        pd.DataFrame([_row(position_id=2, per90_defensive_contribution=15.0)]),
+        horizon=1,
+    ).iloc[0]
+    assert with_defcon["projected_points"] - without_defcon["projected_points"] > 1.0
+
+
+def test_zero_goals_conceded_rate_is_not_replaced_by_default():
+    model = MetricsComponentHybridModel()
+    zero_rate = model.predict(
+        pd.DataFrame([_row(position_id=1, per90_goals_conceded=0.0)]),
+        horizon=1,
+    ).iloc[0]
+    conceded_rate = model.predict(
+        pd.DataFrame([_row(position_id=1, per90_goals_conceded=1.0)]),
+        horizon=1,
+    ).iloc[0]
+    assert zero_rate["projected_points"] > conceded_rate["projected_points"]
+
+
+def test_negative_event_projection_is_preserved():
+    model = MetricsComponentHybridModel()
+    result = model.predict(
+        pd.DataFrame([_row(per90_yellow_cards=10.0)]),
+        horizon=1,
+    ).iloc[0]
+    assert result["projected_points"] < 0.0

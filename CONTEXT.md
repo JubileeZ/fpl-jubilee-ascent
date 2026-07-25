@@ -29,8 +29,16 @@ Raw JSON responses from the FPL API stored in `data/raw/`. Used as a rate-limit 
 _Avoid_: Cache, historical data
 
 **Projection**:
-A per-player per-gameweek expected points (xP) and expected minutes (xMins) estimate produced by a model.
+A per-player per-gameweek expected points (xP) and expected minutes (xMins) estimate produced by a model. Solver projections aggregate all Fixture Projections in the gameweek.
 _Avoid_: xP output, prediction, score
+
+**Fixture Projection**:
+A per-player per-fixture expected points and minutes estimate. Canonical model output grain; retains fixture identity for double gameweeks.
+_Avoid_: fixture score
+
+**Gameweek Projection**:
+A per-player per-gameweek aggregation of one or more Fixture Projections used by the solver and headline evaluation.
+_Avoid_: weekly fixture
 
 **Feature Contract**:
 The strictly defined schema of engineered inputs passed to any projection model.
@@ -63,6 +71,10 @@ _Avoid_: Preseason (ambiguous), blank season
 **Prior-Season Seed**:
 Per-Player Event Rates and minutes carried over from the most recent archived season (`data/archive/<prev-season>/processed/`) to seed Projections during Cold-Start.
 _Avoid_: Carryover, history seed
+
+**Position-Price Fallback Prior**:
+Position- and price-band aggregate Event Rates used when a Player has no usable Prior-Season Seed.
+_Avoid_: Prior-Season Seed, default rate
 
 **Position-Price Prior**:
 A league-wide aggregate of Event Rates grouped by Position and price band, used as the fallback for Players with no Prior-Season Seed (new signings, promoted-Club Players, rookies).

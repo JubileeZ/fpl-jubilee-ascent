@@ -1,5 +1,10 @@
 import pandas as pd
-from models.base import BaseModel
+from models.base import BaseModel, iter_feature_rows
+
+
+def _number(row: pd.Series, column: str, default: float) -> float:
+    value = row.get(column, default)
+    return default if value is None or pd.isna(value) else float(value)
 
 class LinearBaseline(BaseModel):
     @property
@@ -13,29 +18,27 @@ class LinearBaseline(BaseModel):
         """
         predictions = []
         
-        # We generate predictions for each week in the planning horizon
-        for offset in range(horizon):
-            for _, row in features_df.iterrows():
-                # Difficulty adjustment
-                diff = row.get("difficulty", 3.0)
-                # Simple multiplier: higher difficulty lowers expected points
+        for row, gameweek_id, fixture_id in iter_feature_rows(features_df, horizon):
+            if fixture_id is not None and fixture_id < 0:
+                xp = 0.0
+                xmins = 0.0
+            else:
+                diff = _number(row, "difficulty", 3.0)
                 difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
-                
-                # Availability chance adjustment
-                avail = row.get("chance_of_playing", 100.0) / 100.0
-                
-                avg_pts = row.get("avg_points_3gw", 0.0)
-                avg_mins = row.get("avg_mins_3gw", 60.0)
-                
-                # Base expected values
+                avail = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
+                avg_pts = _number(row, "avg_points_3gw", 0.0)
+                avg_mins = _number(row, "avg_mins_3gw", 60.0)
                 xp = avg_pts * difficulty_multiplier * avail
                 xmins = avg_mins * avail
-                
-                predictions.append({
-                    "player_id": int(row["player_id"]),
-                    "gameweek_id": int(row.get("gameweek_id", 1)) + offset,
-                    "projected_points": float(xp),
-                    "projected_minutes": float(xmins)
-                })
+
+            prediction = {
+                "player_id": int(row["player_id"]),
+                "gameweek_id": gameweek_id,
+                "projected_points": float(xp),
+                "projected_minutes": float(xmins),
+            }
+            if fixture_id is not None:
+                prediction["fixture_id"] = fixture_id
+            predictions.append(prediction)
                 
         return pd.DataFrame(predictions)

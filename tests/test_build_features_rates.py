@@ -47,8 +47,11 @@ def test_build_features_emits_per90_rates_and_seed_flag(tmp_path):
     # 1 goal + 0 assists over 180 min -> 0.5 goals/90, 0.5 assists/90.
     assert p1["per90_goals"] == 0.5
     assert p1["per90_assists"] == 0.5
-    assert bool(p1["has_prior_seed"]) is True
+    assert bool(p1["has_prior_seed"]) is False
+    assert bool(p1["has_seed"]) is True
 
     p2 = df[df["player_id"] == 2].iloc[0]
-    assert bool(p2["has_prior_seed"]) is True
+    assert bool(p2["has_prior_seed"]) is False
+    assert bool(p2["has_fallback_prior"]) is True
+    assert bool(p2["has_seed"]) is True
     assert p2["per90_goals"] == 0.5

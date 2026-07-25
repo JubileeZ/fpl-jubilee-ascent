@@ -22,7 +22,8 @@ async def test_refresh_data_fetches_player_summaries():
          patch("commands.refresh_data.fetch_gameweek_fixtures", mock_fetch_fixtures), \
          patch("commands.refresh_data.fetch_element_summary", mock_fetch_summary), \
          patch("commands.refresh_data.get_jwt_token", mock_get_jwt), \
-         mock_process as mock_process_dir:
+         mock_process as mock_process_dir, \
+         patch("commands.refresh_data.append_price_snapshot") as mock_price_snapshot:
          
         from commands.refresh_data import main
         await main()
@@ -38,3 +39,4 @@ async def test_refresh_data_fetches_player_summaries():
         
         # Verify process_directory was called
         mock_process_dir.assert_called_once()
+        mock_price_snapshot.assert_called_once()

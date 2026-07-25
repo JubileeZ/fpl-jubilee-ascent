@@ -8,7 +8,7 @@ def test_fwd_goal_worth_four():
 def test_goal_points_per_position():
     assert event_points("goals", "M", 1) == 5
     assert event_points("goals", "D", 1) == 6
-    assert event_points("goals", "GK", 1) == 6
+    assert event_points("goals", "GK", 1) == 10
 
 
 def test_goal_points_scale_with_quantity():
@@ -59,6 +59,13 @@ def test_saves_gk_one_point_per_three():
 
 def test_saves_non_gk_worth_zero():
     assert event_points("saves", "D", 9) == 0
+
+
+def test_defensive_contributions_are_two_points_for_outfield_players():
+    assert event_points("defensive_contributions", "D", 1) == 2
+    assert event_points("defensive_contributions", "M", 1) == 2
+    assert event_points("defensive_contributions", "F", 1) == 2
+    assert event_points("defensive_contributions", "GK", 1) == 0
 
 
 def test_bonus_passes_through():

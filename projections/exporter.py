@@ -12,6 +12,7 @@ def export_projections(
     
     Expected predictions_df schema:
         - player_id (int)
+        - fixture_id (int, optional)
         - gameweek_id (int)
         - projected_points (float)
         - projected_minutes (float)
@@ -26,12 +27,19 @@ def export_projections(
     df_players = df_players.merge(clubs_df[["id", "short_name"]], left_on="club_id", right_on="id", how="left")
     df_players = df_players.rename(columns={"short_name": "Team", "id_x": "ID"})
     
-    # 2. Pivot predictions per gameweek
-    # We pivot to get columns for each GW's Pts and xMins
-    df_pivot_pts = predictions_df.pivot(index="player_id", columns="gameweek_id", values="projected_points")
+    # 2. Aggregate fixture rows before pivoting to the solver's gameweek grain.
+    # This preserves double-gameweek returns while keeping one solver value per
+    # player/gameweek.
+    grouped = (
+        predictions_df.groupby(["player_id", "gameweek_id"], as_index=False)[
+            ["projected_points", "projected_minutes"]
+        ]
+        .sum()
+    )
+    df_pivot_pts = grouped.pivot(index="player_id", columns="gameweek_id", values="projected_points")
     df_pivot_pts.columns = [f"{gw}_Pts" for gw in df_pivot_pts.columns]
     
-    df_pivot_mins = predictions_df.pivot(index="player_id", columns="gameweek_id", values="projected_minutes")
+    df_pivot_mins = grouped.pivot(index="player_id", columns="gameweek_id", values="projected_minutes")
     df_pivot_mins.columns = [f"{gw}_xMins" for gw in df_pivot_mins.columns]
     
     # Merge pivots
