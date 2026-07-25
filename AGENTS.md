@@ -1,10 +1,10 @@
 # FPL-Jubilee-Ascent
-# Read by all AI agents (Claude, Gemini, Cursor, Copilot, etc.) working in this repo.
+# Read by all AI agents working in this repo.
 ---
 
 ## Project Identity
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models using backtesting, and generates transfer plans via MILP. Consumed by user via CLI commands.
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models using backtesting, and generates transfer plans via MILP. Consumed via CLI commands.
 
 **Stack:** Python 3.14 · uv · pandas · pyarrow · sasoptpy · highspy · pytest · playwright
 
@@ -16,14 +16,14 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 
 ```
 clients/      # FPL API and auth clients
-models/       # custom scoring models (convention-based auto-discovery)
+models/       # Custom scoring models (convention-based auto-discovery)
 features/     # FeatureContract builder (raw to feature dataframe)
 projections/  # ProjectionContract exporter (features to solver CSV)
-solver/       # vendored open-fpl-solver source
-backtesting/  # backtest evaluation engine and metrics
+solver/       # Vendored open-fpl-solver source
+backtesting/  # Backtest evaluation engine and metrics
 commands/     # CLI command entry points
-data/         # transient raw API cache, season archives, solver reports
-docs/         # context vocabulary and data dictionary
+data/         # Transient raw API cache, season archives, solver reports
+docs/         # Context vocabulary and data dictionary
 ```
 
 ---
@@ -34,41 +34,42 @@ docs/         # context vocabulary and data dictionary
 |---------|-------------|
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
+| `bash tests/verify.sh` | Run delivery gate check |
 
-**Pre-commit gate:** agents must run test and lint commands and confirm both pass before proposing any commit.
+**Pre-commit gate:** run `bash tests/verify.sh` before proposing commits.
 
 ---
 
 ## Off-Limits: Never Touch Without Explicit Instruction
 
-- `.env` and any file containing secrets or credentials
-- Database migrations — always flag, never auto-apply or auto-run
+- `.env` and files with secrets or credentials
+- Database migrations — flag, never auto-apply or auto-run
 - Production configuration files
-- Any file marked `# DO NOT EDIT` or `# GENERATED`
-- `data/archive/` (historical files must only be modified via snapshot script)
+- Files marked `# DO NOT EDIT` or `# GENERATED`
+- `data/archive/` (modify historical files via snapshot script only)
 
 ---
 
 ## Project-Specific Safety Rules
 
 - Test commands must never make real external HTTP requests; use HTTPX mocks/fixtures.
-- Playwright auth flow must only be invoked when direct HTTP login and token paste fail.
-- Never delete archive Parquet files outside of destructive operations.
+- Playwright auth flow invoked only when direct HTTP login and token paste fail.
+- Never delete archive Parquet files outside destructive operations.
 
 ---
 
 ## Code Conventions
 
-- All CLI commands must be runnable as modules (e.g. `uv run python -m commands.refresh_data`).
-- Models must adhere to the `BaseModel` abstract class contract.
-- Use explicit type annotations for all new python code.
+- All CLI commands runnable as modules (e.g., `uv run python -m commands.refresh_data`).
+- Models adhere to `BaseModel` abstract class contract.
+- Use explicit type annotations for all new Python code.
 
 ---
 
 ## Agent Behavior Overrides
 
-- Keep project documentation edits (AGENTS.md, ROADMAP.md, current-state.md, etc.) telegraphic: no articles, no filler, concise fragments.
-- ponytail: Python 3.14 and uv are pre-approved stack requirements.
+- Doc edits telegraphic: no articles, no filler, concise fragments.
+- ponytail: Python 3.14 and uv pre-approved stack requirements.
 - ponytail: Prefer single line expressions when possible; avoid unnecessary abstractions.
 
 ---
