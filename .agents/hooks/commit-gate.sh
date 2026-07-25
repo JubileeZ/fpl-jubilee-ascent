@@ -30,37 +30,62 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
       fi
     fi
 
-    # Run harness tests
-    harness_output=$(bash tests/test-harness.sh 2>&1)
-    harness_status=$?
-    if [ $harness_status -ne 0 ]; then
-      reason="Harness tests failed:\n$harness_output"
+    # Portable delivery gate (harness integrity + optional project validation)
+    verify_script="tests/verify.sh"
+    if [ ! -x "${verify_script}" ]; then
+      reason="Missing executable tests/verify.sh — portable delivery gate required."
       if command -v jq >/dev/null 2>&1; then
         jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
       else
-        escaped_reason=$(printf '%s' "$reason" | sed 's/"/\"/g' | tr '\n' ' ')
+        escaped_reason=$(printf '%s' "$reason" | sed 's/"/\\"/g' | tr '\n' ' ')
         printf '{"decision":"deny","reason":"%s"}\n' "$escaped_reason"
       fi
       exit 0
     fi
 
-    # Run project tests if configured
-    project_test_cmd=""
-    if [ -x "tests/project-tests.sh" ]; then
-      project_test_cmd="tests/project-tests.sh"
-    elif [ -n "${AZG_PROJECT_TEST_CMD:-}" ]; then
-      project_test_cmd="$AZG_PROJECT_TEST_CMD"
+    verify_output=$(bash "${verify_script}" 2>&1)
+    verify_status=$?
+    if [ $verify_status -ne 0 ]; then
+      reason="verify.sh failed:\n$verify_output"
+      if command -v jq >/dev/null 2>&1; then
+        jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
+      else
+        escaped_reason=$(printf '%s' "$reason" | sed 's/"/\\"/g' | tr '\n' ' ')
+        printf '{"decision":"deny","reason":"%s"}\n' "$escaped_reason"
+      fi
+      exit 0
     fi
 
-    if [ -n "$project_test_cmd" ]; then
-      project_output=$(eval "$project_test_cmd" 2>&1)
-      project_status=$?
-      if [ $project_status -ne 0 ]; then
-        reason="Project tests failed:\n$project_output"
+    # Checkpoint freshness: code commits must include Work Packet (task.md)
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      has_code=false
+      has_packet=false
+      file_list=""
+      if echo "$cmd" | grep -qE '(^|[[:space:]])(-a|--all)([[:space:]]|$)'; then
+        file_list=$(git status --porcelain 2>/dev/null | cut -c 4- | sed 's/^"//;s/"$//')
+      else
+        file_list=$(git diff --cached --name-only 2>/dev/null)
+      fi
+      while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        case "$f" in
+          task.md)
+            has_packet=true
+            ;;
+          ROADMAP.md|docs/agents/*|.agents/session-handoff.md)
+            ;;
+          *)
+            has_code=true
+            ;;
+        esac
+      done <<< "${file_list}"
+
+      if [ "$has_code" = true ] && [ "$has_packet" = false ]; then
+        reason="Checkpoint requires Work Packet: stage an updated task.md with the code changes (objective/acceptance/SFDBN), then commit."
         if command -v jq >/dev/null 2>&1; then
           jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
         else
-          escaped_reason=$(printf '%s' "$reason" | sed 's/"/\"/g' | tr '\n' ' ')
+          escaped_reason=$(printf '%s' "$reason" | sed 's/"/\\"/g' | tr '\n' ' ')
           printf '{"decision":"deny","reason":"%s"}\n' "$escaped_reason"
         fi
         exit 0

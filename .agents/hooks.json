@@ -19,6 +19,15 @@
             "command": "./hooks/commit-gate.sh"
           }
         ]
+      },
+      {
+        "matcher": "START_SUBAGENT|task|Task|spawn_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./hooks/spawn-budget.sh"
+          }
+        ]
       }
     ],
     "Stop": [

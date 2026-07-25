@@ -1,0 +1,21 @@
+# Active Task: Initial retrofit task
+
+- **Status:** In Progress
+- **Objective:** Focused goal of this chunk
+- **Acceptance:** Measurable done criteria for this chunk
+- **Issue/Ticket:** [Link or ID]
+
+## Work Packet (SFDBN)
+
+- **Status:** [Current status]
+- **Files:** [Key files touched]
+- **Decisions:** [Decisions made]
+- **Blocked:** [Blockers, if any]
+- **Next:** [Exact next action]
+
+## Todo
+- [ ] Subtask 1
+- [ ] Subtask 2
+
+## Blockers / Notes
+- None
