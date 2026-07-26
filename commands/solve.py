@@ -319,6 +319,17 @@ def main() -> None:
             print("="*50)
             print(best_sol["summary"])
             print("="*50 + "\n")
+
+        # Save solution json for dashboard import
+        sol_path = PROJECT_ROOT / "data" / "solution.json"
+        sol_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            import json
+            with open(sol_path, "w", encoding="utf-8") as f:
+                json.dump(best_sol, f, indent=2)
+            logger.info(f"Saved solver solution to {sol_path}")
+        except Exception as e:
+            logger.warning(f"Could not save solver solution: {e}")
             
         if "picks" in best_sol and "statistics" in best_sol:
             try:

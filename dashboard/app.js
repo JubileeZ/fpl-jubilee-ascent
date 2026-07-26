@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return (player.projections && player.projections[selectedGw]) || {};
   }
 
-  // Auto squad selection algorithm (Greedy xP by position rules)
+  // Auto squad selection algorithm (Budget-constrained greedy xP selection)
   function autoSelectTopSquad() {
     squad = Array(15).fill(null);
     const sorted = [...allPlayers].sort((a, b) => getPlayerXp(b) - getPlayerXp(a));
@@ -173,21 +173,91 @@ document.addEventListener("DOMContentLoaded", () => {
     const mids = sorted.filter(p => p.pos === "M");
     const fwds = sorted.filter(p => p.pos === "F");
 
-    // Starters: 1 GK, 3 DEF, 4 MID, 3 FWD (3-4-3)
-    let idx = 0;
-    if (gks[0]) squad[0] = gks[0].id;
-    [0, 1, 2].forEach(i => { if (defs[i]) squad[1 + i] = defs[i].id; });
-    [0, 1, 2, 3].forEach(i => { if (mids[i]) squad[4 + i] = mids[i].id; });
-    [0, 1, 2].forEach(i => { if (fwds[i]) squad[8 + i] = fwds[i].id; });
+    let pickedIds = [];
+    let clubCounts = {};
+    let totalSpent = 0;
 
-    // Bench: 1 GK sub, 2 DEF subs, 1 MID sub
-    if (gks[1]) squad[11] = gks[1].id;
-    if (defs[3]) squad[12] = defs[3].id;
-    if (defs[4]) squad[13] = defs[4].id;
-    if (mids[4]) squad[14] = mids[4].id;
+    function canAdd(p) {
+      if (pickedIds.includes(p.id)) return false;
+      if ((clubCounts[p.team] || 0) >= 3) return false;
+      return true;
+    }
+
+    function pickPlayer(p) {
+      pickedIds.push(p.id);
+      clubCounts[p.team] = (clubCounts[p.team] || 0) + 1;
+      totalSpent += p.price;
+    }
+
+    // Pick 2 GKs: 1 top xP, 1 budget (<= £4.5m)
+    const gk1 = gks.find(canAdd);
+    if (gk1) pickPlayer(gk1);
+    const gk2 = gks.filter(p => p.price <= 4.5).find(canAdd) || gks.find(canAdd);
+    if (gk2) pickPlayer(gk2);
+
+    // Pick 5 DEFs: top xP within budget caps
+    for (let i = 0; i < 5; i++) {
+      const def = defs.find(canAdd);
+      if (def) pickPlayer(def);
+    }
+
+    // Pick 5 MIDs
+    for (let i = 0; i < 5; i++) {
+      const mid = mids.find(canAdd);
+      if (mid) pickPlayer(mid);
+    }
+
+    // Pick 3 FWDs
+    for (let i = 0; i < 3; i++) {
+      const fwd = fwds.find(canAdd);
+      if (fwd) pickPlayer(fwd);
+    }
+
+    // If total spent > 100.0, downgrade most expensive non-GK players until total <= 100.0
+    while (totalSpent > 100.0 && pickedIds.length === 15) {
+      // Find most expensive player among outfielders
+      const outfielders = pickedIds.map(id => playersMap.get(id)).filter(p => p.pos !== "G");
+      outfielders.sort((a, b) => b.price - a.price);
+      const expensiveP = outfielders[0];
+      if (!expensiveP) break;
+
+      // Find candidate replacement of same position with lower price & higher xP/price
+      const pool = sorted.filter(p => p.pos === expensiveP.pos && p.price < expensiveP.price && canAdd(p));
+      if (pool.length > 0) {
+        // Swap out expensiveP for pool[0]
+        const pIdx = pickedIds.indexOf(expensiveP.id);
+        clubCounts[expensiveP.team] -= 1;
+        totalSpent -= expensiveP.price;
+
+        const rep = pool[0];
+        pickedIds[pIdx] = rep.id;
+        clubCounts[rep.team] = (clubCounts[rep.team] || 0) + 1;
+        totalSpent += rep.price;
+      } else {
+        break;
+      }
+    }
+
+    // Assign to squad array: 1 GK, 3 DEF, 4 MID, 3 FWD starters; remainder bench
+    const pickedPlayers = pickedIds.map(id => playersMap.get(id));
+    const pGks = pickedPlayers.filter(p => p.pos === "G");
+    const pDefs = pickedPlayers.filter(p => p.pos === "D");
+    const pMids = pickedPlayers.filter(p => p.pos === "M");
+    const pFwds = pickedPlayers.filter(p => p.pos === "F");
+
+    if (pGks[0]) squad[0] = pGks[0].id;
+    [0, 1, 2].forEach(i => { if (pDefs[i]) squad[1 + i] = pDefs[i].id; });
+    [0, 1, 2, 3].forEach(i => { if (pMids[i]) squad[4 + i] = pMids[i].id; });
+    [0, 1, 2].forEach(i => { if (pFwds[i]) squad[8 + i] = pFwds[i].id; });
+
+    // Bench: 1 GK sub, remaining outfielders
+    if (pGks[1]) squad[11] = pGks[1].id;
+    const remOutfield = [...pDefs.slice(3), ...pMids.slice(4), ...pFwds.slice(3)];
+    [0, 1, 2].forEach(i => { if (remOutfield[i]) squad[12 + i] = remOutfield[i].id; });
 
     autoAssignCaptaincy();
   }
+
 
   function fillSquadFromIds(playerIds) {
     squad = Array(15).fill(null);
