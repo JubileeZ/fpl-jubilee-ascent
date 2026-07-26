@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+import math
+
 _POS_MAP = {1: "G", 2: "D", 3: "M", 4: "F"}
 _POS_NAME_MAP = {1: "Goalkeeper", 2: "Defender", 3: "Midfielder", 4: "Forward"}
 
@@ -35,9 +37,23 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
     if val is None or pd.isna(val):
         return default
     try:
-        return float(val)
+        res = float(val)
+        return default if math.isnan(res) or math.isinf(res) else res
     except (ValueError, TypeError):
         return default
+
+
+def _clean_json_obj(obj: Any) -> Any:
+    """Recursively replaces NaN and Infinity with None/null for valid JSON output."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: _clean_json_obj(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_clean_json_obj(v) for v in obj]
+    return obj
 
 
 def build_dashboard_dataset(
@@ -165,6 +181,9 @@ def build_dashboard_dataset(
         first_name = str(p.get("first_name", ""))
         second_name = str(p.get("second_name", ""))
 
+        raw_chance = p.get("chance_of_playing_next_round")
+        chance_val = None if pd.isna(raw_chance) or raw_chance is None else int(raw_chance)
+
         player_dict = {
             "id": pid,
             "code": int(p.get("code", pid)),
@@ -178,7 +197,7 @@ def build_dashboard_dataset(
             "team_id": club_id,
             "price": round(_safe_float(p.get("now_cost")) / 10.0, 1),
             "status": str(p.get("status", "a")),
-            "chance": p.get("chance_of_playing_next_round"),
+            "chance": chance_val,
             "news": str(p.get("news", "") or ""),
             "pts_per_start": pts_per_start,
             "pts_per_90": pts_per_90,
@@ -210,10 +229,12 @@ def build_dashboard_dataset(
 
 
 def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:
+    cleaned = _clean_json_obj(data)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+        json.dump(cleaned, f, indent=2)
     logger.info(f"Dashboard data exported successfully to {output_path}")
+
 
 
 def main() -> None:
