@@ -73,6 +73,28 @@ def evaluate_predictions(
                 "bias": float(band_errors.mean()),
             }
 
+    component_metrics: dict[str, dict[str, float]] = {}
+    component_keys = [
+        "xp_minutes",
+        "xp_goals",
+        "xp_assists",
+        "xp_clean_sheet",
+        "xp_conceded",
+        "xp_defcon",
+        "xp_bonus",
+    ]
+    for comp in component_keys:
+        act_col = f"actual_{comp}"
+        if comp in df_eval.columns and act_col in df_eval.columns:
+            comp_errors = df_eval[comp] - df_eval[act_col]
+            component_metrics[comp] = {
+                "mean_projected": float(df_eval[comp].mean()),
+                "mean_actual": float(df_eval[act_col].mean()),
+                "mae": float(comp_errors.abs().mean()),
+                "bias": float(comp_errors.mean()),
+                "rmse": float(np.sqrt(np.mean(comp_errors**2))),
+            }
+
     metrics: dict[str, object] = {
         "sample_count": int(len(df_eval)),
         "mae": float(errors.abs().mean()),
@@ -87,6 +109,7 @@ def evaluate_predictions(
         },
         "position_metrics": position_metrics,
         "minutes_band_metrics": minutes_band_metrics,
+        "component_metrics": component_metrics,
     }
 
     for k in top_k_values:

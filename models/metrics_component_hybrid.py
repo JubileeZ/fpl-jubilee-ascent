@@ -291,6 +291,13 @@ class MetricsComponentHybridModel(BaseModel):
                 "projected_points": float(xp_total),
                 "projected_minutes": float(expected_minutes),
                 "xbps": float(xbps),
+                "xp_minutes": float(xp_minutes),
+                "xp_goals": float(event_points("goals", pos, expected_goals)),
+                "xp_assists": float(event_points("assists", pos, expected_assists)),
+                "xp_clean_sheet": float(xp_clean_sheet),
+                "xp_conceded": float(xp_conceded),
+                "xp_defcon": float(xp_defcon),
+                "xp_bonus": 0.0,
             })
             if eligible_bonus and fixture_id is not None and fixture_id >= 0:
                 bonus_groups[fixture_id].append(index)
@@ -329,6 +336,7 @@ class MetricsComponentHybridModel(BaseModel):
 
             exp_bonus = 3.0 * p1 + 2.0 * p2 + 1.0 * p3
             for index, bonus in zip(indices, exp_bonus, strict=True):
+                components[index]["xp_bonus"] = float(bonus)
                 components[index]["projected_points"] += float(bonus)
 
         output = []
@@ -338,6 +346,13 @@ class MetricsComponentHybridModel(BaseModel):
                 "gameweek_id": component["gameweek_id"],
                 "projected_points": component["projected_points"],
                 "projected_minutes": component["projected_minutes"],
+                "xp_minutes": component.get("xp_minutes", 0.0),
+                "xp_goals": component.get("xp_goals", 0.0),
+                "xp_assists": component.get("xp_assists", 0.0),
+                "xp_clean_sheet": component.get("xp_clean_sheet", 0.0),
+                "xp_conceded": component.get("xp_conceded", 0.0),
+                "xp_defcon": component.get("xp_defcon", 0.0),
+                "xp_bonus": component.get("xp_bonus", 0.0),
             }
             if component["fixture_id"] is not None:
                 prediction["fixture_id"] = component["fixture_id"]

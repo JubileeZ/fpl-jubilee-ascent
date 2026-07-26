@@ -64,19 +64,30 @@ class ComponentBaseline(BaseModel):
             difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
 
             pos = _POS_CODE.get(int(row["position_id"]), "M")
-            # Minutes points are a per-match threshold on expected minutes
-            # (not a per-90 rate, not scaled by fixture difficulty).
-            xp = event_points("minutes", pos, expected_minutes)
+            xp_mins = event_points("minutes", pos, expected_minutes)
+            comp_dict = {}
             for component, rate_col in _COMPONENT_RATES:
                 per90 = _number(row, rate_col, 0.0)
                 expected_events = per90 * (expected_minutes / 90.0) * difficulty_multiplier
-                xp += event_points(component, pos, expected_events)
+                comp_dict[component] = event_points(component, pos, expected_events)
+
+            xp = (
+                xp_mins
+                + sum(comp_dict.values())
+            )
 
             prediction = {
                 "player_id": int(row["player_id"]),
                 "gameweek_id": gameweek_id,
                 "projected_points": float(xp),
                 "projected_minutes": float(expected_minutes),
+                "xp_minutes": float(xp_mins),
+                "xp_goals": float(comp_dict.get("goals", 0.0)),
+                "xp_assists": float(comp_dict.get("assists", 0.0)),
+                "xp_clean_sheet": float(comp_dict.get("clean_sheets", 0.0)),
+                "xp_conceded": float(comp_dict.get("goals_conceded", 0.0)),
+                "xp_defcon": 0.0,
+                "xp_bonus": float(comp_dict.get("bonus", 0.0)),
             }
             if fixture_id is not None:
                 prediction["fixture_id"] = fixture_id

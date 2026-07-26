@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -79,6 +80,11 @@ def main() -> None:
         default=None,
         help="Explicit prior-season archive directory name (for example 2025-26)",
     )
+    parser.add_argument(
+        "--component_breakdown",
+        action="store_true",
+        help="Print component-by-component error and bias breakdown table",
+    )
     args = parser.parse_args()
     
     requested_data_dir = (PROJECT_ROOT / args.data_dir).resolve()
@@ -148,18 +154,64 @@ def main() -> None:
 
         # 2. Predict target gameweek points (fixture grain)
         df_proj = model.predict(df_feat, horizon=1)
+        comp_cols = [c for c in ["xp_minutes", "xp_goals", "xp_assists", "xp_clean_sheet", "xp_conceded", "xp_defcon", "xp_bonus"] if c in df_proj.columns]
+        proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
+
         df_proj_gw = (
             df_proj[df_proj["gameweek_id"] == gw]
-            .groupby(["player_id", "gameweek_id"], as_index=False)[
-                ["projected_points", "projected_minutes"]
-            ]
+            .groupby(["player_id", "gameweek_id"], as_index=False)[proj_group_cols]
             .sum()
         )
 
         # 3. Aggregate actual fixture rows to the same player/gameweek grain.
+        gw_perf = df_perf[df_perf["gameweek_id"] == gw].copy()
+        if not gw_perf.empty:
+            pos_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
+            gw_perf = gw_perf.merge(pos_map, on="player_id", how="left")
+            pos_codes = {1: "GK", 2: "D", 3: "M", 4: "F"}
+            pos_series = gw_perf["position_id"].map(pos_codes).fillna("M")
+
+            goal_pts_map = {"GK": 10.0, "D": 6.0, "M": 5.0, "F": 4.0}
+            cs_pts_map = {"GK": 4.0, "D": 4.0, "M": 1.0, "F": 0.0}
+
+            def _col(name: str, default: float = 0.0):
+                return gw_perf[name] if name in gw_perf.columns else default
+
+            gw_perf["actual_xp_minutes"] = np.where(_col("minutes") >= 60, 2.0, np.where(_col("minutes") > 0, 1.0, 0.0))
+            gw_perf["actual_xp_goals"] = _col("goals_scored") * pos_series.map(goal_pts_map)
+            gw_perf["actual_xp_assists"] = _col("assists") * 3.0
+            gw_perf["actual_xp_clean_sheet"] = _col("clean_sheets") * pos_series.map(cs_pts_map)
+            gw_perf["actual_xp_conceded"] = np.where(pos_series.isin(["GK", "D"]), -(_col("goals_conceded") // 2), 0.0)
+            gw_perf["actual_xp_bonus"] = _col("bonus") * 1.0
+
+            save_pts = np.where(pos_series == "GK", _col("saves") // 3, 0.0)
+            card_pts = -1.0 * _col("yellow_cards") - 3.0 * _col("red_cards")
+            og_pts = -2.0 * _col("own_goals")
+            pen_saved = 5.0 * _col("penalties_saved")
+            pen_missed = -2.0 * _col("penalties_missed")
+            base_pts = (
+                gw_perf["actual_xp_minutes"]
+                + gw_perf["actual_xp_goals"]
+                + gw_perf["actual_xp_assists"]
+                + gw_perf["actual_xp_clean_sheet"]
+                + gw_perf["actual_xp_conceded"]
+                + gw_perf["actual_xp_bonus"]
+                + save_pts
+                + card_pts
+                + og_pts
+                + pen_saved
+                + pen_missed
+            )
+            gw_perf["actual_xp_defcon"] = np.maximum(0.0, gw_perf["total_points"] - base_pts)
+
+        actual_group_cols = ["total_points", "minutes"] + [
+            "actual_xp_minutes", "actual_xp_goals", "actual_xp_assists",
+            "actual_xp_clean_sheet", "actual_xp_conceded", "actual_xp_defcon", "actual_xp_bonus"
+        ]
+        actual_group_cols = [c for c in actual_group_cols if c in gw_perf.columns]
+
         df_actual_gw = (
-            df_perf[df_perf["gameweek_id"] == gw]
-            .groupby(["player_id", "gameweek_id"], as_index=False)[["total_points", "minutes"]]
+            gw_perf.groupby(["player_id", "gameweek_id"], as_index=False)[actual_group_cols]
             .sum()
             .rename(columns={"total_points": "actual_points", "minutes": "actual_minutes"})
         )
@@ -171,9 +223,8 @@ def main() -> None:
             on=["player_id", "gameweek_id"],
             how="left",
         )
-        df_compare[["actual_points", "actual_minutes"]] = df_compare[
-            ["actual_points", "actual_minutes"]
-        ].fillna(0.0)
+        fill_cols = [c for c in df_compare.columns if c.startswith("actual_") or c.startswith("xp_")]
+        df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
         position_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
         df_compare = df_compare.merge(position_map, on="player_id", how="left")
         
@@ -212,6 +263,33 @@ def main() -> None:
     print("Availability     : point-in-time snapshot, else Prior-Season Seed appearance probability")
     print("Evaluation Grain : player/gameweek (fixture rows aggregated)")
     print("="*50 + "\n")
+
+    if args.component_breakdown and metrics.get("component_metrics"):
+        comp_m = metrics["component_metrics"]
+        print("=" * 67)
+        print("COMPONENT-BY-COMPONENT ATTRIBUTION BREAKDOWN")
+        print("=" * 67)
+        print(f"{'Component':<18} {'Mean Proj':>10} {'Mean Act':>10} {'MAE':>10} {'Signed Bias':>12}")
+        print("-" * 67)
+        for comp_name, comp_data in comp_m.items():
+            print(
+                f"{comp_name:<18} "
+                f"{comp_data['mean_projected']:>10.4f} "
+                f"{comp_data['mean_actual']:>10.4f} "
+                f"{comp_data['mae']:>10.4f} "
+                f"{comp_data['bias']:>+12.4f}"
+            )
+        print("-" * 67)
+        mean_proj_total = sum(c["mean_projected"] for c in comp_m.values())
+        mean_act_total = sum(c["mean_actual"] for c in comp_m.values())
+        print(
+            f"{'Total (Components)':<18} "
+            f"{mean_proj_total:>10.4f} "
+            f"{mean_act_total:>10.4f} "
+            f"{metrics['mae']:>10.4f} "
+            f"{metrics['bias']:>+12.4f}"
+        )
+        print("=" * 67 + "\n")
     
 if __name__ == "__main__":
     main()

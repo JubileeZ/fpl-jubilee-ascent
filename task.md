@@ -1,14 +1,15 @@
 # Active Task: Statistical Overhaul of `metrics_component_hybrid` Model
 
-- **Status:** Complete — Overhaul implemented, verified via backtest & pytest (80/80 passed).
-- **Objective:** Implement 5-step event-level Empirical Bayes statistical overhaul (`builder.py` team multipliers, Empirical Bayes attacking GLM, Pearson Defcon dispersion, minutes-aware team goal exposure NB, and +3/+2/+1 bonus tier allocation).
-- **Acceptance:** `metrics_component_hybrid` model passes tests, backtests on GW1–38 show improved RMSE/Spearman correlation and reduced bias relative to baseline (`RMSE: 2.8020` vs `3.2230`, `Spearman: +0.2447` vs `-0.0023`, `Bias: +1.6064` vs `+1.8220`).
+- **Status:** Complete — Overhaul & component attribution implemented, verified via backtest & pytest (82/82 passed).
+- **Objective:** Implement 5-step event-level Empirical Bayes statistical overhaul and component-by-component error and bias attribution harness.
+- **Acceptance:** `metrics_component_hybrid` model passes tests, backtests on GW1–38 show improved RMSE/Spearman correlation and reduced bias relative to baseline, and `--component_breakdown` table outputs per-component error metrics.
 - **ADR Document:** [`docs/adr/0007-event-level-empirical-bayes-projection-engine.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0007-event-level-empirical-bayes-projection-engine.md)
+
 
 ## Work Packet (SFDBN)
 
 - **Status:** Complete & verified.
-- **Files:** `models/metrics_component_hybrid.py`, `features/builder.py`, `commands/backtest.py`, `tests/test_metrics_component_hybrid.py`
+- **Files:** `models/metrics_component_hybrid.py`, `models/component_baseline.py`, `backtesting/metrics.py`, `commands/backtest.py`, `tests/test_component_attribution.py`
 - **Decisions:** See [ADR 0007](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0007-event-level-empirical-bayes-projection-engine.md).
 - **Blocked:** None.
 - **Next:** Commit changes to main.
@@ -22,4 +23,5 @@
 - [x] Step 3: Implement Defcon Pearson chi-square dispersion ratio diagnostics.
 - [x] Step 4: Implement minutes-aware team goal exposure & Negative Binomial conceded penalties.
 - [x] Step 5: Implement 2-state starter/sub minutes mixture model & +3/+2/+1 bonus tier allocation.
+- [x] Implement component prediction export and `--component_breakdown` CLI reporting.
 - [x] Run verification & comparison backtest against baseline.
