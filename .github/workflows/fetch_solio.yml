@@ -1,0 +1,31 @@
+name: Automated Solio Projections Fetcher
+
+on:
+  schedule:
+    # Run every 6 hours automatically (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv & Setup Python
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Fetch Solio Projections
+        run: |
+          uv run python -m commands.fetch_solio
+
+      - name: Commit & Push Updated Snapshots
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/solio_latest.parquet data/archive/solio/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(data): auto-update Solio projections [skip ci]" && git push)

@@ -119,3 +119,12 @@ _Avoid_: UI state, solver export
 **Interactive Squad Builder**:
 The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
 _Avoid_: Roster picker, drag list
+
+**Market Projection Ingestion**:
+Automated fetching and archiving of external sports-betting market projections (e.g. Solio Analytics) to provide live market priors for expected minutes and points.
+_Avoid_: External scraping, manual odds import
+
+**Solio xMins Prior**:
+Expected minutes derived from betting-market odds models, used as a cold-start fallback prior during GW1–4 and blended with historical rolling 3-GW minutes for established players.
+_Avoid_: Market guess, external score
+
