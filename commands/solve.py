@@ -173,8 +173,8 @@ def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> 
                 raise ValueError(f"Solver option '--{key}' requires a value")
         elif value.lower() in {"true", "false"}:
             options[key] = value.lower() == "true"
-        elif key in CHIP_KEYS:
-            options[key] = [int(v.strip()) for v in str(value).split(",") if v.strip().isdigit()]
+        elif key in CHIP_KEYS or key in {"locked", "banned", "keep"}:
+            options[key] = [int(v.strip()) if v.strip().isdigit() else v.strip() for v in str(value).split(",") if v.strip()]
         elif value.isdigit():
             options[key] = int(value)
         else:
