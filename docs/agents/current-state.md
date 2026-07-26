@@ -37,6 +37,8 @@ Recent Session Updates:
 - **Tuning Surface**: `commands.run_model` exposes blend thresholds; `commands.solve` exposes horizon, decay, hit-cost, and validated overrides.
 - **ADR 0005 Recorded**: Updated [`docs/adr/0005-hybrid-metrics-component-projection-model.md`](../../docs/adr/0005-hybrid-metrics-component-projection-model.md) to match shipped behavior.
 - **Pre-season Squad Optimization**: Generated optimal 15-player pre-season squad (47.08 xPts/GW) saved to `data/images/squad_timeline_metrics_component_hybrid.png`.
+- **Solio Market Projection Ingestion & 24/7 Automation (ADR 0009)**: Ingested Solio Analytics market projections via `commands/fetch_solio.py` to `data/solio_latest.parquet` and frozen gameweek archives (`data/archive/solio/solio_gw{GW}.parquet`). Integrated `solio_xp` into `features/builder.py` for cold-start xMins blending. Configured 24/7 serverless GitHub Action workflow ([`.github/workflows/fetch_solio.yml`](../../.github/workflows/fetch_solio.yml)).
+
 
 ---
 
