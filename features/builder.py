@@ -501,25 +501,6 @@ def build_features(
             ~df_feat["status"].isin(unavailable_statuses), 0.0
         )
 
-    # 7. Merge Solio Analytics market projections & apply Cold-Start xMins blend (ADR 0009)
-    solio_path = processed_dir.parent / "solio_latest.parquet"
-    if solio_path.exists():
-        try:
-            df_solio = pd.read_parquet(solio_path)
-            # Map Solio features by web_name
-            solio_map = df_solio.drop_duplicates(subset=["name"]).set_index("name")["solio_xp"].to_dict()
-            df_feat["solio_xp"] = df_feat["web_name"].map(solio_map).fillna(0.0)
-
-            # For cold-start players (0 historical starts / low avg_mins_3gw) with positive Solio xP,
-            # infer market-based starting minutes prior (~75 mins for starters)
-            cold_start_mask = (df_feat["n_starts_historical"] == 0) & (df_feat["solio_xp"] > 3.0)
-            df_feat.loc[cold_start_mask, "avg_mins_3gw"] = 75.0
-            df_feat.loc[cold_start_mask, "appearance_probability"] = 0.90
-        except Exception:
-            df_feat["solio_xp"] = 0.0
-    else:
-        df_feat["solio_xp"] = 0.0
-
     player_codes = (
         set(pd.to_numeric(df_players["code"], errors="coerce").dropna().astype(int))
         if "code" in df_players.columns

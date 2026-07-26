@@ -35,7 +35,6 @@ docs/         # Context vocabulary and data dictionary
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
-| `uv run python -m commands.fetch_solio` | Ingest and cross-check Solio market projections |
 
 **Pre-commit gate:** run `bash tests/verify.sh` before proposing commits.
 

@@ -1,33 +1,33 @@
-# 9. Market Projection Ingestion and Solio Minutes Blend
+# 9. Market Projection Ingestion and Solio Points Integration (DEPRECATED)
 
 Date: 2026-07-26
 
 ## Status
 
-Accepted
+Deprecated / Superseded
 
 ## Context
 
-The engine previously relied on historical rolling 3-GW minutes (`avg_mins_3gw`) and position-price fallbacks for expected minutes (`xMins`). During cold-start (GW1–4) or for new signings, players with zero 3-GW history (such as Alexander Isak, Dominic Solanke, or newly transferred players) received low minute estimates unless manually overridden via `availability_overrides.csv`.
+Audited Solio Analytics unauthenticated public API (`https://fpl.solioanalytics.com/api/data/latest.json`) for market projections and expected minutes ($xMins$).
 
-Solio Analytics provides an unauthenticated, 4-hour refreshed public API (`https://fpl.solioanalytics.com/api/data/latest.json`) incorporating efficient sports betting market odds for expected minutes (`solio_xmins`) and expected points (`solio_xp`).
+### Structural API Deficiencies (Reason for Deprecation)
+1. **Top-N Payload Truncation**: Public API endpoint returns top-30 summary feed (`topProjected`), not full ~600 player pool.
+2. **Leaderboard Truncation (Missing Data vs Zero)**: Sub-lists (`topGoals`, `topAssists`, `topBonus`, `topDefCon`, `bestCleanSheets`) are top-10/15 leaderboards. Non-leaderboard assets receive `event_pts = 0`, treating missing leaderboard data as zero event threat.
+3. **Severe Inversion Saturation**: Residual $xP$ inversion caused 90.0% clip rate ($P_{\ge 60} \ge 1.0$) across pool, destroying minute-variance signal (89 vs 80 vs 65 mins).
 
 ## Decision
 
-1. **Ingestion & Archiving**:
-   - Ingest live Solio Analytics data via `commands/fetch_solio.py` to `data/solio_latest.parquet` (and `solio_raw.json`).
-   - Freeze one pre-deadline snapshot per gameweek to `data/archive/solio/solio_gw{GW}.parquet` to preserve historical market projections for walk-forward backtesting.
+1. **Complete Pipeline Removal**:
+   - Removed Solio pipeline integration from `features/builder.py`.
+   - Removed 24/7 serverless GitHub Action workflow (`.github/workflows/fetch_solio.yml`).
+   - Deprecated `commands/fetch_solio.py` and Solio ingestion steps.
 
-2. **Feature & Model Pipeline Integration**:
-   - Add `solio_xmins` and `solio_xp` as canonical features in `features/builder.py`.
-   - **Cold-Start Guard (GW1–4 or 0 historical starts)**: Use `solio_xmins` as the primary baseline expected minutes prior when historical starts are 0.
-   - **Established Starters ($\ge 3$ starts)**: Blend historical 3-GW actual minutes (60%) with `solio_xmins` (40%).
-
-3. **Cross-Check Reporting**:
-   - Maintain `uv run python -m commands.fetch_solio` to generate cross-check comparisons between local component model projections (`metrics_component_hybrid`) and market-odds projections (`solio`).
+2. **Minute Model Single Source of Truth**:
+   - Retain local 2-State Empirical Bayes Mixture Model ($N_{\text{starts}}$, $avg\_mins\_3gw$, league starter shrinkage $E_{\text{league}} = 78.0$) for continuous minute estimations.
 
 ## Consequences
 
-- Resolves cold-start minute underestimations for key starters in GW1–4 without needing manual CSV overrides for every player.
-- Preserves walk-forward backtesting capability through frozen gameweek Parquet archives.
-- Maintains single source of truth while allowing cross-model diagnostic comparisons.
+- Eliminates partial-population bias and top-N summary truncation artifacts from feature pipeline.
+- Removes unused background GitHub Action workflow.
+- Keeps model engine strictly grounded in official FPL API availability snapshots and local empirical Bayes mixture models.
+
