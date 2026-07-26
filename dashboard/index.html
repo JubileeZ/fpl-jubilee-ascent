@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPL Jubilee Ascent - Projections & Squad Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="navbar">
+      <div class="brand">
+        <span class="logo-icon">⚽</span>
+        <div class="brand-text">
+          <h1>FPL Jubilee Ascent</h1>
+          <span class="subtitle">Interactive Squad Builder & Model Projections</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="control-group">
+          <label for="gwSelect">View Gameweek / Horizon:</label>
+          <select id="gwSelect" class="select-input">
+            <option value="horizon">Full Horizon Total (5 GWs)</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button id="btnLoadMilp" class="btn btn-primary">
+            <span class="btn-icon">⚡</span> Load MILP Squad
+          </button>
+
+          <button id="btnClearSquad" class="btn btn-danger">
+            <span class="btn-icon">🗑️</span> Clear
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-grid">
+      <!-- Left Column: Squad Builder & Pitch -->
+      <section class="squad-section">
+        <div class="card squad-summary-card">
+          <div class="summary-stat">
+            <span class="stat-label">Starting 11 xP</span>
+            <span id="statStartingXp" class="stat-value text-accent">0.0</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <span class="stat-label">Bench xP</span>
+            <span id="statBenchXp" class="stat-value">0.0</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <span class="stat-label">Total Cost</span>
+            <span id="statCost" class="stat-value">£0.0m / £100.0m</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <span class="stat-label">Formation</span>
+            <span id="statFormation" class="stat-value text-muted">0-0-0</span>
+          </div>
+        </div>
+
+        <!-- Squad Status Alerts -->
+        <div id="squadValidationAlert" class="validation-banner valid">
+          <span id="validationText">Squad setup valid</span>
+        </div>
+
+        <!-- Pitch Visualization -->
+        <div class="pitch-container">
+          <div class="pitch-grass">
+            <div class="pitch-lines">
+              <div class="penalty-box top"></div>
+              <div class="center-circle"></div>
+              <div class="center-line"></div>
+              <div class="penalty-box bottom"></div>
+            </div>
+
+            <!-- Pitch Formations Rows -->
+            <div class="pitch-layout">
+              <!-- Goalkeeper Row -->
+              <div id="rowGk" class="pitch-row"></div>
+              <!-- Defender Row -->
+              <div id="rowDef" class="pitch-row"></div>
+              <!-- Midfielder Row -->
+              <div id="rowMid" class="pitch-row"></div>
+              <!-- Forward Row -->
+              <div id="rowFwd" class="pitch-row"></div>
+            </div>
+          </div>
+
+          <!-- Bench Tray -->
+          <div class="bench-tray">
+            <div class="bench-header">
+              <span class="bench-title">Bench (Substitutes)</span>
+              <span id="benchCountText" class="bench-sub">0/4 Players</span>
+            </div>
+            <div id="benchContainer" class="bench-slots">
+              <!-- Bench slots 12-15 -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Player Metrics Table -->
+      <section class="table-section">
+        <div class="card table-card">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchInput" placeholder="Search player name or team..." class="search-input">
+            </div>
+
+            <div class="position-tabs">
+              <button class="pos-tab active" data-pos="ALL">ALL</button>
+              <button class="pos-tab pos-gk" data-pos="G">GK</button>
+              <button class="pos-tab pos-def" data-pos="D">DEF</button>
+              <button class="pos-tab pos-mid" data-pos="M">MID</button>
+              <button class="pos-tab pos-fwd" data-pos="F">FWD</button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-responsive">
+            <table id="playersTable" class="data-table">
+              <thead>
+                <tr>
+                  <th data-sort="name">Player ↕</th>
+                  <th data-sort="pos">Pos ↕</th>
+                  <th data-sort="team">Team ↕</th>
+                  <th data-sort="price" class="num">Price ↕</th>
+                  <th data-sort="selected_xp" class="num highlight-col">Total xP ↕</th>
+                  <th data-sort="selected_xmins" class="num">xMins ↕</th>
+                  <th data-sort="selected_xg_pts" class="num">xG Pts ↕</th>
+                  <th data-sort="selected_xa_pts" class="num">xA Pts ↕</th>
+                  <th data-sort="selected_xcs_pts" class="num">xCS Pts ↕</th>
+                  <th data-sort="selected_xdefcon_pts" class="num">xDef ↕</th>
+                  <th data-sort="selected_xb_pts" class="num">xB ↕</th>
+                  <th data-sort="pts_per_start" class="num">Pts/Start ↕</th>
+                  <th data-sort="pts_per_90" class="num">Pts/90 ↕</th>
+                  <th data-sort="ict_per_90" class="num">ICT/90 ↕</th>
+                  <th class="action-col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <!-- Rows injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -28,6 +28,7 @@ data/reports/
 data/session_token.json
 data/*.csv
 data/*.json
+dashboard/*.json
 
 # But do NOT ignore archived seasons
 !data/archive/

@@ -112,4 +112,10 @@ _Avoid_: Fixed distribution, arbitrary variance scaling
 A model abstraction treating goals conceded and clean sheets as team-level properties of the opponent's expected attack, scaled to individual players via minutes exposure.
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
+**Dashboard Data Contract**:
+The exported dataset containing player metadata, historical rate metrics (`Pts/Start`, `Pts/90`, `ICT/90`), and per-gameweek event component projections exported for consumption by the interactive dashboard frontend.
+_Avoid_: UI state, solver export
 
+**Interactive Squad Builder**:
+The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
+_Avoid_: Roster picker, drag list
