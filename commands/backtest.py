@@ -289,6 +289,10 @@ def main() -> None:
             f"{metrics['mae']:>10.4f} "
             f"{metrics['bias']:>+12.4f}"
         )
+        print("-" * 67)
+        spearman_str = f"{metrics['spearman']:+.4f}" if metrics.get("spearman") is not None else "N/A"
+        top15_str = f"{metrics['top_15_overlap']:.4f}" if metrics.get("top_15_overlap") is not None else "N/A"
+        print(f"Ranking Metrics    : Spearman Rank Corr = {spearman_str} | Top-15 Overlap = {top15_str}")
         print("=" * 67 + "\n")
     
 if __name__ == "__main__":
