@@ -100,3 +100,16 @@ _Avoid_: Tackles, defensive stat, work rate
 A statistical or regression model mapping projected Bonus Points System (BPS) totals from event components into expected bonus points (0, 1, 2, or 3).
 _Avoid_: Bonus guess, bonus score
 
+**Two-Stage Empirical Bayes GLM**:
+An event-level regression fitting a league-wide baseline GLM with a log-minutes offset in Stage 1, and applying Empirical Bayes shrinkage to player-level residuals based on fixture sample size in Stage 2.
+_Avoid_: Per-player regression, unregularized OLS
+
+**Defcon Pearson Dispersion**:
+A runtime diagnostic measuring the Pearson chi-square statistic on defensive action residuals to dynamically select between Poisson, Negative Binomial, and quasi-Poisson distributions.
+_Avoid_: Fixed distribution, arbitrary variance scaling
+
+**Team Defensive Event**:
+A model abstraction treating goals conceded and clean sheets as team-level properties of the opponent's expected attack, scaled to individual players via minutes exposure.
+_Avoid_: Per-player goal conceded rate, individual clean sheet rate
+
+

@@ -127,15 +127,16 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
             (away_id, home_id, False, difficulty_away, away_attack, away_defence, home_attack, home_defence),
         ]:
             attack_multiplier = (
-                min(max(team_attack / opponent_defence, 0.4), 1.6)
+                min(max(team_attack / opponent_defence, 0.4), 1.8)
                 if team_attack > 0 and opponent_defence > 0
-                else None
+                else min(max((6.0 - difficulty) / 3.0, 0.4), 1.8)
             )
             defence_multiplier = (
-                min(max(opponent_attack / team_defence, 0.4), 1.6)
+                min(max(opponent_attack / team_defence, 0.4), 1.8)
                 if opponent_attack > 0 and team_defence > 0
-                else None
+                else min(max((6.0 - difficulty) / 3.0, 0.4), 1.8)
             )
+
             fixture_maps.append({
                 "club_id": club_id,
                 "gameweek_id": int(fixture["gameweek_id"]),

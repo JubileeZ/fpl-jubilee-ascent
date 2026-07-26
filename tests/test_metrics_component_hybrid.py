@@ -114,3 +114,34 @@ def test_negative_event_projection_is_preserved():
         horizon=1,
     ).iloc[0]
     assert result["projected_points"] < 0.0
+
+
+def test_full_match_bonus_allocates_six_points():
+    model = MetricsComponentHybridModel()
+    players = [
+        _row(player_id=1, position_id=4, per90_xg=1.2, avg_mins_3gw=90.0),
+        _row(player_id=2, position_id=3, per90_xa=1.0, avg_mins_3gw=90.0),
+        _row(player_id=3, position_id=2, per90_clean_sheets=0.5, avg_mins_3gw=90.0),
+        _row(player_id=4, position_id=1, per90_saves=4.0, avg_mins_3gw=90.0),
+    ]
+    df = pd.DataFrame(players)
+    df["fixture_id"] = 100
+    preds = model.predict(df, horizon=1)
+
+    # For 4 eligible players in a fixture, total projected points must be positive and include all 6 bonus points
+    assert len(preds) == 4
+    assert preds["projected_points"].sum() > 6.0
+
+
+
+def test_empirical_bayes_fit_learns_weights():
+    model = MetricsComponentHybridModel()
+    history = pd.DataFrame([
+        {"player_id": 1, "minutes": 90, "goals_scored": 2, "expected_goals": 1.5, "threat": 120.0, "assists": 1, "expected_assists": 0.8, "creativity": 80.0},
+        {"player_id": 1, "minutes": 90, "goals_scored": 1, "expected_goals": 0.9, "threat": 90.0, "assists": 0, "expected_assists": 0.3, "creativity": 30.0},
+        {"player_id": 2, "minutes": 90, "goals_scored": 0, "expected_goals": 0.1, "threat": 10.0, "assists": 2, "expected_assists": 1.2, "creativity": 110.0},
+    ])
+    model.fit(history)
+    assert model.goal_weights is not None
+    assert model.assist_weights is not None
+

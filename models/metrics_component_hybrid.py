@@ -1,4 +1,4 @@
-"""Calibrated event-component projection model.
+"""Calibrated event-component projection model (Event-Level Empirical Bayes).
 
 The model predicts event quantities/probabilities and reconstructs points through
 the scoring matrix. ``fit`` is optional and must receive only pre-cutoff history.
@@ -43,6 +43,25 @@ def _poisson_cdf_complement(threshold: int, lmbda: float) -> float:
     return min(max(1.0 - cdf, 0.0), 1.0)
 
 
+def _negbin_pmf(k: int, lmbda: float, r: float = 3.0) -> float:
+    """Return P(X = k) for X ~ NegativeBinomial(mean=lmbda, dispersion=r)."""
+    if lmbda <= 0:
+        return 1.0 if k == 0 else 0.0
+    p = r / (r + lmbda)
+    coeff = 1.0
+    for j in range(k):
+        coeff *= (j + r) / (j + 1)
+    return coeff * (p**r) * ((1.0 - p)**k)
+
+
+def _expected_negbin_conceded_penalty(lmbda: float, r: float = 3.0) -> float:
+    """Return expected goals conceded penalty points E[floor(X / 2)] under NB(lmbda, r)."""
+    if lmbda <= 0:
+        return 0.0
+    max_k = max(30, int(math.ceil(lmbda + 10.0 * math.sqrt(lmbda + 1.0))))
+    return sum(math.floor(k / 2) * _negbin_pmf(k, lmbda, r) for k in range(max_k + 1))
+
+
 def _expected_poisson_floor(lmbda: float, divisor: int) -> float:
     """Return E[floor(X / divisor)] for a Poisson random variable."""
     if lmbda <= 0:
@@ -51,45 +70,76 @@ def _expected_poisson_floor(lmbda: float, divisor: int) -> float:
     return sum(math.floor(k / divisor) * _poisson_pmf(k, lmbda) for k in range(max_k + 1))
 
 
-def _probability_sixty_minutes(expected_minutes: float) -> float:
-    if expected_minutes <= 0:
-        return 0.0
-    return 1.0 / (1.0 + math.exp(-(expected_minutes - 60.0) / 8.0))
-
-
 def _fit_metric_weights(
     history_df: pd.DataFrame,
     target_column: str,
     metric_column: str,
     secondary_column: str,
     defaults: np.ndarray,
-) -> np.ndarray:
+) -> tuple[np.ndarray, dict[int, float]]:
     required = {target_column, metric_column, secondary_column, "minutes"}
     if not required.issubset(history_df.columns):
-        return defaults.copy()
+        return defaults.copy(), {}
 
     minutes = pd.to_numeric(history_df["minutes"], errors="coerce")
-    target = pd.to_numeric(history_df[target_column], errors="coerce") / minutes * 90.0
-    metric = pd.to_numeric(history_df[metric_column], errors="coerce") / minutes * 90.0
-    secondary = pd.to_numeric(history_df[secondary_column], errors="coerce") / minutes * 0.9
-    values = pd.DataFrame({"target": target, "metric": metric, "secondary": secondary}).replace(
-        [np.inf, -np.inf], np.nan
-    ).dropna()
-    values = values[minutes.loc[values.index] > 0]
-    if len(values) < 20:
-        return defaults.copy()
+    target = pd.to_numeric(history_df[target_column], errors="coerce")
+    metric = pd.to_numeric(history_df[metric_column], errors="coerce")
+    secondary = pd.to_numeric(history_df[secondary_column], errors="coerce")
 
-    design = values[["metric", "secondary"]].to_numpy()
-    fitted, _, _, _ = np.linalg.lstsq(design, values["target"].to_numpy(), rcond=None)
-    fitted = np.clip(fitted, 0.0, 2.0)
-    weight = len(values) / (len(values) + 100.0)
-    return (weight * fitted + (1.0 - weight) * defaults).astype(float)
+    valid = minutes > 0
+    if not valid.any():
+        return defaults.copy(), {}
+
+    df = pd.DataFrame({
+        "minutes": minutes[valid],
+        "target": target[valid],
+        "metric": metric[valid],
+        "secondary": secondary[valid],
+    }).dropna()
+    if "player_id" in history_df.columns:
+        df["player_id"] = history_df.loc[df.index, "player_id"]
+
+    if len(df) < 20:
+        return defaults.copy(), {}
+
+    rate_target = df["target"] / df["minutes"] * 90.0
+    rate_metric = df["metric"] / df["minutes"] * 90.0
+    rate_sec = df["secondary"] / df["minutes"] * 0.9
+    weights = np.sqrt(df["minutes"].to_numpy())
+
+    X = np.column_stack([rate_metric, rate_sec])
+    y = rate_target.to_numpy()
+
+    XtW = X.T * weights
+    XtWX = XtW @ X
+    lam = 20.0
+    A = XtWX + lam * np.eye(2)
+    b = XtW @ y + lam * defaults
+    try:
+        fitted = np.linalg.solve(A, b)
+        fitted = np.maximum(fitted, 0.0)
+    except np.linalg.LinAlgError:
+        fitted = defaults.copy()
+
+    player_offsets: dict[int, float] = {}
+    if "player_id" in df.columns:
+        pred_rates = X @ fitted
+        df["residual"] = rate_target - pred_rates
+        for pid, grp in df.groupby("player_id"):
+            n = len(grp)
+            mean_res = float(grp["residual"].mean())
+            shrunk = (n / (n + 15.0)) * mean_res
+            player_offsets[int(pid)] = shrunk
+
+    return fitted.astype(float), player_offsets
 
 
 class MetricsComponentHybridModel(BaseModel):
     def __init__(self) -> None:
         self.goal_weights = _DEFAULT_GOAL_WEIGHTS.copy()
         self.assist_weights = _DEFAULT_ASSIST_WEIGHTS.copy()
+        self.goal_offsets: dict[int, float] = {}
+        self.assist_offsets: dict[int, float] = {}
 
     @property
     def name(self) -> str:
@@ -97,14 +147,14 @@ class MetricsComponentHybridModel(BaseModel):
 
     def fit(self, history_df: pd.DataFrame) -> None:
         """Calibrate attack mappings using history strictly before prediction."""
-        self.goal_weights = _fit_metric_weights(
+        self.goal_weights, self.goal_offsets = _fit_metric_weights(
             history_df,
             "goals_scored",
             "expected_goals",
             "threat",
             _DEFAULT_GOAL_WEIGHTS,
         )
-        self.assist_weights = _fit_metric_weights(
+        self.assist_weights, self.assist_offsets = _fit_metric_weights(
             history_df,
             "assists",
             "expected_assists",
@@ -130,7 +180,21 @@ class MetricsComponentHybridModel(BaseModel):
 
             availability = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
             average_minutes = _number(row, "avg_mins_3gw", 0.0)
-            expected_minutes = cap_projected_minutes(row, average_minutes * availability)
+            pid = int(row["player_id"])
+
+            # 2-State Starter/Sub Mixture Model & Starter Mins Shrinkage
+            n_starts = 5
+            w_ind = n_starts / (n_starts + 4.0)
+            league_start_avg = 78.0
+            exp_mins_start = min(90.0, max(60.0, w_ind * average_minutes + (1.0 - w_ind) * league_start_avg))
+            
+            p_start = min(availability, average_minutes / 78.0) if average_minutes > 0 else 0.0
+            p_sub = max(0.0, availability - p_start)
+            exp_mins_sub = 18.0
+
+            raw_expected_mins = p_start * exp_mins_start + p_sub * exp_mins_sub
+            expected_minutes = cap_projected_minutes(row, raw_expected_mins)
+
             diff = _number(row, "difficulty", 3.0)
             fdr_multiplier = max(0.2, (6.0 - diff) / 3.0)
             attack_input = _optional_number(row, "attack_multiplier")
@@ -139,6 +203,7 @@ class MetricsComponentHybridModel(BaseModel):
             defence_multiplier = fdr_multiplier if defence_input is None else defence_input
             pos = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
 
+            # Two-Stage Empirical Bayes Attacking Model
             xg_per90 = _number(row, "per90_xg", 0.0)
             threat_per90 = _number(row, "per90_threat", 0.0)
             raw_goals_per90 = _number(row, "per90_goals", 0.0)
@@ -146,9 +211,11 @@ class MetricsComponentHybridModel(BaseModel):
                 expected_goals_per90 = (
                     self.goal_weights[0] * xg_per90
                     + self.goal_weights[1] * threat_per90 / 100.0
+                    + self.goal_offsets.get(pid, 0.0)
                 )
             else:
-                expected_goals_per90 = raw_goals_per90
+                expected_goals_per90 = raw_goals_per90 + self.goal_offsets.get(pid, 0.0)
+            expected_goals_per90 = max(0.0, expected_goals_per90)
             expected_goals = expected_goals_per90 * expected_minutes / 90.0 * attack_multiplier
 
             xa_per90 = _number(row, "per90_xa", 0.0)
@@ -158,16 +225,24 @@ class MetricsComponentHybridModel(BaseModel):
                 expected_assists_per90 = (
                     self.assist_weights[0] * xa_per90
                     + self.assist_weights[1] * creativity_per90 / 100.0
+                    + self.assist_offsets.get(pid, 0.0)
                 )
             else:
-                expected_assists_per90 = raw_assists_per90
+                expected_assists_per90 = raw_assists_per90 + self.assist_offsets.get(pid, 0.0)
+            expected_assists_per90 = max(0.0, expected_assists_per90)
             expected_assists = expected_assists_per90 * expected_minutes / 90.0 * attack_multiplier
 
+            # Minutes-Aware Team Goal Exposure & Negative Binomial Defensive Model
             gc_per90 = _number(row, "per90_goals_conceded", 1.2)
-            lmbda_conceded = max(0.05, gc_per90 * expected_minutes / 90.0 * defence_multiplier)
-            prob_clean_sheet = math.exp(-lmbda_conceded) * _probability_sixty_minutes(expected_minutes)
+            lmbda_team_90 = max(0.05, gc_per90 * defence_multiplier)
+            lmbda_player = lmbda_team_90 * (expected_minutes / 90.0)
+
+            p_sixty_mins = p_start * min(1.0, max(0.0, (exp_mins_start - 45.0) / 30.0))
+            r_dispersion = 3.0
+            prob_clean_sheet_on_pitch = (r_dispersion / (r_dispersion + lmbda_team_90 * (exp_mins_start / 90.0)))**r_dispersion
+            prob_clean_sheet = prob_clean_sheet_on_pitch * p_sixty_mins
             xp_clean_sheet = prob_clean_sheet * _CLEAN_SHEET_POINTS[pos]
-            xp_conceded = -_expected_poisson_floor(lmbda_conceded, 2) if pos in ("GK", "D") else 0.0
+            xp_conceded = -_expected_negbin_conceded_penalty(lmbda_player, r=r_dispersion) if pos in ("GK", "D") else 0.0
 
             defcon_per90 = _number(row, "per90_defensive_contribution", 0.0)
             lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0)
@@ -195,8 +270,7 @@ class MetricsComponentHybridModel(BaseModel):
                 + event_points("own_goals", pos, own_goals)
             )
 
-            p_play = availability if average_minutes > 0 else 0.0
-            xp_minutes = p_play * (1.0 + _probability_sixty_minutes(expected_minutes))
+            xp_minutes = (p_start + p_sub) * 1.0 + p_sixty_mins * 1.0
             xp_attack = event_points("goals", pos, expected_goals) + event_points("assists", pos, expected_assists)
             xp_total = xp_minutes + xp_attack + xp_clean_sheet + xp_conceded + xp_defcon + xp_saves + xp_cards + xp_rare
 
@@ -211,7 +285,7 @@ class MetricsComponentHybridModel(BaseModel):
             )
             index = len(components)
             components.append({
-                "player_id": int(row["player_id"]),
+                "player_id": pid,
                 "gameweek_id": gameweek_id,
                 "fixture_id": fixture_id,
                 "projected_points": float(xp_total),
@@ -221,15 +295,41 @@ class MetricsComponentHybridModel(BaseModel):
             if eligible_bonus and fixture_id is not None and fixture_id >= 0:
                 bonus_groups[fixture_id].append(index)
 
+        # +3, +2, +1 Full Match Bonus Tier Allocation
         for indices in bonus_groups.values():
-            logits = np.array([float(components[index]["xbps"]) for index in indices]) / 5.0
+            if not indices:
+                continue
+            xbps_vals = np.array([float(components[index]["xbps"]) for index in indices])
+            T = 6.0
+            logits = xbps_vals / T
             logits -= logits.max()
-            weights = np.exp(logits)
-            probabilities = weights / weights.sum()
-            for index, probability in zip(indices, probabilities, strict=True):
-                components[index]["projected_points"] = float(
-                    components[index]["projected_points"] + 3.0 * probability
-                )
+            exp_l = np.exp(logits)
+            p1 = exp_l / exp_l.sum()
+
+            n = len(indices)
+            p2 = np.zeros(n)
+            p3 = np.zeros(n)
+
+            if n > 1:
+                for i in range(n):
+                    mask_i = np.ones(n, dtype=bool)
+                    mask_i[i] = False
+                    exp_l_i = exp_l[mask_i]
+                    p_cond2 = exp_l_i / exp_l_i.sum()
+                    for idx_j, j in enumerate(np.where(mask_i)[0]):
+                        p2[j] += p1[i] * p_cond2[idx_j]
+
+                        if n > 2:
+                            mask_ij = mask_i.copy()
+                            mask_ij[j] = False
+                            exp_l_ij = exp_l[mask_ij]
+                            p_cond3 = exp_l_ij / exp_l_ij.sum()
+                            for idx_m, m in enumerate(np.where(mask_ij)[0]):
+                                p3[m] += p1[i] * p_cond2[idx_j] * p_cond3[idx_m]
+
+            exp_bonus = 3.0 * p1 + 2.0 * p2 + 1.0 * p3
+            for index, bonus in zip(indices, exp_bonus, strict=True):
+                components[index]["projected_points"] += float(bonus)
 
         output = []
         for component in components:

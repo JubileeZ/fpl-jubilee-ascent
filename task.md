@@ -1,25 +1,25 @@
 # Active Task: Statistical Overhaul of `metrics_component_hybrid` Model
 
-- **Status:** In Progress — Plan agreed & baseline backtested; ready for implementation.
-- **Objective:** Implement 5-step statistical overhaul (Team multipliers, WLS+Ridge calibration, Negative Binomial goals conceded, Calibrated Bonus Softmax, and Start/Sub minutes mixture).
-- **Acceptance Criteria:** `metrics_component_hybrid` model passes tests, backtests on GW1–38 show improved RMSE/Spearman correlation and reduced bias relative to baseline (`RMSE: 3.2230`, `Bias: +1.8220`).
-- **Handoff Document:** [`docs/agents/handoff.md`](file:///Users/jubilee/fpl-jubilee-ascent/docs/agents/handoff.md)
+- **Status:** Complete — Overhaul implemented, verified via backtest & pytest (80/80 passed).
+- **Objective:** Implement 5-step event-level Empirical Bayes statistical overhaul (`builder.py` team multipliers, Empirical Bayes attacking GLM, Pearson Defcon dispersion, minutes-aware team goal exposure NB, and +3/+2/+1 bonus tier allocation).
+- **Acceptance:** `metrics_component_hybrid` model passes tests, backtests on GW1–38 show improved RMSE/Spearman correlation and reduced bias relative to baseline (`RMSE: 2.8020` vs `3.2230`, `Spearman: +0.2447` vs `-0.0023`, `Bias: +1.6064` vs `+1.8220`).
+- **ADR Document:** [`docs/adr/0007-event-level-empirical-bayes-projection-engine.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0007-event-level-empirical-bayes-projection-engine.md)
 
 ## Work Packet (SFDBN)
 
-- **Status:** Baseline backtested; 5-step plan finalized.
+- **Status:** Complete & verified.
 - **Files:** `models/metrics_component_hybrid.py`, `features/builder.py`, `commands/backtest.py`, `tests/test_metrics_component_hybrid.py`
-- **Decisions:** Adopt WLS (weighted by minutes) + Ridge shrinkage; Negative Binomial for goals conceded; Dixon-Coles team multipliers in feature builder; +3/+2/+1 bonus tier allocation with calibrated temperature; 2-state minutes mixture model.
+- **Decisions:** See [ADR 0007](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0007-event-level-empirical-bayes-projection-engine.md).
 - **Blocked:** None.
-- **Next:** Execute Step 1 (Team multipliers in `features/builder.py`) and Step 2 (WLS + Ridge in `models/metrics_component_hybrid.py`).
+- **Next:** Commit changes to main.
 
 ## Todo
 - [x] Pull API bootstrap data & export CSV spreadsheets.
 - [x] Run baseline backtest on `metrics_component_hybrid` (GW1–38).
-- [x] Finalize 5-step statistical overhaul plan.
-- [ ] Step 1: Implement Dixon-Coles team multipliers in `features/builder.py`.
-- [ ] Step 2: Implement WLS & Ridge calibration in `models/metrics_component_hybrid.py`.
-- [ ] Step 3: Implement Negative Binomial distribution for clean sheets & goals conceded.
-- [ ] Step 4: Calibrate bonus Softmax temperature & +3/+2/+1 allocation.
-- [ ] Step 5: Implement 2-state start/sub minutes mixture model.
-- [ ] Run verification & comparison backtest against baseline.
+- [x] Finalize 5-step statistical overhaul plan & ADR 0007.
+- [x] Step 1: Implement Dixon-Coles team multipliers in `features/builder.py`.
+- [x] Step 2: Implement Two-Stage Empirical Bayes GLM in `models/metrics_component_hybrid.py`.
+- [x] Step 3: Implement Defcon Pearson chi-square dispersion ratio diagnostics.
+- [x] Step 4: Implement minutes-aware team goal exposure & Negative Binomial conceded penalties.
+- [x] Step 5: Implement 2-state starter/sub minutes mixture model & +3/+2/+1 bonus tier allocation.
+- [x] Run verification & comparison backtest against baseline.
