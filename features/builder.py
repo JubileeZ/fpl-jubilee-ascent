@@ -373,13 +373,18 @@ def build_features(
             sn = player_row.get("second_name")
             if fn and sn:
                 seed_pid = name_to_seed_id.get((fn, sn))
-        if seed_pid is None:
-            seed_pid = pid
-
-        prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = _compute_player_rates(
-            df_seed_perf,
-            seed_pid,
-        )
+        if seed_pid is not None:
+            prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = _compute_player_rates(
+                df_seed_perf,
+                seed_pid,
+            )
+        else:
+            prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = (
+                {col: 0.0 for col in RATE_COLS},
+                0.0,
+                0.0,
+                0,
+            )
         has_player_prior = (
             prior_minutes_if_appearance > 0
             and prior_appearances >= MIN_PRIOR_APPEARANCES
