@@ -208,7 +208,8 @@ def _load_availability_overrides(
 def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[str, float], float, float, int]:
     player_hist = df_perf[df_perf["player_id"] == player_id]
     if player_hist.empty:
-        return ({col: 0.0 for col in RATE_COLS}, 0.0, 0.0, 0)
+        rates = {col: (1.45 if col == "per90_goals_conceded" else 0.0) for col in RATE_COLS}
+        return (rates, 0.0, 0.0, 0)
     total_minutes = float(player_hist["minutes"].sum())
     appearances = int((player_hist["minutes"] > 0).sum())
     minutes_if_appearance = total_minutes / appearances if appearances else 0.0
@@ -219,7 +220,7 @@ def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[s
             val_sum = float(pd.to_numeric(player_hist[raw_col], errors="coerce").fillna(0.0).sum())
             rates[rate_col] = val_sum / total_minutes * 90.0
         else:
-            rates[rate_col] = 0.0
+            rates[rate_col] = 1.45 if rate_col == "per90_goals_conceded" else 0.0
     return rates, minutes_if_appearance, appearance_probability, appearances
 
 
@@ -450,10 +451,11 @@ def build_features(
 
     df_rolling = df_rolling.merge(df_seed, on="player_id", how="left")
     for rc in RATE_COLS:
-        df_rolling[rc] = df_rolling[rc].fillna(0.0)
+        df_rolling[rc] = df_rolling[rc].fillna(1.45 if rc == "per90_goals_conceded" else 0.0)
     df_rolling["avg_mins_3gw"] = df_rolling["minutes_if_appearance"].fillna(0.0)
     df_rolling["has_prior_seed"] = df_rolling["has_prior_seed"].fillna(False)
     df_rolling["n_starts_historical"] = df_rolling["n_starts_historical"].fillna(0.0)
+    df_rolling["appearance_probability"] = df_rolling["appearance_probability"].fillna(0.0)
 
     # 4. Merge player metadata and expand to one row per player/target gameweek.
     df_players["_feature_key"] = 1

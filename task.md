@@ -1,6 +1,6 @@
 # Active Task: Statistical Overhaul of `metrics_component_hybrid` Model
 
-- **Status:** Complete — Overhaul, component attribution, & bias calibration implemented (overall bias reduced from +1.6064 to +0.5090, Spearman +0.2798, 82/82 pytest passing).
+- **Status:** Complete — Overhaul, component attribution, & multi-stage bias calibration implemented (clean sheet bias reduced -45% to +0.0739 via unplayed rate fillna, defcon bias calibrated to +0.0020, overall MAE 1.2701, Spearman rank correlation +0.4042, 82/82 pytest passing).
 - **Objective:** Implement 5-step event-level Empirical Bayes statistical overhaul, component bias attribution, and calibrate player minutes/availability.
 - **Acceptance:** `metrics_component_hybrid` model passes tests, backtests on GW1–38 show improved RMSE/Spearman correlation and reduced bias relative to baseline, and `--component_breakdown` table outputs per-component error metrics.
 - **ADR Document:** [`docs/adr/0007-event-level-empirical-bayes-projection-engine.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/adr/0007-event-level-empirical-bayes-projection-engine.md)

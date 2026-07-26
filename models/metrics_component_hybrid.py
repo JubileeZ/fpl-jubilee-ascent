@@ -54,6 +54,14 @@ def _negbin_pmf(k: int, lmbda: float, r: float = 3.0) -> float:
     return coeff * (p**r) * ((1.0 - p)**k)
 
 
+def _negbin_cdf_complement(threshold: int, lmbda: float, r: float = 7.5) -> float:
+    """Return P(X >= threshold) for X ~ NegativeBinomial(mean=lmbda, dispersion=r)."""
+    if lmbda <= 0:
+        return 0.0
+    cdf = sum(_negbin_pmf(k, lmbda, r) for k in range(threshold))
+    return min(max(1.0 - cdf, 0.0), 1.0)
+
+
 def _expected_negbin_conceded_penalty(lmbda: float, r: float = 3.0) -> float:
     """Return expected goals conceded penalty points E[floor(X / 2)] under NB(lmbda, r)."""
     if lmbda <= 0:
@@ -188,8 +196,9 @@ class MetricsComponentHybridModel(BaseModel):
             league_start_avg = 78.0
             exp_mins_start = min(90.0, w_ind * average_minutes + (1.0 - w_ind) * league_start_avg)
             
+            app_prob = min(1.0, max(0.0, _number(row, "appearance_probability", 1.0)))
             p_start = min(availability, average_minutes / 78.0) if average_minutes > 0 else 0.0
-            p_sub = max(0.0, availability - p_start)
+            p_sub = max(0.0, min(availability - p_start, app_prob))
             exp_mins_sub = 18.0
 
             raw_expected_mins = p_start * exp_mins_start + p_sub * exp_mins_sub
@@ -238,17 +247,18 @@ class MetricsComponentHybridModel(BaseModel):
             lmbda_player = lmbda_team_90 * (expected_minutes / 90.0)
 
             p_sixty_mins = p_start * min(1.0, max(0.0, (exp_mins_start - 45.0) / 30.0))
-            r_dispersion = 3.0
-            prob_clean_sheet_on_pitch = (r_dispersion / (r_dispersion + lmbda_team_90 * (exp_mins_start / 90.0)))**r_dispersion
+            lmbda_pitch = lmbda_team_90 * (exp_mins_start / 90.0)
+            prob_clean_sheet_on_pitch = math.exp(-lmbda_pitch)
             prob_clean_sheet = prob_clean_sheet_on_pitch * p_sixty_mins
             xp_clean_sheet = prob_clean_sheet * _CLEAN_SHEET_POINTS[pos]
-            xp_conceded = -_expected_negbin_conceded_penalty(lmbda_player, r=r_dispersion) if pos in ("GK", "D") else 0.0
+            xp_conceded = -_expected_negbin_conceded_penalty(lmbda_player, r=3.0) if pos in ("GK", "D") else 0.0
 
             defcon_per90 = _number(row, "per90_defensive_contribution", 0.0)
             lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0)
             defcon_threshold = 10 if pos == "D" else 12
+            defcon_r = 8.5 if pos == "D" else 7.0
             prob_defcon = (
-                _poisson_cdf_complement(defcon_threshold, lmbda_defcon)
+                _negbin_cdf_complement(defcon_threshold, lmbda_defcon, r=defcon_r)
                 if pos != "GK"
                 else 0.0
             )
