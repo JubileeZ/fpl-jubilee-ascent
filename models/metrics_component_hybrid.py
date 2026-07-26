@@ -183,10 +183,10 @@ class MetricsComponentHybridModel(BaseModel):
             pid = int(row["player_id"])
 
             # 2-State Starter/Sub Mixture Model & Starter Mins Shrinkage
-            n_starts = 5
+            n_starts = _number(row, "n_starts_historical", 0.0)
             w_ind = n_starts / (n_starts + 4.0)
             league_start_avg = 78.0
-            exp_mins_start = min(90.0, max(60.0, w_ind * average_minutes + (1.0 - w_ind) * league_start_avg))
+            exp_mins_start = min(90.0, w_ind * average_minutes + (1.0 - w_ind) * league_start_avg)
             
             p_start = min(availability, average_minutes / 78.0) if average_minutes > 0 else 0.0
             p_sub = max(0.0, availability - p_start)

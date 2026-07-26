@@ -433,6 +433,7 @@ def build_features(
             "has_fallback_prior": seed_source == "position_price_prior",
             "has_seed": seed_source != "none",
             "seed_source": seed_source,
+            "n_starts_historical": float(prior_appearances + current_appearances),
             "minutes_if_appearance": (
                 prior_weight * base_minutes_if_appearance
                 + current_weight * current_minutes_if_appearance
@@ -452,6 +453,7 @@ def build_features(
         df_rolling[rc] = df_rolling[rc].fillna(0.0)
     df_rolling["avg_mins_3gw"] = df_rolling["minutes_if_appearance"].fillna(0.0)
     df_rolling["has_prior_seed"] = df_rolling["has_prior_seed"].fillna(False)
+    df_rolling["n_starts_historical"] = df_rolling["n_starts_historical"].fillna(0.0)
 
     # 4. Merge player metadata and expand to one row per player/target gameweek.
     df_players["_feature_key"] = 1
@@ -489,6 +491,12 @@ def build_features(
         df_feat["chance_of_playing"] = api_chance.where(
             api_chance.notna(),
             df_feat["appearance_probability"].fillna(1.0) * 100.0,
+        )
+
+    if "status" in df_feat.columns:
+        unavailable_statuses = {"u", "n"}
+        df_feat["chance_of_playing"] = df_feat["chance_of_playing"].where(
+            ~df_feat["status"].isin(unavailable_statuses), 0.0
         )
 
     player_codes = (
