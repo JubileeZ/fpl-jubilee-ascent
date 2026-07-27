@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedGw = "horizon"; // 'horizon' or 'gw1', 'gw2'...
   let searchQuery = "";
   let posFilter = "ALL";
+  let teamFilter = "ALL";
+  let maxPriceFilter = "ALL";
   let sortKey = "selected_xp";
   let sortAsc = false;
 
@@ -25,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const compareModelsContainer = document.getElementById("compareModelsContainer");
   const gwSelect = document.getElementById("gwSelect");
   const searchInput = document.getElementById("searchInput");
+  const teamSelect = document.getElementById("teamSelect");
+  const priceSlider = document.getElementById("priceSlider");
+  const priceSliderVal = document.getElementById("priceSliderVal");
   const playersTable = document.getElementById("playersTable");
   const tableBody = document.getElementById("tableBody");
   const posTabs = document.querySelectorAll(".pos-tab");
@@ -59,6 +64,8 @@ document.addEventListener("DOMContentLoaded", () => {
       allPlayers.forEach(p => playersMap.set(p.id, p));
 
       setupModelControls();
+      setupTeamSelect();
+      setupPriceSlider();
       setupGwSelect();
       setupEventListeners();
 
@@ -128,6 +135,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function setupTeamSelect() {
+    if (!teamSelect) return;
+    const teams = Array.from(new Set(allPlayers.map(p => p.team))).sort();
+    teamSelect.innerHTML = '<option value="ALL">All Teams</option>';
+    teams.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      teamSelect.appendChild(opt);
+    });
+  }
+
+  function setupPriceSlider() {
+    if (!priceSlider || allPlayers.length === 0) return;
+    const prices = allPlayers.map(p => p.price);
+    const minP = Math.floor(Math.min(...prices) * 2) / 2;
+    const maxP = Math.ceil(Math.max(...prices) * 2) / 2;
+
+    priceSlider.min = minP.toFixed(1);
+    priceSlider.max = maxP.toFixed(1);
+    priceSlider.step = "0.5";
+    priceSlider.value = maxP.toFixed(1);
+    maxPriceFilter = maxP;
+
+    if (priceSliderVal) {
+      priceSliderVal.textContent = `£${maxP.toFixed(1)}m`;
+    }
+  }
+
   function setupEventListeners() {
     primaryModelSelect.addEventListener("change", (e) => {
       primaryModel = e.target.value;
@@ -145,6 +181,23 @@ document.addEventListener("DOMContentLoaded", () => {
       searchQuery = e.target.value.toLowerCase();
       renderTable();
     });
+
+    if (teamSelect) {
+      teamSelect.addEventListener("change", (e) => {
+        teamFilter = e.target.value;
+        renderTable();
+      });
+    }
+
+    if (priceSlider) {
+      priceSlider.addEventListener("input", (e) => {
+        maxPriceFilter = parseFloat(e.target.value);
+        if (priceSliderVal) {
+          priceSliderVal.textContent = `£${maxPriceFilter.toFixed(1)}m`;
+        }
+        renderTable();
+      });
+    }
 
     posTabs.forEach(tab => {
       tab.addEventListener("click", () => {
@@ -617,6 +670,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let filtered = allPlayers.filter(p => {
       if (posFilter !== "ALL" && p.pos !== posFilter) return false;
+      if (teamFilter !== "ALL" && p.team !== teamFilter) return false;
+      if (typeof maxPriceFilter === "number" && p.price > maxPriceFilter) return false;
       if (searchQuery) {
         const matchesName = p.name.toLowerCase().includes(searchQuery) || p.full_name.toLowerCase().includes(searchQuery);
         const matchesTeam = p.team.toLowerCase().includes(searchQuery) || p.team_full.toLowerCase().includes(searchQuery);
