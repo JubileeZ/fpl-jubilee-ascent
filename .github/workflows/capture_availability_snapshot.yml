@@ -1,0 +1,69 @@
+name: Capture availability snapshot
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      season:
+        description: "Season directory name"
+        required: true
+        default: "2026-27"
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    env:
+      SEASON: ${{ github.event.inputs.season || '2026-27' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+
+      - name: Hydrate snapshot history
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/availability-snapshots"
+          git fetch origin availability-snapshots || true
+          if git cat-file -e origin/availability-snapshots:data/availability-snapshots 2>/dev/null; then
+            git archive --format=tar origin/availability-snapshots:data/availability-snapshots | tar -x -C "$RUNNER_TEMP/availability-snapshots"
+          fi
+
+      - name: Capture changed availability package
+        run: uv run python -m commands.capture_availability_snapshot --season "$SEASON" --snapshot-root "$RUNNER_TEMP/availability-snapshots"
+
+      - name: Select snapshot branch
+        shell: bash
+        run: |
+          git fetch origin availability-snapshots || true
+          if git show-ref --verify --quiet refs/remotes/origin/availability-snapshots; then
+            git switch --track origin/availability-snapshots
+          else
+            git switch -c availability-snapshots
+          fi
+          if [ -d "$RUNNER_TEMP/availability-snapshots" ]; then
+            mkdir -p data/availability-snapshots
+            cp -R "$RUNNER_TEMP/availability-snapshots/." data/availability-snapshots/
+          fi
+
+      - name: Commit changed package
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- data/availability-snapshots)" ]; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git add data/availability-snapshots
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "data: capture availability snapshot"
+          git push origin HEAD:availability-snapshots

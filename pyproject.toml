@@ -1,7 +1,7 @@
 [project]
 name = "fpl-jubilee-ascent"
 version = "0.1.0"
-description = "Add your description here"
+description = "Fantasy Premier League score projection and MILP transfer optimization engine"
 requires-python = ">=3.14"
 dependencies = [
     "fuzzywuzzy>=0.18.0",

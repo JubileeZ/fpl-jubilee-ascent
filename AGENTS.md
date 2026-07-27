@@ -1,3 +1,8 @@
+---
+description:
+alwaysApply: true
+---
+
 # FPL-Jubilee-Ascent
 # Read by all AI agents working in this repo.
 ---
@@ -23,8 +28,18 @@ solver/       # Vendored open-fpl-solver source
 backtesting/  # Backtest evaluation engine and metrics
 commands/     # CLI command entry points
 data/         # Transient raw API cache, season archives, solver reports
-docs/         # Context vocabulary and data dictionary
+docs/         # Durable project documentation and decision records
 ```
+
+---
+
+## File & Documentation Lifecycle
+
+- Keep durable, project-relevant documentation in `docs/`: architecture decisions in `docs/adr/`, agent operating guides in `docs/agents/`, and topic documentation in a named `docs/<topic>/` directory.
+- Keep source, commands, tests, and data in their existing domain directories; do not create root-level project artifacts unless they are canonical repository files (`README.md`, `AGENTS.md`, `CONTEXT.md`, or `ROADMAP.md`).
+- Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. This directory is ignored and must not contain source-of-truth project information.
+- At task completion, delete all session-only artifacts, including `.tmp/agent/` contents and legacy root-level `task.md`, `implementation_plan.md`, and `walkthrough.md`.
+- If work remains unfinished, record only the durable status, decision, and blocker in the issue tracker or appropriate project documentation; do not retain a handoff document as the sole record.
 
 ---
 
@@ -36,7 +51,8 @@ docs/         # Context vocabulary and data dictionary
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 
-**Pre-commit gate:** run `bash tests/verify.sh` before proposing commits.
+**Pre-commit gate:** run `uv run ruff check .`, `uv run pytest`, and
+`bash tests/verify.sh` before proposing commits.
 
 ---
 
@@ -111,5 +127,5 @@ Before Checkpoint (git commit of in-progress work): update Work Packet SFDBN fie
 - Progress workflow: read `docs/agents/progress.md`.
 - Issue tracker setup: read `docs/agents/issue-tracker.md`.
 - Compaction: collapse completed phase checklists in `ROADMAP.md` to a single header/summary line (Active-Phase Compaction).
-- Cleanup: delete transient session files (`task.md`, `implementation_plan.md`, `walkthrough.md`) once milestone/task is complete.
+- Cleanup: follow File & Documentation Lifecycle; delete transient artifacts once milestone/task is complete.
 <!-- AZG:MANAGED:END -->

@@ -1,6 +1,10 @@
+from datetime import datetime
 from pathlib import Path
+from typing import TypedDict
 
 import pandas as pd
+
+from features.availability_snapshots import resolve_latest_snapshot
 
 EVENT_RATE_MAP = [
     ("goals_scored", "per90_goals"),
@@ -26,6 +30,23 @@ BLEND_FULL_APPEARANCES = 8
 MIN_PRIOR_MINUTES = 450
 MIN_PRIOR_APPEARANCES = 8
 AVAILABILITY_OVERRIDE_COLUMNS = frozenset({"player_code", "xmins_cap", "source", "expires_after_gw"})
+PARTICIPATION_STATES = ("dnp", "start", "sub_in")
+STATE_RECENCY_DECAY = 0.95
+STATE_PRIOR_STRENGTH = 4.0
+
+
+class StateStats(TypedDict):
+    counts: dict[str, float]
+    minutes_sum: dict[str, float]
+    sixty_count: dict[str, float]
+
+
+def _empty_state_stats() -> StateStats:
+    return {
+        "counts": dict.fromkeys(PARTICIPATION_STATES, 0.0),
+        "minutes_sum": dict.fromkeys(PARTICIPATION_STATES, 0.0),
+        "sixty_count": dict.fromkeys(PARTICIPATION_STATES, 0.0),
+    }
 
 
 def _safe_number(value: object, default: float) -> float:
@@ -59,45 +80,30 @@ def _archive_processed_dir(processed_dir: Path, seed_season: str | None) -> Path
     return sorted(candidates)[-1] if candidates else None
 
 
-def _load_players_as_of(processed_dir: Path, as_of_gw: int | None) -> tuple[pd.DataFrame, bool]:
-    """Load player metadata, preferring a point-in-time snapshot when present."""
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    snapshot_path = processed_dir / "player_snapshots.parquet"
-    if as_of_gw is None or not snapshot_path.exists():
-        return df_players, False
+def _load_players(processed_dir: Path) -> pd.DataFrame:
+    """Load terminal metadata for non-point-in-time exploratory projections."""
+    return pd.read_parquet(processed_dir / "players.parquet")
 
-    snapshots = pd.read_parquet(snapshot_path)
-    player_id_col = "player_id" if "player_id" in snapshots.columns else "id"
-    snapshot_gw_col = (
-        "snapshot_gameweek_id"
-        if "snapshot_gameweek_id" in snapshots.columns
-        else "gameweek_id"
-    )
-    if player_id_col not in snapshots.columns or snapshot_gw_col not in snapshots.columns:
-        return df_players, False
 
-    snapshots = snapshots[snapshots[snapshot_gw_col] <= as_of_gw].sort_values(snapshot_gw_col)
-    snapshots = snapshots.drop_duplicates(player_id_col, keep="last")
-    has_availability_snapshot = "chance_of_playing_next_round" in snapshots.columns
-    snapshot_values = snapshots.set_index(player_id_col)
-    for column in snapshot_values.columns:
-        if column == snapshot_gw_col:
-            continue
-        values = df_players["id"].map(snapshot_values[column])
-        if column in {
-            "chance_of_playing_next_round",
-            "chance_of_playing_this_round",
-            "club_id",
-            "position_id",
-            "now_cost",
-            "status",
-        }:
-            df_players[column] = values
-        elif column in df_players.columns:
-            df_players[column] = values.combine_first(df_players[column])
-        else:
-            df_players[column] = values
-    return df_players, has_availability_snapshot
+def history_before_target(
+    df_perf: pd.DataFrame,
+    target_gw: int,
+    target_deadline: datetime | str | None,
+    require_kickoff_time: bool,
+) -> pd.DataFrame:
+    """Keep completed performances known before the target deadline."""
+    history = df_perf[df_perf["gameweek_id"] < target_gw]
+    if target_deadline is None:
+        return history
+    if "kickoff_time" not in history.columns:
+        if require_kickoff_time and not history.empty:
+            raise ValueError("Point-in-time evaluation requires kickoff_time for historical performances")
+        return history
+    deadline = pd.to_datetime(target_deadline, utc=True)
+    kickoff_times = pd.to_datetime(history["kickoff_time"], utc=True, errors="coerce")
+    if require_kickoff_time and kickoff_times.isna().any():
+        raise ValueError("Point-in-time evaluation requires valid historical kickoff_time values")
+    return history[kickoff_times.lt(deadline)]
 
 
 def _club_strength(club_row: pd.Series, preferred: str, fallback: str) -> float:
@@ -224,6 +230,169 @@ def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[s
     return rates, minutes_if_appearance, appearance_probability, appearances
 
 
+def _attach_fixture_clubs(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame) -> pd.DataFrame:
+    """Infer a player's Club from fixture identity and home/away status."""
+    required_perf = {"fixture_id", "was_home"}
+    required_fixtures = {"id", "home_club_id", "away_club_id"}
+    if not required_perf.issubset(df_perf.columns) or not required_fixtures.issubset(df_fixtures.columns):
+        return df_perf.copy()
+
+    fixture_clubs = df_fixtures[list(required_fixtures)].rename(columns={"id": "_fixture_id"})
+    enriched = df_perf.merge(fixture_clubs, left_on="fixture_id", right_on="_fixture_id", how="left")
+    was_home = enriched["was_home"].fillna(False).astype(bool)
+    enriched["club_id_at_fixture"] = enriched["home_club_id"].where(was_home, enriched["away_club_id"])
+    return enriched.drop(columns=["_fixture_id", "home_club_id", "away_club_id"])
+
+
+def _summarize_state_rows(rows: pd.DataFrame, recency_decay: float) -> StateStats:
+    """Summarize DNP/start/sub-in outcomes using recency-weighted rows."""
+    stats = _empty_state_stats()
+    if rows.empty or "minutes" not in rows.columns:
+        return stats
+
+    minutes = pd.to_numeric(rows["minutes"], errors="coerce").fillna(0.0)
+    starts_source = rows["starts"] if "starts" in rows.columns else pd.Series(0.0, index=rows.index)
+    gameweeks_source = (
+        rows["gameweek_id"]
+        if "gameweek_id" in rows.columns
+        else pd.Series(0.0, index=rows.index)
+    )
+    starts = pd.to_numeric(starts_source, errors="coerce").fillna(0.0)
+    gameweeks = pd.to_numeric(gameweeks_source, errors="coerce").fillna(0.0)
+    latest_gameweek = float(gameweeks.max())
+    weights = recency_decay ** (latest_gameweek - gameweeks)
+    states = pd.Series("dnp", index=rows.index)
+    states = states.mask((minutes > 0) & (starts > 0), "start")
+    states = states.mask((minutes > 0) & (starts <= 0), "sub_in")
+
+    for state in PARTICIPATION_STATES:
+        mask = states == state
+        state_weights = weights[mask]
+        stats["counts"][state] = float(state_weights.sum())
+        stats["minutes_sum"][state] = float((minutes[mask] * state_weights).sum())
+        stats["sixty_count"][state] = float(weights[mask & (minutes >= 60)].sum())
+    return stats
+
+
+def _state_stats_for_player(
+    df_perf: pd.DataFrame,
+    player_id: int,
+    club_id: int | None,
+    recency_decay: float,
+) -> StateStats:
+    rows = df_perf[df_perf["player_id"] == player_id]
+    if club_id is not None and "club_id_at_fixture" in rows.columns:
+        known_clubs = rows["club_id_at_fixture"].notna()
+        if known_clubs.any():
+            rows = rows[rows["club_id_at_fixture"] == club_id]
+    return _summarize_state_rows(rows, recency_decay)
+
+
+def _aggregate_state_priors(
+    df_perf: pd.DataFrame,
+    df_players: pd.DataFrame,
+    recency_decay: float,
+) -> tuple[dict[tuple[int, int], StateStats], dict[int, StateStats]]:
+    """Build Position-Price and Position participation priors."""
+    if (
+        df_perf.empty
+        or "player_id" not in df_perf.columns
+        or "position_id" not in df_players.columns
+    ):
+        return {}, {}
+
+    meta_columns = [column for column in ["id", "position_id", "now_cost", "club_id"] if column in df_players.columns]
+    meta = df_players[meta_columns].rename(columns={"id": "player_id"})
+    rows = df_perf.merge(meta, on="player_id", how="left")
+    if "club_id_at_fixture" in rows.columns and "club_id" in rows.columns:
+        known_clubs = rows["club_id_at_fixture"].notna()
+        rows = rows[~known_clubs | (rows["club_id_at_fixture"] == rows["club_id"])]
+    price_source = (
+        rows["now_cost"]
+        if "now_cost" in rows.columns
+        else pd.Series(0.0, index=rows.index)
+    )
+    rows["price_band"] = pd.to_numeric(price_source, errors="coerce").fillna(0.0).map(_price_band)
+
+    by_band: dict[tuple[int, int], StateStats] = {}
+    by_position: dict[int, StateStats] = {}
+    for key, group in rows.groupby(["position_id", "price_band"], dropna=True):
+        by_band[(int(key[0]), int(key[1]))] = _summarize_state_rows(group, recency_decay)
+    for position_id, group in rows.groupby("position_id", dropna=True):
+        by_position[int(position_id)] = _summarize_state_rows(group, recency_decay)
+    return by_band, by_position
+
+
+def _state_probability_summary(
+    current: StateStats,
+    prior: StateStats,
+    prior_strength: float,
+) -> dict[str, float]:
+    """Combine current observations with a prior and conditional minute means."""
+    current_counts = current["counts"]
+    prior_counts = prior["counts"]
+    prior_total = sum(prior_counts.values())
+    prior_probs = (
+        {state: prior_counts[state] / prior_total for state in PARTICIPATION_STATES}
+        if prior_total > 0
+        else dict.fromkeys(PARTICIPATION_STATES, 1.0 / len(PARTICIPATION_STATES))
+    )
+    posterior_counts = {
+        state: current_counts[state] + prior_strength * prior_probs[state]
+        for state in PARTICIPATION_STATES
+    }
+    posterior_total = sum(posterior_counts.values())
+    summary = {
+        f"p_{state}": posterior_counts[state] / posterior_total
+        for state in PARTICIPATION_STATES
+    }
+    for state in ("start", "sub_in"):
+        prior_count = prior_counts[state]
+        prior_minutes = (
+            prior["minutes_sum"][state] / prior_count
+            if prior_count > 0
+            else (78.0 if state == "start" else 18.0)
+        )
+        denominator = current_counts[state] + prior_strength * prior_probs[state]
+        current_minutes = (
+            current["minutes_sum"][state] / current_counts[state]
+            if current_counts[state] > 0
+            else prior_minutes
+        )
+        summary[f"xmins_if_{state}"] = (
+            (
+                current_minutes * current_counts[state]
+                + prior_minutes * prior_strength * prior_probs[state]
+            )
+            / denominator
+            if denominator > 0
+            else prior_minutes
+        )
+        prior_sixty = (
+            prior["sixty_count"][state] / prior_count
+            if prior_count > 0
+            else (1.0 if state == "start" else 0.0)
+        )
+        current_sixty = (
+            current["sixty_count"][state] / current_counts[state]
+            if current_counts[state] > 0
+            else prior_sixty
+        )
+        summary[f"p_60_if_{state}"] = (
+            (
+                current_sixty * current_counts[state]
+                + prior_sixty * prior_strength * prior_probs[state]
+            )
+            / denominator
+            if denominator > 0
+            else prior_sixty
+        )
+    summary["state_observation_weight"] = sum(current_counts.values())
+    for state in PARTICIPATION_STATES:
+        summary[f"{state}_observation_weight"] = current_counts[state]
+    return summary
+
+
 def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFrame) -> tuple[dict[tuple[int, int], dict], dict[int, dict]]:
     if df_perf.empty:
         return {}, {}
@@ -282,6 +451,12 @@ def build_features(
     blend_start_appearances: int = BLEND_START_APPEARANCES,
     blend_full_appearances: int = BLEND_FULL_APPEARANCES,
     availability_overrides: Path | None = None,
+    availability_snapshot_root: Path | None = None,
+    season: str | None = None,
+    target_deadline: datetime | str | None = None,
+    state_recency_decay: float = STATE_RECENCY_DECAY,
+    state_prior_strength: float = STATE_PRIOR_STRENGTH,
+    require_availability_snapshot: bool = False,
 ) -> pd.DataFrame:
     """
     Compiles a FeatureContract DataFrame for a target gameweek.
@@ -294,11 +469,39 @@ def build_features(
         raise ValueError("blend_start_appearances must be non-negative")
     if blend_full_appearances <= blend_start_appearances:
         raise ValueError("blend_full_appearances must be greater than blend_start_appearances")
+    if not 0 < state_recency_decay <= 1:
+        raise ValueError("state_recency_decay must be greater than 0 and at most 1")
+    if state_prior_strength < 0:
+        raise ValueError("state_prior_strength must be non-negative")
 
-    # 1. Load Parquet tables
-    df_players, has_point_in_time_snapshot = _load_players_as_of(processed_dir, as_of_gw)
-    df_fixtures = pd.read_parquet(processed_dir / "fixtures.parquet")
-    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    # 1. Load Parquet tables, preferring a complete immutable snapshot package.
+    snapshot = (
+        resolve_latest_snapshot(
+            availability_snapshot_root,
+            season,
+            target_gw,
+            target_deadline,
+        )
+        if availability_snapshot_root is not None and season and target_deadline is not None
+        else None
+    )
+    if require_availability_snapshot and snapshot is None:
+        raise ValueError(
+            f"Missing immutable availability snapshot for GW{target_gw}; "
+            "point-in-time evaluation cannot use terminal metadata"
+        )
+    if snapshot is None:
+        df_players = _load_players(processed_dir)
+        has_point_in_time_snapshot = False
+        df_fixtures = pd.read_parquet(processed_dir / "fixtures.parquet")
+        df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+        snapshot_id = None
+    else:
+        df_players = snapshot["players"]
+        df_fixtures = snapshot["fixtures"]
+        df_clubs = snapshot["clubs"]
+        has_point_in_time_snapshot = True
+        snapshot_id = str(snapshot["metadata"]["snapshot_id"])
     
     perf_path = processed_dir / "player_performances.parquet"
     if perf_path.exists():
@@ -310,7 +513,12 @@ def build_features(
     gameweeks = list(range(target_gw, target_gw + horizon))
     
     # 2. Compute current-season historical features (pre-target_gw)
-    df_hist = df_perf[df_perf["gameweek_id"] < target_gw]
+    df_hist = history_before_target(
+        df_perf,
+        target_gw,
+        target_deadline,
+        require_availability_snapshot,
+    )
 
     # Simple rolling GW averages
     rolling_stats = []
@@ -328,6 +536,7 @@ def build_features(
             "avg_mins_3gw": float(avg_mins_3gw)
         })
     df_rolling = pd.DataFrame(rolling_stats)
+    df_hist_context = _attach_fixture_clubs(df_hist, df_fixtures)
 
     # 3. Prior-season seed + Position-Price fallback + current-season blend.
     # ponytail: if archive data exists, use it as the seed source. If missing
@@ -345,11 +554,24 @@ def build_features(
     if archive_processed is not None:
         df_seed_perf = pd.read_parquet(archive_processed / "player_performances.parquet")
         df_seed_players = pd.read_parquet(archive_processed / "players.parquet")
+        seed_fixtures_path = archive_processed / "fixtures.parquet"
+        df_seed_fixtures = (
+            pd.read_parquet(seed_fixtures_path)
+            if seed_fixtures_path.exists()
+            else df_fixtures
+        )
     else:
         df_seed_perf = df_hist.copy()
         df_seed_players = df_players.rename(columns={"player_id": "id"}).copy()
+        df_seed_fixtures = df_fixtures
 
+    df_seed_perf_context = _attach_fixture_clubs(df_seed_perf, df_seed_fixtures)
     priors_by_band, priors_by_position = _compute_position_price_priors(df_seed_perf, df_seed_players)
+    state_priors_by_band, state_priors_by_position = _aggregate_state_priors(
+        df_seed_perf_context,
+        df_seed_players,
+        state_recency_decay,
+    )
     # Build mapping from player code / name to seed player id
     # ponytail: FPL element IDs change between seasons; permanent `code` preserves identity.
     # Name fallback omits position_id to handle players whose position changed between seasons (e.g. MID -> FWD).
@@ -361,6 +583,11 @@ def build_features(
     if "first_name" in df_seed_players.columns and "second_name" in df_seed_players.columns:
         dedup_players = df_seed_players.drop_duplicates(subset=["first_name", "second_name"])
         name_to_seed_id = dedup_players.set_index(["first_name", "second_name"])["id"].to_dict()
+    seed_club_by_id = (
+        df_seed_players.set_index("id")["club_id"].to_dict()
+        if {"id", "club_id"}.issubset(df_seed_players.columns)
+        else {}
+    )
 
     seed_rows = []
     for _, player_row in df_players.iterrows():
@@ -417,6 +644,35 @@ def build_features(
             df_hist,
             pid,
         )
+        current_state = _state_stats_for_player(
+            df_hist_context,
+            pid,
+            int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
+            state_recency_decay,
+        )
+        prior_state = (
+            _state_stats_for_player(
+                df_seed_perf_context,
+                seed_pid,
+                int(seed_club_by_id[seed_pid]) if seed_pid in seed_club_by_id else None,
+                state_recency_decay,
+            )
+            if seed_pid is not None
+            else _empty_state_stats()
+        )
+        prior_state_total = sum(prior_state["counts"].values())
+        state_prior = (
+            prior_state
+            if prior_state_total >= MIN_PRIOR_APPEARANCES
+            else state_priors_by_band.get((position_id, band))
+            or state_priors_by_position.get(position_id)
+            or _empty_state_stats()
+        )
+        state_summary = _state_probability_summary(
+            current_state,
+            state_prior,
+            state_prior_strength,
+        )
         if current_appearances < blend_start_appearances:
             current_weight = 0.0
         else:
@@ -444,6 +700,9 @@ def build_features(
                 + current_weight * current_appearance_probability
             ),
         }
+        row.update(state_summary)
+        for state in PARTICIPATION_STATES:
+            row[f"p_{state}_prior"] = state_summary[f"p_{state}"]
         for rate_col in RATE_COLS:
             row[rate_col] = prior_weight * float(base_rates.get(rate_col, 0.0)) + current_weight * float(current_rates.get(rate_col, 0.0))
         seed_rows.append(row)
@@ -456,6 +715,22 @@ def build_features(
     df_rolling["has_prior_seed"] = df_rolling["has_prior_seed"].fillna(False)
     df_rolling["n_starts_historical"] = df_rolling["n_starts_historical"].fillna(0.0)
     df_rolling["appearance_probability"] = df_rolling["appearance_probability"].fillna(0.0)
+    for state in PARTICIPATION_STATES:
+        df_rolling[f"p_{state}"] = df_rolling[f"p_{state}"].fillna(1.0 / len(PARTICIPATION_STATES))
+        df_rolling[f"p_{state}_prior"] = df_rolling[f"p_{state}_prior"].fillna(
+            df_rolling[f"p_{state}"]
+        )
+    for column, default in (
+        ("xmins_if_start", 78.0),
+        ("xmins_if_sub_in", 18.0),
+        ("p_60_if_start", 1.0),
+        ("p_60_if_sub_in", 0.0),
+        ("state_observation_weight", 0.0),
+        ("dnp_observation_weight", 0.0),
+        ("start_observation_weight", 0.0),
+        ("sub_in_observation_weight", 0.0),
+    ):
+        df_rolling[column] = df_rolling[column].fillna(default)
 
     # 4. Merge player metadata and expand to one row per player/target gameweek.
     df_players["_feature_key"] = 1
@@ -495,11 +770,15 @@ def build_features(
             df_feat["appearance_probability"].fillna(1.0) * 100.0,
         )
 
-    if "status" in df_feat.columns:
+    if has_point_in_time_snapshot and "status" in df_feat.columns:
         unavailable_statuses = {"u", "n"}
         df_feat["chance_of_playing"] = df_feat["chance_of_playing"].where(
             ~df_feat["status"].isin(unavailable_statuses), 0.0
         )
+
+    df_feat["is_immediate_next_gw"] = df_feat["gameweek_id"].eq(target_gw)
+    df_feat["has_availability_snapshot"] = has_point_in_time_snapshot
+    df_feat["availability_snapshot_id"] = snapshot_id
 
     player_codes = (
         set(pd.to_numeric(df_players["code"], errors="coerce").dropna().astype(int))

@@ -37,8 +37,8 @@ flowchart LR
 - Do not check ROADMAP boxes for partial work.
 
 ### 3. Before finishing (pre-commit gate)
-- Run all linting and test commands.
-- Delete transient session files (`task.md`, `implementation_plan.md`, `walkthrough.md`) once milestone/task complete.
+- Run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh`.
+- Move no session artifacts into project documentation. Delete `.tmp/agent/` contents and legacy root-level `task.md`, `implementation_plan.md`, and `walkthrough.md` once milestone/task complete.
 
 ### 4. On completion — update docs
 | If you… | Then update… |
@@ -62,7 +62,7 @@ flowchart LR
 
 ## Multi-device sync
 - **Syncs via Git:** Code, docs (`ROADMAP.md`, `current-state.md`, ADRs), issues.
-- **Does not sync:** Temp files, local build caches, local `.env`.
+- **Does not sync:** `.tmp/agent/` session plans, handoffs, scratch artifacts, local build caches, local `.env`.
 
 Pull before starting. Read `current-state.md` after pull — not previous chat.
 

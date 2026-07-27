@@ -35,6 +35,16 @@ def main():
         help="Appearances at which current-season rates fully replace the seed (default: 8)",
     )
     parser.add_argument(
+        "--state_recency_decay",
+        type=float,
+        help="Participation-state historical weight per elapsed Gameweek (default: 0.95)",
+    )
+    parser.add_argument(
+        "--state_prior_strength",
+        type=float,
+        help="Participation-state prior pseudo-observations (default: 4)",
+    )
+    parser.add_argument(
         "--availability_overrides",
         type=Path,
         default=Path("data/availability_overrides.csv"),
@@ -84,6 +94,8 @@ def main():
         for key, value in {
             "blend_start_appearances": args.blend_start_appearances,
             "blend_full_appearances": args.blend_full_appearances,
+            "state_recency_decay": args.state_recency_decay,
+            "state_prior_strength": args.state_prior_strength,
             "availability_overrides": availability_overrides,
         }.items()
         if value is not None

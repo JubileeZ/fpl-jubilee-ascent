@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import os
 import sys
 import httpx
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Set up path to include root
@@ -20,6 +22,7 @@ from clients.fpl_api import (
 )
 from clients.fpl_auth import get_jwt_token
 from features.processor import process_directory
+from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +41,7 @@ async def main():
         logger.info(f"Current Gameweek determined as: {current_gw}")
         
         logger.info("Fetching all fixtures...")
-        await fetch_gameweek_fixtures(client, write_cache=True)
+        fixtures = await fetch_gameweek_fixtures(client, write_cache=True)
         
         # Fetch element summaries for all active players
         elements = bootstrap.get("elements", [])
@@ -80,6 +83,18 @@ async def main():
             )
             
         logger.info("Data refresh complete! Raw JSON cache saved to data/raw/")
+
+        season = os.getenv("FPL_SEASON")
+        if season:
+            capture_payload(
+                season=season,
+                snapshot_root=PROJECT_ROOT / "data" / "availability-snapshots",
+                bootstrap=bootstrap,
+                fixtures=fixtures,
+                captured_at=datetime.now(UTC),
+            )
+        else:
+            logger.info("FPL_SEASON is unset; availability snapshot capture skipped.")
         
         logger.info("Processing raw JSON files into Parquet tables...")
         raw_dir = PROJECT_ROOT / "data" / "raw"

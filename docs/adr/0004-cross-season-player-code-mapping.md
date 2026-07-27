@@ -6,8 +6,8 @@ In Fantasy Premier League API, the element `id` field is a transient integer ass
 
 ## Decision
 
-1. **Preserve Permanent Player Code**: Include `code` field in `players.parquet` schema across all season archives and live data processing ([features/processor.py](file:///home/jubileez/fpl-jubilee-ascent/features/processor.py#L65-L78)).
-2. **Permanent Code Lookup**: When querying Prior-Season Seed stats in [features/builder.py](file:///home/jubileez/fpl-jubilee-ascent/features/builder.py#L152-L170), map the current player's `code` to the archive season's `id` for `_compute_player_rates`.
+1. **Preserve Permanent Player Code**: Include `code` field in `players.parquet` schema across all season archives and live data processing ([features/processor.py](../../features/processor.py)).
+2. **Permanent Code Lookup**: When querying Prior-Season Seed stats in [features/builder.py](../../features/builder.py), map the current player's `code` to the archive season's `id` for `_compute_player_rates`.
 3. **Position Reclassification Handling**: FPL `code` is 100% 1-to-1 and permanent per real-world footballer, robust to position changes across seasons (e.g. 10 players in 2026/27 changed position between DEF, MID, and FWD, such as Marmoush, Georginio, Lewis-Skelly, Dorgu).
 4. **Fallback Matching**: If `code` is unavailable in legacy datasets, fall back to matching by `(first_name, second_name)` without constraining `position_id` so position reclassifications do not break fallback resolution.
 

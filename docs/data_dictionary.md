@@ -136,13 +136,33 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 11. Projection Contract
+## 11. Availability Snapshot Package
+*   **Root:** `data/availability-snapshots/<season>/GW<gameweek>/<capture>-<hash>/`.
+*   **Capture rule:** Stores only changed, complete packages captured in the 48
+    hours before the recorded Gameweek deadline.
+*   **Tables:** `players.parquet`, `clubs.parquet`, and `fixtures.parquet`.
+    These preserve prediction-critical mutable FPL metadata as known at capture
+    time.
+*   **Metadata:** `metadata.json` records `schema_version`, `season`,
+    `target_gameweek`, UTC `deadline`, UTC `captured_at`, `content_hash`,
+    `snapshot_id`, and source endpoint versions.
+*   **Validation:** Readers use only packages with matching season, Gameweek,
+    deadline, schema version, tables, and content hash.
+
+---
+
+## 12. Projection Contract
 Model output is long format with:
 * `player_id`: Player identifier.
 * `fixture_id`: Fixture identifier; `-1` denotes a blank gameweek row.
 * `gameweek_id`: Target gameweek.
 * `projected_points`: Fixture-level expected FPL points.
 * `projected_minutes`: Fixture-level expected minutes.
+* Participation-state projections additionally expose `p_dnp`, `p_start`,
+  `p_sub_in`, `xmins_if_start`, and `xmins_if_sub_in`.
+* Hybrid component projections expose the exact scoring ledger:
+  minutes, goals, assists, clean sheets, goals conceded, saves, penalties
+  saved/missed, own goals, yellow/red cards, Defcon, and bonus.
 
 Solver exports aggregate `projected_points` and `projected_minutes` by
 `player_id` and `gameweek_id`, preserving double-gameweek totals.

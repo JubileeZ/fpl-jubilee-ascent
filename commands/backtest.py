@@ -13,14 +13,33 @@ load_env()
 configure_utf8_stdio()
 
 from models import get_model
-from features.builder import build_features
+from features.builder import build_features, history_before_target
 from backtesting.metrics import evaluate_predictions
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SEED_BASED_MODELS = frozenset({"component_baseline", "metrics_component_hybrid"})
+SEED_BASED_MODELS = frozenset({
+    "component_baseline",
+    "metrics_component_hybrid",
+    "participation_state_hybrid",
+})
+LEDGER_COMPONENTS = (
+    "xp_minutes",
+    "xp_goals",
+    "xp_assists",
+    "xp_clean_sheet",
+    "xp_conceded",
+    "xp_saves",
+    "xp_penalties_saved",
+    "xp_penalties_missed",
+    "xp_own_goals",
+    "xp_yellow_cards",
+    "xp_red_cards",
+    "xp_defcon",
+    "xp_bonus",
+)
 
 
 def _archive_processed_candidates(data_dir: Path) -> list[Path]:
@@ -59,10 +78,21 @@ def resolve_seed_processed_dir(data_dir: Path, model_name: str, seed_season: str
     """Resolve an explicit, distinct prior-season seed for Cold-Start evaluation."""
     if seed_season is None:
         return None
-    if model_name in SEED_BASED_MODELS and data_dir.parent.name == seed_season:
-        raise ValueError(
-            f"{model_name} cannot use {seed_season} as both evaluation data and Prior-Season Seed"
-        )
+    evaluation_season = data_dir.parent.name
+    if model_name in SEED_BASED_MODELS:
+        if evaluation_season == seed_season:
+            raise ValueError(
+                f"{model_name} cannot use {seed_season} as both evaluation data and Prior-Season Seed"
+            )
+        try:
+            if int(seed_season.split("-", maxsplit=1)[0]) >= int(evaluation_season.split("-", maxsplit=1)[0]):
+                raise ValueError(
+                    f"{model_name} Prior-Season Seed {seed_season} must precede evaluation season "
+                    f"{evaluation_season}"
+                )
+        except ValueError as exc:
+            if "must precede" in str(exc):
+                raise
     seed_dir = PROJECT_ROOT / "data" / "archive" / seed_season / "processed"
     if not (seed_dir / "player_performances.parquet").exists() or not (seed_dir / "players.parquet").exists():
         raise FileNotFoundError(f"Prior-season archive not found: {seed_dir}")
@@ -84,6 +114,40 @@ def main() -> None:
         "--component_breakdown",
         action="store_true",
         help="Print component-by-component error and bias breakdown table",
+    )
+    parser.add_argument(
+        "--minutes_breakdown",
+        action="store_true",
+        help="Print expected-minutes error split by actual appearance outcome",
+    )
+    parser.add_argument(
+        "--snapshot_root",
+        type=str,
+        default=None,
+        help="Availability snapshot root for point-in-time package resolution",
+    )
+    parser.add_argument(
+        "--season",
+        type=str,
+        default=None,
+        help="Season directory name for availability snapshot resolution",
+    )
+    parser.add_argument(
+        "--state_recency_decay",
+        type=float,
+        default=None,
+        help="Participation-state historical weight per elapsed Gameweek",
+    )
+    parser.add_argument(
+        "--state_prior_strength",
+        type=float,
+        default=None,
+        help="Participation-state prior pseudo-observations",
+    )
+    parser.add_argument(
+        "--require_snapshots",
+        action="store_true",
+        help="Require verified immutable pre-deadline snapshots for every evaluated Gameweek",
     )
     args = parser.parse_args()
     
@@ -111,6 +175,24 @@ def main() -> None:
         sys.exit(1)
         
     df_perf = pd.read_parquet(perf_path)
+    snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None
+    snapshot_season = args.season or (
+        data_dir.parent.name if data_dir.parent.name != "data" else None
+    )
+    gameweek_deadlines = {}
+    gameweeks_path = data_dir / "gameweeks.parquet"
+    if gameweeks_path.exists():
+        gameweeks = pd.read_parquet(gameweeks_path)
+        if {"id", "deadline_time"}.issubset(gameweeks.columns):
+            gameweek_deadlines = gameweeks.set_index("id")["deadline_time"].to_dict()
+    if args.require_snapshots:
+        if snapshot_root is None or not args.season:
+            logger.error("--require_snapshots requires --snapshot_root and --season.")
+            sys.exit(1)
+        missing_deadlines = [gw for gw in range(start_gw, end_gw + 1) if gw not in gameweek_deadlines]
+        if missing_deadlines:
+            logger.error("Missing deadline metadata for Gameweeks: %s", missing_deadlines)
+            sys.exit(1)
     
     # Instantiate model
     try:
@@ -127,6 +209,7 @@ def main() -> None:
     logger.info(f"Starting backtesting for model '{args.model}' on GW {start_gw} to {end_gw}...")
     
     all_results = []
+    snapshot_ids: dict[int, str] = {}
     
     for gw in range(start_gw, end_gw + 1):
         logger.info(f"Running backtest for Gameweek {gw}...")
@@ -140,21 +223,52 @@ def main() -> None:
                 seed_processed_dir=seed_processed_dir,
                 use_archive_seed=False,
                 as_of_gw=gw,
+                availability_snapshot_root=snapshot_root,
+                season=snapshot_season,
+                target_deadline=gameweek_deadlines.get(gw),
+                require_availability_snapshot=args.require_snapshots,
+                **{
+                    key: value
+                    for key, value in {
+                        "state_recency_decay": args.state_recency_decay,
+                        "state_prior_strength": args.state_prior_strength,
+                    }.items()
+                    if value is not None
+                },
             )
         except Exception as e:
+            if args.require_snapshots:
+                logger.error("Point-in-time backtest cannot evaluate GW %s: %s", gw, e)
+                sys.exit(1)
             logger.warning(f"Skipping GW {gw} because feature construction failed: {e}")
             continue
             
         if df_feat.empty:
+            if args.require_snapshots:
+                logger.error("Point-in-time backtest cannot evaluate empty GW %s.", gw)
+                sys.exit(1)
             logger.warning(f"Skipping GW {gw} because feature dataframe is empty.")
             continue
+        if args.require_snapshots:
+            snapshot_id = df_feat["availability_snapshot_id"].iloc[0]
+            if pd.isna(snapshot_id) or not df_feat["has_availability_snapshot"].all():
+                logger.error("Point-in-time backtest cannot verify the snapshot for GW %s.", gw)
+                sys.exit(1)
+            snapshot_ids[gw] = str(snapshot_id)
             
         if hasattr(model, "fit"):
-            model.fit(df_perf[df_perf["gameweek_id"] < gw])
+            model.fit(
+                history_before_target(
+                    df_perf,
+                    gw,
+                    gameweek_deadlines.get(gw),
+                    args.require_snapshots,
+                )
+            )
 
         # 2. Predict target gameweek points (fixture grain)
         df_proj = model.predict(df_feat, horizon=1)
-        comp_cols = [c for c in ["xp_minutes", "xp_goals", "xp_assists", "xp_clean_sheet", "xp_conceded", "xp_defcon", "xp_bonus"] if c in df_proj.columns]
+        comp_cols = [c for c in LEDGER_COMPONENTS if c in df_proj.columns]
         proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
 
         df_proj_gw = (
@@ -182,31 +296,24 @@ def main() -> None:
             gw_perf["actual_xp_assists"] = _col("assists") * 3.0
             gw_perf["actual_xp_clean_sheet"] = _col("clean_sheets") * pos_series.map(cs_pts_map)
             gw_perf["actual_xp_conceded"] = np.where(pos_series.isin(["GK", "D"]), -(_col("goals_conceded") // 2), 0.0)
+            gw_perf["actual_xp_saves"] = np.where(pos_series == "GK", _col("saves") // 3, 0.0)
+            gw_perf["actual_xp_penalties_saved"] = 5.0 * _col("penalties_saved")
+            gw_perf["actual_xp_penalties_missed"] = -2.0 * _col("penalties_missed")
+            gw_perf["actual_xp_own_goals"] = -2.0 * _col("own_goals")
+            gw_perf["actual_xp_yellow_cards"] = -1.0 * _col("yellow_cards")
+            gw_perf["actual_xp_red_cards"] = -3.0 * _col("red_cards")
             gw_perf["actual_xp_bonus"] = _col("bonus") * 1.0
 
-            save_pts = np.where(pos_series == "GK", _col("saves") // 3, 0.0)
-            card_pts = -1.0 * _col("yellow_cards") - 3.0 * _col("red_cards")
-            og_pts = -2.0 * _col("own_goals")
-            pen_saved = 5.0 * _col("penalties_saved")
-            pen_missed = -2.0 * _col("penalties_missed")
-            base_pts = (
-                gw_perf["actual_xp_minutes"]
-                + gw_perf["actual_xp_goals"]
-                + gw_perf["actual_xp_assists"]
-                + gw_perf["actual_xp_clean_sheet"]
-                + gw_perf["actual_xp_conceded"]
-                + gw_perf["actual_xp_bonus"]
-                + save_pts
-                + card_pts
-                + og_pts
-                + pen_saved
-                + pen_missed
+            defcon_count = _col("defensive_contribution")
+            defcon_threshold = np.where(pos_series == "D", 10, 12)
+            gw_perf["actual_xp_defcon"] = np.where(
+                pos_series.isin(["D", "M", "F"]) & (defcon_count >= defcon_threshold),
+                2.0,
+                0.0,
             )
-            gw_perf["actual_xp_defcon"] = np.maximum(0.0, gw_perf["total_points"] - base_pts)
 
         actual_group_cols = ["total_points", "minutes"] + [
-            "actual_xp_minutes", "actual_xp_goals", "actual_xp_assists",
-            "actual_xp_clean_sheet", "actual_xp_conceded", "actual_xp_defcon", "actual_xp_bonus"
+            f"actual_{component}" for component in LEDGER_COMPONENTS
         ]
         actual_group_cols = [c for c in actual_group_cols if c in gw_perf.columns]
 
@@ -260,7 +367,10 @@ def main() -> None:
     print(f"Top-11 Overlap  : {metrics['top_11_overlap']:.4f}")
     print(f"Top-15 Overlap  : {metrics['top_15_overlap']:.4f}")
     print(f"Seed Season     : {args.seed_season or 'none (in-season evaluation)'}")
-    print("Availability     : point-in-time snapshot, else Prior-Season Seed appearance probability")
+    if snapshot_ids:
+        print(f"Snapshots       : {'; '.join(f'GW{gw}={snapshot_id}' for gw, snapshot_id in snapshot_ids.items())}")
+    else:
+        print("Snapshots       : none (exploratory only; not eligible for promotion)")
     print("Evaluation Grain : player/gameweek (fixture rows aggregated)")
     print("="*50 + "\n")
 
@@ -294,6 +404,38 @@ def main() -> None:
         top15_str = f"{metrics['top_15_overlap']:.4f}" if metrics.get("top_15_overlap") is not None else "N/A"
         print(f"Ranking Metrics    : Spearman Rank Corr = {spearman_str} | Top-15 Overlap = {top15_str}")
         print("=" * 67 + "\n")
+
+    if args.minutes_breakdown and metrics.get("minutes_forecast_metrics"):
+        minutes_m = metrics["minutes_forecast_metrics"]
+        print("=" * 82)
+        print("EXPECTED-MINUTES BREAKDOWN")
+        print("=" * 82)
+        print(
+            f"Overall: projected={minutes_m['mean_projected']:.2f} "
+            f"actual={minutes_m['mean_actual']:.2f} "
+            f"MAE={minutes_m['mae']:.2f} "
+            f"bias={minutes_m['bias']:+.2f} "
+            f"RMSE={minutes_m['rmse']:.2f}"
+        )
+        print("-" * 82)
+        print(
+            f"{'Actual outcome':<16} {'Samples':>9} {'Mean proj':>12} "
+            f"{'Mean act':>10} {'MAE':>10} {'Bias':>10}"
+        )
+        print("-" * 82)
+        for band in ("0", "1-59", "60+"):
+            band_m = minutes_m["by_actual_band"].get(band)
+            if band_m is None:
+                continue
+            print(
+                f"{band:<16} "
+                f"{int(band_m['sample_count']):>9} "
+                f"{band_m['mean_projected']:>12.2f} "
+                f"{band_m['mean_actual']:>10.2f} "
+                f"{band_m['mae']:>10.2f} "
+                f"{band_m['bias']:>+10.2f}"
+            )
+        print("=" * 82 + "\n")
     
 if __name__ == "__main__":
     main()

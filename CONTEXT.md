@@ -36,6 +36,10 @@ _Avoid_: xP output, prediction, score
 A per-player per-fixture expected points and minutes estimate. Canonical model output grain; retains fixture identity for double gameweeks.
 _Avoid_: fixture score
 
+**Club Fixture**:
+A Fixture occurring while a Player is registered with the participating Club. Used as the Participation State training denominator; excludes fixtures before a transfer-in or after a transfer-out.
+_Avoid_: Eligible game, season fixture
+
 **Gameweek Projection**:
 A per-player per-gameweek aggregation of one or more Fixture Projections used by the solver and headline evaluation.
 _Avoid_: weekly fixture
@@ -64,6 +68,10 @@ _Avoid_: Per-90 average, rate (ambiguous)
 The likelihood a Player features in a fixture, taken from the FPL API `chance_of_playing_next_round` when present, else from prior-season appearance rate.
 _Avoid_: Injury chance, playing chance
 
+**Participation State**:
+One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub-in. State probabilities sum to one and determine conditional minutes and Event Component projections.
+_Avoid_: Appearance Probability (only whether a Player features), lineup status
+
 **Minutes if Appearance**:
 The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability.
 _Avoid_: Average minutes, expected minutes
@@ -71,6 +79,10 @@ _Avoid_: Average minutes, expected minutes
 **Availability Override**:
 An explicit, source-attributed and time-limited adjustment to a Player's expected availability or minutes when the FPL API has not yet reflected confirmed information.
 _Avoid_: Expert guess, manual prediction
+
+**Availability Snapshot**:
+A time-stamped record of Player availability captured before a Gameweek deadline. Used to evaluate Availability and xMins without future-information leakage.
+_Avoid_: Current status, injury history
 
 **Cold-Start**:
 The state at the start of a new season where current-season Player performances are empty and Event Rates must be seeded entirely from prior-season history or fallback priors.
@@ -119,4 +131,8 @@ _Avoid_: UI state, solver export
 **Interactive Squad Builder**:
 The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
 _Avoid_: Roster picker, drag list
+
+**Decision Regret**:
+Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
+_Avoid_: Squad Gap (ambiguous), optimizer gap
 

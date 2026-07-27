@@ -6,6 +6,24 @@ import numpy as np
 import pandas as pd
 
 
+_MINUTE_BAND_LABELS = ("0", "1-59", "60+")
+_LEDGER_COMPONENTS = (
+    "xp_minutes",
+    "xp_goals",
+    "xp_assists",
+    "xp_clean_sheet",
+    "xp_conceded",
+    "xp_saves",
+    "xp_penalties_saved",
+    "xp_penalties_missed",
+    "xp_own_goals",
+    "xp_yellow_cards",
+    "xp_red_cards",
+    "xp_defcon",
+    "xp_bonus",
+)
+
+
 def _top_k_stats(group: pd.DataFrame, k: int) -> tuple[float, float]:
     count = min(k, len(group))
     if count == 0:
@@ -17,6 +35,31 @@ def _top_k_stats(group: pd.DataFrame, k: int) -> tuple[float, float]:
     overlap = len(predicted_ids & actual_ids) / count
     regret = float(actual["actual_points"].sum() - predicted["actual_points"].sum())
     return overlap, regret
+
+
+def _minute_bands(minutes: pd.Series) -> pd.Categorical:
+    return pd.cut(
+        minutes,
+        bins=[-0.1, 0.0, 59.999, float("inf")],
+        labels=_MINUTE_BAND_LABELS,
+    )
+
+
+def _validate_component_ledger(df_eval: pd.DataFrame) -> None:
+    """Reject predictions or actuals that do not reconcile to total points."""
+    predicted_columns = [component for component in _LEDGER_COMPONENTS if component in df_eval.columns]
+    actual_columns = [f"actual_{component}" for component in _LEDGER_COMPONENTS if f"actual_{component}" in df_eval.columns]
+    complete_ledger = (
+        len(predicted_columns) == len(_LEDGER_COMPONENTS)
+        and len(actual_columns) == len(_LEDGER_COMPONENTS)
+    )
+    if complete_ledger:
+        predicted_residual = df_eval["projected_points"] - df_eval[predicted_columns].sum(axis=1)
+        if not np.allclose(predicted_residual, 0.0, atol=1e-9):
+            raise ValueError("Predicted component ledger does not reconcile to projected_points")
+        actual_residual = df_eval["actual_points"] - df_eval[actual_columns].sum(axis=1)
+        if not np.allclose(actual_residual, 0.0, atol=1e-9):
+            raise ValueError("Actual component ledger does not reconcile to actual_points")
 
 
 def evaluate_predictions(
@@ -35,6 +78,7 @@ def evaluate_predictions(
     if df_eval.empty:
         raise ValueError("Cannot evaluate an empty prediction frame")
 
+    _validate_component_ledger(df_eval)
     errors = df_eval["projected_points"] - df_eval["actual_points"]
     correlations: list[float] = []
     undefined_rank_gameweeks = 0
@@ -60,11 +104,7 @@ def evaluate_predictions(
 
     minutes_band_metrics: dict[str, dict[str, float]] = {}
     if "actual_minutes" in df_eval.columns:
-        bands = pd.cut(
-            df_eval["actual_minutes"],
-            bins=[-0.1, 0.0, 59.999, float("inf")],
-            labels=["0", "1-59", "60+"],
-        )
+        bands = _minute_bands(df_eval["actual_minutes"])
         for band, group in df_eval.groupby(bands, observed=True):
             band_errors = group["projected_points"] - group["actual_points"]
             minutes_band_metrics[str(band)] = {
@@ -73,16 +113,30 @@ def evaluate_predictions(
                 "bias": float(band_errors.mean()),
             }
 
+    minutes_forecast_metrics: dict[str, object] = {}
+    if {"projected_minutes", "actual_minutes"}.issubset(df_eval.columns):
+        minute_errors = df_eval["projected_minutes"] - df_eval["actual_minutes"]
+        by_actual_band: dict[str, dict[str, float]] = {}
+        for band, group in df_eval.groupby(_minute_bands(df_eval["actual_minutes"]), observed=True):
+            band_errors = group["projected_minutes"] - group["actual_minutes"]
+            by_actual_band[str(band)] = {
+                "sample_count": float(len(group)),
+                "mean_projected": float(group["projected_minutes"].mean()),
+                "mean_actual": float(group["actual_minutes"].mean()),
+                "mae": float(band_errors.abs().mean()),
+                "bias": float(band_errors.mean()),
+            }
+        minutes_forecast_metrics = {
+            "mean_projected": float(df_eval["projected_minutes"].mean()),
+            "mean_actual": float(df_eval["actual_minutes"].mean()),
+            "mae": float(minute_errors.abs().mean()),
+            "bias": float(minute_errors.mean()),
+            "rmse": float(np.sqrt(np.mean(minute_errors**2))),
+            "by_actual_band": by_actual_band,
+        }
+
     component_metrics: dict[str, dict[str, float]] = {}
-    component_keys = [
-        "xp_minutes",
-        "xp_goals",
-        "xp_assists",
-        "xp_clean_sheet",
-        "xp_conceded",
-        "xp_defcon",
-        "xp_bonus",
-    ]
+    component_keys = list(_LEDGER_COMPONENTS)
     for comp in component_keys:
         act_col = f"actual_{comp}"
         if comp in df_eval.columns and act_col in df_eval.columns:
@@ -109,6 +163,7 @@ def evaluate_predictions(
         },
         "position_metrics": position_metrics,
         "minutes_band_metrics": minutes_band_metrics,
+        "minutes_forecast_metrics": minutes_forecast_metrics,
         "component_metrics": component_metrics,
     }
 

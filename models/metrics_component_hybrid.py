@@ -170,6 +170,150 @@ class MetricsComponentHybridModel(BaseModel):
             _DEFAULT_ASSIST_WEIGHTS,
         )
 
+    def _project_event_components(
+        self,
+        row: pd.Series,
+        position: str,
+        expected_minutes: float,
+        *,
+        clean_sheet_minutes: float,
+        p_sixty_mins: float,
+    ) -> dict[str, float]:
+        """Project non-minute events conditional on a participation state."""
+        pid = int(row["player_id"])
+        diff = _number(row, "difficulty", 3.0)
+        fdr_multiplier = max(0.2, (6.0 - diff) / 3.0)
+        attack_input = _optional_number(row, "attack_multiplier")
+        defence_input = _optional_number(row, "defence_multiplier")
+        attack_multiplier = fdr_multiplier if attack_input is None else attack_input
+        defence_multiplier = fdr_multiplier if defence_input is None else defence_input
+
+        xg_per90 = _number(row, "per90_xg", 0.0)
+        threat_per90 = _number(row, "per90_threat", 0.0)
+        raw_goals_per90 = _number(row, "per90_goals", 0.0)
+        if xg_per90 > 0 or threat_per90 > 0:
+            expected_goals_per90 = (
+                self.goal_weights[0] * xg_per90
+                + self.goal_weights[1] * threat_per90 / 100.0
+                + self.goal_offsets.get(pid, 0.0)
+            )
+        else:
+            expected_goals_per90 = raw_goals_per90 + self.goal_offsets.get(pid, 0.0)
+        expected_goals = max(0.0, expected_goals_per90) * expected_minutes / 90.0 * attack_multiplier
+
+        xa_per90 = _number(row, "per90_xa", 0.0)
+        creativity_per90 = _number(row, "per90_creativity", 0.0)
+        raw_assists_per90 = _number(row, "per90_assists", 0.0)
+        if xa_per90 > 0 or creativity_per90 > 0:
+            expected_assists_per90 = (
+                self.assist_weights[0] * xa_per90
+                + self.assist_weights[1] * creativity_per90 / 100.0
+                + self.assist_offsets.get(pid, 0.0)
+            )
+        else:
+            expected_assists_per90 = raw_assists_per90 + self.assist_offsets.get(pid, 0.0)
+        expected_assists = max(0.0, expected_assists_per90) * expected_minutes / 90.0 * attack_multiplier
+
+        gc_per90 = _number(row, "per90_goals_conceded", 1.2)
+        lmbda_team_90 = max(0.05, gc_per90 * defence_multiplier)
+        lmbda_player = lmbda_team_90 * expected_minutes / 90.0
+        p_sixty_mins = min(max(p_sixty_mins, 0.0), 1.0)
+        lmbda_pitch = lmbda_team_90 * max(clean_sheet_minutes, 0.0) / 90.0
+        prob_clean_sheet_on_pitch = math.exp(-lmbda_pitch)
+        prob_clean_sheet = prob_clean_sheet_on_pitch * p_sixty_mins
+
+        defcon_per90 = _number(row, "per90_defensive_contribution", 0.0)
+        lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0)
+        defcon_threshold = 10 if position == "D" else 12
+        defcon_r = 8.5 if position == "D" else 7.0
+        prob_defcon = (
+            _negbin_cdf_complement(defcon_threshold, lmbda_defcon, r=defcon_r)
+            if position != "GK"
+            else 0.0
+        )
+
+        saves_per90 = _number(row, "per90_saves", 0.0)
+        expected_saves = saves_per90 * expected_minutes / 90.0 if position == "GK" else 0.0
+        yellow_cards = _number(row, "per90_yellow_cards", 0.0) * expected_minutes / 90.0
+        red_cards = _number(row, "per90_red_cards", 0.0) * expected_minutes / 90.0
+        penalties_saved = _number(row, "per90_penalties_saved", 0.0) * expected_minutes / 90.0
+        penalties_missed = _number(row, "per90_penalties_missed", 0.0) * expected_minutes / 90.0
+        own_goals = _number(row, "per90_own_goals", 0.0) * expected_minutes / 90.0
+
+        components = {
+            "xp_goals": event_points("goals", position, expected_goals),
+            "xp_assists": event_points("assists", position, expected_assists),
+            "xp_clean_sheet": prob_clean_sheet * _CLEAN_SHEET_POINTS[position],
+            "xp_conceded": (
+                -_expected_negbin_conceded_penalty(lmbda_player, r=3.0)
+                if position in ("GK", "D")
+                else 0.0
+            ),
+            "xp_defcon": event_points("defensive_contributions", position, prob_defcon),
+            "xp_saves": _expected_poisson_floor(expected_saves, 3),
+            "xp_yellow_cards": event_points("yellow_cards", position, yellow_cards),
+            "xp_red_cards": event_points("red_cards", position, red_cards),
+            "xp_penalties_saved": event_points("penalties_saved", position, penalties_saved),
+            "xp_penalties_missed": event_points("penalties_missed", position, penalties_missed),
+            "xp_own_goals": event_points("own_goals", position, own_goals),
+            "xp_bonus": 0.0,
+            "xbps": (
+                expected_minutes * 0.1
+                + expected_goals * 24.0
+                + expected_assists * 12.0
+                + prob_clean_sheet * 12.0
+                + prob_defcon * 6.0
+                + expected_saves * 2.0
+            ),
+        }
+        components["projected_points"] = sum(
+            value
+            for key, value in components.items()
+            if key.startswith("xp_") and key != "xp_bonus"
+        )
+        components["eligible_bonus"] = float(expected_minutes >= 45.0)
+        return components
+
+    @staticmethod
+    def _allocate_bonus(
+        components: list[dict[str, object]],
+        bonus_groups: defaultdict[int, list[int]],
+    ) -> None:
+        """Allocate expected +3/+2/+1 bonus points within each fixture."""
+        for indices in bonus_groups.values():
+            xbps_values = np.array([float(components[index]["xbps"]) for index in indices])
+            logits = xbps_values / 6.0
+            logits -= logits.max()
+            exp_logits = np.exp(logits)
+            first = exp_logits / exp_logits.sum()
+            second = np.zeros(len(indices))
+            third = np.zeros(len(indices))
+
+            for i in range(len(indices)):
+                remaining = np.ones(len(indices), dtype=bool)
+                remaining[i] = False
+                if not remaining.any():
+                    continue
+                second_probs = exp_logits[remaining] / exp_logits[remaining].sum()
+                remaining_indices = np.flatnonzero(remaining)
+                for second_index, player_index in enumerate(remaining_indices):
+                    second[player_index] += first[i] * second_probs[second_index]
+                    remaining_after_second = remaining.copy()
+                    remaining_after_second[player_index] = False
+                    if not remaining_after_second.any():
+                        continue
+                    third_probs = exp_logits[remaining_after_second] / exp_logits[remaining_after_second].sum()
+                    third[remaining_after_second] += (
+                        first[i] * second_probs[second_index] * third_probs
+                    )
+
+            expected_bonus = 3.0 * first + 2.0 * second + third
+            for index, bonus in zip(indices, expected_bonus, strict=True):
+                components[index]["xp_bonus"] = float(bonus)
+                components[index]["projected_points"] = (
+                    float(components[index]["projected_points"]) + float(bonus)
+                )
+
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         components: list[dict[str, object]] = []
         bonus_groups: defaultdict[int, list[int]] = defaultdict(list)
@@ -189,180 +333,66 @@ class MetricsComponentHybridModel(BaseModel):
             availability = min(max(_number(row, "chance_of_playing", 100.0) / 100.0, 0.0), 1.0)
             average_minutes = _number(row, "avg_mins_3gw", 0.0)
             pid = int(row["player_id"])
-
-            # 2-State Starter/Sub Mixture Model & Starter Mins Shrinkage
             n_starts = _number(row, "n_starts_historical", 0.0)
             w_ind = n_starts / (n_starts + 4.0)
-            league_start_avg = 78.0
-            exp_mins_start = min(90.0, w_ind * average_minutes + (1.0 - w_ind) * league_start_avg)
-            
+            exp_mins_start = min(90.0, w_ind * average_minutes + (1.0 - w_ind) * 78.0)
             app_prob = min(1.0, max(0.0, _number(row, "appearance_probability", 1.0)))
             p_start = min(availability, average_minutes / 78.0) if average_minutes > 0 else 0.0
             p_sub = max(0.0, min(availability - p_start, app_prob))
             exp_mins_sub = 18.0
-
             raw_expected_mins = p_start * exp_mins_start + p_sub * exp_mins_sub
             expected_minutes = cap_projected_minutes(row, raw_expected_mins)
-
-            diff = _number(row, "difficulty", 3.0)
-            fdr_multiplier = max(0.2, (6.0 - diff) / 3.0)
-            attack_input = _optional_number(row, "attack_multiplier")
-            defence_input = _optional_number(row, "defence_multiplier")
-            attack_multiplier = fdr_multiplier if attack_input is None else attack_input
-            defence_multiplier = fdr_multiplier if defence_input is None else defence_input
-            pos = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
-
-            # Two-Stage Empirical Bayes Attacking Model
-            xg_per90 = _number(row, "per90_xg", 0.0)
-            threat_per90 = _number(row, "per90_threat", 0.0)
-            raw_goals_per90 = _number(row, "per90_goals", 0.0)
-            if xg_per90 > 0 or threat_per90 > 0:
-                expected_goals_per90 = (
-                    self.goal_weights[0] * xg_per90
-                    + self.goal_weights[1] * threat_per90 / 100.0
-                    + self.goal_offsets.get(pid, 0.0)
-                )
-            else:
-                expected_goals_per90 = raw_goals_per90 + self.goal_offsets.get(pid, 0.0)
-            expected_goals_per90 = max(0.0, expected_goals_per90)
-            expected_goals = expected_goals_per90 * expected_minutes / 90.0 * attack_multiplier
-
-            xa_per90 = _number(row, "per90_xa", 0.0)
-            creativity_per90 = _number(row, "per90_creativity", 0.0)
-            raw_assists_per90 = _number(row, "per90_assists", 0.0)
-            if xa_per90 > 0 or creativity_per90 > 0:
-                expected_assists_per90 = (
-                    self.assist_weights[0] * xa_per90
-                    + self.assist_weights[1] * creativity_per90 / 100.0
-                    + self.assist_offsets.get(pid, 0.0)
-                )
-            else:
-                expected_assists_per90 = raw_assists_per90 + self.assist_offsets.get(pid, 0.0)
-            expected_assists_per90 = max(0.0, expected_assists_per90)
-            expected_assists = expected_assists_per90 * expected_minutes / 90.0 * attack_multiplier
-
-            # Minutes-Aware Team Goal Exposure & Negative Binomial Defensive Model
-            gc_per90 = _number(row, "per90_goals_conceded", 1.2)
-            lmbda_team_90 = max(0.05, gc_per90 * defence_multiplier)
-            lmbda_player = lmbda_team_90 * (expected_minutes / 90.0)
-
+            position = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
             p_sixty_mins = p_start * min(1.0, max(0.0, (exp_mins_start - 45.0) / 30.0))
-            lmbda_pitch = lmbda_team_90 * (exp_mins_start / 90.0)
-            prob_clean_sheet_on_pitch = math.exp(-lmbda_pitch)
-            prob_clean_sheet = prob_clean_sheet_on_pitch * p_sixty_mins
-            xp_clean_sheet = prob_clean_sheet * _CLEAN_SHEET_POINTS[pos]
-            xp_conceded = -_expected_negbin_conceded_penalty(lmbda_player, r=3.0) if pos in ("GK", "D") else 0.0
-
-            defcon_per90 = _number(row, "per90_defensive_contribution", 0.0)
-            lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0)
-            defcon_threshold = 10 if pos == "D" else 12
-            defcon_r = 8.5 if pos == "D" else 7.0
-            prob_defcon = (
-                _negbin_cdf_complement(defcon_threshold, lmbda_defcon, r=defcon_r)
-                if pos != "GK"
-                else 0.0
+            event_components = self._project_event_components(
+                row,
+                position,
+                expected_minutes,
+                clean_sheet_minutes=exp_mins_start,
+                p_sixty_mins=p_sixty_mins,
             )
-            xp_defcon = event_points("defensive_contributions", pos, prob_defcon)
-
-            saves_per90 = _number(row, "per90_saves", 0.0)
-            expected_saves = saves_per90 * expected_minutes / 90.0 if pos == "GK" else 0.0
-            xp_saves = _expected_poisson_floor(expected_saves, 3)
-
-            yellow_per90 = _number(row, "per90_yellow_cards", 0.0)
-            red_per90 = _number(row, "per90_red_cards", 0.0)
-            xp_cards = (-yellow_per90 - 3.0 * red_per90) * expected_minutes / 90.0
-            penalties_saved = _number(row, "per90_penalties_saved", 0.0) * expected_minutes / 90.0
-            penalties_missed = _number(row, "per90_penalties_missed", 0.0) * expected_minutes / 90.0
-            own_goals = _number(row, "per90_own_goals", 0.0) * expected_minutes / 90.0
-            xp_rare = (
-                event_points("penalties_saved", pos, penalties_saved)
-                + event_points("penalties_missed", pos, penalties_missed)
-                + event_points("own_goals", pos, own_goals)
-            )
-
-            xp_minutes = (p_start + p_sub) * 1.0 + p_sixty_mins * 1.0
-            xp_attack = event_points("goals", pos, expected_goals) + event_points("assists", pos, expected_assists)
-            xp_total = xp_minutes + xp_attack + xp_clean_sheet + xp_conceded + xp_defcon + xp_saves + xp_cards + xp_rare
-
-            eligible_bonus = expected_minutes >= 45.0
-            xbps = (
-                expected_minutes * 0.1
-                + expected_goals * 24.0
-                + expected_assists * 12.0
-                + prob_clean_sheet * 12.0
-                + prob_defcon * 6.0
-                + expected_saves * 2.0
-            )
+            xp_minutes = (p_start + p_sub) + p_sixty_mins
             index = len(components)
             components.append({
                 "player_id": pid,
                 "gameweek_id": gameweek_id,
                 "fixture_id": fixture_id,
-                "projected_points": float(xp_total),
-                "projected_minutes": float(expected_minutes),
-                "xbps": float(xbps),
-                "xp_minutes": float(xp_minutes),
-                "xp_goals": float(event_points("goals", pos, expected_goals)),
-                "xp_assists": float(event_points("assists", pos, expected_assists)),
-                "xp_clean_sheet": float(xp_clean_sheet),
-                "xp_conceded": float(xp_conceded),
-                "xp_defcon": float(xp_defcon),
-                "xp_bonus": 0.0,
+                "projected_minutes": expected_minutes,
+                "xbps": event_components["xbps"],
+                "xp_minutes": xp_minutes,
+                **event_components,
+                "projected_points": xp_minutes + event_components["projected_points"],
             })
-            if eligible_bonus and fixture_id is not None and fixture_id >= 0:
+            if event_components["eligible_bonus"] and fixture_id is not None and fixture_id >= 0:
                 bonus_groups[fixture_id].append(index)
 
-        # +3, +2, +1 Full Match Bonus Tier Allocation
-        for indices in bonus_groups.values():
-            if not indices:
-                continue
-            xbps_vals = np.array([float(components[index]["xbps"]) for index in indices])
-            T = 6.0
-            logits = xbps_vals / T
-            logits -= logits.max()
-            exp_l = np.exp(logits)
-            p1 = exp_l / exp_l.sum()
-
-            n = len(indices)
-            p2 = np.zeros(n)
-            p3 = np.zeros(n)
-
-            if n > 1:
-                for i in range(n):
-                    mask_i = np.ones(n, dtype=bool)
-                    mask_i[i] = False
-                    exp_l_i = exp_l[mask_i]
-                    p_cond2 = exp_l_i / exp_l_i.sum()
-                    for idx_j, j in enumerate(np.where(mask_i)[0]):
-                        p2[j] += p1[i] * p_cond2[idx_j]
-
-                        if n > 2:
-                            mask_ij = mask_i.copy()
-                            mask_ij[j] = False
-                            exp_l_ij = exp_l[mask_ij]
-                            p_cond3 = exp_l_ij / exp_l_ij.sum()
-                            for idx_m, m in enumerate(np.where(mask_ij)[0]):
-                                p3[m] += p1[i] * p_cond2[idx_j] * p_cond3[idx_m]
-
-            exp_bonus = 3.0 * p1 + 2.0 * p2 + 1.0 * p3
-            for index, bonus in zip(indices, exp_bonus, strict=True):
-                components[index]["xp_bonus"] = float(bonus)
-                components[index]["projected_points"] += float(bonus)
-
+        self._allocate_bonus(components, bonus_groups)
         output = []
+        component_columns = (
+            "xp_minutes",
+            "xp_goals",
+            "xp_assists",
+            "xp_clean_sheet",
+            "xp_conceded",
+            "xp_defcon",
+            "xp_saves",
+            "xp_yellow_cards",
+            "xp_red_cards",
+            "xp_penalties_saved",
+            "xp_penalties_missed",
+            "xp_own_goals",
+            "xp_bonus",
+        )
         for component in components:
             prediction = {
                 "player_id": component["player_id"],
                 "gameweek_id": component["gameweek_id"],
                 "projected_points": component["projected_points"],
                 "projected_minutes": component["projected_minutes"],
-                "xp_minutes": component.get("xp_minutes", 0.0),
-                "xp_goals": component.get("xp_goals", 0.0),
-                "xp_assists": component.get("xp_assists", 0.0),
-                "xp_clean_sheet": component.get("xp_clean_sheet", 0.0),
-                "xp_conceded": component.get("xp_conceded", 0.0),
-                "xp_defcon": component.get("xp_defcon", 0.0),
-                "xp_bonus": component.get("xp_bonus", 0.0),
+                **{
+                    column: component.get(column, 0.0)
+                    for column in component_columns
+                },
             }
             if component["fixture_id"] is not None:
                 prediction["fixture_id"] = component["fixture_id"]
