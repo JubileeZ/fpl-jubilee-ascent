@@ -203,12 +203,12 @@ body {
 /* Main Grid Layout */
 .main-grid {
   display: grid;
-  grid-template-columns: 580px 1fr;
+  grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1024px) {
   .main-grid {
     grid-template-columns: 1fr;
   }
@@ -382,11 +382,13 @@ body {
 
 /* Player Cards on Pitch & Bench */
 .player-card {
-  width: 82px;
+  width: 100%;
+  max-width: 76px;
+  min-width: 60px;
   background: rgba(17, 24, 39, 0.92);
   border: 1px solid #374151;
   border-radius: 10px;
-  padding: 0.35rem;
+  padding: 0.35rem 0.2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -545,6 +547,7 @@ body {
 /* Table Section */
 .table-section {
   width: 100%;
+  min-width: 0;
 }
 
 .table-toolbar {

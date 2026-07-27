@@ -576,6 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeCompareList = Array.from(compareModels);
 
     let html = `<tr>
+      <th class="action-col">Action</th>
       <th data-sort="name">Player ↕</th>
       <th data-sort="pos">Pos ↕</th>
       <th data-sort="team">Team ↕</th>
@@ -597,7 +598,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <th data-sort="pts_per_start" class="num">Pts/Start ↕</th>
       <th data-sort="pts_per_90" class="num">Pts/90 ↕</th>
       <th data-sort="ict_per_90" class="num">ICT/90 ↕</th>
-      <th class="action-col">Action</th>
     </tr>`;
 
     thead.innerHTML = html;
@@ -660,6 +660,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const tr = document.createElement("tr");
 
       let rowHtml = `
+        <td class="action-col">
+          <button class="add-btn" ${inSquad ? "disabled" : ""} data-id="${p.id}">
+            ${inSquad ? "Added" : "+ Add"}
+          </button>
+        </td>
         <td><strong>${p.name}</strong> <span class="subtitle">(${p.full_name})</span></td>
         <td><span class="pos-tag ${p.pos}">${p.pos}</span></td>
         <td>${p.team}</td>
@@ -686,11 +691,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="num">${p.pts_per_start.toFixed(2)}</td>
         <td class="num">${p.pts_per_90.toFixed(2)}</td>
         <td class="num">${p.ict_per_90.toFixed(2)}</td>
-        <td class="action-col">
-          <button class="add-btn" ${inSquad ? "disabled" : ""} data-id="${p.id}">
-            ${inSquad ? "Added" : "+ Add"}
-          </button>
-        </td>
       `;
 
       tr.innerHTML = rowHtml;
