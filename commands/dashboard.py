@@ -21,7 +21,7 @@ from commands.export_dashboard import (
     export_dashboard_data,
 )
 from features.builder import build_features
-from models import get_model
+from models import get_default_model_name, get_model
 import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -111,7 +111,7 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export dashboard data and launch interactive web dashboard.")
-    parser.add_argument("--model", type=str, default="metrics_component_hybrid", help="Model name to run")
+    parser.add_argument("--model", type=str, default=None, help="Model name to run")
     parser.add_argument("--horizon", type=int, default=5, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")
@@ -119,8 +119,9 @@ def main() -> None:
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open web browser")
 
     args = parser.parse_args()
+    model_name = args.model or get_default_model_name()
 
-    run_dashboard_export(args.model, args.horizon, args.target_gw)
+    run_dashboard_export(model_name, args.horizon, args.target_gw)
 
     if not args.export_only:
         start_server(args.port, open_browser=not args.no_browser)

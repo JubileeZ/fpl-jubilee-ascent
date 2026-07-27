@@ -8,6 +8,7 @@ import httpx
 import logging
 
 from solver.paths import DATA_DIR
+from models import get_default_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ def load_settings():
         user_path.write_text(json.dumps({
             "horizon": 5,
             "decay_base": 0.85,
-            "datasource": "linear_baseline",
+            "datasource": get_default_model_name(),
             "team_data": "json",
             "team_id": None,
             "banned": [],

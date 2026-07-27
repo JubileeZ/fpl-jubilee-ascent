@@ -61,8 +61,12 @@ uv run python -m commands.run_model <model_name> --horizon <gws>
 ```
 *Example (default 5 gameweeks horizon):*
 ```bash
-uv run python -m commands.run_model linear_baseline --horizon 5
+uv run python -m commands.run_model participation_state_hybrid --horizon 5
 ```
+
+`participation_state_hybrid` is the operational default. `metrics_component_hybrid`
+remains available as the comparison baseline while snapshot-backed promotion
+validation continues.
 
 The component seed/current-season blend can be tuned without editing code:
 
@@ -93,7 +97,7 @@ Compute optimal squad selection and transfer plans over planning horizon using M
   ```
 - Regular season solver (optimizes active manager squad):
   ```bash
-  uv run python -m commands.solve --model linear_baseline --horizon 5
+  uv run python -m commands.solve --model participation_state_hybrid --horizon 5
   ```
   *Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
   (for example `--horizon 5 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
@@ -106,7 +110,7 @@ next gameweek, and save the full CSV report (including `Captain` and
 `Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`.
 
 ```bash
-uv run python -m commands.report --model linear_baseline --horizon 5
+uv run python -m commands.report --model participation_state_hybrid --horizon 5
 ```
 
 Record player prices after each refresh and report risers/fallers:

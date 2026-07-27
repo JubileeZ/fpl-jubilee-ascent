@@ -33,6 +33,15 @@ docs/         # Durable project documentation and decision records
 
 ---
 
+## Historical Archive Testing
+
+- `data/archive/<season>/processed/` contains historical season data for exploratory backtests, regression testing, and model comparison.
+- Example: `uv run python -m commands.backtest participation_state_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed`.
+- Archive backtests are exploratory only: terminal player, club, fixture, and availability metadata may not represent the pre-deadline information set.
+- Never edit `data/archive/` Parquet files directly; regenerate historical data through the archive/snapshot tooling.
+
+---
+
 ## File & Documentation Lifecycle
 
 - Keep durable, project-relevant documentation in `docs/`: architecture decisions in `docs/adr/`, agent operating guides in `docs/agents/`, and topic documentation in a named `docs/<topic>/` directory.

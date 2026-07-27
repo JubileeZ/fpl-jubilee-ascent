@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 from unittest.mock import patch
 from commands.solve import build_my_data_from_parquet, main, validate_booked_chips
+from solver.utils import load_settings
 
 def test_build_my_data_from_parquet(tmp_path):
     # 1. Create mock processed tables
@@ -101,3 +102,9 @@ def test_solve_cli_prints_summary(capsys):
         assert "RECOMMENDED SQUAD & TRANSFER PLAN" in captured.out
         assert "Mock recommended transfers and lineups" in captured.out
         mock_timeline.assert_called_once()
+
+
+def test_load_settings_uses_participation_state_as_default(tmp_path, monkeypatch):
+    monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
+
+    assert load_settings()["datasource"] == "participation_state_hybrid"

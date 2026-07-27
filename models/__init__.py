@@ -4,6 +4,18 @@ import inspect
 from pathlib import Path
 from models.base import BaseModel
 
+DEFAULT_MODEL_NAME = "participation_state_hybrid"
+
+
+def get_default_model_name() -> str:
+    try:
+        from models.selection import default_model_name
+
+        return default_model_name()
+    except (FileNotFoundError, ValueError, KeyError):
+        return DEFAULT_MODEL_NAME
+
+
 def get_model(model_name: str) -> BaseModel:
     """
     Auto-discovers and returns an instance of the requested model from the models/ folder.

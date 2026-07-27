@@ -37,7 +37,7 @@ Recent Session Updates:
 - **Tuning Surface**: `commands.run_model` exposes blend thresholds; `commands.solve` exposes horizon, decay, hit-cost, and validated overrides.
 - **ADR 0005 Recorded**: Updated [`docs/adr/0005-hybrid-metrics-component-projection-model.md`](../../docs/adr/0005-hybrid-metrics-component-projection-model.md) to match shipped behavior.
 - **Solio Pipeline Deprecated & Removed (ADR 0009)**: Audited and removed Solio market ingestion pipeline (`commands/fetch_solio.py`), feature merge in `features/builder.py`, and GitHub Action workflow (`.github/workflows/fetch_solio.yml`) due to top-N payload truncation and mathematical xMins inversion saturation. Retained local 2-State Empirical Bayes Mixture Model for minute estimations.
-- **Participation State Comparison Model**: Added explicit DNP/Start/Sub-in feature probabilities and state-conditional minutes in `features/builder.py`; added opt-in `participation_state_hybrid` alongside the unchanged `metrics_component_hybrid` baseline. `commands.capture_availability_snapshot` writes immutable pre-deadline packages; promotion backtests use `--require_snapshots`, and missing or tampered packages fail rather than use terminal metadata. `commands.decision_regret` evaluates legal one-Gameweek lineup advice. Historical snapshot collection and holdout validation remain pending.
+- **Participation State Model**: `participation_state_hybrid` is provisionally operational default; `metrics_component_hybrid` remains its Candidate. Archive-only results may support provisional promotion; verified snapshots support validated promotion. `commands.capture_availability_snapshot` writes immutable pre-deadline packages; `--require_snapshots` rejects missing or tampered packages for strict evaluation. Provisional status requires two four-Gameweek Live Validation Windows.
 
 
 ---
@@ -51,7 +51,7 @@ Recent Session Updates:
 | API Clients | `clients/fpl_api.py`, `clients/fpl_auth.py` | Inbound request handlers and JWT Playwright/tiered login |
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
-| Custom Models | `models/` | Linear, component, hybrid, and opt-in participation-state models |
+| Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Data compilers and solver projection exporters |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
@@ -60,7 +60,8 @@ Recent Session Updates:
 
 ## What does NOT exist yet (do not assume)
 
-- Historical Availability Snapshot collection has not run yet; historical archive results remain exploratory.
+- Historical Availability Snapshot collection has not run yet; archive-backed promotion remains provisional until two Live Validation Windows complete.
+- Committed Comparison Slate lives in `config/model_selection.json`; `commands/compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
 - Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
 - Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate.
 
@@ -74,9 +75,11 @@ uv run ruff check .                                    # Lint code
 uv run python -m commands.refresh_data                 # Ingest current gameweek data
 uv run python -m commands.run_model linear_baseline    # Generate projections
 uv run python -m commands.run_model component_baseline # Generate component projections
-uv run python -m commands.run_model participation_state_hybrid # Compare state model
+uv run python -m commands.run_model participation_state_hybrid # Operational default
+uv run python -m commands.run_model metrics_component_hybrid    # Comparison baseline
 uv run python -m commands.capture_availability_snapshot --season 2026-27
-uv run python -m commands.backtest participation_state_hybrid --gw_range <start-end> --snapshot_root data/availability-snapshots --season 2026-27 --require_snapshots
+uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed
+uv run python -m commands.evaluate_model_promotion --apply --gw_range 1-38 --data_dir data/archive/2025-26/processed
 uv run python -m commands.decision_regret --entry_id <public-entry-id>
 uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
 uv run python -m commands.report                       # Print report

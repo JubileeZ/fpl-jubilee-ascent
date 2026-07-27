@@ -15,7 +15,7 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import build_features
-from models import get_model
+from models import get_default_model_name, get_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -239,7 +239,7 @@ def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export player projections and stats for dashboard.")
-    parser.add_argument("--model", type=str, default="metrics_component_hybrid", help="Model name")
+    parser.add_argument("--model", type=str, default=None, help="Model name")
     parser.add_argument("--horizon", type=int, default=5, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument(
@@ -249,6 +249,7 @@ def main() -> None:
         help="JSON output path",
     )
     args = parser.parse_args()
+    model_name = args.model or get_default_model_name()
 
     processed_dir = PROJECT_ROOT / "data" / "processed"
     if not processed_dir.exists():
@@ -272,8 +273,8 @@ def main() -> None:
     logger.info(f"Building features starting GW {target_gw} over {args.horizon} horizon...")
     df_feat = build_features(processed_dir, target_gw, horizon=args.horizon)
 
-    logger.info(f"Generating projections using model '{args.model}'...")
-    model = get_model(args.model)
+    logger.info(f"Generating projections using model '{model_name}'...")
+    model = get_model(model_name)
     perf_path = processed_dir / "player_performances.parquet"
     if hasattr(model, "fit") and perf_path.exists():
         df_perf = pd.read_parquet(perf_path)

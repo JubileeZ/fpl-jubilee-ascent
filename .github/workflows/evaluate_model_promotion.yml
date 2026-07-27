@@ -1,0 +1,63 @@
+name: Evaluate model promotion
+
+on:
+  push:
+    paths:
+      - "models/**"
+      - "features/**"
+      - "backtesting/**"
+      - "config/model_selection.json"
+      - "commands/compare_models.py"
+      - "commands/evaluate_model_promotion.py"
+  workflow_dispatch:
+    inputs:
+      data_dir:
+        description: "Processed data directory"
+        required: true
+        default: "data/archive/2025-26/processed"
+      seed_season:
+        description: "Prior-season seed directory name"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+
+      - name: Run promotion evaluation
+        env:
+          DATA_DIR: ${{ github.event.inputs.data_dir || 'data/archive/2025-26/processed' }}
+          SEED_SEASON: ${{ github.event.inputs.seed_season || '' }}
+        run: |
+          set -euo pipefail
+          args=(--apply --gw_range 1-38 --data_dir "$DATA_DIR")
+          if [ -n "$SEED_SEASON" ]; then
+            args+=(--seed_season "$SEED_SEASON")
+          fi
+          uv run python -m commands.evaluate_model_promotion "${args[@]}"
+
+      - name: Commit promotion updates
+        shell: bash
+        run: |
+          if [ -z "$(git status --porcelain -- config/model_selection.json data/reports/promotion_evidence)" ]; then
+            echo "No promotion changes."
+            exit 0
+          fi
+          git add config/model_selection.json data/reports/promotion_evidence
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore: automatic historical model promotion"
+          git push

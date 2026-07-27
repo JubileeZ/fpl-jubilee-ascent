@@ -136,3 +136,59 @@ _Avoid_: Roster picker, drag list
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
 _Avoid_: Squad Gap (ambiguous), optimizer gap
 
+**Model Champion**:
+The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation.
+_Avoid_: Default model, production model
+
+**Model Candidate**:
+A Projection Model evaluated against the Model Champion. At most two Candidates may be tracked concurrently, making a three-model comparison including the Champion.
+_Avoid_: Experimental model, challenger
+
+**Decision-First Evaluation**:
+Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MAE when Decision Regret is unavailable, and treats xMins MAE, bias, and rank correlation as guardrails.
+_Avoid_: Prediction-only evaluation, aggregate score
+
+**Historical Promotion Gate**:
+A Candidate may replace the Model Champion only after winning the combined prior-season evaluation and at least two of its Cold-Start, early/mid-season, and late-season segments while matching or improving every Champion guardrail.
+_Avoid_: One-off backtest win, aggregate-only promotion
+
+**Incremental Promotion**:
+A Candidate that passes the Historical Promotion Gate becomes the Model Champion even for a small primary-metric improvement; the former Champion remains in the comparison slate for live validation and rollback.
+_Avoid_: Margin threshold, discard previous model
+
+**Provisional Historical Promotion**:
+An Incremental Promotion supported only by archive data without verified pre-deadline snapshots. It remains provisional until two Live Validation Windows provide current-season evidence.
+_Avoid_: Validated promotion, snapshot-backed promotion
+
+**Live Validation Window**:
+A rolling four-Gameweek comparison of the Model Champion and up to two Candidates using predictions captured from the same pre-deadline inputs.
+_Avoid_: Single-Gameweek validation, live test
+
+**Live Reassessment**:
+A Live Validation Window confirms or challenges a Champion but cannot switch it automatically. A material loss triggers user review, a new Historical Promotion Gate evaluation, or a second live window.
+_Avoid_: Automatic live promotion, weekly model switching
+
+**Meaningful Live Lead**:
+At least a 5% primary-metric advantage over a Live Validation Window while matching the Model Champion's guardrails. Smaller leads are unclear and leave the comparison slate unchanged.
+_Avoid_: Single-week win, automatic promotion threshold
+
+**Candidate Admission**:
+When the three-model comparison slate is full, a new Model Candidate enters only by passing the Historical Promotion Gate against an existing Candidate, which it replaces. The Model Champion is retained.
+_Avoid_: Unbounded experiment list, Champion replacement by admission
+
+**Automatic Historical Promotion**:
+An evaluation job triggered by Candidate code changes updates the committed Model Champion configuration and preserves its evidence report whenever a Candidate passes the Historical Promotion Gate. Routine model reports do not mutate selection state.
+_Avoid_: Manual promotion, silent report-side effect
+
+**Candidate Registration**:
+An explicit committed addition of a Model Candidate to the comparison slate. Registration enables automatic evaluation and promotion but does not itself change the Model Champion.
+_Avoid_: Model auto-discovery, implicit admission
+
+**Comparison Slate**:
+The Model Champion plus zero to two registered Model Candidates. It starts with `participation_state_hybrid` as Champion and `metrics_component_hybrid` as its sole Candidate.
+_Avoid_: All models, model pool
+
+**Promotion Evidence Record**:
+Versioned JSON and Markdown artifacts that identify evaluated models and commits, evaluation windows and snapshot coverage, primary and guardrail metrics, promotion outcome, and resulting Comparison Slate.
+_Avoid_: Backtest log, undocumented promotion
+

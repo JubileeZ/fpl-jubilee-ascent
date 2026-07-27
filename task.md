@@ -1,13 +1,13 @@
 # Active Task: Point-in-Time Participation Model Validation
 
-- **Status:** In progress — temporal leakage safeguards and snapshot capture workflow implemented; real snapshot holdout not collected.
-- **Objective:** Establish a promotion-safe backtest for `participation_state_hybrid` without terminal-metadata or delayed-performance leakage.
-- **Acceptance:** Verified pre-deadline snapshot for every holdout Gameweek; baseline comparison; xP/xMins acceptance gate; default promotion only after all gates pass.
+- **Status:** In progress — `participation_state_hybrid` provisionally promoted; live confirmation not collected.
+- **Objective:** Automate Candidate comparison and provisional promotion while preserving strict snapshot-backed validation.
+- **Acceptance:** Historical Promotion Gate for registered Candidates; committed model-selection configuration and Promotion Evidence Record; two four-Gameweek Live Validation Windows for provisional confirmation; strict snapshot mode rejects missing or tampered packages.
 
 ## Work Packet (SFDBN)
 
-- **Status:** Checkpoint ready; validation blocked on snapshot history.
-- **Files:** `features/builder.py`, `features/availability_snapshots.py`, `commands/backtest.py`, `.github/workflows/capture_availability_snapshot.yml`, regression tests.
-- **Decisions:** Require immutable snapshots for promotion mode; reject missing/tampered packages; filter model fit and features by kickoff deadline; keep `metrics_component_hybrid` as baseline.
+- **Status:** Design agreed; core implementation in progress.
+- **Files:** `config/model_selection.json`, `models/selection.py`, `backtesting/promotion.py`, `backtesting/model_evaluation.py`, `commands/compare_models.py`, `commands/evaluate_model_promotion.py`, `.github/workflows/evaluate_model_promotion.yml`, regression tests.
+- **Decisions:** Automatic Historical Promotion for explicitly registered Candidates; committed Comparison Slate and Promotion Evidence Record; archive evidence may provisionally promote; snapshots support validated promotion; live reassessment report-only.
 - **Blocked:** No historical pre-deadline snapshot packages exist; remote workflow has not been pushed or activated.
-- **Next:** Commit checkpoint, push/enable snapshot workflow, collect holdout packages, run full comparison, promote only if acceptance gate passes.
+- **Next:** Push workflow, collect two Live Validation Windows, add live reassessment reporting.
