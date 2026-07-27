@@ -126,8 +126,11 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
     def handler(*args, **kwargs):
         return DashboardHTTPRequestHandler(*args, directory=str(dashboard_dir), **kwargs)
 
+    class ReusableTCPServer(socketserver.TCPServer):
+        allow_reuse_address = True
+
     try:
-        with socketserver.TCPServer(("", port), handler) as httpd:
+        with ReusableTCPServer(("", port), handler) as httpd:
             url = f"http://localhost:{port}"
             logger.info(f"Dashboard web server running at {url}")
             logger.info("Press Ctrl+C to stop the server.")
@@ -140,6 +143,7 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
         logger.info("\nServer stopped.")
     except Exception as e:
         logger.error(f"Failed to start server on port {port}: {e}")
+
 
 
 def main() -> None:
