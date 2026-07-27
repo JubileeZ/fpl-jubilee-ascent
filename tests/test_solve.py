@@ -93,7 +93,6 @@ def test_solve_cli_prints_summary(capsys):
     with patch("commands.solve.load_settings", return_value=mock_settings), \
          patch("commands.solve.prep_data", return_value={}), \
          patch("commands.solve.solve_multi_period_fpl", return_value=mock_solutions), \
-         patch("commands.solve.create_squad_timeline") as mock_timeline, \
          patch("sys.argv", ["commands.solve", "--preseason"]):
          
         main()
@@ -101,7 +100,7 @@ def test_solve_cli_prints_summary(capsys):
         captured = capsys.readouterr()
         assert "RECOMMENDED SQUAD & TRANSFER PLAN" in captured.out
         assert "Mock recommended transfers and lineups" in captured.out
-        mock_timeline.assert_called_once()
+
 
 
 def test_load_settings_uses_participation_state_as_default(tmp_path, monkeypatch):

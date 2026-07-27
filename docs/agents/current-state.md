@@ -38,6 +38,8 @@ Recent Session Updates:
 - **ADR 0005 Recorded**: Updated [`docs/adr/0005-hybrid-metrics-component-projection-model.md`](../../docs/adr/0005-hybrid-metrics-component-projection-model.md) to match shipped behavior.
 - **Solio Pipeline Deprecated & Removed (ADR 0009)**: Audited and removed Solio market ingestion pipeline (`commands/fetch_solio.py`), feature merge in `features/builder.py`, and GitHub Action workflow (`.github/workflows/fetch_solio.yml`) due to top-N payload truncation and mathematical xMins inversion saturation. Retained local 2-State Empirical Bayes Mixture Model for minute estimations.
 - **Participation State Model**: `participation_state_hybrid` is provisionally operational default; `metrics_component_hybrid` remains its Candidate. Archive-only results may support provisional promotion; verified snapshots support validated promotion. `commands.capture_availability_snapshot` writes immutable pre-deadline packages; `--require_snapshots` rejects missing or tampered packages for strict evaluation. Provisional status requires two four-Gameweek Live Validation Windows.
+- **Image Generation Removal**: Removed PNG squad timeline visualization logic (`solver/visualization.py`, `commands/solve.py`) and deleted `data/images/` directory. Retained `matplotlib` in `pyproject.toml`.
+
 
 
 ---

@@ -13,7 +13,6 @@ configure_utf8_stdio()
 
 from solver.utils import load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
-from solver.visualization import create_squad_timeline
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -330,25 +329,6 @@ def main() -> None:
             logger.info(f"Saved solver solution to {sol_path}")
         except Exception as e:
             logger.warning(f"Could not save solver solution: {e}")
-            
-        if "picks" in best_sol and "statistics" in best_sol:
-            try:
-                model_name = options.get("datasource", "model")
-                filename_base = f"squad_timeline_{model_name}"
-                expected_filepath = PROJECT_ROOT / "data" / "images" / f"{filename_base}.png"
-                
-                initial_squad = [] if options.get("preseason") else [p["element"] for p in my_data.get("picks", [])]
-                
-                logger.info("Generating visual squad timeline plot...")
-                create_squad_timeline(
-                    current_squad=initial_squad,
-                    statistics=best_sol["statistics"],
-                    picks=best_sol["picks"],
-                    filename=filename_base
-                )
-                logger.info(f"Visual squad timeline saved to {expected_filepath}")
-            except Exception as e:
-                logger.error(f"Failed to generate squad timeline plot: {e}")
 
 if __name__ == "__main__":
     main()
