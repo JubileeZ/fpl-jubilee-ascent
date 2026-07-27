@@ -144,6 +144,14 @@ _Avoid_: Default model, production model
 A Projection Model evaluated against the Model Champion. At most two Candidates may be tracked concurrently, making a three-model comparison including the Champion.
 _Avoid_: Experimental model, challenger
 
+**Primary Projection Model**:
+The active model selected in the interactive dashboard to drive pitch xP summaries, bench totals, squad validation, and MILP squad selection. Defaults to the Model Champion.
+_Avoid_: Active UI model, pitch model
+
+**Secondary Comparison Model**:
+A model selected alongside the Primary Projection Model in the interactive dashboard to render overlay side-by-side comparison columns and xP delta metrics.
+_Avoid_: Compare model, overlay model
+
 **Decision-First Evaluation**:
 Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MAE when Decision Regret is unavailable, and treats xMins MAE, bias, and rank correlation as guardrails.
 _Avoid_: Prediction-only evaluation, aggregate score

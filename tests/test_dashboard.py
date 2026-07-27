@@ -117,10 +117,57 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert haaland["pts_per_90"] == 10.0     # (200 / 1800) * 90
     assert "projections" in haaland
     assert "gw1" in haaland["projections"]
+    assert "models" in haaland
     gw1 = haaland["projections"]["gw1"]
     assert gw1["xg_pts"] == 4.0  # 1.0 * 4
     assert gw1["xa_pts"] == 1.5  # 0.5 * 3
     assert gw1["total_xp"] == 7.5
+
+
+def test_build_dashboard_dataset_multi_model(tmp_path: Path):
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+
+    players_df = pd.DataFrame([{
+        "id": 1, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+        "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+        "status": "a", "chance_of_playing_next_round": 100, "news": "",
+        "total_points": 100, "minutes": 900, "starts": 10, "ict_index": "100.0",
+        "influence": "50.0", "creativity": "25.0", "threat": "50.0",
+        "expected_goals": "8.0", "expected_assists": "2.0",
+    }])
+    players_df.to_parquet(processed_dir / "players.parquet")
+    clubs_df = pd.DataFrame([{"id": 1, "name": "Manchester City", "short_name": "MCI"}])
+    clubs_df.to_parquet(processed_dir / "clubs.parquet")
+    gameweeks_df = pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}])
+    gameweeks_df.to_parquet(processed_dir / "gameweeks.parquet")
+
+    pred_m1 = pd.DataFrame([{
+        "player_id": 1, "gameweek_id": 1, "projected_points": 7.5, "projected_minutes": 90.0,
+        "xp_goals": 1.0, "xp_assists": 0.5, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 1.0,
+    }])
+    pred_m2 = pd.DataFrame([{
+        "player_id": 1, "gameweek_id": 1, "projected_points": 5.0, "projected_minutes": 80.0,
+        "xp_goals": 0.5, "xp_assists": 0.2, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.5,
+    }])
+
+    dataset = build_dashboard_dataset(
+        processed_dir=processed_dir,
+        predictions_df={"model_a": pred_m1, "model_b": pred_m2},
+        target_gw=1,
+        horizon=1,
+        default_model_name="model_a",
+    )
+
+    assert dataset["meta"]["models"] == ["model_a", "model_b"]
+    assert dataset["meta"]["default_model"] == "model_a"
+
+    haaland = dataset["players"][0]
+    assert "models" in haaland
+    assert "model_a" in haaland["models"]
+    assert "model_b" in haaland["models"]
+    assert haaland["models"]["model_a"]["total_xp_horizon"] == 7.5
+    assert haaland["models"]["model_b"]["total_xp_horizon"] == 5.0
 
 
 def test_export_dashboard_data_writes_json(tmp_path: Path):
@@ -132,3 +179,4 @@ def test_export_dashboard_data_writes_json(tmp_path: Path):
     with open(output_path, "r", encoding="utf-8") as f:
         loaded = json.load(f)
     assert loaded["meta"]["target_gw"] == 1
+

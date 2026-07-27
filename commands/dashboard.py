@@ -37,11 +37,29 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=directory, **kwargs)
 
 
-def run_dashboard_export(model_name: str, horizon: int, target_gw: int | None = None) -> Path:
+def run_dashboard_export(
+    model_name: str | None = None,
+    horizon: int = 5,
+    target_gw: int | None = None,
+    model_names: list[str] | None = None,
+) -> Path:
     processed_dir = PROJECT_ROOT / "data" / "processed"
     if not processed_dir.exists():
         logger.error("No processed data found. Run 'python -m commands.refresh_data' first.")
         sys.exit(1)
+
+    if model_names is None:
+        if model_name:
+            model_names = [model_name]
+        else:
+            try:
+                from models.selection import load_model_selection
+                sel = load_model_selection()
+                model_names = list(dict.fromkeys([sel.champion, *sel.candidates]))
+            except Exception:
+                model_names = [get_default_model_name()]
+
+    default_model = model_name or model_names[0]
 
     if target_gw is None:
         try:
@@ -58,17 +76,26 @@ def run_dashboard_export(model_name: str, horizon: int, target_gw: int | None = 
     logger.info(f"Generating projections starting GW {target_gw} over {horizon} GW horizon...")
     df_feat = build_features(processed_dir, target_gw, horizon=horizon)
 
-    logger.info(f"Loading model '{model_name}'...")
-    model = get_model(model_name)
+    model_preds: dict[str, pd.DataFrame] = {}
     perf_path = processed_dir / "player_performances.parquet"
-    if hasattr(model, "fit") and perf_path.exists():
-        df_perf = pd.read_parquet(perf_path)
-        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
 
-    df_proj = model.predict(df_feat, horizon)
+    for m_name in model_names:
+        logger.info(f"Loading model '{m_name}'...")
+        model = get_model(m_name)
+        if hasattr(model, "fit") and df_perf is not None:
+            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+        model_preds[m_name] = model.predict(df_feat, horizon)
 
     sol_path = PROJECT_ROOT / "data" / "solution.json"
-    dataset = build_dashboard_dataset(processed_dir, df_proj, target_gw, horizon, sol_path)
+    dataset = build_dashboard_dataset(
+        processed_dir,
+        model_preds,
+        target_gw,
+        horizon,
+        sol_path,
+        default_model_name=default_model,
+    )
 
     dashboard_dir = PROJECT_ROOT / "dashboard"
     dashboard_dir.mkdir(parents=True, exist_ok=True)
@@ -111,7 +138,8 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export dashboard data and launch interactive web dashboard.")
-    parser.add_argument("--model", type=str, default=None, help="Model name to run")
+    parser.add_argument("--model", type=str, default=None, help="Primary model name")
+    parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
     parser.add_argument("--horizon", type=int, default=5, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")
@@ -119,12 +147,17 @@ def main() -> None:
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open web browser")
 
     args = parser.parse_args()
-    model_name = args.model or get_default_model_name()
 
-    run_dashboard_export(model_name, args.horizon, args.target_gw)
+    run_dashboard_export(
+        model_name=args.model,
+        horizon=args.horizon,
+        target_gw=args.target_gw,
+        model_names=args.models,
+    )
 
     if not args.export_only:
         start_server(args.port, open_browser=not args.no_browser)
+
 
 
 

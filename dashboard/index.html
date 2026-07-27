@@ -23,7 +23,19 @@
 
       <div class="header-controls">
         <div class="control-group">
-          <label for="gwSelect">View Gameweek / Horizon:</label>
+          <label for="primaryModelSelect">Primary Model:</label>
+          <select id="primaryModelSelect" class="select-input">
+            <option value="default">Champion Model</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Compare Models:</label>
+          <div id="compareModelsContainer" class="compare-checkbox-group"></div>
+        </div>
+
+        <div class="control-group">
+          <label for="gwSelect">View Horizon:</label>
           <select id="gwSelect" class="select-input">
             <option value="horizon">Full Horizon Total (5 GWs)</option>
           </select>
@@ -40,6 +52,7 @@
         </div>
       </div>
     </header>
+
 
     <!-- Main Content Grid -->
     <main class="main-grid">
