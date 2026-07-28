@@ -412,6 +412,7 @@ Use this file as a hard filter:
 | Mid enablers ≤ £6.5m | N+R MID; prefer High/Medium clarity clubs |
 | Forward ladder | N FWDs + Wright/McBurnie; R 9-battles as watchlist |
 | Premium attack | N only: Haaland, B.Fernandes, Saka, Palmer, Semenyo, Gibbs-White, João Pedro, Watkins, Thiago, Szoboszlai |
+| Early WC GW1–3 bridge | N+R only; Layer A keep-core vs Layer B fixture sells — see [`20260728-early-wildcard-gw1-3-bridge.md`](20260728-early-wildcard-gw1-3-bridge.md) |
 
 ---
 

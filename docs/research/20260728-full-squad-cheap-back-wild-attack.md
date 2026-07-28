@@ -255,7 +255,7 @@ Back £31.5 + MID £38.5 + FWD £30.0 = **£100.0**.
 | --- | --- |
 | Mbeumo £8.0 → Palmer £9.5 | Need −£1.5 elsewhere |
 | Path | Leno → Steele (−0.5) + Ndiaye → Xhaka already… or Wright → £4.5 bench FWD if available + further −£0.5 DEF (Cash→Hume 0 won’t work) |
-| Cleaner | Wildcard GW4–8 once ITB/price rises allow Palmer |
+| Cleaner | Wildcard GW4–5 (early-WC plan) once ITB/price rises allow Palmer — see [`20260728-early-wildcard-gw1-3-bridge.md`](20260728-early-wildcard-gw1-3-bridge.md) |
 
 ### Semenyo variant
 
