@@ -67,10 +67,17 @@ async def async_login() -> str:
 
         async def purge_onetrust():
             try:
+                accept_btn = page.locator('#onetrust-accept-btn-handler, button:has-text("Accept All Cookies")').first
+                if await accept_btn.is_visible():
+                    await accept_btn.click(force=True)
+                    await page.wait_for_timeout(500)
+            except Exception:
+                pass
+            try:
                 await page.evaluate("""() => {
-                    const ids = ['onetrust-consent-sdk', 'onetrust-banner-sdk'];
+                    const ids = ['onetrust-consent-sdk', 'onetrust-banner-sdk', 'onetrust-policy-text'];
                     ids.forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
-                    document.querySelectorAll('.onetrust-pc-dark-filter').forEach(el => el.remove());
+                    document.querySelectorAll('.onetrust-pc-dark-filter, .onetrust-banner-options').forEach(el => el.remove());
                 }""")
             except Exception:
                 pass
@@ -91,16 +98,25 @@ async def async_login() -> str:
         await page.wait_for_timeout(1000)
         await purge_onetrust()
 
+        # Ensure 'Sign In' tab is active
+        try:
+            signin_tab = page.locator('button:has-text("Sign In"), div:has-text("Sign In")').first
+            if await signin_tab.is_visible():
+                await signin_tab.click(force=True)
+                await page.wait_for_timeout(500)
+        except Exception:
+            pass
+
         # Fill credentials
         logger.info("Filling credentials...")
         await page.locator("#username").wait_for(state="visible", timeout=10000)
         await page.locator("#username").fill(email)
         await page.locator("#password").fill(password)
+        await page.wait_for_timeout(500)
 
-        # Submit form with force=True to prevent OneTrust overlay interception
-        logger.info("Submitting login form...")
-        signon_btn = page.locator('button[data-skbuttonvalue="SIGNON"], #btnSignIn').first
-        await signon_btn.click(force=True)
+        # Submit form via Enter key on password input
+        logger.info("Submitting login form via Enter key...")
+        await page.locator("#password").press("Enter")
 
         await page.wait_for_timeout(2000)
         # Check for credential errors on page
@@ -119,6 +135,16 @@ async def async_login() -> str:
         # Trigger API call by navigating to /transfers
         logger.info("Navigating to /transfers to trigger authenticated API call...")
         await page.goto("https://fantasy.premierleague.com/transfers", wait_until="domcontentloaded")
+        await page.wait_for_timeout(1000)
+        await purge_onetrust()
+
+        # Click accept or dismiss on any post-login overlays/modals if present
+        try:
+            accept_btn = page.locator('button:has-text("Accept"), button:has-text("I agree"), button:has-text("Continue")').first
+            if await accept_btn.is_visible():
+                await accept_btn.click(force=True)
+        except Exception:
+            pass
 
         for _ in range(15):
             if found_auth:
