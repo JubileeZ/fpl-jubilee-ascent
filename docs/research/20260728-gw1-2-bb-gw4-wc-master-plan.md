@@ -1,41 +1,43 @@
 # FPL 2026/27 Strategy Master Plan: GW1–2 Bench Boost → GW4 Wildcard
 
 **Date**: 2026-07-28  
+**Status**: Superseded for squad picks — current best call is [`20260728-bb-then-wc-best-plan.md`](20260728-bb-then-wc-best-plan.md). This file keeps the FDR matrix and earlier draft XVs.  
 **Strategy**: Pre-season unlimited transfers → GW1 or GW2 Bench Boost → GW4 Wildcard Rebuild  
-**Inputs**: [`my_team_822158.json`](../../data/raw/my_team_822158.json) · [`20260728-early-wildcard-gw1-3-bridge.md`](20260728-early-wildcard-gw1-3-bridge.md) · [`20260728-full-squad-cheap-back-wild-attack.md`](20260728-full-squad-cheap-back-wild-attack.md) · [`20260728-gkp-def-budget-ratings.md`](20260728-gkp-def-budget-ratings.md) · [`20260728-pl-nailed-regular-starters.md`](20260728-pl-nailed-regular-starters.md)  
+**Inputs**: [`20260728-early-wildcard-gw1-3-bridge.md`](20260728-early-wildcard-gw1-3-bridge.md) · [`20260728-full-squad-cheap-back-wild-attack.md`](20260728-full-squad-cheap-back-wild-attack.md) · [`20260728-gkp-def-budget-ratings.md`](20260728-gkp-def-budget-ratings.md) · [`20260728-pl-nailed-regular-starters.md`](20260728-pl-nailed-regular-starters.md)  
 **Constraints**: £100.0m budget · ≤3 players per club · 15 active starters  
 
 ---
 
-## Original User Intent & Rationale (Prompt-Ready Context)
+## User Intent & Rationale (for future agents)
 
-```yaml
-role: FPL Strategy & Selection Agent
-objective: Evaluate original squad (my_team_822158.json) against GW1–3 bridge strategy, run GW1–2 Bench Boost, and execute GW4 Wildcard rebuild.
-horizon: GW1–3 Sprint → GW4 Wildcard Reset
-constraints:
-  budget: £100.0m
-  club_limit: ≤3 per team
-  squad_size: 15 active 90-min starters (for Bench Boost)
+**Goal:** Strongest opener under a fixed chip path, then a clean Wildcard rebuild. Re-analyse when prices, roles, fitness, or fixtures move — player names below are leans, not locks.
 
-core_thesis:
-  1_unlimited_pre_gw1:
-    - Use pre-season free reset to build 15 active starters.
-    - Maximize Bench Boost (BB) payload in GW1 or GW2.
-  2_gw1_3_fixture_sprint:
-    - Focus starting XI strictly on GW1–3 fixture FDR (Liverpool 2.50, Man Utd GW1–3 sprint, Man City soft homes).
-    - Treat short-term fixture picks (Maguire, Mbeumo, Wilson) as planned Layer B sells for GW4.
-  3_mandatory_price_locks:
-    - Hold high-ownership template risers (Haaland, Palmer, Isak, Szoboszlai, João Pedro) from GW1.
-    - Protect team value against early price rises before Wildcard.
-  4_gw4_wildcard_rebuild:
-    - GW4 is designated Wildcard week (Man Utd face Man City in GW4).
-    - Flush Layer B bridge assets; rebuild for long-term season structure (GW4–10+).
+### Chip path
 
-chip_flexibility:
-  bench_boost: GW1 (immediate 15-starter payload) OR GW2 (confirm GW1 XIs; target MUN vs IPS & LIV vs NFO)
-  wildcard: GW4 TARGETED (flush bridge assets before MUN vs MCI derby; optional slip to GW5 if extra data required)
-```
+1. **Pre-GW1 unlimited** — build 15 players expected to start (Bench Boost legal).  
+2. **Bench Boost GW1 or GW2** — GW2 preferred (confirm XIs; United vs Ipswich H; Liverpool vs Forest H); GW1 if any BB seat looks shaky.  
+3. **Wildcard ~GW4** — flush fixture rentals when United face City; slip to GW5 only for one extra data point.  
+4. **Save** Free Hit and Triple Captain for later (promoted-home premiums / blanks / DGWs).
+
+### Why
+
+Unlimited + early WC1 ≈ two free rebuilds before mid-season. BB spends the only week you can freely build a full playing 15. Early WC fixes minutes/role mistakes once three GWs of data exist, and exits United’s soft open before the City derby. Owning likely keepers/risers from GW1 beats banking large ITB — sell price only captures half of rises.
+
+### Stable rules (redo against these)
+
+| Rule | Detail |
+| --- | --- |
+| Keep core first | Assets wanted post-WC *and* early price insurance. Current lean: Haaland, Bruno, Szoboszlai, Isak, cheap N DEFs, dual locked GKs |
+| Fixture rentals second | 3–4 GW1–3 FDR seats (e.g. Mbeumo, Leeds mid/fwd). Planned WC sells |
+| BB floor last | Nailed £4.0–5.5 only — no cover GK, no R-tier CB battles (avoid Maguire-type seats for BB) |
+| Liverpool | Prefer double (Szobo + Isak); triple only if Wirtz XI is locked |
+| Opener premium | Bruno over Palmer unless user wants Chelsea stack; Palmer fine as WC target |
+| Naming | Keep core / Fixture rentals / BB floor (or synonyms). Labels are flexible |
+
+### Constraints & redo checklist
+
+£100.0m · ≤3/club · 2–5–5–3 · N/R outfield only.  
+Refresh FDR + nailed list → rebuild buckets to £100m → re-pick BB/WC weeks from live pressers → write a new dated note. Full agent brief: see Intent section in [`20260728-bb-then-wc-best-plan.md`](20260728-bb-then-wc-best-plan.md).
 
 ---
 
