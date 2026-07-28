@@ -38,12 +38,11 @@ async def async_login() -> str:
     password = os.getenv("FPL_PASSWORD")
 
     if not email or not password:
-        raise ValueError("FPL_EMAIL and FPL_PASSWORD environment variables must be set.")
+        raise ValueError("FPL_EMAIL and FPL_PASSWORD environment variables must be set in .env.")
 
-    headless_env = os.getenv("FPL_HEADLESS", "true").lower() in ("true", "1", "yes")
-    logger.info(f"Initializing browser login (headless={headless_env})...")
+    logger.info("Initializing Playwright browser login (headless=True)...")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=headless_env)
+        browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             viewport={"width": 1280, "height": 720}
@@ -161,20 +160,8 @@ async def async_login() -> str:
 
 
 async def get_jwt_token(force_refresh: bool = False) -> str:
-    """Get a valid FPL session token, retrieving from environment variable, local cache, or Playwright login."""
-    # 1. Tier 1: Check FPL_TOKEN env var
-    env_token = os.getenv("FPL_TOKEN")
-    if env_token:
-        # Strip Bearer if passed in with prefix
-        if env_token.lower().startswith("bearer "):
-            env_token = env_token[7:].strip()
-        if not is_jwt_expired(env_token):
-            logger.info("Using valid FPL_TOKEN from environment.")
-            return env_token
-        else:
-            logger.warning("FPL_TOKEN from environment is expired.")
-
-    # 2. Tier 2: Check cached token
+    """Get a valid FPL session token, retrieving from local cache or Playwright login via FPL_EMAIL/FPL_PASSWORD."""
+    # 1. Check cached token first
     if not force_refresh and TOKEN_CACHE_PATH.exists():
         try:
             with open(TOKEN_CACHE_PATH, "r") as f:
@@ -186,14 +173,13 @@ async def get_jwt_token(force_refresh: bool = False) -> str:
         except Exception as e:
             logger.warning(f"Failed to read cached token: {e}")
 
-    # 3. Tier 3: Playwright Login via Email/Password
+    # 2. Playwright Login via Email/Password
     email = os.getenv("FPL_EMAIL")
     password = os.getenv("FPL_PASSWORD")
 
     if not email or not password:
         raise ValueError(
-            "FPL authentication missing. Please provide FPL_TOKEN (bearer token) OR "
-            "both FPL_EMAIL and FPL_PASSWORD in environment variables."
+            "FPL authentication missing. Please provide FPL_EMAIL and FPL_PASSWORD in environment variables (.env)."
         )
 
     # Fetch new token via Playwright login

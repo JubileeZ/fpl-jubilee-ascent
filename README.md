@@ -20,9 +20,8 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
    uv run playwright install chromium
    ```
 4. Setup environment variables. Copy `.env.example` to `.env` and fill:
-   - `FPL_EMAIL`: FPL account email (optional, for manager squad data)
-   - `FPL_PASSWORD`: FPL account password (optional)
-   - `FPL_TOKEN`: FPL API token (optional, see [Manual Token Extraction](#manual-fpl-token-extraction) below)
+   - `FPL_EMAIL`: FPL account email (required for authenticated manager squad data)
+   - `FPL_PASSWORD`: FPL account password (required for authenticated manager squad data)
 
 The complete locked dependency set is defined in [pyproject.toml](pyproject.toml)
 and [uv.lock](uv.lock).
@@ -242,17 +241,4 @@ Run tests and checks before committing changes.
   bash tests/verify.sh
   ```
 
-## Manual FPL Token Extraction
 
-Playwright browser automation can be blocked by bot detection. To bypass, extract the JWT token manually:
-
-1. Log in to [fantasy.premierleague.com](https://fantasy.premierleague.com) in your browser.
-2. Open browser DevTools (F12) → **Network** tab.
-3. Navigate to any authenticated page (e.g. Transfers, My Team).
-4. Find a request to `fantasy.premierleague.com/api/` (e.g. `/api/me/`).
-5. In the request headers, copy the value of `x-api-authorization`.
-6. Paste into `.env`:
-   ```
-   FPL_TOKEN=<copied JWT value>
-   ```
-7. Run commands normally — token will be used instead of Playwright login.

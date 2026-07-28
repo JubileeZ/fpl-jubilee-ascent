@@ -97,7 +97,7 @@ docs/         # Durable project documentation and decision records
 - Doc edits telegraphic: no articles, no filler, concise fragments.
 - ponytail: Python 3.14 and uv pre-approved stack requirements.
 - ponytail: Prefer single line expressions when possible; avoid unnecessary abstractions.
-- Authenticated squad ingestion: Never ask user for manager ID or manual squad list in chat. Read `.env` credentials (`FPL_EMAIL`/`FPL_PASSWORD` or `FPL_TOKEN`) via `uv run python -m commands.refresh_data` to execute Playwright/JWT login, cache `data/session_token.json`, and populate `data/processed/user_picks.parquet`. If auth fails, report missing `.env` credentials.
+- Authenticated squad ingestion: Never ask user for manager ID or manual squad list in chat. Read `.env` credentials (`FPL_EMAIL` and `FPL_PASSWORD`) via `uv run python -m commands.refresh_data` to execute Playwright login via password Enter key, cache `data/session_token.json`, and populate `data/processed/user_picks.parquet`. If auth fails, report missing `.env` credentials.
 
 ---
 
