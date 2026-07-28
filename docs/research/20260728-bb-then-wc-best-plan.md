@@ -1,10 +1,10 @@
 # FPL 2026/27 Best Plan — Bench Boost Early → Wildcard Rebuild
 
-**Date**: 2026-07-28  
-**Status**: Independent redo of [`20260728-gw1-2-bb-gw4-wc-master-plan.md`](20260728-gw1-2-bb-gw4-wc-master-plan.md)  
+**Date**: 2026-07-28 (v2 — user DEF thesis + Ballard/Wirtz)  
 **Horizon**: Pre-season unlimited → BB (GW1 or GW2) → WC (~GW4)  
 **Constraint**: £100.0m · ≤3/club · **15 players who start** on BB week  
-**Inputs**: Nailed-starters · cheap-back ratings · Draft C family · PL Scout FDR · public fixture/chip notes  
+**Inputs**: [`20260728-pl-nailed-regular-starters.md`](20260728-pl-nailed-regular-starters.md) · [`20260728-gkp-def-budget-ratings.md`](20260728-gkp-def-budget-ratings.md) · live bootstrap · PL Scout FDR  
+**Note**: `data/raw/my_team_*.json` not present this session — user original XV reconstructed from prior master-plan draft + stated preferences below.
 
 ---
 
@@ -12,281 +12,202 @@
 
 | Decision | Call |
 | --- | --- |
-| Strategy valid? | **Yes** — unlimited GW1 + early WC1 ≈ two free rebuilds; BB uses the only week you can freely build 15 starters |
-| Best BB week | **GW2 preferred** (confirm XIs; Bruno vs IPS H; LIV vs NFO H) · **GW1 fallback** if any BB seat looks shaky |
-| Best WC week | **GW4** (United face City; bridge assets expire) · slip to **GW5** only for one extra data point |
-| Primary spine | **Haaland + Bruno + Szoboszlai + Isak** — not Palmer-first |
-| Reject from prior master | Maguire as BB DEF · dual Spurs-path GK framing · Palmer+João Pedro without Bruno |
-
-Core idea unchanged: **keep the assets you want after WC**, **rent fixtures for 3 weeks**, **cash the chip window before Man derby kills the United sprint**.
+| Chip path | Still good: unlimited → BB GW1/2 → WC ~GW4 |
+| Preferred spine | **Haaland + Bruno + Szoboszlai + Isak** |
+| User Kinsky pick | **Accept** — solid CS differential vs Leno |
+| User Ballard pick | **Playable** as DEFcon/threat CB — minutes are the risk (R / 24 starts) |
+| User Maguire pick | **OK as GW1–3 rental only** if XI-confirmed — not a keep-core |
+| User Wirtz pick | **Only if friendlies lock XI** — else skip; treat as rental if owned |
+| Mitchell / Kayode pushback | Mitchell is stronger than the “CS-only WB” read; Kayode’s limited attack read is fairer |
+| Anderson-type mids | **Avoid** — DEFcon haul last season will not travel to City possession football |
 
 ---
 
 ## User Intent & Rationale (for future agents)
 
-**Goal:** Build the strongest GW1 squad under a fixed chip sequence, then rebuild once early data arrives. Re-run this analysis whenever prices, nailed roles, fitness, or fixtures change — do not treat any named XV as frozen.
+**Goal:** Strongest GW1 squad under a fixed chip path, then Wildcard rebuild. Re-analyse when prices, roles, fitness, or fixtures move.
 
-### What the user wants
+### Chip path
 
-Use the pre-season **unlimited transfers** to assemble a Bench Boost–ready 15 (every player expected to start). Play **Bench Boost in GW1 or GW2**. Play **Wildcard around GW4** (GW5 only if one more confirmation is needed). Do not burn Free Hit or Triple Captain in this window.
+1. Pre-GW1 unlimited → 15 expected starters.  
+2. Bench Boost GW1 or GW2 (GW2 preferred: Bruno vs IPS H, LIV vs NFO H).  
+3. Wildcard ~GW4 (United vs City ends United sprint); GW5 only for one extra confirmation.  
+4. Save FH / TC for later.
 
-### Why this sequence
+### User selection biases (respect unless data kills them)
 
-| Step | Reason |
-| --- | --- |
-| Unlimited → 15 starters | Only clean chance to BB without wasting free transfers on bench upgrades |
-| BB GW1 or GW2 | Official first-half BB pattern; GW2 preferred for XI confirmation + Bruno vs Ipswich H + Liverpool vs Forest H |
-| WC ~GW4 | Three GWs of minutes/pens/injury data; United’s soft open ends vs City — natural exit for fixture rentals |
-| Hold template keepers | FPL sell price ≈ buy + floor(rises/2); missing early risers you still want post-WC is the classic early-WC failure |
-
-### Strategy rules (stable; names of players are not)
-
-1. **Keep core first** — own players you expect after the Wildcard *and* that are likely early price risers. Current spine lean: Haaland, Bruno, Szoboszlai, Isak, cheap nailed DEFs, locked dual GKs.  
-2. **Fixture rentals second** — 3–4 slots maxed on GW1–3 FDR (United attack second, Leeds mid/fwd, optional soft mids). Planned sells at WC — not panic sells.  
-3. **BB floor last** — £4.0–5.5 nailed starters only (no cover GK, no R-tier CB battle seats).  
-4. **Liverpool: double not triple** unless friendlies lock Wirtz as a clear XI. Prefer Szoboszlai + Isak.  
-5. **Bruno over Palmer for the opener** unless the user explicitly wants Chelsea dual ownership; Palmer/Saka are fine WC targets if unowned.  
-6. **Buckets over labels** — call them Keep core / Fixture rentals / BB floor (or equivalent). Old “price-lock / Layer B / enabler” names are optional synonyms.
-
-### Constraints
-
-£100.0m · ≤3 per club · 2–5–5–3 · outfield **N or R only** from nailed-starters research · BB week = 15 expected starters.
-
-### How to redo this analysis
-
-1. Refresh FDR GW1–5 and nailed N/R list.  
-2. Re-check Isak / Wirtz / João Pedro / Palmer minutes and any WC-rest flags.  
-3. Rebuild Keep core → rentals → BB floor to £100.0m.  
-4. Re-pick BB week (GW1 vs GW2) and WC week (GW4 vs GW5) from live pressers — not from this doc’s dates alone.  
-5. Write a new dated research note; leave this file as the prior best call.
-
-**Inputs to re-read:** [`20260728-pl-nailed-regular-starters.md`](20260728-pl-nailed-regular-starters.md) · [`20260728-gkp-def-budget-ratings.md`](20260728-gkp-def-budget-ratings.md) · [`20260728-full-squad-cheap-back-wild-attack.md`](20260728-full-squad-cheap-back-wild-attack.md) · [`20260728-early-wildcard-gw1-3-bridge.md`](20260728-early-wildcard-gw1-3-bridge.md) · live FPL bootstrap / Scout FDR.
-
----
-
-## Why this chip sequence works (and its cost)
-
-### Official chip frame (2026/27)
-
-- Two full chip sets (WC / FH / BB / TC each half); first set expires end of GW19.  
-- **Only one chip per GW.**  
-- PL guidance: first-half **BB is often GW1 or straight after a Wildcard** — because unlimited transfers (or WC) let you build 15 playing bodies.  
-- PL also flags **Bruno GW2 vs Ipswich** and **Haaland GW3 vs Coventry** as early TC magnets — do **not** burn TC on BB week; save TC for a home-vs-promoted premium later (or a DGW).
-
-Sources: [PL chips 2026/27](https://www.premierleague.com/en/news/4679879/whats-happening-with-fpl-chips-in-202627), [Scout early FDR](https://www.premierleague.com/en/news/4675611/who-has-best-and-worst-early-fixtures-in-202627-fantasy).
-
-### Honest trade-off
-
-| Upside | Cost |
-| --- | --- |
-| BB on a hand-built 15-starter squad | First-half BB not saved for a mid-season DGW |
-| WC at GW4 fixes role/fixture mistakes with real minutes | WC1 not saved for a later blank/DGW cluster |
-| Second-half chips still intact | Must play WC1 with a **season structure**, not another 3-week punt |
-
-This plan is coherent if you accept: **first-half BB = “clean 15” chip**, **first-half WC = “information + value” chip**. Second half still holds BB/TC/FH/WC for blanks/doubles.
-
----
-
-## Fixture foundation (GW1–4)
-
-| Club | GW1 | GW2 | GW3 | GW4 | Why it matters |
-| --- | --- | --- | --- | --- | --- |
-| **Liverpool** | NEW (A) | **NFO (H)** | IPS (A) | FUL (H) | Scout: avoids last season’s top 10 for **four** GWs — best big-club open |
-| **Man Utd** | **HUL (A)** | **IPS (H)** | EVE (A) | **MCI (H)** | Best GW1–2 captain sprint → **dies at GW4 derby** (WC trigger) |
-| **Man City** | **BOU (H)** | CRY (A) | **COV (H)** | MUN (A) | Haaland soft homes GW1 + GW3 |
-| **Leeds** | NFO (A) | BRE (H) | BHA (A) | NEW (H) | Strong GW1–3 mid/fwd rental lane |
-| **Brentford** | TOT (H) | LEE (A) | SUN (H) | BOU (A) | Horizontal DEF/attack depth (Kayode already) |
-| **Arsenal** | COV (H) | AVL (A) | CHE (H) | SUN (A) | Skip premium ARS early — WC-rest + tough GW2–3 |
-
-Supporting notes:
-
-- BBC / ESPN: Hull vs United GW1; City vs Bournemouth GW1; Newcastle vs Liverpool GW1.  
-- All About FPL / FFS: United back-to-back vs promoted; Liverpool best medium-term among elites; Haaland Coventry H = early season flashpoint.  
-- Repo FDR matrix (master plan): LIV GW1–4 avg **2.50** best in league; MUN sprint then **MCI H** cliff.
-
----
-
-## Squad design rules
-
-| Bucket | Slots | Job | At WC |
-| --- | ---: | --- | --- |
-| **Keep core** | 8–10 | Wanted after WC **and** likely early risers | Hold |
-| **Fixture rentals** | 3–4 | Max GW1–3 EV; planned exits | Sell |
-| **BB floor** | 2–4 | Nailed £4.0–5.5 who **start** on BB week | Sell or keep as filler |
-
-Hard filters:
-
-1. Outfield = **N or R only** from nailed-starters doc.  
-2. BB week = **no** dead £4.0 cover GK / non-starter.  
-3. Own Haaland + at least one of Bruno / Palmer / Saka you fear rising.  
-4. Max **2 Liverpool attack** (Szobo + Isak). Wirtz only if friendlies scream starter — else skip (R-tier, minutes noise).
-
-### Why Bruno beats Palmer for *this* plan
-
-| | Bruno £12.0 | Palmer £9.5 |
+| Bias | User reason | Agent stance |
 | --- | --- | --- |
-| Early fixtures | HUL A · **IPS H** · EVE A | FUL A · BHA H · ARS A |
-| Scout / PL narrative | Explicit early TC case (esp. GW2 IPS H) | Alonso upside; mid FDR open |
-| Ownership / price stickiness | ~49% — template | ~13% — rises if he hauls, but weaker GW1–2 armband |
-| Role with BB→WC | Captain engine for BB window | Better as **WC target** if unowned, or keep if already owned |
+| Kinsky over Leno | Spurs new CB unit → more CS | **Agree as differential** — Kinsky is Spurs No.1; CS upside real; dual-starter pair = Verbruggen + Kinsky (never Kinsky + Dubravka) |
+| Prefer threat+DEFcon CBs (Ballard, Maguire) over Mitchell / Kayode | Mitchell/Kayode feel CS-dependent with soft attack | **Partially agree** — see DEF audit below |
+| Shaw cheaper than Maguire but less goals | Maguire set-piece scorer | **True** — Maguire higher ceiling when he starts; Shaw higher floor (38 starts) |
+| Open on MID/FWD | — | Prefer Bruno captain engine; LIV double default; Wirtz only if nailed |
+| Don’t trust DEFcon-mids who moved up (Anderson → City) | Volume came from pressing mid role | **Agree strongly** — do not draft Anderson for DEFcon repeat |
 
-Palmer is not bad — he is the wrong **opening** premium when Bruno’s first two opponents are both promoted sides.
+### Stable rules
 
-### Why Maguire is out
+1. Keep core first (wanted post-WC + early risers).  
+2. Fixture rentals second (planned WC sells).  
+3. BB floor = expected starters only.  
+4. Liverpool: double default; triple only if Wirtz XI locked.  
+5. Rebuild from live pressers — names here are leans.
 
-Nailed doc: Maguire = **R** (CB battle while De Ligt out). Shaw = **N** (38 starts). For a BB that needs 15 starters, rent **Mbeumo** (N attack) not Maguire (R CB). Clean sheet upside is inferior to Mitchell / N.Williams / Kayode season roles anyway.
+### Redo checklist
 
----
-
-## Primary squad — “Bruno Dual-Captain + United/Leeds Rentals” (£100.0m)
-
-Optimized for: BB-legal 15 starters · GW1–3 fixture EV · keep-core price insurance · GW4 sell list.
-
-| Pos | Player | Club | £ | Bucket | GW1–3 | Why |
-| --- | --- | ---: | ---: | --- | --- | --- |
-| GKP | Verbruggen | BHA | 4.5 | Keep | AVL H · CHE A · LEE H | Best ≤£4.5 No.1 (rating 9.4) |
-| GKP | Leno | FUL | 4.5 | Keep | CHE H · SUN A · CRY H | Second locked starter (8.8) — **not** Spurs dual-club trap |
-| DEF | Mitchell | CRY | 4.5 | Keep | EVE A · MCI H · FUL A | Attack + DEFcon WB lock |
-| DEF | N.Williams | NFO | 5.0 | Keep | LEE H · LIV A · TOT H | Glasner RWB build-around |
-| DEF | Kayode | BRE | 4.5 | Keep | TOT H · LEE A · SUN H | Ironman + throws; BRE FDR fine |
-| DEF | Cash | AVL | 4.5 | Keep | BHA A · ARS H · HUL A | Best £4.5 G/A among locks |
-| DEF | Thomas | COV | 4.0 | BB floor | ARS A · HUL H · MCI A | Promoted DEFcon / set-piece; **must start** |
-| MID | **B.Fernandes** | MUN | 12.0 | Keep | **HUL A · IPS H · EVE A** | Captain engine; pens; template |
-| MID | Mbeumo | MUN | 8.0 | Rental | **HUL A · IPS H · EVE A** | United sprint #2; first sell if blanks |
-| MID | Szoboszlai | LIV | 7.0 | Keep | NEW A · **NFO H** · IPS A | LIV mid lock; high own |
-| MID | Ndiaye | EVE | 6.0 | Keep/flex | CRY H · BOU A · MUN H | Nailed floor; sellable at WC |
-| MID | Xhaka | SUN | 5.5 | BB floor | IPS A · FUL H · BRE A | 90-min enabler; soft GW1–2 |
-| FWD | **Haaland** | MCI | 15.5 | Keep | **BOU H** · CRY A · **COV H** | Ownership hedge + captain |
-| FWD | **Isak** | LIV | 9.0 | Keep | NEW A · **NFO H** · IPS A | LIV #9 + best club FDR |
-| FWD | Calvert-Lewin | LEE | 6.0 | Rental | NFO A · BRE H · BHA A | Leeds GW1–3 bridge; planned sell |
-| | **Total** | | **100.0** | | | **2 GKP locked · 5 DEF · 5 MID · 3 FWD** |
-
-**Club check:** 2 MUN · 2 LIV · 1 each elsewhere — legal.  
-**Arithmetic:** back £31.5 + mid £38.5 + fwd £30.5 = **£100.0**.
-
-### BB XI lean (GW2)
-
-Start: Verbruggen · Mitchell · N.Williams · Kayode · Bruno · Mbeumo · Szoboszlai · Ndiaye · Haaland · Isak · Calvert-Lewin  
-Bench (all expected to play): Leno · Cash · Xhaka · Thomas  
-
-Captain: **Bruno (IPS H)** · Vice: Isak (NFO H) or Haaland.
-
-### Planned GW4 sells (fixture rentals)
-
-1. **Calvert-Lewin** — Leeds edge fades; minutes already known.  
-2. **Mbeumo** — unless United look elite; GW4 is **City at home**.  
-3. Optional: **Xhaka / Ndiaye / Cash** if better long-term seats unlocked by rises.
-
-### Hold into WC (keep core)
-
-Haaland · Bruno · Szoboszlai · Isak · Mitchell · N.Williams · Kayode · Verbruggen (+ Leno unless funding).
+Refresh FDR + nailed N/R → confirm Maguire/Ballard/Wirtz/Isak minutes → rebuild buckets to £100m → re-pick BB/WC weeks → new dated note.
 
 ---
 
-## Alternative A — “Palmer + João Pedro price stack” (£100.0m)
+## DEF audit (user thesis vs bootstrap 2025/26 carryover)
 
-Use only if you **refuse Bruno’s £12m** and want Chelsea dual exposure + high-ownership João Pedro (~49%).
+Bootstrap `defensive_contribution` fields are **zeroed at launch** this snapshot — use points / G/A / CS / starts / threat as proxies. Ratings from GKP/DEF research.
+
+| Player | £ | Pts | G/A | CS | Starts | Threat | Role | Fit for user thesis? |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |
+| **Mitchell** | 4.5 | 135 | 1/3 | 12 | 36 | 241 | N LWB | **Better than “soft attack”** — elite CS + usable G/A/creativity; WB DEFcon usually solid. Underrating him is the main disagreement. |
+| **Kayode** | 4.5 | 113 | 1/2 | 10 | 37 | 130 | N RB | **Your read is fairer** — ironman + throws, lower raw threat. Fine enabler, not a haul CB. |
+| **Ballard** | 5.0 | 116 | 2/2 | 6 | 24 | **370** | R CB | **Matches your profile** — high threat CB. Risk = **minutes** (24 starts) + SUN CS volume not elite. Soft GW1–2 (IPS A, FUL H) helps early. |
+| **Maguire** | 5.0 | 90 | 1/2 | 7 | 19 | 184 | R CB | **Ceiling when he starts** — set-piece goals. Risk = CB battle (De Ligt out narrative); **19 starts** last season. GW1–3 United sprint makes him a rental, not a season pick. |
+| **Shaw** | 4.5 | 113 | 1/1 | 10 | 38 | 97 | N LB | Safer BB minutes; lower goal threat — your Maguire vs Shaw trade-off is correctly framed. |
+| **N.Williams** | 5.0 | 128 | 2/3 | 9 | 36 | 380 | N RWB | Keep — attack + role. |
+| **Mukiele** | 5.5 | 151 | 3/5 | 9 | 32 | 242 | N | If Ballard minutes look soft, Mukiele is the better SUN DEF — costs +£0.5. |
+
+**Bottom line on DEF:** Your CB-with-threat idea is coherent. Prefer **Ballard over Maguire** for season structure (similar price, clearer attacking threat sample). Maguire only if Carrick XI confirms him for the HUL/IPS sprint. Do not drop Mitchell solely on vibes — he outscored Ballard and Maguire last season with far more starts.
+
+---
+
+## Wirtz (and Anderson caution)
+
+| Player | Call | Why |
+| --- | --- | --- |
+| **Wirtz £7.5** | Conditional yes | R-tier creator; 5G4A / 125 pts / high creativity. LIV fixtures are elite early. **Third Liverpool seat** — blocks Kerkez hedge; blanks concentrate. Use only if Iraola friendlies lock him; treat as **fixture rental** (sell at WC if minutes soft). Prefer Szobo + Isak without him otherwise. |
+| **Anderson £6.5 (MCI)** | Avoid for DEFcon thesis | 180 pts / 37 starts last season was midfield volume + DEFcon in a pressing side. City possession mid ≠ that role. GW1 WC-rest flag in nailed doc. Your instinct is right. |
+
+---
+
+## Squad A — User original idea (reconstructed) (£100.0m)
+
+Prior master-plan “João Pedro + Leeds bridge” shape with your stated GK/DEF preferences.
+
+| Pos | Player | Club | £ | Bucket | Note |
+| --- | --- | ---: | ---: | --- | --- |
+| GKP | Verbruggen | BHA | 4.5 | Keep | Best ≤£4.5 |
+| GKP | **Kinsky** | TOT | 4.5 | Keep | Your CS thesis — accepted |
+| DEF | **Maguire** | MUN | 5.0 | Rental | United sprint; sell GW4; confirm XI |
+| DEF | N.Williams | NFO | 5.0 | Keep | Attack WB |
+| DEF | Mitchell | CRY | 4.5 | Keep | Still strong value despite your doubt |
+| DEF | Thomas | COV | 4.0 | BB floor | Promoted DEFcon |
+| DEF | O'Shea | IPS | 4.0 | BB floor | Promoted CB; must start |
+| MID | Palmer | CHE | 9.5 | Keep/flex | Price insurance; weaker early fixtures than Bruno |
+| MID | Mbeumo | MUN | 8.0 | Rental | United sprint #2 |
+| MID | Szoboszlai | LIV | 7.0 | Keep | LIV mid lock |
+| MID | H.Wilson | LEE | 6.5 | Rental | Leeds GW1–3 |
+| MID | Xhaka | SUN | 5.5 | BB floor | Soft SUN open |
+| FWD | Haaland | MCI | 15.5 | Keep | Captain + ownership |
+| FWD | Isak | LIV | 9.0 | Keep | LIV #9 |
+| FWD | João Pedro | CHE | 7.5 | Keep | High own / Alonso 9 |
+| | **Total** | | **100.0** | | |
+
+**What fits:** Kinsky, Maguire rental, Leeds/United bridge, price-heavy CHE dual, BB floor.  
+**What doesn’t fit well:** No Bruno for HUL/IPS captaincy; Maguire + Mbeumo is United-heavy on minutes risk for Maguire; Mitchell still in (I’d keep him unless Ballard is XI-locked).
+
+### Squad A′ — your Ballard swap (same budget)
+
+Mitchell £4.5 → **Ballard £5.0** needs −£0.5 elsewhere (e.g. Wilson £6.5 → Ndiaye £6.0).
+
+| Change | Effect |
+| --- | --- |
+| Ballard in, Mitchell out | Aligns DEF thesis; lose Palace WB floor; SUN minutes risk |
+| Wilson → Ndiaye | Funds Ballard; weaker Leeds mid haul upside |
+
+---
+
+## Squad B — Recommended (Bruno spine, respects your GK + partial DEF) (£100.0m)
+
+Keeps Kinsky. Uses one threat-CB (Ballard **or** Maguire — not both unless cutting attack). Default = Ballard; Maguire if United CB XI is locked and you want the sprint.
+
+| Pos | Player | Club | £ | Bucket | GW1–3 lean |
+| --- | --- | ---: | ---: | --- | --- |
+| GKP | Verbruggen | BHA | 4.5 | Keep | — |
+| GKP | **Kinsky** | TOT | 4.5 | Keep | Your pick |
+| DEF | **Ballard** | SUN | 5.0 | Keep/flex | IPS A · FUL H · BRE A — soft open |
+| DEF | N.Williams | NFO | 5.0 | Keep | — |
+| DEF | Mitchell | CRY | 4.5 | Keep | Still best £4.5 package |
+| DEF | Cash | AVL | 4.5 | Keep | Best £4.5 G/A |
+| DEF | Thomas | COV | 4.0 | BB floor | — |
+| MID | **B.Fernandes** | MUN | 12.0 | Keep | HUL A · IPS H · EVE A |
+| MID | Mbeumo | MUN | 8.0 | Rental | Same sprint |
+| MID | Szoboszlai | LIV | 7.0 | Keep | NEW · NFO H · IPS |
+| MID | Ndiaye | EVE | 6.0 | Flex | — |
+| MID | Xhaka | SUN | 5.5 | BB floor | 2 SUN with Ballard — OK |
+| FWD | Haaland | MCI | 15.5 | Keep | BOU H · COV H |
+| FWD | Isak | LIV | 9.0 | Keep | — |
+| FWD | Calvert-Lewin | LEE | 6.0 | Rental | Leeds bridge |
+| | **Total** | | **100.0** | | |
+
+Back £31.5 + mid £38.5 + fwd £30.5 = **£100.0**. Club: 2 MUN · 2 LIV · 2 SUN.
+
+**Maguire variant:** Ballard → Maguire (same £5.0). Better GW1–2 United CS upside; worse minutes certainty; sell at GW4 with Mbeumo.
+
+---
+
+## Squad C — Wirtz triple (only if XI locked) (£100.0m)
 
 | Pos | Players | £ |
 | --- | --- | ---: |
-| GKP | Verbruggen, Leno | 9.0 |
-| DEF | Mitchell, N.Williams, Kayode, Cash, Thomas | 22.5 |
-| MID | Palmer 9.5, Mbeumo 8.0, Szoboszlai 7.0, Wilson (LEE) 6.5, Xhaka 5.5 | 36.5 |
-| FWD | Haaland 15.5, Isak 9.0, João Pedro 7.5 | 32.0 |
+| GKP | Verbruggen, Kinsky | 9.0 |
+| DEF | Maguire, Ballard, N.Williams, Thomas, O'Shea | 23.0 |
+| MID | Bruno 12.0, Szoboszlai 7.0, **Wirtz 7.5**, Ndiaye 6.0, Xhaka 5.5 | 38.0 |
+| FWD | Haaland 15.5, Isak 9.0, Wright 5.5 | 30.0 |
 | | **Total** | **100.0** |
 
-**Gain:** Palmer + João Pedro owned before rises; Wilson stronger Leeds mid than Ndiaye.  
-**Loss:** No Bruno for HUL/IPS captaincy — you armband Haaland/Isak instead. Chelsea open (FUL A · BHA H · ARS A) is **worse** than United’s sprint.
-
-This is the closest “good” cousin of the prior master plan — but with **Leno not Kinsky**, **Cash not Maguire**, **Kayode not O'Shea**.
-
----
-
-## Alternative B — “Max United bridge” (aggressive)
-
-Bruno + Mbeumo + Cunha (£28m mid already) forces cutting Isak **or** Haaland. Only if friendlies scream United front three are untouchable **and** you accept Haaland-fade rank risk. Default: **do not**.
+**Fits:** Your Maguire + Ballard CB thesis + LIV triple + Bruno captaincy.  
+**Doesn’t fit:** Heavy concentration (3 LIV + 2 SUN + Maguire minutes); Wright is a thin third forward; no Mbeumo (United attack only Bruno).  
+**Kill switch:** If Wirtz or Maguire or Ballard fails a friendly XI → fall back to Squad B.
 
 ---
 
-## Chip calendar (concrete)
+## Chip calendar
 
 ```text
-Pre-GW1     Unlimited transfers → build Primary squad (15 starters)
-GW1         No chip. Captain Bruno (HUL A) / Haaland (BOU H). Watch minutes.
-GW2         BENCH BOOST. Captain Bruno (IPS H). Vice Isak (NFO H).
-GW3         No chip. Captain Haaland (COV H). Bank free transfer if possible.
-GW4         WILDCARD. Dump rentals. Rebuild GW4–10+ structure.
-            Fallback: delay WC to GW5 if Isak/Palmer/Saka minutes still unclear.
+Pre-GW1   Unlimited → pick Squad B (default) / A (your original) / C (Wirtz locked)
+GW1       No chip. Captain Bruno (HUL A) or Haaland (BOU H).
+GW2       BENCH BOOST. Captain Bruno (IPS H). Vice Isak (NFO H).
+GW3       Captain Haaland (COV H).
+GW4       WILDCARD — sell Maguire/Mbeumo/CLD/Wilson/Wirtz-if-soft; rebuild GW4–10+.
 ```
 
-### BB: GW1 vs GW2
-
-| | GW1 BB | GW2 BB *(preferred)* |
-| --- | --- | --- |
-| Pros | Max certainty after unlimited; no GW1 injury wipeout risk | Confirm XIs; **Bruno vs IPS H**; **LIV vs NFO H**; one week of price/news |
-| Cons | Slightly weaker fixture set than GW2 for United/LIV | If a BB-floor player is benched GW2, chip damaged |
-| Rule | Use if Thomas/Xhaka/Cash look fragile in pressers | Default if GW1 confirms all 15 started or were unused substitutes only |
-
-### WC: why GW4
-
-1. United **vs City** ends Mbeumo/Bruno fixture edge (Bruno may stay; Mbeumo often goes).  
-2. Three GWs of minutes/pens/injury data — enough to drop failed R-tiers.  
-3. Still early enough that WC1 is not “wasted late” before GW19 expiry.  
-4. Aligns with external “GW4–8 early WC sweet spot” guidance (e.g. Onside-style models) without waiting until prices fully lock you out.
-
 ---
 
-## Price / value rules (the real early-WC trap)
+## GW4 sell / hold map
 
-Sell price ≈ buy + floor(rises/2). If Palmer goes £9.5→£10.0 and you never owned him, WC needs **+£0.5 cash**.
-
-Mitigations ranked:
-
-1. Own Haaland + Bruno (or Palmer) + Szobo + Isak from GW1.  
-2. Prefer owning template risers over banking large ITB.  
-3. Rent mid-price differentials you expect to rise (Mbeumo, Wilson/CLD) so *you* capture half.  
-4. Leave ≤£0.5–1.0 ITB only as unknown-riser buffer — not the plan.  
-5. Do not park money in R-tier CBs who might not play on BB week.
-
----
-
-## GW4 Wildcard rebuild sketch (not a fixed XV)
-
-After selling rentals (~£14–20m freed depending on rises):
-
-| Priority | Targets | Why |
-| --- | --- | --- |
-| 1 | Confirm Isak / Szobo minutes — keep or cut | LIV FDR stays good through GW4–5 then City |
-| 2 | Palmer / Saka / Semenyo if unowned and affordable | Template movers |
-| 3 | Muñoz / Truffert / Gabriel only if attack saturated | DEF upgrades are WC luxuries under cheap-back |
-| 4 | Drop failed BB floor (Thomas if DEFcon flop) | Replace with settled N DEF |
-| 5 | Build for **GW4–10**, not another 3-week punt | FH still saved for blanks |
-
-Do **not** play FH or second-half chips early. TC wait for Haaland/Bruno vs promoted (PL table: Bruno IPS GW2 already used as BB captain — next TC magnets Haaland IPS GW7 / Bruno COV GW14 / Haaland HUL GW16).
+| Likely sell | Likely hold |
+| --- | --- |
+| Maguire, Mbeumo, Calvert-Lewin / Wilson, Wirtz (if soft mins), O'Shea/Thomas if flop | Haaland, Bruno, Szoboszlai, Isak, N.Williams, Verbruggen, Kinsky (if Spurs CS thesis holds), Ballard only if minutes stick |
 
 ---
 
 ## Decision tree
 
 ```text
-Commit BB early + WC ~GW4?
-├─ YES
-│  ├─ Want Bruno captaincy GW1–2? → Primary squad
-│  ├─ Want Palmer+João Pedro owned? → Alternative A
-│  ├─ Friendies kill Isak? → swap Isak → João Pedro / Thiago; keep LIV Szobo
-│  └─ Friendies lock Wirtz XI? → only then displace Ndiaye/Xhaka; treat Wirtz as rental
-└─ NO (save BB for DGW)
-   → Skip early BB; build Draft C set-and-forget; WC only if structure breaks
+Friendlies: Wirtz locked XI?
+├─ YES → Squad C (accept 3×LIV risk) or B+Wirtz displacing Ndiaye (rebalance £)
+└─ NO
+   ├─ Want Maguire+Ballard CB stack? → Squad A′ / C without Wirtz (fund carefully)
+   ├─ Want Bruno captaincy + your Kinsky? → Squad B (recommended)
+   └─ Want Palmer+João Pedro owned? → Squad A (accept weaker GW1–2 armband)
 ```
 
 ---
 
 ## Bottom line
 
-1. **Keep the strategy** (unlimited → BB → early WC) — officially supported and fixture-backed.  
-2. **Change the spine**: **Bruno + Haaland + Szobo + Isak**, cheap locked back, Leeds/United rentals.  
-3. **BB GW2** unless a floor player is compromised — then BB GW1.  
-4. **WC GW4** when United hit City and rentals are done.  
-5. Prior master plan’s Maguire / Palmer-first / João Pedro-without-Bruno shape **loses the best early captaincy fixtures** the Scout and fixture tickers are screaming about.
+1. **Kinsky** — keep; your CS reasoning is valid.  
+2. **Ballard** — good expression of threat+DEFcon CB idea; watch starts.  
+3. **Maguire** — rental for United sprint only; Shaw if you need BB certainty.  
+4. **Mitchell** — don’t cut him just to chase CBs; data still likes him.  
+5. **Wirtz** — optional third LIV; minutes-gated; not default.  
+6. **Anderson** — correctly faded for DEFcon repeat.  
+7. Default build this week: **Squad B**.
 
-Prices/roles: FPL bootstrap + repo research 2026-07-28. Fixtures/chips: PL Scout, BBC, ESPN, All About FPL, FFS mid-2026.
+Deleted superseded strategy notes: early-wildcard bridge · full-squad cheap-back drafts. Kept nailed-starters + GKP/DEF ratings as inputs.
