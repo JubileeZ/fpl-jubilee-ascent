@@ -24,7 +24,7 @@ Blocked, wait for deps:
 Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`, `docs/adr/0004-cross-season-player-code-mapping.md`, `docs/adr/0005-hybrid-metrics-component-projection-model.md`, `docs/adr/0006-fixture-first-projection-contract.md`, and `docs/adr/0010-participation-state-snapshots-and-evaluation.md`; vocabulary in `CONTEXT.md`.
 
 Recent Session Updates:
-- **RoleScore transfer overlay (29 Jul eve):** `docs/research/20260729-pl-starter-rolescore.md` — Welbeck→CHE medical → Georginio (Rutter) preferred BHA #9 (Ext R lean, RS 75.2); Welbeck CHE = B starts; Trafford terms agreed.
+- **Research refresh (29 Jul night):** Stable slugs under `docs/research/` (`pl-starter-rolescore.md`, `bb-then-wc-strategy.md`, `gw4-wildcard-chelsea-liverpool.md`, `gkp-def-budget-ratings.md`) — date prefix removed; `Updated` + Agent Prompt in each file. Live 822158 ≈ Squad B′ (Bruno+Ampadu+Georginio); Thomas/Amenda kill switch; WC Plan B′ = Mbeumo→Rogers.
 - **Scoring Matrix Realignment**: Corrected `_GOAL_POINTS` per position (GK=10, Defender=6, Midfielder=5, Forward=4), added defensive-contribution points, and retained official negative-event penalties in `models/scoring_matrix.py`.
 - **Fixture-First Contract**: `features/builder.py` emits one row per player/fixture across the planning horizon; `projections/exporter.py` aggregates double-gameweeks for solver CSVs.
 - **Hybrid Metrics Component Model (`metrics_component_hybrid`)**: Uses separate fixture attack/defence effects, rolling pre-cutoff attack-weight calibration, Poisson count expectations, direct Defcon expected points, and competitor-aware bonus allocation.

@@ -1,26 +1,32 @@
-# Task: RoleScore transfer overlay (Welbeck → CHE / Rutter #9)
+# Task: Research refresh (slug names + full redo)
 
-**Objective:** Refresh starter RoleScore research for 29 Jul eve transfer news — Welbeck Chelsea medical opens Brighton #9 for Rutter.
+**Objective:** Stable research slugs + Agent Prompt in each note + full redo against live 2026-07-29 data.
 
 **Acceptance:**
-- [x] Update `docs/research/20260729-pl-starter-rolescore.md` with Welbeck→CHE status, Rutter case + RoleScore, club cards, open battles
-- [ ] Optional: fold Rutter £5.5 FWD thesis into `docs/research/20260729-bb-then-wc-strategy.md` if BB shortlist wants BHA attack
+- [x] Rename to `docs/research/<topic-slug>.md`; update AGENTS.md naming
+- [x] Embed Agent Prompt in all four notes; `Updated` ISO+timezone in-file
+- [x] `refresh_data` (auth 822158) + price_report + fdr_report + XI/transfer pass
+- [x] Rewrite gkp-def-budget-ratings, pl-starter-rolescore, bb-then-wc-strategy, gw4-wildcard-chelsea-liverpool
 
 ## Work Packet (SFDBN)
 
-**Status:** Research overlay done; Checkpoint pending. Welbeck treat-gone for XI; Rutter Ext R lean / RS 75.2.
+**Status:** Done. Live XV ≈ Squad B′ (Bruno+Ampadu+Georginio). Residual gates: Amenda/Thomas, Rutter 90s, Ballard, Isak.
 
 **Files:**
-- `docs/research/20260729-pl-starter-rolescore.md` (modified)
-- `docs/agents/current-state.md` (continuity)
-- `.agents/session-handoff.md` (continuity)
+- `docs/research/gkp-def-budget-ratings.md`
+- `docs/research/pl-starter-rolescore.md`
+- `docs/research/bb-then-wc-strategy.md`
+- `docs/research/gw4-wildcard-chelsea-liverpool.md`
+- `AGENTS.md`
+- `docs/agents/current-state.md`
 
 **Decisions:**
-- Welbeck CHE medical / 2yr terms (29 Jul eve) → gone for BHA XI until collapse
-- Georginio (Rutter) preferred BHA #9; Ext R lean (map 85) → RoleScore 75.2; not N (Conf. + Kostoulas/Tzimas)
-- Welbeck at CHE = B starts behind João Pedro — fade for FPL
-- Trafford LEE terms agreed £40m+£5m (await announcement)
+- Research filenames = stable slugs; timestamp only in-file (`Updated` + `Data stamp`)
+- Live 822158 already near Squad B with Shaw+Georginio twin (B′)
+- Thomas kill switch armed (Amenda expected into COV XI)
+- Rutter folded into BB strategy (owned bench)
+- WC practical path from live = Mbeumo→Rogers (Plan B′)
 
-**Blocked:** None. Official Welbeck/Trafford announcements still pending.
+**Blocked:** Official Welbeck/Trafford announcements still pending.
 
-**Next:** Confirm Welbeck medical clears + Rutter friendly 90s before upgrading Ext to N; optionally sync BB→WC strategy note.
+**Next:** Confirm Welbeck medical + Rutter/Ballard/Thomas friendlies before GW1 lock; optional Shaw→O'Shea.

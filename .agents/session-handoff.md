@@ -1,7 +1,6 @@
-# Session Handoff (SFDBN)
+# Session handoff
 
-- **Status:** RoleScore research transfer overlay complete (Welbeck→CHE / Rutter #9). Checkpoint with Work Packet.
-- **Files:** `docs/research/20260729-pl-starter-rolescore.md`; `task.md`; `docs/agents/current-state.md`
-- **Decisions:** Rutter Ext R lean RS 75.2 preferred BHA #9; Welbeck CHE = B starts / fade; Trafford terms agreed
-- **Blocked:** Official Welbeck + Trafford announcements pending
-- **Next:** Friendlies lock Rutter #9 before N upgrade; optional fold into `20260729-bb-then-wc-strategy.md`
+- **Done:** Research refresh — slug rename + Agent Prompt + full redo (2026-07-29 ~22:17 ICT data).
+- **Files:** `docs/research/{gkp-def-budget-ratings,pl-starter-rolescore,bb-then-wc-strategy,gw4-wildcard-chelsea-liverpool}.md`; `AGENTS.md`; `task.md`; `docs/agents/current-state.md`
+- **Live 822158:** ≈ Squad B′ (Bruno C, Ampadu, Georginio bench, Shaw not O'Shea)
+- **Next:** Friendlies lock Rutter #9 / Thomas vs Amenda / Ballard 90s; Shaw→O'Shea optional; WC Plan B′ at GW4
