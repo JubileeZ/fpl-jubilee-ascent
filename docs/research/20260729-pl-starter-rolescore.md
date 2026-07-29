@@ -1,7 +1,7 @@
 # FPL 2026/27 — Starter RoleScore Baseline
 
 **Date**: 2026-07-29  
-**Data stamp**: FPL bootstrap / `players.parquet` refreshed **2026-07-29 ~11:00 ICT**  
+**Data stamp**: FPL bootstrap / `players.parquet` **2026-07-29 ~11:00 ICT** · transfer overlay **~22:00 ICT** (Welbeck medical / Rutter #9)  
 **Season**: 2026/27 pre-season · GW1 deadline Fri 21 Aug 2026  
 **Purpose**: Minutes-aware starter baseline for squad building — not GW1 XI only  
 **Supersedes**: `20260728-pl-nailed-regular-starters.md` (deleted 2026-07-29)  
@@ -10,7 +10,8 @@
 **Sources**
 - Primary stats: FPL API prior-season totals in live bootstrap (mins, starts, threat, xG/xA, CS)
 - External XI: [FPL Dashboard / Meerkat](https://fpl.page/article/fpl-gw1-predicted-lineups-2627) (**28 Jul 2026** = primary refresh) · [FFS team-news](https://www.fantasyfootballscout.co.uk/team-news/) still stamped **21–22 Jul** (unchanged as of 29 Jul) · [PL Scout](https://www.premierleague.com/en/news/4681112/early-scout-selection-the-best-fantasy-squad-for-202627) · club press (Kinsky; Ballard; O’Shea; Amenda; De Ligt)
-- Case digests (merged 29 Jul): DEF / MID-FWD-GK / club-XI sub-research
+- Transfer overlay 29 Jul eve: Welbeck → CHE medical / terms agreed (PA, ESPN, Romano “here we go”) · Trafford LEE terms £40m+£5m · Lacroix CHE agreed (medical next)
+- Case digests (merged 29 Jul): DEF / MID-FWD-GK / club-XI sub-research · **eve add**: BHA #9 post-Welbeck
 
 ---
 
@@ -135,9 +136,22 @@ Never pair Kinsky + Dubravka as dual starters.
 
 Ext R · RoleScore 66 · 37 starts ironman at prior club. **Role change** into City possession ≠ Forest pressing DEFcon. High volume, wrong job.
 
+### Rutter vs Kostoulas / Tzimas (BHA #9 after Welbeck → CHE)
+
+**Transfer (29 Jul eve):** Welbeck agreed CHE two-year deal; medical next; Brighton approved exit. Treat as **gone for XI purposes** until deal collapses.
+
+| Player | Ext | RoleScore | starts | mps | xGI90 | thr90 | Flag | Why |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| **Georginio (Rutter)** | **R lean** | **75** | 20 | 88.8 | 0.29 | 22.7 | LIMITED | FPL FWD £5.5 (was MID); preferred #9 path; ~2× CF apps vs hole last season (FFS) |
+| Welbeck | was N → **B at CHE** | — | 26 | 86.5 | 0.55 | 32.1 | LIMITED | CHE experience 9 / rotation behind João Pedro — not a starter pick |
+| Kostoulas | B | — | 2 | — | — | — | THIN | Teen CF upside; Conference minutes likely |
+| Tzimas | X/B | — | 1 | — | — | — | THIN | Knee — 75% next; not GW1 lock |
+
+**Pick thesis:** Rutter is the minutes-aware BHA #9 while Welbeck exits — Ext **R lean** (map 85 → RS **75**), not N yet. Meerkat (28 Jul): “decision about starting #9”; only Groß 🟢 among BHA attackers. Kill switches: Hürzeler rotates CF with Conference League; Kostoulas/Tzimas ramp; new CF signing. Confirm full 90s in friendlies before BB/core. At £5.5 FWD he is a **differential**, not a dual-lock half.
+
 ---
 
-## Core shortlist table (verified 2026-07-29)
+## Core shortlist table (verified 2026-07-29 · eve transfer overlay)
 
 Prices = live bootstrap. RoleScore from formula above.
 
@@ -167,6 +181,7 @@ Prices = live bootstrap. RoleScore from formula above.
 
 | Player | Pos | Club | £ | Ext | RS | starts | mps | thr90 | xGI90 | Flag | Caveat |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| **Georginio** | FWD | BHA | 5.5 | R lean | **75.2** | 20 | 88.8 | 22.7 | 0.29 | LIMITED | Preferred #9 post-Welbeck; Conf. + kids risk |
 | Ballard | DEF | SUN | 5.0 | R | 74.2 | 24 | 89.3 | **15.5** | 0.13 | LIMITED | Ankle return; Europa rotation |
 | Stach | MID | LEE | 6.0 | R | 71.0 | 28 | 84.6 | 12.0 | 0.28 | OK | Fit-dependent |
 | Wright | FWD | COV | 5.5 | N | 70.0 | 0 | — | — | — | NO_PL | Champ pens |
@@ -179,10 +194,11 @@ Prices = live bootstrap. RoleScore from formula above.
 | Thomas | DEF | COV | 4.0 | R→B | 49.0 | 0 | — | — | — | NO_PL | Amenda kill switch |
 | Mainoo | MID | MUN | 5.5 | B | 48.0 | 16 | 103 | 5.1 | 0.10 | LIMITED | Not BB flex |
 | Diop | DEF | IPS | 4.0 | B | 28.7 | 8 | 101 | 3.4 | 0.09 | THIN | Only with back 3 |
+| Welbeck | FWD | CHE* | 6.0 | B | — | 26 | 86.5 | 32.1 | 0.55 | LIMITED | *medical pending; CHE rotation 9 — fade |
 
 ---
 
-## Club cards (refreshed 28–29 Jul 2026)
+## Club cards (refreshed 28–29 Jul 2026 · eve transfer overlay)
 
 Format: manager · **N** / **R** · battles. Meerkat 🟢 = predicted nailed.
 
@@ -204,14 +220,18 @@ Format: manager · **N** / **R** · battles. Meerkat 🟢 = predicted nailed.
 - **Stable spine**
 
 ### Brighton — Hürzeler
-- **N**: Verbruggen  
-- **R**: high rotation; **Welbeck → CHE talks** (27 Jul) → #9 unsettled  
-- High B risk for FPL  
+- **N**: Verbruggen · Groß lean (Meerkat 🟢)  
+- **R lean**: **Georginio (Rutter)** preferred #9 after **Welbeck → CHE medical** (29 Jul eve)  
+- **R**: Kadıoğlu, Dunk, Vušković, Wieffer — Conf. League rotation noise  
+- **B**: Hinshelwood / Gomez / Minteh attack share; Kostoulas / Tzimas CF depth  
+- **Out path**: Welbeck (treat gone); Mitoma hamstring 0%  
+- Still **Low clarity** overall — only #9 thesis upgraded  
 
 ### Chelsea — Alonso (new)
 - **N**: Sánchez, Caicedo, Enzo, Palmer, João Pedro, Rogers  
-- **Battles**: shape 3 vs 4; WB; **Lacroix agreed ~£52m** (BBC 24 Jul) → CB up  
-- **Flags**: Fofana ban; Enzo/James GW1 WC  
+- **Battles**: shape 3 vs 4; WB; **Lacroix agreed** (medical next) → CB up  
+- **In**: **Welbeck** medical / 2yr terms (29 Jul) — experience 9, **B starts** behind João Pedro  
+- **Flags**: Fofana ban; Enzo/James GW1 WC; Delap / Jackson exit risk rises with Welbeck 
 
 ### Coventry — Lampard (promoted)
 - **N lean**: Wright  
@@ -241,7 +261,7 @@ Format: manager · **N** / **R** · battles. Meerkat 🟢 = predicted nailed.
 
 ### Leeds — Farke
 - **N**: Ampadu, Wilson, Calvert-Lewin, Stach (fit)  
-- **R**: Rodon, Gudmundsson; **Trafford** club-record deal close (28 Jul) — GK flips; England WC doubt if signed  
+- **R**: Rodon, Gudmundsson; **Trafford** terms agreed £40m+£5m + sell-on (29 Jul) — Meerkat 🟢*; GK flips once announced; England WC doubt if signed 
 
 ### Liverpool — Iraola (new)
 - **N**: Alisson, Virgil, Szoboszlai, Gravenberch  
@@ -279,7 +299,7 @@ Format: manager · **N** / **R** · battles. Meerkat 🟢 = predicted nailed.
 | --- | --- |
 | High | BRE, EVE, LEE attack/mid, MUN attack, SUN spine |
 | Medium | AVL, CRY, NFO, TOT (GK+CB), LIV (confirm Wirtz) |
-| Low | BHA, CHE, MCI, FUL, NEW, BOU |
+| Low | BHA (#9 clearer; rest still noisy), CHE, MCI, FUL, NEW, BOU |
 | Very low | COV, HUL, IPS |
 
 ---
@@ -292,8 +312,9 @@ Format: manager · **N** / **R** · battles. Meerkat 🟢 = predicted nailed.
 4. Liverpool Wirtz under Iraola · Isak fitness  
 5. United CB (Maguire vs Martinez/Yoro while De Ligt out) + mid trio  
 6. Palace CB after Lacroix → CHE  
-7. Leeds GK (Trafford close)  
-8. Spurs front / LB · City non-Haaland · Ndiaye sale  
+7. Leeds GK (**Trafford** terms agreed — await announcement / Perri exit)  
+8. **Brighton #9** — Rutter lock vs Kostoulas/Tzimas/Conf. rotation · confirm Welbeck medical clears  
+9. Spurs front / LB · City non-Haaland · Ndiaye sale · CHE CF pecking order post-Welbeck 
 
 ---
 
