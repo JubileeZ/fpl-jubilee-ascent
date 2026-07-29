@@ -8,6 +8,7 @@
 **Entry**: 822158 · bank £0.0 · value £100.0m · transfers **unlimited**  
 **Baseline**: [`20260729-pl-starter-rolescore.md`](20260729-pl-starter-rolescore.md)  
 **Also**: [`20260728-gkp-def-budget-ratings.md`](20260728-gkp-def-budget-ratings.md) · PL Scout FDR  
+**WC detail**: [`20260729-gw4-wildcard-chelsea-liverpool.md`](20260729-gw4-wildcard-chelsea-liverpool.md) — GW4 target · CHE turn · LIV core · price hedge  
 
 **Supersedes**: split strategy/assessment/index notes; prior nailed-starters filter → RoleScore baseline.
 
