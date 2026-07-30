@@ -53,6 +53,16 @@ docs/         # Durable project documentation and decision records
 
 ---
 
+## Research Notes
+
+- Start new note by copying `docs/research/template/research-note.md` to `docs/research/<topic-slug>.md`; keep topic slug stable and omit date prefixes.
+- Required core sections: `Updated`, `Data stamp`, `Season`, `Purpose`, `Sources`, `Agent Prompt`, `Method`, `Findings`, `Decision`, and `Risks and unknowns`.
+- `Updated` = last note revision timestamp; `Data stamp` = source/data freshness cutoff. Do not duplicate `Last update`.
+- Keep `Source synthesis` separate from `Project interpretation`; label source claims not independently validated.
+- Keep Agent Prompt reproducible: identify inputs, refresh/recheck steps, stable output path, and scratch cleanup.
+
+---
+
 ## Key Commands
 
 | Command | What it does |

@@ -200,3 +200,23 @@ _Avoid_: All models, model pool
 Versioned JSON and Markdown artifacts that identify evaluated models and commits, evaluation windows and snapshot coverage, primary and guardrail metrics, promotion outcome, and resulting Comparison Slate.
 _Avoid_: Backtest log, undocumented promotion
 
+**Research Note**:
+Durable human-readable analysis under `docs/research/<topic-slug>.md`, structured with source metadata, method, findings, decision, and refresh instructions.
+_Avoid_: Scratch investigation, dated filename
+
+**Updated**:
+Last revision timestamp for a Research Note, formatted as ISO 8601 with timezone.
+_Avoid_: Data stamp, duplicate Last update field
+
+**Data Stamp**:
+Freshness cutoff for source or dataset evidence used by a Research Note.
+_Avoid_: Updated timestamp, publication date when evidence cutoff differs
+
+**Source Synthesis**:
+Direct summary of external source claims without upgrading them to independently validated facts.
+_Avoid_: Project interpretation, verified finding
+
+**Project Interpretation**:
+Project-specific translation of findings into conditional decision rules, kept separate from Source Synthesis.
+_Avoid_: Source claim, independent validation
+
