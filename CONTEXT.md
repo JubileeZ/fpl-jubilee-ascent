@@ -220,3 +220,7 @@ _Avoid_: Project interpretation, verified finding
 Project-specific translation of findings into conditional decision rules, kept separate from Source Synthesis.
 _Avoid_: Source claim, independent validation
 
+**Research Source Directory**:
+Research Note mapping related source pages to child notes, freshness, scope, and source gaps; not substitute for child evidence.
+_Avoid_: Merged research report, complete source transcription
+

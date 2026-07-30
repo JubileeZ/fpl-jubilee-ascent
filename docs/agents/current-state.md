@@ -25,6 +25,7 @@ Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-compon
 
 Recent Session Updates:
 - **Research documentation reset (31 Jul):** Superseded four 2026/27 strategy notes removed; universal template at `docs/research/template/research-note.md`; source synthesis at `docs/research/fpl-first-half-chip-strategy.md`. Future notes use stable slugs, `Updated`/`Data stamp`, and separate source synthesis from project interpretation.
+- **Scout pre-season source set (31 Jul):** Added directory `docs/research/fpl-preseason-guide.md` plus budget goalkeeper, £4.5m defender, £4.0m defender, £4.5m midfielder, and summer-transfer notes. £4.0m defender and £4.5m midfielder notes remain partial where source pages are account-gated.
 - **Scoring Matrix Realignment**: Corrected `_GOAL_POINTS` per position (GK=10, Defender=6, Midfielder=5, Forward=4), added defensive-contribution points, and retained official negative-event penalties in `models/scoring_matrix.py`.
 - **Fixture-First Contract**: `features/builder.py` emits one row per player/fixture across the planning horizon; `projections/exporter.py` aggregates double-gameweeks for solver CSVs.
 - **Hybrid Metrics Component Model (`metrics_component_hybrid`)**: Uses separate fixture attack/defence effects, rolling pre-cutoff attack-weight calibration, Poisson count expectations, direct Defcon expected points, and competitor-aware bonus allocation.
