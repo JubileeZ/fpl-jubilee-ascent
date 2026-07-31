@@ -24,6 +24,7 @@ Blocked, wait for deps:
 Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`, `docs/adr/0004-cross-season-player-code-mapping.md`, `docs/adr/0005-hybrid-metrics-component-projection-model.md`, `docs/adr/0006-fixture-first-projection-contract.md`, and `docs/adr/0010-participation-state-snapshots-and-evaluation.md`; vocabulary in `CONTEXT.md`.
 
 Recent Session Updates:
+- **Expected Role glossary (31 Jul):** Grilling mins/Draft research. Confirmed Expected Role (Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention); Draft-eligible = Nailed + Regular only; seeds Participation State priors. Horizon/schema still open in `task.md`.
 - **Research documentation reset (31 Jul):** Superseded four 2026/27 strategy notes removed; universal template at `docs/research/template/research-note.md`; source synthesis at `docs/research/fpl-first-half-chip-strategy.md`. Future notes use stable slugs, `Updated`/`Data stamp`, and separate source synthesis from project interpretation.
 - **Scout pre-season source set (31 Jul):** Added directory `docs/research/fpl-preseason-guide.md` plus budget goalkeeper, £4.5m defender, £4.0m defender, £4.5m midfielder, and summer-transfer notes. £4.0m defender and £4.5m midfielder notes remain partial where source pages are account-gated.
 - **Scoring Matrix Realignment**: Corrected `_GOAL_POINTS` per position (GK=10, Defender=6, Midfielder=5, Forward=4), added defensive-contribution points, and retained official negative-event penalties in `models/scoring_matrix.py`.

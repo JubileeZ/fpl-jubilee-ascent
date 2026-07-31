@@ -70,7 +70,31 @@ _Avoid_: Injury chance, playing chance
 
 **Participation State**:
 One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub-in. State probabilities sum to one and determine conditional minutes and Event Component projections.
-_Avoid_: Appearance Probability (only whether a Player features), lineup status
+_Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role
+
+**Expected Role**:
+Club-relative preseason judgment of how a Player is expected to be used over the near horizon. Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible.
+_Avoid_: First team, nailed, importance, lineup status, Participation State
+
+**Nailed Starter**:
+Expected Role for a Player who is near-certain to Start when fit.
+_Avoid_: Locked starter, guaranteed starter
+
+**Regular Starter**:
+Expected Role for a Player who is the default starter most weeks when fit, with occasional benchings.
+_Avoid_: Preferred starter, first choice (ambiguous with Nailed Starter)
+
+**Rotation**:
+Expected Role for a Player who contends for starts and shares minutes with others; not Draft-eligible.
+_Avoid_: Squad player, fringe starter
+
+**Cameo**:
+Expected Role for a Player who mostly sits on the bench or enters as a late Sub-in; not Draft-eligible.
+_Avoid_: Impact sub, bench option
+
+**Out of Contention**:
+Expected Role for a Player unlikely to feature meaningfully; not Draft-eligible.
+_Avoid_: Not play, discarded, out of squad
 
 **Minutes if Appearance**:
 The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability.
