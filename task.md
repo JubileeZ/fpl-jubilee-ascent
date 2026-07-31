@@ -17,8 +17,8 @@
 **Status:** Availability/role audit applied for current 2026-07-31 evidence stamp. 339-row table + all-20-Club Research Note updated; model wiring deferred.
 
 **Files:**
-- `docs/research/expected-role-gw1-5.md`
-- `data/research/expected-role-gw1-5.csv`
+- `docs/research/expected-role-gw1-5.md` (human-readable Research Note; links canonical CSV)
+- `data/research/expected-role-gw1-5.csv` (canonical row-level table)
 - `CONTEXT.md`
 - `docs/agents/current-state.md`
 - `.agents/session-handoff.md`

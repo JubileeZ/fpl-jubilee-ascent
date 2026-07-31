@@ -7,6 +7,7 @@
 **Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors for GW1–5 mins projection seeding
 **Scope**: XI Contention Set for all 20 Clubs; fit-role Draft Shortlist = Nailed Starter + Regular Starter; Draft Availability separately filters current `Eligible`, `Watch`, and `Exclude` rows. No model code wiring in this note.
 **Related**: [Summer transfers](fpl-summer-transfers.md) · [Pre-season guide directory](fpl-preseason-guide.md) · `CONTEXT.md` (Expected Role / Role Evidence / Expected Role Table)
+**Artifact**: [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) — canonical row-level data; this Research Note is its human-readable companion.
 
 > Source claims not independently validated. API club registration may lag confirmed transfers (e.g. Lacroix still CRY, Trafford still MCI in local roster).
 
@@ -101,7 +102,7 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 
 ## Club-by-club Expected Role Table
 
-`data/research/expected-role-gw1-5.csv` is the row-level audit authority. It contains 339 XI Contention Set rows across all 20 Clubs: 90 Nailed Starter, 103 Regular Starter, 99 Rotation, and 47 Cameo. Every row includes `player_id`, fit-role priors, Role Evidence, direct source references, API availability/registration fields, and dated Draft Availability.
+The [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) is the row-level audit authority. It contains 339 XI Contention Set rows across all 20 Clubs: 90 Nailed Starter, 103 Regular Starter, 99 Rotation, and 47 Cameo. Every row includes `player_id`, fit-role priors, Role Evidence, direct source references, API availability/registration fields, and dated Draft Availability.
 
 **Draft Shortlist** below means fit-role Nailed Starter + Regular Starter. `Draft Availability` can exclude or flag a listed Player for current selection without changing fit-role.
 
