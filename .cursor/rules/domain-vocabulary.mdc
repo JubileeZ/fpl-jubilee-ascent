@@ -1,0 +1,14 @@
+---
+description: Resolve fuzzy terminology via CONTEXT.md and docs/agents/domain.md. Use when a word is ambiguous/overloaded, naming domain concepts, or checking glossary/ADR vocabulary before inventing language. Read-only — writing glossary/ADRs is grill-with-docs.
+alwaysApply: false
+---
+
+# Domain vocabulary
+
+Read/when-to-open only. Follow `docs/agents/domain.md`. Complements grill-with-docs (writer).
+
+- Open `CONTEXT.md` (or `CONTEXT-MAP.md` + relevant glossaries); ADRs in `docs/adr/` that touch the area.
+- Use glossary terms as defined; do not invent synonyms the glossary avoids.
+- Missing files → proceed silently; do not create them here.
+- Not always-on — do not load full CONTEXT at every session start.
+- Writing glossary/ADRs → `/grill-with-docs` or `/domain-modeling`, not this rule.

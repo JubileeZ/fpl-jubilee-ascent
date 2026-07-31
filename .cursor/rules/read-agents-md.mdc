@@ -1,0 +1,8 @@
+---
+description: Always read AGENTS.md at session start
+alwaysApply: true
+---
+
+# Read AGENTS.md first
+
+Always read the project-level `AGENTS.md` at session start for identity, safety rules, Key Commands, and the session-start ritual.
