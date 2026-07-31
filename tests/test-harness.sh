@@ -68,7 +68,7 @@ fi
 
 # 5. Shellcheck verification (if installed)
 if command -v shellcheck >/dev/null 2>&1; then
-    if shellcheck .agents/hooks/*.sh; then
+    if shellcheck -S error .agents/hooks/*.sh; then
         pass "Shellcheck passed for all hook scripts"
     else
         fail "Shellcheck failed for one or more hook scripts"

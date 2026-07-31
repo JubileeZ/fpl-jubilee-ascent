@@ -28,9 +28,7 @@ flowchart LR
 ```
 
 ### 1. Start
-1. Read `docs/agents/current-state.md` (what exists).
-2. Read `ROADMAP.md` (find first unchecked item in active phase).
-3. (Optional) Pick or create task/issue.
+Follow lean always-on ritual in `AGENTS.md` (`task.md` if present; ROADMAP active / first unchecked only; `current-state` when unfamiliar or existence may have changed). Then pick or create task/issue.
 
 ### 2. During work
 - Comment on task/issue if blocked or scope changes.
@@ -60,6 +58,45 @@ flowchart LR
 
 ---
 
+## Compaction (in place)
+
+Keep live tracking docs small. Prefer rewrite in place.
+
+1. **ROADMAP — Active-Phase Compaction.** Phase done → collapse checklist to one header/summary line. Only active phase expanded.
+2. **current-state = current truth only.** What exists / gaps **today**. Drop stale narrative; move historical dumps to archive (leave one-line pointer).
+3. **CONTEXT = glossary only.** Terms + definitions. No implementation progress, phase history, or design dumps.
+
+ADRs stay in `docs/adr/`. Supersede via status — do not move into archive.
+
+---
+
+## Archive (`docs/archive/`)
+
+Historical detail off the live path, still in git.
+
+**Layout**
+
+- Multi-file: `docs/archive/<kebab-slug>/` (optional `index.md`)
+- Single file: `docs/archive/<kebab-slug>.md`
+- Optional date: `docs/archive/<YYYY-MM-DD>-<kebab-slug>.md` or dated folder
+
+Create `docs/archive/` lazily on first dump. After moving detail, leave pointer in live file.
+
+**When to archive**
+
+- Completed phase checklist too long for one-line ROADMAP summary, detail still useful
+- Superseded design / research dumps no longer current truth
+- Long narrative removed from `current-state` so file stays a snapshot
+
+**Never archive**
+
+- Live `CONTEXT.md` / `CONTEXT-MAP.md` — trim in place at root
+- ADRs — keep under `docs/adr/`; mark superseded / accepted
+
+Archive is not always-on. Open only when task needs historical detail.
+
+---
+
 ## Multi-device sync
 - **Syncs via Git:** Code, docs (`ROADMAP.md`, `current-state.md`, ADRs), issues.
 - **Does not sync:** `.tmp/agent/` session plans, handoffs, scratch artifacts, local build caches, local `.env`.
@@ -69,9 +106,10 @@ Pull before starting. Read `current-state.md` after pull — not previous chat.
 ---
 
 ## Checklist for agents (copy mentally)
-- [ ] Read `current-state.md` at session start
+- [ ] Lean always-on ritual followed (`AGENTS.md`)
 - [ ] Task/issue created or referenced
 - [ ] Tests + lint pass
 - [ ] `ROADMAP.md` checkbox(es) updated
 - [ ] `current-state.md` updated if existence table changed
+- [ ] Compaction / archive applied if phase advanced or live docs bloated
 - [ ] Task closed with summary

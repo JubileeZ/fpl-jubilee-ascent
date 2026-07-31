@@ -1,6 +1,6 @@
 # Current Implementation State
 
-Read if no prior context. `ROADMAP.md` shows target; this file shows what exists today.
+Read if no prior context. `ROADMAP.md` shows target; this file shows what exists today. Current truth only — historical dumps → `docs/archive/` (see `docs/agents/progress.md`).
 
 **Current phase:** New-season readiness complete — see `ROADMAP.md` Phase 5. All tracked implementation issues are closed (`JubileeZ/FPL-Jubilee-Ascent`).
 

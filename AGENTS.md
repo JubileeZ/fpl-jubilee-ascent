@@ -114,11 +114,16 @@ docs/         # Durable project documentation and decision records
 <!-- AZG:MANAGED:START -->
 ## Session start
 
-1. Read `docs/agents/current-state.md` (if unfamiliar with repo state).
-2. Read `ROADMAP.md` (first unchecked item in active phase).
-3. Read `task.md` Work Packet / open issues (if present).
-4. Run `git log -5 --oneline` + `git status` (to sync history).
-5. Do not rely on chat history.
+Lean always-on only:
+
+1. Read `task.md` Work Packet if present.
+2. Read `ROADMAP.md` active phase / first unchecked item only (not archived or collapsed phases).
+3. Read `docs/agents/current-state.md` Active phase + What exists / gaps when unfamiliar, or when existence may have changed.
+4. Run `git log -5 --oneline` + `git status`.
+5. Treat `AGENTS.md` / rules as pointer index — open linked docs only when the task needs them.
+6. Do not rely on chat history.
+
+Not always-on: full `CONTEXT.md`, `docs/agents/progress.md`, `docs/agents/issue-tracker.md`, archived ROADMAP, research notes.
 
 Before Checkpoint (git commit of in-progress work): update Work Packet SFDBN fields in `task.md`.
 
@@ -138,15 +143,15 @@ Before Checkpoint (git commit of in-progress work): update Work Packet SFDBN fie
 
 ## Domain Vocabulary
 
-- Ambiguous terminology? Read `docs/agents/domain.md`.
-- New terms? Create `CONTEXT.md` at root from `docs/agents/CONTEXT.md.tmpl` to register glossary.
+- Ambiguous terminology? Use `domain-vocabulary` skill / rule, or read `docs/agents/domain.md`.
+- New terms? Create `CONTEXT.md` at root from `docs/agents/CONTEXT.md.tmpl` to register glossary (or `/grill-with-docs`).
 
 ---
 
 ## Progress & Issues
 
-- Progress workflow: read `docs/agents/progress.md`.
+- Progress workflow: use `progress-updates` skill / rule, or read `docs/agents/progress.md`.
 - Issue tracker setup: read `docs/agents/issue-tracker.md`.
-- Compaction: collapse completed phase checklists in `ROADMAP.md` to a single header/summary line (Active-Phase Compaction).
-- Cleanup: follow File & Documentation Lifecycle; delete transient artifacts once milestone/task is complete.
+- Compaction / archive: see `docs/agents/progress.md` (Active-Phase Compaction; current-state = current truth; CONTEXT glossary-only; `docs/archive/` when-to-archive). Never archive live `CONTEXT.md` / `CONTEXT-MAP.md`; never relocate ADRs from `docs/adr/`.
+- Cleanup: delete transient session files (`task.md`, `implementation_plan.md`, `walkthrough.md`) once milestone/task is complete.
 <!-- AZG:MANAGED:END -->
