@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Role and availability audit complete for 2026-07-31 evidence stamp; Checkpoint pending.
-- **Files:** `CONTEXT.md`; `task.md`; `docs/research/expected-role-gw1-5.md` (human-readable note → canonical CSV); `data/research/expected-role-gw1-5.csv`; `docs/agents/current-state.md`
-- **Decisions:** 339 XI Contention rows; fit-role Draft = 193 (90 Nailed + 103 Regular); Rotation 99; Cameo 47. Perri → Rotation; Pope/Kinsky → Regular. Added API/official availability and registration fields; current Draft = 179 eligible, 9 watch, 4 exclude GW1, 1 exclude GW1–5. Saliba fit-role Nailed but excluded GW1–5; Saka/Mac Allister fit-role retained with GW1 watch.
+- **Status:** Docs & Research policy consolidation complete; final gates passed.
+- **Files:** `AGENTS.md`; `CONTEXT.md`; `task.md`; `docs/research/expected-role-gw1-5.md` → canonical `data/research/expected-role-gw1-5.csv`; `docs/agents/current-state.md`
+- **Decisions:** `data/research/<topic-slug>.*` companion convention; Research Note `Artifact` link required; three-topic Active research index; archive immutability rules consolidated under Historical Archive Testing. Expected Role audit remains 339 rows / 193 fit-role Draft.
 - **Blocked:** Participation State ingest/availability guard and calibration follow-up only.
-- **Next:** Run final gates, remove `.tmp/agent` scratch reports/helper, then Checkpoint; no model wiring in this packet.
+- **Next:** Map Expected Role Table to Participation State priors in follow-up packet; no model wiring in this packet.
