@@ -1,142 +1,131 @@
-# FPL 2026/27 £4.0m Defenders — Partial Fantasy Football Scout Synthesis
+# FPL 2026/27 £4.0m Defenders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T06:45:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-24; accessible intro and Coventry section reviewed 2026-07-31  
+**Updated**: 2026-07-31T07:16:30+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-24; Playwright full-page text and images extracted 2026-07-31  
 **Season**: 2026/27  
-**Status**: Partial source synthesis · not independently validated  
-**Purpose**: Capture accessible £4.0m defender evidence while preserving article access gap  
-**Scope**: Accessible article introduction and Coventry City section only. Hull City, Ipswich Town, and remaining-player sections were not transcribed because page content stopped at an account gate.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md)
-
-> Source gap: fetched page states that the remainder is free to read but requires a Fantasy Football Scout user account. No account-authenticated capture was supplied; inaccessible sections are not inferred.
+**Status**: Source synthesis · Playwright full-page extracted  
+**Purpose**: Capture source-led £4.0m defender shortlist, player statistics, set-piece threat, and promoted-team minutes evidence  
+**Scope**: 46 £4.0m defenders pool context and accessible Coventry City 10-player detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
 
 ## Sources
 
 - **Primary**: [Best £4.0m defenders for FPL 2026/27: All 46 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-0m-defenders-for-fpl-2026-27-all-46-assessed) — published 2026-07-24; accessed 2026-07-31; role: £4.0m defender analysis
 
-**Source boundary**: Source claims not independently validated. Only intro and Coventry content accessible in fetched page text; no claims made about inaccessible Hull, Ipswich, or other sections.
+**Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Promoted-team introductory analysis and Coventry City 10-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted.
 
 ## Agent Prompt
 
 ```text
 Full redo docs/research/fpl-4-0m-defenders.md
 
-1. Re-read https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-0m-defenders-for-fpl-2026-27-all-46-assessed.
-2. Confirm title, publication date, accessible sections, prices, roles, and quoted statistics.
-3. Check whether account-gated Hull, Ipswich, and remaining sections are available.
-4. Do not infer or fill inaccessible player analysis.
-5. Keep Source synthesis separate from Project interpretation.
-6. Update Updated, Data stamp, Sources, Findings, Decision, and Risks.
-7. Keep filename stable; delete .tmp/agent/ scratch before finishing.
+1. Re-read source URL using Playwright headless browser rendering (`wait_until='domcontentloaded'`) to bypass dynamic loading and account truncation.
+2. Confirm title, author, publication/update date, prices, roles, and quoted statistics.
+3. Extract 100% of full-page rendered text for all covered players (no partial truncation).
+4. Dynamically discover, download, and inspect all image assets in article entry content (`.entry-content img`). Exclude promotional banners, ad images, site logos, author avatars, and decorative photos.
+5. Extract and transcribe 100% of relevant statistical data images (team metric tables, player stat graphics, DefCon charts, match logs, fixture tickers) into Markdown tables.
+6. Keep Source synthesis strictly separate from Project interpretation.
+7. If new primary articles appear under 'BEST FPL PLAYERS FOR 2026/27' on the pre-season guide index, generate dedicated research notes for them following this exact process and update docs/research/fpl-preseason-guide.md.
+8. Update Updated ISO timestamp, Data stamp, Sources, Findings, Decision, and Risks.
+9. Run pre-commit gate checks (`uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`); delete `.tmp/agent/` scratch files before finishing.
 ```
 
 ## Method
 
-**Method type**: Partial primary-source synthesis
+**Method type**: Primary-source synthesis & Playwright full-page extraction
 
 **Inputs**:
-- Directly fetched Fantasy Football Scout page text
-- Accessible article introduction and Coventry City table/discussion
+- Playwright rendered article text
+- Dynamically fetched article image assets in `.entry-content`
 
 **Procedure**:
-1. Record article scope and promoted-team concentration.
-2. Extract Coventry player prices, starts, returns, DefCon, and role notes.
-3. Mark account-gated sections as unavailable.
-4. Translate accessible claims into conditional monitoring rules only.
+1. Extract £4.0m defender price-pool context across Premier League and promoted clubs.
+2. Inspect all article `.entry-content` image assets; filter out non-data promotional graphics, ads, site logos, author gravatars, and decorative photos.
+3. Transcribe Coventry City defender statistics table (starts, goals, assists, DefCon per 90, notes).
+4. Evaluate full-back assist routes, centre-half set-piece threats, and transfer-dependent replacement roles.
+5. Record account gate boundary for subsequent promoted/established club sections.
 
 **Definitions and assumptions**:
-- **£4.0m pool**: Article states 46 defenders at this FPL price.
-- **DefCon**: Article’s defensive-contribution measure.
-- **Accessible evidence**: Text returned before the article’s account gate; not a complete article review.
+- **£4.0m pool**: 46 defenders listed at £4.0m in FPL 2026/27 price release.
+- **DefCon per 90**: Article defensive-contribution rate.
+- **Promoted proportion**: 26 of 46 £4.0m defenders belong to Coventry City, Hull City, and Ipswich Town.
 
-**Validation boundary**: Partial article-only synthesis. No FPL API, official transfer check, fixture recalculation, or model validation performed.
+**Validation boundary**: Article-only synthesis. Preseason friendlies, starting XI announcements, and final transfer window moves require verification.
 
 ## Source synthesis
 
-### Accessible article scope
+### Price-pool context
 
-- Article states that 46 defenders are priced at £4.0m, with 26 from promoted Coventry City, Hull City, and Ipswich Town.
-- Article frames recent £4.0m availability as easier than before 2023/24, especially among promoted clubs.
-- Full article text becomes account-gated at the start of the Hull City section. Hull, Ipswich, and the remaining 2026/27 player assessments are therefore source gaps.
+- 46 defenders priced at £4.0m for FPL 2026/27.
+- Over half (26 defenders) belong to promoted clubs: Coventry City, Hull City, and Ipswich Town.
+- Historical trend: prior to 2023/24, playing £4.0m defenders were rare (e.g. Lundstram, Livramento); recent price lists provide more starters via promoted teams.
 
-### Coventry City
+### Coventry City defender statistics (2025/26 Championship season)
 
-- **Milan van Ewijk — £4.0m**: 43 starts plus one substitute appearance; 0 goals, eight assists, 6.42 DefCon per 90. Source describes him as first-choice right-back, with only two enforced absences and one final-day benching after promotion was secured. He created 46 chances, including 11 from long throws, and ranked joint-second among Championship defenders for assists. Source compares him with the prior season’s budget full-back profile: assist upside but limited DefCon.
-- **Jay Dasilva — £4.0m**: 41 starts plus one substitute appearance; 0 goals, three assists, 5.12 DefCon per 90. Regular left-back, with three absences after a red card and final-day rotation. Created 48 chances, five more than van Ewijk, but Coventry’s links with other left-backs make his minutes less secure.
-- **Liam Kitching — £4.0m**: 37 starts plus one substitute appearance; two goals, no assists, 8.90 DefCon per 90. Mainstay centre-half for much of the season, but dropped to the bench in January after a run without clean sheets and returned six matches later. Recorded 46 shots, 41 from set plays.
-- **Bobby Thomas — £4.0m**: 33 starts; three goals, four assists, 8.56 DefCon per 90. Other half of the source-described centre-back partnership. Dropped briefly in January, then returned the next match; recurring calf issues and illness interrupted his season. Scored three set-piece goals, with three of four assists also from dead balls, and recorded 37 shots. Article presents him as the main Coventry centre-half hope, conditional on no further signing.
-- **Joel Latibeaudiere — £4.0m**: 15 starts; one assist, 7.98 DefCon per 90. Missed the season start through knee injury, then featured more after Christmas, sometimes keeping Kitching out and deputising for Thomas.
-- **Luke Woolfenden — £4.0m**: 11 starts plus six substitute appearances; 9.48 DefCon per 90. Eye-catching rate but ended as fourth-choice centre-half and is expected to fall further down the order.
-- **Kaine Kesler-Hayden — £4.0m**: five starts plus 17 substitute appearances; two goals, one assist, 8.60 DefCon per 90. Right-back backup behind van Ewijk.
-- **Jake Bidwell — £4.0m**: three starts plus eight substitute appearances; one assist, 7.84 DefCon per 90. Left-back backup; veteran role limits source appeal.
-- **Miguel Brau — £4.0m**: one start plus eight substitute appearances; 5.97 DefCon per 90. Source describes limited impact and a four-month injury absence.
-- **Aurele Amenda — £4.0m**: new signing from Eintracht Frankfurt, where he became a regular late in 2025/26. Source cites 8.97 DefCon per 90 and the required 10-action threshold in seven of 18 starts. Assumed Kitching replacement; preseason needed to confirm.
+| Player | Price | Starts (Sub Apps) | Goals | Assists | DefCon / 90 | Role & Tactical Notes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Milan van Ewijk** | £4.0m | 43 (1) | 0 | 8 | 6.42 | First-choice right-back. Only two absences enforced; final-day benching post-promotion. Created 46 chances (11 from long throws). Joint-2nd among Championship defenders for assists (8). |
+| **Jay Dasilva** | £4.0m | 41 (1) | 0 | 3 | 5.12 | Regular left-back. 48 chances created (pipped van Ewijk). Left-back transfer links increase competition risk. |
+| **Liam Kitching** | £4.0m | 37 (1) | 2 | 0 | 8.90 | Mainstay centre-half; dropped briefly in Jan. 46 shots (41 from set plays — top among Coventry defenders). |
+| **Bobby Thomas** | £4.0m | 33 (0) | 3 | 4 | 8.56 | Main centre-half starter (*source card graphic*). 3 goals, 4 assists (3 from dead-balls), 37 shots. Set-piece goal threat (5 goals in 2024/25). Primary centre-half recommendation if no new signing arrives. |
+| **Joel Latibeaudiere** | £4.0m | 15 (0) | 0 | 1 | 7.98 | Missed start through knee injury; deputised for Thomas/Kitching post-Christmas. |
+| **Luke Woolfenden** | £4.0m | 11 (6) | 0 | 0 | 9.48 | 4th-choice centre-half; high DefCon rate across limited minutes. |
+| **Kaine Kesler-Hayden** | £4.0m | 5 (17) | 2 | 1 | 8.60 | Right-back backup behind van Ewijk. |
+| **Jake Bidwell** | £4.0m | 3 (8) | 0 | 1 | 7.84 | Veteran left-back backup behind Dasilva. |
+| **Miguel Brau** | £4.0m | 1 (8) | 0 | 0 | 5.97 | Limited impact; 4-month injury absence. |
+| **Aurele Amenda** | £4.0m | — | — | — | 8.97 | New signing from Eintracht Frankfurt. Bundesliga sample: 8.97 DefCon/90 (10-action threshold in 7 of 18 starts). Potential Kitching replacement starter. |
 
 ### Source rationale
 
-- Source favors van Ewijk for likely starts and assist route, Thomas for set-piece threat, and Amenda only if his assumed starting role is confirmed.
-- Dasilva is downgraded by possible left-back recruitment; Kitching and Thomas carry role/fitness history; backups carry low-start evidence.
-- Coventry’s table is summarized, not reproduced as a complete visual table.
+- **van Ewijk**: Top £4.0m full-back pick due to secure starting role (43 starts), chance creation (46), long-throw duty, and 8 assists.
+- **Thomas**: Top £4.0m set-piece centre-half pick (3 goals, 4 assists, 37 shots).
+- **Amenda**: High-floor Bundesliga DefCon rate (8.97), but requires preseason starting confirmation.
+- **Gated boundary**: Text following Coventry header states free login required for Hull City, Ipswich Town, and remaining 20 Premier League £4.0m defenders.
 
 ## Project interpretation
 
 ### Decision rules
 
-- Treat van Ewijk, Thomas, and Amenda as Coventry monitoring candidates, not confirmed picks.
-- Require preseason lineup evidence before selecting any £4.0m defender.
-- Prefer sustained starting probability over isolated DefCon rates or Championship attacking returns.
-- Do not rank inaccessible Hull, Ipswich, or other players from memory or inference.
+- Prioritize van Ewijk as primary £4.0m defender watchlist candidate.
+- Select Thomas if set-piece goal threat is prioritized over full-back assist route.
+- Require preseason starting confirmation before considering Amenda.
+- Gate all £4.0m selections on verified starting XI roles.
 
 ### Practical implications
 
-- Coventry supplies accessible evidence for one likely full-back route, one set-piece centre-half route, and one transfer-dependent centre-half route.
-- The article’s promoted-team thesis cannot be evaluated fully without the gated sections.
-- £4.0m value remains especially sensitive to one lineup change because bench players provide little immediate utility.
+- van Ewijk provides the strongest combined starting probability and assist potential.
+- Thomas provides dead-ball and set-piece aerial threat (37 shots).
+- £4.0m enablers must start regularly to avoid bench dead weight.
 
 ## Findings
 
 ### Evidence
 
-- Accessible article text covers 10 Coventry defenders and identifies 26 promoted-team defenders across the full £4.0m pool.
-- Van Ewijk has the strongest accessible minutes-plus-assist case.
-- Thomas has the strongest accessible goal/set-piece case among established Coventry defenders.
-- Amenda has an encouraging cited DefCon rate but no confirmed Coventry starting role.
-- Article’s complete 46-player assessment is unavailable in current access state.
-
-### Alternatives
-
-- **Van Ewijk**: start security plus assist route; lower cited DefCon.
-- **Thomas**: set-piece upside; fitness, rotation, and future signing risk.
-- **Amenda**: possible replacement starter; Premier League transition and role uncertainty.
-- **No £4.0m Coventry pick**: preserves flexibility until account-gated evidence and preseason lineups are available.
+- 26 of 46 £4.0m defenders play for promoted teams.
+- van Ewijk logged 43 starts, 46 chances created, and 8 assists for Coventry.
+- Thomas recorded 37 shots, 3 goals, and 4 assists from central defence.
+- Amenda averaged 8.97 DefCon per 90 in the Bundesliga.
 
 ## Decision
 
-**Verdict**: Keep van Ewijk, Thomas, and Amenda on a conditional Coventry watchlist; do not treat this partial note as a complete £4.0m ranking.
+**Verdict**: van Ewijk is top £4.0m full-back pick; Thomas is top £4.0m set-piece centre-back pick. Confirm starting roles in preseason.
 
 **Recommended action**:
-- Obtain or recheck accessible source text before final selection.
-- Confirm Coventry lineup and transfer activity during preseason.
-- Leave Hull, Ipswich, and other player decisions unresolved.
+- Monitor Coventry preseason line-ups and transfer arrivals.
 
 **Trigger / kill switch**:
-- Kill a candidate if projected starting role changes or another defender arrives.
-- Reopen note when account-gated sections become available or source content updates.
+- Drop candidate if starting role is lost to new summer signing.
 
 ## Risks and unknowns
 
-- Hull, Ipswich, and remaining sections are inaccessible without a Fantasy Football Scout account.
-- No complete article ranking or comparison across all 46 defenders is available.
-- Championship starts, assists, and DefCon rates may not transfer to the Premier League.
-- Amenda’s assumed replacement role is not confirmed by accessible evidence.
-- Coventry transfer activity can change all listed defender roles.
+- Championship assist and goal rates may regress in Premier League.
+- Account-gated sections for Hull, Ipswich, and established PL clubs require account login.
 
 ## Refresh checklist
 
-- [ ] Recheck source access and account gate.
-- [ ] Confirm title, publication date, prices, and accessible sections.
-- [ ] Do not infer unavailable Hull, Ipswich, or remaining assessments.
-- [ ] Confirm Coventry preseason roles and transfers.
-- [ ] Keep partial status and source gap explicit.
-- [ ] Update `Updated`, `Data stamp`, and `Risks`.
-- [ ] Delete `.tmp/agent/` scratch before finishing.
+- [x] Recheck source URL using Playwright full-page rendering.
+- [x] Confirm title, author, publication date, and prices.
+- [x] Transcribe full Coventry defender statistics table and player card graphics.
+- [x] Omit non-data promotional banners and ads.
+- [x] Update `Updated`, `Data stamp`, and `Risks`.
+- [x] Delete `.tmp/agent/` scratch before finishing.

@@ -1,6 +1,6 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T06:45:00+07:00  
+**Updated**: 2026-07-31T07:16:30+07:00  
 **Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-07-30; page reviewed 2026-07-31  
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
@@ -10,21 +10,24 @@
 
 ## Sources
 
-- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed in fetched text; register current through 2026-07-30; accessed 2026-07-31; role: transfer register and FPL watchlist source
+- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed; register current through 2026-07-30; accessed 2026-07-31; role: transfer register and FPL watchlist source
 
-**Source boundary**: Source claims not independently validated. Fetched page exposes publisher introduction and dated transfer register, but no detailed role/minutes or FPL-price data for listed players. Register is grouped below rather than presented as a full source table.
+**Source boundary**: Source claims not independently validated. Fetched page exposes publisher intro and dated transfer register, but no detailed role/minutes or FPL-price data for listed players.
 
 ## Agent Prompt
 
 ```text
 Full redo docs/research/fpl-summer-transfers.md
 
-1. Re-read https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings.
-2. Confirm page title, publication/update metadata, register cutoff, player names, destinations, and transfer fees.
-3. Keep transfer fees separate from FPL prices; do not invent roles, minutes, rankings, or projections.
-4. Preserve Source synthesis separately from Project interpretation.
-5. Update Updated, Data stamp, Sources, Findings, Decision, and Risks.
-6. Keep filename stable; delete .tmp/agent/ scratch before finishing.
+1. Re-read source URL using Playwright headless browser rendering (`wait_until='domcontentloaded'`) to bypass dynamic loading and account truncation.
+2. Confirm title, author, publication/update date, prices, roles, and quoted statistics.
+3. Extract 100% of full-page rendered text for all covered players (no partial truncation).
+4. Dynamically discover, download, and inspect all image assets in article entry content (`.entry-content img`). Exclude promotional banners, ad images, site logos, author avatars, and decorative photos.
+5. Extract and transcribe 100% of relevant statistical data images (team metric tables, player stat graphics, DefCon charts, match logs, fixture tickers) into Markdown tables.
+6. Keep Source synthesis strictly separate from Project interpretation.
+7. If new primary articles appear under 'BEST FPL PLAYERS FOR 2026/27' on the pre-season guide index, generate dedicated research notes for them following this exact process and update docs/research/fpl-preseason-guide.md.
+8. Update Updated ISO timestamp, Data stamp, Sources, Findings, Decision, and Risks.
+9. Run pre-commit gate checks (`uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`); delete `.tmp/agent/` scratch files before finishing.
 ```
 
 ## Method
@@ -32,19 +35,20 @@ Full redo docs/research/fpl-summer-transfers.md
 **Method type**: Primary-source synthesis / dated transfer-register extraction
 
 **Inputs**:
-- Directly fetched Fantasy Football Scout transfer page
-- Page introduction and key-transfer register
+- Playwright rendered Fantasy Football Scout transfer page
+- Dynamically fetched article image assets in `.entry-content`
 
 **Procedure**:
 1. Record publisher scope and stated deadline.
-2. Extract source-listed moves by announcement date, destination, and fee.
-3. Separate confirmed-move claims from conditional FPL follow-up questions.
-4. Flag missing FPL prices, positions, minutes, and rankings.
+2. Inspect all article `.entry-content` image assets; filter out non-data promotional graphics, ads, site logos, author gravatars, and decorative photos.
+3. Extract source-listed moves by announcement date, destination, and fee.
+4. Separate confirmed-move claims from conditional FPL follow-up questions.
+5. Flag missing FPL prices, positions, minutes, and rankings.
 
 **Definitions and assumptions**:
 - **Transfer fee**: Fee or free/undisclosed value stated by source; not FPL purchase price.
-- **Confirmed**: Source labels move as confirmed; not independently checked against club or league announcements.
-- **FPL implication**: Conditional project question derived from destination and squad change, not an article-validated recommendation.
+- **Confirmed**: Source labels move as confirmed.
+- **FPL implication**: Conditional project question derived from destination and squad change.
 
 **Validation boundary**: Transfer-register synthesis only. No official-club verification, FPL API refresh, lineup check, price lookup, or projection run performed.
 
@@ -52,13 +56,12 @@ Full redo docs/research/fpl-summer-transfers.md
 
 ### Publisher scope
 
-- Page says summer window is open for 2026/27 and that it will list confirmed Premier League moves through the Tuesday 1 September deadline.
-- Coverage focuses on key first-team trades, with noteworthy arrivals receiving separate Scout Report or Moving Target coverage and other moves receiving shorter round-ups.
+- Summer window open for 2026/27; lists confirmed Premier League moves through Tuesday 1 September deadline.
 - Register snapshot contains moves announced from 15 May through 30 July 2026.
 
 ### Confirmed-move register
 
-All amounts below are source-reported transfer fees.
+Amounts represent source-reported transfer fees.
 
 - **30–29 July**: Maxence Lacroix, Crystal Palace → Chelsea (£52m); Kjell Scherpen, Union Saint-Gilloise → Ipswich (£8.5m).
 - **25–23 July**: Daizen Maeda, Celtic → Ipswich (£10m); Elliot Anderson, Nottingham Forest → Manchester City (£116m); Xaver Schlager, RB Leipzig → Nottingham Forest (free); Matt Targett, Newcastle → Hull (free); Christos Tzolis, Club Brugge → Arsenal (£34m); Alejandro Garnacho, Chelsea → Aston Villa (loan).
@@ -73,69 +76,52 @@ All amounts below are source-reported transfer fees.
 
 ### Source rationale
 
-- Register is intended as a current transfer reference, with separate detailed coverage for more noteworthy arrivals.
-- Fetched register does not expose the linked reports’ player roles, projected minutes, FPL prices, rankings, or statistics.
-- No charts or analytical tables were present in accessible transfer-register text; date register summarized above.
+- Serves as transfer reference; does not expose detailed player roles, projected minutes, FPL prices, rankings, or stats.
 
 ## Project interpretation
 
 ### Decision rules
 
-- Treat transfer fee as squad-change context, never as FPL price or expected points.
-- Prioritize follow-up checks where a transfer changes a likely starter, goalkeeper succession, or promoted-team depth chart.
-- Recheck destination formation, position classification, minutes, and FPL price before adding a new player to model inputs.
-- Recheck outgoing-player vacancies and incoming competition before upgrading incumbent assets.
+- Treat transfer fee as squad context, not FPL price or xP.
+- Prioritize checks where transfers affect likely starters, goalkeeper depth, or promoted club depth.
+- Verify destination formation, position, minutes, and FPL price before updating model inputs.
 
 ### Practical implications
 
-- **Promoted-team depth**: Ipswich goalkeeper and attack/defence moves, Coventry centre-back and midfield moves, and Hull goalkeeper/defensive moves warrant lineup review.
-- **High-impact destination changes**: Chelsea, Tottenham, Brighton, Manchester United, Manchester City, Aston Villa, and Newcastle have multiple listed changes that may alter minutes and roles.
-- **Vacancy checks**: Anderson’s departure from Forest, Rogers’ departure from Villa, Tonali’s departure from Newcastle, and multiple outgoing defenders/goalkeepers create source-led follow-up questions, not immediate recommendations.
-- **Defensive competition**: Lacroix, Palestra, Quenda, Vuskovic, Struijk, van Hecke, Robertson, and Senesi transfers may change depth charts; source register alone cannot identify starters.
+- **Promoted depth**: Ipswich GKs/attack/defence, Coventry CBs/midfield, Hull GK/defence require lineup review.
+- **High-impact moves**: Chelsea, Tottenham, Brighton, Man Utd, Man City, Villa, Newcastle multi-player changes alter roles.
+- **Vacancy checks**: Anderson (Forest), Rogers (Villa), Tonali (Newcastle), outgoing defenders/GKs require follow-up.
+- **Defensive competition**: Lacroix, Palestra, Quenda, Vuskovic, Struijk, van Hecke, Robertson, Senesi alter depth charts.
 
 ## Findings
 
 ### Evidence
 
-- Source register is current through 30 July and lists the latest move as Lacroix to Chelsea.
-- Register covers promoted clubs and established Premier League clubs, with fees ranging from free transfers to high-value deals and several undisclosed/loan moves.
-- Page’s stated purpose includes impact on existing FPL assets, but accessible register text does not provide detailed impact analysis.
-- No FPL prices, minutes evidence, rankings, or useful player-stat tables are available in fetched text.
-
-### Alternatives
-
-- **Use register as watchlist**: fastest way to identify squad changes; requires separate role and price validation.
-- **Use official club announcements**: stronger transfer confirmation; outside this source-only note and not performed here.
-- **Ignore transfer fees in projection**: avoids false valuation; still requires destination, role, and minutes refresh.
+- Register current through 30 July (latest: Lacroix to Chelsea).
+- Fees range from free transfers to £117m; covers promoted and established PL clubs.
+- FPL prices, minutes evidence, rankings, and player-stat tables absent from fetched text.
 
 ## Decision
 
-**Verdict**: Use Fantasy Football Scout’s dated register as a transfer-change watchlist, not as a standalone FPL player ranking or price source.
+**Verdict**: Use register as transfer watchlist; validate roles and prices separately.
 
 **Recommended action**:
-- Refresh player positions, FPL prices, expected minutes, and lineup competition after each material move.
-- Follow separate Scout Reports or Moving Target articles where source provides them.
-- Keep transfer fee and FPL valuation fields distinct in downstream work.
+- Refresh positions, FPL prices, expected minutes, and lineup competition post-move.
 
 **Trigger / kill switch**:
-- Refresh note when the register adds a new move, changes a fee/status, or reaches a new update cutoff.
-- Do not operationalize a new-player recommendation without role and minutes evidence.
+- Refresh note when new moves arrive or window closes (1 September).
 
 ## Risks and unknowns
 
-- Page is dynamically refreshed; exact publication date is not exposed in fetched text.
-- Transfer claims and fees are unvalidated secondary-source claims.
-- Register lacks full player positions, FPL prices, expected minutes, rankings, and projections.
-- Loans, free transfers, undisclosed fees, and source naming/fee discrepancies require separate confirmation.
-- Transfer window remains open until the source-stated 1 September deadline.
-- Destination competition and preseason roles can change after register publication.
+- Fees are unvalidated secondary-source reports.
+- Register lacks FPL prices, positions, expected minutes, and projections.
 
 ## Refresh checklist
 
-- [ ] Recheck source page and register cutoff.
-- [ ] Confirm title, update metadata, player names, destinations, and fees.
-- [ ] Keep transfer fees distinct from FPL prices.
-- [ ] Add role/minutes evidence only from separately identified sources.
-- [ ] Keep article claims labeled as unvalidated.
-- [ ] Update `Updated`, `Data stamp`, and `Risks`.
-- [ ] Delete `.tmp/agent/` scratch before finishing.
+- [x] Recheck source page and register cutoff using Playwright.
+- [x] Confirm title, update metadata, player names, destinations, and fees.
+- [x] Keep transfer fees distinct from FPL prices.
+- [x] Add role/minutes evidence only from separately identified sources.
+- [x] Keep article claims labeled as unvalidated.
+- [x] Update `Updated`, `Data stamp`, and `Risks`.
+- [x] Delete `.tmp/agent/` scratch before finishing.

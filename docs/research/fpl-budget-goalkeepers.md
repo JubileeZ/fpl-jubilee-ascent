@@ -1,136 +1,171 @@
 # FPL 2026/27 Budget Goalkeepers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T06:45:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-28; snapshot reviewed 2026-07-31  
+**Updated**: 2026-07-31T07:16:30+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-28; image stats and text extracted 2026-07-31  
 **Season**: 2026/27  
-**Status**: Source synthesis · not independently validated  
-**Purpose**: Capture source-led £4.0m–£4.5m goalkeeper shortlist and minutes risks  
-**Scope**: Player prices, role evidence, source statistics, fixture/ranking signals, and £4.0m backup routes. No independent fixture or projection validation.  
+**Status**: Source synthesis · image stats extracted  
+**Purpose**: Capture source-led £4.0m–£4.5m goalkeeper shortlist, defensive stats tables extracted from article graphics, and minutes risks  
+**Scope**: Player prices, role evidence, extracted image data tables, fixture/ranking signals, and £4.0m backup routes. No independent fixture or projection validation.  
 **Related**: [Pre-season guide directory](fpl-preseason-guide.md)
 
 ## Sources
 
-- **Primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27 — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; accessed 2026-07-31; role: budget goalkeeper analysis
+- **Primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27 — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; accessed 2026-07-31; role: budget goalkeeper analysis and image stats extraction
 
-**Source boundary**: Source claims not independently validated. Article tables, RMT projections, Fixture Ticker rankings, and clean-sheet visuals summarized rather than fully transcribed.
+**Source boundary**: Source claims not independently validated. Non-data promotional graphics, ads, site logos, and editorial celebration images omitted; article statistical image tables and fixture ticker graphics transcribed directly.
 
 ## Agent Prompt
 
 ```text
 Full redo docs/research/fpl-budget-goalkeepers.md
 
-1. Re-read https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27.
-2. Confirm title, author, publication date, prices, role evidence, and quoted statistics.
-3. Summarize article tables/charts; do not present RMT or fixture claims as validated facts.
-4. Keep Source synthesis separate from Project interpretation.
-5. Update Updated, Data stamp, Sources, Findings, Decision, and Risks.
-6. Keep filename stable; delete .tmp/agent/ scratch before finishing.
+1. Re-read source URL using Playwright headless browser rendering (`wait_until='domcontentloaded'`) to bypass dynamic loading and account truncation.
+2. Confirm title, author, publication/update date, prices, roles, and quoted statistics.
+3. Extract 100% of full-page rendered text for all covered players (no partial truncation).
+4. Dynamically discover, download, and inspect all image assets in article entry content (`.entry-content img`). Exclude promotional banners, ad images, site logos, author avatars, and decorative photos.
+5. Extract and transcribe 100% of relevant statistical data images (team metric tables, player stat graphics, DefCon charts, match logs, fixture tickers) into Markdown tables.
+6. Keep Source synthesis strictly separate from Project interpretation.
+7. If new primary articles appear under 'BEST FPL PLAYERS FOR 2026/27' on the pre-season guide index, generate dedicated research notes for them following this exact process and update docs/research/fpl-preseason-guide.md.
+8. Update Updated ISO timestamp, Data stamp, Sources, Findings, Decision, and Risks.
+9. Run pre-commit gate checks (`uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`); delete `.tmp/agent/` scratch files before finishing.
 ```
 
 ## Method
 
-**Method type**: Primary-source synthesis
+**Method type**: Primary-source synthesis & Playwright image data extraction
 
 **Inputs**:
-- Supplied article capture
-- Article player prices, role statements, 2025/26 goalkeeper statistics, and source rankings
+- Playwright rendered article text
+- Dynamically fetched article image assets in `.entry-content`
 
 **Procedure**:
-1. Extract featured £4.5m candidates and promoted-team alternatives.
-2. Record minutes/starting evidence, relevant defensive statistics, and fixture signals.
-3. Record £4.0m understudy routes and uncertainty.
-4. Translate source claims into conditional project rules without adding independent evidence.
+1. Extract featured £4.5m goalkeeper candidates and promoted-team alternatives from article text.
+2. Inspect all article `.entry-content` image assets; filter out non-data promotional graphics, ads, site logos, author gravatars, and decorative photos.
+3. Inspect and transcribe all data-bearing statistical graphics (team overall defensive stats, home defensive stats, and fixture ticker sequences) into Markdown tables.
+4. Record £4.0m understudy routes and uncertainty.
+5. Translate source claims into conditional project monitoring rules.
 
 **Definitions and assumptions**:
 - **PPMPM**: article shorthand for points per million per match.
-- **Source ranking**: RMT or Fixture Ticker result reported by article; not a project ranking.
+- **Source ranking**: RMT or Fixture Ticker result reported by article; not project ranking.
 - **Backup**: £4.0m goalkeeper described as one injury or suspension away from starting.
 
-**Validation boundary**: Article-only synthesis. Prices, transfers, lineups, fixture ratings, and projections can change before Gameweek 1.
+**Validation boundary**: Article-only synthesis and image extraction. Prices, transfers, lineups, fixture ratings, and projections subject to change before Gameweek 1.
 
 ## Source synthesis
 
+### Extracted image statistics tables
+
+#### Overall defensive statistics (2025/26 season)
+*Source graphic: Overall defensive metrics (sorted by Goals Conceded ascending)*
+
+| Team | Goals Conceded | Clean Sheets | Goal Attempts Conceded | Shots On Target Conceded | Big Chances Conceded | xG Conceded |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **ARS** | 27 | 19 | 314 | 87 | 50 | 28.30 |
+| **MCI** | 35 | 16 | 372 | 124 | 76 | 44.20 |
+| **BHA** | 46 | 10 | 443 | 142 | 77 | 49.13 |
+| **SUN** | 48 | 11 | 544 | 164 | 80 | 54.45 |
+| **AVL** | 49 | 9 | 493 | 160 | 90 | 53.87 |
+| **MUN** | 50 | 8 | 444 | 138 | 72 | 48.57 |
+| **EVE** | 50 | 11 | 534 | 149 | 93 | 56.51 |
+
+#### Home defensive statistics (2025/26 season)
+*Source graphic: Home defensive metrics (sorted by Big Chances Conceded ascending)*
+
+| Team | Goals Conceded | Clean Sheets | Goal Attempts Conceded | Shots On Target Conceded | Big Chances Conceded | xG Conceded |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **BOU** | 20 | 6 | 177 | 58 | 20 | 16.55 |
+| **ARS** | 11 | 11 | 136 | 35 | 23 | 12.38 |
+| **LEE** | 21 | 6 | 210 | 65 | 32 | 22.29 |
+| **BHA** | 20 | 5 | 188 | 68 | 33 | 21.34 |
+| **MUN** | 24 | 4 | 197 | 65 | 33 | 20.82 |
+| **LIV** | 20 | 5 | 211 | 68 | 34 | 22.19 |
+
+#### Extracted opening fixture ticker graphics (GW1–GW6)
+
+- **Tottenham (Kinsky)** (*source fixture graphic*):
+  - GW1: bre (A) · GW2: NEW (H) · GW3: nfo (A) · GW4: EVE (H) · GW5: AVL (H) · GW6: mun (A)
+- **Bournemouth (Petrovic)** (*source fixture graphic*):
+  - GW1: mci (A) · GW2: EVE (H) · GW3: new (A) · GW4: BRE (H) · GW5: LIV (H) · GW6: che (A)
+- **Fulham (Leno)** (*source fixture graphic*):
+  - GW1: CHE (H) · GW2: sun (A) · GW3: CRY (H) · GW4: liv (A) · GW5: MUN (H) · GW6: ips (A)
+
 ### £4.5m candidates
 
-- **Bart Verbruggen — Brighton**: source calls him best-value £4.5m goalkeeper. Brighton reportedly produced five clean sheets in 10 late matches; from Gameweek 28, opponents had league-low 18 big chances. Verbruggen’s cited save-on-target rate was 74.6%; Brighton reportedly conceded 46 goals, 142 shots on target, and 49.13 xGC. Article RMT projected him as top scorer at this price from Gameweeks 1–6, with Leeds and Coventry among early fixtures.
-- **Antonin Kinsky — Tottenham**: source presents him as a potential starter if Guglielmo Vicario leaves and Roberto De Zerbi retains faith. Kinsky’s cited early spell included three wins and clean sheets in four matches before Spurs’ poor season. No promoted opponent until Gameweek 7 reduces immediate fixture appeal.
-- **Djordje Petrovic — Bournemouth**: source ranks him second among £4.5m options by PPMPM. Bournemouth reportedly had an 18-match unbeaten run; home defence ranked second for xGC at 16.55 and first for limiting big chances at 20. A cited Gameweeks 24–30 overperformance was three goals conceded against 11.41 xGC, with 109 saves overall. Europe, Marcos Senesi’s departure, Andoni Iraola’s departure, and a second-worst opening-six Fixture Ticker rank are source risks; no promoted opponent until Gameweek 10.
-- **Bernd Leno — Fulham**: source notes 145 shots on target conceded, fifth-fewest, but 96 big chances conceded, third-most. New manager Alvaro Arbeloa, departures of Marco Silva, Raul Jimenez, and Harry Wilson, and limited new-starter evidence weaken confidence. First five fixtures are described as difficult, followed by Ipswich away, Hull home, and Coventry away.
+- **Bart Verbruggen — Brighton**: cited as best-value £4.5m goalkeeper. Brighton produced five clean sheets in final 10 matches; from GW28, conceded league-low 18 big chances. Verbruggen save rate on target: 74.6% (2nd best). Brighton overall: 46 goals conceded (3rd fewest), 142 shots on target (4th fewest), 49.13 xGC (5th lowest). RMT projects him top scorer at £4.5m for GW1–6 (early opponents: Leeds, Coventry).
+- **Antonin Kinsky — Tottenham**: potential starter if Guglielmo Vicario leaves. Early spell included three wins, clean sheets in four matches. Replaced Vicario (hernia) late in season after early Champions League errors vs Atletico. No promoted opponent until GW7 reduces early schedule rating.
+- **Djordje Petrovic — Bournemouth**: 2nd among £4.5m options by PPMPM. Bournemouth 18-match unbeaten run. Home defence ranked 2nd for xGC (16.55) and 1st for fewest big chances conceded (20). GW24–30 overperformance: 3 goals conceded vs 11.41 xGC; 109 saves overall (joint 3rd most). European fixtures, Senesi departure, Iraola departure, and 2nd worst opening-six Fixture Ticker rank are main risks; no promoted opponent until GW10.
+- **Bernd Leno — Fulham**: 145 shots on target conceded (5th fewest), but 96 big chances conceded (3rd most). Manager Alvaro Arbeloa appointed; Silva, Jimenez, Wilson departed. Difficult first five fixtures: CHE (H), sun (A), CRY (H), liv (A), MUN (H), followed by ips (A), Hull (H), Coventry (A).
 
 ### Promoted-team goalkeepers
 
-- **Coventry**: FPL lists Ben Wilson at £4.5m, but source says he appeared only in cup matches while loan goalkeeper **Carl Rushworth — £4.5m** started all 46 league matches. Coventry reportedly conceded 45, the fewest in their division. Rushworth’s permanent future and poor opening-six Fixture Ticker rank remain unresolved.
-- **Ipswich**: **Christian Walton — £4.5m** is being moved aside in favor of **Kayne van Oevelen — £4.5m** and **Kjell Scherpen — £4.5m**. Ipswich reportedly kept 15 clean sheets in the final 32 matches, 17 overall, and ranked second for xGC at 46.60. Source ranks their fixtures fourth through Gameweek 6, subject to goalkeeper selection.
-- **Hull**: **Jack Butland — £4.5m** replaces Ivor Pandur after his move to Rangers; Konstantinos Tzolakis is also reported as a possible arrival. Hull reportedly conceded 66 goals and had 80.10 xGC, second-most in the Championship.
+- **Coventry**: FPL lists Ben Wilson at £4.5m, but loan goalkeeper **Carl Rushworth — £4.5m** started all 46 league matches. Coventry conceded division-fewest 45 goals. Permanent deal pending; opening-six Ticker rank poor.
+- **Ipswich**: **Christian Walton — £4.5m** replaced by **Kayne van Oevelen — £4.5m** and **Kjell Scherpen — £4.5m**. Ipswich kept 15 clean sheets in final 32 matches (17 total), ranked 2nd for xGC (46.60). Fixture rank: 4th through GW6.
+- **Hull**: **Jack Butland — £4.5m** replaces Ivor Pandur (moved to Rangers); Konstantinos Tzolakis also reported target. Hull conceded 66 goals, 80.10 xGC (2nd most in Championship).
 
 ### £4.0m routes
 
-- Source identifies only four apparent one-injury-or-suspension-away options: **Fraser Forster** at Bournemouth, **Jason Steele** at Brighton, **Benjamin Lecomte** at Fulham, and **Martin Dubravka** at Tottenham.
-- These are listed as understudies to Petrovic, Verbruggen, Leno, and Kinsky respectively.
-- Source suggests doubling up on a club’s £4.5m starter and £4.0m backup, or monitoring whether Kinsky loses his place to Dubravka.
-
-### Source rationale
-
-- Source favors a combination of credible starting role, late defensive momentum, early fixtures, and RMT output.
-- Promoted-team goalkeeper selection is unresolved where transfers or loans changed the depth chart.
-- Article’s charts and tables are summarized above; visual values not shown in text are not reconstructed.
+- Four minimum-priced understudies identified: **Fraser Forster** (Bournemouth), **Jason Steele** (Brighton), **Benjamin Lecomte** (Fulham), and **Martin Dubravka** (Tottenham).
+- Understudies to Petrovic, Verbruggen, Leno, and Kinsky.
+- Doubling starter + backup recommended if squad budget requires £4.0m cover; Dubravka potential challenger to Kinsky.
 
 ## Project interpretation
 
 ### Decision rules
 
-- Require confirmed starter status before selecting a £4.5m goalkeeper as an opening-week asset.
-- Treat RMT’s first-six ranking as a hypothesis requiring minutes, fixture, and transfer checks.
-- Use £4.0m backups only when their club’s starter and succession path are clear.
-- Reassess promoted-team goalkeepers after preseason lineups and final transfer news.
+- Require confirmed starter status before selecting £4.5m goalkeeper for GW1.
+- Treat RMT first-six rankings as hypotheses requiring minutes, fixture, and transfer checks.
+- Use £4.0m backups only when starter and succession path are clear.
+- Reassess promoted-team goalkeepers after preseason lineups and transfer window close.
 
 ### Practical implications
 
-- Verbruggen offers the strongest source-led blend of price, late defensive indicators, and early projection.
-- Kinsky, Rushworth, van Oevelen, Scherpen, and Butland carry selection or transfer uncertainty.
-- Petrovic has strong cited defensive history but the largest schedule and manager-change caveats.
-- A £4.0m backup can reduce transfer cost only if actual succession probability is credible.
+- Verbruggen shows strongest source-led blend of price, late defensive stats (46 GC, 10 CS, 49.13 xGC), and early schedule.
+- Kinsky, Rushworth, van Oevelen, Scherpen, and Butland carry selection/transfer uncertainty.
+- Petrovic has strong home stats (20 GC, 20 BCC, 16.55 xGC) but top schedule and managerial changes.
+- £4.0m backup provides transfer insurance only if succession path is reliable.
 
 ## Findings
 
 ### Evidence
 
-- Source’s main £4.5m shortlist: Verbruggen, Kinsky, Petrovic, and Leno.
-- Source gives Verbruggen the strongest early RMT signal and Petrovic the strongest cited value after him.
-- Promoted-team goalkeeper roles remain unsettled at Coventry, Ipswich, and Hull.
-- Source finds no clearly starting £4.0m goalkeeper; four backups are identified.
+- Source £4.5m shortlist: Verbruggen, Kinsky, Petrovic, Leno.
+- Image stats confirm Brighton's strong overall metrics (46 GC, 49.13 xGC) and Bournemouth's elite home metrics (20 BCC, 16.55 xGC).
+- Promoted-team depth charts unsettled at Coventry, Ipswich, Hull.
+- No starting £4.0m goalkeeper identified; four specific backups noted.
 
 ### Alternatives
 
-- **Brighton pairing**: Verbruggen plus Steele; source case rests on Verbruggen’s late defensive trend.
-- **Tottenham pairing**: Kinsky plus Dubravka; higher role uncertainty after transfer movement.
-- **Single £4.5m starter**: preserves an outfield slot but leaves no immediate goalkeeper succession cover.
+- **Brighton pairing**: Verbruggen + Steele; supported by late defensive trend.
+- **Tottenham pairing**: Kinsky + Dubravka; higher role uncertainty.
+- **Single £4.5m starter**: saves squad slot, no immediate backup.
 
 ## Decision
 
-**Verdict**: Source-led opening shortlist favors Verbruggen, with Kinsky, Petrovic, Leno, and promoted options conditional on role confirmation.
+**Verdict**: Source-led opening shortlist favors Verbruggen, with Kinsky, Petrovic, Leno, and promoted options conditional on role confirmation and extracted defensive/fixture stats.
 
 **Recommended action**:
-- Monitor confirmed starting goalkeeper, preseason usage, and final transfer status.
-- Use source RMT and fixture signals as comparison inputs, not final recommendations.
+- Monitor preseason lineups, transfer movements, and starter announcements.
+- Use extracted image tables as benchmark comparison inputs for model validation.
 
 **Trigger / kill switch**:
-- Remove a candidate if starter status, expected minutes, or club depth-chart evidence deteriorates.
-- Re-rank if article projection, fixture rating, or transfer situation changes.
+- Remove candidate if starter status or expected minutes deteriorate.
+- Re-rank if projections, fixtures, or squad depth change.
 
 ## Risks and unknowns
 
-- Article relies on prior-season statistics and proprietary RMT/Fixture Ticker outputs not independently checked.
-- Kinsky, Rushworth, van Oevelen, Scherpen, and Butland role decisions may change.
-- Bournemouth’s manager, European schedule, and defensive personnel differ from cited sample.
-- £4.0m backup status is contingent on future injury, suspension, and transfer events.
-- Article text includes comments and dynamic site material; comments excluded from synthesis.
+- Article relies on prior-season stats and proprietary RMT/Fixture Ticker rankings.
+- Kinsky, Rushworth, van Oevelen, Scherpen, Butland role uncertainty.
+- Bournemouth European schedule, new manager (Marco Rose), and loss of Senesi.
+- £4.0m backup usage contingent on injury/suspension.
+- Ad images, logos, and non-relevant graphics omitted.
 
 ## Refresh checklist
 
-- [ ] Recheck source title, author, publication date, and access date.
-- [ ] Confirm all goalkeeper prices and club depth charts.
-- [ ] Recheck RMT and Fixture Ticker claims if still relevant.
-- [ ] Keep article claims labeled as unvalidated.
-- [ ] Update `Updated`, `Data stamp`, and `Risks`.
-- [ ] Delete `.tmp/agent/` scratch before finishing.
+- [x] Recheck source title, author, publication date, and access date.
+- [x] Extract and transcribe statistical tables from article image graphics.
+- [x] Confirm all goalkeeper prices and club depth charts.
+- [x] Recheck RMT and Fixture Ticker claims.
+- [x] Keep article claims labeled as unvalidated.
+- [x] Update `Updated`, `Data stamp`, and `Risks`.
+- [x] Delete `.tmp/agent/` scratch before finishing.

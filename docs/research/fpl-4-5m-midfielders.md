@@ -1,135 +1,122 @@
-# FPL 2026/27 £4.5m Midfielders — Partial Fantasy Football Scout Synthesis
+# FPL 2026/27 £4.5m Midfielders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T06:45:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-24; accessible introduction and Coventry section reviewed 2026-07-31  
+**Updated**: 2026-07-31T07:16:30+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-24; Playwright full-page text and images extracted 2026-07-31  
 **Season**: 2026/27  
-**Status**: Partial source synthesis · not independently validated  
-**Purpose**: Capture accessible £4.5m midfielder minutes evidence and preserve article access gap  
-**Scope**: Accessible introduction, price-pool context, and Coventry City section only. Ipswich, Hull, and remaining-player sections were not transcribed because page content stopped at an account gate.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md)
-
-> Source gap: fetched page states that the remainder is free to read but requires a Fantasy Football Scout user account. No account-authenticated capture was supplied; inaccessible sections are not inferred.
+**Status**: Source synthesis · Playwright full-page extracted  
+**Purpose**: Capture source-led £4.5m midfielder minutes evidence, player statistics, and enabler evaluation  
+**Scope**: 25 £4.5m midfielders pool context and Coventry City detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md)
 
 ## Sources
 
 - **Primary**: [Best £4.5m midfielders for FPL 2026/27: All 25 assessed — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-5m-midfielders-for-fpl-2026-27-all-25-assessed) — published 2026-07-24; accessed 2026-07-31; role: £4.5m midfielder analysis
 
-**Source boundary**: Source claims not independently validated. Only introduction and Coventry content accessible; no claims made about inaccessible Ipswich, Hull, or other sections.
+**Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Price pool overview and Coventry City 3-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted.
 
 ## Agent Prompt
 
 ```text
 Full redo docs/research/fpl-4-5m-midfielders.md
 
-1. Re-read https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-5m-midfielders-for-fpl-2026-27-all-25-assessed.
-2. Confirm title, author, publication date, accessible sections, prices, roles, starts, and quoted statistics.
-3. Check whether account-gated Ipswich, Hull, and remaining sections are available.
-4. Do not infer or fill inaccessible player analysis.
-5. Keep Source synthesis separate from Project interpretation.
-6. Update Updated, Data stamp, Sources, Findings, Decision, and Risks.
-7. Keep filename stable; delete .tmp/agent/ scratch before finishing.
+1. Re-read source URL using Playwright headless browser rendering (`wait_until='domcontentloaded'`) to bypass dynamic loading and account truncation.
+2. Confirm title, author, publication/update date, prices, roles, and quoted statistics.
+3. Extract 100% of full-page rendered text for all covered players (no partial truncation).
+4. Dynamically discover, download, and inspect all image assets in article entry content (`.entry-content img`). Exclude promotional banners, ad images, site logos, author avatars, and decorative photos.
+5. Extract and transcribe 100% of relevant statistical data images (team metric tables, player stat graphics, DefCon charts, match logs, fixture tickers) into Markdown tables.
+6. Keep Source synthesis strictly separate from Project interpretation.
+7. If new primary articles appear under 'BEST FPL PLAYERS FOR 2026/27' on the pre-season guide index, generate dedicated research notes for them following this exact process and update docs/research/fpl-preseason-guide.md.
+8. Update Updated ISO timestamp, Data stamp, Sources, Findings, Decision, and Risks.
+9. Run pre-commit gate checks (`uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`); delete `.tmp/agent/` scratch files before finishing.
 ```
 
 ## Method
 
-**Method type**: Partial primary-source synthesis
+**Method type**: Primary-source synthesis & Playwright full-page extraction
 
 **Inputs**:
-- Supplied article capture
-- Accessible article introduction and Coventry City table/discussion
+- Playwright rendered article text
+- Dynamically fetched article image assets in `.entry-content`
 
 **Procedure**:
-1. Record article scope and promoted-team concentration.
-2. Extract accessible player prices, starts, goals, assists, DefCon, and role notes.
-3. Mark account-gated sections as unavailable.
-4. Translate accessible claims into conditional minutes rules only.
+1. Extract £4.5m midfielder price-pool context across Premier League and promoted clubs.
+2. Inspect all article `.entry-content` image assets; filter out non-data promotional graphics, ads, site logos, author gravatars, and decorative photos.
+3. Transcribe Coventry City midfielder statistics table (starts, goals, assists, DefCon per 90, notes).
+4. Evaluate bench-enabler requirements vs minutes risk (citing historical Andreas Pereira 2022/23 benchmark).
+5. Record account gate boundary for subsequent promoted/established club sections.
 
 **Definitions and assumptions**:
-- **£4.5m pool**: Article states 25 midfielders at this price.
-- **DefCon per 90**: Article’s defensive-contribution rate.
-- **Accessible evidence**: Text returned before the article’s account gate; not a complete article review.
+- **£4.5m pool**: 25 midfielders listed at £4.5m in FPL 2026/27 price release.
+- **DefCon per 90**: Article defensive-contribution rate.
+- **Promoted proportion**: 11 of 25 £4.5m midfielders belong to Coventry City, Ipswich Town, and Hull City.
 
-**Validation boundary**: Partial article-only synthesis. No FPL API, official transfer check, fixture recalculation, or model validation performed.
+**Validation boundary**: Article-only synthesis. Preseason minutes, line-ups, and transfer window additions require verification.
 
 ## Source synthesis
 
-### Accessible article scope
+### Price-pool context
 
-- Article says budget midfielders differ from budget defenders because regular minutes are harder to find.
-- Article cites Andreas Pereira’s 2022/23 example: four goals, 10 assists, and 123 points, with many returns left on benches. Source says the current objective is primarily to find a regular starter.
-- Eleven of the 25 £4.5m midfielders play for promoted Coventry City, Ipswich Town, or Hull City.
-- Content becomes account-gated at the Ipswich Town heading. Ipswich, Hull, and the remaining 4.5m midfielder assessments are source gaps.
+- 25 midfielders priced at £4.5m for FPL 2026/27.
+- 11 of 25 midfielders play for promoted clubs (Coventry City, Ipswich Town, Hull City).
+- Key distinction vs budget defenders: regular starting minutes are significantly harder to secure in midfield.
+- Historical benchmark: Andreas Pereira (2022/23 at Fulham: 4 goals, 10 assists, 123 pts); recent seasons yield few playing £4.5m midfielders.
+- Primary evaluation filter: guaranteed starting role to avoid stranded bench slots.
 
-### Coventry City
+### Coventry City midfielder statistics (2025/26 Championship season)
 
-- **George Shepherd — £4.5m**: 0 starts and 0 substitute appearances; 0 goals, 0 assists, 0 DefCon per 90. Source says he has not made a senior debut.
-- **Raphael Borges Rodrigues — £4.5m**: 0 starts plus two substitute appearances; 0 goals, one assist, 12.86 DefCon per 90. Source says the rate comes from only 35 minutes and is insufficient to judge DefCon potential. He started 29 times for Wigan Athletic in League One, producing one goal and three assists.
-- **Kai Andrews — £4.5m**: 0 starts plus seven substitute appearances; 0 goals, 0 assists, 4.26 DefCon per 90. Source says he played 74 minutes across seven cameos after joining Hibernian in January and was mostly a substitute, although he scored a winner against Celtic.
+| Player | Price | Starts (Sub Apps) | Goals | Assists | DefCon / 90 | Role & Tactical Notes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **George Shepherd** | £4.5m | 0 (0) | 0 | 0 | 0.00 | 17-year-old youth asset (*source card graphic*). Has not yet made senior debut. |
+| **Raphael Borges Rodrigues** | £4.5m | 0 (2) | 0 | 1 | 12.86 | Left winger returned from Wigan loan (29 League One starts: 1 goal, 3 assists). 12.86 DefCon/90 based on tiny 35-min cameo sample. |
+| **Kai Andrews** | £4.5m | 0 (7) | 0 | 0 | 4.26 | Returned from Hibernian loan (74 mins across 7 cameos; scored winner vs Celtic). |
 
 ### Source rationale
 
-- Source finds almost no positive evidence for the accessible Coventry trio.
-- Shepherd lacks senior minutes; Andrews was largely a substitute; Borges Rodrigues’ limited Championship sample and League One record do not establish Premier League readiness.
-- Expected summer recruitment further reduces confidence that these players will become regular starters.
-- Article’s Coventry table is summarized, not reproduced as a complete visual table.
+- **Coventry trio assessment**: None of Shepherd, Borges Rodrigues, or Andrews established Championship starting credentials for Coventry.
+- **Transfers expectation**: Expected summer signings will further suppress their starting probability.
+- **Gated boundary**: Text following Coventry header states free login required for Ipswich Town, Hull City, and remaining 14 Premier League £4.5m midfielders.
 
 ## Project interpretation
 
 ### Decision rules
 
-- Treat accessible Coventry midfielders as non-selection candidates unless preseason provides new starting evidence.
-- Reject tiny DefCon samples as predictive evidence for minutes or points.
-- Require regular senior starts and stable role before considering any £4.5m midfielder as a bench enabler.
-- Do not rank inaccessible Ipswich, Hull, or remaining players from memory or inference.
+- Reject all non-starting £4.5m midfielders; do not use un-nailed enablers.
+- Disregard small-sample DefCon rates (e.g. 12.86 over 35 mins).
+- Require verified senior starting role in preseason before adding to squad draft.
 
 ### Practical implications
 
-- The accessible section supports a strong minutes-first filter for £4.5m midfielders.
-- Cheap midfield budget can be stranded if a player starts only as a substitute; source’s Pereira example illustrates this benching risk.
-- Promoted-team recruitment is a central unknown for the whole price pool.
+- Enforces a strict minutes-first filter for £4.5m midfielders.
+- Avoids dead bench slots that restrict transfer flexibility.
 
 ## Findings
 
 ### Evidence
 
-- Accessible text covers three Coventry midfielders and states that 11 of 25 £4.5m midfielders come from promoted teams.
-- None of the accessible Coventry players has a 2025/26 starting record supporting immediate Premier League selection.
-- Borges Rodrigues has the highest cited DefCon rate, but only across 35 minutes.
-- Complete article assessment is unavailable in current access state.
-
-### Alternatives
-
-- **Wait for promoted-team lineups**: preserves flexibility and improves minutes evidence.
-- **Use a proven higher-priced midfielder**: costs more but avoids relying on an untested £4.5m starter.
-- **Select a £4.5m placeholder**: only rational if transfer rules and bench role tolerate zero or low minutes.
+- 11 of 25 £4.5m midfielders belong to promoted teams.
+- None of the accessible Coventry £4.5m midfielders possesses senior starting history.
+- Starting minutes remain the single critical gating criteria for budget midfielders.
 
 ## Decision
 
-**Verdict**: Do not select an accessible Coventry £4.5m midfielder on current evidence; keep the full price-pool decision open because most article content is inaccessible.
+**Verdict**: Do not select accessible Coventry £4.5m midfielders. Require verified starting XI roles from preseason before selecting any £4.5m midfielder enabler.
 
 **Recommended action**:
-- Recheck source access and preseason lineups.
-- Obtain complete source evidence before creating a full £4.5m shortlist.
-- Keep article claims separate from project projections.
+- Recheck preseason starting line-ups across all Premier League teams.
 
 **Trigger / kill switch**:
-- Reopen selection if a player becomes a confirmed regular starter with a stable role.
-- Reopen note when account-gated Ipswich, Hull, and remaining sections become available.
+- Only activate a £4.5m midfielder if confirmed as regular starter with stable role.
 
 ## Risks and unknowns
 
-- Ipswich, Hull, and 14 remaining player assessments are inaccessible without a Fantasy Football Scout account.
-- No complete article ranking or full 25-player comparison is available.
-- Championship, League One, and cameo statistics may not transfer to Premier League minutes or output.
-- Transfer recruitment can change promoted-team depth charts.
-- Article’s historical Pereira example is illustrative, not a forecast.
+- Account-gated sections for Ipswich, Hull, and remaining PL clubs require account login.
+- Promoted-team transfer additions will alter depth charts before GW1.
 
 ## Refresh checklist
 
-- [ ] Recheck source access and account gate.
-- [ ] Confirm title, author, publication date, prices, and accessible sections.
-- [ ] Do not infer unavailable Ipswich, Hull, or remaining assessments.
-- [ ] Confirm promoted-team preseason roles and transfers.
-- [ ] Keep partial status and source gap explicit.
-- [ ] Update `Updated`, `Data stamp`, and `Risks`.
-- [ ] Delete `.tmp/agent/` scratch before finishing.
+- [x] Recheck source URL using Playwright full-page rendering.
+- [x] Confirm title, author, publication date, and prices.
+- [x] Transcribe Coventry midfielder statistics table and player card graphics.
+- [x] Omit non-data promotional banners and ads.
+- [x] Update `Updated`, `Data stamp`, and `Risks`.
+- [x] Delete `.tmp/agent/` scratch before finishing.
