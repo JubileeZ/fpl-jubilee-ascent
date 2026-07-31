@@ -4,28 +4,27 @@
 
 **Acceptance:**
 - [x] Confirm Expected Role taxonomy (Nailed / Regular / Rotation / Cameo / Out of Contention); Draft-eligible = Nailed + Regular only
-- [ ] Lock Expected Role time horizon (GW1 vs early-season band vs full season)
-- [ ] Lock output schema (P(Start), mins if Start, P(Sub-in), mins if Sub-in) + source consolidation rules
-- [ ] Multi-source research note + per-Club Draft-eligible starter list
-- [ ] Map Expected Role defaults → Participation State priors for mins projection
+- [x] Lock Expected Role time horizon (early-season band GW1–5)
+- [x] Lock numeric prior method: tier-default Expected Role Priors + per-Player overrides
+- [x] Lock research coverage: XI Contention Set; Draft Shortlist = Nailed + Regular; Out of Contention as footnotes
+- [x] Lock source set + consolidation rules + mandatory Role Evidence (reason + references)
+- [x] Lock deliverable artifact format: Research Note + Expected Role Table (CSV/Parquet); code wiring later
+- [x] Confirm shared understanding closed; produce Research Note + Expected Role Table for all 20 Clubs
+- [ ] Map Expected Role Table → Participation State priors (follow-up after table lands)
 
 ## Work Packet (SFDBN)
 
-**Status:** Grilling in progress. Q1 confirmed; Expected Role glossary written to `CONTEXT.md`. Awaiting Q2 (horizon).
+**Status:** Research complete for current 2026-07-31 evidence stamp. 339-row Expected Role Table + all-20-Club Research Note generated; model wiring deferred.
 
 **Files:**
-- `CONTEXT.md` (Expected Role + five role terms)
-- `docs/agents/current-state.md` (continuity)
-- `.agents/session-handoff.md` (continuity)
-- `task.md` (this packet)
+- `docs/research/expected-role-gw1-5.md`
+- `data/research/expected-role-gw1-5.csv`
+- `CONTEXT.md`
+- `docs/agents/current-state.md`
+- `.agents/session-handoff.md`
 
-**Decisions:**
-- Canonical term = Expected Role (not first-team / importance / lineup status)
-- Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention
-- Draft-eligible = Nailed Starter + Regular Starter only
-- Expected Role seeds Participation State priors; does not replace Participation State
-- Source seed: [fpl.page GW1 predicted lineups](https://fpl.page/article/fpl-gw1-predicted-lineups-2627); more sources TBD after grill
+**Decisions:** 20 Clubs; 339 XI Contention rows; 194 Draft-eligible (92 Nailed + 102 Regular); 98 Rotation; 47 Cameo. Every row carries reason, source labels, conflict rule, confidence, and conditional mins priors. Lacroix → Chelsea and Trafford → Leeds recorded as transfer-aware exceptions against stale API club registration.
 
-**Blocked:** Shared understanding incomplete — horizon, output schema, consolidation rules still open.
+**Blocked:** No research blocker. Participation State ingest remains follow-up; current table is fit-player role prior and not calibrated against actual minutes.
 
-**Next:** User answers Q2 (horizon). Continue grill one question at a time; do not start full research until grill closes.
+**Next:** Review Draft Shortlist; implement/map Expected Role Table → Participation State priors in follow-up task; refresh before GW1 after material transfer, friendly, injury, or press-conference evidence.

@@ -73,8 +73,8 @@ One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub
 _Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role
 
 **Expected Role**:
-Club-relative preseason judgment of how a Player is expected to be used over the near horizon. Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible.
-_Avoid_: First team, nailed, importance, lineup status, Participation State
+Club-relative preseason judgment of how a Player is expected to be used over the early-season band (GW1–5). Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible. Dated Research Note snapshot; refresh on material pre-GW1 news.
+_Avoid_: First team, nailed, importance, lineup status, Participation State, GW1-only XI, full-season average
 
 **Nailed Starter**:
 Expected Role for a Player who is near-certain to Start when fit.
@@ -95,6 +95,26 @@ _Avoid_: Impact sub, bench option
 **Out of Contention**:
 Expected Role for a Player unlikely to feature meaningfully; not Draft-eligible.
 _Avoid_: Not play, discarded, out of squad
+
+**Expected Role Prior**:
+Default Participation State probabilities and conditional minutes attached to an Expected Role. Applied to fit Players; per-Player overrides only when sources clearly diverge from the tier default.
+_Avoid_: Hand-tuned minutes for every Player, Appearance Probability
+
+**XI Contention Set**:
+Players with a realistic Start or Sub-in path in the Expected Role horizon (Nailed Starter, Regular Starter, Rotation, and notable Cameo challengers). Research grain for role assignment; Draft shortlist is the Nailed + Regular subset.
+_Avoid_: Entire price list, first team (ambiguous), full squad dump
+
+**Draft Shortlist**:
+Per-Club list of Draft-eligible Players (Nailed Starter and Regular Starter only) derived from the XI Contention Set.
+_Avoid_: First team, starter XI, projected lineup
+
+**Role Evidence**:
+Per-Player attribution for an Expected Role assignment: stated reason, source references, conflict rule applied, and confidence. Required on every XI Contention Set row so the User can audit logic.
+_Avoid_: Bare Role label, unexplained override
+
+**Expected Role Table**:
+Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, reason, and source references. Seeds Participation State priors; does not replace live Availability Override.
+_Avoid_: Research Note prose alone, solver projection CSV
 
 **Minutes if Appearance**:
 The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability.
