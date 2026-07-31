@@ -14,7 +14,7 @@
 
 ## Work Packet (SFDBN)
 
-**Status:** Research complete for current 2026-07-31 evidence stamp. 339-row Expected Role Table + all-20-Club Research Note generated; model wiring deferred.
+**Status:** Availability/role audit applied for current 2026-07-31 evidence stamp. 339-row table + all-20-Club Research Note updated; model wiring deferred.
 
 **Files:**
 - `docs/research/expected-role-gw1-5.md`
@@ -23,8 +23,8 @@
 - `docs/agents/current-state.md`
 - `.agents/session-handoff.md`
 
-**Decisions:** 20 Clubs; 339 XI Contention rows; 194 Draft-eligible (92 Nailed + 102 Regular); 98 Rotation; 47 Cameo. Every row carries reason, source labels, conflict rule, confidence, and conditional mins priors. Lacroix → Chelsea and Trafford → Leeds recorded as transfer-aware exceptions against stale API club registration.
+**Decisions:** 20 Clubs; 339 XI Contention rows; 193 fit-role Draft-eligible (90 Nailed + 103 Regular); 99 Rotation; 47 Cameo. Applied evidence-backed demotions: Perri Regular → Rotation, Pope Nailed → Regular, Kinsky Nailed → Regular. Added API/official availability and registration layer: 179 Draft rows eligible, 9 watch, 4 exclude GW1, 1 exclude GW1–5. Saliba remains Nailed when fit but is excluded GW1–5; Saka and Mac Allister remain fit-role eligible with GW1 watch overlays. Lacroix → Chelsea and Trafford → Leeds remain transfer-aware exceptions against stale API registration.
 
-**Blocked:** No research blocker. Participation State ingest remains follow-up; current table is fit-player role prior and not calibrated against actual minutes.
+**Blocked:** No research blocker. Participation State ingest/availability guard remains follow-up; current `p_*` fields are fit-player role priors and not unconditional current-GW probabilities.
 
-**Next:** Review Draft Shortlist; implement/map Expected Role Table → Participation State priors in follow-up task; refresh before GW1 after material transfer, friendly, injury, or press-conference evidence.
+**Next:** Use only `draft_availability=eligible` for current Draft; recheck `watch` rows before final selection; implement/map Expected Role Table → Participation State priors with availability guard; refresh before GW1 after material transfer, friendly, injury, or press-conference evidence.

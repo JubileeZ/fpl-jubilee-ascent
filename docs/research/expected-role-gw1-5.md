@@ -1,11 +1,11 @@
 # FPL 2026/27 Expected Role (GW1–5) — Draft Shortlist & Mins Priors
 
-**Updated**: 2026-07-31T09:30:00+07:00  
-**Data stamp**: Meerkat predicted XIs 2026-07-28; Scout team-news last-updated stamps ~2026-07-21/22; summer-transfers register through 2026-07-30; local `players.parquet` as of last `refresh_data`; table generated 2026-07-31  
+**Updated**: 2026-07-31T10:25:00+07:00
+**Data stamp**: Meerkat predicted XIs 2026-07-28; Scout team-news and official Club evidence checked through 2026-07-31; summer-transfers register through 2026-07-30; local `players.parquet` freshness proxy 2026-07-29; table regenerated 2026-07-31
 **Season**: 2026/27  
-**Status**: Active · research table generated; model ingest deferred  
-**Purpose**: Assign Expected Role + Participation State priors for GW1–5 Draft Shortlist and mins projection seeding  
-**Scope**: XI Contention Set for all 20 Clubs; Draft Shortlist = Nailed Starter + Regular Starter only; Out of Contention footnotes only. No model code wiring in this note.  
+**Status**: Active · role and availability audit applied; model ingest deferred
+**Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors for GW1–5 mins projection seeding
+**Scope**: XI Contention Set for all 20 Clubs; fit-role Draft Shortlist = Nailed Starter + Regular Starter; Draft Availability separately filters current `Eligible`, `Watch`, and `Exclude` rows. No model code wiring in this note.
 **Related**: [Summer transfers](fpl-summer-transfers.md) · [Pre-season guide directory](fpl-preseason-guide.md) · `CONTEXT.md` (Expected Role / Role Evidence / Expected Role Table)
 
 > Source claims not independently validated. API club registration may lag confirmed transfers (e.g. Lacroix still CRY, Trafford still MCI in local roster).
@@ -15,6 +15,9 @@
 - **Primary**: [FPL GW1 Predicted Line-ups For ALL Teams — Charlie (FPL Meerkat) / fpl.page](https://fpl.page/article/fpl-gw1-predicted-lineups-2627) — published 2026-07-28; accessed 2026-07-31; role: nailed (🟢) + narrative XI contention
 - **Primary**: [FPL 2026/27 Predicted Line-ups — Fantasy Football Scout Team News](https://www.fantasyfootballscout.co.uk/team-news) — club stamps ~2026-07-21/22; accessed 2026-07-31; role: predicted XI + injury/doubt flags (Coventry/Hull/Ipswich absent from page capture)
 - **Primary**: [FPL 2026/27 transfer news — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) via [fpl-summer-transfers.md](fpl-summer-transfers.md) — register through 2026-07-30; role: confirmed moves
+- **Primary**: [Medical update: William Saliba — Arsenal](https://www.arsenal.com/news/medical-update-william-saliba-aVUca3q2han2) — accessed 2026-07-31; role: official rehabilitation / availability
+- **Primary**: [Andoni Iraola's update on World Cup players — Liverpool FC](https://www.liverpoolfc.com/news/andoni-iraolas-update-when-reds-world-cup-players-will-return) — accessed 2026-07-31; role: official late-return guidance
+- **Primary**: [England: Saka pleased to finish strongly](https://www.englandfootball.com/articles/2026/Jul/18/bukayo-saka-france-v-england-world-cup-third-place-playoff-match-reaction-20261807) — accessed 2026-07-31; role: tournament participation / post-match fitness evidence
 - **Repository data**: `data/processed/players.parquet` + `clubs.parquet` — player_id / web_name / club mapping; cutoff = last refresh
 
 **Source boundary**: Predicted XIs are opinion. Confirmed transfers are source-claimed. No official Club XI verification. Scout page capture missing three promoted Clubs.
@@ -30,9 +33,10 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 4. Every row must carry Role Evidence: reason, sources, conflict_rule, confidence.
 5. Apply defaults: Nailed 0.90/0.05/85/20; Regular 0.75/0.10/80/20; Rotation 0.40/0.25/70/20; Cameo 0.10/0.35/60/15 unless override=true.
 6. Conflicts: Nailed vs Regular → Regular; Regular vs Rotation → Rotation; single source → confidence=low.
-7. Keep Source synthesis separate from Project interpretation.
-8. Update Updated, Data stamp, Findings, Decision, Risks; regenerate CSV; delete .tmp/agent scratch.
-9. Run uv run ruff check ., uv run pytest, bash tests/verify.sh before Checkpoint.
+7. Add API availability/registration fields and dated Availability Override; keep fit-role priors conditional on availability.
+8. Keep Source synthesis separate from Project interpretation.
+9. Update Updated, Data stamp, Findings, Decision, Risks; regenerate CSV; delete .tmp/agent scratch.
+10. Run uv run ruff check ., uv run pytest, bash tests/verify.sh before Checkpoint.
 ```
 
 ## Method
@@ -44,19 +48,22 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 - Scout Team News predicted XIs + doubts
 - Confirmed summer-transfer register
 - Local FPL roster for ids
+- Official Club/Federation availability and pre-season team-news updates
 
 **Procedure**:
 1. Build XI Contention Set per Club from Scout XI ∪ Meerkat nailed/narrative ∪ key new signings.
 2. Assign Expected Role using source priority: confirmed facts → Scout XI → Meerkat → friendlies/notes → secondary.
 3. Apply conflict demotion rules; attach Role Evidence on every row.
 4. Attach Expected Role Prior defaults; override only when sources clearly diverge.
-5. Emit Draft Shortlist (Nailed + Regular) per Club; footnote Out of Contention.
-6. Write Research Note narrative + `data/research/expected-role-gw1-5.csv`.
+5. Apply separate API/official-source availability and registration overlays; do not demote fit-role for temporary absence.
+6. Emit fit-role Draft Shortlist (Nailed + Regular) per Club; apply Draft Availability separately; footnote Out of Contention.
+7. Write Research Note narrative + `data/research/expected-role-gw1-5.csv`.
 
 **Definitions and assumptions**:
 - See `CONTEXT.md`: Expected Role, Expected Role Prior, XI Contention Set, Draft Shortlist, Role Evidence, Expected Role Table.
 - Horizon = GW1–5 early-season band.
-- Injury/doubt: keep Expected Role when fit; API chance / Availability Override handles unfit.
+- Injury/doubt/late return: keep Expected Role when fit; API chance / Availability Override handles current Draft Availability.
+- `p_start`, `p_sub_in`, and `p_dnp` remain fit-role priors; effective current probabilities require the availability layer.
 
 **Validation boundary**: Opinion synthesis only. Not calibrated against actual minutes. API transfer lag may mis-club players until refresh.
 
@@ -67,6 +74,8 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 - Meerkat (28 Jul) publishes all-20 predicted lineups with 🟢 nailed markers and formation/signing notes.
 - Scout Team News (~21–22 Jul) publishes predicted XIs for 17 Clubs (Coventry, Hull, Ipswich absent in capture) plus out/doubt lists.
 - Summer-transfer register (through 30 Jul) moves several Scout/Meerkat assumptions (e.g. Lacroix → Chelsea; Anderson → Man City; Tonali → Spurs).
+- Official Arsenal evidence confirms Saliba's extended rehabilitation; official Liverpool evidence says Mac Allister's late return may affect the opening fixture; England/Arsenal evidence confirms Saka's tournament participation and short pre-season runway.
+- Fresh friendly evidence supports conservative Nailed → Regular changes for Pope and Kinsky, and Regular → Rotation for Perri; no audited Rotation row had enough evidence for promotion.
 
 ### Source rationale
 
@@ -78,20 +87,23 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 ### Decision rules
 
 - Draft Shortlist membership ⇔ Expected Role ∈ {Nailed Starter, Regular Starter}.
+- Draft Availability is applied after role assignment: only `eligible` rows are safe for an unqualified current Draft; `watch` rows require recheck; `exclude_gw1` / `exclude_gw1-5` rows stay out for that window.
 - `p_dnp = 1 - p_start - p_sub_in`; state probs seed Participation State priors later.
 - Prefer Regular over Nailed when Meerkat 🟢 and Scout disagree on start.
 - Prefer Rotation over Regular when sources describe sharing/bench risk.
+- Keep fit-role priors separate from current availability; never interpret `p_start` as unconditional when an Availability Override exists.
 
 ### Practical implications
 
 - Use Draft Shortlist for human Draft construction.
-- Use full Expected Role Table CSV for mins prior seeding after ingest ticket.
+- Use `draft_availability=eligible` for a conservative current Draft; recheck `watch` rows before selection.
+- Use full Expected Role Table CSV, including availability fields, for mins prior seeding after the ingest ticket.
 
 ## Club-by-club Expected Role Table
 
-`data/research/expected-role-gw1-5.csv` is the row-level audit authority. It contains 339 XI Contention Set rows across all 20 Clubs: 92 Nailed Starter, 102 Regular Starter, 98 Rotation, and 47 Cameo. Every row includes `player_id`, role, `p_start`, `p_sub_in`, `p_dnp`, conditional minutes, confidence, conflict rule, reason, and source labels.
+`data/research/expected-role-gw1-5.csv` is the row-level audit authority. It contains 339 XI Contention Set rows across all 20 Clubs: 90 Nailed Starter, 103 Regular Starter, 99 Rotation, and 47 Cameo. Every row includes `player_id`, fit-role priors, Role Evidence, direct source references, API availability/registration fields, and dated Draft Availability.
 
-**Draft Shortlist** below means Nailed Starter + Regular Starter. Names under Rotation and Cameo remain research context and are excluded from the Draft.
+**Draft Shortlist** below means fit-role Nailed Starter + Regular Starter. `Draft Availability` can exclude or flag a listed Player for current selection without changing fit-role.
 
 ### Arsenal (ARS)
 
@@ -100,6 +112,7 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 - **Regular Starter:** J.Timber, Rice, Saka, White, Mosquera, Calafiori, Ødegaard, Zubimendi, Eze, Madueke, Gyökeres, Martinelli
 - **Rotation:** Hincapie, Tzolis
 - **Cameo:** Havertz
+- **Current Draft Availability:** Saliba `exclude_gw1-5`; J.Timber `exclude_gw1`; Saka `watch`; White `watch`. See CSV `availability_override` and `availability_reason`.
 
 ### Aston Villa (AVL)
 
@@ -191,10 +204,10 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 
 ### Leeds (LEE)
 
-- **Draft Shortlist:** Perri, Rodon, Muharemović, Gudmundsson, Bogle, Justin, Ampadu, Stach, Wilson, Okafor, Calvert-Lewin
+- **Draft Shortlist:** Rodon, Muharemović, Gudmundsson, Bogle, Justin, Ampadu, Stach, Wilson, Okafor, Calvert-Lewin
 - **Nailed Starter:** Rodon, Gudmundsson, Ampadu, Stach, Calvert-Lewin
-- **Regular Starter:** Perri, Muharemović, Bogle, Justin, Wilson, Okafor
-- **Rotation:** Bijol, Aaronson, Tanaka
+- **Regular Starter:** Muharemović, Bogle, Justin, Wilson, Okafor
+- **Rotation:** Perri, Bijol, Aaronson, Tanaka
 - **Cameo:** Gnonto
 
 ### Liverpool (LIV)
@@ -224,10 +237,11 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 ### Newcastle (NEW)
 
 - **Draft Shortlist:** Pope, Thiaw, Livramento, Bruno G.
-- **Nailed Starter:** Pope, Thiaw, Livramento, Bruno G.
-- **Regular Starter:** —
+- **Nailed Starter:** Thiaw, Livramento, Bruno G.
+- **Regular Starter:** Pope
 - **Rotation:** Botman, Hall, Burn, L.Miley, Barnes, Elanga, Willock, J.Ramsey, Osula, Touré, Bamba
 - **Cameo:** Woltemade, Wissa, Joelinton
+- **Current Draft Availability:** Livramento `watch` (API 75% next-round chance); Thiaw remains Nailed when fit but needs senior-XI recheck.
 
 ### Nott'm Forest (NFO)
 
@@ -240,10 +254,11 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 ### Spurs (TOT)
 
 - **Draft Shortlist:** Kinsky, Van de Ven, Pedro Porro, Van Hecke, Fernandes, Tonali, Udogie, Kudus, Maddison, Tel, Solanke
-- **Nailed Starter:** Kinsky, Van de Ven, Pedro Porro
-- **Regular Starter:** Van Hecke, Fernandes, Tonali, Udogie, Kudus, Maddison, Tel, Solanke
+- **Nailed Starter:** Van de Ven, Pedro Porro
+- **Regular Starter:** Kinsky, Van Hecke, Fernandes, Tonali, Udogie, Kudus, Maddison, Tel, Solanke
 - **Rotation:** Danso, Senesi, Bentancur, Gallagher
 - **Cameo:** Romero, Robertson, Richarlison
+- **Current Draft Availability:** Kudus `watch` (API 75% next-round chance).
 
 ### Sunderland (SUN)
 
@@ -252,6 +267,36 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 - **Regular Starter:** —
 - **Rotation:** Hume, Angulo, Adingra, Talbi
 - **Cameo:** Meunier, Isidor, Diarra, Mundle
+
+## Current Draft Availability Audit
+
+Fit-role Draft Shortlist contains 193 Players after three evidence-backed role changes. Current overlay: 179 `eligible`, 9 `watch`, 4 `exclude_gw1`, and 1 `exclude_gw1-5`. Only `eligible` rows are safe without a further availability decision.
+
+**Exclude GW1–5:**
+
+- **Saliba (ARS, Nailed):** Arsenal medical update confirms extended rehabilitation after back injury; no return date. Keep Nailed when fit; exclude current band pending clearance. [Arsenal medical update](https://www.arsenal.com/news/medical-update-william-saliba-aVUca3q2han2)
+
+**Exclude GW1:**
+
+- **J.Timber (ARS, Regular):** FPL API 0%; groin injury, expected back 21 Aug.
+- **Garner (EVE, Regular):** FPL API 0%; groin injury, expected back 22 Aug.
+- **Gomez (LIV, Regular):** FPL API 0%; muscular injury, unknown return.
+- **Rodrigo (MCI, Regular):** FPL API 0%; back injury, unknown return.
+
+**Watch before GW1:**
+
+- **Saka (ARS, Regular):** England World Cup bronze-match starter; late return and Achilles assessment leave GW1 uncertain. Keep Regular when fit. [England match reaction](https://www.englandfootball.com/articles/2026/Jul/18/bukayo-saka-france-v-england-world-cup-third-place-playoff-match-reaction-20261807)
+- **White (ARS, Regular):** stale local API says 0% while newer training evidence says he returned to group work; resolve with fresh official team news.
+- **Mac Allister (LIV, Nailed):** Liverpool says late World Cup return may affect the 23 Aug opener; keep Nailed when fit. [Liverpool return update](https://www.liverpoolfc.com/news/andoni-iraolas-update-when-reds-world-cup-players-will-return)
+- **Kamara (AVL, Nailed), Wharton (CRY, Regular), Martinez (MUN, Regular), Livramento (NEW, Nailed), Murillo (NFO, Nailed), Kudus (TOT, Regular):** FPL API status `d`, 75% next-round chance; keep fit-role and recheck.
+
+**Role changes applied after fresh friendly evidence:**
+
+- **Perri (LEE):** Regular → Rotation; Cairns started both recent Leeds friendlies while Perri had one second-half appearance and then missed the squad; Torino transfer reporting adds uncertainty. [Leeds Sunderland team news](https://www.leedsunited.com/en/news/team-news-leeds-united-vs-sunderland)
+- **Pope (NEW):** Nailed → Regular; shared goalkeeper minutes with Jaouen, who started against Bristol City. [Newcastle confirmed lineup](https://www.newcastleunited.com/en/news/confirmed-line-up-jaouen-starts-at-ashton-gate)
+- **Kinsky (TOT):** Nailed → Regular; Austin and Dubravka started later friendlies, including the stronger Sydney XI. [Spurs Sydney lineup](https://www.tottenhamhotspur.com/news/1080518/victory-on-penalties-after-tel-stunner-against-sydney)
+
+No Rotation Player had sufficient fresh evidence for promotion. Thiaw, Botman, Evanilson, Mateta, Lacroix, and Ndiaye remain flagged for recheck but retain current fit-roles.
 
 ## Out of Contention Footnotes
 
@@ -282,12 +327,13 @@ These Players are excluded from CSV rows by design; Club depth and exclusion not
 
 ### Evidence
 
-- Consolidated table contains 339 rows across all 20 Clubs: 194 Draft-eligible (92 Nailed Starter + 102 Regular Starter), 98 Rotation, and 47 Cameo.
-- Highest Draft Shortlist counts: Arsenal 15, Liverpool 12, Aston Villa/Leeds/Spurs 11 each.
-- Most conservative Draft Shortlists: Newcastle 4; Brighton/Fulham 8; Hull/Ipswich 8 each with no Nailed Starter due thin promoted-Club evidence.
+- Consolidated table contains 339 rows across all 20 Clubs: 193 fit-role Draft-eligible (90 Nailed Starter + 103 Regular Starter), 99 Rotation, and 47 Cameo.
+- Current Draft Availability overlay: 179 eligible, 9 watch, 4 exclude GW1, and 1 exclude GW1–5.
+- Highest fit-role Draft Shortlist counts: Arsenal 15, Liverpool 12, Aston Villa/Spurs 11 each; Leeds is now 10 after Perri's demotion.
+- Most conservative fit-role Draft Shortlists: Newcastle 4; Brighton/Fulham 8; Hull/Ipswich 8 each with no Nailed Starter due thin promoted-Club evidence.
 - Coventry, Hull, and Ipswich receive lower confidence because Scout Team News does not cover them in the captured page; Coventry has no Nailed Starter.
 - Transfer-aware exceptions are preserved in Role Evidence: Lacroix is assigned to Chelsea although the local API roster still lists Crystal Palace; Trafford is assigned to Leeds although the local roster still lists Man City.
-- Full reasons, source labels, conflict rules, and conditional minute priors are in `data/research/expected-role-gw1-5.csv`.
+- Full reasons, direct source references, fit-role priors, API fields, registration status, and Draft Availability are in `data/research/expected-role-gw1-5.csv`.
 
 ### Alternatives
 
@@ -299,7 +345,8 @@ These Players are excluded from CSV rows by design; Club depth and exclusion not
 **Verdict**: Proceed with Research Note + Expected Role Table under locked Expected Role model; model wiring deferred.
 
 **Recommended action**:
-- Use the Draft Shortlist section for initial squad drafting
+- Use only CSV rows with `draft_availability=eligible` for the current Draft
+- Recheck every `watch` row before finalizing the Draft; do not consume `p_start` as unconditional when an Availability Override exists
 - Use CSV rows for expected-minutes prior seeding after the ingest ticket
 - Refresh before GW1 on material transfer/injury news
 
@@ -312,6 +359,8 @@ These Players are excluded from CSV rows by design; Club depth and exclusion not
 - Scout stamps older than Meerkat (~1 week); friendlies may already shift XIs
 - Promoted Clubs (COV/HUL/IPS) thin sources → low confidence
 - API roster lag vs confirmed transfers
+- API `chance_of_playing_this_round` is null for all rows; status `a` with null chance is not proof of 100% availability
+- World Cup late-return decisions remain manager-specific until training and selection evidence arrives
 - European competition rotation not fully priced into GW1–5 defaults
 
 ## Refresh checklist

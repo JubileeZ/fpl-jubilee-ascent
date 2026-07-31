@@ -105,15 +105,19 @@ Players with a realistic Start or Sub-in path in the Expected Role horizon (Nail
 _Avoid_: Entire price list, first team (ambiguous), full squad dump
 
 **Draft Shortlist**:
-Per-Club list of Draft-eligible Players (Nailed Starter and Regular Starter only) derived from the XI Contention Set.
-_Avoid_: First team, starter XI, projected lineup
+Per-Club list of fit-role Draft-eligible Players (Nailed Starter and Regular Starter only) derived from the XI Contention Set. Current availability is applied separately before selecting a Gameweek squad.
+_Avoid_: First team, starter XI, projected lineup, current available list
+
+**Draft Availability**:
+Date-stamped filter applied to a Draft Shortlist after Expected Role assignment: Eligible, Watch, Exclude GW1, or Exclude GW1–5. It consumes Availability Override and registration evidence without changing a Player's fit-role label.
+_Avoid_: Draft eligibility, Expected Role, injury status
 
 **Role Evidence**:
 Per-Player attribution for an Expected Role assignment: stated reason, source references, conflict rule applied, and confidence. Required on every XI Contention Set row so the User can audit logic.
 _Avoid_: Bare Role label, unexplained override
 
 **Expected Role Table**:
-Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, reason, and source references. Seeds Participation State priors; does not replace live Availability Override.
+Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, Role Evidence, API availability fields, registration status, and Draft Availability. Seeds Participation State priors; does not replace live Availability Override.
 _Avoid_: Research Note prose alone, solver projection CSV
 
 **Minutes if Appearance**:
