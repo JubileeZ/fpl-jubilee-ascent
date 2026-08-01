@@ -1,16 +1,16 @@
 scenario_key,scenario_name,gameweek,projected_points,captain,captain_pts,captain_mode,is_bench_boost,squad_spend,squad_itb
-BB1_WC4,Scenario A: BB1 + WC4,1,84.24,Gyökeres,6.56,C,True,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4,2,62.38,Palmer,7.25,C,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4,3,63.91,Isak,7.27,C,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4,4,67.16,Palmer,7.39,C,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4,5,63.92,Palmer,5.83,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4,1,62.82,Palmer,6.05,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4,2,80.77,Palmer,7.25,C,True,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4,3,63.8,Isak,7.27,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4,4,67.16,Palmer,7.39,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4,5,63.92,Palmer,5.83,C,False,99.5,0.5
-Standard_WC4,Scenario C: Standard WC4 (No Early BB),1,64.81,Gyökeres,6.56,C,False,99.5,0.5
-Standard_WC4,Scenario C: Standard WC4 (No Early BB),2,61.83,Palmer,7.25,C,False,99.5,0.5
-Standard_WC4,Scenario C: Standard WC4 (No Early BB),3,62.9,Isak,7.27,C,False,99.5,0.5
-Standard_WC4,Scenario C: Standard WC4 (No Early BB),4,67.16,Palmer,7.39,C,False,99.5,0.5
-Standard_WC4,Scenario C: Standard WC4 (No Early BB),5,63.92,Palmer,5.83,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,1,72.49,Hill,5.69,C,True,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,2,53.94,Palmer,5.52,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,3,57.48,Haaland,6.52,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,4,56.36,Palmer,5.63,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,5,59.51,Haaland,6.37,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,1,54.81,Hill,5.69,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,2,70.33,Palmer,5.52,C,True,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,3,56.76,Haaland,6.52,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,4,56.36,Palmer,5.63,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,5,59.51,Haaland,6.37,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),1,54.7,Hill,5.69,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),2,55.05,Palmer,5.52,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),3,58.22,Haaland,6.52,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),4,56.36,Palmer,5.63,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),5,59.51,Haaland,6.37,C,False,99.5,0.5

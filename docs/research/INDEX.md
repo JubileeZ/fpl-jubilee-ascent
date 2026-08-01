@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-01T20:47:00+07:00  
+**Updated**: 2026-08-02T01:10:00+07:00  
 **Status**: Active research directory authority  
 
 ---

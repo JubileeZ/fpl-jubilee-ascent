@@ -1,7 +1,7 @@
 # GW1–5 Chip Strategy Simulation & Price Sensitivity Research Note
 
-**Updated**: 2026-08-01T23:50:00+07:00  
-**Data stamp**: Projections CSV 2026-08-01; FPL API element summary 2026-07-29; ParticipationStateHybridModel Softmax rates 2026-08-01  
+**Updated**: 2026-08-02T01:10:00+07:00  
+**Data stamp**: Projections CSV 2026-08-02 (grill-lock rebuild); sim re-run 2026-08-02; FPL API element summary 2026-07-29  
 **Season**: 2026/27 · horizon GW1–5  
 **Status**: Active Research Simulation Model  
 **Purpose**: Run multi-period solver simulations comparing GW1 Bench Boost (BB1 + WC4) vs GW2 Bench Boost (BB2 + WC4) vs Standard Wildcard (WC4 without early BB) using Softmax $xP$ projections; enforce £0.5m ITB on GW1–3 drafts.  
@@ -33,6 +33,7 @@ Run 5-Gameweek chip strategy simulations for GW1-5 using gw1-5_projections.csv:
 5. GW1–3 budget ≤ £99.5m (£0.5m ITB); captain = top XI xP (2×); no TC.
 6. Export data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv.
 7. Run self_check in run_simulation.py; ruff check runner.
+8. Update this note Findings table and takeaways.
 ```
 
 ---
@@ -56,16 +57,18 @@ Static costs ($P_t = P_0$). £0.5m ITB enforced on GW1–3 drafts as buffer agai
 
 | Strategy Scenario | GW1 $xP$ | GW2 $xP$ | GW3 $xP$ | GW4 $xP$ (WC) | GW5 $xP$ | Total 5-GW $xP$ | Net vs No BB | ITB |
 |---|---|---|---|---|---|---|---|---|
-| **Scenario A: BB1 + WC4** | **84.24** (BB1) | 62.38 | 63.91 | 67.16 | 63.92 | **341.61** | **+20.99** | £0.5m |
-| **Scenario B: BB2 + WC4** | 62.82 | **80.77** (BB2) | 63.80 | 67.16 | 63.92 | **338.47** | **+17.85** | £0.5m |
-| **Scenario C: Standard WC4** | 64.81 | 61.83 | 62.90 | 67.16 | 63.92 | **320.62** | Baseline | £0.5m |
+| **Scenario A: BB1 + WC4** | **72.49** (BB1) | 53.94 | 57.48 | 56.36 | 59.51 | **299.78** | **+15.94** | £0.5m |
+| **Scenario B: BB2 + WC4** | 54.81 | **70.33** (BB2) | 56.76 | 56.36 | 59.51 | **297.77** | **+13.93** | £0.5m |
+| **Scenario C: Standard WC4** | 54.70 | 55.05 | 58.22 | 56.36 | 59.51 | **283.84** | Baseline | £0.5m |
+
+GW4–5 identical across scenarios (shared WC4 rebuild). Totals lower vs pre-rebuild projection run (~342 → ~300) after grill-lock rates + ParticipationStateHybridModel scoring.
 
 ### 2. Key Strategy Takeaways
-- **Early BB still wins**: Planning BB1/BB2 and packing a strong bench beats XI-only Standard by **+17.9 to +21.0 $xP$** over five GWs (same WC4 path; auto-captain).
-- **BB1 vs BB2**: BB1 total slightly ahead on these projections. BB2 still buys one extra week of team news (not modeled).
-- **Captain**: Auto top-XI (typically Gyökeres/Palmer/Isak by GW). TC out of scope here — see first-half chip strategy note separately.
-- **Standard builds cheaper bench**: Without BB in objective, bench is weaker than BB-optimized squads — fairer chip comparison than all-15 stacked baseline.
-- **Within-squad BB delta** (same BB1 squad, BB on vs off GW1) remains ~**+18.6 $xP$** when bench is intentionally strong.
+- **Early BB still wins**: BB1/BB2 beat Standard by **+13.9 to +15.9 $xP$** over five GWs (same WC4 path; auto-captain).
+- **BB1 vs BB2**: BB1 total **+2.0 $xP$** ahead on refreshed projections. BB2 still buys one extra week of team news (not modeled).
+- **Captain**: Auto top-XI — Hill GW1, Palmer GW2/GW4, Haaland GW3/GW5 on BB1 path. TC out of scope — see first-half chip strategy note.
+- **Standard builds weaker bench**: Without BB in objective, bench is cheaper/weaker than BB-optimized squads.
+- **Within-squad BB delta** (BB1 squad, BB on vs off GW1): **+15.3 $xP$** (`self_check`).
 
 ### 3. Solver Blindspots
 - No price-rise dynamics; ITB is a fixed buffer only.
@@ -91,3 +94,4 @@ Static costs ($P_t = P_0$). £0.5m ITB enforced on GW1–3 drafts as buffer agai
 - **Price Rise Velocity**: Net transfers can move targets faster than £0.5m buffer.
 - **Lineup Surprises**: Pre-season starters must re-verify before GW1 deadline.
 - **BB magnitude**: Early-BB edge assumes willing to fund playable bench; weak-bench drafts shrink the gap toward Standard.
+- **Projection drift**: Totals sensitive to expected-stats rebuild; re-run sim after projection refresh.

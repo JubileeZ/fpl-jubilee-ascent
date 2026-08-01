@@ -1,12 +1,12 @@
 # FPL 2026/27 — First-Half Chip Strategy
 
-**Updated**: 2026-07-31T06:12:00+07:00  
+**Updated**: 2026-08-02T01:10:00+07:00  
 **Data stamp**: FPL Focal article published 2026-07-30; source snapshot reviewed 2026-07-31  
 **Season**: 2026/27 · first-half horizon GW1–19  
 **Status**: Source synthesis · not independently validated  
 **Purpose**: Convert one published chip-strategy guide into reusable first-half decision rules  
 **Scope**: Wildcard, Free Hit, Triple Captain, and Bench Boost before GW19  
-**Related**: [`research-note.md`](template/research-note.md)
+**Related**: [`research-note.md`](template/research-note.md) · [GW1–5 Chip Simulation](../gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [Expected Stats GW1–5](../expected-stats-gw1-5/expected-stats-gw1-5.md)
 
 > Source-derived claims remain separate from Project interpretation. Article fixture projections, player roles, prices, historical splits, and chip-rule statements are not verified here.
 
@@ -177,6 +177,8 @@ Example source differentials include Watkins, Thiago, Vuskovic, Semenyo, and sel
 - Spend FH early only for a clear fixture/ownership edge or emergency; do not spend it merely to repair one ordinary transfer.
 
 **Validation status**: Source-derived framework; no independent validation.
+
+**Repo simulation cross-check** (2026-08-02, not source validation): [GW1–5 chip sim](../gw1-5-chip-simulation/gw1-5-chip-simulation.md) on grill-lock projections — early BB1/BB2 + WC4 beats Standard WC4 by **+13.9 to +15.9 $xP$** over GW1–5; BB1 edges BB2 by ~2.0 $xP$. Supports source early-BB angle; TC not modeled in sim.
 
 ## Risks and unknowns
 

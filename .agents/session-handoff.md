@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Expected-stats GW1–5 grill-lock rebuild done; best-guess Defcon for 7 partial externals; chip sim TC removed. CSVs + notes refreshed. Checkpoint + push this session.
-- **Files:** `docs/research/expected-stats-gw1-5/*`; `data/research/expected-stats-gw1-5/*`; `docs/research/gw1-5-chip-simulation/*`; `CONTEXT.md`; continuity docs
-- **Decisions:** ParticipationStateHybridModel.predict for projections; best-guess Defcon when any CBIT/scout data; chip sim XI-aware no TC; BB1/BB2 > Standard on last sim run (341.61 / 338.47 / 320.62 — pre-projection-rebuild).
+- **Status:** Expected-stats grill-lock rebuild + chip sim re-run complete. BB1 299.78 / BB2 297.77 / Standard 283.84 on 2026-08-02 projections. Docs synced; commit + push this session.
+- **Files:** `docs/research/expected-stats-gw1-5/*`; `data/research/expected-stats-gw1-5/*`; `docs/research/gw1-5-chip-simulation/*`; `data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv`; continuity docs
+- **Decisions:** Early BB + WC4 still preferred; BB1 edges BB2 by ~2.0 xP; auto-captain only (no TC in sim).
 - **Blocked:** None.
-- **Next:** Re-run chip sim on new projections; Expected Role → Participation State priors.
+- **Next:** Expected Role → Participation State priors.

@@ -33,7 +33,7 @@ Rebuild expected-stats-gw1-5 per grill lock:
 2. Project via project_expected_points.py → ParticipationStateHybridModel.predict
    with attack/defence multipliers from club strengths; Softmax bonus over full XI Contention;
    export Draft Shortlist (Nailed+Regular) projections CSV.
-3. Update this note Findings; list fallback_baseline Draft players needing research packages.
+3. Update this note Findings; flag any remaining fallback_baseline or stale downstream consumers.
 4. ruff check docs/research/expected-stats-gw1-5/
 ```
 
@@ -86,13 +86,12 @@ Haaland stays #1 (~0.83 xG/90). Vuskovic jumps to #4 after best-guess CBIT Defco
 
 ## Decision
 
-**Verdict**: Approved rebuild per grill lock. Best-guess Defcon for partial sources. Re-run chip sim on refreshed projections.
+**Verdict**: Approved rebuild per grill lock. Best-guess Defcon for partial sources. Chip sim re-run 2026-08-02: BB1 299.78 / BB2 297.77 / Standard 283.84.
 
 **Recommended Action**:
 - Optional: Rotation/Cameo baseline packages if Softmax bonus rivals matter.
 - Tighten Defcon sources when full CBIT/CBITR tables land (Vuskovic HSV, Emersonn Toulouse).
 - Consider raising Usable Season floor above 450 if injury seasons like Isak 2025/26 should drop from “latest”.
-- Re-run chip sim on refreshed projections.
 
 ---
 

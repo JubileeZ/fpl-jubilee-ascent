@@ -7,16 +7,15 @@
 - [x] External research packages for Draft fallback players + CBIT/CBITR upgrades
 - [x] Best-guess Defcon for 7 partial-source players (else baseline)
 - [x] Chip sim: formation-safe XI, £0.5m ITB, XI-aware MILP; TC removed
-- [x] Rebuild CSVs + research notes
+- [x] Re-run chip sim on refreshed projections; update CSV + research note
 - [x] Continuity SFDBN + Checkpoint + push
 
 **Open (follow-up):**
-- [ ] Re-run chip sim on latest projections (sim still on pre-rebuild projections)
 - [ ] Map Expected Role Table → Participation State priors
 
 ## Work Packet (SFDBN)
 
-**Status:** Expected-stats grill-lock rebuild complete. Draft Nailed/Regular: zero on fallback_baseline. Best-guess Defcon applied to Vuskovic, Amenda, Wright, Ömür, Matusiwa, Maeda, Emersonn. Chip sim TC removed; BB1 341.61 / BB2 338.47 / Standard 320.62 (pre-projection-rebuild run). Checkpoint pending this session.
+**Status:** Checkpoint pushed. Expected-stats grill-lock rebuild complete. Chip sim re-run on 2026-08-02 projections: BB1 299.78 / BB2 297.77 / Standard 283.84.
 
 **Files:**
 - `docs/research/expected-stats-gw1-5/build_expected_stats.py`
@@ -32,4 +31,4 @@
 
 **Blocked:** None.
 
-**Next:** Re-run chip sim on refreshed projections; Expected Role → Participation State priors; optional Isak usable-season floor / Gyökeres source review.
+**Next:** Expected Role → Participation State priors; optional Isak usable-season floor / Gyökeres source review.
