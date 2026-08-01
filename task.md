@@ -1,31 +1,35 @@
-# Task: GW1–5 chip simulation sanity + continuity
+# Task: GW1–5 research rebuild + chip sim
 
-**Objective:** Validate GW1–5 chip strategy research sim; fix TC / formation / ITB / XI-aware objective; refresh artifacts; Checkpoint with continuity docs.
+**Objective:** Rebuild expected-stats GW1–5 per grill lock; external research packages; best-guess Defcon; chip sim XI-aware (no TC); Checkpoint + push.
 
 **Acceptance:**
-- [x] Review sim vs chip-strategy note and projections; identify TC miss, stacked-bench inflation, narrative-only price section
-- [x] Patch `run_simulation.py`: force TC Haaland, formation-safe XI, £0.5m ITB, XI-aware MILP (select+start)
-- [x] Re-run; refresh CSV + research note Findings
-- [x] Self-check in runner; ruff on runner
-- [x] Update Work Packet SFDBN + current-state + session-handoff; Checkpoint
+- [x] Grill lock: code map, usable seasons, 50/50 blend, attack/defence mults, ParticipationStateHybridModel.predict
+- [x] External research packages for Draft fallback players + CBIT/CBITR upgrades
+- [x] Best-guess Defcon for 7 partial-source players (else baseline)
+- [x] Chip sim: formation-safe XI, £0.5m ITB, XI-aware MILP; TC removed
+- [x] Rebuild CSVs + research notes
+- [x] Continuity SFDBN + Checkpoint + push
 
-**Open (prior packet, unchanged):**
-- [ ] Map Expected Role Table → Participation State priors (follow-up)
+**Open (follow-up):**
+- [ ] Re-run chip sim on latest projections (sim still on pre-rebuild projections)
+- [ ] Map Expected Role Table → Participation State priors
 
 ## Work Packet (SFDBN)
 
-**Status:** GW1–5 chip sim patched and re-run. TC Haaland fires GW3; GW1–3 holds £0.5m ITB; XI-aware objective makes Standard cheap-bench vs BB stacked-bench. Continuity docs updated for Checkpoint.
+**Status:** Expected-stats grill-lock rebuild complete. Draft Nailed/Regular: zero on fallback_baseline. Best-guess Defcon applied to Vuskovic, Amenda, Wright, Ömür, Matusiwa, Maeda, Emersonn. Chip sim TC removed; BB1 341.61 / BB2 338.47 / Standard 320.62 (pre-projection-rebuild run). Checkpoint pending this session.
 
 **Files:**
+- `docs/research/expected-stats-gw1-5/build_expected_stats.py`
+- `docs/research/expected-stats-gw1-5/project_expected_points.py`
+- `docs/research/expected-stats-gw1-5/expected-stats-gw1-5.md`
+- `data/research/expected-stats-gw1-5/*.csv`
 - `docs/research/gw1-5-chip-simulation/run_simulation.py`
 - `docs/research/gw1-5-chip-simulation/gw1-5-chip-simulation.md`
-- `data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv`
-- `task.md`
-- `docs/agents/current-state.md`
-- `.agents/session-handoff.md`
+- `CONTEXT.md`
+- `task.md`, `docs/agents/current-state.md`, `.agents/session-handoff.md`
 
-**Decisions:** Prefer BB1 or BB2 then WC4 on Softmax GW1–5 projections (BB1 345.64, BB2 342.50, Standard 324.03). Enforce £0.5m ITB GW1–3. Research milp ≠ open-fpl-solver; price rises remain qualitative. Expected Role → Participation State wiring still deferred.
+**Decisions:** 50/50 recency blend; external only if zero usable FPL seasons; Defcon = CBIT/CBITR/FPL or best-guess when partial data; baseline only when no evidence. Chip sim: auto-captain only, no TC. Early BB + WC4 preferred on Softmax projections.
 
-**Blocked:** None for this packet. Price-rise dynamics and FT path GW1–3 not in sim.
+**Blocked:** None.
 
-**Next:** Map Expected Role Table → Participation State priors with availability guard; recheck `watch` / injury overlays before GW1; optional sim extensions (price velocity, FT path) only if drafting needs them.
+**Next:** Re-run chip sim on refreshed projections; Expected Role → Participation State priors; optional Isak usable-season floor / Gyökeres source review.

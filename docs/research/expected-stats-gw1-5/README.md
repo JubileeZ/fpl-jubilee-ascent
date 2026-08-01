@@ -1,54 +1,32 @@
 # Expected Stats GW1–5 Research & Projection Model Directory
 
-**Updated**: 2026-08-01T20:48:00+07:00  
+**Updated**: 2026-08-02T01:00:00+07:00  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
-**Scope**: GW1–5 expected stats rates and expected points ($xP$) projection for Nailed & Regular Starters.
+**Scope**: XI Contention Event Rates + Draft Shortlist GW1–5 $xP$ via production hybrid scorer.
 
 ---
 
-## Directory & Repository Architecture
-
-Research models created for specific gameweek horizons, pre-season experiments, or temporary draft evaluations (which are not intended as canonical full-season model candidates in `models/`) reside in dedicated subdirectories under `docs/research/<topic-slug>/` for code & notes, and `data/research/<topic-slug>/` for data artifacts.
-
-### Structure
+## Structure
 ```
 docs/research/expected-stats-gw1-5/
-├── README.md                    # Architecture & reproduction guide (this file)
-├── expected-stats-gw1-5.md      # Durable research note & decision audit
-├── build_expected_stats.py      # Reproducible script: computes per-90 rates (50/50 blend + external/fallback)
-└── project_expected_points.py  # Reproducible script: projects GW1–5 xP via ParticipationStateHybridModel logic
+├── README.md
+├── expected-stats-gw1-5.md
+├── build_expected_stats.py      # Code-mapped usable-season rates + external gap fill
+└── project_expected_points.py   # ParticipationStateHybridModel.predict + strength mults
 
 data/research/expected-stats-gw1-5/
-├── expected-stats-gw1-5.csv      # Canonical per-90 rates CSV
-└── gw1-5_projections.csv        # Output table: per-GW and 5-GW aggregate xP projections
+├── expected-stats-gw1-5.csv     # XI Contention per-90 rates
+└── gw1-5_projections.csv        # Nailed+Regular GW1–5 xP
 ```
-
-### Companions
-- **Machine-Readable Research Rates**: `data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv`
-- **Output Projections Table**: `data/research/expected-stats-gw1-5/gw1-5_projections.csv`
-- **Source Role Priors**: `data/research/expected-role-gw1-5/expected-role-gw1-5.csv` and `docs/research/expected-role-gw1-5/expected-role-gw1-5.md`
 
 ---
 
-## Reproduction Guide
+## Reproduction
 
-To reproduce or update the expected stats and GW1–5 projections when underlying data or FPL rosters change:
+```bash
+uv run python docs/research/expected-stats-gw1-5/build_expected_stats.py
+uv run python docs/research/expected-stats-gw1-5/project_expected_points.py
+uv run ruff check docs/research/expected-stats-gw1-5/
+```
 
-1. **Re-build Per-90 Rates CSV**:
-   ```bash
-   uv run python docs/research/expected-stats-gw1-5/build_expected_stats.py
-   ```
-   Outputs: `data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv`
-
-2. **Re-run GW1–5 Points Projection**:
-   ```bash
-   uv run python docs/research/expected-stats-gw1-5/project_expected_points.py
-   ```
-   Outputs: `data/research/expected-stats-gw1-5/gw1-5_projections.csv`
-
-3. **Validation & Verification Gate**:
-   ```bash
-   uv run ruff check .
-   uv run pytest
-   bash tests/verify.sh
-   ```
+Grill lock: Permanent Player Code Mapping; Usable Season ≥450 mins; recency 50/50; external only if no usable FPL year; Defcon = CBIT/CBITR, FPL Defcon, or best-guess when partial data (baseline only if no evidence); scoring via `ParticipationStateHybridModel.predict` with attack/defence strength multipliers; Softmax over XI Contention Set.

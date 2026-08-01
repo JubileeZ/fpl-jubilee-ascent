@@ -9,6 +9,7 @@ Sources projections from data/research/expected-stats-gw1-5/gw1-5_projections.cs
 
 XI-aware MILP: select (x) + start (y) binaries so non-BB weeks score XI only;
 BB weeks score all 15. GW1–3 keeps £0.5m ITB (budget ≤ 99.5).
+Captain = highest XI xP (2×). No Triple Captain in this sim.
 """
 
 from __future__ import annotations
@@ -19,7 +20,6 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import Bounds, LinearConstraint, milp
 
-HAALAND_ID = 411
 ITB_BUFFER = 0.5  # £m held for WC4 price rises
 MAX_BUDGET = 100.0
 
@@ -42,7 +42,6 @@ def _squad_constraints(
     df: pd.DataFrame,
     n: int,
     max_spend: float,
-    force_haaland: bool,
 ) -> tuple[list[np.ndarray], list[float], list[float]]:
     """Constraints on select vars x[0:n] only (ignore trailing start vars)."""
     a_rows: list[np.ndarray] = []
@@ -69,19 +68,11 @@ def _squad_constraints(
         b_l.append(0.0)
         b_u.append(3.0)
 
-    if force_haaland:
-        idx = int(df.index[df["player_id"] == HAALAND_ID][0])
-        row = np.zeros(2 * n)
-        row[idx] = 1.0
-        a_rows.append(row)
-        b_l.append(1.0)
-        b_u.append(1.0)
-
     return a_rows, b_l, b_u
 
 
 def _xi_link_constraints(n: int) -> tuple[list[np.ndarray], list[float], list[float]]:
-    """y <= x; sum y = 11; exactly 1 starting GKP handled via caller pos rows on y."""
+    """y <= x; sum y = 11."""
     a_rows: list[np.ndarray] = []
     b_l: list[float] = []
     b_u: list[float] = []
@@ -124,12 +115,9 @@ def solve_squad(
     gw_weights: dict[int, float],
     bb_gw: int | None = None,
     max_spend: float = MAX_BUDGET - ITB_BUFFER,
-    force_haaland: bool = True,
 ) -> pd.DataFrame:
     """Pick 15 + latent XI maximizing weighted GW xP (BB week counts all 15)."""
     n = len(df)
-    # Objective: non-BB gw → only y*xp; BB gw → all x*xp.
-    # Captain approx omitted from objective (applied in evaluate).
     c = np.zeros(2 * n)
     for gw, w in gw_weights.items():
         xp = df[f"gw{gw}_xp"].values
@@ -138,7 +126,7 @@ def solve_squad(
         else:
             c[n:] -= w * xp
 
-    a_rows, b_l, b_u = _squad_constraints(df, n, max_spend, force_haaland)
+    a_rows, b_l, b_u = _squad_constraints(df, n, max_spend)
     for rows, lo, hi in (_xi_link_constraints(n), _xi_position_constraints(df, n)):
         a_rows.extend(rows)
         b_l.extend(lo)
@@ -154,7 +142,7 @@ def solve_squad(
         raise RuntimeError(f"MILP failed status={res.status} message={res.message}")
     selected = df.iloc[np.where(res.x[:n] > 0.5)[0]].copy()
     selected.attrs["spend"] = float(selected["cost"].sum())
-    selected.attrs["itb"] = max_spend - selected.attrs["spend"] + (MAX_BUDGET - max_spend)
+    selected.attrs["itb"] = MAX_BUDGET - selected.attrs["spend"]
     return selected
 
 
@@ -173,62 +161,15 @@ def pick_xi(squad_df: pd.DataFrame, gw: int) -> pd.DataFrame:
     return pd.concat([locked, rem.iloc[0:4]])
 
 
-def ensure_in_xi(starters: pd.DataFrame, squad_df: pd.DataFrame, player_id: int, gw: int) -> pd.DataFrame:
-    """Swap lowest-xp legal outfield starter for player_id if needed (TC / forced)."""
-    if player_id in set(starters["player_id"]):
-        return starters
-    target = squad_df[squad_df["player_id"] == player_id]
-    if target.empty:
-        raise ValueError(f"player_id {player_id} not in squad")
-    target = target.iloc[0]
-    col = f"gw{gw}_xp"
-    # Drop lowest outfield starter whose removal keeps formation feasible after insert.
-    outfield = starters[starters["position"] != "GKP"].sort_values(col, ascending=True)
-    for _, cand in outfield.iterrows():
-        trial = pd.concat([starters[starters["player_id"] != cand["player_id"]], target.to_frame().T])
-        counts = trial["position"].value_counts()
-        if (
-            counts.get("GKP", 0) == 1
-            and counts.get("DEF", 0) >= 3
-            and counts.get("MID", 0) >= 2
-            and counts.get("FWD", 0) >= 1
-            and len(trial) == 11
-        ):
-            return trial.reset_index(drop=True)
-    raise RuntimeError(f"Cannot legally start player_id={player_id} in GW{gw}")
-
-
-def evaluate_gameweek(
-    squad_df: pd.DataFrame,
-    gw: int,
-    is_bb: bool = False,
-    is_tc: bool = False,
-    tc_player_id: int = HAALAND_ID,
-) -> dict:
-    """Simulate one GW score for a 15-player squad."""
+def evaluate_gameweek(squad_df: pd.DataFrame, gw: int, is_bb: bool = False) -> dict:
+    """Simulate one GW score for a 15-player squad. Captain = top XI xP (2×)."""
     col = f"gw{gw}_xp"
     if is_bb:
         starters = squad_df.copy()
         points = float(squad_df[col].sum())
     else:
         starters = pick_xi(squad_df, gw)
-        if is_tc and tc_player_id in set(squad_df["player_id"]):
-            starters = ensure_in_xi(starters, squad_df, tc_player_id, gw)
         points = float(starters[col].sum())
-
-    if is_tc and tc_player_id in set(starters["player_id"]):
-        c_cand = starters[starters["player_id"] == tc_player_id].iloc[0]
-        c_pts = float(c_cand[col])
-        points += c_pts * 2.0  # 3x total
-        c_mode = "TC"
-    else:
-        c_cand = starters.sort_values(col, ascending=False).iloc[0]
-        c_pts = float(c_cand[col])
-        points += c_pts  # 2x total
-        c_mode = "C"
-
-    # Formation sanity for non-BB
-    if not is_bb:
         counts = starters["position"].value_counts()
         assert len(starters) == 11
         assert counts.get("GKP", 0) == 1
@@ -236,12 +177,16 @@ def evaluate_gameweek(
         assert counts.get("MID", 0) >= 2
         assert counts.get("FWD", 0) >= 1
 
+    c_cand = starters.sort_values(col, ascending=False).iloc[0]
+    c_pts = float(c_cand[col])
+    points += c_pts  # 2x total
+
     return {
         "gw": gw,
         "points": round(points, 2),
         "captain": c_cand["web_name"],
         "captain_pts": round(c_pts, 2),
-        "c_mode": c_mode,
+        "c_mode": "C",
         "is_bb": is_bb,
         "starters_count": len(starters),
     }
@@ -252,17 +197,16 @@ def run_simulations() -> dict:
     scenarios: dict = {}
 
     configs = [
-        ("BB1_WC4", "Scenario A: BB1 + WC4 (TC3 Haaland)", 1),
-        ("BB2_WC4", "Scenario B: BB2 + WC4 (TC3 Haaland)", 2),
-        ("Standard_WC4", "Scenario C: Standard WC4 (No Early BB, TC3 Haaland)", None),
+        ("BB1_WC4", "Scenario A: BB1 + WC4", 1),
+        ("BB2_WC4", "Scenario B: BB2 + WC4", 2),
+        ("Standard_WC4", "Scenario C: Standard WC4 (No Early BB)", None),
     ]
 
     wc4 = solve_squad(
         df,
         gw_weights={4: 1.0, 5: 1.0},
         bb_gw=None,
-        max_spend=MAX_BUDGET,  # WC spends full bank; ITB buffer already held GW1–3
-        force_haaland=True,
+        max_spend=MAX_BUDGET,
     )
 
     for key, name, bb_gw in configs:
@@ -272,11 +216,11 @@ def run_simulations() -> dict:
         elif bb_gw == 2:
             weights = {1: 0.9, 2: 1.0, 3: 0.9}
 
-        sq = solve_squad(df, gw_weights=weights, bb_gw=bb_gw, force_haaland=True)
+        sq = solve_squad(df, gw_weights=weights, bb_gw=bb_gw)
         evals = [
             evaluate_gameweek(sq, 1, is_bb=(bb_gw == 1)),
             evaluate_gameweek(sq, 2, is_bb=(bb_gw == 2)),
-            evaluate_gameweek(sq, 3, is_bb=False, is_tc=True, tc_player_id=HAALAND_ID),
+            evaluate_gameweek(sq, 3, is_bb=False),
             evaluate_gameweek(wc4, 4, is_bb=False),
             evaluate_gameweek(wc4, 5, is_bb=False),
         ]
@@ -293,7 +237,7 @@ def run_simulations() -> dict:
         print(
             f"{key}: total={total} spend={scenarios[key]['spend']} "
             f"ITB={scenarios[key]['itb']} "
-            + " | ".join(f"GW{e['gw']}={e['points']}({e['c_mode']}:{e['captain']})" for e in evals)
+            + " | ".join(f"GW{e['gw']}={e['points']}(C:{e['captain']})" for e in evals)
         )
 
     sim_rows = [
@@ -320,16 +264,14 @@ def run_simulations() -> dict:
 
 
 def _self_check() -> None:
-    """ponytail: fails if TC/formation/ITB regressions return."""
+    """ponytail: fails if formation/ITB/captain regressions return."""
     df = load_data()
     sq = solve_squad(df, gw_weights={1: 1.0, 2: 0.9, 3: 0.9}, bb_gw=1)
     assert float(sq["cost"].sum()) <= MAX_BUDGET - ITB_BUFFER + 1e-6
-    assert HAALAND_ID in set(sq["player_id"])
     xi = pick_xi(sq, 1)
     assert (xi["position"] == "GKP").sum() == 1
-    tc = evaluate_gameweek(sq, 3, is_tc=True, tc_player_id=HAALAND_ID)
-    assert tc["c_mode"] == "TC" and tc["captain"] == "Haaland"
-    # Bench contribution under BB should be XI-aware squad (not all-15 stacked as sole objective)
+    ev = evaluate_gameweek(sq, 3, is_bb=False)
+    assert ev["c_mode"] == "C"
     bb = evaluate_gameweek(sq, 1, is_bb=True)
     nobb = evaluate_gameweek(sq, 1, is_bb=False)
     delta = bb["points"] - nobb["points"]

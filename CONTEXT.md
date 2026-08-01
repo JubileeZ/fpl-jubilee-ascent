@@ -152,9 +152,13 @@ _Avoid_: Default rate, baseline prior
 The cross-season identity resolution technique that links transient annual FPL element `id` values across seasons using the immutable FPL `code` field (with name/position fallback).
 _Avoid_: ID matching, element_id join
 
+**Usable Season**:
+A season-year in the Event Rate window whose FPL sample meets the minutes floor (same floor as Prior-Season Seed: 450 minutes). Thin or missing years are excluded from the rate blend; fill uses older usable seasons first, then external research only if none remain.
+_Avoid_: Any-minutes season, partial sample, injury season as full prior
+
 **Defensive Contribution (Defcon)**:
-The FPL metric tracking defensive actions (clearances, blocks, interceptions, tackles, recoveries) used to evaluate position-specific defensive contribution thresholds for bonus/points.
-_Avoid_: Tackles, defensive stat, work rate
+The FPL metric tracking defensive actions (clearances, blocks, interceptions, tackles, recoveries) used to evaluate position-specific defensive contribution thresholds for bonus/points. CBIT (clearances + blocks + interceptions + tackles) for DEF threshold 10; CBITR (+ recoveries) for MID/FWD threshold 12.
+_Avoid_: Tackles, defensive stat, work rate, raw foreign defensive actions
 
 **BPS Bonus Model**:
 A statistical or regression model mapping projected Bonus Points System (BPS) totals from event components into expected bonus points (0, 1, 2, or 3).

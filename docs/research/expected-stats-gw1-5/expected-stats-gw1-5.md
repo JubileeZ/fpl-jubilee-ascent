@@ -1,118 +1,104 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-01T20:37:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-01; 2025/26 archive 2026-07-29; FPL API elements summary 2026-07-29; European league match logs 2023–2026  
+**Updated**: 2026-08-02T00:55:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-01; 2025/26 archive 2026-07-29; FPL API elements summary 2026-07-29; grill lock 2026-08-02; best-guess Defcon 2026-08-02  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
-**Purpose**: Compute per-90 event rates (xG, xA, xDEFcon, xSaves, xConceded) using a 50% 2025/26 season + 50% career stats blend across a 3-season window (2023–2026), and project GW1–5 expected points ($xP$) for 193 Nailed & Regular Starters.  
-**Scope**: 193 players (90 Nailed Starter, 103 Regular Starter) across all 20 Premier League clubs.  
-**Related**: [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) · [Expected Role Table CSV](../../../data/research/expected-role-gw1-5/expected-role-gw1-5.csv) · [Repo Structure Guide](README.md)  
+**Purpose**: Build Event Rates for XI Contention Set via Permanent Player Code Mapping + usable-season recency blend; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict`.  
+**Scope**: XI Contention rates (Nailed / Regular / Rotation / Cameo); Draft Shortlist projections export (Nailed + Regular).  
+**Related**: [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) · [Repo Structure Guide](README.md) · ADR 0004 · ADR 0005  
 **Artifacts**:
-- [Expected Stats CSV](../../../data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv) — canonical per-90 rates data
-- [GW1–5 Projections CSV](../../../data/research/expected-stats-gw1-5/gw1-5_projections.csv) — row-level GW1–5 $xP$ projections
+- [Expected Stats CSV](../../../data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv)
+- [GW1–5 Projections CSV](../../../data/research/expected-stats-gw1-5/gw1-5_projections.csv)
 
 ---
 
 ## Sources
 
-- **Primary Role Input**: `data/research/expected-role-gw1-5/expected-role-gw1-5.csv` (193 Nailed & Regular Starters, expected role priors, draft availability).
-- **2025/26 FPL Performance History**: `data/archive/2025-26/processed/player_performances.parquet` (match-level xG, xA, defensive contributions, saves, goals conceded).
-- **3-Season FPL Career History**: `history_past` records (2023/24, 2024/25, 2025/26) from `data/raw/element_summary_{id}.json` across Premier League seasons.
-- **European League 3-Season Research**: Primary match logs (FBref/Opta/FotMob) for 16 major overseas transfers (2023–2026 window across Primeira Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Championship, etc.).
-- **Fixture Schedule**: `data/processed/fixtures.parquet` and `data/processed/clubs.parquet` for GW1–5 match schedule and FDR.
+- Expected Role Table + priors: `data/research/expected-role-gw1-5/expected-role-gw1-5.csv`
+- Prior-season archive (code-mapped): `data/archive/2025-26/processed/`
+- `history_past` season totals: `data/raw/element_summary_{id}.json`
+- External research packages when no Usable Season remains (xG/xA/saves; Defcon from CBIT/CBITR, FPL Defcon, or best-guess when any data exists)
+- Fixtures / club strengths: `data/processed/fixtures.parquet`, `clubs.parquet`
 
 ---
 
 ## Agent Prompt
 
 ```text
-Build expected stats per-90 rates and project GW1–5 expected points across a 3-season window (2023–2026):
+Rebuild expected-stats-gw1-5 per grill lock:
 
-1. Filter data/research/expected-role-gw1-5/expected-role-gw1-5.csv for Nailed Starter and Regular Starter players (193 total).
-2. Calculate per-90 rates for xG, xA, xDEFcon (CBIT threshold 10 for D, 12 for M/F), xSaves, and xConceded:
-   - 50% 2025/26 season history + 50% 3-season FPL career history when both are available.
-   - For foreign transfers and low-sample (<450 mins) players, incorporate 3-season (2023–2026) European league match log research (e.g. Gyökeres, Wirtz, Frimpong, Yeremy, Tel, Thiaw, Lammens, Mukiele, Alderete, Reinildo, Le Fée, Sadiki, Roefs).
-   - Apply 2025/26 position baselines if data is absent.
-3. Export rates to data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv with rate_source and provenance_note.
-4. Run ParticipationStateHybridModel scoring logic against GW1–5 fixtures:
-   - Apply availability overrides (exclude_gw1-5, exclude_gw1).
-   - Apply FDR difficulty multiplier max(0.2, (6.0 - FDR) / 3.0).
-   - Reconstruct points across minutes, goals, assists, clean sheets, conceded penalty, defcon, saves, and bonus.
-5. Export projections to data/research/expected-stats-gw1-5/gw1-5_projections.csv.
-6. Verify via ruff, pytest, and verify.sh.
+1. XI Contention Set rates via build_expected_stats.py (code map, usable seasons >=450 mins,
+   recency 50/50, external only if no usable FPL year; Defcon CBIT/best-guess or baseline).
+2. Project via project_expected_points.py → ParticipationStateHybridModel.predict
+   with attack/defence multipliers from club strengths; Softmax bonus over full XI Contention;
+   export Draft Shortlist (Nailed+Regular) projections CSV.
+3. Update this note Findings; list fallback_baseline Draft players needing research packages.
+4. ruff check docs/research/expected-stats-gw1-5/
 ```
 
 ---
 
 ## Method
 
-### 1. Per-90 Event Rates Blending Logic (3-Season Window)
-For each player $i$:
-- **2025/26 Season Rate**: $R_{\text{2025/26}} = \frac{\sum \text{Events}_{\text{2025/26}}}{\sum \text{Minutes}_{\text{2025/26}}} \times 90$
-- **Career Rate (2023–2025)**: $R_{\text{Career}} = \frac{\sum \text{Events}_{\text{2023-2025}}}{\sum \text{Minutes}_{\text{2023-2025}}} \times 90$
-- **Blended Rate**: $R_{\text{Blended}} = 0.5 \times R_{\text{2025/26}} + 0.5 \times R_{\text{Career}}$
+### 1. Event Rates (grill lock)
+- **Identity**: Permanent Player Code Mapping to archive `id` (ADR 0004).
+- **Window**: 2023/24, 2024/25, 2025/26. Prefer archive match logs for 2025/26; else `history_past`.
+- **Usable Season**: minutes ≥ 450. Thin/missing years dropped.
+- **Blend**: 50% latest Usable Season + 50% mean of older Usable Seasons (no double-count). Single usable → 100%.
+- **Gap fill**: external research package only if zero Usable Seasons; else position baseline.
+- **Defcon**: FPL `defensive_contribution` or CBIT/CBITR when complete. Else best-guess from partial scout/FBref/Opta (`defcon_cbit=True`). Position baseline only when no Defcon evidence.
 
-### 2. Sample Hierarchy & Provenance
-- **`fpl_historical_50_50`** (113 players): Both 2025/26 and past 3-season FPL career stats present.
-- **`fpl_3season_career_only`** (34 players): 3-season FPL career stats present.
-- **`external_3season_research`** (31 players): Sourced via subagent 3-season European league match log research for foreign transfers and low PL sample players.
-- **`fallback_baseline`**: 2025/26 Premier League position average applied where no sample exists.
-
-### 3. $xP$ Reconstruction Engine
-Following `ParticipationStateHybridModel` (`models/participation_state_hybrid.py`):
-- State probabilities ($p_{\text{start}}, p_{\text{sub}}, p_{\text{dnp}}$) and expected minutes ($xMins = p_{\text{start}} \cdot xmins_{\text{start}} + p_{\text{sub}} \cdot xmins_{\text{sub}}$) are drawn from expected role priors.
-- Availability exclusions (`exclude_gw1-5`, `exclude_gw1`) set $p_{\text{dnp}} = 1.0$ for covered gameweeks.
-- FDR multiplier adjusts attack, clean sheet, and conceded expectations:
-  $$\text{FDR Mult} = \max\left(0.2, \frac{6.0 - \text{FDR}}{3.0}\right)$$
-- **Fixture-Level Softmax Bonus Allocation**: Bonus points are allocated using fixture-level $xBPS$ competition:
-  $$xBPS = (\text{xMins} \times 0.1) + (xG \times 24) + (xA \times 12) + (P(\text{CS}) \times 12) + (P(\text{DefCon}) \times 6) + (\text{xSaves} \times 2)$$
-- Event points summed using `models/scoring_matrix.py`:
-  $$xP = xP_{\text{mins}} + xP_{\text{goals}} + xP_{\text{assists}} + xP_{\text{clean\_sheet}} + xP_{\text{conceded}} + xP_{\text{defcon}} + xP_{\text{saves}} + xP_{\text{bonus}}$$
+### 2. $xP$ reconstruction
+- Feature-like rows GW1–5 with Expected Role Priors + availability excludes.
+- `attack_multiplier` / `defence_multiplier` from club strength vectors (`features.builder._fixture_maps`); FDR fallback only if strengths missing.
+- Score via `ParticipationStateHybridModel.predict` (NegBin Defcon threshold, Softmax bonus).
+- Bonus competitors = full XI Contention Set; CSV export = Nailed + Regular only.
 
 ---
 
 ## Findings
 
-### 1. Top Projected Players (GW1–5 Aggregate $xP$, 3-Season Window)
+### 1. Top Draft Shortlist (GW1–5 aggregate $xP$, post best-guess Defcon)
 
-| Rank | Player | Club | Pos | Expected Role | GW1 | GW2 | GW3 | GW4 | GW5 | Total 5-GW $xP$ |
-|------|--------|------|-----|---------------|-----|-----|-----|-----|-----|-----------------|
-| 1 | Isak | LIV | FWD | Nailed Starter | 5.97 | 5.68 | 7.27 | 7.20 | 5.70 | **31.82** |
-| 2 | Palmer | CHE | MID | Nailed Starter | 6.05 | 7.25 | 3.78 | 7.39 | 5.83 | **30.31** |
-| 3 | Sarr | CRY | MID | Nailed Starter | 5.20 | 4.31 | 5.31 | 6.22 | 5.12 | **26.16** |
-| 4 | Haaland | MCI | FWD | Nailed Starter | 4.85 | 4.92 | 5.95 | 3.99 | 5.75 | **25.47** |
-| 5 | Vuskovic | BHA | DEF | Nailed Starter | 4.98 | 5.18 | 4.81 | 4.97 | 5.17 | **25.12** |
-| 6 | Gyökeres | ARS | FWD | Regular Starter | 6.56 | 3.92 | 3.86 | 5.13 | 5.21 | **24.69** |
-| 7 | Konsa | AVL | DEF | Nailed Starter | 4.89 | 4.77 | 5.15 | 4.82 | 4.83 | **24.46** |
-| 8 | Calvert-Lewin | LEE | FWD | Nailed Starter | 4.58 | 4.39 | 4.65 | 5.71 | 4.55 | **23.89** |
-| 9 | Dalot | MUN | DEF | Nailed Starter | 4.81 | 4.79 | 4.69 | 4.81 | 4.75 | **23.86** |
-| 10 | Hill | BOU | DEF | Nailed Starter | 5.75 | 4.36 | 4.51 | 4.28 | 4.88 | **23.77** |
-| 11 | João Pedro | CHE | FWD | Nailed Starter | 4.76 | 5.65 | 2.89 | 5.77 | 4.57 | **23.63** |
-| 12 | Ndiaye | EVE | MID | Nailed Starter | 4.68 | 4.68 | 4.19 | 4.66 | 5.35 | **23.56** |
-| 13 | Donnarumma | MCI | GKP | Nailed Starter | 4.63 | 4.66 | 4.59 | 4.89 | 4.52 | **23.29** |
-| 14 | Gabriel | ARS | DEF | Nailed Starter | 4.23 | 4.85 | 4.81 | 4.48 | 4.50 | **22.86** |
-| 15 | Schade | BRE | MID | Nailed Starter | 4.56 | 4.53 | 5.16 | 4.58 | 3.94 | **22.78** |
+| Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
+|------|--------|------|-----|-----|-----|-----|-----|-----|-------|
+| 1 | Haaland | MCI | FWD | 5.25 | 5.30 | 6.52 | 4.21 | 6.37 | **27.65** |
+| 2 | Hill | BOU | DEF | 5.69 | 4.52 | 4.59 | 4.49 | 5.09 | **24.38** |
+| 3 | Palmer | CHE | MID | 4.78 | 5.52 | 3.54 | 5.63 | 4.68 | **24.14** |
+| 4 | Vuskovic | BHA | DEF | 4.71 | 5.10 | 4.44 | 4.45 | 5.08 | **23.77** |
+| 5 | Gabriel | ARS | DEF | 4.19 | 4.90 | 4.86 | 4.48 | 4.50 | **22.92** |
+| 6 | B.Fernandes | MUN | MID | 5.07 | 5.03 | 4.36 | 3.84 | 4.43 | **22.73** |
+| 7 | Sarr | CRY | MID | 4.38 | 3.79 | 4.44 | 5.03 | 4.36 | **22.00** |
 
-### 2. Availability Impact
-- **Éli Junior Kroupi (BOU)**: $xP = 0.00$ across GW1–5 due to fifth metatarsal fracture sustained in pre-season (`exclude_gw1-5`).
-- **Saliba (ARS)**: $xP = 0.00$ across GW1–5 due to extended rehabilitation (`exclude_gw1-5`).
-- **J.Timber (ARS)**: $xP = 0.00$ in GW1 (`exclude_gw1`), projecting 16.72 $xP$ across GW2–5.
-- **Rodrigo (MCI)**: $xP = 0.00$ in GW1 (`exclude_gw1`) recovering from back surgery.
+Haaland stays #1 (~0.83 xG/90). Vuskovic jumps to #4 after best-guess CBIT Defcon 12.45. Isak still diluted by 2025/26 at 694 mins (≥450 floor).
+
+### 2. Rate source mix (340 XI Contention rows)
+- `fpl_recency_50_50`: 199 · `fpl_single_usable_season`: 81 · `external_3season_research`: 22 · `fallback_baseline`: 38 (Rotation/Cameo only)
+
+### 3. Draft Shortlist research (2026-08-02)
+- **Zero** Nailed/Regular on `fallback_baseline` after packages for Thomas, Wright, Butland, Slater, Ömür, Matusiwa, Emersonn + CBIT/CBITR upgrades.
+- **Best-guess Defcon** enabled for remaining 7 with any Defcon evidence (`defcon_cbit=True`): Vuskovic 12.45, Amenda 8.03, Wright 5.28, Ömür 8.32, Matusiwa 13.57, Maeda 7.69, Emersonn 2.78.
+- **Zero** Draft externals still on pure position-baseline Defcon.
+- Remaining 38 baseline rows are Rotation/Cameo (bonus pool only).
 
 ---
 
 ## Decision
 
-**Verdict**: Approved for GW1–5 draft planning and target evaluation.
+**Verdict**: Approved rebuild per grill lock. Best-guess Defcon for partial sources. Re-run chip sim on refreshed projections.
 
 **Recommended Action**:
-- Use `data/research/expected-stats-gw1-5/gw1-5_projections.csv` to rank draft shortlist targets.
-- Re-run `build_expected_stats.py` and `project_expected_points.py` if injury news or availability overrides update prior to GW1 lock.
+- Optional: Rotation/Cameo baseline packages if Softmax bonus rivals matter.
+- Tighten Defcon sources when full CBIT/CBITR tables land (Vuskovic HSV, Emersonn Toulouse).
+- Consider raising Usable Season floor above 450 if injury seasons like Isak 2025/26 should drop from “latest”.
+- Re-run chip sim on refreshed projections.
 
 ---
 
 ## Risks and Unknowns
 
-- **Pre-Season Transfer Data**: 3-season European league match log research for foreign transfers (e.g. Gyökeres, Wirtz, Frimpong, Thiaw) provides comprehensive baseline data, but team style shifts at new clubs remain a factor.
-- **FDR Sensitivity**: Opponent difficulty multipliers reflect team-level FDR ratings; unexpected lineup shifts can alter clean sheet probabilities.
-- **Dynamic Softmax Bonus**: Bonus points use fixture-level $xBPS$ Softmax competition aligned with `ParticipationStateHybridModel`; actual match BPS outcomes may fluctuate based on match dynamics.
+- Usable Season floor 450 still admits some thin injury years into the “latest” 50% slot.
+- Best-guess Defcon from incomplete CBIT/scout samples may over/understate threshold hit rate.
+- Softmax over XI Contention dilutes bonus vs shortlist-only (expected).
+- Research path still not live Expected Role → Participation State wiring (Q1→C later).

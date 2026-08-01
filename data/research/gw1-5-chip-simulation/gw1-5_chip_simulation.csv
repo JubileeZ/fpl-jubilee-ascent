@@ -1,16 +1,16 @@
 scenario_key,scenario_name,gameweek,projected_points,captain,captain_pts,captain_mode,is_bench_boost,squad_spend,squad_itb
-BB1_WC4,Scenario A: BB1 + WC4 (TC3 Haaland),1,84.24,Gyökeres,6.56,C,True,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4 (TC3 Haaland),2,62.38,Palmer,7.25,C,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4 (TC3 Haaland),3,68.54,Haaland,5.95,TC,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4 (TC3 Haaland),4,65.38,Palmer,7.39,C,False,99.5,0.5
-BB1_WC4,Scenario A: BB1 + WC4 (TC3 Haaland),5,65.1,Palmer,5.83,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4 (TC3 Haaland),1,62.82,Palmer,6.05,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4 (TC3 Haaland),2,80.77,Palmer,7.25,C,True,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4 (TC3 Haaland),3,68.43,Haaland,5.95,TC,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4 (TC3 Haaland),4,65.38,Palmer,7.39,C,False,99.5,0.5
-BB2_WC4,Scenario B: BB2 + WC4 (TC3 Haaland),5,65.1,Palmer,5.83,C,False,99.5,0.5
-Standard_WC4,"Scenario C: Standard WC4 (No Early BB, TC3 Haaland)",1,64.81,Gyökeres,6.56,C,False,99.5,0.5
-Standard_WC4,"Scenario C: Standard WC4 (No Early BB, TC3 Haaland)",2,61.62,Palmer,7.25,C,False,99.5,0.5
-Standard_WC4,"Scenario C: Standard WC4 (No Early BB, TC3 Haaland)",3,67.12,Haaland,5.95,TC,False,99.5,0.5
-Standard_WC4,"Scenario C: Standard WC4 (No Early BB, TC3 Haaland)",4,65.38,Palmer,7.39,C,False,99.5,0.5
-Standard_WC4,"Scenario C: Standard WC4 (No Early BB, TC3 Haaland)",5,65.1,Palmer,5.83,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,1,84.24,Gyökeres,6.56,C,True,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,2,62.38,Palmer,7.25,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,3,63.91,Isak,7.27,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,4,67.16,Palmer,7.39,C,False,99.5,0.5
+BB1_WC4,Scenario A: BB1 + WC4,5,63.92,Palmer,5.83,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,1,62.82,Palmer,6.05,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,2,80.77,Palmer,7.25,C,True,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,3,63.8,Isak,7.27,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,4,67.16,Palmer,7.39,C,False,99.5,0.5
+BB2_WC4,Scenario B: BB2 + WC4,5,63.92,Palmer,5.83,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),1,64.81,Gyökeres,6.56,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),2,61.83,Palmer,7.25,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),3,62.9,Isak,7.27,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),4,67.16,Palmer,7.39,C,False,99.5,0.5
+Standard_WC4,Scenario C: Standard WC4 (No Early BB),5,63.92,Palmer,5.83,C,False,99.5,0.5
