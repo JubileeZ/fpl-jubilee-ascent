@@ -1,0 +1,194 @@
+player_id,web_name,club_short,position,expected_role,p_start,p_sub_in,p_dnp,xmins_if_start,xmins_if_sub_in,draft_availability,availability_override,fpl_2025_26_mins,fpl_career_mins,total_mins,rate_source,per90_xg,per90_xa,per90_defcon,per90_saves,per90_goals_conceded,provenance_note
+1,Raya,ARS,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3330.0,9630.0,12960.0,fpl_historical_50_50,0.0,0.0016,0.0,1.708,0.7439,50% 2025/26 + 50% 3-season FPL career history blend
+4,Gabriel,ARS,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,8155.0,8155.0,fpl_3season_career_only,0.1117,0.0398,4.8118,0.0,0.7505,100% 3-season FPL career history
+6,Saliba,ARS,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,exclude_gw1-5,out_gw1-5_pending_return,2614.0,9073.0,11687.0,fpl_historical_50_50,0.0399,0.0376,5.351,0.0,0.7312,50% 2025/26 + 50% 3-season FPL career history blend
+5,J.Timber,ARS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,exclude_gw1,api_unavailable_gw1,2750.0,4937.0,7687.0,fpl_historical_50_50,0.1023,0.0546,7.0211,0.0,0.701,50% 2025/26 + 50% 3-season FPL career history blend
+13,Rice,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,9141.0,9141.0,fpl_3season_career_only,0.1003,0.1777,6.6262,0.0,0.8074,100% 3-season FPL career history
+12,Saka,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,late_world_cup_return_gw1,352.0,6864.0,7216.0,fpl_historical_50_50,0.2046,0.2154,4.9825,0.0,1.1866,50% 2025/26 + 50% 3-season FPL career history blend
+10,White,ARS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,api_stale_vs_training,697.0,4881.0,5578.0,fpl_historical_50_50,0.0266,0.065,2.8587,0.0,0.9314,50% 2025/26 + 50% 3-season FPL career history blend
+11,Mosquera,ARS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,699.0,986.0,1685.0,fpl_historical_50_50,0.0335,0.0732,7.7477,0.0,0.7514,50% 2025/26 + 50% 3-season FPL career history blend
+8,Calafiori,ARS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2452.0,2675.0,5127.0,fpl_historical_50_50,0.1574,0.0525,5.5423,0.0,0.7035,50% 2025/26 + 50% 3-season FPL career history blend
+15,Ødegaard,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,6782.0,6782.0,fpl_3season_career_only,0.1809,0.2719,3.0389,0.0,0.7564,100% 3-season FPL career history
+19,Zubimendi,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1065.0,2991.0,4056.0,fpl_historical_50_50,0.2168,0.0878,7.8724,0.0,0.7142,50% 2025/26 + 50% 3-season FPL career history blend
+14,Eze,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,6527.0,6527.0,fpl_3season_career_only,0.3404,0.1791,4.4676,0.0,1.048,100% 3-season FPL career history
+16,Madueke,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2218.0,4277.0,6495.0,fpl_historical_50_50,0.2942,0.2279,5.8269,0.0,0.9138,50% 2025/26 + 50% 3-season FPL career history blend
+25,Gyökeres,ARS,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,165.0,2217.0,2382.0,external_3season_research,0.77,0.24,1.22,0.0,1.1,"External 3-season research: Sporting CP / Arsenal 2023-26 (0.77 xG/90, 0.24 xA/90)"
+18,Martinelli,ARS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1205.0,5359.0,6564.0,fpl_historical_50_50,0.1938,0.1984,4.2851,0.0,0.8063,50% 2025/26 + 50% 3-season FPL career history blend
+28,Martinez,AVL,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,9045.0,9045.0,fpl_3season_career_only,0.0,0.0011,0.0,2.8856,1.3333,100% 3-season FPL career history
+31,Konsa,AVL,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,418.0,9040.0,9458.0,fpl_historical_50_50,0.3172,0.039,5.0814,0.0,1.3578,50% 2025/26 + 50% 3-season FPL career history blend
+32,Cash,AVL,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2835.0,7223.0,10058.0,fpl_historical_50_50,0.0376,0.0426,2.0622,1.5079,1.2171,50% 2025/26 + 50% 3-season FPL career history blend
+47,Kamara,AVL,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,watch,api_doubt_gw1,3280.0,4783.0,8063.0,fpl_historical_50_50,0.1078,0.0881,6.5331,0.0,1.2136,50% 2025/26 + 50% 3-season FPL career history blend
+55,Watkins,AVL,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,844.0,8648.0,9492.0,fpl_historical_50_50,0.3302,0.105,4.8405,0.0,1.497,50% 2025/26 + 50% 3-season FPL career history blend
+34,Pau,AVL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,6154.0,6154.0,fpl_3season_career_only,0.0409,0.0224,3.3344,0.0,1.3016,100% 3-season FPL career history
+36,Maatsen,AVL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3016.0,2915.0,5931.0,fpl_historical_50_50,0.0613,0.1214,5.8472,0.0,1.308,50% 2025/26 + 50% 3-season FPL career history blend
+37,Lindelöf,AVL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1842.0,2965.0,4807.0,fpl_historical_50_50,0.0311,0.0895,4.4149,0.0,1.169,50% 2025/26 + 50% 3-season FPL career history blend
+45,McGinn,AVL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,7353.0,7353.0,fpl_3season_career_only,0.136,0.1444,3.8311,0.0,1.4198,100% 3-season FPL career history
+46,Barkley,AVL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,4027.0,4027.0,fpl_3season_career_only,0.1627,0.0988,3.33,0.0,2.0338,100% 3-season FPL career history
+41,Buendía,AVL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1673.0,1842.0,3515.0,fpl_historical_50_50,0.1342,0.0657,8.2161,0.0,1.1462,50% 2025/26 + 50% 3-season FPL career history blend
+57,Petrović,BOU,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,5406.0,5406.0,fpl_3season_career_only,0.0,0.0,0.0,3.0633,1.5316,100% 3-season FPL career history
+60,Hill,BOU,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,2619.0,2619.0,fpl_3season_career_only,0.0405,0.0488,10.8247,0.0,1.1684,100% 3-season FPL career history
+61,Truffert,BOU,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,3378.0,3378.0,fpl_3season_career_only,0.036,0.0818,8.0195,0.0,1.3588,100% 3-season FPL career history
+69,Scott,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,4596.0,4596.0,fpl_3season_career_only,0.1048,0.0979,9.5953,0.0,1.4491,100% 3-season FPL career history
+73,Adams,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1073.0,3846.0,4919.0,fpl_historical_50_50,0.0229,0.0263,8.8795,0.0,1.3847,50% 2025/26 + 50% 3-season FPL career history blend
+78,Kroupi.Jr,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,1663.0,1663.0,fpl_3season_career_only,0.4497,0.0817,6.0613,0.0,1.1365,100% 3-season FPL career history
+68,Tavernier,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,6782.0,6782.0,fpl_3season_career_only,0.2448,0.1657,5.7063,0.0,1.473,100% 3-season FPL career history
+67,Rayan,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3420.0,1110.0,4530.0,fpl_historical_50_50,0.1082,0.0746,3.3243,1.4342,1.1159,50% 2025/26 + 50% 3-season FPL career history blend
+64,Smith,BOU,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2833.0,4807.0,7640.0,fpl_historical_50_50,0.2512,0.0413,2.916,0.0,1.2308,50% 2025/26 + 50% 3-season FPL career history blend
+62,Diakité,BOU,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,8.0,1275.0,1283.0,fpl_3season_career_only,0.0014,0.0134,8.2588,0.0,1.9059,100% 3-season FPL career history
+82,Kelleher,BRE,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3200.0,5130.0,8330.0,fpl_historical_50_50,0.1561,0.0459,3.3187,1.4386,1.3628,50% 2025/26 + 50% 3-season FPL career history blend
+84,Collins,BRE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2732.0,9040.0,11772.0,fpl_historical_50_50,0.1804,0.0968,7.4695,0.0,1.4814,50% 2025/26 + 50% 3-season FPL career history blend
+88,Kayode,BRE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,872.0,3781.0,4653.0,fpl_historical_50_50,0.0211,0.0696,10.474,0.0,1.6232,50% 2025/26 + 50% 3-season FPL career history blend
+94,Schade,BRE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,5352.0,5352.0,fpl_3season_career_only,0.3669,0.076,5.9025,0.0,1.2276,100% 3-season FPL career history
+95,O.Dango,BRE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,5483.0,5483.0,fpl_3season_career_only,0.312,0.1389,6.2539,0.0,1.346,100% 3-season FPL career history
+106,Thiago,BRE,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2971.0,3449.0,6420.0,fpl_historical_50_50,0.3044,0.0503,7.9109,0.0,1.371,50% 2025/26 + 50% 3-season FPL career history blend
+85,Van den Berg,BRE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1769.0,5345.0,7114.0,fpl_historical_50_50,0.0619,0.0326,10.1196,0.0,1.47,50% 2025/26 + 50% 3-season FPL career history blend
+86,Lewis-Potter,BRE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1188.0,6480.0,7668.0,fpl_historical_50_50,0.3061,0.1921,5.0884,0.0,1.5215,50% 2025/26 + 50% 3-season FPL career history blend
+102,Yarmoliuk,BRE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,4757.0,4757.0,fpl_3season_career_only,0.0526,0.0624,10.4625,0.0,1.4379,100% 3-season FPL career history
+98,Janelt,BRE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,214.0,6739.0,6953.0,fpl_historical_50_50,0.4437,0.0687,7.5876,0.0,1.372,50% 2025/26 + 50% 3-season FPL career history blend
+97,Jensen,BRE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2741.0,5286.0,8027.0,fpl_historical_50_50,0.2015,0.1324,4.8299,0.0,1.4654,50% 2025/26 + 50% 3-season FPL career history blend
+109,Verbruggen,BHA,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1322.0,8550.0,9872.0,fpl_historical_50_50,0.0061,0.0187,2.3147,1.3789,1.4436,50% 2025/26 + 50% 3-season FPL career history blend
+113,F.Kadıoğlu,BHA,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2761.0,3515.0,6276.0,fpl_historical_50_50,0.0868,0.07,7.0832,0.0,1.2955,50% 2025/26 + 50% 3-season FPL career history blend
+116,Dunk,BHA,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,679.0,7787.0,8466.0,fpl_historical_50_50,0.0626,0.0333,5.443,0.0,1.3766,50% 2025/26 + 50% 3-season FPL career history blend
+504,Vuskovic,BHA,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.185,0.035,11.72,0.0,1.46,External 3-season research: Westerlo / HSV 2024-26 match logs
+124,Groß,BHA,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1911.0,4748.0,6659.0,fpl_historical_50_50,0.0816,0.1761,5.6835,0.0,1.2943,50% 2025/26 + 50% 3-season FPL career history blend
+130,Wieffer,BHA,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,38.0,2904.0,2942.0,fpl_3season_career_only,0.0843,0.0886,13.6054,0.0,1.4876,100% 3-season FPL career history
+131,Baleba,BHA,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,5620.0,5620.0,fpl_3season_career_only,0.0757,0.0348,9.3683,0.0,1.3932,100% 3-season FPL career history
+115,De Cuyper,BHA,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1404.0,1404.0,fpl_3season_career_only,0.1064,0.2615,4.1026,0.0,1.4744,100% 3-season FPL career history
+140,Sánchez,CHE,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,7353.0,7353.0,fpl_3season_career_only,0.0,0.0007,0.0,3.011,1.3219,100% 3-season FPL career history
+149,Colwill,CHE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,103.0,5169.0,5272.0,fpl_historical_50_50,0.0279,0.0171,7.8212,0.0,1.9288,50% 2025/26 + 50% 3-season FPL career history blend
+200,Lacroix,CHE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2717.0,6201.0,8918.0,fpl_historical_50_50,0.1278,0.0606,9.0457,0.0,1.6448,50% 2025/26 + 50% 3-season FPL career history blend
+142,James,CHE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,3430.0,3430.0,fpl_3season_career_only,0.047,0.1498,4.6706,0.0,1.2332,100% 3-season FPL career history
+155,Enzo,CHE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,8265.0,8265.0,fpl_3season_career_only,0.2527,0.1868,5.4991,0.0,1.4156,100% 3-season FPL career history
+159,Caicedo,CHE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,38.0,9012.0,9050.0,fpl_3season_career_only,0.0268,0.072,8.1991,0.0,1.3881,100% 3-season FPL career history
+40,Rogers,CHE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1322.0,7031.0,8353.0,fpl_historical_50_50,0.1382,0.0776,6.3495,0.0,1.4293,50% 2025/26 + 50% 3-season FPL career history blend
+154,Palmer,CHE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,7764.0,7764.0,fpl_3season_career_only,0.518,0.234,3.5471,0.0,1.391,100% 3-season FPL career history
+165,João Pedro,CHE,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,6641.0,6641.0,fpl_3season_career_only,0.4863,0.1315,3.1712,0.0,1.3823,100% 3-season FPL career history
+148,Hato,CHE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3130.0,1139.0,4269.0,fpl_historical_50_50,0.0415,0.0717,6.3554,0.0,1.6562,50% 2025/26 + 50% 3-season FPL career history blend
+172,Wilson,COV,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,57.0,0.0,57.0,external_3season_research,0.0,0.0,0.0,2.25,1.07,External 3-season research: Coventry City GKP 2024-26 match logs
+182,Amenda,COV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,360.0,0.0,360.0,external_3season_research,0.035,0.015,8.97,0.0,1.3,External 3-season research: Young Boys / Eintracht Frankfurt 2024-26
+173,Thomas,COV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1901.0,0.0,1901.0,fpl_2025_26_only,0.0909,0.0881,12.7354,0.0,1.2309,100% 2025/26 FPL season history
+175,van Ewijk,COV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1.0,0.0,1.0,external_3season_research,0.035,0.15,6.44,0.0,1.0,External 3-season research: Coventry City DEF 2024-26
+190,Tchaouna,COV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1539.0,1259.0,2798.0,fpl_historical_50_50,0.0527,0.0419,7.554,0.0,1.852,50% 2025/26 + 50% 3-season FPL career history blend
+188,Torp,COV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.185,0.205,3.96,0.0,1.35,External 3-season research: Coventry City MID 2024-26
+186,Mason-Clark,COV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.255,0.155,2.06,0.0,1.35,External 3-season research: Coventry City MID 2024-26
+104,Onyeka,COV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1258.0,1258.0,fpl_3season_career_only,0.1495,0.1302,0.8585,0.0,2.0747,100% 3-season FPL career history
+184,Grimes,COV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.045,0.205,4.9,0.0,1.25,External 3-season research: Swansea / Coventry City 2024-26
+193,Wright,COV,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1574.0,0.0,1574.0,fpl_2025_26_only,0.024,0.0389,8.0623,0.0,1.8869,100% 2025/26 FPL season history
+198,Henderson,CRY,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1201.0,8370.0,9571.0,fpl_historical_50_50,0.0229,0.0052,4.4963,1.4409,1.6839,50% 2025/26 + 50% 3-season FPL career history blend
+202,Richards,CRY,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1014.0,6837.0,7851.0,fpl_historical_50_50,0.0894,0.0668,6.1131,0.0,2.0176,50% 2025/26 + 50% 3-season FPL career history blend
+204,Mitchell,CRY,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,9547.0,9547.0,fpl_3season_career_only,0.0393,0.081,4.3553,0.0,1.3952,100% 3-season FPL career history
+201,Muñoz,CRY,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,7069.0,7069.0,fpl_3season_career_only,0.1099,0.1103,5.8948,0.0,1.2859,100% 3-season FPL career history
+208,Sarr,CRY,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,4881.0,4881.0,fpl_3season_career_only,0.401,0.1473,6.0295,0.0,1.2538,100% 3-season FPL career history
+203,Canvot,CRY,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1331.0,1331.0,fpl_3season_career_only,0.1001,0.0223,11.4275,0.0,1.5552,100% 3-season FPL career history
+214,Kamada,CRY,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,37.0,3444.0,3481.0,fpl_3season_career_only,0.0721,0.1252,9.9564,0.0,1.4373,100% 3-season FPL career history
+210,Wharton,CRY,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,api_doubt_gw1,1259.0,5162.0,6421.0,fpl_historical_50_50,0.0653,0.1296,6.7204,0.0,1.5552,50% 2025/26 + 50% 3-season FPL career history blend
+211,Yeremy,CRY,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,2074.0,2074.0,external_3season_research,0.24,0.2,2.55,0.0,1.3,External 3-season research: Villarreal / Crystal Palace 2023-26
+222,Strand Larsen,CRY,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,4888.0,4888.0,fpl_3season_career_only,0.2843,0.039,3.4247,0.0,1.7124,100% 3-season FPL career history
+226,Pickford,EVE,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2780.0,10260.0,13040.0,fpl_historical_50_50,0.0233,0.0205,4.2896,1.5044,1.2834,50% 2025/26 + 50% 3-season FPL career history blend
+229,Tarkowski,EVE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,470.0,9672.0,10142.0,fpl_historical_50_50,0.0298,0.0387,8.0015,0.0,1.5949,50% 2025/26 + 50% 3-season FPL career history blend
+239,Garner,EVE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,exclude_gw1,api_unavailable_gw1,486.0,8004.0,8490.0,fpl_historical_50_50,0.1053,0.1506,6.2778,0.0,1.3003,50% 2025/26 + 50% 3-season FPL career history blend
+236,Dewsbury-Hall,EVE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2629.0,2886.0,5515.0,fpl_historical_50_50,0.1498,0.2038,6.0799,0.0,1.2197,50% 2025/26 + 50% 3-season FPL career history blend
+237,Ndiaye,EVE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3114.0,5207.0,8321.0,fpl_historical_50_50,0.2743,0.1548,8.2619,0.0,1.2524,50% 2025/26 + 50% 3-season FPL career history blend
+232,O'Brien,EVE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,788.0,4686.0,5474.0,fpl_historical_50_50,0.0297,0.0354,8.9388,0.0,1.4045,50% 2025/26 + 50% 3-season FPL career history blend
+233,Mykolenko,EVE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,657.0,8510.0,9167.0,fpl_historical_50_50,0.0544,0.0388,5.5678,0.0,1.5408,50% 2025/26 + 50% 3-season FPL career history blend
+246,Röhl,EVE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1247.0,675.0,1922.0,fpl_historical_50_50,0.1168,0.0551,9.1885,0.0,1.5162,50% 2025/26 + 50% 3-season FPL career history blend
+247,Hackney,EVE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,26.0,0.0,26.0,external_3season_research,0.105,0.175,4.38,0.0,1.4,External 3-season research: Middlesbrough 2024-26 (Championship POTS)
+248,Beto,EVE,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,4015.0,4015.0,fpl_3season_career_only,0.5212,0.0217,3.878,0.0,1.4122,100% 3-season FPL career history
+250,Leno,FUL,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1092.0,10260.0,11352.0,fpl_historical_50_50,0.1871,0.0097,1.7308,1.5,1.4698,50% 2025/26 + 50% 3-season FPL career history blend
+254,Robinson,FUL,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,90.0,7919.0,8009.0,fpl_historical_50_50,0.0139,0.054,2.4151,1.5,0.7274,50% 2025/26 + 50% 3-season FPL career history blend
+257,Bassey,FUL,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3085.0,7905.0,10990.0,fpl_historical_50_50,0.0534,0.0174,7.7254,0.0,1.4199,50% 2025/26 + 50% 3-season FPL career history blend
+261,Iwobi,FUL,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2825.0,7732.0,10557.0,fpl_historical_50_50,0.1053,0.1168,7.3693,0.0,1.4023,50% 2025/26 + 50% 3-season FPL career history blend
+258,Castagne,FUL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3253.0,6110.0,9363.0,fpl_historical_50_50,0.0453,0.0651,5.5618,0.0,1.3793,50% 2025/26 + 50% 3-season FPL career history blend
+255,J.Cuenca,FUL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1284.0,1284.0,fpl_3season_career_only,0.0049,0.0379,10.8645,0.0,1.3318,100% 3-season FPL career history
+267,Lukić,FUL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2173.0,5191.0,7364.0,fpl_historical_50_50,0.2687,0.0569,6.5387,0.0,1.2854,50% 2025/26 + 50% 3-season FPL career history blend
+265,Berge,FUL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,8127.0,8127.0,fpl_3season_career_only,0.0446,0.042,5.7807,0.0,1.6611,100% 3-season FPL career history
+274,Butland,HUL,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,fallback_baseline,0.0,0.0,0.0,2.78,1.38,Position baseline (GKP) fallback due to <450 mins sample
+277,Egan,HUL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,482.0,482.0,fpl_3season_career_only,0.0317,0.0,0.0,0.0,3.1743,100% 3-season FPL career history
+278,Hughes,HUL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.075,0.055,7.75,0.0,1.16,External 3-season research: Preston North End 2024-26
+280,Coyle,HUL,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.03,0.125,6.65,0.0,1.24,External 3-season research: Hull City DEF 2024-26
+290,Slater,HUL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,678.0,0.0,678.0,fpl_2025_26_only,0.0451,0.0146,8.8938,0.0,1.1947,100% 2025/26 FPL season history
+292,Ömür,HUL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2959.0,0.0,2959.0,fpl_2025_26_only,0.0085,0.0748,7.026,0.0,1.4295,100% 2025/26 FPL season history
+286,Belloumi,HUL,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.195,0.215,2.55,0.0,1.5,External 3-season research: Farense / Hull City 2024-26
+295,McBurnie,HUL,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2588.0,1279.0,3867.0,fpl_historical_50_50,0.2831,0.0782,5.2512,0.0,2.2432,50% 2025/26 + 50% 3-season FPL career history blend
+259,Diop,IPS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,99.0,3569.0,3668.0,fpl_historical_50_50,0.038,0.0386,6.2722,0.0,1.6404,50% 2025/26 + 50% 3-season FPL career history blend
+304,O'Shea,IPS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1477.0,6014.0,7491.0,fpl_historical_50_50,0.0316,0.0334,8.3772,0.0,1.6409,50% 2025/26 + 50% 3-season FPL career history blend
+306,Greaves,IPS,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,2205.0,2205.0,fpl_3season_career_only,0.0535,0.0086,9.4286,0.0,2.1633,100% 3-season FPL career history
+315,Fatawu,IPS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,576.0,576.0,fpl_3season_career_only,0.0641,0.2219,11.7188,0.0,2.1875,100% 3-season FPL career history
+562,Maeda,IPS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.455,0.175,2.9,0.0,1.2,External 3-season research: Celtic / Ipswich Town 2024-26
+313,Clarke,IPS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1161.0,1161.0,fpl_3season_career_only,0.0907,0.086,10.6202,0.0,2.4031,100% 3-season FPL career history
+310,Matusiwa,IPS,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1898.0,0.0,1898.0,fpl_2025_26_only,0.3874,0.0209,3.509,0.0,1.6122,100% 2025/26 FPL season history
+316,Emersonn,IPS,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1487.0,0.0,1487.0,fpl_2025_26_only,0.0648,0.0956,8.2313,0.0,1.15,100% 2025/26 FPL season history
+329,Rodon,LEE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2674.0,2952.0,5626.0,fpl_historical_50_50,0.1203,0.0888,7.1555,0.0,1.4474,50% 2025/26 + 50% 3-season FPL career history blend
+334,Muharemović,LEE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.07,0.11,10.03,0.0,1.1,External 3-season research: Sassuolo / Juventus 2024-26
+331,Gudmundsson,LEE,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,756.0,2637.0,3393.0,external_3season_research,0.04,0.05,6.15,0.0,1.3,External 3-season research: Lille / Leeds 2023-26 (6.15 def actions/90)
+330,Bogle,LEE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2904.0,5582.0,8486.0,fpl_historical_50_50,0.0597,0.0575,5.7738,0.0,1.6889,50% 2025/26 + 50% 3-season FPL career history blend
+332,Justin,LEE,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1730.0,4805.0,6535.0,fpl_historical_50_50,0.0889,0.068,8.6842,0.0,1.4526,50% 2025/26 + 50% 3-season FPL career history blend
+338,Ampadu,LEE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,987.0,3119.0,4106.0,fpl_historical_50_50,0.1861,0.0386,8.3727,0.0,1.2997,50% 2025/26 + 50% 3-season FPL career history blend
+335,Stach,LEE,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1290.0,2369.0,3659.0,external_3season_research,0.09,0.14,5.71,0.0,1.35,External 3-season research: Hoffenheim / Leeds 2023-26 (5.71 def actions/90)
+260,Wilson,LEE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3150.0,5425.0,8575.0,fpl_historical_50_50,0.17,0.1049,6.2028,0.0,1.2382,50% 2025/26 + 50% 3-season FPL career history blend
+336,Okafor,LEE,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,89.0,1553.0,1642.0,external_3season_research,0.33,0.11,1.4,0.0,1.35,External 3-season research: AC Milan / Leeds 2023-26 (0.33 xG/90)
+346,Calvert-Lewin,LEE,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,8.0,6489.0,6497.0,fpl_3season_career_only,0.4849,0.0454,2.5104,0.0,1.0957,100% 3-season FPL career history
+350,A.Becker,LIV,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2449.0,7368.0,9817.0,fpl_historical_50_50,0.0832,0.0676,3.969,1.3314,1.1377,50% 2025/26 + 50% 3-season FPL career history blend
+356,Virgil,LIV,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1318.0,9927.0,11245.0,fpl_historical_50_50,0.0569,0.045,6.8478,0.0,1.3791,50% 2025/26 + 50% 3-season FPL career history blend
+358,Kerkez,LIV,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1307.0,7553.0,8860.0,fpl_historical_50_50,0.07,0.0736,7.0929,0.0,1.4664,50% 2025/26 + 50% 3-season FPL career history blend
+362,Jacquet,LIV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,244.0,0.0,244.0,external_3season_research,0.045,0.085,8.58,0.0,1.24,External 3-season research: Rennes / Clermont 2024-26
+357,Frimpong,LIV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1032.0,1032.0,external_3season_research,0.2,0.25,2.81,0.0,1.25,"External 3-season research: Bayer Leverkusen / Liverpool DEF 2023-26 (0.20 xG/90, 0.25 xA/90)"
+359,Gomez,LIV,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,exclude_gw1,api_unavailable_gw1,0.0,2883.0,2883.0,fpl_3season_career_only,0.0509,0.0562,2.8408,0.0,1.2799,100% 3-season FPL career history
+371,Gravenberch,LIV,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2251.0,7261.0,9512.0,fpl_historical_50_50,0.0616,0.0579,6.9365,0.0,1.3222,50% 2025/26 + 50% 3-season FPL career history blend
+372,Mac Allister,LIV,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,watch,late_world_cup_return_gw1,1165.0,7851.0,9016.0,fpl_historical_50_50,0.1019,0.1237,5.1566,0.0,1.1855,50% 2025/26 + 50% 3-season FPL career history blend
+366,Wirtz,LIV,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2340.0,2374.0,4714.0,fpl_historical_50_50,0.1295,0.098,3.3361,1.0962,1.2027,50% 2025/26 + 50% 3-season FPL career history blend
+368,Szoboszlai,LIV,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,7819.0,7819.0,fpl_3season_career_only,0.1766,0.2074,6.1811,0.0,1.1971,100% 3-season FPL career history
+367,Gakpo,LIV,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,867.0,6290.0,7157.0,fpl_historical_50_50,0.1756,0.0797,2.0604,1.7647,1.5352,50% 2025/26 + 50% 3-season FPL career history blend
+379,Isak,LIV,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,5705.0,5705.0,fpl_3season_career_only,0.6806,0.1002,1.8773,0.0,1.4356,100% 3-season FPL career history
+384,Donnarumma,MCI,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2736.0,3060.0,5796.0,fpl_historical_50_50,0.1373,0.0787,2.5,1.1471,1.0679,50% 2025/26 + 50% 3-season FPL career history blend
+389,Matheus N.,MCI,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,110.0,5362.0,5472.0,fpl_historical_50_50,0.1383,0.0937,4.796,0.0,1.3217,50% 2025/26 + 50% 3-season FPL career history blend
+388,Guéhi,MCI,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1923.0,8229.0,10152.0,fpl_historical_50_50,0.0873,0.0942,8.5318,0.0,1.4619,50% 2025/26 + 50% 3-season FPL career history blend
+387,O'Reilly,MCI,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3232.0,3168.0,6400.0,fpl_historical_50_50,0.1714,0.1427,7.4902,0.0,1.1217,50% 2025/26 + 50% 3-season FPL career history blend
+391,Gvardiol,MCI,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,105.0,6975.0,7080.0,fpl_historical_50_50,0.1759,0.0926,7.7392,0.0,0.9253,50% 2025/26 + 50% 3-season FPL career history blend
+481,Anderson,MCI,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,7.0,7076.0,7083.0,fpl_3season_career_only,0.0841,0.1215,11.727,0.0,1.2846,100% 3-season FPL career history
+402,Rodrigo,MCI,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,exclude_gw1,api_unavailable_gw1,971.0,4513.0,5484.0,fpl_historical_50_50,0.0758,0.1798,5.2688,0.0,0.7895,50% 2025/26 + 50% 3-season FPL career history blend
+397,Semenyo,MCI,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,8501.0,8501.0,fpl_3season_career_only,0.2679,0.1031,5.3253,0.0,1.334,100% 3-season FPL career history
+398,Foden,MCI,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,6709.0,6709.0,fpl_3season_career_only,0.2867,0.2286,3.3671,0.0,0.939,100% 3-season FPL career history
+411,Haaland,MCI,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2643.0,8242.0,10885.0,fpl_historical_50_50,0.5244,0.0831,3.8949,0.0,0.9443,50% 2025/26 + 50% 3-season FPL career history blend
+412,Lammens,MUN,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,2880.0,2880.0,external_3season_research,0.0,0.0,0.0,3.47,1.15,External 3-season research: Royal Antwerp / Man Utd GKP 2023-26 (3.47 saves/90)
+423,Shaw,MUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1561.0,4526.0,6087.0,fpl_historical_50_50,0.0276,0.0685,8.3048,0.0,1.1453,50% 2025/26 + 50% 3-season FPL career history blend
+418,Maguire,MUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1773.0,5050.0,6823.0,fpl_historical_50_50,0.1163,0.1641,5.9603,0.0,1.1341,50% 2025/26 + 50% 3-season FPL career history blend
+417,Dalot,MUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1772.0,8595.0,10367.0,fpl_historical_50_50,0.1378,0.2635,5.3027,0.0,1.1901,50% 2025/26 + 50% 3-season FPL career history blend
+426,B.Fernandes,MUN,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,288.0,9200.0,9488.0,fpl_historical_50_50,0.1771,0.2065,8.1598,0.0,2.1155,50% 2025/26 + 50% 3-season FPL career history blend
+419,Martinez,MUN,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,api_doubt_gw1,1627.0,3623.0,5250.0,fpl_historical_50_50,0.0751,0.1167,6.7024,0.0,1.3069,50% 2025/26 + 50% 3-season FPL career history blend
+427,Mbeumo,MUN,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1623.0,7983.0,9606.0,fpl_historical_50_50,0.3206,0.1773,5.0951,0.0,1.1924,50% 2025/26 + 50% 3-season FPL career history blend
+428,Cunha,MUN,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,7527.0,7527.0,fpl_3season_career_only,0.3004,0.1389,4.9143,0.0,1.6142,100% 3-season FPL career history
+442,Pope,NEW,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1649.0,6281.0,7930.0,fpl_historical_50_50,0.0319,0.0136,4.1207,1.5762,1.1834,50% 2025/26 + 50% 3-season FPL career history blend
+445,Thiaw,NEW,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,2963.0,2963.0,external_3season_research,0.11,0.02,8.78,0.0,1.15,External 3-season research: AC Milan / Newcastle DEF 2023-26 (8.78 def actions/90)
+450,Livramento,NEW,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,watch,api_doubt_gw1,2493.0,5463.0,7956.0,fpl_historical_50_50,0.1315,0.0971,5.868,0.0,1.299,50% 2025/26 + 50% 3-season FPL career history blend
+452,Bruno G.,NEW,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2339.0,8993.0,11332.0,fpl_historical_50_50,0.1793,0.1737,6.8167,0.0,1.3404,50% 2025/26 + 50% 3-season FPL career history blend
+467,Sels,NFO,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,7527.0,7527.0,fpl_3season_career_only,0.0,0.0049,0.0,3.0132,1.3392,100% 3-season FPL career history
+469,N.Williams,NFO,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2416.0,7421.0,9837.0,fpl_historical_50_50,0.0335,0.0428,3.0198,1.6577,1.3869,50% 2025/26 + 50% 3-season FPL career history blend
+472,Murillo,NFO,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,watch,api_doubt_gw1,0.0,8108.0,8108.0,fpl_3season_career_only,0.0442,0.0251,6.649,0.0,1.4319,100% 3-season FPL career history
+471,Milenković,NFO,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,6705.0,6705.0,fpl_3season_career_only,0.0655,0.0189,8.3356,0.0,1.2886,100% 3-season FPL career history
+473,Aina,NFO,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2176.0,6273.0,8449.0,fpl_historical_50_50,0.0308,0.0869,5.988,0.0,1.5024,50% 2025/26 + 50% 3-season FPL career history blend
+488,Sangaré,NFO,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2456.0,3688.0,6144.0,fpl_historical_50_50,0.125,0.1203,8.9916,0.0,1.2636,50% 2025/26 + 50% 3-season FPL career history blend
+480,Gibbs-White,NFO,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,19.0,9063.0,9082.0,fpl_3season_career_only,0.236,0.1428,4.0218,0.0,1.3704,100% 3-season FPL career history
+474,Jair Cunha,NFO,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1089.0,514.0,1603.0,fpl_historical_50_50,0.0637,0.03,8.8669,0.0,1.15,50% 2025/26 + 50% 3-season FPL career history blend
+558,Schlager,NFO,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,0.0,0.0,external_3season_research,0.085,0.1,7.01,0.0,1.2,External 3-season research: RB Leipzig 2024-26
+491,Igor Jesus,NFO,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2534.0,2293.0,4827.0,fpl_historical_50_50,0.1582,0.0757,6.9778,0.0,1.4009,50% 2025/26 + 50% 3-season FPL career history blend
+496,Kinsky,TOT,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,1170.0,1170.0,fpl_3season_career_only,0.0,0.0008,0.0,2.6154,1.3846,100% 3-season FPL career history
+503,Van de Ven,TOT,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,6396.0,6396.0,fpl_3season_career_only,0.0559,0.0198,3.9118,0.0,1.4775,100% 3-season FPL career history
+499,Pedro Porro,TOT,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,694.0,8489.0,9183.0,fpl_historical_50_50,0.1976,0.0861,4.1186,0.0,1.331,50% 2025/26 + 50% 3-season FPL career history blend
+112,Van Hecke,TOT,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,8538.0,8538.0,fpl_3season_career_only,0.0638,0.0412,5.766,0.0,1.3598,100% 3-season FPL career history
+525,Fernandes,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,896.0,5928.0,6824.0,fpl_historical_50_50,0.2618,0.066,6.793,0.0,1.5837,50% 2025/26 + 50% 3-season FPL career history blend
+455,Tonali,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,1010.0,5596.0,6606.0,fpl_historical_50_50,0.1244,0.1213,9.0478,0.0,1.2875,50% 2025/26 + 50% 3-season FPL career history blend
+506,Udogie,TOT,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2130.0,5649.0,7779.0,fpl_historical_50_50,0.0386,0.0442,6.2965,0.0,1.4332,50% 2025/26 + 50% 3-season FPL career history blend
+512,Kudus,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,api_doubt_gw1,0.0,6609.0,6609.0,fpl_3season_career_only,0.19,0.1166,4.3849,0.0,1.7295,100% 3-season FPL career history
+515,Maddison,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3101.0,3970.0,7071.0,fpl_historical_50_50,0.2961,0.1804,4.2266,0.0,1.3671,50% 2025/26 + 50% 3-season FPL career history blend
+514,Tel,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,0.0,2242.0,2242.0,external_3season_research,0.37,0.17,2.4,0.0,1.3,External 3-season research: Bayern Munich / Spurs 2023-26 (0.37 xG/90)
+526,Solanke,TOT,FWD,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2293.0,6521.0,8814.0,fpl_historical_50_50,0.3583,0.0494,3.518,0.0,1.5887,50% 2025/26 + 50% 3-season FPL career history blend
+529,Roefs,SUN,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,3150.0,3150.0,external_3season_research,0.0,0.0,0.0,3.27,1.31,External 3-season research: NEC Nijmegen / Sunderland GKP 2023-26 (3.27 saves/90)
+533,Mukiele,SUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,2784.0,2784.0,external_3season_research,0.09,0.08,8.42,0.0,1.25,External 3-season research: PSG / Leverkusen / Sunderland 2023-26
+532,Ballard,SUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3032.0,2144.0,5176.0,fpl_historical_50_50,0.0853,0.0436,8.5539,0.0,1.358,50% 2025/26 + 50% 3-season FPL career history blend
+535,Alderete,SUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,319.0,2797.0,3116.0,external_3season_research,0.06,0.02,9.82,0.0,1.25,External 3-season research: Getafe / Sunderland 2023-26 (9.82 def actions/90)
+536,Reinildo,SUN,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,1966.0,1966.0,external_3season_research,0.04,0.02,7.24,0.0,1.25,External 3-season research: Atletico Madrid / Sunderland 2023-26
+545,Sadiki,SUN,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,27.0,2891.0,2918.0,external_3season_research,0.07,0.08,6.25,0.0,1.3,External 3-season research: Union SG / Sunderland 2023-26
+544,Xhaka,SUN,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1403.0,2901.0,4304.0,fpl_historical_50_50,0.1205,0.0851,8.1492,0.0,1.2144,50% 2025/26 + 50% 3-season FPL career history blend
+542,E.Le Fée,SUN,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,133.0,2930.0,3063.0,external_3season_research,0.14,0.2,5.31,0.0,1.3,External 3-season research: Rennes / Roma / Sunderland 2023-26
+552,Brobbey,SUN,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,2891.0,1920.0,4811.0,fpl_historical_50_50,0.1634,0.0384,5.5946,0.0,1.3569,50% 2025/26 + 50% 3-season FPL career history blend

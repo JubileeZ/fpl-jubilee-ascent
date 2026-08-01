@@ -6,8 +6,8 @@
 **Status**: Active · role and availability audit applied; model ingest deferred
 **Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors for GW1–5 mins projection seeding
 **Scope**: XI Contention Set for all 20 Clubs; fit-role Draft Shortlist = Nailed Starter + Regular Starter; Draft Availability separately filters current `Eligible`, `Watch`, and `Exclude` rows. No model code wiring in this note.
-**Related**: [Summer transfers](fpl-summer-transfers.md) · [Pre-season guide directory](fpl-preseason-guide.md) · `CONTEXT.md` (Expected Role / Role Evidence / Expected Role Table)
-**Artifact**: [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) — canonical row-level data; this Research Note is its human-readable companion.
+**Related**: [Summer transfers](../fpl-preseason-guide/fpl-summer-transfers.md) · [Pre-season guide directory](../fpl-preseason-guide/fpl-preseason-guide.md) · `CONTEXT.md` (Expected Role / Role Evidence / Expected Role Table)
+**Artifact**: [Expected Role Table CSV](../../../data/research/expected-role-gw1-5/expected-role-gw1-5.csv) — canonical row-level data; this Research Note is its human-readable companion.
 
 > Source claims not independently validated. API club registration may lag confirmed transfers (e.g. Lacroix still CRY, Trafford still MCI in local roster).
 

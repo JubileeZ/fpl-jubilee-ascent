@@ -43,7 +43,8 @@ docs/         # Durable project documentation and decision records
 ## Docs & Research
 
 - **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and conventions.
-- Keep durable project documentation in `docs/` (`docs/adr/`, `docs/agents/`, `docs/research/`, or named topic dirs).
+- Keep durable project documentation in `docs/` (`docs/adr/`, `docs/agents/`, `docs/research/`, or named topic dirs `docs/research/<topic-slug>/`).
+- Store machine-readable research companions and mock/research model CSVs in topic subfolders under `data/research/<topic-slug>/` (e.g. `data/research/expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv`).
 - Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
 - Keep source, commands, tests, and data in existing domain directories; do not create root-level project artifacts unless canonical repository files (`README.md`, `AGENTS.md`, `CONTEXT.md`, or `ROADMAP.md`).
 - Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
