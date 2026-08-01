@@ -11,8 +11,11 @@ import sys
 
 sys.path.insert(0, ".")
 
+from collections import defaultdict
+
 import pandas as pd
 
+from models.participation_state_hybrid import ParticipationStateHybridModel
 from models.scoring_matrix import event_points, Position
 
 _POS_MAP = {"GKP": "GK", "DEF": "D", "MID": "M", "FWD": "F"}
@@ -88,14 +91,10 @@ def project_gw1_5_points(
         per90_saves = float(row.get("per90_saves", 0.0))
         per90_gc = float(row.get("per90_goals_conceded", 1.30))
 
-        gw_points = {}
-        gw_minutes = {}
-
-        total_5gw_xp = 0.0
-        total_5gw_xmins = 0.0
+        # Compute base points & xBPS for each GW
+        player_gw_data = []
 
         for gw in range(1, 6):
-            # Check availability exclusions
             is_excluded_gw5 = (draft_avail == "exclude_gw1-5") or ("out_gw1-5" in avail_override)
             is_excluded_gw1 = (draft_avail == "exclude_gw1") or ("unavailable_gw1" in avail_override)
 
@@ -104,20 +103,25 @@ def project_gw1_5_points(
             else:
                 p_start, p_sub, p_dnp = p_start_base, p_sub_base, p_dnp_base
 
-            # Find fixture for this club in this GW
             gw_fix = df_fixtures[(df_fixtures["gameweek_id"] == gw) & ((df_fixtures["home_club_id"] == club_id) | (df_fixtures["away_club_id"] == club_id))]
 
             if len(gw_fix) == 0 or p_dnp >= 1.0:
-                gw_points[f"gw{gw}_xp"] = 0.0
-                gw_minutes[f"gw{gw}_xmins"] = 0.0
+                player_gw_data.append({
+                    "gw": gw,
+                    "fixture_id": None,
+                    "expected_mins": 0.0,
+                    "base_xp": 0.0,
+                    "xbps": 0.0,
+                    "xp_bonus": 0.0,
+                })
                 continue
 
             fix_row = gw_fix.iloc[0]
+            fix_id = int(fix_row["id"])
             is_home = (fix_row["home_club_id"] == club_id)
             fdr = float(fix_row["team_h_difficulty"] if is_home else fix_row["team_a_difficulty"])
             fdr_mult = max(0.2, (6.0 - fdr) / 3.0)
 
-            # State mins & p60
             mins_start = xmins_start
             mins_sub = xmins_sub
 
@@ -126,10 +130,8 @@ def project_gw1_5_points(
 
             expected_mins = p_start * mins_start + p_sub * mins_sub
 
-            # Minute points
             xp_mins = p_start * (1.0 + p60_start) + p_sub * (1.0 + p60_sub)
 
-            # Attack (xG, xA)
             exp_xg_start = per90_xg * (mins_start / 90.0) * fdr_mult
             exp_xg_sub = per90_xg * (mins_sub / 90.0) * fdr_mult
             exp_xg = p_start * exp_xg_start + p_sub * exp_xg_sub
@@ -140,7 +142,6 @@ def project_gw1_5_points(
             exp_xa = p_start * exp_xa_start + p_sub * exp_xa_sub
             xp_assists = event_points("assists", pos, exp_xa)
 
-            # Clean sheet
             lmbda_pitch_start = max(0.05, per90_gc * fdr_mult) * mins_start / 90.0
             lmbda_pitch_sub = max(0.05, per90_gc * fdr_mult) * mins_sub / 90.0
 
@@ -149,7 +150,6 @@ def project_gw1_5_points(
             pcs = p_start * pcs_start + p_sub * pcs_sub
             xp_cs = event_points("clean_sheets", pos, pcs)
 
-            # Conceded penalty
             lmbda_conceded_start = max(0.05, per90_gc * fdr_mult) * mins_start / 90.0
             lmbda_conceded_sub = max(0.05, per90_gc * fdr_mult) * mins_sub / 90.0
 
@@ -157,7 +157,6 @@ def project_gw1_5_points(
             pen_sub = _expected_negbin_conceded_penalty(lmbda_conceded_sub) if pos in ("GK", "D") else 0.0
             xp_conceded = -(p_start * pen_start + p_sub * pen_sub)
 
-            # Defensive contribution (xDEFcon)
             lmbda_def_start = per90_defcon * mins_start / 90.0
             lmbda_def_sub = per90_defcon * mins_sub / 90.0
 
@@ -169,43 +168,109 @@ def project_gw1_5_points(
             pdef = p_start * pdef_start + p_sub * pdef_sub
             xp_defcon = event_points("defensive_contributions", pos, pdef)
 
-            # Saves (GKP)
             exp_saves_start = per90_saves * mins_start / 90.0 if pos == "GK" else 0.0
             exp_saves_sub = per90_saves * mins_sub / 90.0 if pos == "GK" else 0.0
             xp_saves_start = math.floor(exp_saves_start / 3.0)
             xp_saves_sub = math.floor(exp_saves_sub / 3.0)
             xp_saves = p_start * xp_saves_start + p_sub * xp_saves_sub
 
-            # Bonus heuristic (~0.25 pt baseline for starters)
-            xp_bonus = p_start * 0.25 + p_sub * 0.05
+            base_xp = xp_mins + xp_goals + xp_assists + xp_cs + xp_conceded + xp_defcon + xp_saves
 
-            # Sum total xP for this GW
-            gw_xp = xp_mins + xp_goals + xp_assists + xp_cs + xp_conceded + xp_defcon + xp_saves + xp_bonus
+            xbps = (
+                expected_mins * 0.1
+                + exp_xg * 24.0
+                + exp_xa * 12.0
+                + pcs * 12.0
+                + pdef * 6.0
+                + (exp_saves_start * p_start + exp_saves_sub * p_sub) * 2.0
+            )
 
-            gw_points[f"gw{gw}_xp"] = round(gw_xp, 2)
-            gw_minutes[f"gw{gw}_xmins"] = round(expected_mins, 1)
+            player_gw_data.append({
+                "gw": gw,
+                "fixture_id": fix_id,
+                "expected_mins": expected_mins,
+                "base_xp": base_xp,
+                "xbps": xbps,
+                "xp_bonus": 0.0,
+            })
 
-            total_5gw_xp += gw_xp
-            total_5gw_xmins += expected_mins
-
-        row_res = {
+        results.append({
             "player_id": pid,
             "web_name": web_name,
             "club_short": club_short,
             "position": pos_str,
             "expected_role": role,
             "draft_availability": row.get("draft_availability", "eligible"),
+            "gw_data": player_gw_data,
+            "rate_source": row.get("rate_source", ""),
+            "provenance_note": row.get("provenance_note", ""),
+        })
+
+    # Allocate bonus per GW per fixture using ParticipationStateHybridModel Softmax
+    for gw in range(1, 6):
+        components = []
+        bonus_groups = defaultdict(list)
+
+        for p_res in results:
+            gw_info = p_res["gw_data"][gw - 1]
+            fix_id = gw_info["fixture_id"]
+            if fix_id is not None and gw_info["expected_mins"] > 0:
+                c_idx = len(components)
+                components.append({
+                    "player_id": p_res["player_id"],
+                    "xbps": gw_info["xbps"],
+                    "projected_points": gw_info["base_xp"],
+                    "xp_bonus": 0.0,
+                })
+                bonus_groups[fix_id].append(c_idx)
+
+        if len(components) > 0 and len(bonus_groups) > 0:
+            ParticipationStateHybridModel._allocate_bonus(components, bonus_groups)
+            
+            # Map allocated bonus back to p_res
+            comp_map = {c["player_id"]: float(c.get("xp_bonus", 0.0)) for c in components}
+            for p_res in results:
+                pid = p_res["player_id"]
+                if pid in comp_map:
+                    p_res["gw_data"][gw - 1]["xp_bonus"] = comp_map[pid]
+
+    # Format final output rows
+    final_rows = []
+    for p_res in results:
+        gw_points = {}
+        gw_minutes = {}
+        total_5gw_xp = 0.0
+        total_5gw_xmins = 0.0
+
+        for gw in range(1, 6):
+            gw_info = p_res["gw_data"][gw - 1]
+            gw_xp = gw_info["base_xp"] + gw_info["xp_bonus"]
+            gw_mins = gw_info["expected_mins"]
+
+            gw_points[f"gw{gw}_xp"] = round(gw_xp, 2)
+            gw_minutes[f"gw{gw}_xmins"] = round(gw_mins, 1)
+
+            total_5gw_xp += gw_xp
+            total_5gw_xmins += gw_mins
+
+        row_dict = {
+            "player_id": p_res["player_id"],
+            "web_name": p_res["web_name"],
+            "club_short": p_res["club_short"],
+            "position": p_res["position"],
+            "expected_role": p_res["expected_role"],
+            "draft_availability": p_res["draft_availability"],
             "total_5gw_xp": round(total_5gw_xp, 2),
             "avg_gw_xp": round(total_5gw_xp / 5.0, 2),
             "total_5gw_xmins": round(total_5gw_xmins, 1),
             **gw_points,
             **gw_minutes,
-            "rate_source": row.get("rate_source", ""),
-            "provenance_note": row.get("provenance_note", ""),
+            "rate_source": p_res["rate_source"],
+            "provenance_note": p_res["provenance_note"],
         }
-        results.append(row_res)
+        final_rows.append(row_dict)
 
-    out_df = pd.DataFrame(results).sort_values("total_5gw_xp", ascending=False)
+    out_df = pd.DataFrame(final_rows).sort_values("total_5gw_xp", ascending=False)
     Path(output_csv_path).parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(output_csv_path, index=False)
     print(f"Exported GW1-5 projections ({len(out_df)} players) to {output_csv_path}")

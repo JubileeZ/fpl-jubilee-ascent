@@ -64,6 +64,8 @@ Following `ParticipationStateHybridModel` (`models/participation_state_hybrid.py
 - Availability exclusions (`exclude_gw1-5`, `exclude_gw1`) set $p_{\text{dnp}} = 1.0$ for covered gameweeks.
 - FDR multiplier adjusts attack, clean sheet, and conceded expectations:
   $$\text{FDR Mult} = \max\left(0.2, \frac{6.0 - \text{FDR}}{3.0}\right)$$
+- **Fixture-Level Softmax Bonus Allocation**: Bonus points are allocated using fixture-level $xBPS$ competition:
+  $$xBPS = (\text{xMins} \times 0.1) + (xG \times 24) + (xA \times 12) + (P(\text{CS}) \times 12) + (P(\text{DefCon}) \times 6) + (\text{xSaves} \times 2)$$
 - Event points summed using `models/scoring_matrix.py`:
   $$xP = xP_{\text{mins}} + xP_{\text{goals}} + xP_{\text{assists}} + xP_{\text{clean\_sheet}} + xP_{\text{conceded}} + xP_{\text{defcon}} + xP_{\text{saves}} + xP_{\text{bonus}}$$
 
@@ -75,21 +77,27 @@ Following `ParticipationStateHybridModel` (`models/participation_state_hybrid.py
 
 | Rank | Player | Club | Pos | Expected Role | GW1 | GW2 | GW3 | GW4 | GW5 | Total 5-GW $xP$ |
 |------|--------|------|-----|---------------|-----|-----|-----|-----|-----|-----------------|
-| 1 | Palmer | CHE | MID | Nailed Starter | 5.16 | 6.02 | 3.61 | 6.02 | 5.16 | **25.97** |
-| 2 | Isak | LIV | FWD | Nailed Starter | 4.68 | 4.68 | 5.55 | 5.55 | 4.68 | **25.14** |
-| 3 | Vuskovic | BHA | DEF | Nailed Starter | 4.64 | 5.01 | 4.46 | 4.46 | 5.01 | **23.59** |
-| 4 | Hill | BOU | DEF | Nailed Starter | 5.55 | 4.22 | 4.22 | 4.22 | 4.78 | **22.97** |
-| 5 | Konsa | AVL | DEF | Nailed Starter | 4.53 | 4.66 | 4.58 | 4.53 | 4.53 | **22.84** |
-| 6 | Sarr | CRY | MID | Nailed Starter | 4.55 | 3.99 | 4.55 | 5.17 | 4.55 | **22.81** |
-| 7 | Gabriel | ARS | DEF | Nailed Starter | 4.21 | 4.77 | 4.77 | 4.45 | 4.45 | **22.66** |
-| 8 | Donnarumma | MCI | GKP | Nailed Starter | 4.50 | 4.50 | 4.45 | 4.69 | 4.45 | **22.58** |
-| 9 | Dalot | MUN | DEF | Nailed Starter | 4.38 | 4.38 | 4.44 | 4.65 | 4.44 | **22.31** |
-| 10 | Kroupi.Jr | BOU | MID | Nailed Starter | 3.52 | 4.63 | 4.63 | 4.63 | 4.05 | **21.45** |
-| 16 | Gyökeres | ARS | FWD | Regular Starter | 5.28 | 3.54 | 3.54 | 4.41 | 4.41 | **21.18** |
+| 1 | Isak | LIV | FWD | Nailed Starter | 5.97 | 5.68 | 7.27 | 7.20 | 5.70 | **31.82** |
+| 2 | Palmer | CHE | MID | Nailed Starter | 6.05 | 7.25 | 3.78 | 7.39 | 5.83 | **30.31** |
+| 3 | Sarr | CRY | MID | Nailed Starter | 5.20 | 4.31 | 5.31 | 6.22 | 5.12 | **26.16** |
+| 4 | Haaland | MCI | FWD | Nailed Starter | 4.85 | 4.92 | 5.95 | 3.99 | 5.75 | **25.47** |
+| 5 | Vuskovic | BHA | DEF | Nailed Starter | 4.98 | 5.18 | 4.81 | 4.97 | 5.17 | **25.12** |
+| 6 | Gyökeres | ARS | FWD | Regular Starter | 6.56 | 3.92 | 3.86 | 5.13 | 5.21 | **24.69** |
+| 7 | Konsa | AVL | DEF | Nailed Starter | 4.89 | 4.77 | 5.15 | 4.82 | 4.83 | **24.46** |
+| 8 | Calvert-Lewin | LEE | FWD | Nailed Starter | 4.58 | 4.39 | 4.65 | 5.71 | 4.55 | **23.89** |
+| 9 | Dalot | MUN | DEF | Nailed Starter | 4.81 | 4.79 | 4.69 | 4.81 | 4.75 | **23.86** |
+| 10 | Hill | BOU | DEF | Nailed Starter | 5.75 | 4.36 | 4.51 | 4.28 | 4.88 | **23.77** |
+| 11 | João Pedro | CHE | FWD | Nailed Starter | 4.76 | 5.65 | 2.89 | 5.77 | 4.57 | **23.63** |
+| 12 | Ndiaye | EVE | MID | Nailed Starter | 4.68 | 4.68 | 4.19 | 4.66 | 5.35 | **23.56** |
+| 13 | Donnarumma | MCI | GKP | Nailed Starter | 4.63 | 4.66 | 4.59 | 4.89 | 4.52 | **23.29** |
+| 14 | Gabriel | ARS | DEF | Nailed Starter | 4.23 | 4.85 | 4.81 | 4.48 | 4.50 | **22.86** |
+| 15 | Schade | BRE | MID | Nailed Starter | 4.56 | 4.53 | 5.16 | 4.58 | 3.94 | **22.78** |
 
 ### 2. Availability Impact
+- **Éli Junior Kroupi (BOU)**: $xP = 0.00$ across GW1–5 due to fifth metatarsal fracture sustained in pre-season (`exclude_gw1-5`).
 - **Saliba (ARS)**: $xP = 0.00$ across GW1–5 due to extended rehabilitation (`exclude_gw1-5`).
 - **J.Timber (ARS)**: $xP = 0.00$ in GW1 (`exclude_gw1`), projecting 16.72 $xP$ across GW2–5.
+- **Rodrigo (MCI)**: $xP = 0.00$ in GW1 (`exclude_gw1`) recovering from back surgery.
 
 ---
 
@@ -107,4 +115,4 @@ Following `ParticipationStateHybridModel` (`models/participation_state_hybrid.py
 
 - **Pre-Season Transfer Data**: 3-season European league match log research for foreign transfers (e.g. Gyökeres, Wirtz, Frimpong, Thiaw) provides comprehensive baseline data, but team style shifts at new clubs remain a factor.
 - **FDR Sensitivity**: Opponent difficulty multipliers reflect team-level FDR ratings; unexpected lineup shifts can alter clean sheet probabilities.
-- **Bonus Point Heuristic**: Expected bonus points use a baseline expectation ($\sim 0.25$ per start); actual match BPS outcomes may fluctuate based on match dynamics.
+- **Dynamic Softmax Bonus**: Bonus points use fixture-level $xBPS$ Softmax competition aligned with `ParticipationStateHybridModel`; actual match BPS outcomes may fluctuate based on match dynamics.

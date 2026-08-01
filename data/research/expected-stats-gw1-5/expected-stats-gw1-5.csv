@@ -30,7 +30,7 @@ player_id,web_name,club_short,position,expected_role,p_start,p_sub_in,p_dnp,xmin
 61,Truffert,BOU,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,3378.0,3378.0,fpl_3season_career_only,0.036,0.0818,8.0195,0.0,1.3588,100% 3-season FPL career history
 69,Scott,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,4596.0,4596.0,fpl_3season_career_only,0.1048,0.0979,9.5953,0.0,1.4491,100% 3-season FPL career history
 73,Adams,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1073.0,3846.0,4919.0,fpl_historical_50_50,0.0229,0.0263,8.8795,0.0,1.3847,50% 2025/26 + 50% 3-season FPL career history blend
-78,Kroupi.Jr,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,1663.0,1663.0,fpl_3season_career_only,0.4497,0.0817,6.0613,0.0,1.1365,100% 3-season FPL career history
+78,Kroupi.Jr,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,exclude_gw1-5,out_gw1-5_metatarsal_fracture,0.0,1663.0,1663.0,fpl_3season_career_only,0.4497,0.0817,6.0613,0.0,1.1365,100% 3-season FPL career history
 68,Tavernier,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,0.0,6782.0,6782.0,fpl_3season_career_only,0.2448,0.1657,5.7063,0.0,1.473,100% 3-season FPL career history
 67,Rayan,BOU,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3420.0,1110.0,4530.0,fpl_historical_50_50,0.1082,0.0746,3.3243,1.4342,1.1159,50% 2025/26 + 50% 3-season FPL career history blend
 64,Smith,BOU,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2833.0,4807.0,7640.0,fpl_historical_50_50,0.2512,0.0413,2.916,0.0,1.2308,50% 2025/26 + 50% 3-season FPL career history blend
