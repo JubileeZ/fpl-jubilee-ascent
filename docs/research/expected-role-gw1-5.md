@@ -1,7 +1,7 @@
 # FPL 2026/27 Expected Role (GW1–5) — Draft Shortlist & Mins Priors
 
-**Updated**: 2026-07-31T10:25:00+07:00
-**Data stamp**: Meerkat predicted XIs 2026-07-28; Scout team-news and official Club evidence checked through 2026-07-31; summer-transfers register through 2026-07-30; local `players.parquet` freshness proxy 2026-07-29; table regenerated 2026-07-31
+**Updated**: 2026-08-01T15:59:00+07:00
+**Data stamp**: Meerkat predicted XIs 2026-07-28; Scout team-news and official Club evidence checked through 2026-08-01; positional research notes audited 2026-08-01; summer-transfers register through 2026-07-30; local `players.parquet` freshness proxy 2026-07-29; table regenerated 2026-08-01
 **Season**: 2026/27  
 **Status**: Active · role and availability audit applied; model ingest deferred
 **Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors for GW1–5 mins projection seeding
@@ -102,7 +102,7 @@ Full redo docs/research/expected-role-gw1-5.md and data/research/expected-role-g
 
 ## Club-by-club Expected Role Table
 
-The [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) is the row-level audit authority. It contains 339 XI Contention Set rows across all 20 Clubs: 90 Nailed Starter, 103 Regular Starter, 99 Rotation, and 47 Cameo. Every row includes `player_id`, fit-role priors, Role Evidence, direct source references, API availability/registration fields, and dated Draft Availability.
+The [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) is the row-level audit authority. It contains 340 XI Contention Set rows across all 20 Clubs: 90 Nailed Starter, 103 Regular Starter, 100 Rotation, and 47 Cameo. Every row includes `player_id`, fit-role priors, Role Evidence, direct source references, API availability/registration fields, and dated Draft Availability.
 
 **Draft Shortlist** below means fit-role Nailed Starter + Regular Starter. `Draft Availability` can exclude or flag a listed Player for current selection without changing fit-role.
 
@@ -257,7 +257,7 @@ The [Expected Role Table CSV](../../data/research/expected-role-gw1-5.csv) is th
 - **Draft Shortlist:** Kinsky, Van de Ven, Pedro Porro, Van Hecke, Fernandes, Tonali, Udogie, Kudus, Maddison, Tel, Solanke
 - **Nailed Starter:** Van de Ven, Pedro Porro
 - **Regular Starter:** Kinsky, Van Hecke, Fernandes, Tonali, Udogie, Kudus, Maddison, Tel, Solanke
-- **Rotation:** Danso, Senesi, Bentancur, Gallagher
+- **Rotation:** Danso, Senesi, Bentancur, Gallagher, Dubravka
 - **Cameo:** Romero, Robertson, Richarlison
 - **Current Draft Availability:** Kudus `watch` (API 75% next-round chance).
 
@@ -321,14 +321,14 @@ These Players are excluded from CSV rows by design; Club depth and exclusion not
 - **MUN:** Bayindir/Darlow/Heaton GK cover; Heaven, Amass, Fredricson youth CBs; Dorgu/Yoro fringe; Rashford, Zirkzee, Obi, Fletcher, Lacey, Collyer, Mantato out of early XI contention. Darlow API doubt.
 - **NEW:** Gillespie/Jaouen GK; A.Murphy, Neave, Schär, Steur, J.Murphy depth/fringe. Gordon/Tonali departed. Conservative Draft Shortlist intentionally only four Players.
 - **NFO:** John GK cover; Savona, Netz, Richards, Abbott, Bindon fringe DEF; McAtee/Yates CM depth; Awoniyi/Kalimuendo ST depth. Anderson sold to Man City.
-- **TOT:** Vicario/Austin/Dubravka behind Kinsky; Spence, Phillips, Davies, Byfield, Rowswell, Souza, Bergvall, Sarr, Gray, Moore, Olusesi depth; Kulusevski, Xavi, Odobert injured; Scarlett ST depth. Simons absent from local FPL roster.
+- **TOT:** Vicario/Austin behind Kinsky; Dubravka free signing from Burnley added to Spurs XI Contention Set as Rotation GKP; Spence, Phillips, Davies, Byfield, Rowswell, Souza, Bergvall, Sarr, Gray, Moore, Olusesi depth; Kulusevski, Xavi, Odobert injured; Scarlett ST depth. Simons absent from local FPL roster.
 - **SUN:** Ellborg/Patterson GK cover; Seelt, Hjelde, O'Nien, Masuaku DEF depth; Rigg, Jocelin.T fringe MID. Europa League may increase rotation beyond GW1–5.
 
 ## Findings
 
 ### Evidence
 
-- Consolidated table contains 339 rows across all 20 Clubs: 193 fit-role Draft-eligible (90 Nailed Starter + 103 Regular Starter), 99 Rotation, and 47 Cameo.
+- Consolidated table contains 340 rows across all 20 Clubs: 193 fit-role Draft-eligible (90 Nailed Starter + 103 Regular Starter), 100 Rotation, and 47 Cameo.
 - Current Draft Availability overlay: 179 eligible, 9 watch, 4 exclude GW1, and 1 exclude GW1–5.
 - Highest fit-role Draft Shortlist counts: Arsenal 15, Liverpool 12, Aston Villa/Spurs 11 each; Leeds is now 10 after Perri's demotion.
 - Most conservative fit-role Draft Shortlists: Newcastle 4; Brighton/Fulham 8; Hull/Ipswich 8 each with no Nailed Starter due thin promoted-Club evidence.
