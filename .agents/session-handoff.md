@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Docs & Research policy consolidation complete; final gates passed.
-- **Files:** `AGENTS.md`; `CONTEXT.md`; `task.md`; `docs/research/expected-role-gw1-5.md` → canonical `data/research/expected-role-gw1-5.csv`; `docs/agents/current-state.md`
-- **Decisions:** `data/research/<topic-slug>.*` companion convention; Research Note `Artifact` link required; three-topic Active research index; archive immutability rules consolidated under Historical Archive Testing. Expected Role audit remains 339 rows / 193 fit-role Draft.
-- **Blocked:** Participation State ingest/availability guard and calibration follow-up only.
-- **Next:** Map Expected Role Table to Participation State priors in follow-up packet; no model wiring in this packet.
+- **Status:** GW1–5 chip sim sanity pass complete; TC/formation/ITB/XI-aware fixes landed; CSV + note refreshed; Checkpoint pending with this handoff.
+- **Files:** `docs/research/gw1-5-chip-simulation/run_simulation.py`; `gw1-5-chip-simulation.md`; `data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv`; `task.md`; `docs/agents/current-state.md`
+- **Decisions:** Early BB + WC4 preferred on current Softmax projections (BB1 345.64 > BB2 342.50 > Standard 324.03); TC Haaland GW3 forced; £0.5m ITB on GW1–3; research milp only.
+- **Blocked:** None. Price rises / FT path still out of sim scope.
+- **Next:** Expected Role → Participation State priors mapping; pre-GW1 availability recheck.

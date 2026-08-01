@@ -1,32 +1,31 @@
-# Task: Expected Role research (2026/27 mins priors)
+# Task: GW1–5 chip simulation sanity + continuity
 
-**Objective:** Grill domain model for preseason Expected Role taxonomy, then multi-source research all Clubs/Players into a Draft-eligible starter list that seeds Participation State mins priors.
+**Objective:** Validate GW1–5 chip strategy research sim; fix TC / formation / ITB / XI-aware objective; refresh artifacts; Checkpoint with continuity docs.
 
 **Acceptance:**
-- [x] Confirm Expected Role taxonomy (Nailed / Regular / Rotation / Cameo / Out of Contention); Draft-eligible = Nailed + Regular only
-- [x] Lock Expected Role time horizon (early-season band GW1–5)
-- [x] Lock numeric prior method: tier-default Expected Role Priors + per-Player overrides
-- [x] Lock research coverage: XI Contention Set; Draft Shortlist = Nailed + Regular; Out of Contention as footnotes
-- [x] Lock source set + consolidation rules + mandatory Role Evidence (reason + references)
-- [x] Lock deliverable artifact format: Research Note + Expected Role Table (CSV/Parquet); code wiring later
-- [x] Confirm shared understanding closed; produce Research Note + Expected Role Table for all 20 Clubs
-- [x] Consolidate AGENTS.md Docs & Research rules, data/research convention, active index, and archive guidance
-- [ ] Map Expected Role Table → Participation State priors (follow-up after table lands)
+- [x] Review sim vs chip-strategy note and projections; identify TC miss, stacked-bench inflation, narrative-only price section
+- [x] Patch `run_simulation.py`: force TC Haaland, formation-safe XI, £0.5m ITB, XI-aware MILP (select+start)
+- [x] Re-run; refresh CSV + research note Findings
+- [x] Self-check in runner; ruff on runner
+- [x] Update Work Packet SFDBN + current-state + session-handoff; Checkpoint
+
+**Open (prior packet, unchanged):**
+- [ ] Map Expected Role Table → Participation State priors (follow-up)
 
 ## Work Packet (SFDBN)
 
-**Status:** AGENTS.md documentation-policy consolidation complete; final gates passed. Expected Role artifacts remain canonical and linked; model wiring deferred.
+**Status:** GW1–5 chip sim patched and re-run. TC Haaland fires GW3; GW1–3 holds £0.5m ITB; XI-aware objective makes Standard cheap-bench vs BB stacked-bench. Continuity docs updated for Checkpoint.
 
 **Files:**
-- `AGENTS.md` (consolidated Docs & Research policy + active index)
-- `docs/research/expected-role-gw1-5.md` (human-readable Research Note; links canonical CSV)
-- `data/research/expected-role-gw1-5.csv` (canonical row-level table)
-- `CONTEXT.md`
+- `docs/research/gw1-5-chip-simulation/run_simulation.py`
+- `docs/research/gw1-5-chip-simulation/gw1-5-chip-simulation.md`
+- `data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv`
+- `task.md`
 - `docs/agents/current-state.md`
 - `.agents/session-handoff.md`
 
-**Decisions:** Docs & Research is single policy section; `data/research/<topic-slug>.*` holds machine-readable companions; research-note header links `Artifact`; Active research index limited to three topics; archive immutability rules live under Historical Archive Testing. Expected Role artifact remains 339 rows: 193 fit-role Draft-eligible (90 Nailed + 103 Regular), 99 Rotation, 47 Cameo; current availability overlay unchanged.
+**Decisions:** Prefer BB1 or BB2 then WC4 on Softmax GW1–5 projections (BB1 345.64, BB2 342.50, Standard 324.03). Enforce £0.5m ITB GW1–3. Research milp ≠ open-fpl-solver; price rises remain qualitative. Expected Role → Participation State wiring still deferred.
 
-**Blocked:** No research blocker. Participation State ingest/availability guard remains follow-up; current `p_*` fields are fit-player role priors and not unconditional current-GW probabilities.
+**Blocked:** None for this packet. Price-rise dynamics and FT path GW1–3 not in sim.
 
-**Next:** Use only `draft_availability=eligible` for current Draft; recheck `watch` rows before final selection; implement/map Expected Role Table → Participation State priors with availability guard; refresh before GW1 after material transfer, friendly, injury, or press-conference evidence.
+**Next:** Map Expected Role Table → Participation State priors with availability guard; recheck `watch` / injury overlays before GW1; optional sim extensions (price velocity, FT path) only if drafting needs them.

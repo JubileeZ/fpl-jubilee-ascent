@@ -24,6 +24,7 @@ Blocked, wait for deps:
 Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`, `docs/adr/0004-cross-season-player-code-mapping.md`, `docs/adr/0005-hybrid-metrics-component-projection-model.md`, `docs/adr/0006-fixture-first-projection-contract.md`, and `docs/adr/0010-participation-state-snapshots-and-evaluation.md`; vocabulary in `CONTEXT.md`.
 
 Recent Session Updates:
+- **GW1–5 chip sim fix (1 Aug):** Patched research milp in `docs/research/gw1-5-chip-simulation/`: XI-aware select+start objective, formation-safe XI (no 2nd GKP fill), forced TC Haaland GW3, £0.5m ITB on GW1–3. Re-ran → BB1 345.64 / BB2 342.50 / Standard 324.03; CSV + note refreshed. Not production solver.
 - **Docs & Research policy (31 Jul):** Consolidated `AGENTS.md` lifecycle/research rules; added `data/research/` companion convention, `Artifact` link requirement, three-topic Active research index, and single-location archive immutability guidance. AZG-managed block unchanged.
 - **Expected Role audit (31 Jul):** Rechecked all 194 prior Draft rows against official club/federation evidence, friendlies, and local FPL availability. Updated table/note: 339 rows, 193 fit-role Draft-eligible (90 Nailed + 103 Regular), 99 Rotation, 47 Cameo; 179 current Draft rows `eligible`, 9 `watch`, 4 `exclude_gw1`, 1 `exclude_gw1-5`. Perri → Rotation; Pope/Kinsky → Regular. Added direct source refs, API registration/availability fields, and dated overlays; Participation State availability guard remains follow-up.
 - **Research documentation reset (31 Jul):** Superseded four 2026/27 strategy notes removed; universal template at `docs/research/template/research-note.md`; source synthesis at `docs/research/fpl-first-half-chip-strategy.md`. Future notes use stable slugs, `Updated`/`Data stamp`, and separate source synthesis from project interpretation.
@@ -61,6 +62,7 @@ Recent Session Updates:
 | Features & Projections | `features/`, `projections/` | Data compilers and solver projection exporters |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
+| Research: Expected Role / Stats / Chip sim | `docs/research/`, `data/research/` | GW1–5 role table, Softmax projections, chip-strategy milp sim (research-only) |
 
 ---
 

@@ -1,14 +1,15 @@
 # GW1–5 Chip Strategy Simulation & Price Sensitivity Research Note
 
-**Updated**: 2026-08-01T21:54:00+07:00  
+**Updated**: 2026-08-01T23:45:00+07:00  
 **Data stamp**: Projections CSV 2026-08-01; FPL API element summary 2026-07-29; ParticipationStateHybridModel Softmax rates 2026-08-01  
 **Season**: 2026/27 · horizon GW1–5  
 **Status**: Active Research Simulation Model  
-**Purpose**: Run multi-period solver simulations comparing GW1 Bench Boost (BB1 + WC4) vs GW2 Bench Boost (BB2 + WC4) vs Standard Wildcard (WC4 without early BB) using the updated dynamic Softmax $xP$ projections, and evaluate real-world price-rise blindspots.  
+**Purpose**: Run multi-period solver simulations comparing GW1 Bench Boost (BB1 + WC4) vs GW2 Bench Boost (BB2 + WC4) vs Standard Wildcard (WC4 without early BB) using Softmax $xP$ projections; enforce £0.5m ITB on GW1–3 drafts.  
 **Scope**: GW1–5 trajectory across 178 eligible starters and 20 Premier League clubs.  
 **Related**: [Expected Stats GW1–5](../expected-stats-gw1-5/expected-stats-gw1-5.md) · [FPL First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Projections CSV](../../../data/research/expected-stats-gw1-5/gw1-5_projections.csv)  
 **Artifacts**:
 - [Simulation Results CSV](../../../data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv) — row-level 5-GW simulation trajectory data
+- [Runner](run_simulation.py) — XI-aware MILP + formation-safe evaluation
 
 ---
 
@@ -16,22 +17,22 @@
 
 - **Primary Projections Input**: `data/research/expected-stats-gw1-5/gw1-5_projections.csv` (178 eligible starters with dynamic Softmax bonus points).
 - **Player Pricing & Metadata**: `data/processed/players.parquet` and `data/processed/clubs.parquet`.
-- **Solver Engine**: MILP multi-period squad optimization (`scipy.optimize.milp`).
+- **Solver Engine**: Custom `scipy.optimize.milp` research sim (not vendored open-fpl-solver). Select + start binaries; formation-safe XI eval.
 
 ---
 
 ## Agent Prompt
 
 ```text
-Run 5-Gameweek chip strategy simulations for GW1-5 using gw1-5_projections.csv as input data:
+Run 5-Gameweek chip strategy simulations for GW1-5 using gw1-5_projections.csv:
 
-1. Simulate Scenario A: BB1 + WC4 (Bench Boost GW1, Wildcard GW4).
-2. Simulate Scenario B: BB2 + WC4 (Bench Boost GW2, Wildcard GW4).
-3. Simulate Scenario C: Standard WC4 (No early BB, Wildcard GW4).
-4. Evaluate total 5-GW projected points, weekly scores, captaincy, and bench output.
-5. Analyze solver blindspots (price rises, ownership velocity, budget squeeze on WC4).
-6. Export results to data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv.
-7. Verify via ruff check and pytest.
+1. Scenario A: BB1 + WC4 (Bench Boost GW1, Wildcard GW4, TC Haaland GW3).
+2. Scenario B: BB2 + WC4 (Bench Boost GW2, Wildcard GW4, TC Haaland GW3).
+3. Scenario C: Standard WC4 (No early BB, Wildcard GW4, TC Haaland GW3).
+4. XI-aware objective: non-BB weeks score start XI only; BB week scores all 15.
+5. GW1–3 budget ≤ £99.5m (£0.5m ITB); force Haaland TC captain on GW3.
+6. Export data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv.
+7. Run self_check in run_simulation.py; ruff check runner.
 ```
 
 ---
@@ -39,12 +40,13 @@ Run 5-Gameweek chip strategy simulations for GW1-5 using gw1-5_projections.csv a
 ## Method
 
 ### 1. Multi-Period Optimization Logic
-- **Initial Squad Selection (GW1–3)**: SOLVE 15-player squad under £100.0m cap to maximize GW1–3 $xP$ given the selected BB gameweek (GW1 or GW2).
-- **Wildcard Rebuild (GW4)**: SOLVE 15-player squad under £100.0m cap optimized for GW4–5 fixture swings (targeting CHE, ARS, MCI, LIV, MUN).
-- **Captaincy**: Highest $xP$ starter assigned 2x multiplier; Triple Captain (TC) applied in GW3 for Haaland vs Coventry (H).
+- **Initial Squad (GW1–3)**: MILP select ($x$) + start ($y$) under £99.5m. Objective weights GW1–3 $xP$; BB gameweek counts all 15 ($x$), other weeks count XI only ($y$). Valid XI: 1 GKP, DEF 3–5, MID 2–5, FWD 1–3.
+- **Wildcard Rebuild (GW4)**: Same XI-aware MILP under £100.0m for GW4–5 (ITB buffer already held GW1–3).
+- **Evaluation**: Formation-safe XI picker excludes 2nd GKP from fill slots. Captain = top XI $xP$; on TC week force Haaland into XI and apply 3×.
+- **Locked path**: No FT/hits GW1–3; squad swaps only at WC4. Static prices (no rise model in MILP).
 
-### 2. Price Rise Sensitivity Modeling
-Static solver models assume fixed player costs ($P_t = P_0$). In reality, early high-performing assets experience price inflation. We evaluate the budget squeeze risk if target WC4 assets rise in value during GW1–3.
+### 2. Price Rise Sensitivity
+Static costs ($P_t = P_0$). £0.5m ITB enforced on GW1–3 drafts as buffer against WC4 target inflation. Rise magnitudes remain qualitative (ownership velocity not simulated).
 
 ---
 
@@ -52,39 +54,41 @@ Static solver models assume fixed player costs ($P_t = P_0$). In reality, early 
 
 ### 1. 5-Gameweek Trajectory & Point Comparison
 
-| Strategy Scenario | GW1 $xP$ | GW2 $xP$ | GW3 $xP$ | GW4 $xP$ (WC) | GW5 $xP$ | Total 5-GW $xP$ | Net vs No BB |
-|---|---|---|---|---|---|---|---|
-| **Scenario A: BB1 + WC4** | **82.54** (BB1) | 62.69 | 64.72 (TC3) | 67.21 | 64.64 | **341.80** | **+19.69** |
-| **Scenario B: BB2 + WC4** | 62.82 | **79.67** (BB2) | 64.84 (TC3) | 67.21 | 64.64 | **339.18** | **+17.07** |
-| **Scenario C: Standard WC4** | 62.82 | 62.60 | 64.84 (TC3) | 67.21 | 64.64 | **322.11** | Baseline |
+| Strategy Scenario | GW1 $xP$ | GW2 $xP$ | GW3 $xP$ | GW4 $xP$ (WC) | GW5 $xP$ | Total 5-GW $xP$ | Net vs No BB | ITB |
+|---|---|---|---|---|---|---|---|---|
+| **Scenario A: BB1 + WC4** | **84.24** (BB1) | 62.38 | 68.54 (TC3) | 65.38 | 65.10 | **345.64** | **+21.61** | £0.5m |
+| **Scenario B: BB2 + WC4** | 62.82 | **80.77** (BB2) | 68.43 (TC3) | 65.38 | 65.10 | **342.50** | **+18.47** | £0.5m |
+| **Scenario C: Standard WC4** | 64.81 | 61.62 | 67.12 (TC3) | 65.38 | 65.10 | **324.03** | Baseline | £0.5m |
 
 ### 2. Key Strategy Takeaways
-- **Early Bench Boost Value**: Executing an early Bench Boost in GW1 or GW2 yields a massive **+17.0 to +19.7 $xP$ gain** over saving the chip.
-- **BB1 vs BB2**: Both BB1 (82.54 pts) and BB2 (79.67 pts) are extremely strong. BB2 provides the advantage of having 1 extra week of team news to confirm 100% starter minutes.
+- **Early BB still wins**: Planning BB1/BB2 and packing a strong bench beats XI-only Standard by **+18.5 to +21.6 $xP$** over five GWs (same TC + WC4 path).
+- **BB1 vs BB2**: BB1 total slightly ahead on these projections. BB2 still buys one extra week of team news (not modeled).
+- **TC now applied**: GW3 captain is Haaland (3×) in all scenarios; prior run auto-captained Isak and never fired TC.
+- **Standard builds cheaper bench**: Without BB in objective, bench ~12 $xP$ (e.g. Sánchez/Belloumi/Ömür/Muharemović) vs ~17–19 $xP$ when optimizing for BB week — fairer chip comparison than all-15 stacked baseline.
+- **Within-squad BB delta** (same BB1 squad, BB on vs off GW1) remains ~**+18.6 $xP$** — upper bound when bench is intentionally strong.
 
----
-
-## Solver Blindspots: Price Rise & Budget Squeeze Analysis
-
-### The Problem: Static Price Assumption
-Standard solvers assume players stay at their GW1 prices through GW4. In real FPL:
-1. **Target Price Inflation**: Assets like Gyökeres (£7.5m), Vušković (£5.0m), Palmer (£9.5m), and Hill (£5.5m) are heavily owned. If they deliver in GW1–3, their prices will rise by **+£0.1m to +£0.3m each**.
-2. **Budget Squeeze on WC4**: By GW4, buying your ideal 15-player WC template might cost **£100.8m to £101.5m**, pricing you out if you hold £0.0m ITB!
+### 3. Solver Blindspots (unchanged class)
+- No price-rise dynamics; ITB is a fixed buffer only.
+- No FT path GW1–3; WC4 identical across scenarios.
+- Captaincy in objective omitted (applied at eval only).
+- Research milp ≠ production open-fpl-solver.
 
 ### Actionable Mitigation Rules for WC4 Execution
-1. **Maintain £0.5m–£1.0m In Bank (ITB)**: Keep £0.5m ITB in your GW1 draft to act as a buffer against target price rises on Wildcard.
-2. **Track Ownership Velocity**: Identify key targets expected to rise in price during GW1–3.
-3. **Early Wildcard Activation**: Activate WC4 early in the gameweek window (Sunday/Monday post-GW3) to lock in price rises on players you bring in, boosting your squad value.
+1. **Keep £0.5m ITB** in GW1 draft (now enforced in sim).
+2. **Track ownership velocity** on WC4 targets (Gyökeres, Vušković, Palmer, Hill, etc.).
+3. **Activate WC early** in GW4 window to lock rises on inbound players.
 
 ---
 
 ## Decision
 
-**Verdict**: Recommended to execute **BB1 or BB2** followed by **WC4**. Maintain **£0.5m ITB** in GW1 to absorb WC4 price inflation.
+**Verdict**: Prefer **BB1 or BB2** then **WC4**, with **TC Haaland GW3** if minutes/fixture gates hold. Hold **£0.5m ITB** through GW1–3.
 
 ---
 
 ## Risks and Unknowns
 
-- **Price Rise Velocity**: Actual FPL price changes depend on net transfer volume; unexpected bandwagon shifts could accelerate price changes.
-- **Lineup Surprises**: Pre-season starters must be re-verified prior to the GW1 deadline.
+- **Price Rise Velocity**: Net transfers can move targets faster than £0.5m buffer.
+- **Lineup Surprises**: Pre-season starters must re-verify before GW1 deadline.
+- **TC opportunity cost**: Forcing Haaland TC can sacrifice higher Isak GW3 captain $xP$ on auto-C path; sim prioritizes stated TC plan.
+- **BB magnitude**: Early-BB edge assumes willing to fund playable bench; weak-bench drafts shrink the gap toward Standard.
