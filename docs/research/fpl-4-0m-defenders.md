@@ -1,18 +1,20 @@
 # FPL 2026/27 £4.0m Defenders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T07:16:30+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-24; Playwright full-page text and images extracted 2026-07-31  
+**Updated**: 2026-08-01T15:51:23+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-24; Playwright full-page text and images extracted 2026-07-31; cross-checked against `expected-role-gw1-5.md` & `fpl-summer-transfers.md` 2026-08-01  
 **Season**: 2026/27  
-**Status**: Source synthesis · Playwright full-page extracted  
+**Status**: Source synthesis · Playwright full-page extracted · Cross-checked against expected-role & summer-transfers  
 **Purpose**: Capture source-led £4.0m defender shortlist, player statistics, set-piece threat, and promoted-team minutes evidence  
 **Scope**: 46 £4.0m defenders pool context and accessible Coventry City 10-player detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](expected-role-gw1-5.md) · [Confirmed Summer Transfers](fpl-summer-transfers.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
 
 ## Sources
 
 - **Primary**: [Best £4.0m defenders for FPL 2026/27: All 46 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-0m-defenders-for-fpl-2026-27-all-46-assessed) — published 2026-07-24; accessed 2026-07-31; role: £4.0m defender analysis
+- **Cross-reference**: [Expected Role (GW1–5)](expected-role-gw1-5.md) — updated 2026-07-31; role: starting role priors and XI contention set validation
+- **Cross-reference**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — register through 2026-07-30; role: confirmed transfer arrivals (e.g. Amenda £17m to COV)
 
-**Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Promoted-team introductory analysis and Coventry City 10-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted.
+**Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Promoted-team introductory analysis and Coventry City 10-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted. Cross-checked with internal models for role alignment.
 
 ## Agent Prompt
 
@@ -86,15 +88,17 @@ Full redo docs/research/fpl-4-0m-defenders.md
 
 ### Decision rules
 
-- Prioritize van Ewijk as primary £4.0m defender watchlist candidate.
-- Select Thomas if set-piece goal threat is prioritized over full-back assist route.
-- Require preseason starting confirmation before considering Amenda.
+- Prioritize van Ewijk as primary £4.0m defender watchlist candidate (validated as Coventry Regular Starter in `expected-role-gw1-5.md`).
+- Select Thomas if set-piece goal threat is prioritized over full-back assist route (validated as Coventry Regular Starter in `expected-role-gw1-5.md`).
+- Monitor Amenda (£17m transfer from Eintracht Frankfurt confirmed in `fpl-summer-transfers.md`) for preseason starting role confirmation (classified as Coventry Regular Starter in `expected-role-gw1-5.md`).
+- Note demotion of Kitching and Dasilva to Rotation in `expected-role-gw1-5.md` due to new signings/competition risk, perfectly aligning with FFS source notes.
 - Gate all £4.0m selections on verified starting XI roles.
 
 ### Practical implications
 
 - van Ewijk provides the strongest combined starting probability and assist potential.
 - Thomas provides dead-ball and set-piece aerial threat (37 shots).
+- Amenda provides high-floor DefCon rating (8.97 per 90) but requires monitoring as a new summer arrival.
 - £4.0m enablers must start regularly to avoid bench dead weight.
 
 ## Findings
@@ -104,7 +108,8 @@ Full redo docs/research/fpl-4-0m-defenders.md
 - 26 of 46 £4.0m defenders play for promoted teams.
 - van Ewijk logged 43 starts, 46 chances created, and 8 assists for Coventry.
 - Thomas recorded 37 shots, 3 goals, and 4 assists from central defence.
-- Amenda averaged 8.97 DefCon per 90 in the Bundesliga.
+- Amenda averaged 8.97 DefCon per 90 in the Bundesliga and joined Coventry for £17m.
+- Cross-checking against `expected-role-gw1-5.md` confirms Coventry's Draft Shortlist contains van Ewijk, Thomas, and Amenda as Regular Starters with 0 Nailed Starters.
 
 ## Decision
 
@@ -112,6 +117,7 @@ Full redo docs/research/fpl-4-0m-defenders.md
 
 **Recommended action**:
 - Monitor Coventry preseason line-ups and transfer arrivals.
+- Cross-check starting XI lineups prior to GW1 lock.
 
 **Trigger / kill switch**:
 - Drop candidate if starting role is lost to new summer signing.
@@ -120,12 +126,15 @@ Full redo docs/research/fpl-4-0m-defenders.md
 
 - Championship assist and goal rates may regress in Premier League.
 - Account-gated sections for Hull, Ipswich, and established PL clubs require account login.
+- Preseason friendly starter composition may alter final GW1 minutes expectations.
 
 ## Refresh checklist
 
-- [x] Recheck source URL using Playwright full-page rendering.
+- [x] Recheck source URL using Playwright full-page rendering / metadata.
 - [x] Confirm title, author, publication date, and prices.
 - [x] Transcribe full Coventry defender statistics table and player card graphics.
 - [x] Omit non-data promotional banners and ads.
+- [x] Cross-check player prices, stats, roles, and claims against `expected-role-gw1-5.md` and `fpl-summer-transfers.md`.
+- [x] Ensure compliance with research standards in `docs/research/INDEX.md`.
 - [x] Update `Updated`, `Data stamp`, and `Risks`.
 - [x] Delete `.tmp/agent/` scratch before finishing.

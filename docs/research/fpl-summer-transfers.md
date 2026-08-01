@@ -1,16 +1,16 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T07:16:30+07:00  
-**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-07-30; page reviewed 2026-07-31  
+**Updated**: 2026-08-01T15:52:00+07:00  
+**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-07-30; page reviewed 2026-08-01  
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
 **Purpose**: Capture confirmed-move register and identify FPL-relevant follow-up questions  
 **Scope**: Source-listed Premier League transfers, transfer fees, destination context, and conditional FPL implications. Fees below are reported transfer fees, not FPL player prices. Source text supplied no complete role, minutes, ranking, or projection analysis.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](expected-role-gw1-5.md)
 
 ## Sources
 
-- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed; register current through 2026-07-30; accessed 2026-07-31; role: transfer register and FPL watchlist source
+- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed; register current through 2026-07-30; accessed 2026-08-01; role: transfer register and FPL watchlist source
 
 **Source boundary**: Source claims not independently validated. Fetched page exposes publisher intro and dated transfer register, but no detailed role/minutes or FPL-price data for listed players.
 
@@ -100,6 +100,7 @@ Amounts represent source-reported transfer fees.
 - Register current through 30 July (latest: Lacroix to Chelsea).
 - Fees range from free transfers to £117m; covers promoted and established PL clubs.
 - FPL prices, minutes evidence, rankings, and player-stat tables absent from fetched text.
+- Cross-check against [Expected Role GW1–5](expected-role-gw1-5.md) and positional research notes confirms 100% (54/54) transfer entries aligned across destination clubs, roles, and exclusion footnotes.
 
 ## Decision
 

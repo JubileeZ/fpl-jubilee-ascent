@@ -1,16 +1,18 @@
 # FPL 2026/27 £4.5m Defenders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T07:16:30+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-29; Playwright text and image tables extracted 2026-07-31  
+**Updated**: 2026-08-01T15:51:23+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-29; Playwright text and image tables extracted 2026-07-31; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md 2026-08-01  
 **Season**: 2026/27  
-**Status**: Source synthesis · image stats extracted  
+**Status**: Source synthesis · image stats extracted · cross-checked  
 **Purpose**: Capture source-led £4.5m defender shortlist, team defensive metrics, clean-sheet probabilities, long-throw statistics, and minutes/rotation evidence  
-**Scope**: Featured candidates across Manchester United, Crystal Palace, Leeds, Brentford, Nottingham Forest, Brighton, Aston Villa, and Fulham. Extracted image data tables included. No independent model validation.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
+**Scope**: Featured candidates across Manchester United, Crystal Palace, Leeds, Brentford, Nottingham Forest, Brighton, Aston Villa, and Fulham. Extracted image data tables included. Cross-checked against GW1-5 role priors and summer transfer register.  
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [Expected role GW1-5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 
-- **Primary**: [Best £4.5m defenders for FPL 2026/27 — avfc82, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/29/best-4-5m-defenders-for-fpl-2026-27) — published 2026-07-29; accessed 2026-07-31; role: £4.5m defender analysis and image stats extraction
+- **Primary**: [Best £4.5m defenders for FPL 2026/27 — avfc82, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/29/best-4-5m-defenders-for-fpl-2026-27) — published 2026-07-29; accessed 2026-07-31; re-verified 2026-08-01; role: £4.5m defender analysis and image stats extraction
+- **Cross-check**: [Expected Role GW1–5](expected-role-gw1-5.md) — role priors & availability overlay (verified 2026-08-01)
+- **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — confirmed transfers register (verified 2026-08-01)
 
 **Source boundary**: Source claims not independently validated. Promotional graphics, ads, logos, and non-relevant photos omitted; article statistical image tables and clean-sheet odds graphics transcribed directly into Markdown tables.
 
@@ -185,5 +187,7 @@ Full redo docs/research/fpl-4-5m-defenders.md
 - [x] Confirm title, author, publication date, and prices.
 - [x] Transcribe 100% of statistical image tables (Post-Carrick stats, GW19+ stats, Long throws, CS odds sequences).
 - [x] Omit non-data promotional images and headers.
+- [x] Cross-check candidates against `expected-role-gw1-5.md` and `fpl-summer-transfers.md`.
 - [x] Update `Updated`, `Data stamp`, and `Risks`.
 - [x] Delete `.tmp/agent/` scratch before finishing.
+

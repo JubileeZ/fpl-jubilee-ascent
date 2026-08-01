@@ -1,16 +1,16 @@
 # FPL 2026/27 £4.5m Midfielders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-07-31T07:16:30+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-07-24; Playwright full-page text and images extracted 2026-07-31  
+**Updated**: 2026-08-01T15:52:00+07:00  
+**Data stamp**: Fantasy Football Scout article published 2026-07-24 (modified 2026-07-24T18:21:18+00:00 verified unchanged); cross-checked against expected-role-gw1-5 (2026-07-31) and summer-transfers (2026-07-30) on 2026-08-01  
 **Season**: 2026/27  
-**Status**: Source synthesis · Playwright full-page extracted  
+**Status**: Source synthesis · Playwright extracted & cross-checked  
 **Purpose**: Capture source-led £4.5m midfielder minutes evidence, player statistics, and enabler evaluation  
 **Scope**: 25 £4.5m midfielders pool context and Coventry City detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 
-- **Primary**: [Best £4.5m midfielders for FPL 2026/27: All 25 assessed — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-5m-midfielders-for-fpl-2026-27-all-25-assessed) — published 2026-07-24; accessed 2026-07-31; role: £4.5m midfielder analysis
+- **Primary**: [Best £4.5m midfielders for FPL 2026/27: All 25 assessed — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-5m-midfielders-for-fpl-2026-27-all-25-assessed) — published 2026-07-24; accessed and re-verified 2026-08-01; role: £4.5m midfielder analysis
 
 **Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Price pool overview and Coventry City 3-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted.
 
@@ -117,6 +117,7 @@ Full redo docs/research/fpl-4-5m-midfielders.md
 - [x] Recheck source URL using Playwright full-page rendering.
 - [x] Confirm title, author, publication date, and prices.
 - [x] Transcribe Coventry midfielder statistics table and player card graphics.
+- [x] Cross-check player prices, roles, and claims against expected-role-gw1-5.md and fpl-summer-transfers.md.
 - [x] Omit non-data promotional banners and ads.
 - [x] Update `Updated`, `Data stamp`, and `Risks`.
 - [x] Delete `.tmp/agent/` scratch before finishing.
