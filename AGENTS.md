@@ -123,6 +123,7 @@ Before Checkpoint (git commit of in-progress work): update Work Packet SFDBN fie
 - Prefer reversible actions. If irreversible, state clearly before executing.
 - Tool blocked by safety hook? Explain block, suggest exact command/content to write manually.
 - Windows: run CLI/hooks only inside Git Bash.
+- Subagent budget & delegation: Read `.agents/spawn-budget.json` for active limits (`max_spawns`, `max_concurrent`, `max_cumulative`, `max_depth`). Dispatch subagents up to `max_spawns` / `max_concurrent` concurrently; wait for running workers to finish before spawning more. Subagents must not spawn child subagents when `max_depth` is 1.
 
 ---
 

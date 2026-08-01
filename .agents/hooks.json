@@ -21,7 +21,7 @@
         ]
       },
       {
-        "matcher": "START_SUBAGENT|task|Task|spawn_subagent",
+        "matcher": "invoke_subagent|START_SUBAGENT|task|Task|spawn_subagent|subagent|agent",
         "hooks": [
           {
             "type": "command",
@@ -70,6 +70,17 @@
           {
             "type": "command",
             "command": "./hooks/pre-compact.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./hooks/spawn-budget.sh --finish"
           }
         ]
       }
