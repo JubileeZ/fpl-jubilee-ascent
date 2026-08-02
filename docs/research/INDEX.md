@@ -26,6 +26,7 @@
   - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)
   - [GW1–5 Chip Strategy Simulation & Price Sensitivity](gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [CSV Companion](../../data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv)
   - [GW1–6 Chip & GW4 Wildcard Squad Optimization](gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [CSV Companion](../../data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [GW1–6 Projections](../../data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv)
+  - [Starter Goalkeeper Fixture Rotation & FDR Correlation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [CSV Companion](../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv)
 
 ---
 
