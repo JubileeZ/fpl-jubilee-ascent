@@ -1,7 +1,7 @@
 # FPL 2026/27 Budget Goalkeepers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-01T15:52:00+07:00  
-**Data stamp**: Primary source FFS article 2026-07-28 (checked 2026-08-01, modified 2026-07-28); cross-checked with `expected-role-gw1-5.md` (2026-07-31) and `fpl-summer-transfers.md` (2026-07-30)  
+**Updated**: 2026-08-03T02:15:00+07:00
+**Data stamp**: Primary source FFS article 2026-07-28 (checked 2026-08-03, modified 2026-07-28); cross-checked with `expected-role-gw1-5.md` (2026-07-31) and `fpl-summer-transfers.md` (2026-07-30)  
 **Season**: 2026/27  
 **Status**: Active · audited & cross-checked  
 **Purpose**: Capture source-led £4.0m–£4.5m goalkeeper shortlist, extracted defensive stats tables, role cross-checks, and minutes risks  
@@ -10,7 +10,7 @@
 
 ## Sources
 
-- **Primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27 — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; last modified 2026-07-28; accessed 2026-08-01; role: budget goalkeeper analysis and image stats extraction
+- **Primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27 — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; last modified 2026-07-28; accessed 2026-08-03; role: budget goalkeeper analysis and image stats extraction
 - **Cross-check**: [Expected Role GW1–5](expected-role-gw1-5.md) — updated 2026-07-31; role: pre-season expected roles, starter status, and draft availability audit
 - **Cross-check**: [Summer transfers](fpl-summer-transfers.md) — updated 2026-07-31; role: confirmed transfer register (Dubravka, Scherpen, Van Oevelen, Butland, Senesi)
 
@@ -21,7 +21,7 @@
 ```text
 Full redo docs/research/fpl-budget-goalkeepers.md
 
-1. Re-read source URL using Playwright / HTTP fetch; verify title, author, publication/update date (published 2026-07-28, modified 2026-07-28, accessed 2026-08-01).
+1. Re-read source URL using Playwright / HTTP fetch; verify title, author, publication/update date (published 2026-07-28, modified 2026-07-28, accessed 2026-08-03).
 2. Cross-check prices, roles, stats, and claims against docs/research/expected-role-gw1-5.md and docs/research/fpl-summer-transfers.md.
 3. Extract 100% of statistical data images into Markdown tables.
 4. Keep Source synthesis strictly separate from Project interpretation.

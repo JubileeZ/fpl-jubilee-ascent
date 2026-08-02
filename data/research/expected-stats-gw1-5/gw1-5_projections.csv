@@ -80,10 +80,10 @@ player_id,web_name,club_short,position,expected_role,draft_availability,rate_sou
 40,Rogers,CHE,MID,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (3280m) + 50% mean older usable [2023/24,2024/25]",3.24,77.5,3.68,77.5,2.47,77.5,3.71,77.5,3.21,77.5,16.3,3.26,387.5
 329,Rodon,LEE,DEF,Nailed Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (2952 mins),3.07,77.5,3.08,77.5,3.07,77.5,3.95,77.5,3.1,77.5,16.27,3.25,387.5
 173,Thomas,COV,DEF,Regular Starter,eligible,external_3season_research,External CHA 2023-26: Bobby Thomas Coventry CB; CBIT Defcon; FBref+FotMob; mins~10017,2.32,62.0,4.12,62.0,2.31,62.0,4.08,62.0,3.38,62.0,16.22,3.24,310.0
-18,Martinelli,ARS,MID,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1065m) + 50% mean older usable [2023/24,2024/25]",3.88,62.0,2.84,62.0,2.84,62.0,3.32,62.0,3.33,62.0,16.21,3.24,310.0
 357,Frimpong,LIV,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (1032 mins),3.0,62.0,2.97,62.0,3.64,62.0,3.64,62.0,2.97,62.0,16.21,3.24,310.0
-188,Torp,COV,MID,Regular Starter,eligible,external_3season_research,External Coventry MID; FBref CBITR Defcon 11.05/90 (2023-25),2.62,62.0,3.85,62.0,2.6,62.0,3.79,62.0,3.34,62.0,16.2,3.24,310.0
+18,Martinelli,ARS,MID,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1065m) + 50% mean older usable [2023/24,2024/25]",3.88,62.0,2.84,62.0,2.84,62.0,3.32,62.0,3.33,62.0,16.21,3.24,310.0
 423,Shaw,MUN,DEF,Nailed Starter,eligible,fpl_recency_50_50,50% 2025/26 (3220m) + 50% mean older usable [2023/24],3.84,77.5,3.83,77.5,3.04,77.5,2.42,77.5,3.07,77.5,16.2,3.24,387.5
+188,Torp,COV,MID,Regular Starter,eligible,external_3season_research,External Coventry MID; FBref CBITR Defcon 11.05/90 (2023-25),2.62,62.0,3.85,62.0,2.6,62.0,3.79,62.0,3.34,62.0,16.2,3.24,310.0
 175,van Ewijk,COV,DEF,Regular Starter,eligible,external_3season_research,External Coventry DEF; FBref CBIT Defcon 7.00/90 (2023-25),2.35,62.0,4.08,62.0,2.34,62.0,4.04,62.0,3.38,62.0,16.19,3.24,310.0
 84,Collins,BRE,DEF,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (2971m) + 50% mean older usable [2023/24,2024/25]",3.22,77.5,3.2,77.5,4.04,77.5,3.2,77.5,2.52,77.5,16.18,3.24,387.5
 193,Wright,COV,FWD,Regular Starter,eligible,external_3season_research,External CHA 2023-26: Haji Wright; best-guess CBITR 5.28/90 from 23/24-24/25 FBref,2.29,62.0,4.16,62.0,2.28,62.0,4.06,62.0,3.37,62.0,16.16,3.23,310.0
@@ -95,8 +95,8 @@ player_id,web_name,club_short,position,expected_role,draft_availability,rate_sou
 247,Hackney,EVE,MID,Regular Starter,eligible,external_3season_research,External Middlesbrough; FBref CBITR Defcon 12.03/90 (Hackney),3.17,62.0,3.17,62.0,2.89,62.0,3.19,62.0,3.54,62.0,15.96,3.19,310.0
 428,Cunha,MUN,MID,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (2493m) + 50% mean older usable [2023/24,2024/25]",3.61,62.0,3.59,62.0,3.06,62.0,2.59,62.0,3.09,62.0,15.93,3.19,310.0
 142,James,CHE,DEF,Regular Starter,eligible,fpl_recency_50_50,50% 2025/26 (1957m) + 50% mean older usable [2024/25],3.14,62.0,3.76,62.0,2.13,62.0,3.77,62.0,3.12,62.0,15.91,3.18,310.0
-331,Gudmundsson,LEE,DEF,Nailed Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (2637 mins),2.99,77.5,3.0,77.5,2.99,77.5,3.91,77.5,3.01,77.5,15.9,3.18,387.5
 211,Yeremy,CRY,MID,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (2074 mins),3.17,62.0,2.68,62.0,3.2,62.0,3.69,62.0,3.16,62.0,15.9,3.18,310.0
+331,Gudmundsson,LEE,DEF,Nailed Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (2637 mins),2.99,77.5,3.0,77.5,2.99,77.5,3.91,77.5,3.01,77.5,15.9,3.18,387.5
 358,Kerkez,LIV,DEF,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (2251m) + 50% mean older usable [2023/24,2024/25]",2.85,77.5,2.81,77.5,3.64,77.5,3.64,77.5,2.81,77.5,15.76,3.15,387.5
 25,Gyökeres,ARS,FWD,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (2217 mins),3.81,62.0,2.73,62.0,2.74,62.0,3.22,62.0,3.24,62.0,15.74,3.15,310.0
 371,Gravenberch,LIV,MID,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (2991m) + 50% mean older usable [2023/24,2024/25]",3.05,77.5,3.0,77.5,3.32,77.5,3.31,77.5,3.0,77.5,15.68,3.14,387.5
@@ -105,8 +105,8 @@ player_id,web_name,club_short,position,expected_role,draft_availability,rate_sou
 488,Sangaré,NFO,MID,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (2073m) + 50% mean older usable [2023/24,2024/25]",3.36,77.5,2.87,77.5,3.13,77.5,2.9,77.5,3.37,77.5,15.64,3.13,387.5
 61,Truffert,BOU,DEF,Nailed Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (3378 mins),2.29,77.5,3.5,77.5,3.55,77.5,3.47,77.5,2.81,77.5,15.62,3.12,387.5
 155,Enzo,CHE,MID,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (3114m) + 50% mean older usable [2023/24,2024/25]",3.1,62.0,3.56,62.0,2.26,62.0,3.59,62.0,3.07,62.0,15.59,3.12,310.0
-248,Beto,EVE,FWD,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1551m) + 50% mean older usable [2023/24,2024/25]",3.08,62.0,3.08,62.0,2.6,62.0,3.1,62.0,3.67,62.0,15.54,3.11,310.0
 336,Okafor,LEE,MID,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (1553 mins),2.99,62.0,3.0,62.0,2.99,62.0,3.54,62.0,3.02,62.0,15.54,3.11,310.0
+248,Beto,EVE,FWD,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1551m) + 50% mean older usable [2023/24,2024/25]",3.08,62.0,3.08,62.0,2.6,62.0,3.1,62.0,3.67,62.0,15.54,3.11,310.0
 474,Jair Cunha,NFO,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (514 mins),3.68,62.0,2.53,62.0,3.07,62.0,2.55,62.0,3.69,62.0,15.52,3.1,310.0
 204,Mitchell,CRY,DEF,Nailed Starter,eligible,fpl_recency_50_50,"50% 2025/26 (3253m) + 50% mean older usable [2023/24,2024/25]",3.05,77.5,2.36,77.5,3.08,77.5,3.91,77.5,3.05,77.5,15.45,3.09,387.5
 558,Schlager,NFO,MID,Regular Starter,eligible,external_3season_research,External RB Leipzig; FBref CBITR Defcon 12.30/90 (Schlager),3.34,62.0,2.81,62.0,3.08,62.0,2.84,62.0,3.34,62.0,15.42,3.08,310.0
@@ -178,8 +178,8 @@ player_id,web_name,club_short,position,expected_role,draft_availability,rate_sou
 292,Ömür,HUL,MID,Regular Starter,eligible,external_3season_research,External 2023-26: Abdülkadir Ömür; best-guess CBITR 8.32/90 from Hull CHA FBref,2.22,62.0,2.56,62.0,2.36,62.0,2.19,62.0,2.42,62.0,11.75,2.35,310.0
 316,Emersonn,IPS,FWD,Regular Starter,eligible,external_3season_research,External 2024-26: Emersonn; best-guess partial def actions 2.78/90 (Tkl+Int+Rec),2.54,62.0,2.1,62.0,2.07,62.0,2.31,62.0,2.31,62.0,11.33,2.27,310.0
 64,Smith,BOU,DEF,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1073m) + 50% mean older usable [2023/24,2024/25]",1.67,62.0,2.53,62.0,2.56,62.0,2.52,62.0,2.05,62.0,11.33,2.27,310.0
-306,Greaves,IPS,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2024/25 (2205 mins),3.01,62.0,1.8,62.0,1.77,62.0,2.31,62.0,2.31,62.0,11.2,2.24,310.0
 402,Rodrigo,MCI,MID,Regular Starter,exclude_gw1,fpl_recency_50_50,50% 2025/26 (1510m) + 50% mean older usable [2023/24],0.0,0.0,2.72,62.0,3.0,62.0,2.48,62.0,2.99,62.0,11.2,2.24,248.0
+306,Greaves,IPS,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2024/25 (2205 mins),3.01,62.0,1.8,62.0,1.77,62.0,2.31,62.0,2.31,62.0,11.2,2.24,310.0
 258,Castagne,FUL,DEF,Regular Starter,eligible,fpl_recency_50_50,"50% 2025/26 (1838m) + 50% mean older usable [2023/24,2024/25]",2.02,62.0,2.55,62.0,2.58,62.0,1.98,62.0,2.05,62.0,11.18,2.24,310.0
 330,Bogle,LEE,DEF,Regular Starter,eligible,fpl_recency_50_50,50% 2025/26 (2795m) + 50% mean older usable [2023/24],2.05,62.0,2.06,62.0,2.05,62.0,2.83,62.0,2.07,62.0,11.05,2.21,310.0
 190,Tchaouna,COV,MID,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (1259 mins),1.89,62.0,2.51,62.0,1.88,62.0,2.48,62.0,2.24,62.0,10.99,2.2,310.0
@@ -190,5 +190,5 @@ player_id,web_name,club_short,position,expected_role,draft_availability,rate_sou
 62,Diakité,BOU,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2025/26 (1275 mins),1.37,62.0,2.2,62.0,2.23,62.0,2.19,62.0,1.73,62.0,9.72,1.94,310.0
 304,O'Shea,IPS,DEF,Regular Starter,eligible,fpl_recency_50_50,50% 2024/25 (3122m) + 50% mean older usable [2023/24],2.44,62.0,1.27,62.0,1.24,62.0,1.76,62.0,1.76,62.0,8.46,1.69,310.0
 277,Egan,HUL,DEF,Regular Starter,eligible,fpl_single_usable_season,100% usable season 2023/24 (482 mins),0.57,62.0,1.74,62.0,1.06,62.0,0.54,62.0,1.1,62.0,5.02,1.0,310.0
-6,Saliba,ARS,DEF,Nailed Starter,exclude_gw1-5,fpl_recency_50_50,"50% 2025/26 (2614m) + 50% mean older usable [2023/24,2024/25]",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
 78,Kroupi.Jr,BOU,MID,Nailed Starter,exclude_gw1-5,fpl_single_usable_season,100% usable season 2025/26 (1663 mins),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+6,Saliba,ARS,DEF,Nailed Starter,exclude_gw1-5,fpl_recency_50_50,"50% 2025/26 (2614m) + 50% mean older usable [2023/24,2024/25]",0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

@@ -1,6 +1,6 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-01T15:52:00+07:00  
+**Updated**: 2026-08-03T02:15:00+07:00
 **Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-07-30; page reviewed 2026-08-01  
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
@@ -10,7 +10,7 @@
 
 ## Sources
 
-- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed; register current through 2026-07-30; accessed 2026-08-01; role: transfer register and FPL watchlist source
+- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — page publication date not exposed; register current through 2026-07-30; accessed 2026-08-03; role: transfer register and FPL watchlist source
 
 **Source boundary**: Source claims not independently validated. Fetched page exposes publisher intro and dated transfer register, but no detailed role/minutes or FPL-price data for listed players.
 

@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-02T01:10:00+07:00  
+**Updated**: 2026-08-03T02:15:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -14,7 +14,9 @@
   - [£5.0m Defenders](fpl-preseason-guide/fpl-5-0m-defenders.md)
   - [£4.5m Defenders](fpl-preseason-guide/fpl-4-5m-defenders.md)
   - [£4.0m Defenders](fpl-preseason-guide/fpl-4-0m-defenders.md)
+  - [£5.5m+ Defenders](fpl-preseason-guide/fpl-5-5m-defenders.md)
   - [£4.5m Midfielders](fpl-preseason-guide/fpl-4-5m-midfielders.md)
+  - [£7.5m+ Midfielders](fpl-preseason-guide/fpl-7-5m-midfielders.md)
   - [£6.0m–£6.5m Forwards](fpl-preseason-guide/fpl-6-0m-6-5m-forwards.md)
   - [Confirmed Summer Transfers](fpl-preseason-guide/fpl-summer-transfers.md)
 
