@@ -56,7 +56,7 @@ Full redo docs/research/fpl-6-0m-6-5m-forwards.md
 - **Evanilson (Bournemouth, £6.0m)**: Maintained starting role due to Kroupi (£7.5m) long-term injury, but £25.7m signing of Alvaro Rodriguez (£6.0m) adds competition. High volume (87 box passes received, 15 six-yard box shots) but poor conversion (6 goals, -4.59 xG underperformance). Tough early fixtures until GW6 under Marco Rose.
 - **Jean-Philippe Mateta (Crystal Palace, £6.5m)**: 31 big chances last season (5th among forwards). Competition from Strand Larsen (£6.0m) and World Cup fatigue may prompt new manager Pierre Sage to ease him in despite good GW1–6 fixtures (5th on Ticker).
 - **Igor Jesus (Nottingham Forest, £6.0m)**: 7 goals in Europa League but low top-flight xG efficiency (0.09 xG per shot). Strong pre-season form (3 friendly goals); Oliver Glasner could pick him over Wood (£6.0m) or Awoniyi (£5.5m).
-- **Dominic Solanke (Spurs, £6.5m)**: Proven 19-goal season in 2023/24; rotation/injury history. Spurs fixtures improve from GW7.
+- **Dominic Solanke (Spurs, £6.0m)**: Proven 19-goal season in 2023/24; rotation/injury history. Spurs fixtures improve from GW7.
 
 ### Pending Transfers & Other Options
 
@@ -68,7 +68,7 @@ Full redo docs/research/fpl-6-0m-6-5m-forwards.md
 ### Cross-model role alignment (expected-role-gw1-5.md)
 
 - **Nailed Starters**: Dominic Calvert-Lewin (Leeds, £6.0m) and Brian Brobbey (Sunderland, £6.0m) are confirmed Nailed Starters in `expected-role-gw1-5.md`.
-- **Regular Starters**: Dominic Solanke (Spurs, £6.5m), Igor Jesus (Nott'm Forest, £6.0m), Strand Larsen (Crystal Palace, £6.0m), and Beto (Everton, £6.0m) are listed as Regular Starters.
+- **Regular Starters**: Dominic Solanke (Spurs, £6.0m), Igor Jesus (Nott'm Forest, £6.0m), Strand Larsen (Crystal Palace, £6.0m), and Beto (Everton, £5.5m) are listed as Regular Starters.
 - **Rotation / Competition**: Mateta (Palace, £6.5m, behind Strand Larsen), Evanilson (Bournemouth, £6.0m, alongside Alvaro Rodriguez behind Kroupi Jr), Chris Wood (Forest, £6.0m), Osula (Newcastle, £6.0m), and Welbeck (Brighton, £6.0m) are classified as Rotation options.
 
 ### Decision rules

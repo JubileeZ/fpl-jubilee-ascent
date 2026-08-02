@@ -56,8 +56,8 @@ Full redo docs/research/fpl-preseason-guide/fpl-7-5m-midfielders.md
 
 ### Premium & Standout Options (£8.0m–£9.5m)
 
-- **Bruno Fernandes (Man United, £9.0m)**: Standout midfield option in FPL. Top NPxGI among all midfielders last season; central focus of Michael Carrick's attack with top fixture run in GW1–5.
-- **Bryan Mbeumo (Man United, £8.5m)**: Outperformed Cunha and Fernandes in xG inside the box last season. Strong case for Man Utd midfield double-up or alternative coverage.
+- **Bruno Fernandes (Man United, £12.0m)**: Standout midfield option in FPL. Top NPxGI among all midfielders last season; central focus of Michael Carrick's attack with top fixture run in GW1–5.
+- **Bryan Mbeumo (Man United, £8.0m)**: Outperformed Cunha and Fernandes in xG inside the box last season. Strong case for Man Utd midfield double-up or alternative coverage.
 - **Matheus Cunha (Man United, £8.0m)**: High-volume attacking returns and direct threat alongside Fernandes and Mbeumo under Carrick.
 - **Morgan Gibbs-White (Nottingham Forest, £8.0m)**: 3rd among all midfielders for FPL points last season (188 pts, 15 goals, 4 assists). Set-piece taker under new manager Oliver Glasner with no European midweek fixture congestion. Note: NPxGI delta of +5.03 indicates some overperformance.
 - **Bukayo Saka (Arsenal, £9.5m)**: Premium talisman for league champions, on penalties and set-pieces. Fitness monitoring required post-World Cup campaign.
@@ -77,8 +77,8 @@ Full redo docs/research/fpl-preseason-guide/fpl-7-5m-midfielders.md
 
 ### Decision rules
 
-- Prioritize Bruno Fernandes (£9.0m) as core midfield anchor given fixtures and expected role.
-- If budget permits, evaluate Man United double-up with Mbeumo (£8.5m).
+- Prioritize Bruno Fernandes (£12.0m) as core midfield anchor given fixtures and expected role.
+- If budget permits, evaluate Man United double-up with Mbeumo (£8.0m).
 - Monitor Wirtz (£7.5m) pre-season friendly position under Iraola as potential value upgrade.
 
 ### Practical implications
@@ -90,7 +90,7 @@ Full redo docs/research/fpl-preseason-guide/fpl-7-5m-midfielders.md
 ### Evidence
 
 - 13 midfielders priced at £7.5m or higher in FPL 2026/27.
-- Fernandes (£9.0m) and Gibbs-White (£8.0m) were top point scorers in 2025/26.
+- Fernandes (£12.0m) and Gibbs-White (£8.0m) were top point scorers in 2025/26.
 - Kroupi (£7.5m) is sidelined for 3–4 months post-surgery.
 
 ### Alternatives
@@ -99,7 +99,7 @@ Full redo docs/research/fpl-preseason-guide/fpl-7-5m-midfielders.md
 
 ## Decision
 
-**Verdict**: Lock Bruno Fernandes (£9.0m) or Mbeumo (£8.5m) as primary midfield asset; track Wirtz (£7.5m) and Saka (£9.5m) fitness ahead of GW1.
+**Verdict**: Lock Bruno Fernandes (£12.0m) or Mbeumo (£8.0m) as primary midfield asset; track Wirtz (£7.5m) and Saka (£9.5m) fitness ahead of GW1.
 
 **Recommended action**:
 - Check pre-season line-ups for Wirtz's position under Iraola.
