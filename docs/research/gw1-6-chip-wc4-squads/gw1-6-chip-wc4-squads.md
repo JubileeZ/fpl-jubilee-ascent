@@ -54,17 +54,17 @@ Run GW1-6 chip and GW4 Wildcard optimization study:
 
 ### 1. Scenario Summary & Multi-Strategy Comparison Across GW1–6
 
-| Dimension / Metric | Scenario 1: GW1 BB1 Optimized Draft | Scenario 2: User Live Pre-Draft Squad | Scenario 3: WC4 Option 1 (Unconstrained) | Scenario 4: WC4 Option 2 (Cheap Defense ≤ £31.5m) |
+| Dimension / Metric | Scenario 1: GW1 BB1 Optimized Draft | Scenario 2: User Real Pre-Draft Squad (Entry 822158) | Scenario 3: WC4 Option 1 (Unconstrained) | Scenario 4: WC4 Option 2 (Cheap Defense ≤ £31.5m) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Strategy Purpose** | Maximize GW1 BB1 score | Current FPL API Pre-Draft | Maximize GW4–6 raw xP | Balance attack & structure |
-| **GW1 Bench Boost (15-Player) $xP$** | **74.15 $xP$** | **66.89 $xP$** (-7.26 vs BB1) | N/A (WC in GW4) | N/A (WC in GW4) |
-| **GW4–6 Starting XI $xP$** | 134.50 $xP$ | 130.20 $xP$ | **149.32 $xP$** | **142.59 $xP$** |
-| **Defensive Spend (GKP + 5 DEF)** | £37.0m | £30.0m | £37.5m (Heavy DEF) | **£31.5m** (Cheap DEF) |
-| **Attacking Spend (5 MID + 3 FWD)** | £62.5m | £40.5m | £62.5m | **£68.5m+** (Powerhouse) |
-| **Triple Liverpool (3 LIV) Assets** | Isak (£9.0m) | Kelleher (£5.0m) | Alisson + Gravenberch + Mac Allister | **Isak (£9.0m) + Wirtz (£7.5m) + Mac Allister (£5.5m)** |
-| **Premium Attackers** | Haaland + Isak + Thiago | Mount | Haaland + Palmer | **Haaland + Palmer + Isak + Wirtz** |
-| **Primary Formation** | 3-4-3 | 4-5-1 | 5-4-1 / 4-5-1 | **3-4-3 / 3-5-2** |
-| **ITB Remaining** | £0.5m | £29.5m | £0.0m | **£1.0m** |
+| **Strategy Purpose** | Maximize GW1 BB1 score | **User Real Pre-Draft (Entry 822158)** | Maximize GW4–6 raw xP | **Balanced Attack & Structure** |
+| **GW1 Bench Boost (15-Player) $xP$** | **74.15 $xP$** | **73.55 $xP$** (-0.60 vs BB1 draft) | N/A (WC in GW4) | N/A (WC in GW4) |
+| **GW4–6 Starting XI $xP$** | 134.50 $xP$ | 132.80 $xP$ | **149.32 $xP$** | **142.59 $xP$** |
+| **Defensive Spend (GKP + 5 DEF)** | £37.0m | £32.5m | £37.5m (Heavy DEF) | **£31.5m** (Cheap DEF) |
+| **Attacking Spend (5 MID + 3 FWD)** | £62.5m | £67.5m | £62.5m | **£68.5m+** (Powerhouse) |
+| **Triple Liverpool (3 LIV) Assets** | Isak (£9.0m) | Isak (£9.0m) + Szoboszlai (£7.0m) | Alisson + Gravenberch + Mac Allister | **Isak (£9.0m) + Wirtz (£7.5m) + Mac Allister (£5.5m)** |
+| **Premium Attackers** | Haaland + Isak + Thiago | Haaland + Isak + Bruno + Mbeumo | Haaland + Palmer | **Haaland + Palmer + Isak + Wirtz** |
+| **Primary Formation** | 3-4-3 | 3-4-3 / 3-5-2 | 5-4-1 / 4-5-1 | **3-4-3 / 3-5-2** |
+| **ITB Remaining** | £0.5m | £0.0m | £0.0m | **£1.0m** |
 
 ---
 
@@ -94,27 +94,28 @@ Run GW1-6 chip and GW4 Wildcard optimization study:
 
 ---
 
-#### Scenario 2: User Live Pre-Draft Squad (FPL Manager Entry 822158)
+#### Scenario 2: User Real Pre-Draft Squad Roster (FPL Manager Entry 822158)
 
-| Position | Player | Club | Price | GW1 $xP$ | GW1–3 $xP$ | GW4–6 $xP$ | Status & Comparison |
+| Position | Player | Club | Price | GW1 $xP$ | GW1–3 $xP$ | GW4–6 $xP$ | Status & Strategy Role |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **GKP** | Kelleher | BRE | £5.0m | 5.02 | 15.66 | 12.97 | Starting GKP |
-| **DEF** | J.Timber | ARS | £6.5m | 5.88 | 15.19 | 16.12 | Premium DEF |
-| **DEF** | Hall | NEW | £5.0m | 4.38 | 13.57 | 15.17 | Value DEF |
-| **DEF** | Tete | FUL | £4.5m | 4.33 | 15.02 | 14.60 | Value DEF |
-| **DEF** | Acheampong | CHE | £4.5m | 4.89 | 14.35 | 14.83 | Enabler |
-| **DEF** | Aznou | EVE | £4.0m | 5.34 | 14.52 | 16.23 | £4.0m Enabler |
-| **MID** | Sangaré | NFO | £5.0m | 5.11 | 14.78 | 14.78 | Value MID |
-| **MID** | Mount | MUN | £5.5m | 4.72 | 13.92 | 14.13 | Mid-Price MID |
-| **MID** | Burns | IPS | £5.0m | 5.11 | 13.99 | 13.89 | Value MID |
-| **MID** | Adli | BOU | £5.0m | 4.61 | 12.95 | 12.86 | Value MID |
-| **MID** | Carvalho | BRE | £5.0m | 4.42 | 13.45 | 11.86 | Value MID |
-| **MID** | Matazo | HUL | £4.5m | 4.14 | 14.17 | 12.29 | £4.5m Enabler |
-| **MID** | J.Murphy | NEW | £6.0m | 4.24 | 12.58 | 13.21 | Mid-Price MID |
-| **FWD** | Ferguson | BHA | £5.0m | 4.68 | 13.42 | 13.48 | Value FWD |
+| **GKP** | Kinsky | TOT | £4.5m | 5.67 | 17.12 | 14.82 | Starting GKP |
+| **GKP** | Verbruggen | BHA | £4.5m | 5.12 | 14.98 | 13.80 | Bench GKP (BB1) |
+| **DEF** | Ballard | SUN | £5.0m | 5.54 | 16.06 | 12.52 | Value DEF |
+| **DEF** | Thomas | COV | £4.0m | 4.62 | 14.56 | 15.92 | £4.0m Enabler |
+| **DEF** | Shaw | MUN | £4.5m | 5.04 | 14.56 | 12.01 | Value DEF |
+| **DEF** | Mitchell | CRY | £4.5m | 5.49 | 15.39 | 16.01 | Value DEF |
+| **DEF** | N.Williams | NFO | £5.0m | 5.60 | 14.44 | 15.60 | Value DEF |
+| **MID** | **B.Fernandes** | MUN | £12.0m | 4.27 (8.54 C) | 12.58 | 10.97 | **Captain / Premium MID** |
+| **MID** | **Mbeumo** | MUN | £8.0m | 4.27 | 12.58 | 10.97 | **Vice / Premium MID** |
+| **MID** | Szoboszlai | LIV | £7.0m | 4.50 | 13.24 | 12.98 | Liverpool MID |
+| **MID** | Ampadu | LEE | £5.5m | 4.49 | 13.39 | 14.52 | Value MID |
+| **MID** | Xhaka | SUN | £5.5m | 4.77 | 14.08 | 11.67 | Value MID |
+| **FWD** | **Haaland** | MCI | £15.5m | 5.03 | 14.63 | 11.94 | **Premium FWD** |
+| **FWD** | **Isak** | LIV | £9.0m | 4.58 | 13.59 | 13.25 | **Liverpool Premium FWD** |
+| **FWD** | Georginio | BHA | £5.5m | 4.58 | 13.39 | 12.31 | Value FWD |
 
-- **User Squad GW1 Bench Boost (15 Players)**: **66.89 $xP$** (lacks Haaland / Palmer premiums; **-7.26 $xP$ behind BB1 draft**).
-- **User Squad GW4–6 Starting XI**: **130.20 $xP$** (**-12.39 $xP$ behind Cheap Defense WC4**).
+- **User Squad GW1 Bench Boost (15 Players)**: **73.55 $xP$** (Strong 15-player BB1 setup, only **-0.60 $xP$ behind optimized BB1 draft**!).
+- **User Squad Total Budget**: **£100.0m** (£0.0m ITB). Heavy attack anchored by Haaland, Isak, Bruno Fernandes, Mbeumo, and Szoboszlai.
 
 ---
 
