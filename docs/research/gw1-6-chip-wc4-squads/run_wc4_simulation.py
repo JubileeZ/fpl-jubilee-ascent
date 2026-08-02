@@ -149,8 +149,7 @@ def generate_gw1_6_projections() -> pd.DataFrame:
         row["gw4_6_xp"] = round(row["gw4_xp"] + row["gw5_xp"] + row["gw6_xp"], 2)
         final_rows.append(row)
 
-    df_out = pd.DataFrame(final_rows).sort_values("total_6gw_xp", ascending=False)
-    df_out = df_out[df_out["expected_role"].isin(pmod.DRAFT_ROLES)].reset_index(drop=True)
+    df_out = pd.DataFrame(final_rows).sort_values("total_6gw_xp", ascending=False).reset_index(drop=True)
     return df_out
 
 
@@ -162,6 +161,7 @@ def solve_squad_advanced(
     max_def_spend: float | None = None,
     min_liv: int = 1,
 ) -> pd.DataFrame:
+    df = df[df["expected_role"].isin(pmod.DRAFT_ROLES)].reset_index(drop=True)
     n = len(df)
     c = np.zeros(2 * n)
     for gw in gw_list:

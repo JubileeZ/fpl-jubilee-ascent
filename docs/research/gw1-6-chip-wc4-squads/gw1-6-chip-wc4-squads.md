@@ -148,24 +148,24 @@ Execution & Constraints:
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Recommended MILP (S3: BB1 + WC4 Opt3)** | GW1 BB | **167.93 $xP$** | **146.44 $xP$** | **314.37 $xP$** | Baseline | Baseline |
 | **Top Raw MILP (S1: BB1 + WC4 Opt1)** | GW1 BB | **167.93 $xP$** | **151.28 $xP$** | **319.21 $xP$** | +4.84 $xP$ | Baseline |
-| **User Squad Evolved (GW1 BB + GW4 WC Opt3)** | GW1 BB | **150.03 $xP$** | **146.44 $xP$** | **296.47 $xP$** | **-17.90 $xP$** | **-17.90 $xP$** |
-| **User Squad Evolved (GW1 BB + 1 FT GW2 + GW4 WC Opt3)** | GW1 BB | **154.80 $xP$** | **146.44 $xP$** | **301.24 $xP$** | **-13.13 $xP$** | **-13.13 $xP$** |
-| **User Squad Evolved (GW1 BB + GW4 WC Opt1)** | GW1 BB | **150.03 $xP$** | **151.28 $xP$** | **301.31 $xP$** | **-13.06 $xP$** | **-17.90 $xP$** |
-| **User Squad Sticking (GW1 BB + No Wildcard)** | GW1 BB | **150.03 $xP$** | **128.94 $xP$** | **278.97 $xP$** | **-35.40 $xP$** | **-17.90 $xP$** |
-| **User Squad Sticking (No BB + No Wildcard)** | None | **139.89 $xP$** | **128.94 $xP$** | **268.83 $xP$** | **-45.54 $xP$** | **-28.04 $xP$** |
+| **User Squad Evolved (GW1 BB + GW4 WC Opt1)** | GW1 BB | **146.83 $xP$** | **151.28 $xP$** | **298.11 $xP$** | **-16.26 $xP$** | **-21.10 $xP$** |
+| **User Squad Evolved (GW1 BB + 1 FT GW2 + GW4 WC Opt3)** | GW1 BB | **146.66 $xP$** | **146.44 $xP$** | **293.10 $xP$** | **-21.27 $xP$** | **-21.27 $xP$** |
+| **User Squad Evolved (GW1 BB + GW4 WC Opt3)** | GW1 BB | **146.83 $xP$** | **146.44 $xP$** | **293.27 $xP$** | **-21.10 $xP$** | **-21.10 $xP$** |
+| **User Squad Sticking (GW1 BB + No Wildcard)** | GW1 BB | **146.83 $xP$** | **125.05 $xP$** | **271.88 $xP$** | **-42.49 $xP$** | **-21.10 $xP$** |
+| **User Squad Sticking (No BB + No Wildcard)** | None | **138.11 $xP$** | **125.05 $xP$** | **268.16 $xP$** | **-51.21 $xP$** | **-29.82 $xP$** |
 
 #### User Current Squad Composition (£100.0m Spend)
-- **GKP**: Verbruggen (£4.5m, BHA), Kinsky (£4.5m, TOT) — *£9.0m GKP spend*
-- **DEF**: Ballard (£5.0m, SUN), Maguire (£5.0m, MUN), N.Williams (£5.0m, NFO), Thomas (£4.0m, COV), O'Shea (£4.0m, IPS) — *£23.0m DEF spend*
-- **MID**: Palmer (£9.5m, CHE), Mbeumo (£8.0m, MUN), Wirtz (£7.5m, LIV), Szoboszlai (£7.0m, LIV), Xhaka (£5.5m, SUN) — *£37.5m MID spend*
-- **FWD**: Haaland (£15.5m, MCI), Isak (£9.0m, LIV), Solanke (£6.0m, TOT) — *£30.5m FWD spend*
+- **GKP**: Kinsky (£4.5m, TOT), Verbruggen (£4.5m, BHA) — *£9.0m GKP spend*
+- **DEF**: Ballard (£5.0m, SUN), Thomas (£4.0m, COV), Shaw (£4.5m, MUN), Mitchell (£4.5m, CRY), N.Williams (£5.0m, NFO) — *£23.0m DEF spend*
+- **MID**: Ampadu (£5.5m, LEE), Szoboszlai (£7.0m, LIV), Bruno Fernandes (£12.0m, MUN), Mbeumo (£8.0m, MUN), Xhaka (£5.5m, SUN) — *£38.0m MID spend*
+- **FWD**: Haaland (£15.5m, MCI), Isak (£9.0m, LIV), Georginio (£5.5m, BHA) — *£30.0m FWD spend*
 
 #### Opportunity Loss & Risk/Reward Assessment
-1. **Confined Pre-WC Opportunity Loss**: Because the GW4 Wildcard fully resets the squad roster, the opportunity loss of starting with your current squad is **strictly confined to GW1–3**. You give up **17.90 $xP$** without transfers, or **13.13 $xP$** if using 1 FT in GW2 (O'Shea $\rightarrow$ Hughes).
+1. **Confined Pre-WC Opportunity Loss**: Because the GW4 Wildcard fully resets the squad roster, the opportunity loss of starting with your actual refreshed squad is **strictly confined to GW1–3**. You give up **21.10 $xP$** without transfers across GW1–3 (scoring 146.83 xP vs MILP 167.93 xP).
 2. **Post-WC Equity Recovery**: Once GW4 arrives, executing the Wildcard completely recovers 100% of post-WC equity (yielding **146.44 $xP$** in Opt 3 or **151.28 $xP$** in Opt 1), eliminating any ongoing structural drag.
 3. **Is it Worth the Risk?**:
-   - **Low to Moderate Risk**: Giving up ~13.1 to 17.9 points over GW1–3 (~4.3 to 5.9 xP/GW) is a manageable deficit if you want to preserve your starting lineup.
-   - **High Sticking Penalty**: Sticking with the current squad into GW4–6 without a Wildcard doubles the total loss to **-35.40 $xP$** (or **-45.54 $xP$** without BB), making the GW4 Wildcard evolution step critical.
+   - **Low to Moderate Risk**: Giving up ~21.1 points over GW1–3 (~7.0 xP/GW) is a manageable deficit if you want to preserve your current squad composition entering GW1.
+   - **High Sticking Penalty**: Sticking with your refreshed current squad into GW4–6 without a Wildcard doubles the total 6-GW deficit to **-42.49 $xP$** (or **-51.21 $xP$** without BB), making the GW4 Wildcard evolution step critical.
 
 ---
 
