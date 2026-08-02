@@ -249,68 +249,175 @@ def solve_squad_advanced(
     return squad
 
 
+def solve_gw1_3_squad(df: pd.DataFrame, bb_gw: int, max_spend: float = 99.5, min_liv: int = 1) -> pd.DataFrame:
+    """Solves GW1-3 draft maximizing total xP given Bench Boost timing (GW1 or GW2)."""
+    return solve_squad_advanced(df, gw_list=[1, 2, 3], bb_gw=bb_gw, max_spend=max_spend, min_liv=min_liv)
+
+
+def get_gw_starters(df_squad: pd.DataFrame, gw: int, bb_gw: int | None = None) -> tuple[pd.DataFrame, float]:
+    """Returns starting 11 (or 15 if BB) for a given gameweek and calculates total xP."""
+    if bb_gw == gw:
+        # All 15 play
+        xp = df_squad[f"gw{gw}_xp"].sum()
+        return df_squad.copy(), float(xp)
+
+    # Pick best formation of 1 GKP + 10 outfielders (3-5 DEF, 2-5 MID, 1-3 FWD)
+    gkps = df_squad[df_squad["position"] == "GKP"].sort_values(f"gw{gw}_xp", ascending=False)
+    best_gkp = gkps.iloc[0:1]
+
+    outfield = df_squad[df_squad["position"] != "GKP"].copy()
+    
+    # MILP to select optimal 10 outfielders respecting formation rules
+    n = len(outfield)
+    c = -outfield[f"gw{gw}_xp"].values
+    a_rows = []
+    b_l = []
+    b_u = []
+
+    # Total 10
+    sum_row = np.ones(n)
+    a_rows.append(sum_row)
+    b_l.append(10.0)
+    b_u.append(10.0)
+
+    for pos, lo, hi in [("DEF", 3, 5), ("MID", 2, 5), ("FWD", 1, 3)]:
+        row = (outfield["position"] == pos).astype(float).values
+        a_rows.append(row)
+        b_l.append(float(lo))
+        b_u.append(float(hi))
+
+    res = milp(c=c, integrality=np.ones(n), bounds=Bounds(0, 1), constraints=LinearConstraint(np.array(a_rows), b_l, b_u))
+    selected_outfield = outfield.iloc[np.where(res.x > 0.5)[0]]
+
+    starters = pd.concat([best_gkp, selected_outfield])
+    total_xp = starters[f"gw{gw}_xp"].sum()
+    return starters, float(total_xp)
+
+
 def run_full_wc4_study():
     df_proj = generate_gw1_6_projections()
     p_csv = Path("data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv")
     p_csv.parent.mkdir(parents=True, exist_ok=True)
     df_proj.to_csv(p_csv, index=False)
 
-    # Solve GW1/GW2 BB Drafts with min 1 LIV pre-WC
-    bb1_squad = solve_squad_advanced(df_proj, gw_list=[1, 2, 3], bb_gw=1, max_spend=99.5, min_liv=1)
-    bb2_squad = solve_squad_advanced(df_proj, gw_list=[1, 2, 3], bb_gw=2, max_spend=99.5, min_liv=1)
+    # Pre-WC Squads
+    bb1_pre = solve_gw1_3_squad(df_proj, bb_gw=1, max_spend=99.5, min_liv=1)
+    bb2_pre = solve_gw1_3_squad(df_proj, bb_gw=2, max_spend=99.5, min_liv=1)
 
-    # Solve GW4 WC Squads with min 3 LIV post-WC (Triple Liverpool)
-    wc4_opt1_unconstrained = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, min_liv=3)
-    wc4_opt2_cheapdef = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=31.5, min_liv=3)
+    # Post-WC Squads
+    wc4_opt1 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, min_liv=0)
+    wc4_opt2 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=31.5, min_liv=0)
+    wc4_opt3 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=31.5, min_liv=2)
 
-    print("\n=======================================================")
-    print("GW1 BENCH BOOST 1 DRAFT (£99.5m spend, min 1 LIV)")
-    print("=======================================================")
-    print(f"Total Spend: £{bb1_squad.attrs['spend']:.1f}m | GKP+DEF: £{bb1_squad.attrs['def_spend']:.1f}m | MID+FWD: £{bb1_squad.attrs['mid_fwd_spend']:.1f}m")
-    print(bb1_squad[["web_name", "club_short", "position", "cost", "expected_role", "gw1_xp", "gw1_3_xp", "is_starter"]].sort_values(["position", "cost"], ascending=[True, False]).to_string(index=False))
+    scenarios = [
+        ("S1: BB1 + WC4 Opt1 (Unconstrained)", bb1_pre, wc4_opt1, 1),
+        ("S2: BB1 + WC4 Opt2 (Cheap DEF)", bb1_pre, wc4_opt2, 1),
+        ("S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb1_pre, wc4_opt3, 1),
+        ("S4: BB2 + WC4 Opt1 (Unconstrained)", bb2_pre, wc4_opt1, 2),
+        ("S5: BB2 + WC4 Opt2 (Cheap DEF)", bb2_pre, wc4_opt2, 2),
+        ("S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb2_pre, wc4_opt3, 2),
+    ]
 
-    print("\n=======================================================")
-    print("GW4 WILDCARD — OPTION 1: UNCONSTRAINED MILP (min 3 LIV)")
-    print("=======================================================")
-    print(f"Total Spend: £{wc4_opt1_unconstrained.attrs['spend']:.1f}m | Starters XI GW4-6 xP: {wc4_opt1_unconstrained[wc4_opt1_unconstrained['is_starter']]['gw4_6_xp'].sum():.2f}")
-    print(wc4_opt1_unconstrained[["web_name", "club_short", "position", "cost", "expected_role", "gw4_xp", "gw5_xp", "gw6_xp", "gw4_6_xp", "is_starter"]].sort_values(["position", "cost"], ascending=[True, False]).to_string(index=False))
+    summary_records = []
+    detailed_records = []
 
-    print("\n=======================================================")
-    print("GW4 WILDCARD — OPTION 2: CHEAP DEFENSE CAP <= £31.5m (min 3 LIV)")
-    print("=======================================================")
-    print(f"Total Spend: £{wc4_opt2_cheapdef.attrs['spend']:.1f}m | Starters XI GW4-6 xP: {wc4_opt2_cheapdef[wc4_opt2_cheapdef['is_starter']]['gw4_6_xp'].sum():.2f}")
-    print(wc4_opt2_cheapdef[["web_name", "club_short", "position", "cost", "expected_role", "gw4_xp", "gw5_xp", "gw6_xp", "gw4_6_xp", "is_starter"]].sort_values(["position", "cost"], ascending=[True, False]).to_string(index=False))
+    print("\n==========================================================================")
+    print("GW1-6 FULL OPTIMIZED 3x2 MATRIX STUDY (ALL 6 SCENARIOS)")
+    print("==========================================================================")
 
-    records = []
-    for squad_label, sq, gws in [
-        ("GW1 Draft (BB1, min 1 LIV)", bb1_squad, [1, 2, 3]),
-        ("GW2 Draft (BB2, min 1 LIV)", bb2_squad, [1, 2, 3]),
-        ("WC4 Option 1 (Unconstrained, min 3 LIV)", wc4_opt1_unconstrained, [4, 5, 6]),
-        ("WC4 Option 2 (Cheap DEF <= £31.5m, min 3 LIV)", wc4_opt2_cheapdef, [4, 5, 6]),
-    ]:
-        for _, r in sq.iterrows():
+    for name, pre_squad, post_squad, bb_gw in scenarios:
+        # Calculate per-GW xP
+        gw_xps = {}
+        # GW1-3 from pre_squad
+        for gw in [1, 2, 3]:
+            _, xp = get_gw_starters(pre_squad, gw, bb_gw=bb_gw)
+            gw_xps[gw] = xp
+
+        # GW4-6 from post_squad
+        for gw in [4, 5, 6]:
+            _, xp = get_gw_starters(post_squad, gw, bb_gw=None)
+            gw_xps[gw] = xp
+
+        total_6gw_xp = sum(gw_xps.values())
+
+        # Transfers logic
+        # GW1: Set initial squad (£99.5m spend, £0.5m ITB)
+        # GW2: 0 FTs (Roll FT, 1 FT banked)
+        # GW3: 0 FTs (Roll FT, 2 FTs banked into GW4)
+        # GW4: Wildcard Activated! (Replaces squad, £100.0m max spend allowed)
+        # GW5: 0 FTs (Roll FT, 1 FT banked)
+        # GW6: 0 FTs (Roll FT, 2 FTs BANKED into GW6 post-international break)
+
+        in_players = set(post_squad["player_id"]) - set(pre_squad["player_id"])
+
+        summary_records.append({
+            "scenario": name,
+            "bb_chip": f"GW{bb_gw}",
+            "wc4_option": name.split(" + ")[1],
+            "gw1_xp": round(gw_xps[1], 2),
+            "gw2_xp": round(gw_xps[2], 2),
+            "gw3_xp": round(gw_xps[3], 2),
+            "gw1_3_xp": round(gw_xps[1] + gw_xps[2] + gw_xps[3], 2),
+            "gw4_xp": round(gw_xps[4], 2),
+            "gw5_xp": round(gw_xps[5], 2),
+            "gw6_xp": round(gw_xps[6], 2),
+            "gw4_6_xp": round(gw_xps[4] + gw_xps[5] + gw_xps[6], 2),
+            "total_6gw_xp": round(total_6gw_xp, 2),
+            "pre_spend": pre_squad.attrs['spend'],
+            "post_spend": post_squad.attrs['spend'],
+            "itb_gw6": round(100.0 - post_squad.attrs['spend'], 1),
+            "wc4_transfers_cnt": len(in_players),
+            "banked_fts_gw6": 2,
+        })
+
+        # Append detailed simulation records
+        for _, r in pre_squad.iterrows():
             rec = {
-                "squad_label": squad_label,
+                "scenario": name,
+                "phase": "GW1-3 Pre-WC",
                 "player_id": int(r["player_id"]),
                 "web_name": r["web_name"],
                 "club_short": r["club_short"],
                 "position": r["position"],
                 "cost": r["cost"],
                 "expected_role": r["expected_role"],
-                "is_starter": bool(r.get("is_starter", True)),
-                "per90_defcon": r["per90_defcon"],
-                "per90_xg": r["per90_xg"],
-                "per90_xa": r["per90_xa"],
+                "gw1_xp": r["gw1_xp"],
+                "gw2_xp": r["gw2_xp"],
+                "gw3_xp": r["gw3_xp"],
+                "gw4_xp": 0.0,
+                "gw5_xp": 0.0,
+                "gw6_xp": 0.0,
             }
-            for gw in gws:
-                rec[f"gw{gw}_xp"] = r[f"gw{gw}_xp"]
-                rec[f"gw{gw}_xmins"] = r[f"gw{gw}_xmins"]
-            records.append(rec)
+            detailed_records.append(rec)
+
+        for _, r in post_squad.iterrows():
+            rec = {
+                "scenario": name,
+                "phase": "GW4-6 Post-WC",
+                "player_id": int(r["player_id"]),
+                "web_name": r["web_name"],
+                "club_short": r["club_short"],
+                "position": r["position"],
+                "cost": r["cost"],
+                "expected_role": r["expected_role"],
+                "gw1_xp": 0.0,
+                "gw2_xp": 0.0,
+                "gw3_xp": 0.0,
+                "gw4_xp": r["gw4_xp"],
+                "gw5_xp": r["gw5_xp"],
+                "gw6_xp": r["gw6_xp"],
+            }
+            detailed_records.append(rec)
+
+    df_summary = pd.DataFrame(summary_records)
+    print("\n--- 3x2 MATRIX SUMMARY TABLE (CUMULATIVE GW1-6 xP & METRICS) ---")
+    print(df_summary[["scenario", "gw1_3_xp", "gw4_6_xp", "total_6gw_xp", "pre_spend", "post_spend", "itb_gw6", "banked_fts_gw6"]].to_string(index=False))
 
     sim_csv = Path("data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv")
-    pd.DataFrame(records).to_csv(sim_csv, index=False)
-    print(f"\nExported squad simulation CSV to {sim_csv}")
+    pd.DataFrame(detailed_records).to_csv(sim_csv, index=False)
+    print(f"\nExported detailed simulation records to {sim_csv}")
 
 
 if __name__ == "__main__":
     run_full_wc4_study()
+
