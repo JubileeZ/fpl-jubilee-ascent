@@ -23,6 +23,7 @@
   - [Expected Stats & GW1–5 Projections](expected-stats-gw1-5/expected-stats-gw1-5.md) · [CSV Companion](../../data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv) · [GW1–5 Projections](../../data/research/expected-stats-gw1-5/gw1-5_projections.csv)
   - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)
   - [GW1–5 Chip Strategy Simulation & Price Sensitivity](gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [CSV Companion](../../data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv)
+  - [GW1–6 Chip & GW4 Wildcard Squad Optimization](gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [CSV Companion](../../data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [GW1–6 Projections](../../data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv)
 
 ---
 

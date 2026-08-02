@@ -22,8 +22,8 @@ project_mod = _import_from_path(
 
 def test_build_expected_stats_outputs():
     df_stats = build_mod.build_expected_stats()
-    assert len(df_stats) == 193
-    assert set(df_stats["expected_role"].unique()).issubset({"Nailed Starter", "Regular Starter"})
+    assert len(df_stats) == 340
+    assert set(df_stats["expected_role"].unique()).issubset({"Nailed Starter", "Regular Starter", "Rotation", "Cameo"})
     assert "per90_xg" in df_stats.columns
     assert "per90_xa" in df_stats.columns
     assert "per90_defcon" in df_stats.columns

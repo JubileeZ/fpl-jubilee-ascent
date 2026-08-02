@@ -63,13 +63,13 @@ Rebuild expected-stats-gw1-5 per grill lock:
 
 | Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
 |------|--------|------|-----|-----|-----|-----|-----|-----|-------|
-| 1 | Haaland | MCI | FWD | 5.25 | 5.30 | 6.52 | 4.21 | 6.37 | **27.65** |
-| 2 | Hill | BOU | DEF | 5.69 | 4.52 | 4.59 | 4.49 | 5.09 | **24.38** |
-| 3 | Palmer | CHE | MID | 4.78 | 5.52 | 3.54 | 5.63 | 4.68 | **24.14** |
-| 4 | Vuskovic | BHA | DEF | 4.71 | 5.10 | 4.44 | 4.45 | 5.08 | **23.77** |
-| 5 | Gabriel | ARS | DEF | 4.19 | 4.90 | 4.86 | 4.48 | 4.50 | **22.92** |
-| 6 | B.Fernandes | MUN | MID | 5.07 | 5.03 | 4.36 | 3.84 | 4.43 | **22.73** |
-| 7 | Sarr | CRY | MID | 4.38 | 3.79 | 4.44 | 5.03 | 4.36 | **22.00** |
+| 1 | Haaland | MCI | FWD | 5.54 | 5.44 | 6.91 | 4.15 | 6.86 | **28.90** |
+| 2 | Palmer | CHE | MID | 4.86 | 5.97 | 3.01 | 6.04 | 4.78 | **24.66** |
+| 3 | Vuskovic | BHA | DEF | 4.71 | 3.68 | 5.81 | 5.73 | 3.74 | **23.67** |
+| 4 | B.Fernandes | MUN | MID | 5.52 | 5.48 | 4.46 | 3.59 | 4.52 | **23.57** |
+| 5 | O'Reilly | MCI | DEF | 4.31 | 4.28 | 4.99 | 3.63 | 4.98 | **22.19** |
+| 6 | Gabriel | ARS | DEF | 5.30 | 3.88 | 3.89 | 4.52 | 4.54 | **22.14** |
+| 7 | Sarr | CRY | MID | 4.38 | 3.47 | 4.44 | 5.41 | 4.36 | **22.06** |
 
 Haaland stays #1 (~0.83 xG/90). Vuskovic jumps to #4 after best-guess CBIT Defcon 12.45. Isak still diluted by 2025/26 at 694 mins (≥450 floor).
 

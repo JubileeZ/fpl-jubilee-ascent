@@ -140,7 +140,7 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
             defence_multiplier = (
                 min(max(opponent_attack / team_defence, 0.4), 1.8)
                 if opponent_attack > 0 and team_defence > 0
-                else min(max((6.0 - difficulty) / 3.0, 0.4), 1.8)
+                else min(max(difficulty / 3.0, 0.4), 1.8)
             )
 
             fixture_maps.append({

@@ -182,11 +182,12 @@ class MetricsComponentHybridModel(BaseModel):
         """Project non-minute events conditional on a participation state."""
         pid = int(row["player_id"])
         diff = _number(row, "difficulty", 3.0)
-        fdr_multiplier = max(0.2, (6.0 - diff) / 3.0)
+        fdr_attack = max(0.2, (6.0 - diff) / 3.0)
+        fdr_defence = max(0.2, diff / 3.0)
         attack_input = _optional_number(row, "attack_multiplier")
         defence_input = _optional_number(row, "defence_multiplier")
-        attack_multiplier = fdr_multiplier if attack_input is None else attack_input
-        defence_multiplier = fdr_multiplier if defence_input is None else defence_input
+        attack_multiplier = fdr_attack if attack_input is None else attack_input
+        defence_multiplier = fdr_defence if defence_input is None else defence_input
 
         xg_per90 = _number(row, "per90_xg", 0.0)
         threat_per90 = _number(row, "per90_threat", 0.0)

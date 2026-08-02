@@ -57,9 +57,9 @@ Static costs ($P_t = P_0$). £0.5m ITB enforced on GW1–3 drafts as buffer agai
 
 | Strategy Scenario | GW1 $xP$ | GW2 $xP$ | GW3 $xP$ | GW4 $xP$ (WC) | GW5 $xP$ | Total 5-GW $xP$ | Net vs No BB | ITB |
 |---|---|---|---|---|---|---|---|---|
-| **Scenario A: BB1 + WC4** | **72.49** (BB1) | 53.94 | 57.48 | 56.36 | 59.51 | **299.78** | **+15.94** | £0.5m |
-| **Scenario B: BB2 + WC4** | 54.81 | **70.33** (BB2) | 56.76 | 56.36 | 59.51 | **297.77** | **+13.93** | £0.5m |
-| **Scenario C: Standard WC4** | 54.70 | 55.05 | 58.22 | 56.36 | 59.51 | **283.84** | Baseline | £0.5m |
+| **Scenario A: BB1 + WC4** | **72.10** (BB1) | 55.81 | 58.58 | 57.63 | 57.09 | **301.21** | **+16.53** | £0.5m |
+| **Scenario B: BB2 + WC4** | 55.87 | **71.77** (BB2) | 59.42 | 57.63 | 57.09 | **301.78** | **+17.10** | £0.5m |
+| **Scenario C: Standard WC4** | 55.29 | 55.23 | 59.44 | 57.63 | 57.09 | **284.68** | Baseline | £0.5m |
 
 GW4–5 identical across scenarios (shared WC4 rebuild). Totals lower vs pre-rebuild projection run (~342 → ~300) after grill-lock rates + ParticipationStateHybridModel scoring.
 
