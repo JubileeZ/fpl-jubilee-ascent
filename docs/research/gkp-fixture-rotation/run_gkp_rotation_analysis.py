@@ -1,7 +1,8 @@
 """GKP Fixture Rotation & FDR Correlation Analysis script.
 
-Calculates Pearson correlation of FDR sequences and rotated effective FDR for all starter
-goalkeeper pairs with combined cost <= £9.5m across multiple planning horizons.
+Calculates Pearson correlation of FDR sequences and rotated effective FDR for all genuine starter
+goalkeeper pairs (Nailed Starter or Regular Starter in expected-role-gw1-5.csv) with combined cost <= £9.5m
+across multiple planning horizons.
 """
 
 from pathlib import Path
@@ -10,26 +11,23 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
-OUT_DIR = PROJECT_ROOT / "data" / "research" / "gkp-fixture-rotation"
+RESEARCH_DIR = PROJECT_ROOT / "data" / "research"
+OUT_DIR = RESEARCH_DIR / "gkp-fixture-rotation"
 
 
 def run_analysis() -> pd.DataFrame:
     players = pd.read_parquet(DATA_DIR / "players.parquet")
     clubs = pd.read_parquet(DATA_DIR / "clubs.parquet")
     fixtures = pd.read_parquet(DATA_DIR / "fixtures.parquet")
+    exp_roles = pd.read_csv(RESEARCH_DIR / "expected-role-gw1-5" / "expected-role-gw1-5.csv")
 
-    club_map = dict(zip(clubs["id"], clubs["short_name"]))
-
-    # Select main/starter goalkeeper per club
-    gkps = players[players["position_id"] == 1].copy()
-    gkps["price"] = gkps["now_cost"] / 10.0
-
-    top_gkps = {}
-    for c_id in sorted(clubs["id"].tolist()):
-        c_gkps = gkps[gkps["club_id"] == c_id].sort_values(
-            by=["selected_by_percent", "now_cost"], ascending=[False, False]
-        )
-        top_gkps[c_id] = c_gkps.iloc[0]
+    # Filter strictly for genuine starting goalkeepers (Nailed Starter or Regular Starter)
+    starters = exp_roles[
+        (exp_roles["position"] == "GKP")
+        & (exp_roles["expected_role"].isin(["Nailed Starter", "Regular Starter"]))
+    ].copy()
+    starters["price"] = starters["player_id"].map(players.set_index("id")["now_cost"] / 10.0)
+    starters["club_id"] = starters["player_id"].map(players.set_index("id")["club_id"])
 
     # Build FDR matrix
     club_ids = sorted(clubs["id"].tolist())
@@ -55,17 +53,21 @@ def run_analysis() -> pd.DataFrame:
     ]
 
     all_rows = []
+    starter_records = starters.to_dict("records")
 
     for h_name, start_gw, end_gw in horizons:
         sub_fdr = df_fdr.loc[start_gw:end_gw]
         num_gws = end_gw - start_gw + 1
 
-        for i in range(len(club_ids)):
-            for j in range(i + 1, len(club_ids)):
-                c1, c2 = club_ids[i], club_ids[j]
-                gkp1, gkp2 = top_gkps[c1], top_gkps[c2]
-                tot_price = gkp1["price"] + gkp2["price"]
+        for i in range(len(starter_records)):
+            for j in range(i + 1, len(starter_records)):
+                g1, g2 = starter_records[i], starter_records[j]
+                c1, c2 = int(g1["club_id"]), int(g2["club_id"])
 
+                if c1 == c2:
+                    continue
+
+                tot_price = g1["price"] + g2["price"]
                 if tot_price > 9.5:
                     continue
 
@@ -86,12 +88,14 @@ def run_analysis() -> pd.DataFrame:
                         "horizon": h_name,
                         "start_gw": start_gw,
                         "end_gw": end_gw,
-                        "club1": club_map[c1],
-                        "gkp1": gkp1["web_name"],
-                        "price1": gkp1["price"],
-                        "club2": club_map[c2],
-                        "gkp2": gkp2["web_name"],
-                        "price2": gkp2["price"],
+                        "club1": g1["club_short"],
+                        "gkp1": g1["web_name"],
+                        "role1": g1["expected_role"],
+                        "price1": g1["price"],
+                        "club2": g2["club_short"],
+                        "gkp2": g2["web_name"],
+                        "role2": g2["expected_role"],
+                        "price2": g2["price"],
                         "total_price": tot_price,
                         "fdr_corr": round(corr, 4),
                         "avg_fdr1": round(avg1, 4),
@@ -111,4 +115,4 @@ def run_analysis() -> pd.DataFrame:
 
 if __name__ == "__main__":
     df = run_analysis()
-    print(f"Generated {len(df)} GKP rotation records in {OUT_DIR / 'gkp_rotation_matrix.csv'}")
+    print(f"Generated {len(df)} genuine starter GKP rotation records in {OUT_DIR / 'gkp_rotation_matrix.csv'}")
