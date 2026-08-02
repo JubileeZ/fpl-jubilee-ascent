@@ -98,6 +98,14 @@ docs/         # Durable project documentation and decision records
 ---
 
 <!-- AZG:MANAGED:START -->
+## Placeholder fill
+
+If `AGENTS.md` or tracking docs (`ROADMAP.md`, `progress.md`, `current-state.md`) have `<!-- AGENT: ... -->` placeholders:
+1. Ask whether to fill; if skipped, leave exact comments.
+2. If filling: interview section-by-section (never whole file); max 3 options (recommended first); drop inapplicable sections; telegraphic for doc surfaces; remove comments when filled.
+
+---
+
 ## Session start
 
 Lean always-on only:
