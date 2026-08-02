@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
-# Cursor adapter: remind to Checkpoint via Work Packet (stop cannot hard-deny)
+# Cursor adapter: checkpoint via followup_message (agy checkpoint.sh uses decision continue)
 # Accept same workstate set as Antigravity checkpoint.sh
 set -euo pipefail
 
 input=$(cat)
 : "${input}"
+
+CHECKPOINT_REASON='Code changes without Work Packet / continuity update. Update task.md (SFDBN), docs/agents/current-state.md, or .agents/session-handoff.md, then Checkpoint before stopping.'
+LOOP_LIMIT=3
+
+loop_count=0
+status="completed"
+if command -v jq >/dev/null 2>&1; then
+  loop_count=$(printf '%s' "${input}" | jq -r '.loop_count // 0' 2>/dev/null || echo 0)
+  status=$(printf '%s' "${input}" | jq -r '.status // "completed"' 2>/dev/null || echo completed)
+fi
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf '{}\n'
@@ -33,8 +43,13 @@ while IFS= read -r line; do
   esac
 done < <(git status --porcelain 2>/dev/null)
 
-if [ "${has_code_changes}" = true ] && [ "${has_workstate_update}" = false ]; then
-  printf '{"followup_message":"Code changes without Work Packet / continuity update. Update task.md (SFDBN), docs/agents/current-state.md, or .agents/session-handoff.md, then Checkpoint before stopping."}\n'
+if [ "${has_code_changes}" = true ] && [ "${has_workstate_update}" = false ] \
+  && [ "${status}" = "completed" ] && [ "${loop_count}" -lt "${LOOP_LIMIT}" ]; then
+  if command -v jq >/dev/null 2>&1; then
+    jq -n --arg m "${CHECKPOINT_REASON}" '{followup_message: $m}'
+  else
+    printf '{"followup_message":"%s"}\n' "${CHECKPOINT_REASON}"
+  fi
   exit 0
 fi
 

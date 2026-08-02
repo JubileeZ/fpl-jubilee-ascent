@@ -10,7 +10,8 @@
     ],
     "stop": [
       {
-        "command": ".cursor/hooks/run-hook.cmd stop-checkpoint"
+        "command": ".cursor/hooks/run-hook.cmd stop-checkpoint",
+        "loop_limit": 3
       }
     ],
     "preCompact": [
