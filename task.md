@@ -1,34 +1,28 @@
-# Task: GW1–5 research rebuild + chip sim
+# Task: GW1–6 chip & GW4 Wildcard research study refresh
 
-**Objective:** Rebuild expected-stats GW1–5 per grill lock; external research packages; best-guess Defcon; chip sim XI-aware (no TC); Checkpoint + push.
+**Objective:** Refresh GW1–6 chip & GW4 Wildcard 3×2 matrix study with unified £100.0m budget, £32.0m Cheap DEF Cap, user squad evolution comparison, and flexible FT banking policy.
 
 **Acceptance:**
-- [x] Grill lock: code map, usable seasons, 50/50 blend, attack/defence mults, ParticipationStateHybridModel.predict
-- [x] External research packages for Draft fallback players + CBIT/CBITR upgrades
-- [x] Best-guess Defcon for 7 partial-source players (else baseline)
-- [x] Chip sim: formation-safe XI, £0.5m ITB, XI-aware MILP; TC removed
-- [x] Re-run chip sim on refreshed projections; update CSV + research note
-- [x] Continuity SFDBN + Checkpoint + push
-
-**Open (follow-up):**
-- [ ] Map Expected Role Table → Participation State priors
+- [x] Pre-WC & Post-WC budget unified to <= £100.0m (no ITB split constraint)
+- [x] Cheap Defense Cap updated to <= £32.0m for GKP + 5 DEF
+- [x] Flexible FT banking policy: at least 2 FTs banked entering GW6 (1-2 FTs spendable across GW2-3/GW5)
+- [x] User squad comparison: ingest `data/processed/user_picks.parquet`, project GW1 BB & GW4 Wildcard evolution, quantify GW1-3 pre-WC opportunity loss (-13.13 to -17.90 xP)
+- [x] Re-run `run_wc4_simulation.py`, update simulation CSV + research note `gw1-6-chip-wc4-squads.md`
+- [x] Verify delivery gates (`ruff`, `pytest`, `verify.sh`) and stage/commit updates
 
 ## Work Packet (SFDBN)
 
-**Status:** Checkpoint pushed. Expected-stats grill-lock rebuild complete. Chip sim re-run on 2026-08-02 projections: BB1 299.78 / BB2 297.77 / Standard 283.84.
+**Status:** Completed. GW1-6 chip & GW4 Wildcard study refreshed with £100.0m max budget, £32.0m Cheap DEF Cap, flexible FT banking, and active user squad evolution analysis.
 
 **Files:**
-- `docs/research/expected-stats-gw1-5/build_expected_stats.py`
-- `docs/research/expected-stats-gw1-5/project_expected_points.py`
-- `docs/research/expected-stats-gw1-5/expected-stats-gw1-5.md`
-- `data/research/expected-stats-gw1-5/*.csv`
-- `docs/research/gw1-5-chip-simulation/run_simulation.py`
-- `docs/research/gw1-5-chip-simulation/gw1-5-chip-simulation.md`
-- `CONTEXT.md`
-- `task.md`, `docs/agents/current-state.md`, `.agents/session-handoff.md`
+- `docs/research/gw1-6-chip-wc4-squads/run_wc4_simulation.py`
+- `docs/research/gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md`
+- `data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv`
+- `task.md`
 
-**Decisions:** 50/50 recency blend; external only if zero usable FPL seasons; Defcon = CBIT/CBITR/FPL or best-guess when partial data; baseline only when no evidence. Chip sim: auto-captain only, no TC. Early BB + WC4 preferred on Softmax projections.
+**Decisions:** Unified £100.0m spend pre/post-WC. Cheap DEF Cap £32.0m unlocks Pickford (£5.5m) in goal. At least 2 FTs banked entering GW6 post-international break. User squad starting GW1 incurs -13.13 to -17.90 xP pre-WC loss, fully recovered post-WC on GW4 Wildcard.
 
 **Blocked:** None.
 
-**Next:** Expected Role → Participation State priors; optional Isak usable-season floor / Gyökeres source review.
+**Next:** Monitor FPL price changes or team news updates ahead of GW1 deadline.
+

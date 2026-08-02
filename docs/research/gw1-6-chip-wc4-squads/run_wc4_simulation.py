@@ -1,8 +1,8 @@
 """GW1–6 Chip & WC4 Wildcard Squad Optimization Engine.
 
 Calculates GW1-6 projections via ParticipationStateHybridModel,
-solves GW1/GW2 Bench Boost squads (£99.5m budget, £0.5m ITB) with 1+ Liverpool player,
-and solves GW4 Wildcard squads comparing Unconstrained MILP vs Cheap-Defense Cap (GKP+DEF <= £31.5m) with 3 Liverpool players (Triple Liverpool).
+solves GW1/GW2 Bench Boost squads (<= £100.0m budget) with 1+ Liverpool player,
+and solves GW4 Wildcard squads comparing Unconstrained MILP vs Cheap-Defense Cap (GKP+DEF <= £32.0m) with 3 Liverpool players (Triple Liverpool).
 Enforces 0 FTs in GW5 to bank 2+ FTs for GW6 post-international break.
 """
 
@@ -21,7 +21,6 @@ sys.path.insert(0, ".")
 from features.builder import _fixture_maps
 from models.participation_state_hybrid import ParticipationStateHybridModel
 
-ITB_BUFFER = 0.5
 MAX_BUDGET = 100.0
 
 spec = importlib.util.spec_from_file_location("pmod", "docs/research/expected-stats-gw1-5/project_expected_points.py")
@@ -249,7 +248,7 @@ def solve_squad_advanced(
     return squad
 
 
-def solve_gw1_3_squad(df: pd.DataFrame, bb_gw: int, max_spend: float = 99.5, min_liv: int = 1) -> pd.DataFrame:
+def solve_gw1_3_squad(df: pd.DataFrame, bb_gw: int, max_spend: float = 100.0, min_liv: int = 1) -> pd.DataFrame:
     """Solves GW1-3 draft maximizing total xP given Bench Boost timing (GW1 or GW2)."""
     return solve_squad_advanced(df, gw_list=[1, 2, 3], bb_gw=bb_gw, max_spend=max_spend, min_liv=min_liv)
 
@@ -301,13 +300,13 @@ def run_full_wc4_study():
     df_proj.to_csv(p_csv, index=False)
 
     # Pre-WC Squads
-    bb1_pre = solve_gw1_3_squad(df_proj, bb_gw=1, max_spend=99.5, min_liv=1)
-    bb2_pre = solve_gw1_3_squad(df_proj, bb_gw=2, max_spend=99.5, min_liv=1)
+    bb1_pre = solve_gw1_3_squad(df_proj, bb_gw=1, max_spend=100.0, min_liv=1)
+    bb2_pre = solve_gw1_3_squad(df_proj, bb_gw=2, max_spend=100.0, min_liv=1)
 
     # Post-WC Squads
     wc4_opt1 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, min_liv=0)
-    wc4_opt2 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=31.5, min_liv=0)
-    wc4_opt3 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=31.5, min_liv=2)
+    wc4_opt2 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=32.0, min_liv=0)
+    wc4_opt3 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=32.0, min_liv=2)
 
     scenarios = [
         ("S1: BB1 + WC4 Opt1 (Unconstrained)", bb1_pre, wc4_opt1, 1),
@@ -340,13 +339,10 @@ def run_full_wc4_study():
 
         total_6gw_xp = sum(gw_xps.values())
 
-        # Transfers logic
-        # GW1: Set initial squad (£99.5m spend, £0.5m ITB)
-        # GW2: 0 FTs (Roll FT, 1 FT banked)
-        # GW3: 0 FTs (Roll FT, 2 FTs banked into GW4)
-        # GW4: Wildcard Activated! (Replaces squad, £100.0m max spend allowed)
-        # GW5: 0 FTs (Roll FT, 1 FT banked)
-        # GW6: 0 FTs (Roll FT, 2 FTs BANKED into GW6 post-international break)
+        # Transfers & FT Banking Logic:
+        # Enforces AT LEAST 2 Free Transfers banked entering GW6 post-international break.
+        # Managers can spend 1-2 FTs across GW2-3 or GW5 while preserving >= 2 FTs for GW6.
+        # Max banked FTs entering GW6 (if 0 FTs spent): up to 4-5 FTs.
 
         in_players = set(post_squad["player_id"]) - set(pre_squad["player_id"])
 

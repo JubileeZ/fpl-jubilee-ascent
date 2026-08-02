@@ -5,6 +5,7 @@ S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,208,Sarr,CRY,MID,6.5,Nailed Star
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,387,O'Reilly,MCI,DEF,6.5,Regular Starter,4.31,4.28,4.99,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,379,Isak,LIV,FWD,9.0,Nailed Starter,4.11,4.0,4.87,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,532,Ballard,SUN,DEF,5.0,Nailed Starter,4.97,5.01,3.95,0.0,0.0,0.0
+S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,60,Hill,BOU,DEF,5.5,Nailed Starter,3.33,4.52,4.59,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,237,Ndiaye,EVE,MID,6.0,Nailed Starter,3.97,3.96,3.47,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,Nailed Starter,4.02,3.98,4.56,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
@@ -13,7 +14,6 @@ S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Nailed Sta
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,562,Maeda,IPS,MID,5.5,Regular Starter,4.64,3.16,3.1,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S1: BB1 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,418,Maguire,MUN,DEF,5.0,Nailed Starter,4.32,4.3,3.42,0.0,0.0,0.0
 S1: BB1 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S1: BB1 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S1: BB1 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -35,6 +35,7 @@ S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,208,Sarr,CRY,MID,6.5,Nailed Starter,
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,387,O'Reilly,MCI,DEF,6.5,Regular Starter,4.31,4.28,4.99,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,379,Isak,LIV,FWD,9.0,Nailed Starter,4.11,4.0,4.87,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,532,Ballard,SUN,DEF,5.0,Nailed Starter,4.97,5.01,3.95,0.0,0.0,0.0
+S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,60,Hill,BOU,DEF,5.5,Nailed Starter,3.33,4.52,4.59,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,237,Ndiaye,EVE,MID,6.0,Nailed Starter,3.97,3.96,3.47,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,Nailed Starter,4.02,3.98,4.56,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
@@ -43,7 +44,6 @@ S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,562,Maeda,IPS,MID,5.5,Regular Starter,4.64,3.16,3.1,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S2: BB1 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,418,Maguire,MUN,DEF,5.0,Nailed Starter,4.32,4.3,3.42,0.0,0.0,0.0
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -53,18 +53,19 @@ S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,237,Ndiaye,EVE,MID,6.0,Nailed Start
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,165,João Pedro,CHE,FWD,7.5,Nailed Starter,0.0,0.0,0.0,4.82,3.94,3.96
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,445,Thiaw,NEW,DEF,5.0,Nailed Starter,0.0,0.0,0.0,3.71,4.94,4.76
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,562,Maeda,IPS,MID,5.5,Regular Starter,0.0,0.0,0.0,3.84,3.85,4.79
-S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,346,Calvert-Lewin,LEE,FWD,6.0,Nailed Starter,0.0,0.0,0.0,4.72,3.81,2.55
-S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,140,Sánchez,CHE,GKP,5.0,Nailed Starter,0.0,0.0,0.0,4.07,3.33,3.34
+S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,226,Pickford,EVE,GKP,5.5,Nailed Starter,0.0,0.0,0.0,3.5,4.25,4.27
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,173,Thomas,COV,DEF,4.0,Regular Starter,0.0,0.0,0.0,4.08,3.38,4.12
-S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,250,Leno,FUL,GKP,4.5,Nailed Starter,0.0,0.0,0.0,2.59,2.74,4.06
+S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,274,Butland,HUL,GKP,4.5,Regular Starter,0.0,0.0,0.0,2.64,3.21,3.12
+S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,295,McBurnie,HUL,FWD,5.5,Regular Starter,0.0,0.0,0.0,2.55,3.16,3.07
+S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,280,Coyle,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.47,3.12,3.05
 S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,306,Greaves,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.31,2.31,3.05
-S2: BB1 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,304,O'Shea,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,1.76,1.76,2.47
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,5.54,5.44,6.91,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,4.71,3.68,5.81,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,208,Sarr,CRY,MID,6.5,Nailed Starter,4.38,3.47,4.44,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,387,O'Reilly,MCI,DEF,6.5,Regular Starter,4.31,4.28,4.99,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,379,Isak,LIV,FWD,9.0,Nailed Starter,4.11,4.0,4.87,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,532,Ballard,SUN,DEF,5.0,Nailed Starter,4.97,5.01,3.95,0.0,0.0,0.0
+S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,60,Hill,BOU,DEF,5.5,Nailed Starter,3.33,4.52,4.59,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,237,Ndiaye,EVE,MID,6.0,Nailed Starter,3.97,3.96,3.47,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,Nailed Starter,4.02,3.98,4.56,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
@@ -73,7 +74,6 @@ S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Naile
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,562,Maeda,IPS,MID,5.5,Regular Starter,4.64,3.16,3.1,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,418,Maguire,MUN,DEF,5.0,Nailed Starter,4.32,4.3,3.42,0.0,0.0,0.0
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -83,12 +83,12 @@ S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,237,Ndiaye,EVE,MID,6.0,Nai
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,165,João Pedro,CHE,FWD,7.5,Nailed Starter,0.0,0.0,0.0,4.82,3.94,3.96
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,445,Thiaw,NEW,DEF,5.0,Nailed Starter,0.0,0.0,0.0,3.71,4.94,4.76
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,562,Maeda,IPS,MID,5.5,Regular Starter,0.0,0.0,0.0,3.84,3.85,4.79
-S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,140,Sánchez,CHE,GKP,5.0,Nailed Starter,0.0,0.0,0.0,4.07,3.33,3.34
+S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,226,Pickford,EVE,GKP,5.5,Nailed Starter,0.0,0.0,0.0,3.5,4.25,4.27
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,173,Thomas,COV,DEF,4.0,Regular Starter,0.0,0.0,0.0,4.08,3.38,4.12
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,372,Mac Allister,LIV,MID,5.5,Nailed Starter,0.0,0.0,0.0,3.58,3.18,2.82
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,274,Butland,HUL,GKP,4.5,Regular Starter,0.0,0.0,0.0,2.64,3.21,3.12
 S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,280,Coyle,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.47,3.12,3.05
-S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,277,Egan,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,0.54,1.1,1.07
+S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,306,Greaves,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.31,2.31,3.05
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,5.54,5.44,6.91,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,4.86,5.97,3.01,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,4.71,3.68,5.81,0.0,0.0,0.0
@@ -99,11 +99,11 @@ S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,Naile
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,535,Alderete,SUN,DEF,5.0,Nailed Starter,4.73,4.76,3.82,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter,4.03,4.0,4.71,0.0,0.0,0.0
-S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
+S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,533,Mukiele,SUN,DEF,5.5,Nailed Starter,4.68,4.71,3.73,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,173,Thomas,COV,DEF,4.0,Regular Starter,2.32,4.12,2.31,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,193,Wright,COV,FWD,5.5,Regular Starter,2.29,4.16,2.28,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,188,Torp,COV,MID,5.5,Regular Starter,2.62,3.85,2.6,0.0,0.0,0.0
+S4: BB2 + WC4 Opt1 (Unconstrained),GW1-3 Pre-WC,286,Belloumi,HUL,MID,5.0,Regular Starter,2.85,3.74,3.25,0.0,0.0,0.0
 S4: BB2 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S4: BB2 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S4: BB2 + WC4 Opt1 (Unconstrained),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -129,11 +129,11 @@ S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,Nailed St
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,535,Alderete,SUN,DEF,5.0,Nailed Starter,4.73,4.76,3.82,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter,4.03,4.0,4.71,0.0,0.0,0.0
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,533,Mukiele,SUN,DEF,5.5,Nailed Starter,4.68,4.71,3.73,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,173,Thomas,COV,DEF,4.0,Regular Starter,2.32,4.12,2.31,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,193,Wright,COV,FWD,5.5,Regular Starter,2.29,4.16,2.28,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,188,Torp,COV,MID,5.5,Regular Starter,2.62,3.85,2.6,0.0,0.0,0.0
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW1-3 Pre-WC,286,Belloumi,HUL,MID,5.0,Regular Starter,2.85,3.74,3.25,0.0,0.0,0.0
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -143,12 +143,12 @@ S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,237,Ndiaye,EVE,MID,6.0,Nailed Start
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,165,João Pedro,CHE,FWD,7.5,Nailed Starter,0.0,0.0,0.0,4.82,3.94,3.96
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,445,Thiaw,NEW,DEF,5.0,Nailed Starter,0.0,0.0,0.0,3.71,4.94,4.76
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,562,Maeda,IPS,MID,5.5,Regular Starter,0.0,0.0,0.0,3.84,3.85,4.79
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,346,Calvert-Lewin,LEE,FWD,6.0,Nailed Starter,0.0,0.0,0.0,4.72,3.81,2.55
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,140,Sánchez,CHE,GKP,5.0,Nailed Starter,0.0,0.0,0.0,4.07,3.33,3.34
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,226,Pickford,EVE,GKP,5.5,Nailed Starter,0.0,0.0,0.0,3.5,4.25,4.27
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,173,Thomas,COV,DEF,4.0,Regular Starter,0.0,0.0,0.0,4.08,3.38,4.12
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,250,Leno,FUL,GKP,4.5,Nailed Starter,0.0,0.0,0.0,2.59,2.74,4.06
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,274,Butland,HUL,GKP,4.5,Regular Starter,0.0,0.0,0.0,2.64,3.21,3.12
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,295,McBurnie,HUL,FWD,5.5,Regular Starter,0.0,0.0,0.0,2.55,3.16,3.07
+S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,280,Coyle,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.47,3.12,3.05
 S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,306,Greaves,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.31,2.31,3.05
-S5: BB2 + WC4 Opt2 (Cheap DEF),GW4-6 Post-WC,304,O'Shea,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,1.76,1.76,2.47
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,5.54,5.44,6.91,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,4.86,5.97,3.01,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,4.71,3.68,5.81,0.0,0.0,0.0
@@ -159,11 +159,11 @@ S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,384,Donnarumma,MCI,GKP,5.5,
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,106,Thiago,BRE,FWD,8.0,Nailed Starter,4.18,4.14,4.98,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,535,Alderete,SUN,DEF,5.0,Nailed Starter,4.73,4.76,3.82,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter,4.03,4.0,4.71,0.0,0.0,0.0
-S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,542,E.Le Fée,SUN,MID,6.0,Nailed Starter,4.41,4.46,3.75,0.0,0.0,0.0
+S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,533,Mukiele,SUN,DEF,5.5,Nailed Starter,4.68,4.71,3.73,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,412,Lammens,MUN,GKP,5.0,Nailed Starter,4.21,4.19,3.46,0.0,0.0,0.0
-S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,173,Thomas,COV,DEF,4.0,Regular Starter,2.32,4.12,2.31,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,193,Wright,COV,FWD,5.5,Regular Starter,2.29,4.16,2.28,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,188,Torp,COV,MID,5.5,Regular Starter,2.62,3.85,2.6,0.0,0.0,0.0
+S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW1-3 Pre-WC,286,Belloumi,HUL,MID,5.0,Regular Starter,2.85,3.74,3.25,0.0,0.0,0.0
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter,0.0,0.0,0.0,4.15,6.86,4.07
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,154,Palmer,CHE,MID,9.5,Nailed Starter,0.0,0.0,0.0,6.04,4.78,4.8
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter,0.0,0.0,0.0,5.73,3.74,4.61
@@ -173,9 +173,9 @@ S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,237,Ndiaye,EVE,MID,6.0,Nai
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,165,João Pedro,CHE,FWD,7.5,Nailed Starter,0.0,0.0,0.0,4.82,3.94,3.96
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,445,Thiaw,NEW,DEF,5.0,Nailed Starter,0.0,0.0,0.0,3.71,4.94,4.76
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,562,Maeda,IPS,MID,5.5,Regular Starter,0.0,0.0,0.0,3.84,3.85,4.79
-S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,140,Sánchez,CHE,GKP,5.0,Nailed Starter,0.0,0.0,0.0,4.07,3.33,3.34
+S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,226,Pickford,EVE,GKP,5.5,Nailed Starter,0.0,0.0,0.0,3.5,4.25,4.27
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,173,Thomas,COV,DEF,4.0,Regular Starter,0.0,0.0,0.0,4.08,3.38,4.12
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,372,Mac Allister,LIV,MID,5.5,Nailed Starter,0.0,0.0,0.0,3.58,3.18,2.82
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,274,Butland,HUL,GKP,4.5,Regular Starter,0.0,0.0,0.0,2.64,3.21,3.12
 S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,280,Coyle,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.47,3.12,3.05
-S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,277,Egan,HUL,DEF,4.0,Regular Starter,0.0,0.0,0.0,0.54,1.1,1.07
+S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+),GW4-6 Post-WC,306,Greaves,IPS,DEF,4.0,Regular Starter,0.0,0.0,0.0,2.31,2.31,3.05
