@@ -276,3 +276,21 @@ _Avoid_: Source claim, independent validation
 Research Note mapping related source pages to child notes, freshness, scope, and source gaps; not substitute for child evidence.
 _Avoid_: Merged research report, complete source transcription
 
+**Calibrated Component Architecture**:
+Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes.
+_Avoid_: Top-down power rating, single composite score xP prediction
+
+**Dual-Vector Strength**:
+Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to official FDR only when data is sparse.
+_Avoid_: Static FDR multiplier, single team rating
+
+**Recency-Weighted Prior Shrinkage**:
+Event Rate estimation method blending a multi-season prior with exponential recency decay over recent matches (e.g. 10 appearances) and applying Bayesian shrinkage for sample-constrained / low-minute players.
+_Avoid_: Simple unweighted current-season average, static role rates
+
+**Rotation Quality Index (RQI)**:
+A composite 0–100 score synthesizing schedule difficulty ($S_{\text{fdr}}$, 25%), Pearson correlation ($S_{\text{corr}}$, 25%), easy fixture percentage ($S_{\text{easy}}$, 15%), Rotated $xP$ Points Gain ($S_{\text{xp\_gain}}$, 25%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings).
+$$\text{RQI} = 0.25 \cdot S_{\text{fdr}} + 0.25 \cdot S_{\text{corr}} + 0.15 \cdot S_{\text{easy}} + 0.25 \cdot S_{\text{xp\_gain}} + 0.10 \cdot S_{\text{cost}}$$
+_Avoid_: Raw FDR correlation alone, unweighted rotation score, raw FDR rating gain as substitute for xP points gain
+
+

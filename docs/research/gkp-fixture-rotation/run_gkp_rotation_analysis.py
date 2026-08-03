@@ -29,6 +29,14 @@ def run_analysis() -> pd.DataFrame:
     starters["price"] = starters["player_id"].map(players.set_index("id")["now_cost"] / 10.0)
     starters["club_id"] = starters["player_id"].map(players.set_index("id")["club_id"])
 
+    # Load model projections for xP gain calculation
+    df_proj = pd.read_csv(RESEARCH_DIR / "gw1-6-chip-wc4-squads" / "gw1-6_projections.csv")
+    starters = starters.merge(
+        df_proj[["player_id", "gw1_xp", "gw2_xp", "gw3_xp", "gw4_xp", "gw5_xp", "gw6_xp"]],
+        on="player_id",
+        how="left",
+    )
+
     # Build FDR matrix
     club_ids = sorted(clubs["id"].tolist())
     fdr_matrix = {c_id: {} for c_id in club_ids}
@@ -74,14 +82,34 @@ def run_analysis() -> pd.DataFrame:
                 s1 = sub_fdr[c1]
                 s2 = sub_fdr[c2]
 
-                corr = s1.corr(s2)
-                avg1 = s1.mean()
-                avg2 = s2.mean()
+                corr = float(s1.corr(s2))
+                avg1 = float(s1.mean())
+                avg2 = float(s2.mean())
                 rotated = np.minimum(s1.values, s2.values)
-                rot_avg = rotated.mean()
+                rot_avg = float(rotated.mean())
                 best_single = min(avg1, avg2)
-                gain = best_single - rot_avg
+                fdr_gain = float(best_single - rot_avg)
                 easy_gws = int(np.sum(rotated <= 2))
+                easy_pct = float(easy_gws / num_gws * 100.0)
+
+                # Calculate Rotated xP Points Gain across projected horizon
+                proj_len = min(6, end_gw)
+                xp1_list = [float(g1.get(f"gw{gw}_xp", 3.0)) for gw in range(1, proj_len + 1)]
+                xp2_list = [float(g2.get(f"gw{gw}_xp", 3.0)) for gw in range(1, proj_len + 1)]
+                rot_xp_list = [max(x1, x2) for x1, x2 in zip(xp1_list, xp2_list, strict=False)]
+                tot_rot_xp = sum(rot_xp_list)
+                best_single_xp = max(sum(xp1_list), sum(xp2_list))
+                xp_gain = tot_rot_xp - best_single_xp
+                xp_gain_per_gw = xp_gain / proj_len
+
+                # Canonical 25/25/15/25/10 RQI Formula (0-100 scale)
+                s_fdr = float(np.clip((5.0 - rot_avg) / (5.0 - 2.0) * 100.0, 0, 100))
+                s_corr = float(np.clip((-corr + 1.0) / 2.0 * 100.0, 0, 100))
+                s_easy = easy_pct
+                s_xp_gain = float(np.clip((xp_gain_per_gw / 0.40) * 100.0, 0, 100))
+                s_cost = 100.0 if tot_price <= 9.0 else 75.0
+
+                rqi = round(0.25 * s_fdr + 0.25 * s_corr + 0.15 * s_easy + 0.25 * s_xp_gain + 0.10 * s_cost, 2)
 
                 all_rows.append(
                     {
@@ -101,9 +129,12 @@ def run_analysis() -> pd.DataFrame:
                         "avg_fdr1": round(avg1, 4),
                         "avg_fdr2": round(avg2, 4),
                         "rotated_avg_fdr": round(rot_avg, 4),
-                        "fdr_gain": round(gain, 4),
+                        "fdr_gain": round(fdr_gain, 4),
                         "easy_gws": easy_gws,
-                        "easy_gw_pct": round(easy_gws / num_gws * 100, 1),
+                        "easy_gw_pct": round(easy_pct, 1),
+                        "tot_rot_xp_gw1_6": round(tot_rot_xp, 2),
+                        "xp_gain_gw1_6": round(xp_gain, 2),
+                        "rqi": rqi,
                     }
                 )
 
