@@ -1,0 +1,6 @@
+category,sample_size,avg_cost,avg_pts,pts_per_million
+All Premiums S&F (£5.5m+),3,9.8,144.0,14.69
+All Solo Budget £4.5m S&F (£4.5m-£4.6m),3,8.6,119.7,13.91
+All Regular Pair Rotations (FDR Rule),45,9.3,126.8,13.64
+Top 5 Regular Pair Rotations (FDR Rule),5,9.52,152.0,15.97
+All Regular Pair Rotations (Hindsight Best),45,9.3,168.4,18.11
