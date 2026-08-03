@@ -1,0 +1,19 @@
+player_id,web_name,club_short,price,expected_role,per90_saves,per90_goals_conceded,rate_source,usable_mins_total,provenance_note,has_promoted_proxy
+442,Pope,NEW,5.0,Regular Starter,3.1627,1.2879,fpl_recency_50_50,6281.0,"50% 2025/26 (2416m) + 50% mean older usable [2023/24,2024/25]",False
+57,Petrović,BOU,4.5,Nailed Starter,3.1336,1.5716,fpl_recency_50_50,5406.0,50% 2025/26 (3420m) + 50% mean older usable [2023/24],False
+529,Roefs,SUN,5.0,Nailed Starter,3.1143,1.3143,fpl_single_usable_season,3150.0,100% usable season 2025/26 (3150 mins),False
+140,Sánchez,CHE,5.0,Nailed Starter,3.025,1.3835,fpl_recency_50_50,7353.0,"50% 2025/26 (3040m) + 50% mean older usable [2023/24,2024/25]",False
+467,Sels,NFO,5.0,Nailed Starter,2.9705,1.3825,fpl_recency_50_50,7527.0,"50% 2025/26 (2667m) + 50% mean older usable [2023/24,2024/25]",False
+198,Henderson,CRY,5.0,Nailed Starter,2.9222,1.4414,fpl_recency_50_50,8370.0,"50% 2025/26 (3330m) + 50% mean older usable [2023/24,2024/25]",False
+28,Martinez,AVL,5.0,Nailed Starter,2.9211,1.3082,fpl_recency_50_50,9045.0,"50% 2025/26 (2835m) + 50% mean older usable [2023/24,2024/25]",False
+226,Pickford,EVE,5.5,Nailed Starter,2.9145,1.2829,fpl_recency_50_50,10260.0,"50% 2025/26 (3420m) + 50% mean older usable [2023/24,2024/25]",False
+250,Leno,FUL,4.5,Nailed Starter,2.8947,1.4276,fpl_recency_50_50,10260.0,"50% 2025/26 (3420m) + 50% mean older usable [2023/24,2024/25]",False
+82,Kelleher,BRE,5.0,Nailed Starter,2.848,1.2372,fpl_recency_50_50,5130.0,"50% 2025/26 (3330m) + 50% mean older usable [2023/24,2024/25]",False
+109,Verbruggen,BHA,4.5,Nailed Starter,2.8005,1.3414,fpl_recency_50_50,8550.0,"50% 2025/26 (3420m) + 50% mean older usable [2023/24,2024/25]",False
+496,Kinsky,TOT,4.5,Regular Starter,2.7143,1.4167,fpl_recency_50_50,1170.0,50% 2025/26 (630m) + 50% mean older usable [2024/25],False
+350,A.Becker,LIV,5.5,Nailed Starter,2.537,1.1242,fpl_recency_50_50,7368.0,"50% 2025/26 (2340m) + 50% mean older usable [2023/24,2024/25]",False
+412,Lammens,MUN,5.0,Nailed Starter,2.4688,1.2188,fpl_single_usable_season,2880.0,100% usable season 2025/26 (2880 mins),False
+274,Butland,HUL,4.5,Regular Starter,2.333,1.01,external_3season_research,0.0,External SPFL 2023-26: Jack Butland Rangers proxy (no Hull mins yet); mins~9180,True
+384,Donnarumma,MCI,5.5,Nailed Starter,2.2941,0.8529,fpl_single_usable_season,3060.0,100% usable season 2025/26 (3060 mins),False
+172,Wilson,COV,4.5,Regular Starter,2.25,1.07,external_3season_research,0.0,External: Coventry GKP saves,True
+1,Raya,ARS,6.0,Nailed Starter,1.736,0.7625,fpl_recency_50_50,9630.0,"50% 2025/26 (3330m) + 50% mean older usable [2023/24,2024/25]",False

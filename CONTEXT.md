@@ -289,9 +289,9 @@ Event Rate estimation method blending a multi-season prior with exponential rece
 _Avoid_: Simple unweighted current-season average, static role rates
 
 **Rotation Quality Index (RQI)**:
-A composite 0–100 score synthesizing Total Rotated Expected Points ($S_{\text{tot\_xp}}$, 40%), schedule difficulty ($S_{\text{fdr}}$, 20%), Pearson correlation ($S_{\text{corr}}$, 20%), easy fixture percentage ($S_{\text{easy}}$, 10%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings).
+A composite 0–100 score synthesizing horizon-matched rotated expected points per gameweek under the FDR-min pick rule ($S_{\text{tot\_xp}}$, 40%), schedule difficulty ($S_{\text{fdr}}$, 20%), Pearson correlation ($S_{\text{corr}}$, 20%), easy fixture percentage ($S_{\text{easy}}$, 10%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings). Optional max(xP) total is a separate upper-bound column, not the RQI points term.
 $$\text{RQI} = 0.40 \cdot S_{\text{tot\_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
-_Avoid_: Relative gain alone without total points weighting, unweighted rotation score, raw FDR correlation alone
+_Avoid_: Relative gain alone without total points weighting, unweighted rotation score, raw FDR correlation alone, reusing a short-horizon xP total inside a longer-horizon RQI
 
 
 
