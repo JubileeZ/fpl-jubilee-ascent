@@ -92,7 +92,7 @@ def run_analysis() -> pd.DataFrame:
                 easy_gws = int(np.sum(rotated <= 2))
                 easy_pct = float(easy_gws / num_gws * 100.0)
 
-                # Calculate Rotated xP Points Gain across projected horizon
+                # Calculate Rotated xP Points across projected horizon (GW1-6)
                 proj_len = min(6, end_gw)
                 xp1_list = [float(g1.get(f"gw{gw}_xp", 3.0)) for gw in range(1, proj_len + 1)]
                 xp2_list = [float(g2.get(f"gw{gw}_xp", 3.0)) for gw in range(1, proj_len + 1)]
@@ -100,16 +100,18 @@ def run_analysis() -> pd.DataFrame:
                 tot_rot_xp = sum(rot_xp_list)
                 best_single_xp = max(sum(xp1_list), sum(xp2_list))
                 xp_gain = tot_rot_xp - best_single_xp
-                xp_gain_per_gw = xp_gain / proj_len
+                rot_xp_per_gw = tot_rot_xp / proj_len
 
-                # Canonical 25/25/15/25/10 RQI Formula (0-100 scale)
+                # Points-Heavy 40/20/20/10/10 RQI Formula (0-100 scale)
+                # s_tot_xp: Total Rotated xP per GW normalized (2.5 - 4.2 xP/GW scale)
+                s_tot_xp = float(np.clip((rot_xp_per_gw - 2.5) / (4.2 - 2.5) * 100.0, 0, 100))
                 s_fdr = float(np.clip((5.0 - rot_avg) / (5.0 - 2.0) * 100.0, 0, 100))
                 s_corr = float(np.clip((-corr + 1.0) / 2.0 * 100.0, 0, 100))
                 s_easy = easy_pct
-                s_xp_gain = float(np.clip((xp_gain_per_gw / 0.40) * 100.0, 0, 100))
                 s_cost = 100.0 if tot_price <= 9.0 else 75.0
 
-                rqi = round(0.25 * s_fdr + 0.25 * s_corr + 0.15 * s_easy + 0.25 * s_xp_gain + 0.10 * s_cost, 2)
+                rqi = round(0.40 * s_tot_xp + 0.20 * s_fdr + 0.20 * s_corr + 0.10 * s_easy + 0.10 * s_cost, 2)
+                has_promoted_proxy = bool(g1["club_short"] in ["COV", "HUL"] or g2["club_short"] in ["COV", "HUL"])
 
                 all_rows.append(
                     {
@@ -134,9 +136,11 @@ def run_analysis() -> pd.DataFrame:
                         "easy_gw_pct": round(easy_pct, 1),
                         "tot_rot_xp_gw1_6": round(tot_rot_xp, 2),
                         "xp_gain_gw1_6": round(xp_gain, 2),
+                        "has_promoted_proxy": has_promoted_proxy,
                         "rqi": rqi,
                     }
                 )
+
 
     res_df = pd.DataFrame(all_rows)
     OUT_DIR.mkdir(parents=True, exist_ok=True)

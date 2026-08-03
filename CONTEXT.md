@@ -289,8 +289,9 @@ Event Rate estimation method blending a multi-season prior with exponential rece
 _Avoid_: Simple unweighted current-season average, static role rates
 
 **Rotation Quality Index (RQI)**:
-A composite 0–100 score synthesizing schedule difficulty ($S_{\text{fdr}}$, 25%), Pearson correlation ($S_{\text{corr}}$, 25%), easy fixture percentage ($S_{\text{easy}}$, 15%), Rotated $xP$ Points Gain ($S_{\text{xp\_gain}}$, 25%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings).
-$$\text{RQI} = 0.25 \cdot S_{\text{fdr}} + 0.25 \cdot S_{\text{corr}} + 0.15 \cdot S_{\text{easy}} + 0.25 \cdot S_{\text{xp\_gain}} + 0.10 \cdot S_{\text{cost}}$$
-_Avoid_: Raw FDR correlation alone, unweighted rotation score, raw FDR rating gain as substitute for xP points gain
+A composite 0–100 score synthesizing Total Rotated Expected Points ($S_{\text{tot\_xp}}$, 40%), schedule difficulty ($S_{\text{fdr}}$, 20%), Pearson correlation ($S_{\text{corr}}$, 20%), easy fixture percentage ($S_{\text{easy}}$, 10%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings).
+$$\text{RQI} = 0.40 \cdot S_{\text{tot\_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
+_Avoid_: Relative gain alone without total points weighting, unweighted rotation score, raw FDR correlation alone
+
 
 

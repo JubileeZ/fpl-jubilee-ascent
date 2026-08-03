@@ -11,9 +11,10 @@ We establish the foundational metric and ability modeling architecture for proje
 1. **Bottom-Up Calibrated Component Architecture**: Projections derive expected points ($xP$) directly from underlying per-90 skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength factors and projected minutes.
 2. **Rolling xG/xGA Dual-Vector Strength**: Team attack and opponent defense strength multipliers are calculated from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to official FDR only when data is sparse.
 3. **Recency-Weighted Prior Shrinkage**: Player underlying rates blend a multi-season prior with exponential recency decay over recent matches, applying Bayesian shrinkage for sample-constrained / low-minute players.
-4. **Multi-Factor Rotation Quality Index (RQI)**: Goalkeeper and Defender rotation pairs are evaluated for research reports using a canonical 0–100 score:
-   $$\text{RQI} = 0.25 \cdot S_{\text{fdr}} + 0.25 \cdot S_{\text{corr}} + 0.15 \cdot S_{\text{easy}} + 0.25 \cdot S_{\text{xp\_gain}} + 0.10 \cdot S_{\text{cost}}$$
-   where $S_{\text{xp\_gain}}$ measures Rotated $xP$ Points Gain over a single set-and-forget keeper.
+4. **Points-Heavy Rotation Quality Index (RQI)**: Goalkeeper and Defender rotation pairs are evaluated for research reports using a canonical 0–100 score:
+   $$\text{RQI} = 0.40 \cdot S_{\text{tot\_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
+   where $S_{\text{tot\_xp}}$ measures Total Rotated Expected Points ($\text{tot\_rot\_xp}$) on a normalized scale, prioritizing absolute expected points output over relative gain ($\Delta xP$) to prevent artificial score inflation from volatile lower-tier/promoted keepers.
+
 
 ## Consequences
 
