@@ -1,20 +1,19 @@
-# Task: azg harness SubagentStart strip
+# Task: FFS pre-season guide recheck & transfer register refresh
 
-**Objective:** Apply alpha-zero-g spawn-budget fix (drop SubagentStart double-count) + lean hook refresh.
+**Objective:** Recheck Fantasy Football Scout pre-season guide children for source updates; refresh stale notes.
 
 **Acceptance:**
-- [x] `.agents/hooks.json` has no `SubagentStart`
-- [x] PreToolUse / SubagentStop / SessionStart lifecycle present
+- [x] Playwright recheck all 10 price-bracket child source URLs
+- [x] Refresh `fpl-summer-transfers.md` through 4 August (9 new moves + Bamba backfill)
+- [x] Update `fpl-preseason-guide.md` index (guide modified 2026-08-04; Scout Picks link noted out-of-scope)
+- [x] Bump `docs/research/INDEX.md` timestamp
+- [x] Pre-commit gates green
 
 ## Work Packet (SFDBN)
 
-- **Status:** Done — Checkpoint now
-- **Files:** `.agents/hooks.json` · spawn-budget · checkpoint/commit-gate · Cursor stop/commit-verify · AGENTS managed · `checkpoint-scan.sh`
-- **Decisions:** Full `azg apply` from local alpha-zero-g (not hand-edit only)
-- **Blocked:** None
-- **Next:** Push needs AUTH; prior GKP optional RQI follow-up still optional
+- **Status:** Complete. Ten price-bracket children unchanged; transfers + guide index refreshed. Ready to checkpoint.
+- **Files:** `docs/research/fpl-preseason-guide/fpl-summer-transfers.md`; `fpl-preseason-guide.md`; `docs/research/INDEX.md`; `task.md`; `docs/agents/current-state.md`; `.agents/session-handoff.md`
+- **Decisions:** GW1 Scout Picks preview (2026-08-04) out of core scope — no dedicated child note. 10 new/backfilled transfer entries pending `expected-role-gw1-5` cross-check.
+- **Blocked:** None.
+- **Next:** Cross-check Aug transfers against `expected-role-gw1-5`; delete `task.md` when closed.
 
-## Todo
-- [x] azg apply
-- [x] Confirm SubagentStart gone
-- [x] Checkpoint commit

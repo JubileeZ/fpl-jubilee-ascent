@@ -1,9 +1,9 @@
 # FPL 2026/27 Pre-Season Guide — Source Directory
 
-**Updated**: 2026-08-03T02:15:00+07:00  
-**Data stamp**: Fantasy Football Scout guide capture reviewed 2026-08-03; 10 child notes active & refreshed 2026-08-03  
+**Updated**: 2026-08-04T23:40:00+07:00  
+**Data stamp**: Fantasy Football Scout guide capture reviewed 2026-08-04 (modified 2026-08-04); transfer register through 2026-08-04; 10 price-bracket child notes unchanged since 2026-08-03  
 **Season**: 2026/27  
-**Status**: Source directory · 10 child notes active & refreshed  
+**Status**: Source directory · 10 price-bracket child notes active · transfer register refreshed 2026-08-04  
 **Purpose**: Index decision-relevant pre-season source notes  
 **Scope**: Budget goalkeepers, £5.0m+ goalkeepers, £5.0m defenders, £4.5m defenders, £4.0m defenders, £5.5m+ defenders, £4.5m midfielders, £7.5m+ midfielders, £6.0m–£6.5m forwards, and confirmed summer transfers. Guide-only index content; no full transcription of unrelated sections.  
 **Related**: [Budget goalkeepers](fpl-budget-goalkeepers.md) · [£5.0m+ goalkeepers](fpl-5-0m-goalkeepers.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£4.0m defenders](fpl-4-0m-defenders.md) · [£5.5m+ defenders](fpl-5-5m-defenders.md) · [£4.5m midfielders](fpl-4-5m-midfielders.md) · [£7.5m+ midfielders](fpl-7-5m-midfielders.md) · [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md) · [Summer transfers](fpl-summer-transfers.md)
@@ -12,7 +12,7 @@
 
 ## Sources
 
-- **Primary**: [FPL 2026/27: The ultimate pre-season guide, tips + more — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-the-ultimate-pre-season-guide-tips-more) — modified 2026-08-02; accessed 2026-08-03; role: pre-season content directory
+- **Primary**: [FPL 2026/27: The ultimate pre-season guide, tips + more — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-the-ultimate-pre-season-guide-tips-more) — modified 2026-08-04; accessed 2026-08-04; role: pre-season content directory
 - **Supporting primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; accessed 2026-08-03; role: budget goalkeeper analysis & extracted image stats
 - **Supporting primary**: [Best £5.0m+ goalkeepers for FPL 2026/27](https://www.fantasyfootballscout.co.uk/2026/07/31/best-5-0m-goalkeepers-for-fpl-2026-27) — published 2026-07-31; accessed 2026-08-03; role: £5.0m+ goalkeeper analysis
 - **Supporting primary**: [Best £5.0m defenders for FPL 2026/27](https://www.fantasyfootballscout.co.uk/2026/07/30/best-5-0m-defenders-for-fpl-2026-27) — published 2026-07-30; accessed 2026-08-03; role: £5.0m defender analysis & extracted image stats
@@ -22,7 +22,8 @@
 - **Supporting primary**: [Best £4.5m midfielders for FPL 2026/27: All 25 assessed](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-5m-midfielders-for-fpl-2026-27-all-25-assessed) — published 2026-07-24; accessed 2026-08-03; role: £4.5m midfielder analysis
 - **Supporting primary**: [Best £7.5m+ midfielders for FPL 2026/27](https://www.fantasyfootballscout.co.uk/2026/08/02/best-7-5m-midfielders-for-fpl-2026-27) — published 2026-08-02; accessed 2026-08-03; role: £7.5m+ midfielder analysis
 - **Supporting primary**: [Best £6.0m-£6.5m forwards for FPL 2026/27](https://www.fantasyfootballscout.co.uk/2026/07/31/best-6-0m-6-5m-forwards-for-fpl-2026-27) — published 2026-07-31; accessed 2026-08-03; role: £6.0m–£6.5m forward analysis
-- **Supporting primary**: [FPL 2026/27 transfer news: Confirmed summer signings](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — register current through 2026-07-30; accessed 2026-08-03; role: transfer register
+- **Supporting primary**: [FPL 2026/27 transfer news: Confirmed summer signings](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — modified 2026-08-04; register current through 2026-08-04; accessed 2026-08-04; role: transfer register
+- **Out-of-scope guide link**: [What would the FPL Gameweek 1 Scout Picks look like right now?](https://www.fantasyfootballscout.co.uk/2026/08/04/what-would-a-fpl-gameweek-1-scout-picks-team-look-like-now) — published 2026-08-04; accessed 2026-08-04; role: GW1 Scout Picks preview (not a price-bracket article; no dedicated child note)
 
 **Source boundary**: Guide and child-page claims not independently validated. No FPL API refresh, fixture recalculation, projection run, or lineup verification performed.
 
@@ -69,7 +70,7 @@ Full redo docs/research/fpl-preseason-guide.md
 
 ### Relevant guide sections
 
-- **BEST FPL PLAYERS FOR 2026/27**: links to [budget goalkeepers](fpl-budget-goalkeepers.md), [£5.0m+ goalkeepers](fpl-5-0m-goalkeepers.md), [£5.0m defenders](fpl-5-0m-defenders.md), [£4.5m defenders](fpl-4-5m-defenders.md), [£4.0m defenders](fpl-4-0m-defenders.md), [£5.5m+ defenders](fpl-5-5m-defenders.md), [£4.5m midfielders](fpl-4-5m-midfielders.md), [£7.5m+ midfielders](fpl-7-5m-midfielders.md), and [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md).
+- **BEST FPL PLAYERS FOR 2026/27**: links to [budget goalkeepers](fpl-budget-goalkeepers.md), [£5.0m+ goalkeepers](fpl-5-0m-goalkeepers.md), [£5.0m defenders](fpl-5-0m-defenders.md), [£4.5m defenders](fpl-4-5m-defenders.md), [£4.0m defenders](fpl-4-0m-defenders.md), [£5.5m+ defenders](fpl-5-5m-defenders.md), [£4.5m midfielders](fpl-4-5m-midfielders.md), [£7.5m+ midfielders](fpl-7-5m-midfielders.md), and [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md). Also lists [GW1 Scout Picks preview](https://www.fantasyfootballscout.co.uk/2026/08/04/what-would-a-fpl-gameweek-1-scout-picks-team-look-like-now) (out of core scope; no dedicated child note).
 - **SUMMER TRANSFERS**: links to [confirmed summer transfers](fpl-summer-transfers.md).
 - Pre-season directory collated and regularly refreshed through Gameweek 1.
 - **CLUB BY CLUB** contains additional team, friendly, and transfer links; excluded from core scope.
@@ -96,7 +97,9 @@ Full redo docs/research/fpl-preseason-guide.md
 
 ### Evidence
 
-- Guide exposes ten decision sections: budget goalkeepers, £5.0m+ goalkeepers, £5.0m defenders, £4.5m defenders, £4.0m defenders, £5.5m+ defenders, £4.5m midfielders, £7.5m+ midfielders, £6.0m–£6.5m forwards, and summer-transfer register.
+- Guide exposes ten in-scope price-bracket sections plus summer-transfer register; new GW1 Scout Picks preview link added 2026-08-04 (out of scope).
+- Ten price-bracket child sources unchanged since 2026-08-03 recheck.
+- Transfer register refreshed through 4 August in [summer transfers](fpl-summer-transfers.md).
 
 ### Alternatives
 
@@ -110,20 +113,21 @@ Full redo docs/research/fpl-preseason-guide.md
 **Recommended action**:
 - Start topic review from linked child note.
 - Monitor guide for new position/price articles published prior to GW1.
+- Optionally synthesize GW1 Scout Picks preview if squad-selection context needed.
 
 **Trigger / kill switch**:
-- Create a new research note whenever a new primary article is published under **BEST FPL PLAYERS FOR 2026/27**.
+- Create a new research note whenever a new price-bracket primary article is published under **BEST FPL PLAYERS FOR 2026/27**.
 
 ## Risks and unknowns
 
-- Guide publication date not exposed in capture.
+- Guide modified 2026-08-04; may add non-price-bracket links (e.g. Scout Picks) without child-note coverage.
 - Preseason player roles remain subject to friendly usage and deadline transfer moves.
 
 ## Refresh checklist
 
-- [x] Re-read guide and confirm ten requested links.
-- [x] Recheck child-note source URLs, publication dates, and access dates.
-- [x] Create dedicated research notes for newly added primary articles (`fpl-5-5m-defenders.md`, `fpl-7-5m-midfielders.md`).
-- [x] Update directory scope and child-page links.
+- [x] Re-read guide and confirm ten in-scope price-bracket links.
+- [x] Note new GW1 Scout Picks preview link (out of scope).
+- [x] Recheck child-note source URLs; ten price-bracket articles unchanged.
+- [x] Refresh [summer transfers](fpl-summer-transfers.md) through 4 August.
 - [x] Update `Updated`, `Data stamp`, `Related`, and `Risks`.
 - [x] Delete `.tmp/agent/` scratch before finishing.

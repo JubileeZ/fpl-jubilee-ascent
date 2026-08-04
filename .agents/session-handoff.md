@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Expected-stats grill-lock rebuild + chip sim re-run complete. BB1 299.78 / BB2 297.77 / Standard 283.84 on 2026-08-02 projections. Docs synced; commit + push this session.
-- **Files:** `docs/research/expected-stats-gw1-5/*`; `data/research/expected-stats-gw1-5/*`; `docs/research/gw1-5-chip-simulation/*`; `data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv`; continuity docs
-- **Decisions:** Early BB + WC4 still preferred; BB1 edges BB2 by ~2.0 xP; auto-captain only (no TC in sim).
+- **Status:** FFS pre-season guide recheck complete. Ten price-bracket children unchanged; `fpl-summer-transfers.md` refreshed through 4 Aug; guide index updated. Gates green; checkpoint pending.
+- **Files:** `docs/research/fpl-preseason-guide/fpl-summer-transfers.md`; `fpl-preseason-guide.md`; `docs/research/INDEX.md`; `task.md`; `docs/agents/current-state.md`
+- **Decisions:** GW1 Scout Picks preview (2026-08-04) out of core scope — no dedicated child note. Aug transfer entries pending `expected-role-gw1-5` cross-check.
 - **Blocked:** None.
-- **Next:** Expected Role → Participation State priors.
+- **Next:** Cross-check Aug transfers vs `expected-role-gw1-5`; optional Scout Picks synthesis if squad-selection context needed.
