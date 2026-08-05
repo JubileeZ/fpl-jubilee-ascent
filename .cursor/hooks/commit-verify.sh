@@ -3,13 +3,7 @@
 set -euo pipefail
 
 input=$(cat)
-cmd=""
-if command -v jq >/dev/null 2>&1; then
-  cmd=$(printf '%s' "${input}" | jq -r '.command // .tool_input.command // empty' 2>/dev/null || true)
-fi
-if [ -z "${cmd}" ]; then
-  cmd=$(printf '%s' "${input}" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)
-fi
+cmd=$(printf '%s' "${input}" | jq -r '.command // .tool_input.command // empty' 2>/dev/null || true)
 
 if ! echo "${cmd}" | grep -qE 'git[[:space:]]+commit'; then
   printf '{"permission":"allow"}\n'
@@ -22,9 +16,8 @@ if [ ! -x tests/verify.sh ]; then
 fi
 
 if ! out=$(bash tests/verify.sh 2>&1); then
-  # Escape for JSON without requiring jq
-  esc=$(printf '%s' "${out}" | tr '\n' ' ' | sed 's/"/\\"/g')
-  printf '{"permission":"deny","user_message":"verify.sh failed","agent_message":"verify.sh failed: %s"}\n' "${esc}"
+  jq -n --arg msg "$(printf '%s' "${out}" | tr '\n' ' ')" \
+    '{permission: "deny", user_message: "verify.sh failed", agent_message: ("verify.sh failed: " + $msg)}'
   exit 0
 fi
 

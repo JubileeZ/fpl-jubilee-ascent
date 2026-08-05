@@ -41,17 +41,6 @@
         ]
       }
     ],
-    "SubagentStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./hooks/spawn-budget.sh"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "*",

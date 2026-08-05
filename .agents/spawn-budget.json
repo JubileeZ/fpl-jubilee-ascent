@@ -1,5 +1,4 @@
 {
   "max_spawns": 5,
-  "max_depth": 1,
-  "mode": "concurrent"
+  "max_depth": 1
 }

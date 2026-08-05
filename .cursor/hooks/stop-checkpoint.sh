@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Cursor adapter: checkpoint via followup_message (agy checkpoint.sh uses decision continue)
-# Accept same workstate set as Antigravity checkpoint.sh
 set -euo pipefail
 
 input=$(cat)
@@ -11,45 +10,22 @@ LOOP_LIMIT=3
 
 loop_count=0
 status="completed"
-if command -v jq >/dev/null 2>&1; then
-  loop_count=$(printf '%s' "${input}" | jq -r '.loop_count // 0' 2>/dev/null || echo 0)
-  status=$(printf '%s' "${input}" | jq -r '.status // "completed"' 2>/dev/null || echo completed)
-fi
+loop_count=$(printf '%s' "${input}" | jq -r '.loop_count // 0' 2>/dev/null || echo 0)
+status=$(printf '%s' "${input}" | jq -r '.status // "completed"' 2>/dev/null || echo completed)
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   printf '{}\n'
   exit 0
 fi
 
-has_code_changes=false
-has_workstate_update=false
+_hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../../.agents/hooks/checkpoint-scan.sh
+source "${_hook_dir}/../../.agents/hooks/checkpoint-scan.sh"
+azg_checkpoint_scan_porcelain
 
-while IFS= read -r line; do
-  [ -z "${line}" ] && continue
-  file_path=$(printf '%s' "${line}" | cut -c 4-)
-  file_path="${file_path#\"}"
-  file_path="${file_path%\"}"
-  case "${file_path}" in
-    .agents/spawn-state.json|.agents/session-handoff.md.tmpl) continue ;;
-  esac
-  case "${file_path}" in
-    task.md|docs/agents/current-state.md|.agents/session-handoff.md)
-      has_workstate_update=true
-      ;;
-    ROADMAP.md) ;;
-    *)
-      has_code_changes=true
-      ;;
-  esac
-done < <(git status --porcelain 2>/dev/null)
-
-if [ "${has_code_changes}" = true ] && [ "${has_workstate_update}" = false ] \
+if [ "${AZG_CHECKPOINT_HAS_CODE}" = true ] && [ "${AZG_CHECKPOINT_HAS_WORKSTATE}" = false ] \
   && [ "${status}" = "completed" ] && [ "${loop_count}" -lt "${LOOP_LIMIT}" ]; then
-  if command -v jq >/dev/null 2>&1; then
-    jq -n --arg m "${CHECKPOINT_REASON}" '{followup_message: $m}'
-  else
-    printf '{"followup_message":"%s"}\n' "${CHECKPOINT_REASON}"
-  fi
+  jq -n --arg m "${CHECKPOINT_REASON}" '{followup_message: $m}'
   exit 0
 fi
 
