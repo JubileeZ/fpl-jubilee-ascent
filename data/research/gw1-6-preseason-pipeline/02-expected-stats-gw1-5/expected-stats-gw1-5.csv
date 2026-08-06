@@ -234,7 +234,7 @@ player_id,player_code,web_name,club_short,position,expected_role,p_start,p_sub_i
 379,219168,Isak,LIV,FWD,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,5705.0,fpl_recency_50_50,0.5357,0.0612,2.6713,2.6713,0.0,1.3275,"50% 2025/26 (694m) + 50% mean older usable [2023/24,2024/25]"
 380,510663,Ekitiké,LIV,FWD,Cameo,0.1,0.35,0.55,60.0,15.0,not_role_eligible,api_unavailable_gw1,1,1797.0,fpl_single_usable_season,0.5058,0.1227,4.2571,4.2571,0.0,1.2521,100% usable season 2025/26 (1797 mins)
 384,204936,Donnarumma,MCI,GKP,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1,3060.0,fpl_single_usable_season,0.0,0.0038,0.0,0.0,2.2941,0.8529,100% usable season 2025/26 (3060 mins)
-385,432720,Trafford,MCI,GKP,Cameo,0.1,0.35,0.55,60.0,15.0,not_role_eligible,none,1,2520.0,fpl_single_usable_season,0.0,0.0014,0.0,0.0,3.7857,2.2143,100% usable season 2023/24 (2520 mins)
+385,432720,Trafford,LEE,GKP,Nailed Starter,0.9,0.35,0.55,60.0,15.0,eligible,none,1,2520.0,fpl_single_usable_season,0.0,0.0014,0.0,0.0,3.7857,2.2143,100% usable season 2023/24 (2520 mins)
 389,465351,Matheus N.,MCI,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,5362.0,fpl_recency_50_50,0.0444,0.1261,4.1988,4.1988,0.0,1.0484,"50% 2025/26 (2861m) + 50% mean older usable [2023/24,2024/25]"
 388,209036,Guéhi,MCI,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3,8229.0,fpl_recency_50_50,0.0781,0.0598,5.9427,5.9427,0.0,1.1654,"50% 2025/26 (3150m) + 50% mean older usable [2023/24,2024/25]"
 387,472769,O'Reilly,MCI,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2,3168.0,fpl_recency_50_50,0.2139,0.1037,4.9856,4.9856,0.0,0.6828,50% 2025/26 (2643m) + 50% mean older usable [2024/25]
@@ -303,12 +303,12 @@ player_id,player_code,web_name,club_short,position,expected_role,p_start,p_sub_i
 483,456512,Ndoye,NFO,MID,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,1,1167.0,fpl_single_usable_season,0.081,0.1165,7.4036,7.4036,0.0,1.3111,100% usable season 2025/26 (1167 mins)
 485,476887,Bakwa,NFO,MID,Cameo,0.1,0.35,0.55,60.0,15.0,not_role_eligible,none,1,549.0,fpl_single_usable_season,0.0885,0.1656,5.7377,5.7377,0.0,1.6393,100% usable season 2025/26 (549 mins)
 470,485047,Morato,NFO,DEF,Cameo,0.1,0.35,0.55,60.0,15.0,not_role_eligible,none,2,2231.0,fpl_recency_50_50,0.0534,0.0066,10.4924,10.4924,0.0,1.4795,50% 2025/26 (1340m) + 50% mean older usable [2024/25]
-496,485055,Kinsky,TOT,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2,1170.0,fpl_recency_50_50,0.0,0.0008,0.0,0.0,2.7143,1.4167,50% 2025/26 (630m) + 50% mean older usable [2024/25]
+496,485055,Kinsky,TOT,GKP,Nailed Starter,0.9,0.05,0.05,80.0,20.0,eligible,none,2,1170.0,fpl_recency_50_50,0.0,0.0008,0.0,0.0,2.7143,1.4167,50% 2025/26 (630m) + 50% mean older usable [2024/25]
 503,491279,Van de Ven,TOT,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,6396.0,fpl_recency_50_50,0.0596,0.0243,4.6016,4.6016,0.0,1.4823,"50% 2025/26 (3041m) + 50% mean older usable [2023/24,2024/25]"
 499,441164,Pedro Porro,TOT,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,8489.0,fpl_recency_50_50,0.0523,0.1561,5.1701,5.1701,0.0,1.4435,"50% 2025/26 (2793m) + 50% mean older usable [2023/24,2024/25]"
 112,469142,Van Hecke,TOT,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3,8538.0,fpl_recency_50_50,0.0699,0.0416,6.1922,6.1922,0.0,1.3352,"50% 2025/26 (3210m) + 50% mean older usable [2023/24,2024/25]"
 525,551226,Fernandes,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2,5928.0,fpl_recency_50_50,0.0934,0.1001,10.667,10.667,0.0,1.766,50% 2025/26 (3017m) + 50% mean older usable [2024/25]
-455,432422,Tonali,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2,5159.0,fpl_recency_50_50,0.1075,0.0985,9.7582,9.7582,0.0,1.2577,50% 2025/26 (2534m) + 50% mean older usable [2024/25]
+455,432422,Tonali,TOT,MID,Nailed Starter,0.9,0.1,0.15,80.0,20.0,eligible,none,2,5159.0,fpl_recency_50_50,0.1075,0.0985,9.7582,9.7582,0.0,1.2577,50% 2025/26 (2534m) + 50% mean older usable [2024/25]
 506,487053,Udogie,TOT,DEF,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3,5649.0,fpl_recency_50_50,0.0325,0.0608,3.8249,3.8249,0.0,1.6569,"50% 2025/26 (1335m) + 50% mean older usable [2023/24,2024/25]"
 512,460842,Kudus,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,watch,api_doubt_gw1,3,6609.0,fpl_recency_50_50,0.1627,0.1254,5.5415,5.5415,0.0,1.5384,"50% 2025/26 (1535m) + 50% mean older usable [2023/24,2024/25]"
 515,172780,Maddison,TOT,MID,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,2,3936.0,fpl_recency_50_50,0.2761,0.2788,3.5019,3.5019,0.0,1.4532,50% 2024/25 (1799m) + 50% mean older usable [2023/24]

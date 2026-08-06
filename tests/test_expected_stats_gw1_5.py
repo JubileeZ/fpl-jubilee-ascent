@@ -12,11 +12,11 @@ def _import_from_path(module_name: str, file_path: str):
 
 build_mod = _import_from_path(
     "build_expected_stats",
-    "docs/research/expected-stats-gw1-5/build_expected_stats.py",
+    "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py",
 )
 project_mod = _import_from_path(
     "project_expected_points",
-    "docs/research/expected-stats-gw1-5/project_expected_points.py",
+    "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py",
 )
 
 
@@ -32,7 +32,7 @@ def test_build_expected_stats_outputs():
 
 def test_project_gw1_5_points_outputs():
     df_proj = project_mod.project_gw1_5_points()
-    assert len(df_proj) == 193
+    assert len(df_proj) == 194
     assert "total_5gw_xp" in df_proj.columns
     assert "gw1_xp" in df_proj.columns
     assert "gw5_xp" in df_proj.columns

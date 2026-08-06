@@ -102,11 +102,11 @@ def _build_feature_frame(
 
 
 def project_gw1_5_points(
-    stats_csv_path: str = "data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv",
+    stats_csv_path: str = "data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv",
     fixtures_parquet_path: str = "data/processed/fixtures.parquet",
     clubs_parquet_path: str = "data/processed/clubs.parquet",
     players_parquet_path: str = "data/processed/players.parquet",
-    output_csv_path: str = "data/research/expected-stats-gw1-5/gw1-5_projections.csv",
+    output_csv_path: str = "data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv",
     export_draft_only: bool = True,
 ) -> pd.DataFrame:
     df_stats = pd.read_csv(stats_csv_path)

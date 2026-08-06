@@ -23,13 +23,13 @@ from models.participation_state_hybrid import ParticipationStateHybridModel
 
 MAX_BUDGET = 100.0
 
-spec = importlib.util.spec_from_file_location("pmod", "docs/research/expected-stats-gw1-5/project_expected_points.py")
+spec = importlib.util.spec_from_file_location("pmod", "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py")
 pmod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pmod)
 
 
 def generate_gw1_6_projections() -> pd.DataFrame:
-    df_stats = pd.read_csv("data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv")
+    df_stats = pd.read_csv("data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv")
     df_fixtures = pd.read_parquet("data/processed/fixtures.parquet")
     df_clubs = pd.read_parquet("data/processed/clubs.parquet")
     df_players = pd.read_parquet("data/processed/players.parquet")
@@ -295,7 +295,7 @@ def get_gw_starters(df_squad: pd.DataFrame, gw: int, bb_gw: int | None = None) -
 
 def run_full_wc4_study():
     df_proj = generate_gw1_6_projections()
-    p_csv = Path("data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv")
+    p_csv = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv")
     p_csv.parent.mkdir(parents=True, exist_ok=True)
     df_proj.to_csv(p_csv, index=False)
 
@@ -409,7 +409,7 @@ def run_full_wc4_study():
     print("\n--- 3x2 MATRIX SUMMARY TABLE (CUMULATIVE GW1-6 xP & METRICS) ---")
     print(df_summary[["scenario", "gw1_3_xp", "gw4_6_xp", "total_6gw_xp", "pre_spend", "post_spend", "itb_gw6", "banked_fts_gw6"]].to_string(index=False))
 
-    sim_csv = Path("data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv")
+    sim_csv = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv")
     pd.DataFrame(detailed_records).to_csv(sim_csv, index=False)
     print(f"\nExported detailed simulation records to {sim_csv}")
 

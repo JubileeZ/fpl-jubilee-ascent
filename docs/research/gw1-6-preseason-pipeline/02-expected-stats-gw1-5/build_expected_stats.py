@@ -223,10 +223,10 @@ def _default_priors(role: str) -> tuple[float, float, float, float, float]:
 
 
 def build_expected_stats(
-    role_csv_path: str = "data/research/expected-role-gw1-5/expected-role-gw1-5.csv",
+    role_csv_path: str = "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv",
     archive_processed: str = "data/archive/2025-26/processed",
     players_parquet: str = "data/processed/players.parquet",
-    output_csv_path: str = "data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv",
+    output_csv_path: str = "data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv",
 ) -> pd.DataFrame:
     df_role = pd.read_csv(role_csv_path)
     shortlist = df_role[df_role["expected_role"].isin(XI_CONTENTION_ROLES)].copy()

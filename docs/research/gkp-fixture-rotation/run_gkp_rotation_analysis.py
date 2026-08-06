@@ -22,8 +22,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 RESEARCH_DIR = PROJECT_ROOT / "data" / "research"
 OUT_DIR = RESEARCH_DIR / "gkp-fixture-rotation"
-STATS_CSV = RESEARCH_DIR / "expected-stats-gw1-5" / "expected-stats-gw1-5.csv"
-ROLE_CSV = RESEARCH_DIR / "expected-role-gw1-5" / "expected-role-gw1-5.csv"
+STATS_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "02-expected-stats-gw1-5" / "expected-stats-gw1-5.csv"
+ROLE_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "01-expected-role-gw1-5" / "expected-role-gw1-5.csv"
 
 DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
 PROMOTED_CLUBS = frozenset({"COV", "HUL"})
