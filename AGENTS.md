@@ -85,7 +85,7 @@ docs/         # Durable project documentation and decision records
 
 ## Session start
 
-Once per session (not every turn). Read; don't invent from chat:
+Once per session (not every turn). Continuity from listed files (chat ≠ continuity):
 
 1. `current-state.md` (reality).
 2. `task.md` if present (Work Packet). Absent = no active packet (OK).
@@ -95,8 +95,9 @@ Once per session (not every turn). Read; don't invent from chat:
 
 If handoff present or user says continue: read `.agents/session-handoff.md`.
 
-Missing required continuity doc: don't invent from memory.
-Restore: `git checkout -- <path>` if history exists; else ask user.
+Session start done when: `current-state` + (`task.md` if present) + ROADMAP slice read; git status/log before first edit.
+
+Missing required continuity doc: restore from git if history exists; else ask user.
 
 During work / before Checkpoint: update tracking docs when state changes
 (see `docs/agents/progress.md`). Before Checkpoint: refresh Work Packet SFDBN in `task.md`.
@@ -107,23 +108,22 @@ JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`
 
 ## Harness Safety
 
-- Safety-hook deny: explain the block; give exact manual command/content; do not execute it or weaken the hook.
+- Safety-hook deny: explain the block; give exact manual command/content; leave hook unchanged (do not execute the blocked action).
 
 ---
 
 ## Domain Vocabulary
 
-- Ambiguous domain terms: follow `docs/agents/domain.md` (read `CONTEXT.md` / `CONTEXT-MAP.md` + relevant ADRs; don't invent avoided synonyms).
+- Ambiguous domain terms: follow `docs/agents/domain.md` (read `CONTEXT.md` / `CONTEXT-MAP.md` + relevant ADRs; use glossary/ADR terms only).
 - Glossary/ADR writes: `/grill-with-docs` (uses `/domain-modeling`) after a term is resolved — domain concepts only; glossary-only; lazy create/update per that skill.
 
 ---
 
 ## Work State & Checkpoints
 
-- Tracker: `docs/agents/issue-tracker.md`. Procedure: `docs/agents/progress.md` (updates, compaction, archive, cleanup).
+- Tracker: `docs/agents/issue-tracker.md`. Updates/compaction/archive/cleanup: `docs/agents/progress.md`.
 - Code commits: stage updated `task.md` (Work Packet) with code — `commit-gate` enforces. Trivial: minimal packet OK; clear/delete when done same commit if appropriate.
-- Handoff write: only when user asks (handoff / device switch / leave-for-other-agent). Canonical: `.agents/session-handoff.md` (SFDBN); commit with work. Day-to-day same device: prefer `task.md` + `current-state.md`. If another handoff skill writes elsewhere (e.g. temp): copy SFDBN into `.agents/session-handoff.md` and commit before switch. Non-repo handoff ≠ Device Handoff.
+- Handoff / device switch / leave-for-other-agent → follow `docs/agents/progress.md` §Device Handoff (canonical `.agents/session-handoff.md`). Day-to-day same device: `task.md` + `current-state.md`.
 - Before Checkpoint / stop with code: refresh `task.md` and/or `current-state.md` and/or handoff as appropriate (hooks accept those).
 - Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; delete or empty `task.md` (finished packet — do not re-seed old content). Next task: create a new Work Packet with required SFDBN markers; durable state stays in ROADMAP / current-state / git.
-
 <!-- AZG:MANAGED:END -->
