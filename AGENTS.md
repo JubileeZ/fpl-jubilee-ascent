@@ -1,10 +1,4 @@
----
-description:
-alwaysApply: true
----
-
 # FPL-Jubilee-Ascent
-# Read by all AI agents working in this repo.
 ---
 
 ## Project Identity
@@ -34,23 +28,6 @@ docs/         # Durable project documentation and decision records
 
 ---
 
-## Historical Archive Testing
-
-- **MUST** read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) before performing backtesting or historical data exploration.
-
----
-
-## Docs & Research
-
-- **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and conventions.
-- Keep durable project documentation in `docs/` (`docs/adr/`, `docs/agents/`, `docs/research/`, or named topic dirs `docs/research/<topic-slug>/`).
-- Store machine-readable research companions and mock/research model CSVs in topic subfolders under `data/research/<topic-slug>/` (e.g. `data/research/expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv`).
-- Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
-- Keep source, commands, tests, and data in existing domain directories; do not create root-level project artifacts unless canonical repository files (`README.md`, `AGENTS.md`, `CONTEXT.md`, or `ROADMAP.md`).
-- Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
-
----
-
 ## Key Commands
 
 | Command | What it does |
@@ -59,24 +36,28 @@ docs/         # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 
-**Pre-commit gate:** run `uv run ruff check .`, `uv run pytest`, and
-`bash tests/verify.sh` before proposing commits.
+**Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 
 ---
 
-## Off-Limits: Never Touch Without Explicit Instruction
+## Safety Rules
 
-- `.env` and files with secrets or credentials
-- Database migrations — flag, never auto-apply or auto-run
-- Production configuration files
-- Files marked `# DO NOT EDIT` or `# GENERATED`
-
----
-
-## Project-Specific Safety Rules
-
+- Never commit, print, or paste secret values (from `.env`, credentials, tokens, or chat). App code may read env vars; do not exfiltrate their values.
+- Database migrations — flag, never auto-apply or auto-run.
+- Production configuration files — do not edit without explicit authorization.
 - Test commands must never make real external HTTP requests; use HTTPX mocks/fixtures.
 - Playwright auth flow invoked only when direct HTTP login and token paste fail. Submits sign-in form via `#password` Enter key to bypass `account.premierleague.com` tab/cookie overlay selector ambiguity.
+
+---
+
+## Docs & Research
+
+- **MUST** read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) before performing backtesting or historical data exploration.
+- **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and conventions.
+- Keep durable project documentation in `docs/` (`docs/adr/`, `docs/agents/`, `docs/research/`, or named topic dirs `docs/research/<topic-slug>/`).
+- Store machine-readable research companions and mock/research model CSVs in topic subfolders under `data/research/<topic-slug>/`.
+- Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
+- Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
 
 ---
 
@@ -85,11 +66,6 @@ docs/         # Durable project documentation and decision records
 - All CLI commands runnable as modules (e.g., `uv run python -m commands.refresh_data`).
 - Models adhere to `BaseModel` abstract class contract.
 - Use explicit type annotations for all new Python code.
-
----
-
-## Agent Behavior Overrides
-
 - Doc edits telegraphic: no articles, no filler, concise fragments.
 - ponytail: Python 3.14 and uv pre-approved stack requirements.
 - ponytail: Prefer single line expressions when possible; avoid unnecessary abstractions.
@@ -100,53 +76,54 @@ docs/         # Durable project documentation and decision records
 <!-- AZG:MANAGED:START -->
 ## Placeholder fill
 
-If `AGENTS.md` or tracking docs (`ROADMAP.md`, `progress.md`, `current-state.md`) have `<!-- AGENT: ... -->` placeholders:
-1. Ask whether to fill; if skipped, leave exact comments.
-2. If filling: interview section-by-section (never whole file); max 3 options (recommended first); drop inapplicable sections; telegraphic for doc surfaces; remove comments when filled.
+`<!-- AGENT: ... -->` in agent/tracking docs (e.g. `AGENTS.md`, `ROADMAP.md`, `docs/agents/*`):
+1. Ask fill or skip; skip → leave comment exact.
+2. One section at a time; ≤3 options, recommended first.
+3. Done → drop resolved comments + inapplicable sections; telegraphic prose.
 
 ---
 
 ## Session start
 
-Lean always-on only:
+Once per session (not every turn). Read; don't invent from chat:
 
-1. Read `task.md` Work Packet if present.
-2. Read `ROADMAP.md` active phase / first unchecked item only (not archived or collapsed phases).
-3. Read `docs/agents/current-state.md` Active phase + What exists / gaps when unfamiliar, or when existence may have changed.
-4. Run `git log -5 --oneline` + `git status`.
-5. Treat `AGENTS.md` / rules as pointer index — open linked docs only when the task needs them.
-6. Do not rely on chat history.
+1. `current-state.md` (reality).
+2. `task.md` if present (Work Packet). Absent = no active packet (OK).
+3. `ROADMAP.md` active phase / first unchecked only.
+4. `git status` + `git log -5 --oneline` before edit.
+5. Other docs JIT via pointers.
 
-Not always-on: full `CONTEXT.md`, `docs/agents/progress.md`, `docs/agents/issue-tracker.md`, archived ROADMAP, research notes.
+If handoff present or user says continue: read `.agents/session-handoff.md`.
 
-Before Checkpoint (git commit of in-progress work): update Work Packet SFDBN fields in `task.md`.
+Missing required continuity doc: don't invent from memory.
+Restore: `git checkout -- <path>` if history exists; else ask user.
+
+During work / before Checkpoint: update tracking docs when state changes
+(see `docs/agents/progress.md`). Before Checkpoint: refresh Work Packet SFDBN in `task.md`.
+
+JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`, archived ROADMAP, research notes.
 
 ---
 
-## Universal Safety Rules
+## Harness Safety
 
-- No secrets/tokens/credentials in any file.
-- Destructive ops (delete/overwrite/truncate/drop): inline `# DESTRUCTIVE: <reason>`.
-- No new top-level dependencies without flagging in response.
-- Agent harness device changes: implement scalably for current/future devices and new repos.
-- Prefer reversible actions. If irreversible, state clearly before executing.
-- Tool blocked by safety hook? Explain block, suggest exact command/content to write manually.
-- Windows: run CLI/hooks only inside Git Bash.
-- Subagent budget & delegation: Read `.agents/spawn-budget.json` for active limits (`max_spawns`, `max_concurrent`, `max_depth`). Dispatch subagents up to `max_spawns` / `max_concurrent` concurrently; wait for running workers to finish before spawning more. Subagents must not spawn child subagents when `max_depth` is 1.
+- Safety-hook deny: explain the block; give exact manual command/content; do not execute it or weaken the hook.
 
 ---
 
 ## Domain Vocabulary
 
-- Ambiguous terminology? Use `domain-vocabulary` skill / rule, or read `docs/agents/domain.md`.
-- New terms? Create `CONTEXT.md` at root from `docs/agents/CONTEXT.md.tmpl` to register glossary (or `/grill-with-docs`).
+- Ambiguous domain terms: follow `docs/agents/domain.md` (read `CONTEXT.md` / `CONTEXT-MAP.md` + relevant ADRs; don't invent avoided synonyms).
+- Glossary/ADR writes: `/grill-with-docs` (uses `/domain-modeling`) after a term is resolved — domain concepts only; glossary-only; lazy create/update per that skill.
 
 ---
 
-## Progress & Issues
+## Work State & Checkpoints
 
-- Progress workflow: use `progress-updates` skill / rule, or read `docs/agents/progress.md`.
-- Issue tracker setup: read `docs/agents/issue-tracker.md`.
-- Compaction / archive: see `docs/agents/progress.md` (Active-Phase Compaction; current-state = current truth; CONTEXT glossary-only; `docs/archive/` when-to-archive). Never archive live `CONTEXT.md` / `CONTEXT-MAP.md`; never relocate ADRs from `docs/adr/`.
-- Cleanup: delete transient session files (`task.md`, `implementation_plan.md`, `walkthrough.md`) once milestone/task is complete.
+- Tracker: `docs/agents/issue-tracker.md`. Procedure: `docs/agents/progress.md` (updates, compaction, archive, cleanup).
+- Code commits: stage updated `task.md` (Work Packet) with code — `commit-gate` enforces. Trivial: minimal packet OK; clear/delete when done same commit if appropriate.
+- Handoff write: only when user asks (handoff / device switch / leave-for-other-agent). Canonical: `.agents/session-handoff.md` (SFDBN); commit with work. Day-to-day same device: prefer `task.md` + `current-state.md`. If another handoff skill writes elsewhere (e.g. temp): copy SFDBN into `.agents/session-handoff.md` and commit before switch. Non-repo handoff ≠ Device Handoff.
+- Before Checkpoint / stop with code: refresh `task.md` and/or `current-state.md` and/or handoff as appropriate (hooks accept those).
+- Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; delete or empty `task.md` (finished packet — do not re-seed old content). Next task: create a new Work Packet with required SFDBN markers; durable state stays in ROADMAP / current-state / git.
+
 <!-- AZG:MANAGED:END -->

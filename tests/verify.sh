@@ -50,13 +50,11 @@ check_file "docs/agents/issue-tracker.md"
 check_file "docs/agents/triage-labels.md"
 check_file "docs/agents/domain.md"
 check_file ".agents/hooks.json"
-check_file ".agents/spawn-budget.json"
 
 for hook in \
   block-destructive-ops.sh \
   commit-gate.sh \
   checkpoint.sh \
-  spawn-budget.sh \
   pre-compact.sh
 do
   check_file ".agents/hooks/${hook}"

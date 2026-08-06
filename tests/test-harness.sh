@@ -54,7 +54,6 @@ check_file "docs/agents/domain.md"
 
 # 3. Check configuration and hooks
 check_file ".agents/hooks.json"
-check_file ".agents/spawn-budget.json"
 check_file ".agents/hooks/block-destructive-ops.sh"
 check_executable ".agents/hooks/block-destructive-ops.sh"
 

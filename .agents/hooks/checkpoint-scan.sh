@@ -17,7 +17,7 @@ azg_checkpoint_scan_porcelain() {
     file_path="${file_path#\"}"
     file_path="${file_path%\"}"
     case "${file_path}" in
-      .agents/spawn-state.json|.agents/session-handoff.md.tmpl) continue ;;
+      .agents/session-handoff.md.tmpl) continue ;;
     esac
     case "${file_path}" in
       task.md|docs/agents/current-state.md|.agents/session-handoff.md)
