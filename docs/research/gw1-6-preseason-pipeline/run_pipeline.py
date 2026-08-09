@@ -1,9 +1,9 @@
 """GW1–6 Preseason Pipeline Master Runner.
 
 Automates the complete 3-stage research pipeline:
-Stage 1: Player Role & Availability Refresh (refresh_expected_role.py)
-Stage 2: Expected Stats & Points Projections (build_expected_stats.py & project_expected_points.py)
-Stage 3: GW1–6 Chip & GW4 Wildcard 3x2 Matrix Optimization (run_wc4_simulation.py)
+Stage 1: Dual-source Expected Role rebuild (FFS + Meerkat scrape)
+Stage 2: Expected Stats & Points Projections (availability overlays applied)
+Stage 3: 16-scenario chip exploration matrix (BB × FH3|TC3 × Haaland × Bruno × WC4 Opt1)
 """
 
 from __future__ import annotations

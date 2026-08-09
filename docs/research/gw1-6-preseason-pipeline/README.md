@@ -1,12 +1,12 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-09T18:15:00+07:00  
-**Data stamp**: Projections CSV 2026-08-09; Expected Role Table 2026-08-09; FFS transfers through 2026-08-08; API player pricing 2026-07-29  
+**Updated**: 2026-08-10T06:45:00+07:00  
+**Data stamp**: Dual-source role scrape 2026-08-10; Stage 2 dual-floor rates 2026-08-10; FFS + Meerkat accessed 2026-08-10; API pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
-**Purpose**: Consolidate the 3-stage preseason research pipeline — transforming raw source evidence & transfer registers into player expected roles (Stage 1), generating empirical expected stats & points projections (Stage 2), and solving full 6-Gameweek chip & Wildcard squad optimizations (Stage 3).  
-**Scope**: End-to-end 20-club player role audit, feature event-rate calculation, $xP$ points projection, and 3x2 matrix MILP squad optimization across GW1–6.  
-**Pipeline Runner**: [`run_pipeline.py`](run_pipeline.py) — executes Stage 1 ➔ Stage 2 ➔ Stage 3 end-to-end.
+**Purpose**: End-to-end preseason research — dual-source Expected Role rebuild (Stage 1), dual-floor Event Rates + $xP$ (Stage 2), and 16-scenario chip exploration with WC4 Opt1 (Stage 3).  
+**Scope**: 20-club XI Contention role audit; availability-aware Participation State scoring; exploration matrix (BB1|BB2) × WC4 Opt1 × (FH3|TC3) × (Allow|Ban Haaland pre) × (Allow|Ban B.Fernandes pre).  
+**Pipeline Runner**: [`run_pipeline.py`](run_pipeline.py)
 
 ---
 
@@ -14,88 +14,86 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ External Sources & Transfers Register                   │
-│ (FFS Team News, FPL Meerkat, Transfers, Official News)  │
+│ FFS Team News + FPL Meerkat + transfers + API overlays  │
 └────────────────────────────┬────────────────────────────┘
-                             │  ingested by refresh_expected_role.py
+                             │  refresh_expected_role.py (HTTP scrape)
                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 1: 01-expected-role-gw1-5/                        │
-│ └── expected-role-gw1-5.csv (340 XI Contention Rows)    │
+│ └── expected-role-gw1-5.csv (XI Contention + injects)   │
 └────────────────────────────┬────────────────────────────┘
-                             │  ingested by build_expected_stats.py & project_expected_points.py
+                             │  build_expected_stats.py & project_expected_points.py
                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 2: 02-expected-stats-gw1-5/                        │
 │ ├── expected-stats-gw1-5.csv                            │
-│ └── gw1-5_projections.csv / gw1-6_projections.csv       │
+│ └── gw1-5_projections.csv                               │
 └────────────────────────────┬────────────────────────────┘
-                             │  ingested by run_wc4_simulation.py
+                             │  generate_gw1_6_projections() + run_wc4_simulation.py
                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 3: 03-gw1-6-chip-wc4-squads/                      │
-│ └── gw1-6_wc4_simulation.csv (3x2 Matrix Optimization) │
+│ ├── gw1-6_projections.csv                               │
+│ ├── gw1-6_wc4_summary.csv (16 scenarios)                │
+│ ├── gw1-6_wc4_simulation.csv                            │
+│ └── gw1-6_user_squad_comparison.csv                     │
 └─────────────────────────────────────────────────────────┘
 ```
 
+Shared overlay module: [`availability_priors.py`](availability_priors.py) — Watch $p_{\text{start}}\times0.70$ on GW1–5; `exclude_gw1-5` zeros GW1–5 only.
+
 ---
 
-## Agent Prompt (Parameterized for Reproducible End-to-End Pipeline Redo)
+## Agent Prompt
 
 ```text
-Run parameterized GW1-6 Preseason Pipeline (End-to-End Execution):
+Run parameterized GW1-6 Preseason Pipeline (End-to-End):
 
-1. Execute Stage 1 (Player Role & Availability Refresh):
-   - Command: uv run python docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py
-   - Input: Scraped line-up predictions (FFS Team News, FPL Meerkat), summer transfer register (fpl-summer-transfers.md), official club fitness updates.
-   - Output: data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv (340 rows).
-
-2. Execute Stage 2 (Expected Stats & Points Projections):
-   - Script 2A: build_expected_stats.py -> outputs expected-stats-gw1-5.csv.
-   - Script 2B: project_expected_points.py -> scores ParticipationStateHybridModel across 20 clubs.
-   - Output: data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv.
-
-3. Execute Stage 3 (GW1-6 Chip & WC4 Wildcard Squad Optimization):
-   - Command: run_wc4_simulation.py -> solves 3x2 matrix (Pre-WC BB1 vs BB2; Post-WC Opt1 Unconstrained, Opt2 Cheap DEF <= £32m, Opt3 Cheap DEF + LIV 2+).
-   - Output: data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv.
-
-4. Run Master Pipeline Script:
-   - Command: uv run python docs/research/gw1-6-preseason-pipeline/run_pipeline.py
-   - Verifies all 3 stages run sequentially and syncs CSV artifacts across pipeline directories.
-
-5. Verify Pre-Commit Delivery Gates:
-   - Run: uv run ruff check ., uv run pytest, bash tests/verify.sh before completion.
+1. Stage 1: uv run python docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py
+   - HTTP scrape FFS Team News + FPL Meerkat; inject missing FFS XI players; conflict rules; API + official availability.
+2. Stage 2: build_expected_stats.py then project_expected_points.py (availability_priors applied).
+3. Stage 3: run_wc4_simulation.py — 16-scenario matrix; WC4 Opt1 only; user_picks + FT banking; summary CSVs.
+4. Master: uv run python docs/research/gw1-6-preseason-pipeline/run_pipeline.py
+5. Gates: uv run ruff check ., uv run pytest, bash tests/verify.sh
 ```
 
 ---
 
 ## Sub-Stage Directories
 
-1. [**01-expected-role-gw1-5**](01-expected-role-gw1-5/expected-role-gw1-5.md): 20-Club Expected Role Audit & Draft Availability priors.
-2. [**02-expected-stats-gw1-5**](02-expected-stats-gw1-5/expected-stats-gw1-5.md): Player Event Rates & $xP$ projections.
-3. [**03-gw1-6-chip-wc4-squads**](03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md): Strategic GW1–6 chip & GW4 Wildcard squad optimization.
+1. [**01-expected-role-gw1-5**](01-expected-role-gw1-5/expected-role-gw1-5.md)
+2. [**02-expected-stats-gw1-5**](02-expected-stats-gw1-5/expected-stats-gw1-5.md)
+3. [**03-gw1-6-chip-wc4-squads**](03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)
 
 ---
 
-## Master Scenario Summary Table (Stage 3 Optimization Output)
+## Master Scenario Summary (Stage 3 — 16 exploration paths)
 
-| Scenario ID | Pre-WC Chip | FH Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **S1** | GW1 BB1 | — | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S2** | GW1 BB1 | — | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S3** | GW1 BB1 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S4** | GW2 BB2 | — | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S5** | GW2 BB2 | — | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S6** | GW2 BB2 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S7** | GW1 BB1 | **GW3 FH** | Opt1 (Unconstrained) | **174.11 $xP$** | **151.85 $xP$** | **325.96 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S8** | GW1 BB1 | **GW3 FH** | Opt2 (Cheap DEF $\le$32m) | **174.11 $xP$** | 147.05 $xP$ | **321.16 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S9** | GW1 BB1 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **174.11 $xP$** | 146.56 $xP$ | **320.67 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S10** | GW2 BB2 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 173.36 $xP$ | 146.56 $xP$ | **319.92 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S11** | None (Std) | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 157.93 $xP$ | 146.56 $xP$ | **304.49 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| ID | BB | Mid chip | Ban H | Ban Bruno | GW1–3 xP | GW4–6 xP | Total | Banked FTs GW6 |
+| :--- | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
+| S1 | GW1 | FH3 | allow | allow | 174.83 | 152.43 | **327.26** | 4 |
+| S2 | GW1 | FH3 | allow | ban | 174.83 | 152.43 | 327.26 | 4 |
+| S3 | GW1 | FH3 | ban | allow | 174.83 | 152.43 | 327.26 | 4 |
+| S4 | GW1 | FH3 | ban | ban | 174.83 | 152.43 | 327.26 | 4 |
+| S5 | GW1 | TC3 | allow | allow | 183.61 | 152.43 | **336.04** | 4 |
+| S6 | GW1 | TC3 | allow | ban | 183.61 | 152.43 | 336.04 | 4 |
+| S7 | GW1 | TC3 | ban | allow | 178.87 | 152.43 | 331.30 | 4 |
+| S8 | GW1 | TC3 | ban | ban | 178.87 | 152.43 | 331.30 | 4 |
+| S9 | GW2 | FH3 | allow | allow | 174.00 | 152.43 | 326.43 | 4 |
+| S10 | GW2 | FH3 | allow | ban | 174.00 | 152.43 | 326.43 | 4 |
+| S11 | GW2 | FH3 | ban | allow | 173.39 | 152.43 | 325.82 | 4 |
+| S12 | GW2 | FH3 | ban | ban | 173.39 | 152.43 | 325.82 | 4 |
+| S13 | GW2 | TC3 | allow | allow | 182.87 | 152.43 | 335.30 | 4 |
+| S14 | GW2 | TC3 | allow | ban | 182.87 | 152.43 | 335.30 | 4 |
+| S15 | GW2 | TC3 | ban | allow | 178.52 | 152.43 | 330.95 | 4 |
+| S16 | GW2 | TC3 | ban | ban | 178.52 | 152.43 | 330.95 | 4 |
+
+**Decision rule**: report top FH3 and top TC3 separately (different chip spends).  
+**Top FH3**: S1 — 327.26 xP. **Top TC3**: S5 — 336.04 xP (TC on Haaland GW3).
 
 ---
 
 ## Verification & Delivery
 
 - Master runner verified via `uv run python docs/research/gw1-6-preseason-pipeline/run_pipeline.py`.
-- Delivery checks (`uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`) passed cleanly.
+- Availability unit tests: `tests/test_availability_priors.py`.

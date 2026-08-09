@@ -73,7 +73,7 @@ One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub
 _Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role
 
 **Expected Role**:
-Club-relative preseason judgment of how a Player is expected to be used over the early-season band (GW1–5). Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible. Dated Research Note snapshot; refresh on material pre-GW1 news.
+Club-relative preseason judgment of how a Player is expected to be used over the early-season band (GW1–5). Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible. Dated Research Note snapshot; refresh via dual-source lineup scrape (FFS Team News + FPL Meerkat) with conflict rules.
 _Avoid_: First team, nailed, importance, lineup status, Participation State, GW1-only XI, full-season average
 
 **Nailed Starter**:
@@ -109,8 +109,8 @@ Per-Club list of fit-role Draft-eligible Players (Nailed Starter and Regular Sta
 _Avoid_: First team, starter XI, projected lineup, current available list
 
 **Draft Availability**:
-Date-stamped filter applied to a Draft Shortlist after Expected Role assignment: Eligible, Watch, Exclude GW1, or Exclude GW1–5. It consumes Availability Override and registration evidence without changing a Player's fit-role label.
-_Avoid_: Draft eligibility, Expected Role, injury status
+Date-stamped overlay applied after Expected Role assignment: Eligible, Watch, Exclude GW1, or Exclude GW1–5. Does not change fit-role label. Scoring: Watch multiplies $p_{\text{start}}$ by 0.70 for GW1–5 (cut mass → $p_{\text{dnp}}$); Exclude GW1 zeros GW1 only; Exclude GW1–5 zeros GW1–5 only (GW6 uses fit-role priors).
+_Avoid_: Draft eligibility, Expected Role, injury status, treating Watch as annotation-only
 
 **Role Evidence**:
 Per-Player attribution for an Expected Role assignment: stated reason, source references, conflict rule applied, and confidence. Required on every XI Contention Set row so the User can audit logic.
@@ -153,8 +153,16 @@ The cross-season identity resolution technique that links transient annual FPL e
 _Avoid_: ID matching, element_id join
 
 **Usable Season**:
-A season-year in the Event Rate window whose FPL sample meets the minutes floor (same floor as Prior-Season Seed: 450 minutes). Thin or missing years are excluded from the rate blend; fill uses older usable seasons first, then external research only if none remain.
-_Avoid_: Any-minutes season, partial sample, injury season as full prior
+A season-year in the Event Rate window whose FPL sample meets the any-usable minutes floor (450; same as Prior-Season Seed). Thin or missing years below that floor are excluded. Research Stage 2 dual-floor: the **latest** blend slot additionally requires ≥900 minutes; years with 450–899 minutes may only enter the older-mean half (or equal-weight all ≥450 when no ≥900 year exists).
+_Avoid_: Any-minutes season, partial sample, treating injury season as automatic latest prior
+
+**Research Position Baseline**:
+Position-only aggregate Event Rates used by the preseason research Stage 2 builder when a Player has no Usable Season and no external research package. Distinct from production Position-Price Fallback Prior (position × price band).
+_Avoid_: Position-Price Fallback Prior, Prior-Season Seed
+
+**Position-Price Fallback Prior**:
+Position- and price-band aggregate Event Rates used in production Cold-Start when a Player has no usable Prior-Season Seed.
+_Avoid_: Prior-Season Seed, default rate, Research Position Baseline
 
 **Defensive Contribution (Defcon)**:
 The FPL metric tracking defensive actions (clearances, blocks, interceptions, tackles, recoveries) used to evaluate position-specific defensive contribution thresholds for bonus/points. CBIT (clearances + blocks + interceptions + tackles) for DEF threshold 10; CBITR (+ recoveries) for MID/FWD threshold 12.

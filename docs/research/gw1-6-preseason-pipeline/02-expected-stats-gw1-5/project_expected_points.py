@@ -7,6 +7,7 @@ bonus over the XI Contention Set, exports Draft-eligible rows to projections CSV
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -16,6 +17,15 @@ import pandas as pd
 
 from features.builder import _fixture_maps
 from models.participation_state_hybrid import ParticipationStateHybridModel
+
+_PRIOR_SPEC = importlib.util.spec_from_file_location(
+    "availability_priors",
+    Path(__file__).resolve().parents[1] / "availability_priors.py",
+)
+_PRIOR_MOD = importlib.util.module_from_spec(_PRIOR_SPEC)
+assert _PRIOR_SPEC.loader is not None
+_PRIOR_SPEC.loader.exec_module(_PRIOR_MOD)
+apply_availability_priors = _PRIOR_MOD.apply_availability_priors
 
 _POS_TO_ID = {"GKP": 1, "DEF": 2, "MID": 3, "FWD": 4}
 DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
@@ -38,8 +48,6 @@ def _build_feature_frame(
         club_fixtures = fixture_map[fixture_map["club_id"] == club_id]
         draft_avail = str(player.get("draft_availability", "eligible"))
         avail_override = str(player.get("availability_override", "") or "")
-        exclude_all = draft_avail == "exclude_gw1-5" or "out_gw1-5" in avail_override
-        exclude_gw1 = draft_avail == "exclude_gw1" or "unavailable_gw1" in avail_override
 
         p_start = float(player["p_start"])
         p_sub = float(player["p_sub_in"])
@@ -49,10 +57,9 @@ def _build_feature_frame(
 
         for _, fx in club_fixtures.iterrows():
             gw = int(fx["gameweek_id"])
-            if exclude_all or (exclude_gw1 and gw == 1):
-                row_p_start, row_p_sub, row_p_dnp = 0.0, 0.0, 1.0
-            else:
-                row_p_start, row_p_sub, row_p_dnp = p_start, p_sub, p_dnp
+            row_p_start, row_p_sub, row_p_dnp = apply_availability_priors(
+                p_start, p_sub, p_dnp, draft_avail, avail_override, gw
+            )
 
             rows.append({
                 "player_id": int(player["player_id"]),

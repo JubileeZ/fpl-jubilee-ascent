@@ -1,11 +1,14 @@
 """Expected Stats GW1–5 builder — Permanent Player Code Mapping + usable-season blend.
 
-Rules (grill lock):
+Rules (grill lock 2026-08-10):
 - Resolve archive history via FPL `code` (ADR 0004), never raw cross-season player_id.
-- Season window 2023/24–2025/26. Usable season = minutes >= MIN_USABLE_MINUTES (450).
-- Thin/missing seasons dropped. Blend: 50% latest usable + 50% mean of older usable.
-- External research only when no usable FPL season remains; Defcon only if CBIT/CBITR
-  or true FPL Defcon (else position baseline Defcon).
+- Season window 2023/24–2025/26.
+- Usable season (any slot) = minutes >= MIN_USABLE_MINUTES (450).
+- Latest slot = most recent usable with minutes >= MIN_LATEST_USABLE_MINUTES (900).
+  Thin years (450–899) may sit in the older-mean half only; if no ≥900 year exists,
+  equal-weight all ≥450 usables (no 50/50 latest).
+- External research only when no usable FPL season remains; Defcon from CBIT/CBITR
+  or FPL Defcon when present; else component fill from external/baseline.
 - Rate sheet covers XI Contention Set (Nailed / Regular / Rotation / Cameo).
 """
 
@@ -21,10 +24,12 @@ import pandas as pd
 
 from features.builder import MIN_PRIOR_MINUTES
 
-MIN_USABLE_MINUTES = MIN_PRIOR_MINUTES  # 450 — same floor as Prior-Season Seed
+MIN_USABLE_MINUTES = MIN_PRIOR_MINUTES  # 450 — any-usable floor
+MIN_LATEST_USABLE_MINUTES = 900  # latest-slot floor (dual-floor grill lock)
 SEASON_WINDOW = ("2023/24", "2024/25", "2025/26")
 LATEST_ARCHIVE_SEASON = "2025/26"
 XI_CONTENTION_ROLES = ("Nailed Starter", "Regular Starter", "Rotation", "Cameo")
+RATE_KEYS = ("xg", "xa", "defcon", "saves", "gc")
 
 POSITION_BASELINES = {
     "GKP": {"xg": 0.00, "xa": 0.00, "defcon": 0.00, "saves": 2.78, "gc": 1.38},
@@ -115,6 +120,37 @@ EXTERNAL_RESEARCH_RATES: dict[int, dict] = {
           "note": "External Rennes/Clermont; FBref CBIT Defcon 10.87/90 (Jacquet)"},
     558: {"xg": 0.085, "xa": 0.100, "saves": 0.00, "gc": 1.20, "defcon": 12.30, "defcon_cbit": True,
           "note": "External RB Leipzig; FBref CBITR Defcon 12.30/90 (Schlager)"},
+    # Draft Regular fallback packages (grill lock 2026-08-10)
+    110: {"xg": 0.000, "xa": 0.000, "saves": 3.10, "gc": 1.41, "defcon": 0.00, "defcon_cbit": True,
+          "note": "External CHA 2023/24 Swansea #1: Rushworth ~3.10 saves/90, GA90 1.41 (FBref)"},
+    20: {"xg": 0.220, "xa": 0.120, "saves": 0.00, "gc": 1.30, "defcon": 4.50, "defcon_cbit": True,
+         "note": "External best-guess: Dowman academy MID; tempered from thin 2025/26 FPL sample"},
+    557: {"xg": 0.320, "xa": 0.180, "saves": 0.00, "gc": 1.25, "defcon": 2.80, "defcon_cbit": True,
+          "note": "External best-guess: Tzolis Club Brugge/PAOK wing rates → FPL MID proxy"},
+    152: {"xg": 0.050, "xa": 0.080, "saves": 0.00, "gc": 1.35, "defcon": 7.50, "defcon_cbit": True,
+          "note": "External best-guess: Palestra Chelsea RWB/RB; CHA/U23 defensive proxy"},
+    185: {"xg": 0.160, "xa": 0.140, "saves": 0.00, "gc": 1.35, "defcon": 6.80, "defcon_cbit": True,
+          "note": "External best-guess: Sakamoto J-League/CHA creative MID proxy"},
+    194: {"xg": 0.380, "xa": 0.100, "saves": 0.00, "gc": 1.40, "defcon": 2.20, "defcon_cbit": True,
+          "note": "External best-guess: Thomas-Asante CHA FWD xG proxy (~0.38/90)"},
+    279: {"xg": 0.040, "xa": 0.030, "saves": 0.00, "gc": 1.20, "defcon": 8.50, "defcon_cbit": True,
+          "note": "External best-guess: Ajayi CHA/PL CB; CBIT-style Defcon proxy"},
+    287: {"xg": 0.120, "xa": 0.110, "saves": 0.00, "gc": 1.40, "defcon": 7.20, "defcon_cbit": True,
+          "note": "External best-guess: Millar Scottish/CHA wing-mid proxy"},
+    564: {"xg": 0.000, "xa": 0.000, "saves": 3.20, "gc": 1.25, "defcon": 0.00, "defcon_cbit": True,
+          "note": "External best-guess: Scherpen Ajax/Eredivisie GKP saves proxy"},
+    308: {"xg": 0.050, "xa": 0.060, "saves": 0.00, "gc": 1.25, "defcon": 7.80, "defcon_cbit": True,
+          "note": "External best-guess: Furlong CHA RB/CB; CBIT Defcon proxy"},
+    309: {"xg": 0.100, "xa": 0.160, "saves": 0.00, "gc": 1.35, "defcon": 8.50, "defcon_cbit": True,
+          "note": "External best-guess: Núñez Norwich/CHA progressive MID proxy"},
+    324: {"xg": 0.180, "xa": 0.140, "saves": 0.00, "gc": 1.40, "defcon": 5.50, "defcon_cbit": True,
+          "note": "External best-guess: Mehmeti Basel/CHA attacking MID proxy"},
+    289: {"xg": 0.140, "xa": 0.090, "saves": 0.00, "gc": 1.40, "defcon": 9.00, "defcon_cbit": True,
+          "note": "External best-guess: Crooks CHA box-mid; CBITR Defcon proxy"},
+    551: {"xg": 0.170, "xa": 0.030, "saves": 0.00, "gc": 1.35, "defcon": 7.86, "defcon_cbit": True,
+          "note": "External: Angulo thin 2025/26 FPL (401m) scaled xG/xA/Defcon as package"},
+    283: {"xg": 0.040, "xa": 0.050, "saves": 0.00, "gc": 1.30, "defcon": 8.00, "defcon_cbit": True,
+          "note": "External best-guess: Jacob NEW DEF; CBIT Defcon proxy"},
 }
 
 
@@ -129,6 +165,8 @@ def _rates_from_sums(
     defcon: float,
     saves: float,
     gc: float,
+    *,
+    has_defcon_evidence: bool,
 ) -> dict[str, float] | None:
     if minutes < MIN_USABLE_MINUTES:
         return None
@@ -136,9 +174,10 @@ def _rates_from_sums(
         "minutes": minutes,
         "xg": _per90(xg, minutes),
         "xa": _per90(xa, minutes),
-        "defcon": _per90(defcon, minutes),
+        "defcon": _per90(defcon, minutes) if has_defcon_evidence else 0.0,
         "saves": _per90(saves, minutes),
         "gc": _per90(gc, minutes),
+        "has_defcon_evidence": 1.0 if has_defcon_evidence else 0.0,
     }
 
 
@@ -157,7 +196,9 @@ def _archive_season_rates(
     defcon = float(pd.to_numeric(hist["defensive_contribution"], errors="coerce").fillna(0).sum())
     saves = float(pd.to_numeric(hist["saves"], errors="coerce").fillna(0).sum())
     gc = float(pd.to_numeric(hist["goals_conceded"], errors="coerce").fillna(0).sum())
-    return _rates_from_sums(minutes, xg, xa, defcon, saves, gc)
+    return _rates_from_sums(
+        minutes, xg, xa, defcon, saves, gc, has_defcon_evidence=defcon > 0
+    )
 
 
 def _history_past_season_rates(summary_path: Path, season: str) -> dict[str, float] | None:
@@ -172,13 +213,13 @@ def _history_past_season_rates(summary_path: Path, season: str) -> dict[str, flo
         if hp.get("season_name") != season:
             continue
         minutes = float(hp.get("minutes", 0) or 0)
-        # Prefer FPL Defcon field; else CBIT(+R) component sum when present.
         defcon = float(hp.get("defensive_contribution", 0) or 0)
         if defcon <= 0:
             cbi = float(hp.get("clearances_blocks_interceptions", 0) or 0)
             tackles = float(hp.get("tackles", 0) or 0)
             recoveries = float(hp.get("recoveries", 0) or 0)
             defcon = cbi + tackles + recoveries
+        has_defcon = defcon > 0
         return _rates_from_sums(
             minutes,
             float(hp.get("expected_goals", 0) or 0),
@@ -186,30 +227,95 @@ def _history_past_season_rates(summary_path: Path, season: str) -> dict[str, flo
             defcon,
             float(hp.get("saves", 0) or 0),
             float(hp.get("goals_conceded", 0) or 0),
+            has_defcon_evidence=has_defcon,
         )
     return None
 
 
-def _blend_usable(usable: list[tuple[str, dict[str, float]]]) -> tuple[dict[str, float], str, str]:
-    """Recency 50/50: latest usable + mean of older usable. No double-count."""
-    keys = ("xg", "xa", "defcon", "saves", "gc")
+def _mean_rates(seasons: list[tuple[str, dict[str, float]]], keys: tuple[str, ...] = RATE_KEYS) -> dict[str, float]:
+    return {k: sum(s[k] for _, s in seasons) / len(seasons) for k in keys}
+
+
+def _blend_non_defcon(usable: list[tuple[str, dict[str, float]]]) -> tuple[dict[str, float], str, str]:
+    """Dual-floor blend for xG/xA/saves/gc (excludes defcon)."""
+    keys = ("xg", "xa", "saves", "gc")
+    usable_sorted = sorted(usable, key=lambda x: SEASON_WINDOW.index(x[0]))
+    latest_eligible = [
+        (s, r) for s, r in usable_sorted if r["minutes"] >= MIN_LATEST_USABLE_MINUTES
+    ]
+    if latest_eligible:
+        latest_season, latest = latest_eligible[-1]
+        older = [(s, r) for s, r in usable_sorted if s != latest_season]
+        if not older:
+            rates = {k: latest[k] for k in keys}
+            note = (
+                f"100% latest-eligible {latest_season} "
+                f"({latest['minutes']:.0f} mins, floor>={MIN_LATEST_USABLE_MINUTES})"
+            )
+            return rates, "fpl_single_usable_season", note
+        older_avg = _mean_rates(older, keys)
+        rates = {k: 0.5 * latest[k] + 0.5 * older_avg[k] for k in keys}
+        older_names = ",".join(
+            f"{s}({r['minutes']:.0f}m)" for s, r in older
+        )
+        note = (
+            f"50% latest>={MIN_LATEST_USABLE_MINUTES} {latest_season} ({latest['minutes']:.0f}m) + "
+            f"50% mean other usable [{older_names}]"
+        )
+        return rates, "fpl_recency_50_50", note
+
+    # No ≥900 year: equal-weight all ≥450 usables
+    rates = _mean_rates(usable_sorted, keys)
+    names = ",".join(f"{s}({r['minutes']:.0f}m)" for s, r in usable_sorted)
+    note = (
+        f"Equal-weight usable ≥{MIN_USABLE_MINUTES} (no latest>={MIN_LATEST_USABLE_MINUTES}): [{names}]"
+    )
+    return rates, "fpl_equal_weight_thin_latest", note
+
+
+def _blend_defcon(
+    usable: list[tuple[str, dict[str, float]]],
+    pid: int,
+    pos: str,
+) -> tuple[float, str]:
+    """Defcon-only fill: blend seasons with evidence; else external/baseline."""
+    evidenced = [(s, r) for s, r in usable if r.get("has_defcon_evidence", 0) > 0]
+    if evidenced:
+        usable_sorted = sorted(evidenced, key=lambda x: SEASON_WINDOW.index(x[0]))
+        latest_eligible = [
+            (s, r) for s, r in usable_sorted if r["minutes"] >= MIN_LATEST_USABLE_MINUTES
+        ]
+        if latest_eligible:
+            _latest_season, latest = latest_eligible[-1]
+            older = [(s, r) for s, r in usable_sorted if s != _latest_season]
+            if not older:
+                return float(latest["defcon"]), "fpl_defcon"
+            older_avg = sum(r["defcon"] for _, r in older) / len(older)
+            return 0.5 * float(latest["defcon"]) + 0.5 * older_avg, "fpl_defcon"
+        return sum(r["defcon"] for _, r in usable_sorted) / len(usable_sorted), "fpl_defcon"
+
+    base = POSITION_BASELINES.get(pos, POSITION_BASELINES["MID"])
+    if pid in EXTERNAL_RESEARCH_RATES and EXTERNAL_RESEARCH_RATES[pid].get("defcon_cbit"):
+        return float(EXTERNAL_RESEARCH_RATES[pid]["defcon"]), "defcon_external_fill"
+    return float(base["defcon"]), "defcon_baseline_fill"
+
+
+def _blend_usable(
+    usable: list[tuple[str, dict[str, float]]],
+    pid: int,
+    pos: str,
+) -> tuple[dict[str, float], str, str]:
+    """Dual-floor non-Defcon blend + Defcon-only evidence fill."""
     if not usable:
         raise ValueError("usable empty")
-    usable_sorted = sorted(usable, key=lambda x: SEASON_WINDOW.index(x[0]))
-    latest_season, latest = usable_sorted[-1]
-    older = usable_sorted[:-1]
-    if not older:
-        rates = {k: latest[k] for k in keys}
-        note = f"100% usable season {latest_season} ({latest['minutes']:.0f} mins)"
-        return rates, "fpl_single_usable_season", note
-    older_avg = {k: sum(s[k] for _, s in older) / len(older) for k in keys}
-    rates = {k: 0.5 * latest[k] + 0.5 * older_avg[k] for k in keys}
-    older_names = ",".join(s for s, _ in older)
-    note = (
-        f"50% {latest_season} ({latest['minutes']:.0f}m) + "
-        f"50% mean older usable [{older_names}]"
-    )
-    return rates, "fpl_recency_50_50", note
+    rates, src, note = _blend_non_defcon(usable)
+    defcon, defcon_src = _blend_defcon(usable, pid, pos)
+    rates["defcon"] = defcon
+    if defcon_src != "fpl_defcon":
+        note = f"{note}; {defcon_src}"
+        if src.startswith("fpl_"):
+            src = f"{src}+{defcon_src}"
+    return rates, src, note
 
 
 def _default_priors(role: str) -> tuple[float, float, float, float, float]:
@@ -270,7 +376,7 @@ def build_expected_stats(
 
         base = POSITION_BASELINES.get(pos, POSITION_BASELINES["MID"])
         if usable:
-            blended, src, note = _blend_usable(usable)
+            blended, src, note = _blend_usable(usable, pid, pos)
             per90_xg = blended["xg"]
             per90_xa = blended["xa"]
             per90_defcon = blended["defcon"]

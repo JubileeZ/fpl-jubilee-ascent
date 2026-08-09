@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-09T17:55:00+07:00  
+**Updated**: 2026-08-10T06:25:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -11,7 +11,7 @@
   - [**GW1–6 Preseason Pipeline Master README**](gw1-6-preseason-pipeline/README.md) · [Pipeline Runner](gw1-6-preseason-pipeline/run_pipeline.py)
   - [Stage 1: Expected Role (GW1–5)](gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv)
   - [Stage 2: Expected Stats & Points Projections](gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv) · [GW1–5 Projections](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
-  - [Stage 3: GW1–6 Chip & GW4 Wildcard Squad Optimization](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
+  - [Stage 3: GW1–6 Chip Exploration Matrix (16 scenarios)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
 
 - **FPL 2026/27 Pre-Season Source Directory**:
   - [Pre-Season Source Directory](fpl-preseason-guide/fpl-preseason-guide.md)
