@@ -293,5 +293,22 @@ A composite 0–100 score synthesizing horizon-matched rotated expected points p
 $$\text{RQI} = 0.40 \cdot S_{\text{tot\_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
 _Avoid_: Relative gain alone without total points weighting, unweighted rotation score, raw FDR correlation alone, reusing a short-horizon xP total inside a longer-horizon RQI
 
+**Set-Piece Hierarchy**:
+Ordered ranking of designated set-piece takers (corners left/right, direct free-kicks, indirect free-kicks, penalties) per Club.
+_Avoid_: Set-piece list, dead-ball taker (ambiguous)
+
+**Inswinging Corner Preference**:
+Tactical distribution of left-footed vs right-footed corner delivery from respective flanks (2025/26 Premier League meta: 83% inswingers).
+_Avoid_: Corner curve, foot preference
+
+**Set-Play Target xG**:
+Non-penalty expected goals generated from set-piece deliveries for box aerial targets and first contacts.
+_Avoid_: Set-piece goal threat, header xG
+
+**Set-Piece Net Swing**:
+Club-level goal differential between non-penalty dead-ball goals scored and conceded, driven by specialized set-piece coaching staff.
+_Avoid_: Set-piece differential, dead-ball swing
+
+
 
 

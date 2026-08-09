@@ -35,6 +35,9 @@
   - [GW1–5 Chip Strategy Simulation & Price Sensitivity](gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [CSV Companion](../../data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv)
   - [Starter Goalkeeper Fixture Rotation & FDR Correlation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [CSV Companion](../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv) · [Baseline Rates](../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)
 
+- **Tactical & Dead-Ball Analytics**:
+  - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)
+
 ---
 
 ## Research Conventions & Standards
