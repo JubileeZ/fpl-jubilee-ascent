@@ -292,45 +292,68 @@ def get_gw_starters(df_squad: pd.DataFrame, gw: int, bb_gw: int | None = None) -
     total_xp = starters[f"gw{gw}_xp"].sum()
     return starters, float(total_xp)
 
-
 def run_full_wc4_study():
     df_proj = generate_gw1_6_projections()
     p_csv = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv")
     p_csv.parent.mkdir(parents=True, exist_ok=True)
     df_proj.to_csv(p_csv, index=False)
 
-    # Pre-WC Squads
+    # Pre-WC Squads (Standard with Haaland)
     bb1_pre = solve_gw1_3_squad(df_proj, bb_gw=1, max_spend=100.0, min_liv=1)
     bb2_pre = solve_gw1_3_squad(df_proj, bb_gw=2, max_spend=100.0, min_liv=1)
 
-    # Post-WC Squads
+    # Pre-WC Squads (No Haaland in GW1-2)
+    df_no_h = df_proj[df_proj["web_name"] != "Haaland"].copy()
+    bb1_pre_no_h = solve_squad_advanced(df_no_h, gw_list=[1, 2], bb_gw=1, max_spend=100.0, min_liv=1)
+    bb2_pre_no_h = solve_squad_advanced(df_no_h, gw_list=[1, 2], bb_gw=2, max_spend=100.0, min_liv=1)
+    std_pre_no_h = solve_squad_advanced(df_no_h, gw_list=[1, 2], bb_gw=None, max_spend=100.0, min_liv=1)
+
+    # GW3 Free Hit Squad (all players including Haaland allowed)
+    fh3_squad = solve_squad_advanced(df_proj, gw_list=[3], bb_gw=None, max_spend=100.0, min_liv=0)
+
+    # Post-WC Squads (GW4-6)
     wc4_opt1 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, min_liv=0)
     wc4_opt2 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=32.0, min_liv=0)
     wc4_opt3 = solve_squad_advanced(df_proj, gw_list=[4, 5, 6], bb_gw=None, max_spend=100.0, max_def_spend=32.0, min_liv=2)
 
+    # Baseline 3x2 Matrix Scenarios
     scenarios = [
-        ("S1: BB1 + WC4 Opt1 (Unconstrained)", bb1_pre, wc4_opt1, 1),
-        ("S2: BB1 + WC4 Opt2 (Cheap DEF)", bb1_pre, wc4_opt2, 1),
-        ("S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb1_pre, wc4_opt3, 1),
-        ("S4: BB2 + WC4 Opt1 (Unconstrained)", bb2_pre, wc4_opt1, 2),
-        ("S5: BB2 + WC4 Opt2 (Cheap DEF)", bb2_pre, wc4_opt2, 2),
-        ("S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb2_pre, wc4_opt3, 2),
+        ("S1: BB1 + WC4 Opt1 (Unconstrained)", bb1_pre, None, wc4_opt1, 1),
+        ("S2: BB1 + WC4 Opt2 (Cheap DEF)", bb1_pre, None, wc4_opt2, 1),
+        ("S3: BB1 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb1_pre, None, wc4_opt3, 1),
+        ("S4: BB2 + WC4 Opt1 (Unconstrained)", bb2_pre, None, wc4_opt1, 2),
+        ("S5: BB2 + WC4 Opt2 (Cheap DEF)", bb2_pre, None, wc4_opt2, 2),
+        ("S6: BB2 + WC4 Opt3 (Cheap DEF + LIV 2+)", bb2_pre, None, wc4_opt3, 2),
+        # No-Haaland GW1-2 + FH3 + WC4 Scenarios
+        ("S7: No-Haaland BB1 + FH3 + WC4 Opt1", bb1_pre_no_h, fh3_squad, wc4_opt1, 1),
+        ("S8: No-Haaland BB1 + FH3 + WC4 Opt2", bb1_pre_no_h, fh3_squad, wc4_opt2, 1),
+        ("S9: No-Haaland BB1 + FH3 + WC4 Opt3", bb1_pre_no_h, fh3_squad, wc4_opt3, 1),
+        ("S10: No-Haaland BB2 + FH3 + WC4 Opt3", bb2_pre_no_h, fh3_squad, wc4_opt3, 2),
+        ("S11: No-Haaland Std + FH3 + WC4 Opt3", std_pre_no_h, fh3_squad, wc4_opt3, None),
     ]
 
     summary_records = []
     detailed_records = []
 
     print("\n==========================================================================")
-    print("GW1-6 FULL OPTIMIZED 3x2 MATRIX STUDY (ALL 6 SCENARIOS)")
+    print("GW1-6 FULL OPTIMIZED SCENARIO MATRIX (WITH NO-HAALAND FH3 VARIANTS)")
     print("==========================================================================")
 
-    for name, pre_squad, post_squad, bb_gw in scenarios:
+    for name, pre_squad, fh_squad, post_squad, bb_gw in scenarios:
         # Calculate per-GW xP
         gw_xps = {}
-        # GW1-3 from pre_squad
-        for gw in [1, 2, 3]:
-            _, xp = get_gw_starters(pre_squad, gw, bb_gw=bb_gw)
-            gw_xps[gw] = xp
+        if fh_squad is None:
+            # Standard 3-GW pre-squad
+            for gw in [1, 2, 3]:
+                _, xp = get_gw_starters(pre_squad, gw, bb_gw=bb_gw)
+                gw_xps[gw] = xp
+        else:
+            # GW1-2 from pre_squad, GW3 from fh_squad
+            for gw in [1, 2]:
+                _, xp = get_gw_starters(pre_squad, gw, bb_gw=bb_gw)
+                gw_xps[gw] = xp
+            _, xp3 = get_gw_starters(fh_squad, 3, bb_gw=None)
+            gw_xps[3] = xp3
 
         # GW4-6 from post_squad
         for gw in [4, 5, 6]:
@@ -338,18 +361,16 @@ def run_full_wc4_study():
             gw_xps[gw] = xp
 
         total_6gw_xp = sum(gw_xps.values())
-
-        # Transfers & FT Banking Logic:
-        # Enforces AT LEAST 2 Free Transfers banked entering GW6 post-international break.
-        # Managers can spend 1-2 FTs across GW2-3 or GW5 while preserving >= 2 FTs for GW6.
-        # Max banked FTs entering GW6 (if 0 FTs spent): up to 4-5 FTs.
-
         in_players = set(post_squad["player_id"]) - set(pre_squad["player_id"])
+
+        bb_chip_label = f"GW{bb_gw}" if bb_gw else "None"
+        fh_label = "FH3" if fh_squad is not None else "No FH"
 
         summary_records.append({
             "scenario": name,
-            "bb_chip": f"GW{bb_gw}",
-            "wc4_option": name.split(" + ")[1],
+            "bb_chip": bb_chip_label,
+            "fh_chip": fh_label,
+            "wc4_option": name.split(" + ")[-1],
             "gw1_xp": round(gw_xps[1], 2),
             "gw2_xp": round(gw_xps[2], 2),
             "gw3_xp": round(gw_xps[3], 2),
@@ -367,10 +388,11 @@ def run_full_wc4_study():
         })
 
         # Append detailed simulation records
+        pre_phase_label = "GW1-2 Pre-FH" if fh_squad is not None else "GW1-3 Pre-WC"
         for _, r in pre_squad.iterrows():
             rec = {
                 "scenario": name,
-                "phase": "GW1-3 Pre-WC",
+                "phase": pre_phase_label,
                 "player_id": int(r["player_id"]),
                 "web_name": r["web_name"],
                 "club_short": r["club_short"],
@@ -379,12 +401,32 @@ def run_full_wc4_study():
                 "expected_role": r["expected_role"],
                 "gw1_xp": r["gw1_xp"],
                 "gw2_xp": r["gw2_xp"],
-                "gw3_xp": r["gw3_xp"],
+                "gw3_xp": 0.0 if fh_squad is not None else r["gw3_xp"],
                 "gw4_xp": 0.0,
                 "gw5_xp": 0.0,
                 "gw6_xp": 0.0,
             }
             detailed_records.append(rec)
+
+        if fh_squad is not None:
+            for _, r in fh_squad.iterrows():
+                rec = {
+                    "scenario": name,
+                    "phase": "GW3 Free-Hit",
+                    "player_id": int(r["player_id"]),
+                    "web_name": r["web_name"],
+                    "club_short": r["club_short"],
+                    "position": r["position"],
+                    "cost": r["cost"],
+                    "expected_role": r["expected_role"],
+                    "gw1_xp": 0.0,
+                    "gw2_xp": 0.0,
+                    "gw3_xp": r["gw3_xp"],
+                    "gw4_xp": 0.0,
+                    "gw5_xp": 0.0,
+                    "gw6_xp": 0.0,
+                }
+                detailed_records.append(rec)
 
         for _, r in post_squad.iterrows():
             rec = {
@@ -406,7 +448,7 @@ def run_full_wc4_study():
             detailed_records.append(rec)
 
     df_summary = pd.DataFrame(summary_records)
-    print("\n--- 3x2 MATRIX SUMMARY TABLE (CUMULATIVE GW1-6 xP & METRICS) ---")
+    print("\n--- FULL SCENARIO SUMMARY TABLE (CUMULATIVE GW1-6 xP & METRICS) ---")
     print(df_summary[["scenario", "gw1_3_xp", "gw4_6_xp", "total_6gw_xp", "pre_spend", "post_spend", "itb_gw6", "banked_fts_gw6"]].to_string(index=False))
 
     sim_csv = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv")
@@ -416,4 +458,3 @@ def run_full_wc4_study():
 
 if __name__ == "__main__":
     run_full_wc4_study()
-

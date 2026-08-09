@@ -76,22 +76,48 @@ Execution & Constraints:
 
 ## Findings
 
-### 1. 3×2 Matrix Summary Table (Cumulative GW1–6 xP & Metrics)
+### 1. Master Scenario Summary Table (Cumulative GW1–6 xP & Metrics)
 
-| Scenario ID | Pre-WC Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| Scenario ID | Pre-WC Chip | FH Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **S1** | GW1 BB1 | — | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S2** | GW1 BB1 | — | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S3** | GW1 BB1 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S4** | GW2 BB2 | — | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S5** | GW2 BB2 | — | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S6** | GW2 BB2 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S7** | GW1 BB1 | **GW3 FH** | Opt1 (Unconstrained) | **174.11 $xP$** | **151.85 $xP$** | **325.96 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S8** | GW1 BB1 | **GW3 FH** | Opt2 (Cheap DEF $\le$32m) | **174.11 $xP$** | 147.05 $xP$ | **321.16 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S9** | GW1 BB1 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **174.11 $xP$** | 146.56 $xP$ | **320.67 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S10** | GW2 BB2 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 173.36 $xP$ | 146.56 $xP$ | **319.92 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S11** | None (Std) | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 157.93 $xP$ | 146.56 $xP$ | **304.49 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
 
 ---
 
 ## 2. Full GW1–6 Squad Lists & Transfer Schedules for All Scenarios
 
-### Pre-WC Phase Squad Rosters (GW1–3)
+### No-Haaland (GW1–2) + Free Hit 3 (GW3) + Wildcard 4 Strategy (Scenarios S7–S11)
+
+##### No-Haaland GW1–2 BB1 Squad Roster (£100.0m Spend) — Scenarios S7, S8, S9
+- **GKP**: Lammens (£5.0m, MUN), Sels (£5.0m, NFO)
+- **DEF**: Vuskovic (£5.0m, BHA), Ballard (£5.0m, SUN), Alderete (£5.0m, SUN), Maguire (£5.0m, MUN), Lacroix (£6.0m, CHE)
+- **MID**: Bruno Fernandes (£12.0m, MUN), Palmer (£9.5m, CHE), Sarr (£6.5m, CRY), E.Le Fée (£6.0m, SUN), Maeda (£5.5m, IPS)
+- **FWD**: Isak (£9.0m, LIV), Thiago (£8.0m, BRE), João Pedro (£7.5m, CHE)
+- **GW1 (BB1 Activated)**: 15-Player Score = **67.20 $xP$** (vs 65.54 $xP$ with Haaland)
+- **GW2 XI**: 51.93 $xP$ (vs 48.76 $xP$ with Haaland)
+- **GW1–2 Total**: **119.13 $xP$** (+4.83 $xP$ gain over Haaland BB1)
+
+##### GW3 Free Hit Squad Roster (£98.5m Spend) — Scenarios S7–S11
+- **GKP**: Donnarumma (£5.5m, MCI), Petrović (£4.5m, BOU)
+- **DEF**: Vuskovic (£5.0m, BHA), O'Reilly (£6.5m, MCI), Hill (£5.5m, BOU), van Ewijk (£4.0m, COV), Diop (£4.0m, IPS)
+- **MID**: Sarr (£6.5m, CRY), Wirtz (£7.5m, LIV), Schade (£6.0m, BRE), O.Dango (£6.5m, BRE), Slater (£4.5m, HUL)
+- **FWD**: Haaland (£15.5m, MCI), Isak (£9.0m, LIV), Thiago (£8.0m, BRE)
+- **GW3 Starting XI Score**: **54.98 $xP$** (Targeting MCI, BRE, LIV, BHA home fixtures)
+- **GW1–3 Cumulative Score (BB1 + FH3)**: **174.11 $xP$** (+6.15 $xP$ gain over baseline S1–S3)
+
+---
+
+### Baseline Pre-WC Phase Squad Rosters (GW1–3 with Haaland)
 
 ##### BB1 Pre-WC Squad Roster (£100.0m Spend) — Scenarios S1, S2, S3
 - **GKP**: Donnarumma (£5.5m, MCI), Lammens (£5.0m, MUN)
@@ -100,7 +126,7 @@ Execution & Constraints:
 - **FWD**: Haaland (£15.5m, MCI), Isak (£9.0m, LIV), Thiago (£8.0m, BRE)
 - **GW1 (BB1 Activated)**: 15-Player Score = **65.54 $xP$**
 - **GW2 XI**: 48.76 $xP$ | **GW3 XI**: 53.63 $xP$
-- **GW1–3 Total**: **167.93 $xP$**
+- **GW1–3 Total**: **167.96 $xP$**
 
 ##### BB2 Pre-WC Squad Roster (£100.0m Spend) — Scenarios S4, S5, S6
 - **GKP**: Donnarumma (£5.5m, MCI), Lammens (£5.0m, MUN)
@@ -109,8 +135,8 @@ Execution & Constraints:
 - **FWD**: Haaland (£15.5m, MCI), Thiago (£8.0m, BRE), Wright (£5.5m, COV)
 - **GW1 XI**: 50.23 $xP$
 - **GW2 (BB2 Activated)**: 15-Player Score = **65.84 $xP$**
-- **GW3 XI**: 51.35 $xP$
-- **GW1–3 Total**: **167.42 $xP$**
+- **GW3 XI**: 51.23 $xP$
+- **GW1–3 Total**: **167.30 $xP$**
 
 ---
 

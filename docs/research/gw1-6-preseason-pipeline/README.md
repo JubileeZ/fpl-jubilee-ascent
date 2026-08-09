@@ -77,16 +77,21 @@ Run parameterized GW1-6 Preseason Pipeline (End-to-End Execution):
 
 ---
 
-## 3×2 Matrix Summary Table (Stage 3 Optimization Output)
+## Master Scenario Summary Table (Stage 3 Optimization Output)
 
-| Scenario ID | Pre-WC Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| Scenario ID | Pre-WC Chip | FH Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **S1** | GW1 BB1 | — | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S2** | GW1 BB1 | — | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S3** | GW1 BB1 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S4** | GW2 BB2 | — | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S5** | GW2 BB2 | — | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S6** | GW2 BB2 | — | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S7** | GW1 BB1 | **GW3 FH** | Opt1 (Unconstrained) | **174.11 $xP$** | **151.85 $xP$** | **325.96 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S8** | GW1 BB1 | **GW3 FH** | Opt2 (Cheap DEF $\le$32m) | **174.11 $xP$** | 147.05 $xP$ | **321.16 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S9** | GW1 BB1 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **174.11 $xP$** | 146.56 $xP$ | **320.67 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S10** | GW2 BB2 | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 173.36 $xP$ | 146.56 $xP$ | **319.92 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S11** | None (Std) | **GW3 FH** | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 157.93 $xP$ | 146.56 $xP$ | **304.49 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
 
 ---
 

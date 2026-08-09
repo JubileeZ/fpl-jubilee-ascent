@@ -1,24 +1,25 @@
-# Active Task: Refresh GW1–6 Preseason Pipeline & Research Suite
+# Active Task: Expand GW1–6 Strategy with No-Haaland GW1–2 + FH3 + WC4 Scenarios
 
 - **Status:** Complete
-- **Objective:** Refresh `docs/research/gw1-6-preseason-pipeline/` (Stage 1 role audit, Stage 2 event rates & projections, Stage 3 WC4 3x2 matrix MILP) with 8–9 August transfers and price-bracket research
-- **Acceptance:** `refresh_expected_role.py` updated with 8 Aug moves; Stage 1/2/3 CSV companions and markdown docs refreshed; master runner `run_pipeline.py` verified; delivery gates green
-- **Issue/Ticket:** Pre-season pipeline maintenance
+- **Objective:** Add and optimize the No-Haaland (GW1–2) + Free Hit 3 (GW3) + Wildcard 4 (GW4) strategy across `docs/research/gw1-6-preseason-pipeline/`
+- **Acceptance:** `run_wc4_simulation.py` expanded to solve No-Haaland drafts, FH3 single-GW maximization, and WC4 structural variants; S7–S11 records added to `gw1-6_wc4_simulation.csv`; documentation updated; delivery gates green
+- **Issue/Ticket:** Pre-season strategy optimization
 
 ## Work Packet (SFDBN)
 
 - **Status:** Complete
-- **Files:** docs/research/gw1-6-preseason-pipeline/*, docs/research/INDEX.md, docs/agents/current-state.md, task.md
-- **Decisions:** Integrated Bruno Guimarães (NEW->ARS £75m Nailed) and Danny Welbeck (BHA->CHE £5m Rotation); regenerated Stage 1 (340 rows), Stage 2 (194 draft shortlist projections), and Stage 3 (3x2 matrix solved: S1 319.81 xP, S2 315.01 xP, S3 314.52 xP, S4 319.15 xP, S5 314.35 xP, S6 313.86 xP); synchronized markdown docs and timestamps
+- **Files:** docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/*, docs/research/gw1-6-preseason-pipeline/README.md, docs/agents/current-state.md, task.md
+- **Decisions:** Integrated No-Haaland GW1–2 (BB1 119.13 xP / BB2 118.38 xP / Std 102.95 xP), GW3 Free Hit (54.98 xP with Haaland/MCI/BRE/LIV/BHA targeting), and GW4 Wildcard Options 1-3. S7 (BB1+FH3+Opt1) reaches 325.96 xP (+6.15 xP vs S1); S9 (BB1+FH3+Opt3) reaches 320.67 xP (+6.15 xP vs S3) with £3.0m ITB and 2 banked FTs in GW6.
 - **Blocked:** None
 - **Next:** Proceed with GW1 squad finalization and operational runs
 
 ## Todo
-- [x] Audit latest 8–9 August transfers against `gw1-6-preseason-pipeline`
-- [x] Update `refresh_expected_role.py` with Bruno Guimarães and Danny Welbeck moves
-- [x] Execute `run_pipeline.py` to regenerate Stages 1, 2, and 3 CSVs
-- [x] Update markdown documentation in Stages 1, 2, 3 and master README
-- [x] Sync `docs/research/INDEX.md` and `docs/agents/current-state.md`
+- [x] Formulate and solve No-Haaland GW1–2 draft MILPs (BB1, BB2, Std)
+- [x] Formulate and solve GW3 Free Hit (FH3) single-GW MILP
+- [x] Expand `run_wc4_simulation.py` to evaluate S7–S11 scenarios
+- [x] Regenerate `gw1-6_wc4_simulation.csv` and verify master pipeline
+- [x] Update `gw1-6-chip-wc4-squads.md` and `README.md`
+- [x] Update `docs/agents/current-state.md`
 - [x] Verify delivery gates (ruff, pytest, verify.sh)
 - [x] Clean up `.tmp/agent/` scratch files
 
