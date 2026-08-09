@@ -73,6 +73,26 @@ def refresh_expected_roles(
         df.loc[lacroix_mask, "draft_availability"] = "eligible"
         df.loc[lacroix_mask, "reason"] = "Confirmed £52m transfer from Crystal Palace to Chelsea."
 
+    # 7. Bruno Guimarães (Arsenal MID) -> Nailed Starter
+    bruno_mask = (df["web_name"] == "Bruno G.")
+    if bruno_mask.any():
+        df.loc[bruno_mask, "club"] = "Arsenal"
+        df.loc[bruno_mask, "club_short"] = "ARS"
+        df.loc[bruno_mask, "expected_role"] = "Nailed Starter"
+        df.loc[bruno_mask, "p_start"] = 0.90
+        df.loc[bruno_mask, "draft_availability"] = "eligible"
+        df.loc[bruno_mask, "reason"] = "Confirmed £75m transfer from Newcastle to Arsenal as starting CM."
+
+    # 8. Danny Welbeck (Chelsea FWD) -> Rotation
+    welbeck_mask = (df["web_name"] == "Welbeck")
+    if welbeck_mask.any():
+        df.loc[welbeck_mask, "club"] = "Chelsea"
+        df.loc[welbeck_mask, "club_short"] = "CHE"
+        df.loc[welbeck_mask, "expected_role"] = "Rotation"
+        df.loc[welbeck_mask, "p_start"] = 0.35
+        df.loc[welbeck_mask, "draft_availability"] = "not_role_eligible"
+        df.loc[welbeck_mask, "reason"] = "Confirmed £5m transfer from Brighton to Chelsea as forward depth."
+
     # Save to target paths
     for out_path in output_csvs:
         p = Path(out_path)

@@ -1,21 +1,21 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-02T00:55:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-01; 2025/26 archive 2026-07-29; FPL API elements summary 2026-07-29; grill lock 2026-08-02; best-guess Defcon 2026-08-02  
+**Updated**: 2026-08-09T18:15:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-09; 2025/26 archive 2026-07-29; FPL API elements summary 2026-07-29; grill lock 2026-08-02; FFS summer transfers through 2026-08-08  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
 **Purpose**: Build Event Rates for XI Contention Set via Permanent Player Code Mapping + usable-season recency blend; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict`.  
 **Scope**: XI Contention rates (Nailed / Regular / Rotation / Cameo); Draft Shortlist projections export (Nailed + Regular).  
-**Related**: [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) · [Repo Structure Guide](README.md) · ADR 0004 · ADR 0005  
+**Related**: [Expected Role GW1–5](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Preseason Pipeline Master README](../README.md) · ADR 0004 · ADR 0005  
 **Artifacts**:
-- [Expected Stats CSV](../../../data/research/expected-stats-gw1-5/expected-stats-gw1-5.csv)
-- [GW1–5 Projections CSV](../../../data/research/expected-stats-gw1-5/gw1-5_projections.csv)
+- [Expected Stats CSV](../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv)
+- [GW1–5 Projections CSV](../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
 
 ---
 
 ## Sources
 
-- Expected Role Table + priors: `data/research/expected-role-gw1-5/expected-role-gw1-5.csv`
+- Expected Role Table + priors: `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`
 - Prior-season archive (code-mapped): `data/archive/2025-26/processed/`
 - `history_past` season totals: `data/raw/element_summary_{id}.json`
 - External research packages when no Usable Season remains (xG/xA/saves; Defcon from CBIT/CBITR, FPL Defcon, or best-guess when any data exists)
@@ -34,7 +34,7 @@ Rebuild expected-stats-gw1-5 per grill lock:
    with attack/defence multipliers from club strengths; Softmax bonus over full XI Contention;
    export Draft Shortlist (Nailed+Regular) projections CSV.
 3. Update this note Findings; flag any remaining fallback_baseline or stale downstream consumers.
-4. ruff check docs/research/expected-stats-gw1-5/
+4. ruff check docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/
 ```
 
 ---
@@ -63,13 +63,18 @@ Rebuild expected-stats-gw1-5 per grill lock:
 
 | Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
 |------|--------|------|-----|-----|-----|-----|-----|-----|-------|
-| 1 | Haaland | MCI | FWD | 5.54 | 5.44 | 6.91 | 4.15 | 6.86 | **28.90** |
-| 2 | Palmer | CHE | MID | 4.86 | 5.97 | 3.01 | 6.04 | 4.78 | **24.66** |
-| 3 | Vuskovic | BHA | DEF | 4.71 | 3.68 | 5.81 | 5.73 | 3.74 | **23.67** |
-| 4 | B.Fernandes | MUN | MID | 5.52 | 5.48 | 4.46 | 3.59 | 4.52 | **23.57** |
-| 5 | O'Reilly | MCI | DEF | 4.31 | 4.28 | 4.99 | 3.63 | 4.98 | **22.19** |
-| 6 | Gabriel | ARS | DEF | 5.30 | 3.88 | 3.89 | 4.52 | 4.54 | **22.14** |
-| 7 | Sarr | CRY | MID | 4.38 | 3.47 | 4.44 | 5.41 | 4.36 | **22.06** |
+| 1 | Haaland | MCI | FWD | 5.55 | 5.44 | 6.91 | 4.15 | 6.87 | **28.93** |
+| 2 | Palmer | CHE | MID | 4.85 | 5.96 | 3.00 | 6.03 | 4.77 | **24.61** |
+| 3 | Vuskovic | BHA | DEF | 4.71 | 3.68 | 5.81 | 5.73 | 3.74 | **23.68** |
+| 4 | B.Fernandes | MUN | MID | 5.52 | 5.48 | 4.46 | 3.59 | 4.52 | **23.58** |
+| 5 | O'Reilly | MCI | DEF | 4.31 | 4.28 | 4.99 | 3.63 | 4.98 | **22.20** |
+| 6 | Gabriel | ARS | DEF | 5.28 | 3.86 | 3.87 | 4.51 | 4.53 | **22.06** |
+| 7 | Sarr | CRY | MID | 4.38 | 3.47 | 4.44 | 5.41 | 4.36 | **22.05** |
+| 8 | Isak | LIV | FWD | 4.14 | 4.52 | 4.87 | 3.89 | 4.46 | **21.87** |
+| 9 | Wirtz | LIV | MID | 4.04 | 4.41 | 4.64 | 3.77 | 4.33 | **21.18** |
+| 10 | Hill | BOU | DEF | 3.33 | 5.16 | 4.62 | 4.45 | 3.25 | **20.81** |
+| 11 | Thiago | BRE | FWD | 4.17 | 4.51 | 4.98 | 3.29 | 3.79 | **20.74** |
+| 12 | Lacroix | CHE | DEF | 4.07 | 5.04 | 2.78 | 5.08 | 3.74 | **20.71** |
 
 Haaland stays #1 (~0.83 xG/90). Vuskovic jumps to #4 after best-guess CBIT Defcon 12.45. Isak still diluted by 2025/26 at 694 mins (≥450 floor).
 

@@ -1,23 +1,23 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-06T22:32:00+07:00
-**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-05; page reviewed 2026-08-06  
+**Updated**: 2026-08-09T17:55:00+07:00  
+**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-08 (modified 2026-08-08); page reviewed 2026-08-09  
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
 **Purpose**: Capture confirmed-move register and identify FPL-relevant follow-up questions  
 **Scope**: Source-listed Premier League transfers, transfer fees, destination context, and conditional FPL implications. Fees below are reported transfer fees, not FPL player prices. Source text supplied no complete role, minutes, ranking, or projection analysis.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md)
 
 ## Sources
 
-- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — modified 2026-08-06; register current through 2026-08-05; accessed 2026-08-06; role: transfer register and FPL watchlist source
+- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — modified 2026-08-08; register current through 2026-08-08; accessed 2026-08-09; role: transfer register and FPL watchlist source
 
 **Source boundary**: Source claims not independently validated. Fetched page exposes publisher intro and dated transfer register, but no detailed role/minutes or FPL-price data for listed players.
 
 ## Agent Prompt
 
 ```text
-Full redo docs/research/fpl-summer-transfers.md
+Full redo docs/research/fpl-preseason-guide/fpl-summer-transfers.md
 
 1. Re-read source URL using Playwright headless browser rendering (`wait_until='domcontentloaded'`) to bypass dynamic loading and account truncation.
 2. Confirm title, author, publication/update date, prices, roles, and quoted statistics.
@@ -42,7 +42,7 @@ Full redo docs/research/fpl-summer-transfers.md
 - Verified transfer register note `docs/research/fpl-preseason-guide/fpl-summer-transfers.md`
 
 **Data stamp / freshness**:
-- Register snapshot contains transfers announced 15 May through 5 August 2026.
+- Register snapshot contains transfers announced 15 May through 8 August 2026.
 
 ## Assumptions & Boundaries
 
@@ -63,12 +63,13 @@ Full redo docs/research/fpl-summer-transfers.md
 ### Publisher scope
 
 - Summer window open for 2026/27; lists confirmed Premier League moves through Tuesday 1 September deadline.
-- Register snapshot contains moves announced from 15 May through 5 August 2026.
+- Register snapshot contains moves announced from 15 May through 8 August 2026.
 
 ### Confirmed-move register
 
 Amounts represent source-reported transfer fees.
 
+- **8–6 August**: Bruno Guimaraes, Newcastle → Arsenal (£75m); Sasa Lukic, Fulham → Ipswich (£9m); Jens Hjerto-Dahl, Tromso → Hull (£10m); Caleb Yirenkyi, Nordsjaelland → Coventry (£23m); James Trafford, Manchester City → Leeds (£45m); Juanlu Sanchez, Sevilla → Bournemouth (£10.4m); Christian Norgaard, Arsenal → Everton (£7m).
 - **5–1 August**: Konstantinos Tzolakis, Olympiacos → Hull (£20m); Florentino Luis, Burnley → Ipswich (£16m); Carl Rushworth, Brighton → Coventry (£22m); Gonzalo Garcia, Real Madrid → Fulham (£34.2m); César Palacios, Real Madrid → Fulham (£8.6m); Jordan Henderson, Brentford → Chelsea (free); Lukas Hornicek, Braga → Newcastle (£25.7m); Valentin Barco, Strasbourg → Chelsea (£33.6m); Mamadou Sangare, Lens → Brentford (£38.5m); Danny Welbeck, Brighton → Chelsea (£5m); Antonio Silva, Benfica → Bournemouth (£25.7m).
 - **30–29 July**: Maxence Lacroix, Crystal Palace → Chelsea (£52m); Kjell Scherpen, Union Saint-Gilloise → Ipswich (£8.5m).
 - **25–23 July**: Daizen Maeda, Celtic → Ipswich (£10m); Aladji Bamba, Monaco → Newcastle (£30m); Hidemasa Morita, Sporting → Hull (£free); Elliot Anderson, Nottingham Forest → Manchester City (£116m); Xaver Schlager, RB Leipzig → Nottingham Forest (free); Matt Targett, Newcastle → Hull (free); Christos Tzolis, Club Brugge → Arsenal (£34m); Alejandro Garnacho, Chelsea → Aston Villa (loan).
@@ -91,21 +92,20 @@ Amounts represent source-reported transfer fees.
 
 ### Practical implications
 
-- **Promoted depth**: Ipswich GKs/attack/defence/MID (Florentino Luis), Coventry CBs/midfield/GK (Rushworth), Hull GK/defence (Tzolakis, Morita) require lineup review.
-- **High-impact moves**: Chelsea (Welbeck, Henderson, Barco, Lacroix), Tottenham, Brighton (outgoing Rushworth/Welbeck), Man Utd, Man City, Villa, Newcastle (Hornicek, Bamba) multi-player changes alter roles.
-- **Vacancy checks**: Anderson (Forest), Rogers (Villa), Tonali (Newcastle), outgoing defenders/GKs require follow-up.
-- **Defensive competition**: Lacroix, Barco, Silva, Palestra, Quenda, Vuskovic, Struijk, van Hecke, Robertson, Senesi alter depth charts.
-- **Attacking arrivals**: Fulham (Garcia, Palacios), Brentford (Sangare), Chelsea (Welbeck) add forward/midfield competition.
+- **Promoted depth**: Ipswich GKs/attack/defence/MID (Lukic, Florentino Luis, Scherpen, Maeda, Diop), Coventry CBs/midfield/GK (Yirenkyi, Rushworth, Amenda, Tchaouna, Onyeka), Hull GK/defence/midfield (Hjerto-Dahl, Tzolakis, Morita, Targett, Butland, Zambrano) require lineup review.
+- **High-impact moves**: Arsenal (Bruno Guimaraes, Tzolis, Hincapie, Meslier), Chelsea (Welbeck, Henderson, Barco, Lacroix, Rogers, Quenda, Palestra), Leeds (Trafford, Muharemovic, H. Wilson), Tottenham (Tonali, M. Fernandes, Struijk, Senesi, Robertson), Man Utd (Tielemans, Santos, Darlow), Bournemouth (Juanlu Sanchez, A. Silva, A. Rodriguez).
+- **Vacancy checks**: Bruno Guimaraes / Tonali departures from Newcastle; Anderson departure from Forest; Rogers departure from Villa.
+- **Defensive competition**: Trafford at Leeds, Tzolakis at Hull, Rushworth at Coventry, Juanlu at Bournemouth alter starter hierarchies.
 
 ## Findings
 
 ### Evidence
 
-- Register current through 5 August (latest: Tzolakis to Hull, Florentino Luis to Ipswich).
-- Eleven new moves captured for August (1–5 August); Morita (24 July) backfilled from source.
+- Register current through 8 August (latest: Bruno Guimaraes to Arsenal, Sasa Lukic to Ipswich, Jens Hjerto-Dahl to Hull, Caleb Yirenkyi to Coventry, James Trafford to Leeds, Juanlu Sanchez to Bournemouth, Christian Norgaard to Everton).
+- Total of 18 August moves recorded (1–8 August).
 - Fees range from free transfers to £117m; covers promoted and established PL clubs.
 - FPL prices, minutes evidence, rankings, and player-stat tables absent from fetched text.
-- Cross-check against [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) and positional research notes: prior entries through 30 July aligned (54/54); August entries pending cross-check.
+- Cross-check against [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md): starter statuses for Trafford (Leeds #1), Tzolakis (Hull #1), Rushworth (Coventry #1), and Norgaard (Everton pivot) verified.
 
 ## Decision
 

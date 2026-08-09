@@ -1,7 +1,7 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-06T22:50:00+07:00  
-**Data stamp**: Projections CSV 2026-08-06; Expected Role Table 2026-08-06; FFS transfers through 2026-08-05; API player pricing 2026-07-29  
+**Updated**: 2026-08-09T18:15:00+07:00  
+**Data stamp**: Projections CSV 2026-08-09; Expected Role Table 2026-08-09; FFS transfers through 2026-08-08; API player pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
 **Purpose**: Consolidate the 3-stage preseason research pipeline — transforming raw source evidence & transfer registers into player expected roles (Stage 1), generating empirical expected stats & points projections (Stage 2), and solving full 6-Gameweek chip & Wildcard squad optimizations (Stage 3).  
@@ -81,12 +81,12 @@ Run parameterized GW1-6 Preseason Pipeline (End-to-End Execution):
 
 | Scenario ID | Pre-WC Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.89 $xP$** | **151.35 $xP$** | **319.24 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.89 $xP$** | 147.96 $xP$ | **315.85 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.89 $xP$** | 146.77 $xP$ | **314.66 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 168.09 $xP$ | **151.35 $xP$** | **319.44 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 168.09 $xP$ | 147.96 $xP$ | **316.05 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 168.09 $xP$ | 146.77 $xP$ | **314.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
 
 ---
 

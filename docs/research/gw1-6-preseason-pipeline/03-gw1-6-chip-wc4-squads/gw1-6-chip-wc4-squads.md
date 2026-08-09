@@ -1,23 +1,23 @@
 # GW1–6 Early Chip & GW4 Wildcard Squad Optimization (3×2 Matrix Study)
 
-**Updated**: 2026-08-03T04:20:20+07:00  
-**Data stamp**: Projections CSV 2026-08-03 (ParticipationStateHybridModel horizon 6); FPL API player pricing 2026-07-29  
+**Updated**: 2026-08-09T18:15:00+07:00  
+**Data stamp**: Projections CSV 2026-08-09 (ParticipationStateHybridModel horizon 6); FPL API player pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Research Model  
 **Purpose**: Execute full 6-Gameweek optimization study across a $3 \times 2 = 6$ scenario matrix combining Pre-WC Bench Boost timing (GW1 BB vs GW2 BB under $\le$ £100.0m spend) with GW4 Wildcard structural designs (Option 1 Unconstrained MILP, Option 2 Cheap-Defense Cap $\le$ £32.0m, and Option 3 Cheap-Defense Cap $\le$ £32.0m + Liverpool 2+). All scenarios enforce GW5 transfer rolling to enter GW6 with 2+ Free Transfers banked post-international break.  
 **Scope**: End-to-end 15-player squad optimization, starting XI selection, transfer schedules, Liverpool asset constraints, ITB buffer management, and international break risk strategy across GW1–6.  
-**Related**: [GW1–5 Chip Strategy Simulation](../gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [Expected Stats GW1–5](../expected-stats-gw1-5/expected-stats-gw1-5.md) · [Simulation Runner](run_wc4_simulation.py)  
+**Related**: [Preseason Pipeline Master README](../README.md) · [Expected Role (Stage 1)](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Expected Stats (Stage 2)](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [Simulation Runner](run_wc4_simulation.py)  
 **Artifacts**:
-- [Squad Simulation CSV](../../../data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) — row-level squad rosters, phase labels, and per-GW $xP$ across all 6 scenarios
-- [Projections CSV](../../../data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv) — GW1–6 player-level $xP$ and $xMins$
+- [Squad Simulation CSV](../../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) — row-level squad rosters, phase labels, and per-GW $xP$ across all 6 scenarios
+- [Projections CSV](../../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv) — GW1–6 player-level $xP$ and $xMins$
 
 ---
 
 ## Sources
 
-- **Primary Projections Input**: `data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv` (ParticipationStateHybridModel 6-GW horizon).
+- **Primary Projections Input**: `data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv` (ParticipationStateHybridModel 6-GW horizon).
 - **Player Pricing & Metadata**: `data/processed/players.parquet` and `data/processed/clubs.parquet`.
-- **Optimization Runner**: `docs/research/gw1-6-chip-wc4-squads/run_wc4_simulation.py` (scipy MILP).
+- **Optimization Runner**: `docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/run_wc4_simulation.py` (scipy MILP).
 
 ---
 
@@ -27,7 +27,7 @@
 Run parameterized GW1-6 chip & GW4 Wildcard 3x2 matrix optimization study:
 
 Inputs & Horizon:
-- Input Projections: data/research/gw1-6-chip-wc4-squads/gw1-6_projections.csv (ParticipationStateHybridModel, horizon GW1-6).
+- Input Projections: data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv (ParticipationStateHybridModel, horizon GW1-6).
 - Price & Metadata: data/processed/players.parquet, data/processed/clubs.parquet.
 - User Active Squad: data/processed/user_picks.parquet.
 - Pre-WC Budget: <= £100.0m. Post-WC Budget: <= £100.0m.
@@ -49,7 +49,7 @@ User Squad Evolution & Comparison:
 Execution & Constraints:
 - Maintain AT LEAST 2 Free Transfers banked entering GW6 post-international break (allows using 1-2 FTs across GW2-3 or GW5).
 - For each of the 6 scenarios and user squad evolution paths, calculate exact per-gameweek starting XI + bench xP, total 6-GW cumulative xP, exact GW1-6 squad lists, and transfer logs.
-- Export results to data/research/gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv.
+- Export results to data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv.
 - Run ruff check and verify delivery gates before completing.
 ```
 
@@ -80,12 +80,12 @@ Execution & Constraints:
 
 | Scenario ID | Pre-WC Chip | Post-WC Option | GW1–3 XI xP | GW4–6 XI xP | Total 6-GW xP | Pre Spend | Post Spend | GW6 ITB | Banked FTs (GW6) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.93 $xP$** | **151.28 $xP$** | **319.21 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.93 $xP$** | 146.95 $xP$ | **314.88 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.93 $xP$** | 146.44 $xP$ | **314.37 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
-| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 167.42 $xP$ | **151.28 $xP$** | **318.70 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 167.42 $xP$ | 146.95 $xP$ | **314.37 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
-| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.42 $xP$ | 146.44 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S1** | GW1 BB1 | Opt1 (Unconstrained) | **167.96 $xP$** | **151.85 $xP$** | **319.81 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S2** | GW1 BB1 | Opt2 (Cheap DEF $\le$32m) | **167.96 $xP$** | 147.05 $xP$ | **315.01 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S3** | GW1 BB1 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | **167.96 $xP$** | 146.56 $xP$ | **314.52 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
+| **S4** | GW2 BB2 | Opt1 (Unconstrained) | 167.30 $xP$ | **151.85 $xP$** | **319.15 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S5** | GW2 BB2 | Opt2 (Cheap DEF $\le$32m) | 167.30 $xP$ | 147.05 $xP$ | **314.35 $xP$** | £100.0m | £100.0m | £0.0m | **2 FTs** |
+| **S6** | GW2 BB2 | Opt3 (Cheap DEF $\le$32m + LIV 2+) | 167.30 $xP$ | 146.56 $xP$ | **313.86 $xP$** | £100.0m | £97.0m | **£3.0m** | **2 FTs** |
 
 ---
 

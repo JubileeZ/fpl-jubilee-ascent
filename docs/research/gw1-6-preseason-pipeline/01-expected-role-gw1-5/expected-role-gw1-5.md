@@ -1,7 +1,7 @@
 # FPL 2026/27 Expected Role (GW1–5) — 20-Club Audit & Mins Priors
 
-**Updated**: 2026-08-06T22:49:00+07:00  
-**Data stamp**: Scout team-news, Meerkat predicted XIs, FFS summer transfers, and official club evidence audited through 2026-08-06; `players.parquet` 2026-07-29  
+**Updated**: 2026-08-09T18:15:00+07:00  
+**Data stamp**: Scout team-news, Meerkat predicted XIs, FFS summer transfers through 2026-08-08, and official club evidence audited through 2026-08-09; `players.parquet` 2026-07-29  
 **Season**: 2026/27  
 **Status**: Active Research Model  
 **Purpose**: Assign fit-conditional Expected Role, dated Availability Status, and Participation State priors across all 20 Premier League clubs for GW1–5 projections seeding  
@@ -15,10 +15,10 @@
 
 ## Sources
 
-- **Primary**: [Fantasy Football Scout Team News](https://www.fantasyfootballscout.co.uk/team-news) — accessed 2026-08-06; predicted XIs & injury flags.
-- **Primary**: [FPL GW1 Predicted Line-ups — FPL Meerkat / fpl.page](https://fpl.page/article/fpl-gw1-predicted-lineups-2627) — accessed 2026-08-06; 🟢 Nailed markers & tactical notes.
-- **Primary**: [Confirmed Summer Transfers — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) via [fpl-summer-transfers.md](../../fpl-preseason-guide/fpl-summer-transfers.md) — register through 2026-08-05.
-- **Primary**: Premier League & Official Club News (Arsenal medical update for Saliba, Liverpool update for Mac Allister & Jacquet, Man City update for Rodri, Spurs press conference confirming Kinsky #1).
+- **Primary**: [Fantasy Football Scout Team News](https://www.fantasyfootballscout.co.uk/team-news) — accessed 2026-08-09; predicted XIs & injury flags.
+- **Primary**: [FPL GW1 Predicted Line-ups — FPL Meerkat / fpl.page](https://fpl.page/article/fpl-gw1-predicted-lineups-2627) — accessed 2026-08-09; 🟢 Nailed markers & tactical notes.
+- **Primary**: [Confirmed Summer Transfers — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) via [fpl-summer-transfers.md](../../fpl-preseason-guide/fpl-summer-transfers.md) — register through 2026-08-08.
+- **Primary**: Premier League & Official Club News (Arsenal medical update for Saliba, Liverpool update for Mac Allister & Jacquet, Man City update for Rodri, Spurs press conference confirming Kinsky #1, Arsenal confirmation of Bruno Guimarães).
 - **Repository data**: `data/processed/players.parquet` + `clubs.parquet` — player mapping & local freshness.
 
 ---
@@ -64,11 +64,13 @@ Procedure:
    - **Carl Rushworth (COV)**: Signed £22m from Brighton following Dovin ACL tear (`exclude_gw1-5`).
    - **Konstantinos Tzolakis (HUL)**: Signed £20m from Olympiacos (`Nailed Starter`).
 
-2. **Major Availability Exclusions**:
+2. **Major Availability & Summer Transfer Updates**:
+   - **Bruno Guimarães (ARS)**: Confirmed £75m transfer from Newcastle to Arsenal (`Nailed Starter`, `p_start=0.90`).
    - **William Saliba (ARS)**: Back rehabilitation (`exclude_gw1-5`).
    - **Rodri (MCI)**: Back surgery recovery (`exclude_gw1`).
    - **Alexis Mac Allister (LIV)** & **Bukayo Saka (ARS)**: Post-World Cup fitness management (`watch`).
    - **Maxence Lacroix (CHE)** & **Morgan Rogers (CHE)**: Nailed starters for Chelsea following summer moves.
+   - **Danny Welbeck (CHE)**: £5m depth move from Brighton to Chelsea (`Rotation`, `not_role_eligible`).
 
 ---
 

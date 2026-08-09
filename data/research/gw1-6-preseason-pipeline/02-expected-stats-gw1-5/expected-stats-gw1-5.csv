@@ -78,7 +78,7 @@ player_id,player_code,web_name,club_short,position,expected_role,p_start,p_sub_i
 127,514254,Gomez,BHA,MID,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,2,2624.0,fpl_recency_50_50,0.2054,0.1395,11.3608,11.3608,0.0,1.7703,50% 2025/26 (2117m) + 50% mean older usable [2024/25]
 123,532529,Hinshelwood,BHA,MID,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,3,4441.0,fpl_recency_50_50,0.2161,0.0884,4.7414,4.7414,0.0,1.4049,"50% 2025/26 (1736m) + 50% mean older usable [2023/24,2024/25]"
 122,592031,Minteh,BHA,MID,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,2,4220.0,fpl_recency_50_50,0.1733,0.2179,7.7119,7.7119,0.0,1.4326,50% 2025/26 (2389m) + 50% mean older usable [2024/25]
-136,50175,Welbeck,BHA,FWD,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,3,6045.0,fpl_recency_50_50,0.4174,0.062,3.2545,3.2545,0.0,1.3284,"50% 2025/26 (2249m) + 50% mean older usable [2023/24,2024/25]"
+136,50175,Welbeck,CHE,FWD,Rotation,0.35,0.25,0.35,70.0,20.0,not_role_eligible,none,3,6045.0,fpl_recency_50_50,0.4174,0.062,3.2545,3.2545,0.0,1.3284,"50% 2025/26 (2249m) + 50% mean older usable [2023/24,2024/25]"
 121,451340,Mitoma,BHA,MID,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,api_unavailable_gw1,3,5796.0,fpl_recency_50_50,0.2386,0.1608,4.2647,4.2647,0.0,1.2807,"50% 2025/26 (1714m) + 50% mean older usable [2023/24,2024/25]"
 137,608181,Tzimas,BHA,FWD,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,api_doubt_gw1,0,0.0,fallback_baseline,0.41,0.13,1.5,1.5,0.0,1.41,Position baseline (FWD); no usable FPL season and no external package
 328,222694,Struijk,BHA,DEF,Cameo,0.1,0.35,0.55,60.0,15.0,not_role_eligible,none,1,2935.0,fpl_single_usable_season,0.0938,0.0233,9.1073,9.1073,0.0,1.4719,100% usable season 2025/26 (2935 mins)
@@ -271,7 +271,7 @@ player_id,player_code,web_name,club_short,position,expected_role,p_start,p_sub_i
 442,98747,Pope,NEW,GKP,Regular Starter,0.75,0.1,0.15,80.0,20.0,eligible,none,3,6281.0,fpl_recency_50_50,0.0033,0.0,0.0,0.0,3.1627,1.2879,"50% 2025/26 (2416m) + 50% mean older usable [2023/24,2024/25]"
 445,465642,Thiaw,NEW,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,1,2963.0,fpl_single_usable_season,0.1458,0.0292,8.8694,8.8694,0.0,1.5795,100% usable season 2025/26 (2963 mins)
 450,441191,Livramento,NEW,DEF,Nailed Starter,0.9,0.05,0.05,85.0,20.0,watch,api_doubt_gw1,3,5463.0,fpl_recency_50_50,0.0136,0.066,3.7521,3.7521,0.0,1.2592,"50% 2025/26 (1326m) + 50% mean older usable [2023/24,2024/25]"
-452,208706,Bruno G.,NEW,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,8993.0,fpl_recency_50_50,0.1661,0.1702,7.005,7.005,0.0,1.394,"50% 2025/26 (2456m) + 50% mean older usable [2023/24,2024/25]"
+452,208706,Bruno G.,ARS,MID,Nailed Starter,0.9,0.05,0.05,85.0,20.0,eligible,none,3,8993.0,fpl_recency_50_50,0.1661,0.1702,7.005,7.005,0.0,1.394,"50% 2025/26 (2456m) + 50% mean older usable [2023/24,2024/25]"
 447,220237,Botman,NEW,DEF,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,2,3209.0,fpl_recency_50_50,0.0627,0.0388,5.2999,5.2999,0.0,1.6116,50% 2025/26 (1834m) + 50% mean older usable [2023/24]
 449,487838,Hall,NEW,DEF,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,3,5137.0,fpl_recency_50_50,0.0355,0.1168,5.0688,5.0688,0.0,1.4746,"50% 2025/26 (2176m) + 50% mean older usable [2023/24,2024/25]"
 448,78916,Burn,NEW,DEF,Rotation,0.4,0.25,0.35,70.0,20.0,not_role_eligible,none,3,8250.0,fpl_recency_50_50,0.0631,0.024,6.5452,6.5452,0.0,1.4137,"50% 2025/26 (2195m) + 50% mean older usable [2023/24,2024/25]"
