@@ -6,7 +6,7 @@
 **Status**: Active  
 **Purpose**: Identify optimal 5-defender (5 DEF) club combinations and starting lineups over the long term (GW1–19, with GW1–3 early launch and GW4–19 post-Wildcard sub-horizons) that maximize defensive fixture diversification, eliminate difficult fixtures (FDR $\ge 4$) across starting defenders, and optimize rotated expected points ($xP$) across multiple budget tiers.  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
-**Artifacts**: [`def_club_5way_rotation_matrix.csv`](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv), [`def_tier_player_rotations.csv`](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv), [`def_performance_baseline.csv`](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)  
+**Artifacts**: [`def_club_5way_rotation_matrix.csv`](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv), [`def_tier_player_rotations.csv`](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv), [`def_bb1_wc4_club_matrix.csv`](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv), [`def_bb1_wc4_tier_lineups.csv`](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv), [`def_performance_baseline.csv`](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)  
 **Script**: [`run_def_rotation_analysis.py`](run_def_rotation_analysis.py)  
 
 ---
@@ -169,6 +169,85 @@ Evaluating all 15,504 combinations reveals that optimal 5-club schedules can ach
 
 ---
 
+## Special Scenario: GW1 Bench Boost (BB1) + GW4 Wildcard (WC4) Pre-Wildcard Defense
+
+**Context**: In a **GW1 Bench Boost + GW4 Wildcard** strategy:
+- **GW1**: All 5 defenders are active and contribute points (Bench Boost).
+  - *Hard Constraint*: **Zero Opponent Clashes in GW1** (no two defenders face each other in the same match to prevent clean sheet cannibalization).
+  - *Fixture Ceiling*: **Max FDR $\le 3.0$ across all 5 DEF in GW1** (100% avoid difficult fixtures FDR 4 or 5).
+- **GW2 & GW3**: Revert to standard 3-DEF starting rotation (top 3 by FDR-min / hybrid $xP$; 2 benched).
+- **GW4**: Full squad overhaul on Wildcard. Total pre-WC defensive sample = **11 started player-matches** (5 in GW1 + 3 in GW2 + 3 in GW3).
+
+---
+
+### 1. Non-Clashing 5-Club Combinations (GW1 BB + GW2–3 3-DEF Rotation)
+
+Out of 15,504 possible 5-club combinations, **8,064 sets have zero GW1 head-to-head matches**, and exactly **1,683 sets satisfy the strict GW1 max FDR $\le 3.0$ ceiling**.
+
+#### **Top 5 PL-Proven 5-Club Rotations (0 Promoted Clubs)**
+
+| Rank | 5-Club Combination | GW1 Avg FDR (5 Starters) | GW1 Max FDR | GW2–3 Rotated Avg FDR (3 Starters) | 11-Start Effective Avg FDR | Zero GW1 Clashes |
+|:---:|---|:---:|:---:|:---:|:---:|:---:|
+| **1** | **ARS - BRE - CHE - MUN - NFO** | **2.40** | **3.0** | **2.50** | **2.4545** | ✅ Zero Clashes |
+| **2** | **ARS - BRE - IPS - LIV - MUN** | **2.40** | **3.0** | **2.50** | **2.4545** | ✅ Zero Clashes |
+| **3** | **ARS - BRE - IPS - MCI - MUN** | **2.40** | **3.0** | **2.50** | **2.4545** | ✅ Zero Clashes |
+| **4** | **ARS - BRE - LIV - MUN - NFO** | **2.40** | **3.0** | **2.50** | **2.4545** | ✅ Zero Clashes |
+| **5** | **ARS - CHE - LIV - MUN - NFO** | **2.40** | **3.0** | **2.50** | **2.4545** | ✅ Zero Clashes |
+
+*All 5 clubs in the winning set have easy GW1 fixtures: Arsenal (H vs COV, FDR 2), Man Utd (A vs HUL, FDR 2), Nott'm Forest (H vs LEE, FDR 2), Brentford (H vs TOT, FDR 3), Chelsea (A vs FUL, FDR 3).*
+
+#### **Top 3 Overall 5-Club Rotations (Including Promoted Proxies)**
+
+| Rank | 5-Club Combination | GW1 Avg FDR | GW1 Max FDR | GW2–3 Rot Avg FDR | Effective Avg FDR | Promoted Clubs |
+|:---:|---|:---:|:---:|:---:|:---:|:---:|
+| **1** | **ARS - BRE - MUN - NFO - SUN** ⚠️ | **2.20** | **3.0** | **2.50** | **2.3636** | 1 (SUN) |
+| **2** | **ARS - CHE - MUN - NFO - SUN** ⚠️ | **2.20** | **3.0** | **2.50** | **2.3636** | 1 (SUN) |
+| **3** | **ARS - AVL - BRE - MUN - SUN** ⚠️ | **2.40** | **3.0** | **2.33** | **2.3636** | 1 (SUN) |
+
+---
+
+### 2. Pre-Wildcard (GW1–3) Player Lineup Rankings
+
+#### **Tier 1: Pure Budget BB1 Rotation (£21.5m–£22.5m Total Spend)**
+*Maximizes starting budget for Salah, Haaland, Saka, and Palmer in GW1–3.*
+
+1. **Top PL-Proven Budget Lineup (£22.0m | BB-RQI: 65.16)**:
+   - **Maatsen** (AVL £4.5m) + **Greaves** (IPS £4.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **Robertson** (TOT £4.5m)
+   - **Total 3-GW Effective $xP$ (11 Starts)**: **52.05 $xP$**
+     - *GW1 (All 5 DEF on BB)*: **23.15 $xP$** (4.63 $xP$/defender; 0 clashes; FDRs: 3, 2, 2, 2, 3)
+     - *GW2–3 (Top 3 DEF)*: **28.90 $xP$** (4.82 $xP$/starter)
+   - **Effective Avg FDR**: **2.5455** (100% FDR $\le 3.0$ across all 11 started player-matches!)
+   - **Spend**: Only **£22.0m**, leaving **£78.0m ITB** for midfield and attack.
+2. **Top Promoted-Hybrid Budget Lineup (£22.5m | BB-RQI: 71.46)**:
+   - **Maatsen** (AVL £4.5m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **Hume** (SUN £4.5m) ⚠️ + **Robertson** (TOT £4.5m)
+   - **Total 3-GW Effective $xP$**: **54.13 $xP$** (GW1: **23.98 $xP$** with 2.20 avg FDR; GW2–3: **30.15 $xP$**).
+
+---
+
+#### **Tier 2: 1 Premium Anchor + 4 Budget Defenders (£23.5m–£24.5m Total Spend)**
+*1 Premium Anchor (e.g. Man City defender) starts all 3 GWs; top 4 budget defenders all start GW1, then rotate for 2 spots in GW2/GW3.*
+
+1. **Top PL-Proven Anchor Lineup (£24.5m | BB-RQI: 76.02)**:
+   - **[Anchor: O'Reilly / Gvardiol (MCI £6.5m/£5.5m)]** + **Maatsen** (AVL £4.5m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **Robertson** (TOT £4.5m)
+   - **Total 3-GW Effective $xP$ (11 Starts)**: **59.82 $xP$**
+     - *GW1 (All 5 DEF on BB)*: **25.32 $xP$** (5.06 $xP$/defender)
+     - *GW2–3 (Anchor + Top 2 Budget)*: **34.50 $xP$** (5.75 $xP$/starter)
+   - **Effective Avg FDR**: **2.4545** (100% FDR $\le 3.0$)
+   - **Point Gain**: **+7.77 $xP$ boost** over 3 gameweeks vs pure budget for £2.5m spend.
+
+---
+
+### **BB1 + WC4 Final Defensive Recommendation**:
+
+- **If prioritizing maximum funds for Haaland + Salah + Saka in GW1–3**: Select the **£22.0m PL-Proven Budget Lineup**:
+  `Maatsen (AVL £4.5m) + Greaves (IPS £4.0m) + Shaw (MUN £4.5m) + Jair Cunha (NFO £4.5m) + Robertson (TOT £4.5m)`
+  *(Zero clashes in GW1, 2.54 effective FDR, 52.05 total xP across 11 appearances).*
+- **If prioritizing defensive ceiling with 1 Man City starter**: Select the **£24.5m Anchor Lineup**:
+  `[Anchor: O'Reilly/Gvardiol (MCI £6.5m/£5.5m)] + Maatsen (AVL £4.5m) + Shaw (MUN £4.5m) + Jair Cunha (NFO £4.5m) + Robertson (TOT £4.5m)`
+  *(Zero clashes in GW1, 59.82 total xP).*
+
+---
+
 ## Risks and Unknowns
 
 1. **Starting Role Volatility**: Players like Maatsen, Robertson, and Hato face rotational competition; monitor pre-season starting XI announcements.
@@ -179,8 +258,10 @@ Evaluating all 15,504 combinations reveals that optimal 5-club schedules can ach
 
 ## Refresh Checklist
 
-- [x] `Updated` uses ISO 8601 timestamp with timezone (`2026-08-10T11:40:00+07:00`).
+- [x] `Updated` uses ISO 8601 timestamp with timezone (`2026-08-10T12:45:00+07:00`).
 - [x] `Data stamp` identifies current evidence cutoff.
 - [x] Full combinatorial simulation executed across all 15,504 combinations.
+- [x] Specialized BB1 + WC4 simulation executed with non-clashing GW1 filters.
 - [x] Machine-readable CSV companions written to `data/research/def-fixture-rotation/`.
 - [x] Dual reporting for Overall vs PL-Proven selections.
+
