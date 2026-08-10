@@ -1,24 +1,26 @@
-# Active Task: Stage 2 Event Rate grill + rebuild
+# Active Task: 5-Defender Fixture Rotation & Long-Term Diversification Study (GW1–19)
 
 - **Status:** Complete
-- **Objective:** Grill-lock and implement Stage 2 dual-floor usable blend, Defcon-only fill, Draft Regular packages; rebuild Stage 2+3; sync docs/CONTEXT.
-- **Acceptance:** Blend unit tests pass; zero Draft on fallback_baseline; Stage 3 summary refreshed; full pytest green.
-- **Issue/Ticket:** Stage 2 `/grill-with-docs`
+- **Objective:** Execute exhaustive combinatorial 5-DEF fixture rotation research across GW1–3, GW4–19, GW1–19, and full season; evaluate multi-tier player lineups; produce durable research artifacts and note.
+- **Acceptance:** 15,504 5-club combinatorial matrix + player tier simulations generated in data/research/def-fixture-rotation/; research note registered in docs/research/INDEX.md; unit tests in tests/test_def_fixture_rotation.py passing; verify.sh green.
+- **Issue/Ticket:** 5-DEF Fixture Diversification `/grill-with-docs`
 
 ## Work Packet (SFDBN)
 
 - **Status:** Complete
-- **Files:** docs/research/gw1-6-preseason-pipeline/02-*/**, 03-*/**, availability path, CONTEXT.md, tests/test_expected_stats_blend.py, docs/agents/current-state.md, task.md, data/research/gw1-6-preseason-pipeline/**
-- **Decisions:** Dual floor 450/900; Defcon-only fill; packages for 15 Draft Regulars; Softmax full Contention; Research Position Baseline in glossary; Stage 2+3 re-run.
+- **Files:** docs/research/def-fixture-rotation/**, data/research/def-fixture-rotation/**, tests/test_def_fixture_rotation.py, docs/research/INDEX.md, docs/agents/current-state.md, task.md
+- **Decisions:** Fixed 3 DEF starters; multi-tier brackets (Budget £21.5-£22.5m, Anchor £23.5-£24.5m, Dual-Anchor £25.0-£26.5m); DEF-RQI 35/25/15/15/10 weighting; dual reporting for Overall vs PL-Proven.
 - **Blocked:** None
-- **Next:** Refresh authenticated user_picks; optional tighten best-guess packages
+- **Next:** Integrate findings into pre-season draft selection and solver constraints.
 
 ## Todo
-- [x] Grill Q1–Q8 lock
-- [x] Implement dual floor + Defcon fill + packages
-- [x] CONTEXT + Stage 2/3 docs
-- [x] Rebuild Stage 2+3
-- [x] Delivery gates
+- [x] Grill Q1–Q6 lock
+- [x] Implement 5-club + player tier simulation script `run_def_rotation_analysis.py`
+- [x] Generate CSV companions in `data/research/def-fixture-rotation/`
+- [x] Create research note `docs/research/def-fixture-rotation/def-fixture-rotation.md`
+- [x] Register in `docs/research/INDEX.md`
+- [x] Unit tests in `tests/test_def_fixture_rotation.py`
+- [x] Delivery gate checks green
 
 ## Blockers / Notes
 - None
