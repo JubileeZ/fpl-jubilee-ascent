@@ -151,6 +151,17 @@ EXTERNAL_RESEARCH_RATES: dict[int, dict] = {
           "note": "External: Angulo thin 2025/26 FPL (401m) scaled xG/xA/Defcon as package"},
     283: {"xg": 0.040, "xa": 0.050, "saves": 0.00, "gc": 1.30, "defcon": 8.00, "defcon_cbit": True,
           "note": "External best-guess: Jacob NEW DEF; CBIT Defcon proxy"},
+    # Newly injected Draft Regular starters (scraped 2026-08-11/12)
+    461: {"xg": 0.260, "xa": 0.170, "saves": 0.00, "gc": 1.25, "defcon": 4.80, "defcon_cbit": True,
+          "note": "External best-guess: Bazoumana Touré Allsvenskan wing rates → NEW MID proxy"},
+    541: {"xg": 0.040, "xa": 0.080, "saves": 0.00, "gc": 1.25, "defcon": 8.80, "defcon_cbit": True,
+          "note": "External 2023-26: Thomas Meunier Ligue 1 / Super Lig RB; CBIT Defcon proxy"},
+    321: {"xg": 0.340, "xa": 0.140, "saves": 0.00, "gc": 1.35, "defcon": 2.40, "defcon_cbit": True,
+          "note": "External best-guess: Sindre Walle Egeli Danish Superliga FWD rates → IPS proxy"},
+    462: {"xg": 0.120, "xa": 0.140, "saves": 0.00, "gc": 1.30, "defcon": 5.80, "defcon_cbit": True,
+          "note": "External best-guess: Sean Steur Ajax/NEW progressive midfield proxy"},
+    523: {"xg": 0.220, "xa": 0.160, "saves": 0.00, "gc": 1.30, "defcon": 4.10, "defcon_cbit": True,
+          "note": "External best-guess: Mikey Moore Spurs academy / creative MID proxy"},
 }
 
 
