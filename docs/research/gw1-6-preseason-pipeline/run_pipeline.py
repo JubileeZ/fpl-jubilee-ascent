@@ -4,6 +4,9 @@ Automates the complete 3-stage research pipeline:
 Stage 1: Dual-source Expected Role rebuild (FFS + Meerkat scrape)
 Stage 2: Expected Stats & Points Projections (availability overlays applied)
 Stage 3: 16-scenario chip exploration matrix (BB × FH3|TC3 × Haaland × Bruno × WC4 Opt1)
+
+Ownership value explorer is a standalone full-season research topic:
+docs/research/ownership-value-explorer/
 """
 
 from __future__ import annotations

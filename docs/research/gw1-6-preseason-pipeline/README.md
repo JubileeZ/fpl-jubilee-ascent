@@ -1,6 +1,6 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-12T00:56:00+07:00  
+**Updated**: 2026-08-12T02:00:00+07:00  
 **Data stamp**: Dual-source role scrape 2026-08-12; Stage 2 dual-floor rates 2026-08-12; FFS + Meerkat accessed 2026-08-12; API pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
@@ -39,6 +39,8 @@
 │ └── gw1-6_user_squad_comparison.csv                     │
 └─────────────────────────────────────────────────────────┘
 ```
+
+Standalone (not a pipeline stage): [Ownership Value Explorer (GW1–38)](../ownership-value-explorer/ownership-value-explorer.md) — consumes Stage 2 rates.
 
 Shared overlay module: [`availability_priors.py`](availability_priors.py) — Watch $p_{\text{start}}\times0.70$ on GW1–5; `exclude_gw1-5` zeros GW1–5 only.
 
