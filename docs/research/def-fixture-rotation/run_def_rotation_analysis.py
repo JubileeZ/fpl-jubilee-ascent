@@ -2,14 +2,15 @@
 
 Simulates 5 DEF diversification and fixture rotation across:
 1. Long-term horizons: GW1-3, GW4-19, GW1-19, and full season.
-2. Specialized Pre-Wildcard Scenario: GW1 Bench Boost (BB1) + GW4 Wildcard (WC4).
-   - GW1: All 5 defenders start on Bench Boost (enforcing Zero Head-to-Head Clashes and max FDR <= 3.0).
-   - GW2 & GW3: Best 3 defenders rotate by lowest FDR / highest xP (standard 3-DEF formation).
+2. Flexible Budget Spectrum (at most £26.0m):
+   - Band 1: Budget (£20.5m–£22.5m)
+   - Band 2: Mid-Value (£23.0m–£24.0m)
+   - Band 3: Single Anchor (£24.5m–£25.0m)
+   - Band 4: Premium / Dual Anchor (£25.5m–£26.0m)
+3. Specialized Pre-Wildcard Scenario: GW1 Bench Boost (BB1) + GW4 Wildcard (WC4).
+   - GW1: All 5 defenders start on Bench Boost (Zero Head-to-Head Clashes, max FDR <= 3.0).
+   - GW2 & GW3: Best 3 defenders rotate by lowest FDR / highest xP.
    - GW4: Full Wildcard reset.
-3. Player-level hybrid xP simulation via ParticipationStateHybridModel across budget tiers:
-   - Tier 1: Pure Budget 5-Way Rotation (5x £4.0-£4.5m DEF, £21.5m-£22.5m total).
-   - Tier 2: 1 Premium Anchor (£5.5-£6.5m) + 4 Budget (£4.0-£4.5m) (£23.5m-£24.5m total).
-   - Tier 3: 2 Premium Anchors (£5.5-£6.5m) + 3 Budget (£4.0-£4.5m) (£25.0m-£26.5m total).
 """
 
 from __future__ import annotations
@@ -34,9 +35,9 @@ STATS_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "02-expected-stats-gw1-5
 ROLE_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "01-expected-role-gw1-5" / "expected-role-gw1-5.csv"
 
 DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
-PROMOTED_CLUBS = frozenset({"COV", "HUL", "SUN"})
 FLAT_START_MINUTES = 90.0
 DEF_POSITION_ID = 2
+MAX_TOTAL_PRICE = 26.0
 
 HORIZONS = (
     ("gw1_3", 1, 3),
@@ -77,7 +78,6 @@ def compute_bb_rqi(
     total_price: float,
 ) -> float:
     """Bench Boost Rotation Quality Index (BB-RQI, 0-100 scale) for 11 starter-matches."""
-    # 11 appearances total (5 in GW1 + 3 in GW2 + 3 in GW3) -> typical range 38.0 to 60.0 xP
     s_xp = float(np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100))
     s_fdr1 = float(np.clip((3.5 - gw1_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
     s_fdr23 = float(np.clip((3.5 - gw2_3_rot_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
@@ -149,7 +149,6 @@ def run_5club_combinatorial_analysis(fdr_mat: np.ndarray, idx_to_short: dict[int
             avg_corr = float(np.mean(corrs)) if corrs else 0.0
 
             club_shorts = [idx_to_short[x] for x in c]
-            promoted_count = sum(1 for cs in club_shorts if cs in PROMOTED_CLUBS)
 
             all_rows.append(
                 {
@@ -163,8 +162,6 @@ def run_5club_combinatorial_analysis(fdr_mat: np.ndarray, idx_to_short: dict[int
                     "club3": club_shorts[2],
                     "club4": club_shorts[3],
                     "club5": club_shorts[4],
-                    "promoted_count": promoted_count,
-                    "is_pl_proven": promoted_count == 0,
                     "rot_avg_fdr": round(rot_avg_fdr, 4),
                     "max_worst_starter": round(max_worst_starter, 1),
                     "no_diff_gws": no_diff_gws,
@@ -223,7 +220,6 @@ def run_bb1_wc4_club_combinatorial_analysis(
         avg_corr = float(np.mean(corrs)) if corrs else 0.0
 
         club_shorts = [idx_to_short[x] for x in c]
-        promoted_count = sum(1 for cs in club_shorts if cs in PROMOTED_CLUBS)
 
         rows.append(
             {
@@ -233,8 +229,6 @@ def run_bb1_wc4_club_combinatorial_analysis(
                 "club3": club_shorts[2],
                 "club4": club_shorts[3],
                 "club5": club_shorts[4],
-                "promoted_count": promoted_count,
-                "is_pl_proven": promoted_count == 0,
                 "gw1_avg_fdr": round(gw1_avg_fdr, 2),
                 "gw1_max_fdr": round(gw1_max_fdr, 1),
                 "gw2_avg_fdr": round(gw2_avg_fdr, 2),
@@ -326,298 +320,139 @@ def project_starter_def_grid(starters: pd.DataFrame, fmap: pd.DataFrame, end_gw:
     )
 
 
+def classify_budget_band(price: float) -> tuple[str, int]:
+    """Classify total 5 DEF spend into natural budget band."""
+    if price <= 22.5:
+        return "Band 1: Budget (£20.5m-£22.5m)", 1
+    elif price <= 24.0:
+        return "Band 2: Mid-Value (£23.0m-£24.0m)", 2
+    elif price <= 25.0:
+        return "Band 3: Single Anchor (£24.5m-£25.0m)", 3
+    else:
+        return "Band 4: Premium / Dual Anchor (£25.5m-£26.0m)", 4
+
+
 def simulate_player_tier_combinations(
     starters: pd.DataFrame,
     gw_xp: pd.DataFrame,
     fdr_mat: np.ndarray,
     id_to_idx: dict[int, int],
 ) -> pd.DataFrame:
-    """Simulate 5-DEF combinations across 4 budget tiers using top representative defenders per club."""
+    """Simulate 5-DEF combinations across flexible budget spectrum up to £26.0m with vectorized ranking."""
     xp_lookup = {
         int(pid): grp.set_index("gameweek_id")["projected_points"].to_dict()
         for pid, grp in gw_xp.groupby("player_id")
     }
-    player_meta = starters.set_index("player_id").to_dict("index")
 
-    budget_defs: list[int] = []
-    premium_defs: list[int] = []
+    rep_defs_list = []
+    for (_, _), grp in starters.groupby(["club_short", "price"]):
+        best = grp.sort_values(["per90_xg", "per90_defcon", "per90_xa"], ascending=[False, False, False]).iloc[0]
+        rep_defs_list.append(best)
+    df_rep = pd.DataFrame(rep_defs_list)
 
-    for _, grp in starters.groupby("club_short"):
-        b_sub = grp[grp["price"] <= 4.5].sort_values(
-            ["price", "per90_xg", "per90_defcon"], ascending=[True, False, False]
-        )
-        if not b_sub.empty:
-            budget_defs.append(int(b_sub.iloc[0]["player_id"]))
+    player_meta = df_rep.set_index("player_id").to_dict("index")
+    pids = list(player_meta.keys())
+    n_players = len(pids)
 
-        p_sub = grp[grp["price"] >= 5.5].sort_values(
-            ["per90_xg", "per90_defcon", "price"], ascending=[False, False, True]
-        )
-        if not p_sub.empty:
-            premium_defs.append(int(p_sub.iloc[0]["player_id"]))
+    p_prices = np.array([player_meta[pid]["price"] for pid in pids], dtype=np.float32)
+    p_cids = np.array([id_to_idx[int(player_meta[pid]["club_id"])] for pid in pids], dtype=np.int32)
+    p_all_fdrs = np.array([fdr_mat[cid, :] for cid in p_cids], dtype=np.float32)
+    p_all_xps = np.array(
+        [[float(xp_lookup[pid].get(gw, 0.0)) for gw in range(1, 39)] for pid in pids],
+        dtype=np.float32,
+    )
+
+    all_5combos = np.array(list(itertools.combinations(range(n_players), 5)), dtype=np.int32)
+    combo_prices = p_prices[all_5combos].sum(axis=1)
+    combo_cids = p_cids[all_5combos]
+
+    distinct_mask = np.array([len(set(combo_cids[i])) == 5 for i in range(len(all_5combos))], dtype=bool)
+    price_mask = combo_prices <= MAX_TOTAL_PRICE
+    valid_mask = distinct_mask & price_mask
+    valid_5combos = all_5combos[valid_mask]
+    valid_prices = combo_prices[valid_mask]
+    valid_cids = combo_cids[valid_mask]
 
     all_tier_rows: list[dict] = []
     pair_indices = list(itertools.combinations(range(5), 2))
 
     for h_name, start_gw, end_gw in HORIZONS:
-        gws = list(range(start_gw, end_gw + 1))
-        gw_indices = [gw - 1 for gw in gws]
-        n_gws = len(gws)
+        gw_indices = list(range(start_gw - 1, end_gw))
+        n_gws = len(gw_indices)
         h_fdr = fdr_mat[:, gw_indices]
         corr_mat = precompute_pairwise_corr(h_fdr)
 
-        # -------------------------------------------------------------
-        # Tier 1: Pure Budget 5-Way Rotation (5x £4.0-£4.5m DEF)
-        # -------------------------------------------------------------
-        for combo in itertools.combinations(budget_defs, 5):
-            p_objs = [player_meta[pid] for pid in combo]
-            tot_price = sum(float(p["price"]) for p in p_objs)
-            if tot_price > 22.5:
+        combo_fdr = p_all_fdrs[valid_5combos][:, :, gw_indices]
+        combo_xp = p_all_xps[valid_5combos][:, :, gw_indices]
+
+        sort_key = combo_fdr - combo_xp * 1e-4
+        top3_idx = np.argsort(sort_key, axis=1)[:, :3, :]
+        top3_fdr = np.take_along_axis(combo_fdr, top3_idx, axis=1)
+        top3_xp = np.take_along_axis(combo_xp, top3_idx, axis=1)
+
+        tot_rot_xp = top3_xp.sum(axis=(1, 2))
+        rot_avg_fdr = top3_fdr.mean(axis=(1, 2))
+        worst_starter = top3_fdr.max(axis=1)
+        no_diff_gws = (worst_starter <= 3.0).sum(axis=1)
+        no_diff_pct = no_diff_gws / float(n_gws) * 100.0
+        max_worst_starter = worst_starter.max(axis=1)
+
+        top3_xp_order = np.argsort(-combo_xp, axis=1)[:, :3, :]
+        tot_max_xp = np.take_along_axis(combo_xp, top3_xp_order, axis=1).sum(axis=(1, 2))
+
+        # Vectorized RQI
+        s_xp = np.clip((tot_rot_xp / float(n_gws) - 9.0) / (16.5 - 9.0) * 100.0, 0, 100)
+        s_fdr = np.clip((3.5 - rot_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
+        s_no_diff = np.clip(no_diff_pct, 0, 100)
+        s_cost = np.clip((28.0 - valid_prices) / (28.0 - 20.0) * 100.0, 0, 100)
+        rqi_arr = np.round(0.35 * s_xp + 0.25 * s_fdr + 0.15 * s_no_diff + 0.10 * s_cost, 2)
+
+        # Select top candidates per band to write
+        band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
+        for i in range(len(valid_5combos)):
+            _, b_id = classify_budget_band(float(valid_prices[i]))
+            band_indices[b_id].append(i)
+
+        selected_indices = set()
+        for b_id, idx_list in band_indices.items():
+            if not idx_list:
                 continue
+            sub_rqi = rqi_arr[idx_list]
+            sub_xp = tot_rot_xp[idx_list]
+            # Top 1000 by RQI + top 200 by XP
+            top_rqi_idx = [idx_list[k] for k in np.argsort(-sub_rqi)[:1000]]
+            top_xp_idx = [idx_list[k] for k in np.argsort(-sub_xp)[:200]]
+            selected_indices.update(top_rqi_idx)
+            selected_indices.update(top_xp_idx)
 
-            club_idxs = [id_to_idx[int(p["club_id"])] for p in p_objs]
-            c_fdrs = h_fdr[club_idxs, :]
-            c_xps = np.array([[float(xp_lookup[pid].get(gw, 0.0)) for gw in gws] for pid in combo])
+        for i in selected_indices:
+            tot_p = float(valid_prices[i])
+            band_name, band_id = classify_budget_band(tot_p)
+            avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
 
-            fdr_picks_xp = []
-            rot_fdr_picks = []
-            worst_starters = []
-            max_xp_picks = []
-
-            for t in range(n_gws):
-                gw_fdr = c_fdrs[:, t]
-                gw_xp_t = c_xps[:, t]
-                order = sorted(range(5), key=lambda idx: (gw_fdr[idx], -gw_xp_t[idx]))
-                starters_idx = order[:3]
-                fdr_picks_xp.append(sum(gw_xp_t[i] for i in starters_idx))
-                rot_fdr_picks.append(np.mean([gw_fdr[i] for i in starters_idx]))
-                worst_starters.append(max(gw_fdr[i] for i in starters_idx))
-
-                top3_xp_idx = np.argsort(-gw_xp_t)[:3]
-                max_xp_picks.append(sum(gw_xp_t[i] for i in top3_xp_idx))
-
-            tot_rot_xp = float(sum(fdr_picks_xp))
-            tot_max_xp = float(sum(max_xp_picks))
-            rot_avg_fdr = float(np.mean(rot_fdr_picks))
-            max_worst_starter = float(max(worst_starters))
-            no_diff_gws = int(sum(1 for w in worst_starters if w <= 3.0))
-            no_diff_pct = float(no_diff_gws / n_gws * 100.0)
-
-            corrs = [corr_mat[club_idxs[i], club_idxs[j]] for i, j in pair_indices]
-            avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-            rqi = compute_def_rqi(
-                tot_rot_xp=tot_rot_xp,
-                num_gws=n_gws,
-                rot_avg_fdr=rot_avg_fdr,
-                no_diff_pct=no_diff_pct,
-                fdr_corr=avg_corr,
-                total_price=tot_price,
-            )
-
-            has_promoted = any(p["club_short"] in PROMOTED_CLUBS for p in p_objs)
+            p_objs = [player_meta[pids[idx]] for idx in valid_5combos[i]]
             all_tier_rows.append(
                 {
-                    "tier": "Tier 1: Pure Budget Rotation (£21.5m-£22.5m)",
-                    "tier_id": 1,
+                    "tier": band_name,
+                    "tier_id": band_id,
                     "horizon": h_name,
                     "start_gw": start_gw,
                     "end_gw": end_gw,
                     "num_gws": n_gws,
                     "lineup_summary": " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs),
                     "clubs": "-".join(p["club_short"] for p in p_objs),
-                    "total_price": round(tot_price, 1),
-                    "rqi": rqi,
-                    "tot_rot_xp": round(tot_rot_xp, 2),
-                    "tot_rot_xp_maxxp": round(tot_max_xp, 2),
-                    "maxxp_delta": round(tot_max_xp - tot_rot_xp, 2),
-                    "rot_avg_fdr": round(rot_avg_fdr, 4),
-                    "max_worst_starter": round(max_worst_starter, 1),
-                    "no_diff_gws": no_diff_gws,
-                    "no_diff_pct": round(no_diff_pct, 1),
+                    "total_price": round(tot_p, 1),
+                    "rqi": float(rqi_arr[i]),
+                    "tot_rot_xp": round(float(tot_rot_xp[i]), 2),
+                    "tot_rot_xp_maxxp": round(float(tot_max_xp[i]), 2),
+                    "maxxp_delta": round(float(tot_max_xp[i] - tot_rot_xp[i]), 2),
+                    "rot_avg_fdr": round(float(rot_avg_fdr[i]), 4),
+                    "max_worst_starter": round(float(max_worst_starter[i]), 1),
+                    "no_diff_gws": int(no_diff_gws[i]),
+                    "no_diff_pct": round(float(no_diff_pct[i]), 1),
                     "avg_fdr_corr": round(avg_corr, 4),
-                    "has_promoted_proxy": has_promoted,
                 }
             )
-
-        # -------------------------------------------------------------
-        # Tier 2: 1 Premium Anchor (£5.5-£6.5m) + 4 Budget (£4.0-£4.5m)
-        # -------------------------------------------------------------
-        for prem in premium_defs:
-            prem_obj = player_meta[prem]
-            prem_club = prem_obj["club_short"]
-            prem_cid = id_to_idx[int(prem_obj["club_id"])]
-            prem_fdr = h_fdr[prem_cid, :]
-            prem_xp = np.array([float(xp_lookup[prem].get(gw, 0.0)) for gw in gws])
-
-            valid_b = [b for b in budget_defs if player_meta[b]["club_short"] != prem_club]
-            for b_combo in itertools.combinations(valid_b, 4):
-                p_objs = [prem_obj] + [player_meta[pid] for pid in b_combo]
-                tot_price = sum(float(p["price"]) for p in p_objs)
-                if tot_price > 24.5 or tot_price < 23.5:
-                    continue
-
-                b_cids = [id_to_idx[int(p["club_id"])] for p in p_objs[1:]]
-                b_fdrs = h_fdr[b_cids, :]
-                b_xps = np.array([[float(xp_lookup[pid].get(gw, 0.0)) for gw in gws] for pid in b_combo])
-
-                fdr_picks_xp = []
-                rot_fdr_picks = []
-                worst_starters = []
-                max_xp_picks = []
-
-                for t in range(n_gws):
-                    b_fdr_t = b_fdrs[:, t]
-                    b_xp_t = b_xps[:, t]
-                    order = sorted(range(4), key=lambda idx: (b_fdr_t[idx], -b_xp_t[idx]))
-                    b_starters_idx = order[:2]
-
-                    wk_xp = prem_xp[t] + sum(b_xp_t[i] for i in b_starters_idx)
-                    fdr_picks_xp.append(wk_xp)
-                    wk_fdr = np.mean([prem_fdr[t], *(b_fdr_t[i] for i in b_starters_idx)])
-                    rot_fdr_picks.append(wk_fdr)
-                    worst_starters.append(max(prem_fdr[t], *(b_fdr_t[i] for i in b_starters_idx)))
-
-                    top2_b_xp = np.argsort(-b_xp_t)[:2]
-                    max_xp_picks.append(prem_xp[t] + sum(b_xp_t[i] for i in top2_b_xp))
-
-                tot_rot_xp = float(sum(fdr_picks_xp))
-                tot_max_xp = float(sum(max_xp_picks))
-                rot_avg_fdr = float(np.mean(rot_fdr_picks))
-                max_worst_starter = float(max(worst_starters))
-                no_diff_gws = int(sum(1 for w in worst_starters if w <= 3.0))
-                no_diff_pct = float(no_diff_gws / n_gws * 100.0)
-
-                all_cids = [prem_cid, *b_cids]
-                corrs = [corr_mat[all_cids[i], all_cids[j]] for i, j in pair_indices]
-                avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-                rqi = compute_def_rqi(
-                    tot_rot_xp=tot_rot_xp,
-                    num_gws=n_gws,
-                    rot_avg_fdr=rot_avg_fdr,
-                    no_diff_pct=no_diff_pct,
-                    fdr_corr=avg_corr,
-                    total_price=tot_price,
-                )
-
-                has_promoted = any(p["club_short"] in PROMOTED_CLUBS for p in p_objs)
-                all_tier_rows.append(
-                    {
-                        "tier": "Tier 2: 1 Premium Anchor + 4 Budget (£23.5m-£24.5m)",
-                        "tier_id": 2,
-                        "horizon": h_name,
-                        "start_gw": start_gw,
-                        "end_gw": end_gw,
-                        "num_gws": n_gws,
-                        "lineup_summary": f"[Anchor: {prem_obj['web_name']} ({prem_obj['club_short']} £{prem_obj['price']:.1f}m)] + "
-                        + " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs[1:]),
-                        "clubs": "-".join(p["club_short"] for p in p_objs),
-                        "total_price": round(tot_price, 1),
-                        "rqi": rqi,
-                        "tot_rot_xp": round(tot_rot_xp, 2),
-                        "tot_rot_xp_maxxp": round(tot_max_xp, 2),
-                        "maxxp_delta": round(tot_max_xp - tot_rot_xp, 2),
-                        "rot_avg_fdr": round(rot_avg_fdr, 4),
-                        "max_worst_starter": round(max_worst_starter, 1),
-                        "no_diff_gws": no_diff_gws,
-                        "no_diff_pct": round(no_diff_pct, 1),
-                        "avg_fdr_corr": round(avg_corr, 4),
-                        "has_promoted_proxy": has_promoted,
-                    }
-                )
-
-        # -------------------------------------------------------------
-        # Tier 3: 2 Premium Anchors (£5.5-£6.5m) + 3 Budget (£4.0-£4.5m)
-        # -------------------------------------------------------------
-        for prem_pair in itertools.combinations(premium_defs, 2):
-            prem1, prem2 = player_meta[prem_pair[0]], player_meta[prem_pair[1]]
-            prem_clubs = {prem1["club_short"], prem2["club_short"]}
-            if len(prem_clubs) < 2:
-                continue
-
-            prem1_cid = id_to_idx[int(prem1["club_id"])]
-            prem2_cid = id_to_idx[int(prem2["club_id"])]
-            prem1_fdr = h_fdr[prem1_cid, :]
-            prem2_fdr = h_fdr[prem2_cid, :]
-            prem1_xp = np.array([float(xp_lookup[prem_pair[0]].get(gw, 0.0)) for gw in gws])
-            prem2_xp = np.array([float(xp_lookup[prem_pair[1]].get(gw, 0.0)) for gw in gws])
-
-            valid_b = [b for b in budget_defs if player_meta[b]["club_short"] not in prem_clubs]
-            for b_combo in itertools.combinations(valid_b, 3):
-                p_objs = [prem1, prem2] + [player_meta[pid] for pid in b_combo]
-                tot_price = sum(float(p["price"]) for p in p_objs)
-                if tot_price > 26.5 or tot_price < 25.0:
-                    continue
-
-                b_cids = [id_to_idx[int(p["club_id"])] for p in p_objs[2:]]
-                b_fdrs = h_fdr[b_cids, :]
-                b_xps = np.array([[float(xp_lookup[pid].get(gw, 0.0)) for gw in gws] for pid in b_combo])
-
-                fdr_picks_xp = []
-                rot_fdr_picks = []
-                worst_starters = []
-                max_xp_picks = []
-
-                for t in range(n_gws):
-                    b_fdr_t = b_fdrs[:, t]
-                    b_xp_t = b_xps[:, t]
-                    order = sorted(range(3), key=lambda idx: (b_fdr_t[idx], -b_xp_t[idx]))
-                    best_b_idx = order[0]
-
-                    wk_xp = prem1_xp[t] + prem2_xp[t] + b_xp_t[best_b_idx]
-                    fdr_picks_xp.append(wk_xp)
-                    wk_fdr = np.mean([prem1_fdr[t], prem2_fdr[t], b_fdr_t[best_b_idx]])
-                    rot_fdr_picks.append(wk_fdr)
-                    worst_starters.append(max(prem1_fdr[t], prem2_fdr[t], b_fdr_t[best_b_idx]))
-
-                    top1_b_xp = np.argsort(-b_xp_t)[0]
-                    max_xp_picks.append(prem1_xp[t] + prem2_xp[t] + b_xp_t[top1_b_xp])
-
-                tot_rot_xp = float(sum(fdr_picks_xp))
-                tot_max_xp = float(sum(max_xp_picks))
-                rot_avg_fdr = float(np.mean(rot_fdr_picks))
-                max_worst_starter = float(max(worst_starters))
-                no_diff_gws = int(sum(1 for w in worst_starters if w <= 3.0))
-                no_diff_pct = float(no_diff_gws / n_gws * 100.0)
-
-                all_cids = [prem1_cid, prem2_cid, *b_cids]
-                corrs = [corr_mat[all_cids[i], all_cids[j]] for i, j in pair_indices]
-                avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-                rqi = compute_def_rqi(
-                    tot_rot_xp=tot_rot_xp,
-                    num_gws=n_gws,
-                    rot_avg_fdr=rot_avg_fdr,
-                    no_diff_pct=no_diff_pct,
-                    fdr_corr=avg_corr,
-                    total_price=tot_price,
-                )
-
-                has_promoted = any(p["club_short"] in PROMOTED_CLUBS for p in p_objs)
-                all_tier_rows.append(
-                    {
-                        "tier": "Tier 3: 2 Premium Anchors + 3 Budget (£25.5m-£26.5m)",
-                        "tier_id": 3,
-                        "horizon": h_name,
-                        "start_gw": start_gw,
-                        "end_gw": end_gw,
-                        "num_gws": n_gws,
-                        "lineup_summary": f"[Anchors: {prem1['web_name']} ({prem1['club_short']} £{prem1['price']:.1f}m) + {prem2['web_name']} ({prem2['club_short']} £{prem2['price']:.1f}m)] + "
-                        + " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs[2:]),
-                        "clubs": "-".join(p["club_short"] for p in p_objs),
-                        "total_price": round(tot_price, 1),
-                        "rqi": rqi,
-                        "tot_rot_xp": round(tot_rot_xp, 2),
-                        "tot_rot_xp_maxxp": round(tot_max_xp, 2),
-                        "maxxp_delta": round(tot_max_xp - tot_rot_xp, 2),
-                        "rot_avg_fdr": round(rot_avg_fdr, 4),
-                        "max_worst_starter": round(max_worst_starter, 1),
-                        "no_diff_gws": no_diff_gws,
-                        "no_diff_pct": round(no_diff_pct, 1),
-                        "avg_fdr_corr": round(avg_corr, 4),
-                        "has_promoted_proxy": has_promoted,
-                    }
-                )
 
     return pd.DataFrame(all_tier_rows)
 
@@ -629,12 +464,33 @@ def simulate_bb1_wc4_player_tier_combinations(
     id_to_idx: dict[int, int],
     fixtures: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Simulate player lineups specifically for GW1 BB (5 starters) + GW2-3 rotation (3 starters)."""
+    """Simulate player lineups specifically for GW1 BB (5 starters) + GW2-3 rotation (3 starters) up to £26.0m."""
     xp_lookup = {
         int(pid): grp.set_index("gameweek_id")["projected_points"].to_dict()
         for pid, grp in gw_xp.groupby("player_id")
     }
-    player_meta = starters.set_index("player_id").to_dict("index")
+
+    rep_defs_list = []
+    for (_, _), grp in starters.groupby(["club_short", "price"]):
+        best = grp.sort_values(["per90_xg", "per90_defcon", "per90_xa"], ascending=[False, False, False]).iloc[0]
+        rep_defs_list.append(best)
+    df_rep = pd.DataFrame(rep_defs_list)
+
+    player_meta = df_rep.set_index("player_id").to_dict("index")
+    pids = list(player_meta.keys())
+    n_players = len(pids)
+
+    p_prices = np.array([player_meta[pid]["price"] for pid in pids], dtype=np.float32)
+    p_cids = np.array([id_to_idx[int(player_meta[pid]["club_id"])] for pid in pids], dtype=np.int32)
+    p_all_fdrs = np.array([fdr_mat[cid, :] for cid in p_cids], dtype=np.float32)
+    p_all_xps = np.array(
+        [[float(xp_lookup[pid].get(gw, 0.0)) for gw in range(1, 39)] for pid in pids],
+        dtype=np.float32,
+    )
+
+    all_5combos = np.array(list(itertools.combinations(range(n_players), 5)), dtype=np.int32)
+    combo_prices = p_prices[all_5combos].sum(axis=1)
+    combo_cids = p_cids[all_5combos]
 
     gw1_f = fixtures[fixtures["gameweek_id"] == 1]
     clash_pairs = set()
@@ -643,182 +499,92 @@ def simulate_bb1_wc4_player_tier_combinations(
         a_idx = id_to_idx[int(f["away_club_id"])]
         clash_pairs.add(frozenset([h_idx, a_idx]))
 
+    distinct_mask = np.array([len(set(combo_cids[i])) == 5 for i in range(len(all_5combos))], dtype=bool)
+    price_mask = combo_prices <= MAX_TOTAL_PRICE
+
+    no_clash_mask = np.array([
+        not any(frozenset([combo_cids[i, j], combo_cids[i, k]]) in clash_pairs for j in range(5) for k in range(j + 1, 5))
+        for i in range(len(all_5combos))
+    ], dtype=bool)
+
+    gw1_max_fdr_mask = np.array([
+        p_all_fdrs[all_5combos[i], 0].max() <= 3.0
+        for i in range(len(all_5combos))
+    ], dtype=bool)
+
+    valid_bb1_mask = distinct_mask & price_mask & no_clash_mask & gw1_max_fdr_mask
+    valid_bb1_combos = all_5combos[valid_bb1_mask]
+    valid_bb1_prices = combo_prices[valid_bb1_mask]
+    valid_cids = combo_cids[valid_bb1_mask]
+
     corr_mat = precompute_pairwise_corr(fdr_mat[:, 0:3])
     pair_indices = list(itertools.combinations(range(5), 2))
 
-    budget_defs: list[int] = []
-    premium_defs: list[int] = []
+    gw1_xps = p_all_xps[valid_bb1_combos, 0].sum(axis=1)
+    gw1_fdrs = p_all_fdrs[valid_bb1_combos, 0].mean(axis=1)
 
-    for _, grp in starters.groupby("club_short"):
-        b_sub = grp[grp["price"] <= 4.5].sort_values(
-            ["price", "per90_xg", "per90_defcon"], ascending=[True, False, False]
-        )
-        if not b_sub.empty:
-            budget_defs.append(int(b_sub.iloc[0]["player_id"]))
+    gw2_combo_fdr = p_all_fdrs[valid_bb1_combos, 1]
+    gw2_combo_xp = p_all_xps[valid_bb1_combos, 1]
+    gw2_order = np.argsort(gw2_combo_fdr - gw2_combo_xp * 1e-4, axis=1)[:, :3]
+    gw2_top3_xp = np.take_along_axis(gw2_combo_xp, gw2_order, axis=1).sum(axis=1)
+    gw2_top3_fdr = np.take_along_axis(gw2_combo_fdr, gw2_order, axis=1).sum(axis=1)
 
-        p_sub = grp[grp["price"] >= 5.5].sort_values(
-            ["per90_xg", "per90_defcon", "price"], ascending=[False, False, True]
-        )
-        if not p_sub.empty:
-            premium_defs.append(int(p_sub.iloc[0]["player_id"]))
+    gw3_combo_fdr = p_all_fdrs[valid_bb1_combos, 2]
+    gw3_combo_xp = p_all_xps[valid_bb1_combos, 2]
+    gw3_order = np.argsort(gw3_combo_fdr - gw3_combo_xp * 1e-4, axis=1)[:, :3]
+    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order, axis=1).sum(axis=1)
+    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order, axis=1).sum(axis=1)
+
+    tot_effective_xp = gw1_xps + gw2_top3_xp + gw3_top3_xp
+    gw2_3_rot_fdr = (gw2_top3_fdr + gw3_top3_fdr) / 6.0
+    effective_avg_fdr = (p_all_fdrs[valid_bb1_combos, 0].sum(axis=1) + gw2_top3_fdr + gw3_top3_fdr) / 11.0
+
+    s_xp = np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100)
+    s_fdr1 = np.clip((3.5 - gw1_fdrs) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_eff_fdr = np.clip((3.5 - effective_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_cost = np.clip((28.0 - valid_bb1_prices) / (28.0 - 20.0) * 100.0, 0, 100)
+    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr1 + 0.20 * s_eff_fdr + 0.15 * s_cost, 2)
+
+    band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
+    for i in range(len(valid_bb1_combos)):
+        _, b_id = classify_budget_band(float(valid_bb1_prices[i]))
+        band_indices[b_id].append(i)
+
+    selected_indices = set()
+    for b_id, idx_list in band_indices.items():
+        if not idx_list:
+            continue
+        sub_rqi = bb_rqi_arr[idx_list]
+        sub_xp = tot_effective_xp[idx_list]
+        top_rqi_idx = [idx_list[k] for k in np.argsort(-sub_rqi)[:1000]]
+        top_xp_idx = [idx_list[k] for k in np.argsort(-sub_xp)[:200]]
+        selected_indices.update(top_rqi_idx)
+        selected_indices.update(top_xp_idx)
 
     rows: list[dict] = []
+    for i in selected_indices:
+        tot_p = float(valid_bb1_prices[i])
+        band_name, band_id = classify_budget_band(tot_p)
+        avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
 
-    # -------------------------------------------------------------
-    # Tier 1: Pure Budget BB1 (£21.5m-£22.5m)
-    # -------------------------------------------------------------
-    for combo in itertools.combinations(budget_defs, 5):
-        p_objs = [player_meta[pid] for pid in combo]
-        c_idxs = [id_to_idx[int(p["club_id"])] for p in p_objs]
-        has_clash = any(frozenset([c_idxs[i], c_idxs[j]]) in clash_pairs for i in range(5) for j in range(i + 1, 5))
-        if has_clash:
-            continue
-
-        gw1_fdrs = [fdr_mat[c_idxs[i], 0] for i in range(5)]
-        if max(gw1_fdrs) > 3.0:
-            continue
-
-        tot_price = sum(float(p["price"]) for p in p_objs)
-        if tot_price > 22.5:
-            continue
-
-        # GW1: all 5 play
-        gw1_xps = [float(xp_lookup[pid].get(1, 0.0)) for pid in combo]
-        gw1_pts = float(sum(gw1_xps))
-
-        # GW2: top 3 by FDR
-        gw2_fdrs = [fdr_mat[c_idxs[i], 1] for i in range(5)]
-        gw2_xps = [float(xp_lookup[pid].get(2, 0.0)) for pid in combo]
-        order2 = sorted(range(5), key=lambda idx: (gw2_fdrs[idx], -gw2_xps[idx]))[:3]
-        gw2_pts = float(sum(gw2_xps[i] for i in order2))
-
-        # GW3: top 3 by FDR
-        gw3_fdrs = [fdr_mat[c_idxs[i], 2] for i in range(5)]
-        gw3_xps = [float(xp_lookup[pid].get(3, 0.0)) for pid in combo]
-        order3 = sorted(range(5), key=lambda idx: (gw3_fdrs[idx], -gw3_xps[idx]))[:3]
-        gw3_pts = float(sum(gw3_xps[i] for i in order3))
-
-        tot_effective_xp = gw1_pts + gw2_pts + gw3_pts
-        gw1_avg_fdr = float(np.mean(gw1_fdrs))
-        gw2_3_rot_fdr = float((sum(gw2_fdrs[i] for i in order2) + sum(gw3_fdrs[i] for i in order3)) / 6.0)
-        effective_avg_fdr = float(
-            (sum(gw1_fdrs) + sum(gw2_fdrs[i] for i in order2) + sum(gw3_fdrs[i] for i in order3)) / 11.0
-        )
-
-        corrs = [corr_mat[c_idxs[i], c_idxs[j]] for i, j in pair_indices]
-        avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-        rqi = compute_bb_rqi(
-            tot_effective_xp=tot_effective_xp,
-            gw1_avg_fdr=gw1_avg_fdr,
-            gw2_3_rot_fdr=gw2_3_rot_fdr,
-            effective_avg_fdr=effective_avg_fdr,
-            avg_corr=avg_corr,
-            total_price=tot_price,
-        )
-
-        has_promoted = any(p["club_short"] in PROMOTED_CLUBS for p in p_objs)
+        p_objs = [player_meta[pids[idx]] for idx in valid_bb1_combos[i]]
         rows.append(
             {
-                "tier": "Tier 1: Pure Budget BB1 (£21.5m-£22.5m)",
-                "tier_id": 1,
+                "tier": band_name,
+                "tier_id": band_id,
                 "lineup_summary": " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs),
                 "clubs": "-".join(p["club_short"] for p in p_objs),
-                "total_price": round(tot_price, 1),
-                "bb_rqi": rqi,
-                "tot_effective_xp": round(tot_effective_xp, 2),
-                "gw1_xp_5def": round(gw1_pts, 2),
-                "gw2_3_xp_6def": round(gw2_pts + gw3_pts, 2),
-                "gw1_avg_fdr": round(gw1_avg_fdr, 2),
-                "gw2_3_rot_fdr": round(gw2_3_rot_fdr, 2),
-                "effective_avg_fdr": round(effective_avg_fdr, 4),
+                "total_price": round(tot_p, 1),
+                "bb_rqi": float(bb_rqi_arr[i]),
+                "tot_effective_xp": round(float(tot_effective_xp[i]), 2),
+                "gw1_xp_5def": round(float(gw1_xps[i]), 2),
+                "gw2_3_xp_6def": round(float(gw2_top3_xp[i] + gw3_top3_xp[i]), 2),
+                "gw1_avg_fdr": round(float(gw1_fdrs[i]), 2),
+                "gw2_3_rot_fdr": round(float(gw2_3_rot_fdr[i]), 2),
+                "effective_avg_fdr": round(float(effective_avg_fdr[i]), 4),
                 "avg_fdr_corr": round(avg_corr, 4),
-                "has_promoted_proxy": has_promoted,
             }
         )
-
-    # -------------------------------------------------------------
-    # Tier 2: 1 Premium Anchor (£5.5-£6.5m) + 4 Budget (£4.0-£4.5m)
-    # -------------------------------------------------------------
-    for prem in premium_defs:
-        prem_obj = player_meta[prem]
-        prem_club = prem_obj["club_short"]
-        prem_cid = id_to_idx[int(prem_obj["club_id"])]
-        valid_b = [b for b in budget_defs if player_meta[b]["club_short"] != prem_club]
-
-        for b_combo in itertools.combinations(valid_b, 4):
-            combo = (prem, *b_combo)
-            p_objs = [player_meta[pid] for pid in combo]
-            c_idxs = [id_to_idx[int(p["club_id"])] for p in p_objs]
-
-            has_clash = any(frozenset([c_idxs[i], c_idxs[j]]) in clash_pairs for i in range(5) for j in range(i + 1, 5))
-            if has_clash:
-                continue
-
-            gw1_fdrs = [fdr_mat[c_idxs[i], 0] for i in range(5)]
-            if max(gw1_fdrs) > 3.0:
-                continue
-
-            tot_price = sum(float(p["price"]) for p in p_objs)
-            if tot_price > 24.5 or tot_price < 23.5:
-                continue
-
-            gw1_xps = [float(xp_lookup[pid].get(1, 0.0)) for pid in combo]
-            gw1_pts = float(sum(gw1_xps))
-
-            # GW2: Anchor + top 2 budget
-            gw2_b_fdrs = [fdr_mat[c_idxs[i], 1] for i in range(1, 5)]
-            gw2_b_xps = [float(xp_lookup[pid].get(2, 0.0)) for pid in b_combo]
-            order2 = sorted(range(4), key=lambda idx: (gw2_b_fdrs[idx], -gw2_b_xps[idx]))[:2]
-            gw2_pts = float(xp_lookup[prem].get(2, 0.0)) + sum(gw2_b_xps[i] for i in order2)
-
-            # GW3: Anchor + top 2 budget
-            gw3_b_fdrs = [fdr_mat[c_idxs[i], 2] for i in range(1, 5)]
-            gw3_b_xps = [float(xp_lookup[pid].get(3, 0.0)) for pid in b_combo]
-            order3 = sorted(range(4), key=lambda idx: (gw3_b_fdrs[idx], -gw3_b_xps[idx]))[:2]
-            gw3_pts = float(xp_lookup[prem].get(3, 0.0)) + sum(gw3_b_xps[i] for i in order3)
-
-            tot_effective_xp = gw1_pts + gw2_pts + gw3_pts
-            gw1_avg_fdr = float(np.mean(gw1_fdrs))
-            gw2_3_rot_fdr = float(
-                (fdr_mat[prem_cid, 1] + sum(gw2_b_fdrs[i] for i in order2) + fdr_mat[prem_cid, 2] + sum(gw3_b_fdrs[i] for i in order3)) / 6.0
-            )
-            effective_avg_fdr = float(
-                (sum(gw1_fdrs) + fdr_mat[prem_cid, 1] + sum(gw2_b_fdrs[i] for i in order2) + fdr_mat[prem_cid, 2] + sum(gw3_b_fdrs[i] for i in order3)) / 11.0
-            )
-
-            corrs = [corr_mat[c_idxs[i], c_idxs[j]] for i, j in pair_indices]
-            avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-            rqi = compute_bb_rqi(
-                tot_effective_xp=tot_effective_xp,
-                gw1_avg_fdr=gw1_avg_fdr,
-                gw2_3_rot_fdr=gw2_3_rot_fdr,
-                effective_avg_fdr=effective_avg_fdr,
-                avg_corr=avg_corr,
-                total_price=tot_price,
-            )
-
-            has_promoted = any(p["club_short"] in PROMOTED_CLUBS for p in p_objs)
-            rows.append(
-                {
-                    "tier": "Tier 2: 1 Premium Anchor + 4 Budget (£23.5m-£24.5m)",
-                    "tier_id": 2,
-                    "lineup_summary": f"[Anchor: {prem_obj['web_name']} ({prem_obj['club_short']} £{prem_obj['price']:.1f}m)] + "
-                    + " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs[1:]),
-                    "clubs": "-".join(p["club_short"] for p in p_objs),
-                    "total_price": round(tot_price, 1),
-                    "bb_rqi": rqi,
-                    "tot_effective_xp": round(tot_effective_xp, 2),
-                    "gw1_xp_5def": round(gw1_pts, 2),
-                    "gw2_3_xp_6def": round(gw2_pts + gw3_pts, 2),
-                    "gw1_avg_fdr": round(gw1_avg_fdr, 2),
-                    "gw2_3_rot_fdr": round(gw2_3_rot_fdr, 2),
-                    "effective_avg_fdr": round(effective_avg_fdr, 4),
-                    "avg_fdr_corr": round(avg_corr, 4),
-                    "has_promoted_proxy": has_promoted,
-                }
-            )
 
     return pd.DataFrame(rows)
 
@@ -853,10 +619,10 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     print("Projecting weekly hybrid xP for all starting defenders...")
     gw_xp = project_starter_def_grid(starters, fmap, end_gw=38)
 
-    print("Simulating multi-tier 5-DEF player combinations...")
+    print("Simulating flexible 5-DEF player combinations (up to £26.0m)...")
     df_tiers = simulate_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx)
 
-    print("Simulating specialized GW1 BB + GW4 WC pre-wildcard scenario...")
+    print("Simulating specialized GW1 BB + GW4 WC pre-wildcard scenario (up to £26.0m)...")
     df_bb1_clubs = run_bb1_wc4_club_combinatorial_analysis(fdr_mat, idx_to_short, fixtures, id_to_idx)
     df_bb1_tiers = simulate_bb1_wc4_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, fixtures)
 
@@ -875,7 +641,6 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
             "usable_mins_total",
         ]
     ].copy()
-    baseline["has_promoted_proxy"] = baseline["club_short"].isin(PROMOTED_CLUBS)
     baseline = baseline.sort_values(["price", "per90_defcon", "web_name"], ascending=[False, False, True]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** FFS pre-season guide recheck complete. Ten price-bracket children unchanged; `fpl-summer-transfers.md` refreshed through 4 Aug; guide index updated. Gates green; checkpoint pending.
-- **Files:** `docs/research/fpl-preseason-guide/fpl-summer-transfers.md`; `fpl-preseason-guide.md`; `docs/research/INDEX.md`; `task.md`; `docs/agents/current-state.md`
-- **Decisions:** GW1 Scout Picks preview (2026-08-04) out of core scope — no dedicated child note. Aug transfer entries pending `expected-role-gw1-5` cross-check.
+- **Status:** Flexible 5-defender fixture diversification & rotation research updated up to £26.0m without promoted proxy exclusions; all 5 CSV artifacts regenerated in `data/research/def-fixture-rotation/`; `def-fixture-rotation.md` updated; tests and verify.sh passing.
+- **Files:** `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `data/research/def-fixture-rotation/*.csv`, `docs/agents/current-state.md`, `.agents/session-handoff.md`.
+- **Decisions:** Allowed flexible combinations up to £26.0m across 4 natural budget bands; vectorized top candidates per band for blazing fast generation; aligned scoring bounds with test suite contract.
 - **Blocked:** None.
-- **Next:** Cross-check Aug transfers vs `expected-role-gw1-5`; optional Scout Picks synthesis if squad-selection context needed.
+- **Next:** Maintain data snapshots; explore mid/fwd combinations.
