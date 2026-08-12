@@ -95,9 +95,11 @@ def test_def_rotation_artifacts_exist() -> None:
     df_base = pd.read_csv(baseline_csv)
 
     assert set(df_clubs["horizon"].unique()) >= {"gw1_3", "gw4_19", "gw1_19", "full_season"}
-    assert len(df_clubs) == 15504 * 4
+    assert len(df_clubs) == 41344 * 4
+    assert set(df_clubs["num_unique_clubs"].unique()) == {2, 3, 4, 5}
     assert len(df_tiers) > 0
     assert len(df_bb_clubs) > 1000
+    assert set(df_bb_clubs["num_unique_clubs"].unique()) == {2, 3, 4, 5}
     assert len(df_bb_tiers) > 100
     assert len(df_base) >= 50
     assert (df_base["expected_role"].isin(["Nailed Starter", "Regular Starter"])).all()

@@ -1,14 +1,19 @@
 """Starter Defender (5 DEF) Fixture Rotation & Diversification Analysis.
 
 Simulates 5 DEF diversification and fixture rotation across:
-1. Long-term horizons: GW1-3, GW4-19, GW1-19, and full season.
-2. Flexible Budget Spectrum (at most £26.0m):
+1. Multi-horizon analysis: GW1-3 (Early sprint), GW4-19 (Post-Wildcard), GW1-19 (First half), GW1-38 (Full season).
+2. Combinatorial club partitions (2 to 5 unique clubs, max 2 for top-4 attack clubs MCI/ARS/LIV/CHE, max 3 others):
+   - 5 unique clubs (1+1+1+1+1)
+   - 4 clubs (2+1+1+1)
+   - 3 clubs (2+2+1 and 3+1+1)
+   - 2 clubs (3+2)
+3. Flexible Budget Spectrum (at most £26.0m):
    - Band 1: Budget (£20.5m–£22.5m)
    - Band 2: Mid-Value (£23.0m–£24.0m)
    - Band 3: Single Anchor (£24.5m–£25.0m)
    - Band 4: Premium / Dual Anchor (£25.5m–£26.0m)
-3. Specialized Pre-Wildcard Scenario: GW1 Bench Boost (BB1) + GW4 Wildcard (WC4).
-   - GW1: All 5 defenders start on Bench Boost (Zero Head-to-Head Clashes, max FDR <= 3.0).
+4. Specialized Pre-Wildcard Scenario: GW1 Bench Boost (BB1) + GW4 Wildcard (WC4).
+   - GW1: All 5 defenders start on Bench Boost (Zero Head-to-Head Opponent Clashes, max FDR <= 3.0).
    - GW2 & GW3: Best 3 defenders rotate by lowest FDR / highest xP.
    - GW4: Full Wildcard reset.
 """
@@ -17,6 +22,7 @@ from __future__ import annotations
 
 import itertools
 import sys
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +44,10 @@ DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
 FLAT_START_MINUTES = 90.0
 DEF_POSITION_ID = 2
 MAX_TOTAL_PRICE = 26.0
+
+TOP_ATTACK_CLUBS = {"MCI", "ARS", "LIV", "CHE"}
+MAX_DEF_PER_TOP_CLUB = 2
+MAX_DEF_PER_OTHER_CLUB = 3
 
 HORIZONS = (
     ("gw1_3", 1, 3),
@@ -123,9 +133,36 @@ def precompute_pairwise_corr(fdr_mat_sub: np.ndarray) -> np.ndarray:
     return corr_mat
 
 
+def generate_valid_club_multisets(idx_to_short: dict[int, str]) -> tuple[np.ndarray, list[str], list[int], list[str]]:
+    """Generate all valid 5-club multisets satisfying top-attack quota rules (max 2 for MCI/ARS/LIV/CHE, max 3 others)."""
+    all_combos = list(itertools.combinations_with_replacement(range(20), 5))
+    valid_combos = []
+    patterns = []
+    num_uniques = []
+    club_names = []
+    for c in all_combos:
+        counts = Counter(c)
+        valid = True
+        for c_idx, cnt in counts.items():
+            c_short = idx_to_short[c_idx]
+            if c_short in TOP_ATTACK_CLUBS and cnt > MAX_DEF_PER_TOP_CLUB:
+                valid = False
+                break
+            elif cnt > MAX_DEF_PER_OTHER_CLUB:
+                valid = False
+                break
+        if valid:
+            valid_combos.append(c)
+            p_tup = tuple(sorted(counts.values(), reverse=True))
+            patterns.append("+".join(str(x) for x in p_tup))
+            num_uniques.append(len(p_tup))
+            club_names.append("-".join(idx_to_short[x] for x in c))
+    return np.array(valid_combos, dtype=np.int32), patterns, num_uniques, club_names
+
+
 def run_5club_combinatorial_analysis(fdr_mat: np.ndarray, idx_to_short: dict[int, str]) -> pd.DataFrame:
-    """Evaluate all 15,504 5-club combinations across standard horizons."""
-    combos = list(itertools.combinations(range(20), 5))
+    """Evaluate all valid 41,344 5-club combinations (2 to 5 unique clubs) across standard horizons."""
+    valid_combos, patterns, num_uniques, club_names = generate_valid_club_multisets(idx_to_short)
     pair_indices = list(itertools.combinations(range(5), 2))
     all_rows: list[dict] = []
 
@@ -135,20 +172,21 @@ def run_5club_combinatorial_analysis(fdr_mat: np.ndarray, idx_to_short: dict[int
         h_fdr = fdr_mat[:, gw_indices]
         corr_mat = precompute_pairwise_corr(h_fdr)
 
-        for c in combos:
-            sub = h_fdr[list(c), :]
-            sorted_sub = np.sort(sub, axis=0)
-            top3 = sorted_sub[:3, :]
-            rot_avg_fdr = float(top3.mean())
-            worst_starter_each_gw = sorted_sub[2, :]
-            max_worst_starter = float(worst_starter_each_gw.max())
-            no_diff_gws = int(np.sum(worst_starter_each_gw <= 3.0))
-            all_easy_gws = int(np.sum(worst_starter_each_gw <= 2.0))
+        combo_fdr = h_fdr[valid_combos]
+        sorted_fdr = np.sort(combo_fdr, axis=1)
+        top3_fdr = sorted_fdr[:, :3, :]
+        rot_avg_fdr = top3_fdr.mean(axis=(1, 2))
+        worst_starters = sorted_fdr[:, 2, :]
+        max_worst_starter = worst_starters.max(axis=1)
+        no_diff_gws = (worst_starters <= 3.0).sum(axis=1)
+        no_diff_pct = no_diff_gws / float(n_gws) * 100.0
+        all_easy_gws = (worst_starters <= 2.0).sum(axis=1)
+        all_easy_pct = all_easy_gws / float(n_gws) * 100.0
 
-            corrs = [corr_mat[c[i], c[j]] for i, j in pair_indices]
+        for i in range(len(valid_combos)):
+            c = valid_combos[i]
+            corrs = [corr_mat[c[a], c[b]] for a, b in pair_indices]
             avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-            club_shorts = [idx_to_short[x] for x in c]
 
             all_rows.append(
                 {
@@ -156,18 +194,20 @@ def run_5club_combinatorial_analysis(fdr_mat: np.ndarray, idx_to_short: dict[int
                     "start_gw": start_gw,
                     "end_gw": end_gw,
                     "num_gws": n_gws,
-                    "clubs": "-".join(club_shorts),
-                    "club1": club_shorts[0],
-                    "club2": club_shorts[1],
-                    "club3": club_shorts[2],
-                    "club4": club_shorts[3],
-                    "club5": club_shorts[4],
-                    "rot_avg_fdr": round(rot_avg_fdr, 4),
-                    "max_worst_starter": round(max_worst_starter, 1),
-                    "no_diff_gws": no_diff_gws,
-                    "no_diff_pct": round(no_diff_gws / n_gws * 100.0, 1),
-                    "all_easy_gws": all_easy_gws,
-                    "all_easy_pct": round(all_easy_gws / n_gws * 100.0, 1),
+                    "num_unique_clubs": num_uniques[i],
+                    "allocation_pattern": patterns[i],
+                    "clubs": club_names[i],
+                    "club1": idx_to_short[c[0]],
+                    "club2": idx_to_short[c[1]],
+                    "club3": idx_to_short[c[2]],
+                    "club4": idx_to_short[c[3]],
+                    "club5": idx_to_short[c[4]],
+                    "rot_avg_fdr": round(float(rot_avg_fdr[i]), 4),
+                    "max_worst_starter": round(float(max_worst_starter[i]), 1),
+                    "no_diff_gws": int(no_diff_gws[i]),
+                    "no_diff_pct": round(float(no_diff_pct[i]), 1),
+                    "all_easy_gws": int(all_easy_gws[i]),
+                    "all_easy_pct": round(float(all_easy_pct[i]), 1),
                     "avg_fdr_corr": round(avg_corr, 4),
                 }
             )
@@ -189,26 +229,26 @@ def run_bb1_wc4_club_combinatorial_analysis(
         a_idx = id_to_idx[int(f["away_club_id"])]
         clash_pairs.add(frozenset([h_idx, a_idx]))
 
-    combos = list(itertools.combinations(range(20), 5))
+    valid_combos, patterns, num_uniques, club_names = generate_valid_club_multisets(idx_to_short)
     pair_indices = list(itertools.combinations(range(5), 2))
     corr_mat = precompute_pairwise_corr(fdr_mat[:, 0:3])
 
     rows: list[dict] = []
-    for c in combos:
-        has_clash = any(frozenset([c[i], c[j]]) in clash_pairs for i in range(5) for j in range(i + 1, 5))
+    for i, c in enumerate(valid_combos):
+        has_clash = any(frozenset([c[a], c[b]]) in clash_pairs for a in range(5) for b in range(a + 1, 5) if c[a] != c[b])
         if has_clash:
             continue
 
         # GW1: all 5 start
-        gw1_fdrs = fdr_mat[list(c), 0]
+        gw1_fdrs = fdr_mat[c, 0]
         gw1_max_fdr = float(gw1_fdrs.max())
         if gw1_max_fdr > 3.0:  # Strict ceiling rule
             continue
         gw1_avg_fdr = float(gw1_fdrs.mean())
 
         # GW2 and GW3: top 3 start
-        gw2_fdrs = np.sort(fdr_mat[list(c), 1])[:3]
-        gw3_fdrs = np.sort(fdr_mat[list(c), 2])[:3]
+        gw2_fdrs = np.sort(fdr_mat[c, 1])[:3]
+        gw3_fdrs = np.sort(fdr_mat[c, 2])[:3]
         gw2_avg_fdr = float(gw2_fdrs.mean())
         gw3_avg_fdr = float(gw3_fdrs.mean())
         gw2_3_rot_fdr = float((gw2_fdrs.sum() + gw3_fdrs.sum()) / 6.0)
@@ -216,19 +256,19 @@ def run_bb1_wc4_club_combinatorial_analysis(
         tot_effective_fdr = float(gw1_fdrs.sum() + gw2_fdrs.sum() + gw3_fdrs.sum())
         effective_avg_fdr = tot_effective_fdr / 11.0
 
-        corrs = [corr_mat[c[i], c[j]] for i, j in pair_indices]
+        corrs = [corr_mat[c[a], c[b]] for a, b in pair_indices]
         avg_corr = float(np.mean(corrs)) if corrs else 0.0
-
-        club_shorts = [idx_to_short[x] for x in c]
 
         rows.append(
             {
-                "clubs": "-".join(club_shorts),
-                "club1": club_shorts[0],
-                "club2": club_shorts[1],
-                "club3": club_shorts[2],
-                "club4": club_shorts[3],
-                "club5": club_shorts[4],
+                "num_unique_clubs": num_uniques[i],
+                "allocation_pattern": patterns[i],
+                "clubs": club_names[i],
+                "club1": idx_to_short[c[0]],
+                "club2": idx_to_short[c[1]],
+                "club3": idx_to_short[c[2]],
+                "club4": idx_to_short[c[3]],
+                "club5": idx_to_short[c[4]],
                 "gw1_avg_fdr": round(gw1_avg_fdr, 2),
                 "gw1_max_fdr": round(gw1_max_fdr, 1),
                 "gw2_avg_fdr": round(gw2_avg_fdr, 2),
@@ -337,6 +377,7 @@ def simulate_player_tier_combinations(
     gw_xp: pd.DataFrame,
     fdr_mat: np.ndarray,
     id_to_idx: dict[int, int],
+    idx_to_short: dict[int, str],
 ) -> pd.DataFrame:
     """Simulate 5-DEF combinations across flexible budget spectrum up to £26.0m with vectorized ranking."""
     xp_lookup = {
@@ -366,12 +407,34 @@ def simulate_player_tier_combinations(
     combo_prices = p_prices[all_5combos].sum(axis=1)
     combo_cids = p_cids[all_5combos]
 
-    distinct_mask = np.array([len(set(combo_cids[i])) == 5 for i in range(len(all_5combos))], dtype=bool)
-    price_mask = combo_prices <= MAX_TOTAL_PRICE
-    valid_mask = distinct_mask & price_mask
-    valid_5combos = all_5combos[valid_mask]
-    valid_prices = combo_prices[valid_mask]
-    valid_cids = combo_cids[valid_mask]
+    valid_indices = []
+    patterns = []
+    num_uniques = []
+    for i in range(len(all_5combos)):
+        if combo_prices[i] > MAX_TOTAL_PRICE:
+            continue
+        c_counts = Counter(combo_cids[i])
+        valid = True
+        for cid, cnt in c_counts.items():
+            c_short = idx_to_short[cid]
+            if c_short in TOP_ATTACK_CLUBS and cnt > MAX_DEF_PER_TOP_CLUB:
+                valid = False
+                break
+            elif cnt > MAX_DEF_PER_OTHER_CLUB:
+                valid = False
+                break
+        if valid:
+            valid_indices.append(i)
+            p_tup = tuple(sorted(c_counts.values(), reverse=True))
+            patterns.append("+".join(str(x) for x in p_tup))
+            num_uniques.append(len(p_tup))
+
+    valid_indices = np.array(valid_indices, dtype=np.int32)
+    valid_5combos = all_5combos[valid_indices]
+    valid_prices = combo_prices[valid_indices]
+    valid_cids = combo_cids[valid_indices]
+    patterns_arr = np.array(patterns)
+    num_uniques_arr = np.array(num_uniques, dtype=np.int32)
 
     all_tier_rows: list[dict] = []
     pair_indices = list(itertools.combinations(range(5), 2))
@@ -439,6 +502,8 @@ def simulate_player_tier_combinations(
                     "start_gw": start_gw,
                     "end_gw": end_gw,
                     "num_gws": n_gws,
+                    "num_unique_clubs": int(num_uniques_arr[i]),
+                    "allocation_pattern": str(patterns_arr[i]),
                     "lineup_summary": " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs),
                     "clubs": "-".join(p["club_short"] for p in p_objs),
                     "total_price": round(tot_p, 1),
@@ -462,6 +527,7 @@ def simulate_bb1_wc4_player_tier_combinations(
     gw_xp: pd.DataFrame,
     fdr_mat: np.ndarray,
     id_to_idx: dict[int, int],
+    idx_to_short: dict[int, str],
     fixtures: pd.DataFrame,
 ) -> pd.DataFrame:
     """Simulate player lineups specifically for GW1 BB (5 starters) + GW2-3 rotation (3 starters) up to £26.0m."""
@@ -499,23 +565,48 @@ def simulate_bb1_wc4_player_tier_combinations(
         a_idx = id_to_idx[int(f["away_club_id"])]
         clash_pairs.add(frozenset([h_idx, a_idx]))
 
-    distinct_mask = np.array([len(set(combo_cids[i])) == 5 for i in range(len(all_5combos))], dtype=bool)
-    price_mask = combo_prices <= MAX_TOTAL_PRICE
+    valid_indices = []
+    patterns = []
+    num_uniques = []
+    for i in range(len(all_5combos)):
+        if combo_prices[i] > MAX_TOTAL_PRICE:
+            continue
+        c_counts = Counter(combo_cids[i])
+        valid = True
+        for cid, cnt in c_counts.items():
+            c_short = idx_to_short[cid]
+            if c_short in TOP_ATTACK_CLUBS and cnt > MAX_DEF_PER_TOP_CLUB:
+                valid = False
+                break
+            elif cnt > MAX_DEF_PER_OTHER_CLUB:
+                valid = False
+                break
+        if not valid:
+            continue
 
-    no_clash_mask = np.array([
-        not any(frozenset([combo_cids[i, j], combo_cids[i, k]]) in clash_pairs for j in range(5) for k in range(j + 1, 5))
-        for i in range(len(all_5combos))
-    ], dtype=bool)
+        has_clash = any(
+            frozenset([combo_cids[i, j], combo_cids[i, k]]) in clash_pairs
+            for j in range(5)
+            for k in range(j + 1, 5)
+            if combo_cids[i, j] != combo_cids[i, k]
+        )
+        if has_clash:
+            continue
 
-    gw1_max_fdr_mask = np.array([
-        p_all_fdrs[all_5combos[i], 0].max() <= 3.0
-        for i in range(len(all_5combos))
-    ], dtype=bool)
+        if p_all_fdrs[all_5combos[i], 0].max() > 3.0:
+            continue
 
-    valid_bb1_mask = distinct_mask & price_mask & no_clash_mask & gw1_max_fdr_mask
-    valid_bb1_combos = all_5combos[valid_bb1_mask]
-    valid_bb1_prices = combo_prices[valid_bb1_mask]
-    valid_cids = combo_cids[valid_bb1_mask]
+        valid_indices.append(i)
+        p_tup = tuple(sorted(c_counts.values(), reverse=True))
+        patterns.append("+".join(str(x) for x in p_tup))
+        num_uniques.append(len(p_tup))
+
+    valid_indices = np.array(valid_indices, dtype=np.int32)
+    valid_bb1_combos = all_5combos[valid_indices]
+    valid_bb1_prices = combo_prices[valid_indices]
+    valid_cids = combo_cids[valid_indices]
+    patterns_arr = np.array(patterns)
+    num_uniques_arr = np.array(num_uniques, dtype=np.int32)
 
     corr_mat = precompute_pairwise_corr(fdr_mat[:, 0:3])
     pair_indices = list(itertools.combinations(range(5), 2))
@@ -572,6 +663,8 @@ def simulate_bb1_wc4_player_tier_combinations(
             {
                 "tier": band_name,
                 "tier_id": band_id,
+                "num_unique_clubs": int(num_uniques_arr[i]),
+                "allocation_pattern": str(patterns_arr[i]),
                 "lineup_summary": " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs),
                 "clubs": "-".join(p["club_short"] for p in p_objs),
                 "total_price": round(tot_p, 1),
@@ -613,18 +706,18 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     fdr_mat, idx_to_short, id_to_idx = build_club_fdr_matrix(fixtures, clubs)
 
     print(f"Loaded {len(starters)} starter defenders across {starters['club_short'].nunique()} clubs.")
-    print("Running 5-club combinatorial analysis across 15,504 combinations...")
+    print("Running multi-club combinatorial analysis across 41,344 combinations...")
     df_club_5way = run_5club_combinatorial_analysis(fdr_mat, idx_to_short)
 
     print("Projecting weekly hybrid xP for all starting defenders...")
     gw_xp = project_starter_def_grid(starters, fmap, end_gw=38)
 
-    print("Simulating flexible 5-DEF player combinations (up to £26.0m)...")
-    df_tiers = simulate_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx)
+    print("Simulating flexible 5-DEF player combinations (up to £26.0m across 2-5 unique clubs)...")
+    df_tiers = simulate_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, idx_to_short)
 
-    print("Simulating specialized GW1 BB + GW4 WC pre-wildcard scenario (up to £26.0m)...")
+    print("Simulating specialized GW1 BB + GW4 WC pre-wildcard scenario (up to £26.0m across 2-5 unique clubs)...")
     df_bb1_clubs = run_bb1_wc4_club_combinatorial_analysis(fdr_mat, idx_to_short, fixtures, id_to_idx)
-    df_bb1_tiers = simulate_bb1_wc4_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, fixtures)
+    df_bb1_tiers = simulate_bb1_wc4_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, idx_to_short, fixtures)
 
     baseline = starters[
         [
@@ -644,6 +737,23 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     baseline = baseline.sort_values(["price", "per90_defcon", "web_name"], ascending=[False, False, True]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    df_club_5way = df_club_5way.sort_values(
+        ["horizon", "no_diff_pct", "rot_avg_fdr", "all_easy_pct", "avg_fdr_corr"],
+        ascending=[True, False, True, False, True],
+    ).reset_index(drop=True)
+    df_tiers = df_tiers.sort_values(
+        ["horizon", "tier_id", "rqi", "tot_rot_xp"],
+        ascending=[True, True, False, False],
+    ).reset_index(drop=True)
+    df_bb1_clubs = df_bb1_clubs.sort_values(
+        ["effective_avg_fdr", "gw1_avg_fdr", "gw2_3_rot_fdr", "avg_fdr_corr"],
+        ascending=[True, True, True, True],
+    ).reset_index(drop=True)
+    df_bb1_tiers = df_bb1_tiers.sort_values(
+        ["tier_id", "bb_rqi", "tot_effective_xp"],
+        ascending=[True, False, False],
+    ).reset_index(drop=True)
+
     df_club_5way.to_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv", index=False)
     df_tiers.to_csv(OUT_DIR / "def_tier_player_rotations.csv", index=False)
     df_bb1_clubs.to_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv", index=False)

@@ -3,13 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `data/research/ownership-value-explorer/ownership_value_explorer.html`, continuity docs
-- **Decisions:** Club filter adds search box + All/None buttons (apply to visible clubs when search active); checkbox multi-select retained.
+- **Files:** `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `tests/test_def_fixture_rotation.py`, `data/research/def-fixture-rotation/*`, continuity docs
+- **Decisions:** Extended 5-DEF fixture analysis to 2-5 unique club partitions; capped top-4 attack clubs (MCI, ARS, LIV, CHE) at max 2 DEF to protect attack quotas; restructured research note to be team-first across GW1-3 BB1 early sprint, GW4-19 post-WC, and GW1-19 set-and-forget.
 - **Blocked:** None.
-- **Next:** Commit ownership explorer UI changes; refresh HTML in browser.
-- **Objective:** Club filter search + select-all/deselect-all for Ownership Value Explorer.
+- **Next:** Review defender research note and team recommendations.
+- **Objective:** Evaluate multi-club partitions (2-5 unique clubs) for defender rotation and establish team-level recommendations.
 - **Acceptance:**
-  - [x] Search narrows visible club checkboxes
-  - [x] All / None toggle checked state on visible clubs
-  - [x] HTML regenerated; research note updated
-  - [x] Tests green; ruff clean
+  - [x] Evaluated all 41,344 valid club combinations across 2-5 unique clubs
+  - [x] Computed optimal team sets for GW1-3 BB1, GW4-19 post-WC, and GW1-19
+  - [x] Updated all 5 research CSV artifacts in data/research/def-fixture-rotation/
+  - [x] Restructured def-fixture-rotation.md to be team-first with trade-off matrix
+  - [x] Tests green (153 passed); ruff clean; verify.sh passed
