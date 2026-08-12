@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Flexible 5-defender fixture diversification & rotation research updated up to £26.0m without promoted proxy exclusions; all 5 CSV artifacts regenerated in `data/research/def-fixture-rotation/`; `def-fixture-rotation.md` updated; tests and verify.sh passing.
-- **Files:** `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `data/research/def-fixture-rotation/*.csv`, `docs/agents/current-state.md`, `.agents/session-handoff.md`.
-- **Decisions:** Allowed flexible combinations up to £26.0m across 4 natural budget bands; vectorized top candidates per band for blazing fast generation; aligned scoring bounds with test suite contract.
+- **Status:** Ownership Value Explorer club filter — search + All/None on visible clubs; HTML regenerated; research note updated.
+- **Files:** `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `data/research/ownership-value-explorer/ownership_value_explorer.html`, `task.md`, `docs/agents/current-state.md`, `.agents/session-handoff.md`.
+- **Decisions:** All/None apply to search-visible clubs only (empty search = all clubs).
 - **Blocked:** None.
-- **Next:** Maintain data snapshots; explore mid/fwd combinations.
+- **Next:** Commit; browser refresh to verify club search/deselect workflow.

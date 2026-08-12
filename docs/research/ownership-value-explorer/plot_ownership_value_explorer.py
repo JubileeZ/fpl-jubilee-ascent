@@ -165,7 +165,11 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     .group label.title {{ font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #444; }}
     .checks {{ display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; }}
     .checks label, .toggles label {{ font-size: 0.85rem; }}
-    select[multiple] {{ min-width: 12rem; min-height: 6.5rem; }}
+    .club-group {{ min-width: 12rem; }}
+    .club-toolbar {{ display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; }}
+    #club-search {{ flex: 1 1 7rem; min-width: 7rem; font-size: 0.85rem; padding: 0.2rem 0.4rem; }}
+    .club-toolbar button {{ font-size: 0.75rem; padding: 0.15rem 0.45rem; cursor: pointer; }}
+    #club-checks {{ max-height: 6.5rem; overflow-y: auto; }}
     .range-row {{ display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }}
     input[type=number] {{ width: 4.5rem; }}
     input[type=range] {{ width: 9rem; }}
@@ -191,10 +195,14 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       <label class="title">Position</label>
       <div class="checks" id="pos-checks"></div>
     </div>
-    <div class="group">
+    <div class="group club-group">
       <label class="title">Club</label>
-      <select id="club-select" multiple></select>
-      <div class="checks"><label><input type="checkbox" id="club-all" checked/> All clubs</label></div>
+      <div class="club-toolbar">
+        <input type="search" id="club-search" placeholder="Search clubs…" autocomplete="off" spellcheck="false"/>
+        <button type="button" id="club-select-all" title="Select visible clubs">All</button>
+        <button type="button" id="club-deselect-all" title="Deselect visible clubs">None</button>
+      </div>
+      <div class="checks" id="club-checks"></div>
     </div>
     <div class="group">
       <label class="title">Price (£m)</label>
@@ -239,6 +247,28 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       return {{xp90: r.xp_per_90_season, avgMins: r.avg_xmins_season, totalXp: r.total_season_xp, label: 'GW1–38'}};
     }}
 
+    function clubLabels() {{
+      return document.querySelectorAll('#club-checks label.club-label');
+    }}
+    function visibleClubLabels() {{
+      return Array.from(clubLabels()).filter(lab => lab.style.display !== 'none');
+    }}
+    function setClubSearchFilter(q) {{
+      const needle = q.trim().toLowerCase();
+      clubLabels().forEach(lab => {{
+        const name = (lab.dataset.club || '').toLowerCase();
+        lab.style.display = !needle || name.includes(needle) ? '' : 'none';
+      }});
+    }}
+    function setClubsChecked(checked, onlyVisible) {{
+      const targets = onlyVisible ? visibleClubLabels() : clubLabels();
+      targets.forEach(lab => {{
+        const cb = lab.querySelector('.club');
+        if (cb) cb.checked = checked;
+      }});
+      render();
+    }}
+
     function initControls() {{
       const pos = document.getElementById('pos-checks');
       DATA.positions.forEach(p => {{
@@ -246,11 +276,17 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         lab.innerHTML = `<input type="checkbox" class="pos" value="${{p}}" checked/> ${{p}}`;
         pos.appendChild(lab);
       }});
-      const club = document.getElementById('club-select');
+      const club = document.getElementById('club-checks');
       DATA.clubs.forEach(c => {{
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c; club.appendChild(opt);
+        const lab = document.createElement('label');
+        lab.className = 'club-label';
+        lab.dataset.club = c;
+        lab.innerHTML = `<input type="checkbox" class="club" value="${{c}}" checked/> ${{c}}`;
+        club.appendChild(lab);
       }});
+      document.getElementById('club-search').addEventListener('input', (e) => setClubSearchFilter(e.target.value));
+      document.getElementById('club-select-all').addEventListener('click', () => setClubsChecked(true, true));
+      document.getElementById('club-deselect-all').addEventListener('click', () => setClubsChecked(false, true));
       document.getElementById('price-min').value = DATA.price_min;
       document.getElementById('price-max').value = DATA.price_max;
       const floor = document.getElementById('xmins-floor');
@@ -258,9 +294,8 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       document.getElementById('xmins-floor-val').textContent = DATA.default_xmins_floor;
       [
         ...document.querySelectorAll('.pos'),
+        ...document.querySelectorAll('.club'),
         ...document.querySelectorAll('input[name="horizon"]'),
-        document.getElementById('club-select'),
-        document.getElementById('club-all'),
         document.getElementById('price-min'),
         document.getElementById('price-max'),
         document.getElementById('xmins-floor'),
@@ -269,14 +304,6 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         document.getElementById('hl-user'),
         document.getElementById('only-overlay'),
       ].forEach(el => el.addEventListener('input', render));
-      document.getElementById('club-all').addEventListener('change', (e) => {{
-        if (e.target.checked) Array.from(club.options).forEach(o => o.selected = false);
-        render();
-      }});
-      club.addEventListener('change', () => {{
-        document.getElementById('club-all').checked = Array.from(club.selectedOptions).length === 0;
-        render();
-      }});
       floor.addEventListener('input', () => {{
         document.getElementById('xmins-floor-val').textContent = floor.value;
       }});
@@ -286,9 +313,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       return Array.from(document.querySelectorAll('.pos:checked')).map(x => x.value);
     }}
     function selectedClubs() {{
-      if (document.getElementById('club-all').checked) return null;
-      const vals = Array.from(document.getElementById('club-select').selectedOptions).map(o => o.value);
-      return vals.length ? vals : null;
+      return new Set(Array.from(document.querySelectorAll('.club:checked')).map(x => x.value));
     }}
     function filtered() {{
       const pos = new Set(selectedPositions());
@@ -302,7 +327,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       const hlUser = document.getElementById('hl-user').checked;
       return DATA.records.filter(r => {{
         if (!pos.has(r.position)) return false;
-        if (clubs && !clubs.includes(r.club_short)) return false;
+        if (!clubs.has(r.club_short)) return false;
         if (r.cost < pmin || r.cost > pmax) return false;
         const m = metrics(r);
         if (m.avgMins < floor) return false;

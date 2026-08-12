@@ -3,14 +3,13 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `data/research/def-fixture-rotation/*.csv`, `docs/agents/current-state.md`, `.agents/session-handoff.md`
-- **Decisions:** Remove promoted proxy split; expand 5-DEF combination space up to £26.0m across 4 budget bands; vectorize simulation for sub-second generation.
+- **Files:** `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `data/research/ownership-value-explorer/ownership_value_explorer.html`, continuity docs
+- **Decisions:** Club filter adds search box + All/None buttons (apply to visible clubs when search active); checkbox multi-select retained.
 - **Blocked:** None.
-- **Next:** Push commit to origin/main.
-- **Objective:** Update 5-DEF fixture rotation research to evaluate flexible combinations up to £26.0m without promoted proxy exclusions and regenerate all research artifacts.
+- **Next:** Commit ownership explorer UI changes; refresh HTML in browser.
+- **Objective:** Club filter search + select-all/deselect-all for Ownership Value Explorer.
 - **Acceptance:**
-  - [x] Promoted proxy split removed across all 20 Premier League clubs
-  - [x] Flexible combinations up to £26.0m simulated across 4 budget bands
-  - [x] Vectorized rotation pipeline writes all 5 CSV artifacts
-  - [x] Research note updated with unified rankings and BB1 vs Set & Forget findings
-  - [ ] Verification gates green
+  - [x] Search narrows visible club checkboxes
+  - [x] All / None toggle checked state on visible clubs
+  - [x] HTML regenerated; research note updated
+  - [x] Tests green; ruff clean

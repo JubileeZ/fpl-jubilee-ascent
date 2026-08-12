@@ -1,6 +1,6 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-12T02:00:00+07:00  
+**Updated**: 2026-08-12T14:30:00+07:00  
 **Data stamp**: Stage 2 expected-stats rates; fixtures GW1–38; `selected_by_percent` pricing stamp 2026-07-29  
 **Season**: 2026/27 · default horizon GW1–38  
 **Status**: Active Research Model  
@@ -11,6 +11,61 @@
 - [Season projections CSV](../../../data/research/ownership-value-explorer/season_projections.csv)
 - [Metrics CSV](../../../data/research/ownership-value-explorer/ownership_value_metrics.csv)
 - [Interactive HTML](../../../data/research/ownership-value-explorer/ownership_value_explorer.html)
+
+---
+
+## Open & use
+
+### Open the interactive chart
+
+Artifact path (repo root):
+
+`data/research/ownership-value-explorer/ownership_value_explorer.html`
+
+**From terminal** (repo root):
+
+```bash
+xdg-open data/research/ownership-value-explorer/ownership_value_explorer.html   # Linux
+open data/research/ownership-value-explorer/ownership_value_explorer.html       # macOS
+```
+
+**From the IDE**: open that file in Cursor/VS Code → right-click → **Reveal in File Explorer** / **Open with Live Server**, or use the editor browser preview if available.
+
+**From file manager**: double-click `ownership_value_explorer.html` in `data/research/ownership-value-explorer/`.
+
+Requires network on first load (Plotly CDN). After that, refresh the browser tab when you regenerate the HTML.
+
+### Read the chart
+
+- **X-axis**: FPL ownership % (`selected_by_percent`) — not EO.
+- **Y-axis**: xP per 90 for the selected horizon (default **GW1–38** full season).
+- **Marker size**: average expected minutes over that horizon.
+- **Colour**: position (GKP / DEF / MID / FWD).
+- **Text labels**: player names when avg xMins ≥ 60.
+- **Overlay markers**: diamond = user squad · square = preseason S5 · triangle-up = preseason S1.
+
+### Filters
+
+| Control | What it does |
+|---------|----------------|
+| **Horizon** | `GW1–38 season` (default) or `GW1–6 window` for early-chip comparison |
+| **Position** | Checkbox each of GKP / DEF / MID / FWD (all checked = all positions) |
+| **Club** | Search box narrows visible clubs; **All** / **None** select or deselect visible matches (search first, then None to exclude e.g. one club); checkboxes per club |
+| **Price (£m)** | Min / max cost band |
+| **Avg xMins floor** | Hide low-minute spikes (default **45**; lower only to inspect cameos) |
+| **Overlays** | Toggle S1 / S5 / user highlights; **Only overlay players** restricts to flagged names |
+
+**Typical workflow**: pick position + price band → set xMins floor ≥ 45 → scan low-own, high xP/90 markers on the season horizon → switch to GW1–6 if checking early chip picks → enable user overlay to compare your squad diamonds.
+
+### Regenerate when data changes
+
+When Stage 2 rates, fixtures, ownership stamp, or overlays change:
+
+```bash
+uv run python docs/research/ownership-value-explorer/plot_ownership_value_explorer.py
+```
+
+Writes `season_projections.csv`, `ownership_value_metrics.csv`, and `ownership_value_explorer.html`. Reopen or refresh the HTML file in your browser.
 
 ---
 
@@ -35,7 +90,7 @@ Run Ownership Value Explorer (full season):
    - Rebuilds GW1–38 season projections via ParticipationStateHybridModel.
    - Writes season_projections.csv, ownership_value_metrics.csv, ownership_value_explorer.html.
    - HTML default horizon GW1–38; toggle to GW1–6; filters position/club/price/xMins floor 45.
-3. Open HTML in browser (Plotly CDN).
+3. Open HTML — see [Open & use](#open--use) above (`data/research/ownership-value-explorer/ownership_value_explorer.html`).
 4. Verification: uv run pytest tests/test_ownership_value_explorer.py, uv run ruff check .
 ```
 
