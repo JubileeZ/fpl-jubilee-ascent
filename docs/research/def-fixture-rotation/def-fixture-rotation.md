@@ -26,10 +26,14 @@
    - **Club Level**: Exhaustive evaluation of all $C(20,5) = 15,504$ 5-club combinations across 20 Premier League clubs.
    - **Player Level**: 83 eligible starting defenders across 20 clubs projected via `ParticipationStateHybridModel` with flat 90-minute starter minutes.
 5. **Defense Rotation Quality Index (DEF-RQI)** (0–100 scale):
-   $$\text{DEF-RQI} = 0.35\cdot S_{\text{tot\_xp}} + 0.25\cdot S_{\text{fdr}} + 0.15\cdot S_{\text{no\_diff}} + 0.15\cdot S_{\text{corr}} + 0.10\cdot S_{\text{cost}}$$
-   - $S_{\text{tot\_xp}}$: Rotated xP per GW (scaled 9.0 to 16.5 xP/GW for 3 starters).
+
+   $$
+   \text{DEF-RQI} = 0.35\cdot S_{\text{totxp}} + 0.25\cdot S_{\text{fdr}} + 0.15\cdot S_{\text{nodiff}} + 0.15\cdot S_{\text{corr}} + 0.10\cdot S_{\text{cost}}
+   $$
+
+   - $S_{\text{totxp}}$: Rotated xP per GW (scaled 9.0 to 16.5 xP/GW for 3 starters).
    - $S_{\text{fdr}}$: Rotated average FDR of 3 starters (scaled 2.0 to 3.5).
-   - $S_{\text{no\_diff}}$: % of gameweeks where all 3 starters face FDR ≤ 3.0 (Zero difficult fixtures).
+   - $S_{\text{nodiff}}$: % of gameweeks where all 3 starters face FDR ≤ 3.0 (Zero difficult fixtures).
    - $S_{\text{corr}}$: Pairwise FDR correlation across the 10 club pairs (-1.0 to +1.0).
    - $S_{\text{cost}}$: Budget efficiency (higher score for lower total spend, £20.0m to £28.0m).
 
