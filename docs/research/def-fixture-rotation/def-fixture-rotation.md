@@ -1,7 +1,7 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
-**Updated**: 2026-08-14T01:30:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; FPL API processed snapshot; `ParticipationStateHybridModel` GW1–38 projections  
+**Updated**: 2026-08-14T02:30:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff  
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Determine the optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint (GW1–3 Bench Boost), post-Wildcard (GW4–19), and full first-half (GW1–19). Constrained WC4 (1–2 slot swaps) lives in child notes.  
@@ -19,8 +19,20 @@ After Stage 2 rate / new-player change:
 This topic only (slow full combinatorics):
   uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py
 Bridges only: --bridges-only / --sun-bridge-only / --overall-bridge-only
-Update parent §1.3 player maps and child bridge stamps from CSVs.
+Update parent §1.3 player maps, GW4-19 dest (corr-first), and child bridge stamps from CSVs.
+Ranking lenses: --print-ranks. More negative avg_fdr_corr wins after primary FDR keys.
 ```  
+
+**Ranking lenses** (script constants; `--print-ranks` reprints Top-10s):
+
+| Lens | Sort | Canonical #1 |
+| --- | --- | --- |
+| BB1 sprint | eff FDR → GW1 FDR → GW2–3 rot FDR → corr (asc) | `ARS-MUN-MUN-NFO-SUN` |
+| GW4–19 dest | rot FDR → zero-diff% → **corr (asc)** → easy% | `AVL-BOU-CHE-LIV-NFO` (r = −0.0994) |
+| GW1–19 | same as GW4–19 on `gw1_19` | `AVL-CHE-LIV-MCI-NFO` |
+| WC4 bridge | path FDR → GW1 → n_swaps → pre corr. Dest picker: zero-diff → path FDR → dest FDR → **dest corr** → easy% | Overall `LIV-MCI-MUN-MUN-NFO` |
+
+More negative correlation is better: club FDR schedules diversify, so the three you start are less likely to hit FDR 4+ together.
 
 ---
 
@@ -34,8 +46,8 @@ flowchart TD
     Strategy --> PostWC["Phase 2: GW4-19 Post-Wildcard"]
     Strategy --> Full["Phase 3: GW1-19 Set & Forget"]
 
-    Early --> EarlyPick["<b>4-Club Double-Up (2+1+1+1)</b><br>MCI(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1: 2.0-2.2 FDR"]
-    PostWC --> PostWCPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - CHE - LIV - MCI - NFO<br>100% Zero-Diff | Rot FDR: 2.4375"]
+    Early --> EarlyPick["<b>4-Club Double-Up (2+1+1+1)</b><br>ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1: 2.00 FDR"]
+    PostWC --> PostWCPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - BOU - CHE - LIV - NFO<br>100% Zero-Diff | Rot FDR: 2.4375 | r = -0.0994"]
     Full --> FullPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - CHE - LIV - MCI - NFO<br>100% Zero-Diff (19/19 GWs) | Rot FDR: 2.4386"]
 
     style EarlyPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
@@ -56,8 +68,8 @@ flowchart TD
   - Stacking 3 defenders from Man City, Arsenal, Liverpool, or Chelsea locks out essential captaincy and premium attacking slots (Haaland, Saka, Salah, Palmer).
   - The model enforces a hard ceiling of **maximum 2 defenders from top-4 attack clubs**, and up to 3 for mid/budget clubs.
 4. **Constrained WC4 (1–2 slot swaps)** — child notes, open/refresh separately:
-  - **Overall (any clubs):** [`wc4-overall-bridge.md`](wc4-overall-bridge.md) — pick `LIV-MCI-MUN-MUN-NFO` → dump both MUN for AVL+CHE. SUN not required.
-  - **1–2 Sunderland:** [`wc4-sun-bridge.md`](wc4-sun-bridge.md) — pick `LIV-MCI-MUN-NFO-SUN` → dump MUN+SUN for AVL+CHE.
+  - **Overall (any clubs):** [`wc4-overall-bridge.md`](wc4-overall-bridge.md) — pick `LIV-MCI-MUN-MUN-NFO` → dump both MUN for AVL+CHE (`AVL-CHE-LIV-MCI-NFO`, only 2-swap dest at 2.4375).
+  - **1–2 Sunderland:** [`wc4-sun-bridge.md`](wc4-sun-bridge.md) — pick `LIV-MCI-MUN-NFO-SUN` → dump MUN+SUN for AVL+CHE. Paths that already hold AVL+LIV+NFO dump to corr-first dest `AVL-BOU-CHE-LIV-NFO`.
 
 ---
 
@@ -156,10 +168,11 @@ Independent GW1–3 and GW4–19 top-10s are **not** 1–2 swaps apart. Child no
 | **Overall (any clubs)** | Best GW1–3 → 1–2 WC4 swaps → GW4–19, no SUN filter | [`wc4-overall-bridge.md`](wc4-overall-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --overall-bridge-only` |
 | **1–2 Sunderland** | Same scorer, pre-sets must hold 1 or 2 SUN | [`wc4-sun-bridge.md`](wc4-sun-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --sun-bridge-only` |
 
-Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags, or `refresh_downstream.py` after a Stage 2 rate change.
+Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags, or `refresh_downstream.py` after a Stage 2 rate change. Rank tables: `--print-ranks`.
 
-- Overall pick: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE. Path FDR 2.4237.
+- Overall pick: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE onto `AVL-CHE-LIV-MCI-NFO`. Path FDR 2.4237.
 - SUN pick: `LIV-MCI-MUN-NFO-SUN` → AVL+CHE. Same path FDR, 5 unique in GW1–3.
+- GW4–19 standalone #1 (corr-first): `AVL-BOU-CHE-LIV-NFO`. Used as dest when the pre-set already holds 3 of those clubs.
 
 ---
 
@@ -169,14 +182,16 @@ Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no
 
 For managers activating their Wildcard in GW4, this 16-gameweek block establishes a permanent defensive foundation that requires zero weekly transfer expenditure.
 
+**Tie-break**: among 100% zero-diff sets at rot FDR 2.4375, rank by more negative pairwise FDR correlation. Table #1 is `AVL-BOU-CHE-LIV-NFO`, not `AVL-CHE-LIV-MCI-NFO`.
+
 ### 2.1 Overview by Allocation Pattern (GW4–19)
 
 
 | Allocation Pattern       | Unique Clubs | Total Evaluated | Best Rotated FDR (Top 3) | 100% Zero-Diff Rate    | Top Recommended Club Set              | Avg Pairwise Corr ($r$) |
 | ------------------------ | ------------ | --------------- | ------------------------ | ---------------------- | ------------------------------------- | ----------------------- |
-| **5 Unique Clubs (1x5)** | **5**        | **15,504**      | **2.4375**               | **100.0% (16/16 GWs)** | **AVL - CHE - LIV - MCI - NFO**       | **-0.0529**             |
-| **5 Unique Clubs (1x5)** | **5**        | —               | **2.4375**               | **100.0% (16/16 GWs)** | **AVL - BOU - CHE - LIV - NFO**       | **-0.0994**             |
+| **5 Unique Clubs (1x5)** | **5**        | **15,504**      | **2.4375**               | **100.0% (16/16 GWs)** | **AVL - BOU - CHE - LIV - NFO**       | **-0.0994**             |
 | **5 Unique Clubs (1x5)** | **5**        | —               | **2.4375**               | **100.0% (16/16 GWs)** | **BOU - CHE - EVE - LIV - NFO**       | **-0.0785**             |
+| **5 Unique Clubs (1x5)** | **5**        | —               | **2.4375**               | **100.0% (16/16 GWs)** | **AVL - CHE - LIV - MCI - NFO**       | **-0.0529**             |
 | **4 Clubs (2+1+1+1)**    | **4**        | **19,380**      | **2.4792**               | **100.0% (16/16 GWs)** | **AVL(2) - CHE(1) - COV(1) - LEE(1)** | **-0.1583**             |
 | **4 Clubs (2+1+1+1)**    | **4**        | —               | **2.4792**               | **100.0% (16/16 GWs)** | **AVL(1) - COV(2) - FUL(1) - MCI(1)** | **-0.1297**             |
 | **3 Clubs (2+2+1)**      | **3**        | **6,156**       | **2.4792**               | 93.8% (15/16 GWs)      | **BOU(2) - LIV(2) - NFO(1)**          | **-0.1381**             |
@@ -368,11 +383,11 @@ For managers executing a set-and-forget defensive strategy across the entire fir
 ```mermaid
 graph TD
     A["FPL Defensive Strategy"] --> B{"Planning GW1 Bench Boost?"}
-    B -- "YES (GW1 BB + GW4 WC)" --> C["<b>Step 1: Pick Early Sprint Teams (GW1-3)</b><br>4 Clubs: MCI(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1 FDR: 2.20"]
+    B -- "YES (GW1 BB + GW4 WC)" --> C["<b>Step 1: Pick Early Sprint Teams (GW1-3)</b><br>4 Clubs: ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1 FDR: 2.00"]
     B -- "NO (Set & Forget / Normal Start)" --> D["<b>Step 1: Pick Long-Term Rotation Teams (GW1-19)</b><br>5 Unique Clubs: AVL - CHE - LIV - MCI - NFO<br>100% Zero-Difficult GWs | Rot FDR: 2.4386"]
     
-    C --> E["<b>Step 2: Map Players to Budget (£22.5m-£24.5m)</b><br>Shaw (£4.5m) + Maguire (£5.0m) + Jair Cunha (£4.5m) + O'Nien (£4.0m) + Ballard (£5.0m)"]
-    D --> F["<b>Step 2: Map Players to Budget (£22.0m-£25.5m)</b><br>Maatsen (£4.5m) + Colwill (£5.0m) + Jacquet (£5.0m) + Gvardiol/O'Reilly (£5.5-6.5m) + Jair Cunha (£4.5m)"]
+    C --> E["<b>Step 2: Map Players to Budget (£22.5m-£24.5m)</b><br>Shaw / Yoro + Jair Cunha + Ballard / Meunier + O'Nien"]
+    D --> F["<b>Step 2: Map Players to Budget (£22.0m-£25.5m)</b><br>Maatsen/Pau + Colwill/Lacroix + Jacquet + Gvardiol/Hill + Jair Cunha"]
 ```
 
 
@@ -382,13 +397,13 @@ graph TD
 ### Summary of Best Team Combinations
 
 1. **For Early Sprint (GW1–3 Bench Boost + GW4 Wildcard)**:
-  - **Recommended Teams**: `Manchester City (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)`
-  - **Why**: Exploits home fixtures in GW1 for a 2.20 GW1 FDR across all 5 defenders, with solid GW2–3 rotation before resetting on Wildcard.
-  - **If WC4 is limited to 1–2 defender swaps**: do **not** use the unconstrained BB1 specialist (Hamming 4 from the GW4–19 #1). Open [`wc4-overall-bridge.md`](wc4-overall-bridge.md) (`LIV-MCI-MUN-MUN-NFO`) or [`wc4-sun-bridge.md`](wc4-sun-bridge.md) (`LIV-MCI-MUN-NFO-SUN`).
+  - **Recommended Teams**: `Arsenal (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)`
+  - **Why**: Best GW1 FDR (2.00) at the shared 2.2727 11-start eff FDR. GW2–3 rot FDR 2.50 (worse than the 2.33 BRE/LIV/MCI variants at GW1 2.20).
+  - **If WC4 is limited to 1–2 defender swaps**: do **not** use this BB1 specialist (Hamming 4 from every 2.4375 dest). Open [`wc4-overall-bridge.md`](wc4-overall-bridge.md) (`LIV-MCI-MUN-MUN-NFO`) or [`wc4-sun-bridge.md`](wc4-sun-bridge.md) (`LIV-MCI-MUN-NFO-SUN`).
 2. **For Post-Wildcard (GW4–19)**:
-  - **Recommended Teams**: `Aston Villa (1) + Chelsea (1) + Liverpool (1) + Manchester City (1) + Nottingham Forest (1)`
-  - **Why**: Lowest rotated FDR (2.4375) and 100% zero-difficult fixture safety across all 16 gameweeks.
+  - **Recommended Teams**: `Aston Villa (1) + Bournemouth (1) + Chelsea (1) + Liverpool (1) + Nottingham Forest (1)`
+  - **Why**: Tied lowest rotated FDR (2.4375) and 100% zero-diff; **best correlation** (r = −0.0994) in that tier. `AVL-CHE-LIV-MCI-NFO` is rank 3 (r = −0.0529) — keep it when the WC4 dump must retain City.
 3. **For Set & Forget (GW1–19)**:
-  - **Recommended Teams**: `Aston Villa (1) + Chelsea (1) + Liverpool (1) + Manchester City (1) + Nottingham Forest (1)` (or `AVL - BOU - CHE - LIV - NFO`)
-  - **Why**: Eliminates transfer friction, maximizes clean-sheet probability, and preserves full quota flexibility for premium midfielders and forwards.
+  - **Recommended Teams**: `Aston Villa (1) + Chelsea (1) + Liverpool (1) + Manchester City (1) + Nottingham Forest (1)`
+  - **Why**: Unique #1 on the 19-GW horizon (rot FDR 2.4386, 100% zero-diff). `AVL-BOU-CHE-LIV-NFO` is rank 3 here (2.4561).
 

@@ -56,6 +56,17 @@ HORIZONS = (
     ("full_season", 1, 38),
 )
 
+# Ranking lenses — more negative avg_fdr_corr is better (schedules diversify).
+# GW4-19 / GW1-19 club tables: min rot FDR, then 100% zero-diff, then corr-first.
+CLUB_5WAY_SORT_COLS = ["horizon", "rot_avg_fdr", "no_diff_pct", "avg_fdr_corr", "all_easy_pct"]
+CLUB_5WAY_SORT_ASC = [True, True, False, True, False]
+# BB1 club tables: 11-start eff FDR, then GW1, then GW2-3, then corr-first.
+BB1_CLUB_SORT_COLS = ["effective_avg_fdr", "gw1_avg_fdr", "gw2_3_rot_fdr", "avg_fdr_corr"]
+BB1_CLUB_SORT_ASC = [True, True, True, True]
+# Published WC4 bridge Top 10 among eligible rows.
+BRIDGE_RANK_SORT_COLS = ["path_eff_fdr", "gw1_avg_fdr", "n_swaps", "pre_corr", "pre_clubs"]
+BRIDGE_RANK_SORT_ASC = [True, True, True, True, True]
+
 
 def compute_def_rqi(
     *,
@@ -694,6 +705,32 @@ def path_effective_fdr(gw13_eff_fdr: float, gw419_rot_fdr: float) -> float:
     return (11.0 * gw13_eff_fdr + 48.0 * gw419_rot_fdr) / 59.0
 
 
+def bridge_destination_key(
+    *,
+    post_no_diff_pct: float,
+    path_fdr: float,
+    post_rot_fdr: float,
+    post_corr: float,
+    post_easy_pct: float,
+    gw1_avg_fdr: float,
+    n_swaps: int,
+    pre_eff_fdr: float,
+    post_j: int,
+) -> tuple[object, ...]:
+    """Lower tuple wins. Correlation-first among equal path / dest FDR / zero-diff."""
+    return (
+        -post_no_diff_pct,
+        round(path_fdr, 6),
+        post_rot_fdr,
+        post_corr,
+        -post_easy_pct,
+        gw1_avg_fdr,
+        n_swaps,
+        pre_eff_fdr,
+        post_j,
+    )
+
+
 def _club_count_matrix(club_strings: pd.Series, club_index: dict[str, int]) -> np.ndarray:
     mat = np.zeros((len(club_strings), len(club_index)), dtype=np.int8)
     for i, raw in enumerate(club_strings):
@@ -712,7 +749,8 @@ def run_wc4_bridge_analysis(
 
     Pre-sets come from the BB1 clash-free matrix. Post-sets are GW4-19 4-5 unique
     club combinations. One destination per pre-set: 100% zero-diff first, then
-    path FDR (11 GW1-3 starts + 48 GW4-19 starts), then GW1 FDR, then fewer swaps.
+    path FDR (11 GW1-3 starts + 48 GW4-19 starts), then dest rot FDR, then
+    dest correlation-first (more negative wins), then easy%, GW1 FDR, fewer swaps.
     If sun_counts is set, keep only pre-sets whose SUN slot count is in that set.
     """
     pre = bb1_clubs[bb1_clubs["num_unique_clubs"].isin([4, 5])].copy()
@@ -762,16 +800,16 @@ def run_wc4_bridge_analysis(
             post_j = start + int(local_j)
             n_swaps = int(ham[pre_i, local_j])
             path = path_effective_fdr(float(pre_eff[pre_i]), float(post_fdr[post_j]))
-            key = (
-                -float(post_nd[post_j]),
-                round(path, 6),
-                float(pre_gw1[pre_i]),
-                n_swaps,
-                float(pre_eff[pre_i]),
-                float(post_fdr[post_j]),
-                -float(post_easy[post_j]),
-                float(post_corr[post_j]),
-                post_j,
+            key = bridge_destination_key(
+                post_no_diff_pct=float(post_nd[post_j]),
+                path_fdr=path,
+                post_rot_fdr=float(post_fdr[post_j]),
+                post_corr=float(post_corr[post_j]),
+                post_easy_pct=float(post_easy[post_j]),
+                gw1_avg_fdr=float(pre_gw1[pre_i]),
+                n_swaps=n_swaps,
+                pre_eff_fdr=float(pre_eff[pre_i]),
+                post_j=post_j,
             )
             if best[pre_i] is None or key < best[pre_i]:
                 best[pre_i] = key
@@ -780,7 +818,7 @@ def run_wc4_bridge_analysis(
     for pre_i, key in enumerate(best):
         if key is None:
             continue
-        _nd, path, _gw1, n_swaps, _eff, post_fdr_v, _easy, _corr, post_j = key
+        _nd, path, _post_fdr, _corr, _easy, _gw1, n_swaps, _eff, post_j = key
         pre_set = str(pre_names[pre_i])
         post_set = str(post_names[post_j])
         out_clubs = ",".join(sorted((Counter(pre_set.split("-")) - Counter(post_set.split("-"))).elements()))
@@ -802,7 +840,7 @@ def run_wc4_bridge_analysis(
                 "post_unique": int(post_unique[post_j]),
                 "post_pattern": str(post_pattern[post_j]),
                 "post_sun": int(post_mat[post_j, sun_col]),
-                "gw419_rot_fdr": round(float(post_fdr_v), 4),
+                "gw419_rot_fdr": round(float(post_fdr[post_j]), 4),
                 "gw419_no_diff_pct": round(float(post_nd[post_j]), 1),
                 "gw419_all_easy_pct": round(float(post_easy[post_j]), 1),
                 "post_corr": round(float(post_corr[post_j]), 4),
@@ -821,8 +859,8 @@ def run_wc4_bridge_analysis(
     )
     df["scenario_eligible"] = eligible
     ranked = df.loc[eligible].sort_values(
-        ["path_eff_fdr", "gw1_avg_fdr", "n_swaps", "pre_corr", "pre_clubs"],
-        ascending=[True, True, True, True, True],
+        BRIDGE_RANK_SORT_COLS,
+        ascending=BRIDGE_RANK_SORT_ASC,
     )
     rank_map = {idx: rank for rank, idx in enumerate(ranked.index, start=1)}
     df["scenario_rank"] = df.index.map(rank_map)
@@ -853,6 +891,42 @@ def _write_bridge_csvs(bb1_clubs: pd.DataFrame, club_5way: pd.DataFrame, *, sun:
         df_all = run_wc4_overall_bridge_analysis(bb1_clubs, club_5way)
         df_all.to_csv(OUT_DIR / "def_wc4_overall_bridge_matrix.csv", index=False)
         print(f"Wrote {OUT_DIR / 'def_wc4_overall_bridge_matrix.csv'} ({len(df_all)} rows)")
+
+
+def apply_ranking_sorts(
+    df_club_5way: pd.DataFrame,
+    df_bb1_clubs: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply published ranking lenses. Correlation-first after primary FDR keys."""
+    club_sorted = df_club_5way.sort_values(
+        CLUB_5WAY_SORT_COLS, ascending=CLUB_5WAY_SORT_ASC
+    ).reset_index(drop=True)
+    bb1_sorted = df_bb1_clubs.sort_values(
+        BB1_CLUB_SORT_COLS, ascending=BB1_CLUB_SORT_ASC
+    ).reset_index(drop=True)
+    return club_sorted, bb1_sorted
+
+
+def print_rank_tables(df_club_5way: pd.DataFrame, df_bb1_clubs: pd.DataFrame) -> None:
+    """Print Top-10 blocks used by the research notes (correlation-first GW4-19)."""
+    def _top(frame: pd.DataFrame, n: int, cols: list[str]) -> None:
+        for i, row in enumerate(frame.head(n).itertuples(), 1):
+            bits = " ".join(f"{c}={getattr(row, c)}" for c in cols)
+            print(f"  {i:2d} {row.clubs} {bits}")
+
+    print("=== BB1 4 unique (eff FDR lens) ===")
+    b4 = df_bb1_clubs[df_bb1_clubs["num_unique_clubs"] == 4]
+    _top(b4, 10, ["effective_avg_fdr", "gw1_avg_fdr", "gw2_3_rot_fdr", "avg_fdr_corr"])
+    print("=== GW4-19 5 unique (corr-first after rot FDR) ===")
+    g = df_club_5way[
+        (df_club_5way["horizon"] == "gw4_19") & (df_club_5way["num_unique_clubs"] == 5)
+    ]
+    _top(g, 10, ["rot_avg_fdr", "no_diff_pct", "all_easy_pct", "avg_fdr_corr"])
+    print("=== GW1-19 5 unique ===")
+    g19 = df_club_5way[
+        (df_club_5way["horizon"] == "gw1_19") & (df_club_5way["num_unique_clubs"] == 5)
+    ]
+    _top(g19, 10, ["rot_avg_fdr", "no_diff_pct", "all_easy_pct", "avg_fdr_corr"])
 
 
 def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -910,17 +984,10 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     baseline = baseline.sort_values(["price", "per90_defcon", "web_name"], ascending=[False, False, True]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df_club_5way = df_club_5way.sort_values(
-        ["horizon", "no_diff_pct", "rot_avg_fdr", "all_easy_pct", "avg_fdr_corr"],
-        ascending=[True, False, True, False, True],
-    ).reset_index(drop=True)
+    df_club_5way, df_bb1_clubs = apply_ranking_sorts(df_club_5way, df_bb1_clubs)
     df_tiers = df_tiers.sort_values(
         ["horizon", "tier_id", "rqi", "tot_rot_xp"],
         ascending=[True, True, False, False],
-    ).reset_index(drop=True)
-    df_bb1_clubs = df_bb1_clubs.sort_values(
-        ["effective_avg_fdr", "gw1_avg_fdr", "gw2_3_rot_fdr", "avg_fdr_corr"],
-        ascending=[True, True, True, True],
     ).reset_index(drop=True)
     df_bb1_tiers = df_bb1_tiers.sort_values(
         ["tier_id", "bb_rqi", "tot_effective_xp"],
@@ -965,11 +1032,25 @@ if __name__ == "__main__":
         action="store_true",
         help="Rebuild both WC4 bridge CSVs from existing club CSVs",
     )
+    parser.add_argument(
+        "--print-ranks",
+        action="store_true",
+        help="Print Top-10 ranking blocks from existing CSVs (no combinatorics)",
+    )
     args = parser.parse_args()
+    if args.print_ranks:
+        club_5way = pd.read_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv")
+        bb1 = pd.read_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv")
+        club_5way, bb1 = apply_ranking_sorts(club_5way, bb1)
+        print_rank_tables(club_5way, bb1)
+        raise SystemExit(0)
     bridge_only = args.sun_bridge_only or args.overall_bridge_only or args.bridges_only
     if bridge_only:
         bb1 = pd.read_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv")
         club_5way = pd.read_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv")
+        club_5way, bb1 = apply_ranking_sorts(club_5way, bb1)
+        club_5way.to_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv", index=False)
+        bb1.to_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv", index=False)
         write_sun = args.sun_bridge_only or args.bridges_only
         write_overall = args.overall_bridge_only or args.bridges_only
         if args.bridges_only:

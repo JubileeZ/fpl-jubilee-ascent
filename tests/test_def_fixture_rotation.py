@@ -80,6 +80,37 @@ def test_club_slot_hamming(rotation_mod: ModuleType) -> None:
     assert rotation_mod.club_slot_hamming("ARS-MUN-MUN-NFO-SUN", "AVL-CHE-LIV-MCI-NFO") == 4
 
 
+def test_club_5way_sort_is_correlation_first(rotation_mod: ModuleType) -> None:
+    frame = pd.DataFrame(
+        [
+            {"horizon": "gw4_19", "clubs": "HIGH-CORR", "rot_avg_fdr": 2.4375, "no_diff_pct": 100.0, "avg_fdr_corr": -0.05, "all_easy_pct": 25.0},
+            {"horizon": "gw4_19", "clubs": "BEST-CORR", "rot_avg_fdr": 2.4375, "no_diff_pct": 100.0, "avg_fdr_corr": -0.10, "all_easy_pct": 18.0},
+            {"horizon": "gw4_19", "clubs": "WORSE-FDR", "rot_avg_fdr": 2.4583, "no_diff_pct": 100.0, "avg_fdr_corr": -0.20, "all_easy_pct": 30.0},
+        ]
+    )
+    sorted_frame, _ = rotation_mod.apply_ranking_sorts(
+        frame,
+        pd.DataFrame(
+            [{"effective_avg_fdr": 2.27, "gw1_avg_fdr": 2.0, "gw2_3_rot_fdr": 2.5, "avg_fdr_corr": 0.4, "clubs": "A"}]
+        ),
+    )
+    assert list(sorted_frame["clubs"]) == ["BEST-CORR", "HIGH-CORR", "WORSE-FDR"]
+
+
+def test_bridge_dest_prefers_more_negative_corr(rotation_mod: ModuleType) -> None:
+    easy_worse_corr = rotation_mod.bridge_destination_key(
+        post_no_diff_pct=100.0, path_fdr=2.4237, post_rot_fdr=2.4375,
+        post_corr=-0.0529, post_easy_pct=25.0, gw1_avg_fdr=2.4, n_swaps=2,
+        pre_eff_fdr=2.3636, post_j=0,
+    )
+    harder_better_corr = rotation_mod.bridge_destination_key(
+        post_no_diff_pct=100.0, path_fdr=2.4237, post_rot_fdr=2.4375,
+        post_corr=-0.0994, post_easy_pct=18.8, gw1_avg_fdr=2.4, n_swaps=2,
+        pre_eff_fdr=2.3636, post_j=1,
+    )
+    assert harder_better_corr < easy_worse_corr
+
+
 def test_path_effective_fdr_weights(rotation_mod: ModuleType) -> None:
     # 11 GW1-3 starts vs 48 GW4-19 starts
     assert rotation_mod.path_effective_fdr(2.3636, 2.4375) == pytest.approx(
@@ -115,6 +146,9 @@ def test_def_rotation_artifacts_exist() -> None:
     df_overall = pd.read_csv(overall_bridge_csv)
 
     assert set(df_clubs["horizon"].unique()) >= {"gw1_3", "gw4_19", "gw1_19", "full_season"}
+    gw4_5 = df_clubs[(df_clubs["horizon"] == "gw4_19") & (df_clubs["num_unique_clubs"] == 5)].iloc[0]
+    assert gw4_5["clubs"] == "AVL-BOU-CHE-LIV-NFO"
+    assert gw4_5["avg_fdr_corr"] == pytest.approx(-0.0994, abs=1e-4)
     assert len(df_clubs) == 41344 * 4
     assert set(df_clubs["num_unique_clubs"].unique()) == {2, 3, 4, 5}
     assert len(df_tiers) > 0
