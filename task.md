@@ -3,14 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/wc4-sun-bridge.md`, `docs/research/def-fixture-rotation/wc4-overall-bridge.md`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `data/research/def-fixture-rotation/def_wc4_overall_bridge_matrix.csv`, `tests/test_def_fixture_rotation.py`, `docs/research/INDEX.md`
-- **Decisions:** Child notes for constrained WC4. Overall pick `LIV-MCI-MUN-MUN-NFO`. SUN pick unchanged. Separate CLI flags.
+- **Files:** `docs/research/gw1-6-preseason-pipeline/refresh_downstream.py`, `build_expected_stats.py` (`CAREER_INDIVIDUAL_RATES` + `raise_if_draft_on_fallback`), pipeline README / Stage 2–3 / GKP / DEF / ownership notes, `tests/test_expected_stats_blend.py`, `tests/test_gkp_fixture_rotation.py`
+- **Decisions:** Two runners — `run_pipeline.py` when roles change (HTTP); `refresh_downstream.py` when rates / new-player packages change. New Draft no-seed player → `CAREER_INDIVIDUAL_RATES` then downstream refresh. Fail-closed if Nailed/Regular on fallback.
 - **Blocked:** None.
-- **Next:** None.
-- **Objective:** Split SUN WC4 bridge into a standalone sub-report; add unrestricted overall 1–2 swap bridge as a second sub-report with independent refresh.
+- **Next:** None for this packet. Next Draft inject: add career package, run `refresh_downstream.py`, restamp Findings tables.
+- **Objective:** Re-run ADR-0014 consumers and document the new-player refresh path.
 - **Acceptance:**
-  - [x] Parent §1.4 hubs to both children with refresh commands
-  - [x] `wc4-sun-bridge.md` and `wc4-overall-bridge.md` open standalone
-  - [x] `--sun-bridge-only` / `--overall-bridge-only` / `--bridges-only` work
-  - [x] Overall CSV 5,623 rows; #1 is 0-SUN `LIV-MCI-MUN-MUN-NFO`
-  - [x] Tests green; ruff clean
+  - [x] Stage 3 / GKP / DEF / ownership artifacts rebuilt on ADR-0014 rates
+  - [x] `refresh_downstream.py` orchestrates Stage 2 → 3 → GKP → DEF → ownership
+  - [x] New-player path documented (CAREER_INDIVIDUAL_RATES + fail-closed)
+  - [x] Research notes + INDEX restamped; GKP Sources point at pipeline CSVs
+  - [x] IPS tagged promoted in GKP; draft-fallback unit tests green

@@ -137,32 +137,36 @@ The state at the start of a new season where current-season Player performances 
 _Avoid_: Preseason (ambiguous), blank season
 
 **Prior-Season Seed**:
-Per-Player Event Rates and minutes carried over from the most recent archived season (`data/archive/<prev-season>/processed/`) to seed Projections during Cold-Start.
-_Avoid_: Carryover, history seed
+Per-Player Event Rates and minutes carried over from the most recent archived season (`data/archive/<prev-season>/processed/`) to seed Projections during Cold-Start. A summer club change does not discard a usable seed.
+_Avoid_: Carryover, history seed, three-season FPL blend
 
-**Position-Price Fallback Prior**:
-Position- and price-band aggregate Event Rates used when a Player has no usable Prior-Season Seed.
-_Avoid_: Prior-Season Seed, default rate
+**Career Individual Rate**:
+Per-90 xG, xA, Defcon, and GK saves from a Player's last completed senior league season. Used only when no usable Prior-Season Seed exists (foreign arrivals, promoted-Club Players, rookies).
+_Avoid_: Position-Price Prior, three-season foreign blend, treating any summer transfer as a newcomer
+
+**Destination Team Concede Rate**:
+Destination Club's prior-season Premier League goals conceded per game. Supplies the Team Defensive Event λ for Players with no Prior-Season Seed. Clubs with no PL archive use that season's PL league-average concede rate.
+_Avoid_: Player-level GC for newcomers, Championship GC as PL λ, opponent xG as the seed
 
 **Position-Price Prior**:
-A league-wide aggregate of Event Rates grouped by Position and price band, used as the fallback for Players with no Prior-Season Seed (new signings, promoted-Club Players, rookies).
-_Avoid_: Default rate, baseline prior
+A league-wide aggregate of Event Rates grouped by Position and price band, used as the production fallback for Players with no Prior-Season Seed (new signings, promoted-Club Players, rookies).
+_Avoid_: Default rate, baseline prior, Career Individual Rate
 
 **Player Code Mapping**:
 The cross-season identity resolution technique that links transient annual FPL element `id` values across seasons using the immutable FPL `code` field (with name/position fallback).
 _Avoid_: ID matching, element_id join
 
 **Usable Season**:
-A season-year in the Event Rate window whose FPL sample meets the any-usable minutes floor (450; same as Prior-Season Seed). Thin or missing years below that floor are excluded. Research Stage 2 dual-floor: the **latest** blend slot additionally requires ≥900 minutes; years with 450–899 minutes may only enter the older-mean half (or equal-weight all ≥450 when no ≥900 year exists).
-_Avoid_: Any-minutes season, partial sample, treating injury season as automatic latest prior
+A FPL season-year whose minutes meet the 450 floor (same as Prior-Season Seed). Research Stage 2 Cold-Start uses only the latest archive season; older FPL years are not blended. Thin or missing latest years are not a seed.
+_Avoid_: Dual-floor 50/50 blend, any-minutes season, treating injury season as automatic latest prior
 
 **Research Position Baseline**:
-Position-only aggregate Event Rates used by the preseason research Stage 2 builder when a Player has no Usable Season and no external research package. Distinct from production Position-Price Fallback Prior (position × price band).
-_Avoid_: Position-Price Fallback Prior, Prior-Season Seed
+Position-only aggregate Event Rates used by preseason Stage 2 when a Player has no usable Prior-Season Seed and no Career Individual Rate package. Distinct from production Position-Price Prior (position × price band).
+_Avoid_: Position-Price Prior, Prior-Season Seed, Career Individual Rate
 
 **Position-Price Fallback Prior**:
 Position- and price-band aggregate Event Rates used in production Cold-Start when a Player has no usable Prior-Season Seed.
-_Avoid_: Prior-Season Seed, default rate, Research Position Baseline
+_Avoid_: Prior-Season Seed, default rate, Research Position Baseline, Career Individual Rate
 
 **Defensive Contribution (Defcon)**:
 The FPL metric tracking defensive actions (clearances, blocks, interceptions, tackles, recoveries) used to evaluate position-specific defensive contribution thresholds for bonus/points. CBIT (clearances + blocks + interceptions + tackles) for DEF threshold 10; CBITR (+ recoveries) for MID/FWD threshold 12.
@@ -181,7 +185,7 @@ A runtime diagnostic measuring the Pearson chi-square statistic on defensive act
 _Avoid_: Fixed distribution, arbitrary variance scaling
 
 **Team Defensive Event**:
-A model abstraction treating goals conceded and clean sheets as team-level properties of the opponent's expected attack, scaled to individual players via minutes exposure.
+A model abstraction treating goals conceded and clean sheets as team-level properties of the opponent's expected attack, scaled to individual players via minutes exposure. Cold-Start Players with no Prior-Season Seed take Destination Team Concede Rate as the club λ.
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:

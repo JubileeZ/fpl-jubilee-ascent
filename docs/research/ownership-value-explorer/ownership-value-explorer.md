@@ -1,12 +1,12 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-13T03:40:00+07:00  
-**Data stamp**: Stage 2 expected-stats rates 2026-08-13; fixtures GW1–38; `selected_by_percent` pricing stamp 2026-07-29  
+**Updated**: 2026-08-14T01:30:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; fixtures GW1–38; `selected_by_percent` pricing stamp 2026-07-29  
 **Season**: 2026/27 · default horizon GW1–38  
 **Status**: Active Research Model  
 **Purpose**: Interactive evaluation of projected rate (xP/90) against ownership popularity across the full season, sized by expected minutes, with position / club / price filters.  
 **Scope**: XI Contention rates from Stage 2; Ownership = FPL `selected_by_percent` (not EO); optional GW1–6 toggle; optional preseason S1/S5 + user overlays.  
-**Related**: [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [GW1–6 Chip Matrix](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Project](project_season_points.py) · [Plot](plot_ownership_value_explorer.py)  
+**Related**: [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [GW1–6 Chip Matrix](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py) · [Project](project_season_points.py) · [Plot](plot_ownership_value_explorer.py)  
 **Artifacts**:
 - [Season projections CSV](../../../data/research/ownership-value-explorer/season_projections.csv)
 - [Metrics CSV](../../../data/research/ownership-value-explorer/ownership_value_metrics.csv)
@@ -64,6 +64,12 @@ Requires network on first load (Plotly CDN). After that, refresh the browser tab
 When Stage 2 rates, fixtures, ownership stamp, or overlays change:
 
 ```bash
+uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
+```
+
+Explorer only (Stage 2 + Stage 3 already current):
+
+```bash
 uv run python docs/research/ownership-value-explorer/plot_ownership_value_explorer.py
 ```
 
@@ -87,7 +93,8 @@ Writes `season_projections.csv`, `ownership_value_metrics.csv`, and `ownership_v
 ```text
 Run Ownership Value Explorer (full season):
 
-1. Prerequisite: Stage 2 expected-stats CSV present.
+1. Prerequisite: Stage 2 expected-stats CSV present. After a rate / new-player change prefer:
+   uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
 2. Command: uv run python docs/research/ownership-value-explorer/plot_ownership_value_explorer.py
    - Rebuilds GW1–38 season projections via ParticipationStateHybridModel.
    - Writes season_projections.csv, ownership_value_metrics.csv, ownership_value_explorer.html.
@@ -113,6 +120,8 @@ Run Ownership Value Explorer (full season):
 - Default view is **GW1–38** differentials (own% vs season xP/90).
 - Player table lists all 357 contention rows; chart default floor 45 plots 227. Search finds names the scatter does not label.
 - Identity: **B.Fernandes (MUN)** nailed; **Bruno G. (ARS)** Rotation (not United); **Virgil (LIV)** nailed — chart + table.
+- Top season xP/90 at xMins ≥ 45: Calafiori **6.63**, Tzolis **6.34**, Gabriel **6.02**, Haaland **6.02**, Vuskovic **5.96**.
+- Chip overlays still mark **S1 / S5** (BB1 FH3 / BB1 TC3). Current Stage 3 winners are **S9 / S13**.
 - Low-xMins players inflate xP/90 — keep floor ≥ 45 unless inspecting cameos (Bruno G. avg xMins 33 sits below the floor; search still lists him).
 
 ---

@@ -1,7 +1,7 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
-**Updated**: 2026-08-13T23:55:00+07:00  
-**Data stamp**: FPL API processed snapshot + `expected-stats-gw1-5.csv` rates + `ParticipationStateHybridModel` GW1–38 projections  
+**Updated**: 2026-08-14T01:30:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; FPL API processed snapshot; `ParticipationStateHybridModel` GW1–38 projections  
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Determine the optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint (GW1–3 Bench Boost), post-Wildcard (GW4–19), and full first-half (GW1–19). Constrained WC4 (1–2 slot swaps) lives in child notes.  
@@ -9,6 +9,18 @@
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
 **Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`  
 **Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)`  
+**Downstream**: `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py` (full parent + both WC4 bridges)
+
+## Agent Prompt
+
+```text
+After Stage 2 rate / new-player change:
+  uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
+This topic only (slow full combinatorics):
+  uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py
+Bridges only: --bridges-only / --sun-bridge-only / --overall-bridge-only
+Update parent §1.3 player maps and child bridge stamps from CSVs.
+```  
 
 ---
 
@@ -125,10 +137,10 @@ In a **GW1 Bench Boost + GW4 Wildcard** setup:
 
 | Budget Band                              | Spend  | Representative Lineup                                                                                                             | BB-RQI    | Effective 11-Start xP | GW1 xP (5 def) | Effective FDR |
 | ---------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------- | -------------- | ------------- |
-| **Band 1: Budget (£20.5–22.5m)**         | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Hume** (SUN £4.5m)      | **72.99** | **56.33 xP**          | 26.02 xP       | **2.273**     |
-| **Band 2: Mid-Value (£23.0–24.0m)**      | £23.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Maguire** (MUN £5.0m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m)      | **77.80** | **60.75 xP**          | 27.43 xP       | **2.273**     |
-| **Band 3: Single Anchor (£24.5–25.0m)**  | £24.5m | **Calafiori** (ARS £5.5m) + **Shaw** (MUN £4.5m) + **Maguire** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Ballard** (SUN £5.0m) | **77.09** | **59.54 xP**          | 28.85 xP       | **2.273**     |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Shaw** (MUN £4.5m) + **Maguire** (MUN £5.0m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m)    | **76.05** | **60.16 xP**          | 29.02 xP       | **2.273**     |
+| **Band 1: Budget (£20.5–22.5m)**         | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m)    | **77.74** | **58.94 xP**          | 27.11 xP       | **2.273**     |
+| **Band 2: Mid-Value (£23.0–24.0m)**      | £23.0m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m)    | **78.57** | **59.90 xP**          | 27.38 xP       | **2.273**     |
+| **Band 3: Single Anchor (£24.5–25.0m)**  | £24.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **77.28** | **59.64 xP**          | 29.75 xP       | **2.273**     |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) | **75.21** | **59.53 xP**          | 29.64 xP       | **2.273**     |
 
 
 ---
@@ -144,7 +156,7 @@ Independent GW1–3 and GW4–19 top-10s are **not** 1–2 swaps apart. Child no
 | **Overall (any clubs)** | Best GW1–3 → 1–2 WC4 swaps → GW4–19, no SUN filter | [`wc4-overall-bridge.md`](wc4-overall-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --overall-bridge-only` |
 | **1–2 Sunderland** | Same scorer, pre-sets must hold 1 or 2 SUN | [`wc4-sun-bridge.md`](wc4-sun-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --sun-bridge-only` |
 
-Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags.
+Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags, or `refresh_downstream.py` after a Stage 2 rate change.
 
 - Overall pick: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE. Path FDR 2.4237.
 - SUN pick: `LIV-MCI-MUN-NFO-SUN` → AVL+CHE. Same path FDR, 5 unique in GW1–3.

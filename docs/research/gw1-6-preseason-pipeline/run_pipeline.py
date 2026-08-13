@@ -1,9 +1,13 @@
 """GW1–6 Preseason Pipeline Master Runner.
 
-Automates the complete 3-stage research pipeline:
+Automates the complete 3-stage research pipeline (includes Stage 1 HTTP scrape):
 Stage 1: Dual-source Expected Role rebuild (FFS + Meerkat scrape)
-Stage 2: Expected Stats & Points Projections (availability overlays applied)
+Stage 2: Expected Stats & Points Projections (ADR-0014 rates)
 Stage 3: 16-scenario chip exploration matrix (BB × FH3|TC3 × Haaland × Bruno × WC4 Opt1)
+
+When roles are unchanged and only rates / new-player packages change, skip the
+scrape and run refresh_downstream.py instead (Stage 2 → Stage 3 → GKP → DEF →
+ownership explorer).
 
 Ownership value explorer is a standalone full-season research topic:
 docs/research/ownership-value-explorer/

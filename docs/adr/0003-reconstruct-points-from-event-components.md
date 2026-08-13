@@ -8,7 +8,7 @@
 
 The new model will **not** learn total points as a target. Instead it predicts per-90 Event Rates (minutes/appearance, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, defensive contributions, penalty events) and reconstructs projected points by mapping those events through the official FPL scoring matrix (deterministic per Position: a Goal is worth 10/6/5/4 for GK/D/M/F, an Assist 3, a Clean Sheet 4/4/1/0, etc.).
 
-Event Rates are seeded from the Prior-Season Seed and blended into current-season data after a threshold of current-season appearances. Clean sheets and goals-conceded are modeled per Player from prior history (Player-level), not per Club. Newcomers with no prior seed fall back to the Position-Price Prior.
+Event Rates are seeded from the Prior-Season Seed and blended into current-season data after a threshold of current-season appearances. Clean sheets and goals-conceded are modeled per Player from prior history (Player-level), not per Club, **when a usable Prior-Season Seed exists**. Newcomers with no seed: production still falls back to the Position-Price Prior; preseason research uses Career Individual Rate + Destination Team Concede Rate (ADR-0014).
 
 ## Consequences
 

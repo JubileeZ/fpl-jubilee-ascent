@@ -26,7 +26,7 @@ STATS_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "02-expected-stats-gw1-5
 ROLE_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "01-expected-role-gw1-5" / "expected-role-gw1-5.csv"
 
 DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
-PROMOTED_CLUBS = frozenset({"COV", "HUL"})
+PROMOTED_CLUBS = frozenset({"COV", "HUL", "IPS"})
 FLAT_START_MINUTES = 90.0
 GKP_POSITION_ID = 1
 HORIZONS = (

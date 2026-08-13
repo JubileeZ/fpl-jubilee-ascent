@@ -1,7 +1,7 @@
 # Constrained WC4 Bridge — 1–2 Sunderland (GW1–3 → 1–2 swaps → GW4–19)
 
-**Updated**: 2026-08-13T23:55:00+07:00  
-**Data stamp**: BB1 club matrix + GW4–19 5-way club matrix (`def_bb1_wc4_club_matrix.csv`, `def_club_5way_rotation_matrix.csv`)  
+**Updated**: 2026-08-14T01:30:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; BB1 club matrix + GW4–19 5-way club matrix (`def_bb1_wc4_club_matrix.csv`, `def_club_5way_rotation_matrix.csv`)  
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Rank 4–5 unique GW1–3 defender club sets that already hold 1–2 Sunderland and reach a strong GW4–19 4–5 unique set after 1 or 2 club-slot replacements.  
@@ -31,7 +31,7 @@ Refresh docs/research/def-fixture-rotation/wc4-sun-bridge.md
 uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --sun-bridge-only
 ```
 
-Both bridges: `--bridges-only`. Full parent pipeline (slow): run the script with no flags.
+Both bridges: `--bridges-only`. Full parent pipeline (slow): run the script with no flags, or `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py` after a Stage 2 rate change.
 
 ## Method
 
@@ -88,9 +88,9 @@ Ranks 5 and 10 land on `BOU-CHE-EVE-LIV-NFO` (tied 2.4375 FDR). Prefer ranks 1�
 
 | Role | Club set | Spend | Lineup | Notes |
 | --- | --- | --- | --- | --- |
-| **GW1–3 pick (1 SUN)** | LIV-MCI-MUN-NFO-SUN | £24.0m | Jacquet (LIV £5.0m) + Gvardiol (MCI £5.5m) + Maguire (MUN £5.0m) + Jair Cunha (NFO £4.5m) + O'Nien (SUN £4.0m) | BB-RQI 73.65; 60.73 xP / 11 starts |
-| **WC4 (1 SUN path)** | AVL-CHE-LIV-MCI-NFO | £24.5m | Maatsen (AVL £4.5m) + Colwill (CHE £5.0m) + Jacquet + Gvardiol + Jair Cunha | Maguire + O'Nien → Maatsen + Colwill |
-| **GW1–3 pick (2 SUN)** | LIV-MCI-NFO-SUN-SUN | £24.0m | Jacquet + Gvardiol + Jair Cunha + O'Nien + Ballard (SUN £5.0m) | BB-RQI 73.65; 60.86 xP / 11 starts |
+| **GW1–3 pick (1 SUN)** | LIV-MCI-MUN-NFO-SUN | £24.5m | Jacquet (LIV £5.0m) + Gvardiol (MCI £5.5m) + Shaw (MUN £4.5m) + Jair Cunha (NFO £4.5m) + Ballard (SUN £5.0m) | BB-RQI 71.08; 59.10 xP / 11 starts |
+| **WC4 (1 SUN path)** | AVL-CHE-LIV-MCI-NFO | £24.5m | Maatsen (AVL £4.5m) + Colwill (CHE £5.0m) + Jacquet + Gvardiol + Jair Cunha | Shaw + Ballard → Maatsen + Colwill |
+| **GW1–3 pick (2 SUN)** | LIV-MCI-NFO-SUN-SUN | £24.5m | Jacquet + Gvardiol + Jair Cunha + Meunier (SUN £4.5m) + Ballard (SUN £5.0m) | BB-RQI 72.71; 60.29 xP / 11 starts |
 | **WC4 (2 SUN path)** | AVL-CHE-LIV-MCI-NFO | £24.5m | Maatsen + Colwill + Jacquet + Gvardiol + Jair Cunha | Dump both SUN |
 
 ## Decision

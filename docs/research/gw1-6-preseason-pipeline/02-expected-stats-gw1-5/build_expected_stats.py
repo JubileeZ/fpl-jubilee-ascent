@@ -1,15 +1,16 @@
-"""Expected Stats GW1–5 builder — Permanent Player Code Mapping + usable-season blend.
+"""Expected Stats GW1–5 builder — Prior-Season Seed + Career Individual Rate.
 
-Rules (grill lock 2026-08-10):
+Rules (ADR-0014):
 - Resolve archive history via FPL `code` (ADR 0004), never raw cross-season player_id.
-- Season window 2023/24–2025/26.
-- Usable season (any slot) = minutes >= MIN_USABLE_MINUTES (450).
-- Latest slot = most recent usable with minutes >= MIN_LATEST_USABLE_MINUTES (900).
-  Thin years (450–899) may sit in the older-mean half only; if no ≥900 year exists,
-  equal-weight all ≥450 usables (no 50/50 latest).
-- External research only when no usable FPL season remains; Defcon from CBIT/CBITR
-  or FPL Defcon when present; else component fill from external/baseline.
+- Prior-Season Seed = latest archive season (2025/26) with minutes >= 450.
+- No seed: Career Individual Rate (xG/xA/Defcon/saves) from last-season research
+  package, else most recent older FPL history_past >= 450.
+- No seed GC/CS: Destination Team Concede Rate (2025/26 PL GC/game;
+  promoted Clubs inherit PL league-average, not Championship GC).
+- Research Position Baseline only if no career package and no older FPL.
 - Rate sheet covers XI Contention Set (Nailed / Regular / Rotation / Cameo).
+- New Draft player with no seed: add CAREER_INDIVIDUAL_RATES package, then
+  refresh_downstream.py (Stage 2 fail-closes if Nailed/Regular still on fallback).
 """
 
 from __future__ import annotations
@@ -24,12 +25,9 @@ import pandas as pd
 
 from features.builder import MIN_PRIOR_MINUTES
 
-MIN_USABLE_MINUTES = MIN_PRIOR_MINUTES  # 450 — any-usable floor
-MIN_LATEST_USABLE_MINUTES = 900  # latest-slot floor (dual-floor grill lock)
-SEASON_WINDOW = ("2023/24", "2024/25", "2025/26")
+MIN_USABLE_MINUTES = MIN_PRIOR_MINUTES  # 450 — Prior-Season Seed floor
 LATEST_ARCHIVE_SEASON = "2025/26"
 XI_CONTENTION_ROLES = ("Nailed Starter", "Regular Starter", "Rotation", "Cameo")
-RATE_KEYS = ("xg", "xa", "defcon", "saves", "gc")
 
 POSITION_BASELINES = {
     "GKP": {"xg": 0.00, "xa": 0.00, "defcon": 0.00, "saves": 2.78, "gc": 1.38},
@@ -164,6 +162,100 @@ EXTERNAL_RESEARCH_RATES: dict[int, dict] = {
           "note": "External best-guess: Mikey Moore Spurs academy / creative MID proxy"},
 }
 
+# Last-season Career Individual Rates for Draft newcomers with no Prior-Season Seed.
+# GC omitted: Destination Team Concede Rate is applied at build time (ADR-0014).
+# New-player path: Stage 1 injects Nailed/Regular with no Prior-Season Seed → add
+# {player_id: {xg, xa, saves, defcon, defcon_cbit, minutes?, note}} last completed
+# senior league season. Omit gc (Destination Team Concede Rate overlays it).
+# Then: uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
+CAREER_INDIVIDUAL_RATES: dict[int, dict] = {
+    557: {"xg": 0.417, "xa": 0.467, "saves": 0.00, "defcon": 6.06, "defcon_cbit": True,
+          "note": "2025/26 Belgian Pro League Club Brugge; ~3072m; FotMob"},
+    504: {"xg": 0.188, "xa": 0.101, "saves": 0.00, "defcon": 12.46, "defcon_cbit": True,
+          "note": "2025/26 Bundesliga Hamburger SV; ~2441m; FootyStats"},
+    152: {"xg": 0.050, "xa": 0.104, "saves": 0.00, "defcon": 3.50, "defcon_cbit": True,
+          "note": "2025/26 Serie A Cagliari; ~3084m; FotMob"},
+    182: {"xg": 0.041, "xa": 0.047, "saves": 0.00, "defcon": 8.97, "defcon_cbit": True,
+          "note": "2025/26 Bundesliga Eintracht Frankfurt; ~1676m; FotMob"},
+    173: {"xg": 0.089, "xa": 0.104, "saves": 0.00, "defcon": 8.56, "defcon_cbit": True,
+          "note": "2025/26 Championship Coventry; ~2924m; FotMob"},
+    175: {"xg": 0.026, "xa": 0.141, "saves": 0.00, "defcon": 6.42, "defcon_cbit": True,
+          "note": "2025/26 Championship Coventry; ~3784m; FotMob"},
+    188: {"xg": 0.180, "xa": 0.198, "saves": 0.00, "defcon": 7.95, "defcon_cbit": True,
+          "note": "2025/26 Championship Coventry; ~2320m; FotMob"},
+    186: {"xg": 0.291, "xa": 0.166, "saves": 0.00, "defcon": 5.00, "defcon_cbit": True,
+          "note": "2025/26 Championship Coventry; ~2989m; FotMob"},
+    184: {"xg": 0.038, "xa": 0.199, "saves": 0.00, "defcon": 9.58, "defcon_cbit": True,
+          "note": "CHA 2025/26 Coventry 4125m; xG/xA/defcon FotMob Opta"},
+    185: {"xg": 0.153, "xa": 0.193, "saves": 0.00, "defcon": 6.13, "defcon_cbit": True,
+          "note": "CHA 2025/26 Coventry 2494m; xG/xA/defcon FotMob Opta"},
+    193: {"xg": 0.610, "xa": 0.070, "saves": 0.00, "defcon": 4.47, "defcon_cbit": True,
+          "note": "CHA 2025/26 Coventry 2594m; xG/xA FootyStats Opta; CBITR FS CBIT + FotMob recovery scale"},
+    194: {"xg": 0.610, "xa": 0.170, "saves": 0.00, "defcon": 6.21, "defcon_cbit": True,
+          "note": "CHA 2025/26 Coventry 1865m; xG/xA FootyStats Opta; CBITR FS CBIT + FotMob recovery scale"},
+    247: {"xg": 0.150, "xa": 0.233, "saves": 0.00, "defcon": 8.83, "defcon_cbit": True,
+          "note": "CHA 2025/26 Middlesbrough 3314m; xG/xA/defcon FotMob Opta"},
+    280: {"xg": 0.010, "xa": 0.091, "saves": 0.00, "defcon": 6.18, "defcon_cbit": True,
+          "note": "CHA 2025/26 Hull 3187m; xG/xA/defcon FotMob Opta"},
+    290: {"xg": 0.056, "xa": 0.054, "saves": 0.00, "defcon": 10.24, "defcon_cbit": True,
+          "note": "CHA 2025/26 Hull 3156m; xG/xA/defcon FotMob Opta"},
+    286: {"xg": 0.228, "xa": 0.157, "saves": 0.00, "defcon": 10.89, "defcon_cbit": True,
+          "note": "CHA 2025/26 Hull 934m; xG/xA/defcon FotMob Opta"},
+    287: {"xg": 0.210, "xa": 0.120, "saves": 0.00, "defcon": 7.45, "defcon_cbit": True,
+          "note": "Hull CHA 2025/26; 1848 min; FootyStats xG + FotMob; CBITR proxy"},
+    564: {"xg": 0.000, "xa": 0.000, "saves": 1.90, "defcon": 0.00, "defcon_cbit": True,
+          "note": "Union SG Belgian Pro League 2025/26; 2835 min; FotMob 60 saves (1.90/90)"},
+    562: {"xg": 0.460, "xa": 0.190, "saves": 0.00, "defcon": 7.58, "defcon_cbit": True,
+          "note": "Celtic SPFL 2025/26; 2837 min; FootyStats xG/xA; CBITR proxy"},
+    309: {"xg": 0.270, "xa": 0.360, "saves": 0.00, "defcon": 7.50, "defcon_cbit": True,
+          "note": "Ipswich CHA 2025/26; 2234 min; FootyStats xG/xA; CBITR proxy"},
+    316: {"xg": 0.440, "xa": 0.110, "saves": 0.00, "defcon": 2.78, "defcon_cbit": True,
+          "note": "Toulouse Ligue 1 2025/26; 1526 min; Goalazo xG/xA; CBITR Sporting Life"},
+    334: {"xg": 0.100, "xa": 0.140, "saves": 0.00, "defcon": 11.56, "defcon_cbit": True,
+          "note": "Sassuolo Serie A 2025/26; 2835 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk"},
+    362: {"xg": 0.040, "xa": 0.110, "saves": 0.00, "defcon": 8.39, "defcon_cbit": True,
+          "note": "Rennes Ligue 1 2025/26; 1673 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk"},
+    461: {"xg": 0.240, "xa": 0.310, "saves": 0.00, "defcon": 4.77, "defcon_cbit": True,
+          "note": "Hoffenheim Bundesliga 2025/26; 2327 min; FootyStats xG/xA; CBITR proxy"},
+    551: {"xg": 0.300, "xa": 0.280, "saves": 0.00, "defcon": 5.01, "defcon_cbit": False,
+          "note": "2025/26 Belgian Pro League Anderlecht MID; 1902m; FootyStats; CBITR no recoveries"},
+    541: {"xg": 0.120, "xa": 0.170, "saves": 0.00, "defcon": 4.80, "defcon_cbit": False,
+          "note": "2025/26 Ligue 1 Lille DEF; 1910m; FootyStats; CBIT Tkl+Int+Blk+Clr/90"},
+    20: {"xg": 0.690, "xa": 0.190, "saves": 0.00, "defcon": 9.41, "defcon_cbit": False,
+         "minutes": 153, "note": "2025/26 PL Arsenal MID; 153m THIN; FotMob; U18 2024/25 no Opta"},
+    110: {"xg": 0.000, "xa": 0.000, "saves": 3.11, "defcon": 0.00, "defcon_cbit": True,
+          "note": "2023/24 Championship Swansea GKP; 4140m; FBref 143 saves/46.0 90s"},
+    289: {"xg": 0.130, "xa": 0.070, "saves": 0.00, "defcon": 9.18, "defcon_cbit": False,
+          "note": "2025/26 Championship Hull MID; 2509m; FotMob xG/xA; CBITR"},
+    321: {"xg": 0.330, "xa": 0.160, "saves": 0.00, "defcon": 2.40, "defcon_cbit": False,
+          "note": "2024/25 Danish Superliga Nordsjælland FWD; 2205m; FootyStats/FBref; CBITR partial"},
+    462: {"xg": 0.130, "xa": 0.110, "saves": 0.00, "defcon": 6.52, "defcon_cbit": False,
+          "note": "2025/26 Eredivisie Ajax MID; 1135m; FotMob; CBITR"},
+    523: {"xg": 0.215, "xa": 0.172, "saves": 0.00, "defcon": 6.34, "defcon_cbit": False,
+          "note": "2025/26 Scottish Premiership Rangers loan MID; 2163m; FotMob; CBITR"},
+}
+EXTERNAL_RESEARCH_RATES.update(CAREER_INDIVIDUAL_RATES)
+
+DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
+
+
+def raise_if_draft_on_fallback(out_df: pd.DataFrame) -> None:
+    """Fail-closed: Nailed/Regular must not ship on Research Position Baseline."""
+    draft_fb = out_df[
+        out_df["expected_role"].isin(DRAFT_ROLES)
+        & out_df["rate_source"].str.contains("fallback_baseline", na=False)
+    ]
+    if draft_fb.empty:
+        return
+    names = ", ".join(
+        f"{row.web_name} ({int(row.player_id)}, {row.position}, {row.club_short})"
+        for row in draft_fb.itertuples()
+    )
+    raise SystemExit(
+        "Draft players on fallback_baseline. Add last-season CAREER_INDIVIDUAL_RATES "
+        f"in build_expected_stats.py then re-run Stage 2: {names}"
+    )
+
 
 def _per90(events: float, minutes: float) -> float:
     return (events / minutes * 90.0) if minutes > 0 else 0.0
@@ -243,90 +335,96 @@ def _history_past_season_rates(summary_path: Path, season: str) -> dict[str, flo
     return None
 
 
-def _mean_rates(seasons: list[tuple[str, dict[str, float]]], keys: tuple[str, ...] = RATE_KEYS) -> dict[str, float]:
-    return {k: sum(s[k] for _, s in seasons) / len(seasons) for k in keys}
+def _destination_gc_map(
+    fixtures: pd.DataFrame,
+    clubs: pd.DataFrame,
+) -> tuple[dict[str, float], float]:
+    """2025/26 PL goals conceded per game by club short_name, plus league average."""
+    finished = fixtures[fixtures["finished"].fillna(False).astype(bool)]
+    rows: list[tuple[int, float]] = []
+    for _, row in finished.iterrows():
+        home_score, away_score = row.get("team_h_score"), row.get("team_a_score")
+        if pd.isna(home_score) or pd.isna(away_score):
+            continue
+        rows.append((int(row["home_club_id"]), float(away_score)))
+        rows.append((int(row["away_club_id"]), float(home_score)))
+    fallback = float(POSITION_BASELINES["DEF"]["gc"])
+    if not rows:
+        return {}, fallback
+    gc_df = pd.DataFrame(rows, columns=["club_id", "gc"])
+    means = gc_df.groupby("club_id")["gc"].mean()
+    id_to_short = clubs.set_index("id")["short_name"].astype(str).to_dict()
+    by_short = {id_to_short[club_id]: float(value) for club_id, value in means.items() if club_id in id_to_short}
+    return by_short, float(means.mean())
 
 
-def _blend_non_defcon(usable: list[tuple[str, dict[str, float]]]) -> tuple[dict[str, float], str, str]:
-    """Dual-floor blend for xG/xA/saves/gc (excludes defcon)."""
-    keys = ("xg", "xa", "saves", "gc")
-    usable_sorted = sorted(usable, key=lambda x: SEASON_WINDOW.index(x[0]))
-    latest_eligible = [
-        (s, r) for s, r in usable_sorted if r["minutes"] >= MIN_LATEST_USABLE_MINUTES
-    ]
-    if latest_eligible:
-        latest_season, latest = latest_eligible[-1]
-        older = [(s, r) for s, r in usable_sorted if s != latest_season]
-        if not older:
-            rates = {k: latest[k] for k in keys}
-            note = (
-                f"100% latest-eligible {latest_season} "
-                f"({latest['minutes']:.0f} mins, floor>={MIN_LATEST_USABLE_MINUTES})"
-            )
-            return rates, "fpl_single_usable_season", note
-        older_avg = _mean_rates(older, keys)
-        rates = {k: 0.5 * latest[k] + 0.5 * older_avg[k] for k in keys}
-        older_names = ",".join(
-            f"{s}({r['minutes']:.0f}m)" for s, r in older
-        )
-        note = (
-            f"50% latest>={MIN_LATEST_USABLE_MINUTES} {latest_season} ({latest['minutes']:.0f}m) + "
-            f"50% mean other usable [{older_names}]"
-        )
-        return rates, "fpl_recency_50_50", note
-
-    # No ≥900 year: equal-weight all ≥450 usables
-    rates = _mean_rates(usable_sorted, keys)
-    names = ",".join(f"{s}({r['minutes']:.0f}m)" for s, r in usable_sorted)
-    note = (
-        f"Equal-weight usable ≥{MIN_USABLE_MINUTES} (no latest>={MIN_LATEST_USABLE_MINUTES}): [{names}]"
-    )
-    return rates, "fpl_equal_weight_thin_latest", note
+def _lookup_destination_gc(club_short: str, gc_map: dict[str, float], league_avg: float) -> float:
+    return float(gc_map.get(str(club_short), league_avg))
 
 
-def _blend_defcon(
-    usable: list[tuple[str, dict[str, float]]],
+def _older_fpl_career(summary_path: Path) -> tuple[str, dict[str, float]] | None:
+    """Most recent FPL history_past season other than the latest archive, if ≥450 mins."""
+    found: list[tuple[str, dict[str, float]]] = []
+    if not summary_path.exists():
+        return None
+    try:
+        with open(summary_path) as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+    for past in payload.get("history_past", []):
+        season = str(past.get("season_name") or "")
+        if not season or season == LATEST_ARCHIVE_SEASON:
+            continue
+        rates = _history_past_season_rates(summary_path, season)
+        if rates is not None:
+            found.append((season, rates))
+    if not found:
+        return None
+    found.sort(key=lambda item: item[0], reverse=True)
+    return found[0]
+
+
+def _career_attack(
     pid: int,
     pos: str,
-) -> tuple[float, str]:
-    """Defcon-only fill: blend seasons with evidence; else external/baseline."""
-    evidenced = [(s, r) for s, r in usable if r.get("has_defcon_evidence", 0) > 0]
-    if evidenced:
-        usable_sorted = sorted(evidenced, key=lambda x: SEASON_WINDOW.index(x[0]))
-        latest_eligible = [
-            (s, r) for s, r in usable_sorted if r["minutes"] >= MIN_LATEST_USABLE_MINUTES
-        ]
-        if latest_eligible:
-            _latest_season, latest = latest_eligible[-1]
-            older = [(s, r) for s, r in usable_sorted if s != _latest_season]
-            if not older:
-                return float(latest["defcon"]), "fpl_defcon"
-            older_avg = sum(r["defcon"] for _, r in older) / len(older)
-            return 0.5 * float(latest["defcon"]) + 0.5 * older_avg, "fpl_defcon"
-        return sum(r["defcon"] for _, r in usable_sorted) / len(usable_sorted), "fpl_defcon"
-
+    summary_path: Path,
+) -> tuple[dict[str, float], str, str] | None:
+    """xG/xA/Defcon/saves for a Player with no Prior-Season Seed. GC is not returned."""
     base = POSITION_BASELINES.get(pos, POSITION_BASELINES["MID"])
+    if pid in EXTERNAL_RESEARCH_RATES:
+        ext = EXTERNAL_RESEARCH_RATES[pid]
+        use_researched_defcon = bool(ext.get("defcon_cbit")) or pid in CAREER_INDIVIDUAL_RATES
+        defcon = float(ext["defcon"]) if use_researched_defcon else float(base["defcon"])
+        src = "career_individual" if pid in CAREER_INDIVIDUAL_RATES else "external_3season_research"
+        xg, xa, saves = float(ext["xg"]), float(ext["xa"]), float(ext["saves"])
+        sample_mins = float(ext["minutes"]) if ext.get("minutes") is not None else float(MIN_USABLE_MINUTES)
+        note = str(ext["note"])
+        if sample_mins < MIN_USABLE_MINUTES:
+            weight = sample_mins / MIN_USABLE_MINUTES
+            xg = weight * xg + (1.0 - weight) * float(base["xg"])
+            xa = weight * xa + (1.0 - weight) * float(base["xa"])
+            if pos != "GKP":
+                defcon = weight * defcon + (1.0 - weight) * float(base["defcon"])
+            note = f"{note}; thin-sample shrink w={weight:.2f} toward {pos} baseline"
+        rates = {"xg": xg, "xa": xa, "saves": saves, "defcon": defcon}
+        return rates, src, note
+    older = _older_fpl_career(summary_path)
+    if older is None:
+        return None
+    season, rates = older
+    attack = {"xg": rates["xg"], "xa": rates["xa"], "saves": rates["saves"], "defcon": rates["defcon"]}
+    note = f"Older FPL {season} ({rates['minutes']:.0f}m); destination GC overlay"
+    return attack, "career_fpl_prior_year", note
+
+
+def _fill_seed_defcon(seed: dict[str, float], pid: int, pos: str) -> tuple[float, str]:
+    if seed.get("has_defcon_evidence", 0) > 0:
+        return float(seed["defcon"]), "fpl_defcon"
     if pid in EXTERNAL_RESEARCH_RATES and EXTERNAL_RESEARCH_RATES[pid].get("defcon_cbit"):
         return float(EXTERNAL_RESEARCH_RATES[pid]["defcon"]), "defcon_external_fill"
+    base = POSITION_BASELINES.get(pos, POSITION_BASELINES["MID"])
     return float(base["defcon"]), "defcon_baseline_fill"
-
-
-def _blend_usable(
-    usable: list[tuple[str, dict[str, float]]],
-    pid: int,
-    pos: str,
-) -> tuple[dict[str, float], str, str]:
-    """Dual-floor non-Defcon blend + Defcon-only evidence fill."""
-    if not usable:
-        raise ValueError("usable empty")
-    rates, src, note = _blend_non_defcon(usable)
-    defcon, defcon_src = _blend_defcon(usable, pid, pos)
-    rates["defcon"] = defcon
-    if defcon_src != "fpl_defcon":
-        note = f"{note}; {defcon_src}"
-        if src.startswith("fpl_"):
-            src = f"{src}+{defcon_src}"
-    return rates, src, note
 
 
 def _default_priors(role: str) -> tuple[float, float, float, float, float]:
@@ -351,7 +449,10 @@ def build_expected_stats(
     archive_dir = Path(archive_processed)
     df_arch_players = pd.read_parquet(archive_dir / "players.parquet")
     df_arch_perf = pd.read_parquet(archive_dir / "player_performances.parquet")
+    df_arch_fixtures = pd.read_parquet(archive_dir / "fixtures.parquet")
+    df_arch_clubs = pd.read_parquet(archive_dir / "clubs.parquet")
     df_curr = pd.read_parquet(players_parquet)
+    gc_map, league_avg_gc = _destination_gc_map(df_arch_fixtures, df_arch_clubs)
 
     code_to_archive_id = (
         df_arch_players.set_index("code")["id"].to_dict()
@@ -367,56 +468,56 @@ def build_expected_stats(
         pid = int(srow["player_id"])
         pos = str(srow["position"])
         role = str(srow["expected_role"])
+        club_short = str(srow["club_short"])
         code = curr_code.get(pid)
         archive_pid = code_to_archive_id.get(code) if code is not None else None
+        summary_path = Path(f"data/raw/element_summary_{pid}.json")
 
-        usable: list[tuple[str, dict[str, float]]] = []
-        for season in SEASON_WINDOW:
-            if season == LATEST_ARCHIVE_SEASON:
-                rates = _archive_season_rates(df_arch_perf, archive_pid)
-                if rates is None:
-                    rates = _history_past_season_rates(
-                        Path(f"data/raw/element_summary_{pid}.json"), season
-                    )
-            else:
-                rates = _history_past_season_rates(
-                    Path(f"data/raw/element_summary_{pid}.json"), season
-                )
-            if rates is not None:
-                usable.append((season, rates))
+        seed = _archive_season_rates(df_arch_perf, archive_pid)
+        if seed is None:
+            seed = _history_past_season_rates(summary_path, LATEST_ARCHIVE_SEASON)
 
         base = POSITION_BASELINES.get(pos, POSITION_BASELINES["MID"])
-        if usable:
-            blended, src, note = _blend_usable(usable, pid, pos)
-            per90_xg = blended["xg"]
-            per90_xa = blended["xa"]
-            per90_defcon = blended["defcon"]
-            per90_saves = blended["saves"]
-            per90_gc = blended["gc"]
-            usable_mins = sum(r["minutes"] for _, r in usable)
-        elif pid in EXTERNAL_RESEARCH_RATES:
-            ext = EXTERNAL_RESEARCH_RATES[pid]
-            per90_xg = float(ext["xg"])
-            per90_xa = float(ext["xa"])
-            per90_saves = float(ext["saves"])
-            per90_gc = float(ext["gc"])
-            if ext.get("defcon_cbit"):
-                per90_defcon = float(ext["defcon"])
-            else:
-                per90_defcon = float(base["defcon"])
-            src = "external_3season_research"
-            note = str(ext["note"])
-            usable_mins = 0.0
+        dest_gc = _lookup_destination_gc(club_short, gc_map, league_avg_gc)
+        if seed is not None:
+            per90_xg = seed["xg"]
+            per90_xa = seed["xa"]
+            per90_saves = seed["saves"]
+            per90_gc = seed["gc"]
+            per90_defcon, defcon_src = _fill_seed_defcon(seed, pid, pos)
+            src = "prior_season_seed"
+            note = f"Prior-Season Seed {LATEST_ARCHIVE_SEASON} ({seed['minutes']:.0f}m)"
+            if defcon_src != "fpl_defcon":
+                src = f"{src}+{defcon_src}"
+                note = f"{note}; {defcon_src}"
+            usable_mins = seed["minutes"]
+            usable_count = 1
         else:
-            per90_xg = float(base["xg"])
-            per90_xa = float(base["xa"])
-            per90_defcon = float(base["defcon"])
-            per90_saves = float(base["saves"])
-            per90_gc = float(base["gc"])
-            src = "fallback_baseline"
-            note = f"Position baseline ({pos}); no usable FPL season and no external package"
-            usable_mins = 0.0
-            needs_research.append(f"{srow['web_name']} ({pid}, {pos}, {srow['club_short']})")
+            career = _career_attack(pid, pos, summary_path)
+            per90_gc = dest_gc
+            if career is not None:
+                attack, src, note = career
+                per90_xg = attack["xg"]
+                per90_xa = attack["xa"]
+                per90_saves = attack["saves"]
+                per90_defcon = attack["defcon"]
+                src = f"{src}+destination_gc"
+                note = f"{note}; dest GC {club_short}={per90_gc:.3f}"
+                usable_mins = 0.0
+                usable_count = 0
+            else:
+                per90_xg = float(base["xg"])
+                per90_xa = float(base["xa"])
+                per90_defcon = float(base["defcon"])
+                per90_saves = float(base["saves"])
+                src = "fallback_baseline+destination_gc"
+                note = (
+                    f"Position baseline ({pos}); dest GC {club_short}={per90_gc:.3f}; "
+                    "no Prior-Season Seed and no Career Individual Rate"
+                )
+                usable_mins = 0.0
+                usable_count = 0
+                needs_research.append(f"{srow['web_name']} ({pid}, {pos}, {club_short})")
 
         p_start, p_sub, p_dnp, xmins_s, xmins_u = _default_priors(role)
         p_start = float(srow.get("p_start", p_start))
@@ -439,7 +540,7 @@ def build_expected_stats(
             "xmins_if_sub_in": xmins_u,
             "draft_availability": srow.get("draft_availability", "eligible"),
             "availability_override": srow.get("availability_override", ""),
-            "usable_season_count": len(usable),
+            "usable_season_count": usable_count,
             "usable_mins_total": round(usable_mins, 1),
             "rate_source": src,
             "per90_xg": round(per90_xg, 4),
@@ -457,11 +558,12 @@ def build_expected_stats(
     print(f"Exported {len(out_df)} XI Contention rows to {output_csv_path}")
     print("rate_source counts:\n", out_df["rate_source"].value_counts().to_string())
     if needs_research:
-        print(f"\nNeeds external research package ({len(needs_research)}):")
+        print(f"\nNeeds external research package ({len(needs_research)} Rotation/Cameo):")
         for line in needs_research[:30]:
             print(f"  - {line}")
         if len(needs_research) > 30:
             print(f"  ... +{len(needs_research) - 30} more")
+    raise_if_draft_on_fallback(out_df)
     return out_df
 
 

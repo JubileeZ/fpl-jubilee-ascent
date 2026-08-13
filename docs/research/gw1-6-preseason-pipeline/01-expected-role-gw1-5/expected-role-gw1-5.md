@@ -39,8 +39,10 @@ Run parameterized GW1-5 Expected Role Rebuild (Stage 1):
    - Merge API status/chance flags from players.parquet and apply official club availability overlays.
    - Separate fit-role from availability (do not demote fit-role for temporary injury).
    - Export CSV to data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv.
-2. Synchronize 20-club markdown tables in expected-role-gw1-5.md with the generated CSV.
-3. Verification: uv run pytest, uv run ruff check .
+2. If a new Nailed/Regular has no 2025/26 Prior-Season Seed, add CAREER_INDIVIDUAL_RATES in
+   02-expected-stats-gw1-5/build_expected_stats.py then run refresh_downstream.py (not a second scrape).
+3. Synchronize 20-club markdown tables in expected-role-gw1-5.md with the generated CSV.
+4. Verification: uv run pytest, uv run ruff check .
 ```
 
 ---

@@ -75,8 +75,8 @@ def test_rqi_uses_per_gw_rotated_xp() -> None:
     assert rqi_6 == rqi_38
 
 
-def test_flat_starter_minutes_constants() -> None:
-    assert mod.FLAT_START_MINUTES == 90.0
+def test_promoted_clubs_are_cov_hul_ips() -> None:
+    assert mod.PROMOTED_CLUBS == frozenset({"COV", "HUL", "IPS"})
 
 
 def test_run_analysis_full_season_xp_not_gw1_6_capped() -> None:
