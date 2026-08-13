@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £6.0m Midfielders
 
-**Updated**: 2026-08-09T17:55:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-07 (modified 2026-08-07); accessed 2026-08-09; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md  
+**Updated**: 2026-08-13T23:15:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-08-07 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £6.0m mid-tier midfielders for FPL 2026/27 starting XI selection, penalty duties, underlying attacking stats, and DefCon hybrid output  
@@ -12,7 +12,7 @@
 
 ## Sources
 
-- **Primary**: [Best £6.0m midfielders for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/07/best-6-0m-midfielders-for-fpl-2026-27) — published 2026-08-07; accessed 2026-08-09; role: £6.0m midfielder analysis, penalty hierarchies, Opta creativity / big chance data, and starting prospects
+- **Primary**: [Best £6.0m midfielders for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/07/best-6-0m-midfielders-for-fpl-2026-27) — published 2026-08-07; accessed 2026-08-13; role: £6.0m midfielder analysis, penalty hierarchies, Opta creativity / big chance data, and starting prospects
 - **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-08-06; role: starter status, tactical deployment, injury status
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — updated 2026-08-09; role: confirmed transfer moves (Mateus Fernandes to Spurs £85m, Tielemans to Man Utd £35m)
 

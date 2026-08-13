@@ -1,18 +1,18 @@
 # FPL 2026/27: Best £4.5m–£5.5m Forwards
 
-**Updated**: 2026-08-09T17:55:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-07 (modified 2026-08-07); accessed 2026-08-09; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md  
+**Updated**: 2026-08-13T23:15:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-08-07 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £4.5m–£5.5m budget forwards for FPL 2026/27 third-forward enablers, Bench Boost options, and penalty-taking starters  
 **Scope**: All 39 forwards priced at £4.5m, £5.0m, and £5.5m in FPL 2026/27  
-**Related**: [Pre-season guide](fpl-preseason-guide.md) · [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md) · [Expected role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide](fpl-preseason-guide.md) · [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md) · [£7.0m+ forwards](fpl-7-0m-forwards.md) · [Expected role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 > Note revision created 2026-08-09 from Fantasy Football Scout full price-bracket review. Primary article published 2026-08-07. Source claims cross-checked with expected-role-gw1-5.md and fpl-summer-transfers.md.
 
 ## Sources
 
-- **Primary**: [Best £4.5m-£5.5m forwards for FPL 2026/27: All 39 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/07/best-4-5m-5-5m-forwards-for-fpl-2026-27-all-39-assessed) — published 2026-08-07; accessed 2026-08-09; role: comprehensive budget forward price bracket analysis (all 39 players), Championship underlying stats, and £4.5m enabler audit
+- **Primary**: [Best £4.5m-£5.5m forwards for FPL 2026/27: All 39 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/07/best-4-5m-5-5m-forwards-for-fpl-2026-27-all-39-assessed) — published 2026-08-07; accessed 2026-08-13; role: comprehensive budget forward price bracket analysis (all 39 players), Championship underlying stats, and £4.5m enabler audit
 - **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-08-06; role: starter status, minutes expectations, availability overlays
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — updated 2026-08-09; role: confirmed transfer moves (Welbeck to Chelsea £5m, Garcia to Fulham £34.2m, Emersonn to Ipswich £26m, Kusi-Asare to Fulham £5.2m)
 

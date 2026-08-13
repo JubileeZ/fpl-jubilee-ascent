@@ -1,18 +1,18 @@
 # FPL 2026/27: Best £6.0m–£6.5m Forwards
 
-**Updated**: 2026-08-03T02:15:00+07:00
-**Data stamp**: Fantasy Football Scout article published 2026-07-31; accessed 2026-08-03  
+**Updated**: 2026-08-13T23:15:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-07-31 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £6.0m–£6.5m forwards for FPL 2026/27 forward line composition  
 **Scope**: Forwards priced at £6.0m and £6.5m  
-**Related**: [Pre-season guide](fpl-preseason-guide.md) · [Confirmed summer transfers](fpl-summer-transfers.md) · [Expected Role GW1–5](expected-role-gw1-5.md)
+**Related**: [Pre-season guide](fpl-preseason-guide.md) · [£6.0m–£6.5m forwards](fpl-6-0m-6-5m-forwards.md) · [£7.0m+ forwards](fpl-7-0m-forwards.md) · [Confirmed summer transfers](fpl-summer-transfers.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md)
 
 > Note revision updated 2026-08-01. Source claims not independently validated.
 
 ## Sources
 
-- **Primary**: [Best £6.0m-£6.5m forwards for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/31/best-6-0m-6-5m-forwards-for-fpl-2026-27) — published 2026-07-31; accessed 2026-08-03; role: £6.0m–£6.5m forward price bracket analysis
+- **Primary**: [Best £6.0m-£6.5m forwards for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/31/best-6-0m-6-5m-forwards-for-fpl-2026-27) — published 2026-07-31; accessed 2026-08-13; role: £6.0m–£6.5m forward price bracket analysis
 
 **Source boundary**: Source claims not independently validated. No FPL API refresh, fixture recalculation, projection run, or lineup verification performed.
 

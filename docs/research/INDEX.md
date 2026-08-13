@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-13T03:40:00+07:00  
+**Updated**: 2026-08-13T23:15:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -31,6 +31,7 @@
   - [£7.5m+ Midfielders](fpl-preseason-guide/fpl-7-5m-midfielders.md)
   - [£4.5m–£5.5m Forwards](fpl-preseason-guide/fpl-4-5m-5-5m-forwards.md)
   - [£6.0m–£6.5m Forwards](fpl-preseason-guide/fpl-6-0m-6-5m-forwards.md)
+  - [£7.0m+ Forwards](fpl-preseason-guide/fpl-7-0m-forwards.md)
   - [Confirmed Summer Transfers](fpl-preseason-guide/fpl-summer-transfers.md)
 
 - **Role & Chip Strategy Models**:

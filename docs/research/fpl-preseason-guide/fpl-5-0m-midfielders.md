@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £5.0m Midfielders
 
-**Updated**: 2026-08-09T17:55:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-05 (modified 2026-08-05); accessed 2026-08-09; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md  
+**Updated**: 2026-08-13T23:15:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-08-05 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £5.0m budget midfielders for FPL 2026/27 squad structure, Bench Boost enablers, attacking value, and Defensive Contribution (DefCon) reliability  
@@ -12,7 +12,7 @@
 
 ## Sources
 
-- **Primary**: [Best £5.0m midfielders for FPL 2026/27: All 89 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/05/best-5-0m-midfielders-for-fpl-2026-27-all-89-assessed) — published 2026-08-05; accessed 2026-08-09; role: comprehensive £5.0m midfielder analysis (all 89 players), Opta xGI / DefCon rates, and club depth assessments
+- **Primary**: [Best £5.0m midfielders for FPL 2026/27: All 89 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/05/best-5-0m-midfielders-for-fpl-2026-27-all-89-assessed) — published 2026-08-05; accessed 2026-08-13; role: comprehensive £5.0m midfielder analysis (all 89 players), Opta xGI / DefCon rates, and club depth assessments
 - **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-08-06; role: starter status, minutes expectations, availability overlays
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — updated 2026-08-09; role: confirmed transfer moves (Norgaard, Lukic, Bamba, Morita, Schlager, Steur)
 

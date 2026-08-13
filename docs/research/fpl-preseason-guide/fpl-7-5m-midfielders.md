@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £7.5m+ Midfielders
 
-**Updated**: 2026-08-03T02:15:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-02; accessed 2026-08-03; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md 2026-08-03  
+**Updated**: 2026-08-13T23:15:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-08-02 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £7.5m+ premium and mid-premium midfielders for FPL 2026/27 squad structure and captaincy/midfield selections  
@@ -12,7 +12,7 @@
 
 ## Sources
 
-- **Primary**: [Best £7.5m+ midfielders for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/02/best-7-5m-midfielders-for-fpl-2026-27) — published 2026-08-02; accessed 2026-08-03; role: premium midfielder price bracket analysis (£7.5m+)
+- **Primary**: [Best £7.5m+ midfielders for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/02/best-7-5m-midfielders-for-fpl-2026-27) — published 2026-08-02; accessed 2026-08-13; role: premium midfielder price bracket analysis (£7.5m+)
 - **Cross-check**: [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-07-31; role: player availability, pre-season friendly minutes, starter roles
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — register through 2026-07-30; role: confirmed transfer moves and squad context
 
