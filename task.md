@@ -3,14 +3,13 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `tests/test_def_fixture_rotation.py`, `data/research/def-fixture-rotation/*`, continuity docs
-- **Decisions:** Extended 5-DEF fixture analysis to 2-5 unique club partitions; capped top-4 attack clubs (MCI, ARS, LIV, CHE) at max 2 DEF to protect attack quotas; restructured research note to be team-first across GW1-3 BB1 early sprint, GW4-19 post-WC, and GW1-19 set-and-forget.
+- **Files:** `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py`, `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, pipeline CSVs + explorer HTML, research notes, `tests/test_expected_role_name_match.py`, `tests/test_ownership_value_explorer.py`
+- **Decisions:** Lineup matching uses FPL first/second/web name. Bruno G. = Guimarães at ARS (Rotation). B.Fernandes = United nailed. Virgil matches Van Dijk. Explorer table lists all 357 rows.
 - **Blocked:** None.
-- **Next:** Review defender research note and team recommendations.
-- **Objective:** Evaluate multi-club partitions (2-5 unique clubs) for defender rotation and establish team-level recommendations.
+- **Next:** None.
+- **Objective:** Validate ownership explorer missing players (Virgil) and Bruno G vs Bruno F club mix-up; fix matching and dashboard list.
 - **Acceptance:**
-  - [x] Evaluated all 41,344 valid club combinations across 2-5 unique clubs
-  - [x] Computed optimal team sets for GW1-3 BB1, GW4-19 post-WC, and GW1-19
-  - [x] Updated all 5 research CSV artifacts in data/research/def-fixture-rotation/
-  - [x] Restructured def-fixture-rotation.md to be team-first with trade-off matrix
-  - [x] Tests green (153 passed); ruff clean; verify.sh passed
+  - [x] Bruno G. club_short ARS not MUN; B.Fernandes MUN nailed; Virgil LIV nailed
+  - [x] Explorer HTML has searchable full player table; Virgil avg xMins ≥ 45
+  - [x] Stage 2–3 rebuilt; S1 drafts B.Fernandes not Bruno G.
+  - [x] Tests green; ruff clean

@@ -1,7 +1,7 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-12T02:00:00+07:00  
-**Data stamp**: Dual-source role scrape 2026-08-12; Stage 2 dual-floor rates 2026-08-12; FFS + Meerkat accessed 2026-08-12; API pricing 2026-07-29  
+**Updated**: 2026-08-13T03:35:00+07:00  
+**Data stamp**: Dual-source role scrape 2026-08-13; Stage 2 dual-floor rates 2026-08-13; FFS + Meerkat accessed 2026-08-13; API pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
 **Purpose**: End-to-end preseason research — dual-source Expected Role rebuild (Stage 1), dual-floor Event Rates + $xP$ (Stage 2), and 16-scenario chip exploration with WC4 Opt1 (Stage 3).  
@@ -89,25 +89,25 @@ Run parameterized GW1-6 Preseason Pipeline (End-to-End Execution):
 
 | ID | BB | Mid chip | Ban H | Ban Bruno | GW1–3 xP | GW4–6 xP | Total | Banked FTs GW6 |
 | :--- | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
-| S1 | GW1 | FH3 | allow | allow | 174.99 | 152.41 | **327.40** | 4 |
-| S2 | GW1 | FH3 | allow | ban | 174.99 | 152.41 | 327.40 | 4 |
-| S3 | GW1 | FH3 | ban | allow | 174.99 | 152.41 | 327.40 | 4 |
-| S4 | GW1 | FH3 | ban | ban | 174.99 | 152.41 | 327.40 | 4 |
-| S5 | GW1 | TC3 | allow | allow | 183.01 | 152.41 | **335.42** | 4 |
-| S6 | GW1 | TC3 | allow | ban | 183.01 | 152.41 | 335.42 | 4 |
-| S7 | GW1 | TC3 | ban | allow | 178.66 | 152.41 | 331.07 | 4 |
-| S8 | GW1 | TC3 | ban | ban | 178.66 | 152.41 | 331.07 | 4 |
-| S9 | GW2 | FH3 | allow | allow | 174.54 | 152.41 | 326.95 | 4 |
-| S10 | GW2 | FH3 | allow | ban | 174.54 | 152.41 | 326.95 | 4 |
-| S11 | GW2 | FH3 | ban | allow | 173.97 | 152.41 | 326.38 | 4 |
-| S12 | GW2 | FH3 | ban | ban | 173.97 | 152.41 | 326.38 | 4 |
-| S13 | GW2 | TC3 | allow | allow | 182.44 | 152.41 | 334.85 | 4 |
-| S14 | GW2 | TC3 | allow | ban | 182.44 | 152.41 | 334.85 | 4 |
-| S15 | GW2 | TC3 | ban | allow | 178.31 | 152.41 | 330.72 | 4 |
-| S16 | GW2 | TC3 | ban | ban | 178.31 | 152.41 | 330.72 | 4 |
+| S1 | GW1 | FH3 | allow | allow | 176.16 | 152.06 | **328.22** | 4 |
+| S2 | GW1 | FH3 | allow | ban | 174.53 | 152.06 | 326.59 | 4 |
+| S3 | GW1 | FH3 | ban | allow | 176.16 | 152.06 | **328.22** | 4 |
+| S4 | GW1 | FH3 | ban | ban | 174.53 | 152.06 | 326.59 | 4 |
+| S5 | GW1 | TC3 | allow | allow | 182.95 | 152.06 | **335.01** | 4 |
+| S6 | GW1 | TC3 | allow | ban | 182.77 | 152.06 | 334.83 | 4 |
+| S7 | GW1 | TC3 | ban | allow | 180.52 | 152.06 | 332.58 | 4 |
+| S8 | GW1 | TC3 | ban | ban | 178.28 | 152.06 | 330.34 | 4 |
+| S9 | GW2 | FH3 | allow | allow | 175.88 | 152.06 | 327.94 | 4 |
+| S10 | GW2 | FH3 | allow | ban | 173.75 | 152.06 | 325.81 | 4 |
+| S11 | GW2 | FH3 | ban | allow | 175.88 | 152.06 | 327.94 | 4 |
+| S12 | GW2 | FH3 | ban | ban | 173.25 | 152.06 | 325.31 | 4 |
+| S13 | GW2 | TC3 | allow | allow | 182.45 | 152.06 | 334.51 | 4 |
+| S14 | GW2 | TC3 | allow | ban | 182.22 | 152.06 | 334.28 | 4 |
+| S15 | GW2 | TC3 | ban | allow | 180.82 | 152.06 | 332.88 | 4 |
+| S16 | GW2 | TC3 | ban | ban | 177.97 | 152.06 | 330.03 | 4 |
 
 **Decision rule**: report top FH3 and top TC3 separately (different chip spends).  
-**Top FH3**: S1 — **327.40** xP. **Top TC3**: S5 — **335.42** xP (TC on Haaland GW3).
+**Top FH3**: S1 — **328.22** xP. **Top TC3**: S5 — **335.01** xP (TC on Haaland GW3). Bruno ban binding (~1.6 xP FH3).
 
 ---
 

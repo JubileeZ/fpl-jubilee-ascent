@@ -14,6 +14,7 @@ player_id,web_name,club_short,price,expected_role,per90_saves,per90_goals_conced
 82,Kelleher,BRE,5.0,Nailed Starter,2.848,1.2372,fpl_recency_50_50+defcon_baseline_fill,5130.0,"50% latest>=900 2025/26 (3330m) + 50% mean other usable [2023/24(900m),2024/25(900m)]; defcon_baseline_fill",False
 109,Verbruggen,BHA,4.5,Nailed Starter,2.8005,1.3414,fpl_recency_50_50+defcon_baseline_fill,8550.0,"50% latest>=900 2025/26 (3420m) + 50% mean other usable [2023/24(1890m),2024/25(3240m)]; defcon_baseline_fill",False
 496,Kinsky,TOT,4.5,Regular Starter,2.7143,1.4167,fpl_equal_weight_thin_latest+defcon_baseline_fill,1170.0,"Equal-weight usable ≥450 (no latest>=900): [2024/25(540m),2025/26(630m)]; defcon_baseline_fill",False
+350,A.Becker,LIV,5.5,Nailed Starter,2.537,1.1242,fpl_recency_50_50+defcon_baseline_fill,7368.0,"50% latest>=900 2025/26 (2340m) + 50% mean other usable [2023/24(2520m),2024/25(2508m)]; defcon_baseline_fill",False
 412,Lammens,MUN,5.0,Nailed Starter,2.4688,1.2188,fpl_single_usable_season+defcon_external_fill,2880.0,"100% latest-eligible 2025/26 (2880 mins, floor>=900); defcon_external_fill",False
 384,Donnarumma,MCI,5.5,Nailed Starter,2.2941,0.8529,fpl_single_usable_season+defcon_baseline_fill,3060.0,"100% latest-eligible 2025/26 (3060 mins, floor>=900); defcon_baseline_fill",False
 1,Raya,ARS,6.0,Nailed Starter,1.736,0.7625,fpl_recency_50_50+defcon_baseline_fill,9630.0,"50% latest>=900 2025/26 (3330m) + 50% mean other usable [2023/24(2880m),2024/25(3420m)]; defcon_baseline_fill",False

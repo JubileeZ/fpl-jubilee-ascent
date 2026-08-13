@@ -174,8 +174,16 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     input[type=number] {{ width: 4.5rem; }}
     input[type=range] {{ width: 9rem; }}
     #meta {{ padding: 0.5rem 1.25rem; font-size: 0.85rem; color: #444; }}
-    #chart {{ width: 100%; height: calc(100vh - 240px); min-height: 480px; background: #fff; }}
-    .note {{ font-size: 0.8rem; color: #666; padding: 0 1.25rem 1rem; }}
+    #chart {{ width: 100%; height: calc(100vh - 280px); min-height: 420px; background: #fff; }}
+    .note {{ font-size: 0.8rem; color: #666; padding: 0 1.25rem 0.5rem; }}
+    #player-search {{ min-width: 10rem; font-size: 0.85rem; padding: 0.2rem 0.4rem; }}
+    #search-hint {{ padding: 0.35rem 1.25rem; font-size: 0.85rem; color: #8a1c1c; min-height: 1.2rem; }}
+    #player-table-wrap {{ max-height: 320px; overflow: auto; margin: 0 1.25rem 1.25rem; background: #fff; border: 1px solid #ddd; }}
+    table.players {{ width: 100%; border-collapse: collapse; font-size: 0.8rem; }}
+    table.players th, table.players td {{ padding: 0.28rem 0.45rem; border-bottom: 1px solid #eee; text-align: left; white-space: nowrap; }}
+    table.players th {{ position: sticky; top: 0; background: #f3f4f6; z-index: 1; }}
+    table.players tr.off-chart {{ color: #777; }}
+    table.players tr.hit {{ background: #fff6d6; }}
   </style>
 </head>
 <body>
@@ -228,10 +236,26 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         <label><input type="checkbox" id="only-overlay"/> Only overlay players</label>
       </div>
     </div>
+    <div class="group">
+      <label class="title">Player list</label>
+      <input type="search" id="player-search" placeholder="Search player or club…" autocomplete="off" spellcheck="false"/>
+    </div>
   </div>
   <div id="meta"></div>
+  <div id="search-hint"></div>
   <div id="chart"></div>
-  <p class="note">Ownership is FPL <code>selected_by_percent</code> (not EO). Season xP uses Stage 2 rates × GW1–38 fixtures with availability priors. xP/90 = horizon xP ÷ (Σ xMins / 90). Default floor hides low-minute spikes.</p>
+  <p class="note">Ownership is FPL <code>selected_by_percent</code> (not EO). Season xP uses Stage 2 rates × GW1–38 fixtures with availability priors. xP/90 = horizon xP ÷ (Σ xMins / 90). Default floor hides low-minute spikes from the chart; the table below lists every player. Chart labels show when avg xMins ≥ 60 or the row matches search.</p>
+  <div id="player-table-wrap">
+    <table class="players">
+      <thead>
+        <tr>
+          <th>Player</th><th>Club</th><th>Pos</th><th>£m</th><th>Own%</th>
+          <th>xP/90</th><th>Avg xMins</th><th>On chart</th><th>Role</th>
+        </tr>
+      </thead>
+      <tbody id="player-table"></tbody>
+    </table>
+  </div>
   <script>
     const DATA = {payload};
     const POS_COLORS = {{GKP:'#4c78a8', DEF:'#f58518', MID:'#54a24b', FWD:'#e45756'}};
@@ -303,6 +327,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         document.getElementById('hl-s5'),
         document.getElementById('hl-user'),
         document.getElementById('only-overlay'),
+        document.getElementById('player-search'),
       ].forEach(el => el.addEventListener('input', render));
       floor.addEventListener('input', () => {{
         document.getElementById('xmins-floor-val').textContent = floor.value;
@@ -315,7 +340,14 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     function selectedClubs() {{
       return new Set(Array.from(document.querySelectorAll('.club:checked')).map(x => x.value));
     }}
-    function filtered() {{
+    function searchNeedle() {{
+      return (document.getElementById('player-search').value || '').trim().toLowerCase();
+    }}
+    function nameHit(r, needle) {{
+      if (!needle) return false;
+      return (r.web_name + ' ' + r.club_short + ' ' + (r.expected_role || '')).toLowerCase().includes(needle);
+    }}
+    function hideReason(r) {{
       const pos = new Set(selectedPositions());
       const clubs = selectedClubs();
       const pmin = parseFloat(document.getElementById('price-min').value);
@@ -325,18 +357,29 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       const hlS1 = document.getElementById('hl-s1').checked;
       const hlS5 = document.getElementById('hl-s5').checked;
       const hlUser = document.getElementById('hl-user').checked;
-      return DATA.records.filter(r => {{
-        if (!pos.has(r.position)) return false;
-        if (!clubs.has(r.club_short)) return false;
-        if (r.cost < pmin || r.cost > pmax) return false;
-        const m = metrics(r);
-        if (m.avgMins < floor) return false;
-        if (only) {{
-          const hit = (hlS1 && r.in_s1) || (hlS5 && r.in_s5) || (hlUser && r.in_user);
-          if (!hit) return false;
-        }}
-        return Number.isFinite(m.xp90);
-      }});
+      const m = metrics(r);
+      const why = [];
+      if (!pos.has(r.position)) why.push('position filter');
+      if (!clubs.has(r.club_short)) why.push('club filter');
+      if (r.cost < pmin || r.cost > pmax) why.push('price band');
+      if (m.avgMins < floor) why.push('xMins floor ' + floor + ' (avg ' + m.avgMins.toFixed(1) + ')');
+      if (only) {{
+        const hit = (hlS1 && r.in_s1) || (hlS5 && r.in_s5) || (hlUser && r.in_user);
+        if (!hit) why.push('overlay-only');
+      }}
+      if (!Number.isFinite(m.xp90)) why.push('non-finite xP/90');
+      return why;
+    }}
+    function filtered() {{
+      return DATA.records.filter(r => hideReason(r).length === 0);
+    }}
+    function plotRows() {{
+      const rows = filtered();
+      const needle = searchNeedle();
+      if (!needle) return rows;
+      const ids = new Set(rows.map(r => r.player_id));
+      const extra = DATA.records.filter(r => nameHit(r, needle) && !ids.has(r.player_id));
+      return rows.concat(extra);
     }}
 
     function markerStyle(r) {{
@@ -353,11 +396,52 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       return {{symbol, size, line, color: POS_COLORS[r.position] || '#888'}};
     }}
 
+    function renderTable(onChartIds, needle) {{
+      const h = metrics(DATA.records[0] || {{avg_xmins_season:0, xp_per_90_season:0, total_season_xp:0, avg_xmins_gw1_6:0, xp_per_90_gw1_6:0, total_gw1_6_xp:0}});
+      let rows = DATA.records.slice();
+      if (needle) rows = rows.filter(r => nameHit(r, needle));
+      rows.sort((a, b) => metrics(b).xp90 - metrics(a).xp90);
+      const body = document.getElementById('player-table');
+      body.innerHTML = rows.map(r => {{
+        const m = metrics(r);
+        const on = onChartIds.has(r.player_id);
+        const hit = needle && nameHit(r, needle);
+        return `<tr class="${{on ? '' : 'off-chart'}}${{hit ? ' hit' : ''}}">
+          <td>${{r.web_name}}</td><td>${{r.club_short}}</td><td>${{r.position}}</td>
+          <td>${{r.cost.toFixed(1)}}</td><td>${{r.ownership_pct.toFixed(1)}}</td>
+          <td>${{m.xp90.toFixed(2)}}</td><td>${{m.avgMins.toFixed(1)}}</td>
+          <td>${{on ? 'yes' : 'no'}}</td><td>${{r.expected_role}}</td>
+        </tr>`;
+      }}).join('');
+      const hint = document.getElementById('search-hint');
+      if (!needle) {{
+        hint.textContent = '';
+        return;
+      }}
+      const hits = DATA.records.filter(r => nameHit(r, needle));
+      if (!hits.length) {{
+        hint.textContent = 'No player matching “' + needle + '”.';
+        return;
+      }}
+      const hidden = hits.filter(r => !onChartIds.has(r.player_id));
+      if (!hidden.length) {{
+        hint.textContent = '';
+        return;
+      }}
+      hint.textContent = hidden.map(r => {{
+        const why = hideReason(r).join(', ') || 'filtered';
+        return r.web_name + ' (' + r.club_short + ') is listed below but off-chart: ' + why;
+      }}).join(' · ');
+    }}
+
     function render() {{
-      const rows = filtered();
+      const base = filtered();
+      const rows = plotRows();
+      const needle = searchNeedle();
+      const onChartIds = new Set(rows.map(r => r.player_id));
       const h = metrics(rows[0] || {{avg_xmins_season:0, xp_per_90_season:0, total_season_xp:0, avg_xmins_gw1_6:0, xp_per_90_gw1_6:0, total_gw1_6_xp:0}});
       document.getElementById('meta').textContent =
-        `Horizon ${{h.label}} · showing ${{rows.length}} / ${{DATA.records.length}} · diamond=user · square=S5 · triangle=S1`;
+        `Horizon ${{h.label}} · chart ${{base.length}} / ${{DATA.records.length}} · table ${{needle ? 'search' : 'all ' + DATA.records.length}} · diamond=user · square=S5 · triangle=S1`;
       const traces = DATA.positions.map(pos => {{
         const subset = rows.filter(r => r.position === pos);
         const styles = subset.map(markerStyle);
@@ -368,7 +452,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
           name: pos,
           x: subset.map(r => r.ownership_pct),
           y: ms.map(m => m.xp90),
-          text: subset.map((r, i) => ms[i].avgMins >= 60 ? r.web_name : ''),
+          text: subset.map((r, i) => (ms[i].avgMins >= 60 || nameHit(r, needle)) ? r.web_name : ''),
           textposition: 'top center',
           textfont: {{size: 10}},
           customdata: subset.map((r, i) => [r.web_name, r.club_short, r.cost, r.expected_role, ms[i].avgMins, ms[i].totalXp, r.in_s1, r.in_s5, r.in_user, ms[i].label]),
@@ -398,6 +482,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         hovermode: 'closest',
       }};
       Plotly.react('chart', traces, layout, {{responsive: true, displayModeBar: true}});
+      renderTable(onChartIds, needle);
     }}
 
     initControls();

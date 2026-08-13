@@ -1,7 +1,7 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-12T14:30:00+07:00  
-**Data stamp**: Stage 2 expected-stats rates; fixtures GW1–38; `selected_by_percent` pricing stamp 2026-07-29  
+**Updated**: 2026-08-13T03:40:00+07:00  
+**Data stamp**: Stage 2 expected-stats rates 2026-08-13; fixtures GW1–38; `selected_by_percent` pricing stamp 2026-07-29  
 **Season**: 2026/27 · default horizon GW1–38  
 **Status**: Active Research Model  
 **Purpose**: Interactive evaluation of projected rate (xP/90) against ownership popularity across the full season, sized by expected minutes, with position / club / price filters.  
@@ -41,8 +41,9 @@ Requires network on first load (Plotly CDN). After that, refresh the browser tab
 - **Y-axis**: xP per 90 for the selected horizon (default **GW1–38** full season).
 - **Marker size**: average expected minutes over that horizon.
 - **Colour**: position (GKP / DEF / MID / FWD).
-- **Text labels**: player names when avg xMins ≥ 60.
+- **Text labels**: player names when avg xMins ≥ 60, or when the row matches **Player list** search.
 - **Overlay markers**: diamond = user squad · square = preseason S5 · triangle-up = preseason S1.
+- **Player table**: full contention list under the chart (not only labelled dots). Search by name/club; **On chart** shows whether the xMins/position/club/price filters currently plot the row. Search also pins a matching marker on the chart even if it is below the xMins floor.
 
 ### Filters
 
@@ -52,8 +53,9 @@ Requires network on first load (Plotly CDN). After that, refresh the browser tab
 | **Position** | Checkbox each of GKP / DEF / MID / FWD (all checked = all positions) |
 | **Club** | Search box narrows visible clubs; **All** / **None** select or deselect visible matches (search first, then None to exclude e.g. one club); checkboxes per club |
 | **Price (£m)** | Min / max cost band |
-| **Avg xMins floor** | Hide low-minute spikes (default **45**; lower only to inspect cameos) |
-| **Overlays** | Toggle S1 / S5 / user highlights; **Only overlay players** restricts to flagged names |
+| **Avg xMins floor** | Hide low-minute spikes from the **chart** (default **45**; lower only to inspect cameos). Table still lists everyone. |
+| **Overlays** | Toggle S1 / S5 / user highlights; **Only overlay players** restricts the chart to flagged names |
+| **Player list** | Search name or club; table is the full list. Off-chart rows stay visible with a reason (e.g. xMins floor). |
 
 **Typical workflow**: pick position + price band → set xMins floor ≥ 45 → scan low-own, high xP/90 markers on the season horizon → switch to GW1–6 if checking early chip picks → enable user overlay to compare your squad diamonds.
 
@@ -109,8 +111,9 @@ Run Ownership Value Explorer (full season):
 ## Findings
 
 - Default view is **GW1–38** differentials (own% vs season xP/90).
-- GW1–6 toggle retained for early-window comparison only.
-- Low-xMins players inflate xP/90 — keep floor ≥ 45 unless inspecting cameos.
+- Player table lists all 357 contention rows; chart default floor 45 plots 227. Search finds names the scatter does not label.
+- Identity: **B.Fernandes (MUN)** nailed; **Bruno G. (ARS)** Rotation (not United); **Virgil (LIV)** nailed — chart + table.
+- Low-xMins players inflate xP/90 — keep floor ≥ 45 unless inspecting cameos (Bruno G. avg xMins 33 sits below the floor; search still lists him).
 
 ---
 

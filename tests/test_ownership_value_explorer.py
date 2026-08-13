@@ -88,3 +88,80 @@ def test_build_explorer_frame_season_overlays(explorer_mod: ModuleType) -> None:
     assert bool(alpha["in_user"]) is True
     assert bool(beta["in_s5"]) is True
     assert bool(beta["in_user"]) is False
+
+
+def test_html_includes_player_table_and_search(explorer_mod: ModuleType, tmp_path: Path) -> None:
+    season = pd.DataFrame(
+        [
+            {
+                "player_id": 356,
+                "web_name": "Virgil",
+                "club_short": "LIV",
+                "position": "DEF",
+                "expected_role": "Nailed Starter",
+                "draft_availability": "eligible",
+                "cost": 6.5,
+                "ownership_pct": 16.3,
+                "total_season_xp": 140.0,
+                "total_season_xmins": 2945.0,
+                "avg_xmins_season": 77.5,
+                "xp_per_90_season": 4.3,
+                "total_gw1_6_xp": 22.0,
+                "total_gw1_6_xmins": 465.0,
+                "avg_xmins_gw1_6": 77.5,
+                "xp_per_90_gw1_6": 4.3,
+                "n_gameweeks": 38,
+            },
+            {
+                "player_id": 452,
+                "web_name": "Bruno G.",
+                "club_short": "ARS",
+                "position": "MID",
+                "expected_role": "Nailed Starter",
+                "draft_availability": "eligible",
+                "cost": 7.0,
+                "ownership_pct": 8.2,
+                "total_season_xp": 145.0,
+                "total_season_xmins": 2945.0,
+                "avg_xmins_season": 77.5,
+                "xp_per_90_season": 4.4,
+                "total_gw1_6_xp": 23.0,
+                "total_gw1_6_xmins": 465.0,
+                "avg_xmins_gw1_6": 77.5,
+                "xp_per_90_gw1_6": 4.5,
+                "n_gameweeks": 38,
+            },
+        ]
+    )
+    frame = explorer_mod.build_explorer_frame(season)
+    path = tmp_path / "ownership_value_explorer.html"
+    explorer_mod.write_explorer_html(frame, path)
+    html = path.read_text(encoding="utf-8")
+    assert 'id="player-search"' in html
+    assert 'id="player-table"' in html
+    assert '"web_name":"Virgil"' in html
+    assert '"web_name":"Bruno G.","club_short":"ARS"' in html
+    assert '"club_short":"MUN"' not in html
+
+
+def test_role_csv_bruno_g_is_arsenal_not_united() -> None:
+    roles = pd.read_csv(
+        "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
+    )
+    bruno_g = roles.loc[roles["web_name"] == "Bruno G."].iloc[0]
+    assert bruno_g["club_short"] == "ARS"
+    bfer = roles.loc[roles["web_name"] == "B.Fernandes"].iloc[0]
+    assert bfer["club_short"] == "MUN"
+    virgil = roles.loc[roles["web_name"] == "Virgil"].iloc[0]
+    assert virgil["club_short"] == "LIV"
+    assert virgil["expected_role"] == "Nailed Starter"
+
+
+def test_explorer_metrics_identity() -> None:
+    metrics = pd.read_csv("data/research/ownership-value-explorer/ownership_value_metrics.csv")
+    bruno_g = metrics.loc[metrics["web_name"] == "Bruno G."].iloc[0]
+    assert bruno_g["club_short"] == "ARS"
+    bfer = metrics.loc[metrics["web_name"] == "B.Fernandes"].iloc[0]
+    assert bfer["club_short"] == "MUN"
+    virgil = metrics.loc[metrics["web_name"] == "Virgil"].iloc[0]
+    assert float(virgil["avg_xmins_season"]) >= 45.0

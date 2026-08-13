@@ -1,7 +1,7 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-12T00:56:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-12 (357 rows); dual-floor + Defcon-fill grill lock 2026-08-12; archive 2026-07-29  
+**Updated**: 2026-08-13T03:30:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-13 (357 rows); dual-floor + Defcon-fill grill lock 2026-08-12; archive 2026-07-29  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
 **Purpose**: Build Event Rates for XI Contention Set via Permanent Player Code Mapping + dual-floor usable-season blend; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict` with Draft Availability overlays.  
@@ -60,7 +60,7 @@ Run parameterized GW1-5 Expected Stats & Projections (Stage 2):
 
 ### 2. $xP$ reconstruction
 - Feature rows GW1–5 with Expected Role Priors + availability overlays.
-- Softmax bonus competitors = full XI Contention (357 rows); CSV export = Nailed + Regular only (224 rows).
+- Softmax bonus over full 357 XI Contention; CSV export = Nailed + Regular only (227 rows).
 
 ---
 
@@ -70,20 +70,23 @@ Run parameterized GW1-5 Expected Stats & Projections (Stage 2):
 
 | Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Haaland | MCI | FWD | 5.40 | 5.29 | 6.74 | 4.03 | 6.70 | **28.15** |
-| 2 | Palmer | CHE | MID | 4.83 | 5.92 | 3.06 | 6.00 | 4.79 | **24.60** |
-| 3 | Isak | LIV | FWD | 4.45 | 4.45 | 5.45 | 5.45 | 4.39 | **24.20** |
-| 4 | Vuskovic | BHA | DEF | 4.68 | 3.66 | 5.70 | 5.67 | 3.74 | **23.45** |
-| 5 | Gabriel | ARS | DEF | 5.57 | 4.14 | 4.12 | 4.77 | 4.79 | **23.39** |
-| 6 | Muharemović | LEE | DEF | 4.46 | 4.47 | 4.43 | 5.36 | 4.47 | **23.19** |
-| 7 | Jacquet | LIV | DEF | 4.24 | 4.24 | 5.04 | 5.04 | 4.21 | **22.76** |
-| 8 | O'Reilly | MCI | DEF | 4.26 | 4.24 | 4.95 | 3.59 | 4.94 | **21.98** |
-| 9 | Sarr | CRY | MID | 4.33 | 3.43 | 4.37 | 5.29 | 4.28 | **21.70** |
-| 10 | Wieffer | BHA | DEF | 4.30 | 3.43 | 5.21 | 5.18 | 3.50 | **21.62** |
-| 11 | Wirtz | LIV | MID | 3.96 | 3.96 | 4.61 | 4.61 | 3.92 | **21.07** |
-| 12 | Tarkowski | EVE | DEF | 4.12 | 4.11 | 3.43 | 4.13 | 5.01 | **20.79** |
+| 1 | Haaland | MCI | FWD | 5.38 | 5.28 | 6.72 | 4.02 | 6.68 | **28.09** |
+| 2 | B.Fernandes | MUN | MID | 5.82 | 5.74 | 4.76 | 3.88 | 4.80 | **24.99** |
+| 3 | Palmer | CHE | MID | 4.83 | 5.91 | 3.05 | 6.00 | 4.78 | **24.57** |
+| 4 | Isak | LIV | FWD | 4.40 | 4.39 | 5.37 | 5.37 | 4.34 | **23.86** |
+| 5 | Vuskovic | BHA | DEF | 4.66 | 3.65 | 5.70 | 5.65 | 3.72 | **23.39** |
+| 6 | Gabriel | ARS | DEF | 5.55 | 4.12 | 4.11 | 4.76 | 4.76 | **23.30** |
+| 7 | Muharemović | LEE | DEF | 4.47 | 4.46 | 4.42 | 5.37 | 4.48 | **23.20** |
+| 8 | Jacquet | LIV | DEF | 4.21 | 4.21 | 5.01 | 5.01 | 4.19 | **22.63** |
+| 9 | O'Reilly | MCI | DEF | 4.26 | 4.24 | 4.94 | 3.59 | 4.93 | **21.96** |
+| 10 | Sarr | CRY | MID | 4.33 | 3.43 | 4.37 | 5.29 | 4.29 | **21.70** |
+| 11 | Wieffer | BHA | DEF | 4.29 | 3.42 | 5.20 | 5.17 | 3.48 | **21.56** |
+| 12 | Virgil | LIV | DEF | 3.90 | 3.90 | 4.72 | 4.72 | 3.88 | **21.12** |
+| 13 | Wirtz | LIV | MID | 3.93 | 3.92 | 4.56 | 4.56 | 3.89 | **20.87** |
+| 14 | Tarkowski | EVE | DEF | 4.12 | 4.11 | 3.43 | 4.13 | 5.01 | **20.79** |
+| 15 | Hill | BOU | DEF | 3.30 | 4.48 | 4.50 | 4.46 | 3.82 | **20.57** |
 
-Isak maintains #3 after dual-floor drops thin 2025/26 (694m) from the latest slot (older-mean only; latest = 2024/25).
+Identity match fix (2026-08-13): B.Fernandes now #2 (was unmatched vs FFS "Bruno Fernandes"; Bruno G. no longer occupies MUN). Virgil #12 (was Rotation because "Van Dijk" missed web_name "Virgil"). Bruno G. is ARS Rotation — not in Draft Shortlist. Softmax competitor set still 357; export is 227 Nailed+Regular.
 
 ### 2. Rate source mix (357 rows)
 - `fpl_recency_50_50`: 189 · `fpl_single_usable_season`: 62 · `external_3season_research`: 42 · `fallback_baseline`: 26 · `fpl_equal_weight_thin_latest`: 15 · plus Defcon-fill variants (23 rows)
