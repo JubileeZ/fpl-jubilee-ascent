@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-13T23:15:00+07:00  
+**Updated**: 2026-08-13T23:55:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -39,6 +39,8 @@
   - [GW1–5 Chip Strategy Simulation & Price Sensitivity](gw1-5-chip-simulation/gw1-5-chip-simulation.md) · [CSV Companion](../../data/research/gw1-5-chip-simulation/gw1-5_chip_simulation.csv)
   - [Starter Goalkeeper Fixture Rotation & FDR Correlation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [CSV Companion](../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv) · [Baseline Rates](../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)
   - [5-Defender Fixture Diversification & Long-Term Rotation](def-fixture-rotation/def-fixture-rotation.md) · [5-Club Matrix](../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv) · [Tier Rotations](../../data/research/def-fixture-rotation/def_tier_player_rotations.csv) · [BB1+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv) · [BB1+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv) · [Baseline Rates](../../data/research/def-fixture-rotation/def_performance_baseline.csv)
+    - [WC4 Overall Bridge (any clubs, 1–2 swaps)](def-fixture-rotation/wc4-overall-bridge.md) · [CSV](../../data/research/def-fixture-rotation/def_wc4_overall_bridge_matrix.csv)
+    - [WC4 SUN Bridge (1–2 Sunderland, 1–2 swaps)](def-fixture-rotation/wc4-sun-bridge.md) · [CSV](../../data/research/def-fixture-rotation/def_wc4_sun_bridge_matrix.csv)
 
 - **Tactical & Dead-Ball Analytics**:
   - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)

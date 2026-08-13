@@ -682,6 +682,179 @@ def simulate_bb1_wc4_player_tier_combinations(
     return pd.DataFrame(rows)
 
 
+def club_slot_hamming(pre_clubs: str, post_clubs: str) -> int:
+    """Defender-slot Hamming distance: 5 minus multiset overlap of hyphenated club codes."""
+    pre_counts = Counter(pre_clubs.split("-"))
+    post_counts = Counter(post_clubs.split("-"))
+    return 5 - sum((pre_counts & post_counts).values())
+
+
+def path_effective_fdr(gw13_eff_fdr: float, gw419_rot_fdr: float) -> float:
+    """Starter-weighted FDR across BB1 11 starts + GW4-19 48 rotated starts."""
+    return (11.0 * gw13_eff_fdr + 48.0 * gw419_rot_fdr) / 59.0
+
+
+def _club_count_matrix(club_strings: pd.Series, club_index: dict[str, int]) -> np.ndarray:
+    mat = np.zeros((len(club_strings), len(club_index)), dtype=np.int8)
+    for i, raw in enumerate(club_strings):
+        for code in str(raw).split("-"):
+            mat[i, club_index[code]] += 1
+    return mat
+
+
+def run_wc4_bridge_analysis(
+    bb1_clubs: pd.DataFrame,
+    club_5way: pd.DataFrame,
+    *,
+    sun_counts: frozenset[int] | None = None,
+) -> pd.DataFrame:
+    """Best 1-2 slot WC4 destination for each 4-5 unique GW1-3 BB1 set.
+
+    Pre-sets come from the BB1 clash-free matrix. Post-sets are GW4-19 4-5 unique
+    club combinations. One destination per pre-set: 100% zero-diff first, then
+    path FDR (11 GW1-3 starts + 48 GW4-19 starts), then GW1 FDR, then fewer swaps.
+    If sun_counts is set, keep only pre-sets whose SUN slot count is in that set.
+    """
+    pre = bb1_clubs[bb1_clubs["num_unique_clubs"].isin([4, 5])].copy()
+    pre["pre_sun"] = pre["clubs"].map(lambda s: Counter(str(s).split("-"))["SUN"])
+    if sun_counts is not None:
+        pre = pre[pre["pre_sun"].isin(sun_counts)].reset_index(drop=True)
+    else:
+        pre = pre.reset_index(drop=True)
+    post = club_5way[
+        (club_5way["horizon"] == "gw4_19") & (club_5way["num_unique_clubs"].isin([4, 5]))
+    ].reset_index(drop=True)
+    if pre.empty or post.empty:
+        return pd.DataFrame()
+
+    all_codes = sorted({c for raw in list(pre["clubs"]) + list(post["clubs"]) for c in str(raw).split("-")})
+    club_index = {code: i for i, code in enumerate(all_codes)}
+    pre_mat = _club_count_matrix(pre["clubs"], club_index)
+    post_mat = _club_count_matrix(post["clubs"], club_index)
+    sun_col = club_index["SUN"]
+
+    pre_eff = pre["effective_avg_fdr"].to_numpy()
+    pre_gw1 = pre["gw1_avg_fdr"].to_numpy()
+    pre_gw23 = pre["gw2_3_rot_fdr"].to_numpy()
+    pre_corr = pre["avg_fdr_corr"].to_numpy()
+    pre_unique = pre["num_unique_clubs"].to_numpy()
+    pre_pattern = pre["allocation_pattern"].to_numpy()
+    pre_sun = pre["pre_sun"].to_numpy()
+    pre_names = pre["clubs"].to_numpy()
+
+    post_fdr = post["rot_avg_fdr"].to_numpy()
+    post_nd = post["no_diff_pct"].to_numpy()
+    post_easy = post["all_easy_pct"].to_numpy()
+    post_corr = post["avg_fdr_corr"].to_numpy()
+    post_unique = post["num_unique_clubs"].to_numpy()
+    post_pattern = post["allocation_pattern"].to_numpy()
+    post_names = post["clubs"].to_numpy()
+
+    n_pre = len(pre_mat)
+    n_post = len(post_mat)
+    best: list[tuple[object, ...] | None] = [None] * n_pre
+    chunk = 4000
+    for start in range(0, n_post, chunk):
+        post_chunk = post_mat[start : start + chunk]
+        ham = (np.abs(pre_mat[:, None, :] - post_chunk[None, :, :]).sum(axis=2) // 2).astype(np.int8)
+        rows, cols = np.where((ham == 1) | (ham == 2))
+        for pre_i, local_j in zip(rows.tolist(), cols.tolist()):
+            post_j = start + int(local_j)
+            n_swaps = int(ham[pre_i, local_j])
+            path = path_effective_fdr(float(pre_eff[pre_i]), float(post_fdr[post_j]))
+            key = (
+                -float(post_nd[post_j]),
+                round(path, 6),
+                float(pre_gw1[pre_i]),
+                n_swaps,
+                float(pre_eff[pre_i]),
+                float(post_fdr[post_j]),
+                -float(post_easy[post_j]),
+                float(post_corr[post_j]),
+                post_j,
+            )
+            if best[pre_i] is None or key < best[pre_i]:
+                best[pre_i] = key
+
+    records: list[dict] = []
+    for pre_i, key in enumerate(best):
+        if key is None:
+            continue
+        _nd, path, _gw1, n_swaps, _eff, post_fdr_v, _easy, _corr, post_j = key
+        pre_set = str(pre_names[pre_i])
+        post_set = str(post_names[post_j])
+        out_clubs = ",".join(sorted((Counter(pre_set.split("-")) - Counter(post_set.split("-"))).elements()))
+        in_clubs = ",".join(sorted((Counter(post_set.split("-")) - Counter(pre_set.split("-"))).elements()))
+        records.append(
+            {
+                "pre_clubs": pre_set,
+                "pre_unique": int(pre_unique[pre_i]),
+                "pre_pattern": str(pre_pattern[pre_i]),
+                "pre_sun": int(pre_sun[pre_i]),
+                "gw13_eff_fdr": round(float(pre_eff[pre_i]), 4),
+                "gw1_avg_fdr": round(float(pre_gw1[pre_i]), 2),
+                "gw23_rot_fdr": round(float(pre_gw23[pre_i]), 2),
+                "pre_corr": round(float(pre_corr[pre_i]), 4),
+                "n_swaps": int(n_swaps),
+                "out_clubs": out_clubs,
+                "in_clubs": in_clubs,
+                "post_clubs": post_set,
+                "post_unique": int(post_unique[post_j]),
+                "post_pattern": str(post_pattern[post_j]),
+                "post_sun": int(post_mat[post_j, sun_col]),
+                "gw419_rot_fdr": round(float(post_fdr_v), 4),
+                "gw419_no_diff_pct": round(float(post_nd[post_j]), 1),
+                "gw419_all_easy_pct": round(float(post_easy[post_j]), 1),
+                "post_corr": round(float(post_corr[post_j]), 4),
+                "path_eff_fdr": round(float(path), 6),
+            }
+        )
+
+    df = pd.DataFrame(records)
+    if df.empty:
+        return df
+
+    eligible = (
+        (df["gw13_eff_fdr"] <= 2.3636)
+        & (df["gw1_avg_fdr"] <= 2.4)
+        & (df["gw419_no_diff_pct"] >= 100.0)
+    )
+    df["scenario_eligible"] = eligible
+    ranked = df.loc[eligible].sort_values(
+        ["path_eff_fdr", "gw1_avg_fdr", "n_swaps", "pre_corr", "pre_clubs"],
+        ascending=[True, True, True, True, True],
+    )
+    rank_map = {idx: rank for rank, idx in enumerate(ranked.index, start=1)}
+    df["scenario_rank"] = df.index.map(rank_map)
+    return df.sort_values(
+        ["scenario_eligible", "scenario_rank", "path_eff_fdr"],
+        ascending=[False, True, True],
+        na_position="last",
+    ).reset_index(drop=True)
+
+
+def run_wc4_sun_bridge_analysis(bb1_clubs: pd.DataFrame, club_5way: pd.DataFrame) -> pd.DataFrame:
+    """GW1-3 4-5 unique sets holding 1-2 Sunderland, 1-2 WC4 slot swaps."""
+    return run_wc4_bridge_analysis(bb1_clubs, club_5way, sun_counts=frozenset({1, 2}))
+
+
+def run_wc4_overall_bridge_analysis(bb1_clubs: pd.DataFrame, club_5way: pd.DataFrame) -> pd.DataFrame:
+    """GW1-3 4-5 unique sets, no club filter, 1-2 WC4 slot swaps."""
+    return run_wc4_bridge_analysis(bb1_clubs, club_5way, sun_counts=None)
+
+
+def _write_bridge_csvs(bb1_clubs: pd.DataFrame, club_5way: pd.DataFrame, *, sun: bool, overall: bool) -> None:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    if sun:
+        df_sun = run_wc4_sun_bridge_analysis(bb1_clubs, club_5way)
+        df_sun.to_csv(OUT_DIR / "def_wc4_sun_bridge_matrix.csv", index=False)
+        print(f"Wrote {OUT_DIR / 'def_wc4_sun_bridge_matrix.csv'} ({len(df_sun)} rows)")
+    if overall:
+        df_all = run_wc4_overall_bridge_analysis(bb1_clubs, club_5way)
+        df_all.to_csv(OUT_DIR / "def_wc4_overall_bridge_matrix.csv", index=False)
+        print(f"Wrote {OUT_DIR / 'def_wc4_overall_bridge_matrix.csv'} ({len(df_all)} rows)")
+
+
 def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Execute complete DEF rotation analysis and write CSV artifacts."""
     print("Loading data...")
@@ -754,6 +927,9 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
         ascending=[True, False, False],
     ).reset_index(drop=True)
 
+    print("Scoring constrained WC4 bridges (SUN filter + overall)...")
+    _write_bridge_csvs(df_bb1_clubs, df_club_5way, sun=True, overall=True)
+
     df_club_5way.to_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv", index=False)
     df_tiers.to_csv(OUT_DIR / "def_tier_player_rotations.csv", index=False)
     df_bb1_clubs.to_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv", index=False)
@@ -771,4 +947,34 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
 
 
 if __name__ == "__main__":
-    run_def_rotation_pipeline()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="5-DEF fixture rotation analysis")
+    parser.add_argument(
+        "--sun-bridge-only",
+        action="store_true",
+        help="Rebuild def_wc4_sun_bridge_matrix.csv from existing club CSVs",
+    )
+    parser.add_argument(
+        "--overall-bridge-only",
+        action="store_true",
+        help="Rebuild def_wc4_overall_bridge_matrix.csv from existing club CSVs",
+    )
+    parser.add_argument(
+        "--bridges-only",
+        action="store_true",
+        help="Rebuild both WC4 bridge CSVs from existing club CSVs",
+    )
+    args = parser.parse_args()
+    bridge_only = args.sun_bridge_only or args.overall_bridge_only or args.bridges_only
+    if bridge_only:
+        bb1 = pd.read_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv")
+        club_5way = pd.read_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv")
+        write_sun = args.sun_bridge_only or args.bridges_only
+        write_overall = args.overall_bridge_only or args.bridges_only
+        if args.bridges_only:
+            write_sun = True
+            write_overall = True
+        _write_bridge_csvs(bb1, club_5way, sun=write_sun, overall=write_overall)
+    else:
+        run_def_rotation_pipeline()

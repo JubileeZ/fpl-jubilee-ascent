@@ -74,6 +74,19 @@ def test_bb_rqi_scoring_bounds(rotation_mod: ModuleType) -> None:
     assert bb_rqi_min == 0.0
 
 
+def test_club_slot_hamming(rotation_mod: ModuleType) -> None:
+    assert rotation_mod.club_slot_hamming("LIV-MCI-NFO-SUN-SUN", "AVL-CHE-LIV-MCI-NFO") == 2
+    assert rotation_mod.club_slot_hamming("AVL-CHE-LIV-MCI-SUN", "AVL-CHE-LIV-MCI-NFO") == 1
+    assert rotation_mod.club_slot_hamming("ARS-MUN-MUN-NFO-SUN", "AVL-CHE-LIV-MCI-NFO") == 4
+
+
+def test_path_effective_fdr_weights(rotation_mod: ModuleType) -> None:
+    # 11 GW1-3 starts vs 48 GW4-19 starts
+    assert rotation_mod.path_effective_fdr(2.3636, 2.4375) == pytest.approx(
+        (11 * 2.3636 + 48 * 2.4375) / 59.0
+    )
+
+
 def test_def_rotation_artifacts_exist() -> None:
     base_dir = Path("data/research/def-fixture-rotation")
     club_csv = base_dir / "def_club_5way_rotation_matrix.csv"
@@ -81,18 +94,25 @@ def test_def_rotation_artifacts_exist() -> None:
     bb_club_csv = base_dir / "def_bb1_wc4_club_matrix.csv"
     bb_tier_csv = base_dir / "def_bb1_wc4_tier_lineups.csv"
     baseline_csv = base_dir / "def_performance_baseline.csv"
+    sun_bridge_csv = base_dir / "def_wc4_sun_bridge_matrix.csv"
+
+    overall_bridge_csv = base_dir / "def_wc4_overall_bridge_matrix.csv"
 
     assert club_csv.exists()
     assert tier_csv.exists()
     assert bb_club_csv.exists()
     assert bb_tier_csv.exists()
     assert baseline_csv.exists()
+    assert sun_bridge_csv.exists()
+    assert overall_bridge_csv.exists()
 
     df_clubs = pd.read_csv(club_csv)
     df_tiers = pd.read_csv(tier_csv)
     df_bb_clubs = pd.read_csv(bb_club_csv)
     df_bb_tiers = pd.read_csv(bb_tier_csv)
     df_base = pd.read_csv(baseline_csv)
+    df_bridge = pd.read_csv(sun_bridge_csv)
+    df_overall = pd.read_csv(overall_bridge_csv)
 
     assert set(df_clubs["horizon"].unique()) >= {"gw1_3", "gw4_19", "gw1_19", "full_season"}
     assert len(df_clubs) == 41344 * 4
@@ -104,3 +124,19 @@ def test_def_rotation_artifacts_exist() -> None:
     assert len(df_base) >= 50
     assert (df_base["expected_role"].isin(["Nailed Starter", "Regular Starter"])).all()
     assert (df_bb_clubs["gw1_max_fdr"] <= 3.0).all()
+    assert len(df_bridge) > 100
+    assert df_bridge["pre_sun"].isin([1, 2]).all()
+    assert df_bridge["n_swaps"].isin([1, 2]).all()
+    assert df_bridge["pre_unique"].isin([4, 5]).all()
+    top = df_bridge[df_bridge["scenario_rank"] == 1].iloc[0]
+    assert top["gw419_rot_fdr"] == pytest.approx(2.4375)
+    assert int(top["n_swaps"]) == 2
+    assert "SUN" in str(top["out_clubs"])
+    assert len(df_overall) > len(df_bridge)
+    assert df_overall["n_swaps"].isin([1, 2]).all()
+    assert df_overall["pre_unique"].isin([4, 5]).all()
+    overall_top = df_overall[df_overall["scenario_rank"] == 1].iloc[0]
+    assert overall_top["gw419_rot_fdr"] == pytest.approx(2.4375)
+    assert int(overall_top["pre_sun"]) == 0
+    assert Path("docs/research/def-fixture-rotation/wc4-sun-bridge.md").exists()
+    assert Path("docs/research/def-fixture-rotation/wc4-overall-bridge.md").exists()

@@ -3,13 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py`, `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, pipeline CSVs + explorer HTML, research notes, `tests/test_expected_role_name_match.py`, `tests/test_ownership_value_explorer.py`
-- **Decisions:** Lineup matching uses FPL first/second/web name. Bruno G. = Guimarães at ARS (Rotation). B.Fernandes = United nailed. Virgil matches Van Dijk. Explorer table lists all 357 rows.
+- **Files:** `docs/research/def-fixture-rotation/wc4-sun-bridge.md`, `docs/research/def-fixture-rotation/wc4-overall-bridge.md`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `data/research/def-fixture-rotation/def_wc4_overall_bridge_matrix.csv`, `tests/test_def_fixture_rotation.py`, `docs/research/INDEX.md`
+- **Decisions:** Child notes for constrained WC4. Overall pick `LIV-MCI-MUN-MUN-NFO`. SUN pick unchanged. Separate CLI flags.
 - **Blocked:** None.
 - **Next:** None.
-- **Objective:** Validate ownership explorer missing players (Virgil) and Bruno G vs Bruno F club mix-up; fix matching and dashboard list.
+- **Objective:** Split SUN WC4 bridge into a standalone sub-report; add unrestricted overall 1–2 swap bridge as a second sub-report with independent refresh.
 - **Acceptance:**
-  - [x] Bruno G. club_short ARS not MUN; B.Fernandes MUN nailed; Virgil LIV nailed
-  - [x] Explorer HTML has searchable full player table; Virgil avg xMins ≥ 45
-  - [x] Stage 2–3 rebuilt; S1 drafts B.Fernandes not Bruno G.
+  - [x] Parent §1.4 hubs to both children with refresh commands
+  - [x] `wc4-sun-bridge.md` and `wc4-overall-bridge.md` open standalone
+  - [x] `--sun-bridge-only` / `--overall-bridge-only` / `--bridges-only` work
+  - [x] Overall CSV 5,623 rows; #1 is 0-SUN `LIV-MCI-MUN-MUN-NFO`
   - [x] Tests green; ruff clean
