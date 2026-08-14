@@ -6,7 +6,7 @@
 **Status**: Source synthesis · image stats extracted · cross-checked  
 **Purpose**: Capture source-led £5.0m defender shortlist, team defensive metrics, player attacking stats, and minutes/rotation evidence  
 **Scope**: Featured candidates across Nottingham Forest, Newcastle, Manchester United, Sunderland, Liverpool, Leeds, and Crystal Palace. Extracted image data tables included. No independent model validation.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 

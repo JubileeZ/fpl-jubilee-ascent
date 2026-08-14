@@ -1,10 +1,10 @@
 # Starter Goalkeeper Fixture Rotation & FDR Correlation Study
 
-**Updated**: 2026-08-14T01:30:00+07:00  
+**Updated**: 2026-08-14T18:55:00+07:00  
 **Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; FPL API processed snapshot; ParticipationStateHybridModel GW1–38 flat-90 projections  
 **Season**: 2026/27  
 **Purpose**: Identify pairs of **genuine starting goalkeepers** (Nailed Starter or Regular Starter) costing <= £9.5m combined with the highest horizon-matched rotated expected points under FDR-min weekly picks, negative FDR correlation, and lowest rotated average FDR.  
-**Related**: [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [DEF rotation](../def-fixture-rotation/def-fixture-rotation.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  
+**Related**: [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [DEF rotation](../def-fixture-rotation/def-fixture-rotation.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
 **Artifacts**: [`gkp_rotation_matrix.csv`](../../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv), [`gkp_performance_baseline.csv`](../../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)  
 **Script**: [`run_gkp_rotation_analysis.py`](run_gkp_rotation_analysis.py)
@@ -164,6 +164,55 @@ Overall #1 is FDR complementarity (Kinsky+Scherpen), not points. Prefer PL-prove
 
 ---
 
+## Pre-WC Bench Boost Pairings vs Post-WC4 Structural Archetypes
+
+Strategic linkage: [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) establishes **BB2 + TC3 (Haaland) + WC4 Opt1** (Scenario S13, **340.14 xP**) as repo baseline. Decouples goalkeeper planning into two distinct structural phases:
+
+```
+Pre-WC Sprint (GW1–3)                       Post-WC4 Horizon (GW4–19 / Full Season)
+┌────────────────────────────────────────┐  Wildcard  ┌────────────────────────────────────────┐
+│ Dual Active Starters (BB Enabler)      │ ─────────> │ Choose Archetype A or Archetype B      │
+│ • £5.0m+£4.5m / £5.5m+£5.0m / £4.5m+£4.5m│    GW4    │ A: Premium/Mid Starter + £4.0m Fodder  │
+│ • Target GW2 BB home/easy fixtures     │            │ B: Active 2-GKP Rotation (£9.0m–£9.5m) │
+└────────────────────────────────────────┘            └────────────────────────────────────────┘
+```
+
+---
+
+### 1. Pre-WC (GW1–3 Sprint): Dual Active Starters for Bench Boost
+
+Bench Boost deployment in GW2 (or GW1) requires **two genuine starting goalkeepers**. Non-playing £4.0m backups strictly forfeit 4–8 chip points during the sprint.
+
+#### Top Pre-WC GKP Pairings (GW1–3 Sprint Evaluation):
+
+| Pair | Price Tier | GW1 xP (Best) | GW2 GKP1 xP | GW2 GKP2 xP | GW2 BB Combined | GW3 xP (Best) | GW1–3 Sprint EV (BB2) | Key Matchup Strengths & Fixture Profile |
+|---|---|---|---|---|---|---|---|---|
+| **Donnarumma** (MCI £5.5m) + **Roefs** (SUN £5.0m) | £10.5m (S13 Winner) | 6.74 (SUN vs IPS) | 5.97 (MCI @ CRY) | 6.75 (SUN vs FUL) | **12.71 xP** | 7.05 (MCI vs COV) | **26.50 xP** | S13 MILP choice. GW2: SUN home vs FUL (diff 2) + MCI away vs CRY. GW3: MCI home vs promoted COV (diff 2). Max raw points ceiling. |
+| **Lammens** (MUN £5.0m) + **Roefs** (SUN £5.0m) | £10.0m (S9 Winner) | 7.04 (MUN @ HUL) | 6.72 (MUN vs IPS) | 6.75 (SUN vs FUL) | **13.47 xP** | 5.82 (MUN @ EVE) | **26.32 xP** | S9 FH3 choice. GW2: Dual home vs promoted/relegation tier (MUN vs IPS diff 2 + SUN vs FUL diff 2). Highest GW2 BB sum. |
+| **Verbruggen** (BHA £4.5m) + **Lammens** (MUN £5.0m) | **£9.5m** (PL-Proven #1) | 7.04 (MUN @ HUL) | 4.70 (BHA @ CHE) | 6.72 (MUN vs IPS) | **11.42 xP** | 6.66 (BHA vs LEE) | **25.12 xP** | Top budget-preserving PL pair. GW1: MUN away @ HUL (diff 2). GW2: MUN home vs IPS (diff 2). GW3: BHA home vs LEE (diff 2). Zero tough fixtures started. |
+| **Rushworth** (COV £4.5m) + **Lammens** (MUN £5.0m) | **£9.5m** ⚠️ (Promoted/PL) | 7.04 (MUN @ HUL) | 4.57 (COV vs HUL) | 6.72 (MUN vs IPS) | **11.29 xP** | 6.54 (COV @ MCI saves) | **24.86 xP** | GW2 dual home clash: COV vs HUL (diff 2) + MUN vs IPS (diff 2). High save-volume upside for Rushworth GW3 @ MCI. |
+| **Petrović** (BOU £4.5m) + **Scherpen** (IPS £4.5m) | 🔥 **£9.0m** ⚠️ (Double £4.5m) | 6.03 (IPS vs SUN) | 5.60 (BOU vs EVE) | 4.58 (IPS @ MUN) | **10.18 xP** | 5.55 (BOU @ NEW) | **21.76 xP** | Lowest cost starter pair. Unlocks £1.0m–£1.5m outfield budget pre-WC. GW1: IPS home vs SUN. GW2: BOU home vs EVE. |
+| **Verbruggen** (BHA £4.5m) + **Kinsky** (TOT £4.5m) | 🔥 **£9.0m** (PL Double £4.5m) | 5.77 (TOT @ BRE) | 4.70 (BHA @ CHE) | 6.54 (TOT vs NEW) | **11.24 xP** | 6.66 (BHA vs LEE) | **23.67 xP** | Best PL-proven £9.0m pair. GW2: TOT home vs NEW (6.54 xP). GW3: BHA home vs LEE (6.66 xP). |
+
+---
+
+### 2. Post-WC4 (GW4–19 / Full Season): Structural Archetypes
+
+GW4 Wildcard wipes pre-season squad constraints, resetting goalkeeper architecture. Two structural paths:
+
+#### **Archetype A: Single Starter + £4.0m Non-Playing Fodder (Budget Liberation — Recommended)**
+- **Structure**: Single premium or mid starter (£5.0m–£6.0m, e.g. **Raya £6.0m ARS** or **Donnarumma £5.5m MCI**) + £4.0m non-playing reserve (e.g. Dennis/Fabianski stubs). Total GKP spend: £8.5m–£10.0m.
+- **Budget dynamic**: Frees **£0.5m–£1.0m** vs active 2-GKP rotation. Reinvests capital directly into premium outfield core (**Haaland £15.5m**, **Palmer £9.5m**, **Gabriel £8.0m**, **Sarr £6.5m**, **Tzolis £6.5m** per MILP WC4 Opt1).
+- **Outfield dividend**: Outfield points per £1.0m and captaincy leverage outpace modest GKP rotation deltas (+7.1 pts full season / +0.19 pts/GW).
+- **Operational benefit**: Zero bench selection error; eliminates points benched on double-digit hauls.
+
+#### **Archetype B: Active 2-GKP Rotation (£9.0m–£9.5m / Continuous Coverage)**
+- **Structure**: Retain two active £4.5m–£5.0m starting goalkeepers (e.g. **Verbruggen £4.5m + Lammens £5.0m** at £9.5m, **Leno £4.5m + Kinsky £4.5m** at £9.0m, or MILP Opt1 draft **Raya £6.0m + Kinsky £4.5m** at £10.5m).
+- **Fixture agility**: Enables weekly FDR-min targeting across GW4–19 (dodging top-6 attack encounters).
+- **Opportunity cost**: £0.5m–£1.0m idle capital tied on bench. Viable only when committed to top-5 RQI complementary pairing (e.g. Verbruggen+Lammens, $r = -0.417$, 55.3% easy fixtures).
+
+---
+
 ## 2025/26 Historical Retrospective Backtest (Empirical Proof)
 
 **Data Source**: `data/archive/2025-26/processed/` (38 Gameweeks)  
@@ -212,10 +261,12 @@ To eliminate non-playing bench fodder noise and single-player outlier skew, filt
 
 ## Decision & Practical Recommendation
 
-1. **Strategy 1: Premium Set & Forget (Raya £6.0m + £4.0m Bench = £10.0m)** — best overall points / least operational drag when budget allows.
-2. **Strategy 2: Solo Budget Set & Forget (£4.5m–£5.0m + £4.0m Bench)** — best value; frees £ for outfield.
-3. **Active 2-Keeper Pair Rotation** — only if locking a top-decile complementary pair (e.g. Verbruggen+Lammens) *and* accepting bench/slot cost; historical average pair underperforms solo budget after opportunity cost.
-4. **Method note**: Forward RQI now uses horizon-matched FDR-min rotated xP from the hybrid scorer; do not compare absolute season $xP$ totals to historical points without the minutes caveat above.
+1. **Pre-WC Phase (GW1–3 BB Sprint)**: Deploy active starter pair (Donnarumma+Roefs £10.5m for max EV / S13; Verbruggen+Lammens £9.5m for PL-proven balance; Petrović+Scherpen £9.0m for budget ceiling). Both goalkeepers must start to capture GW2 Bench Boost returns.
+2. **Post-WC Phase (GW4–19 / Full Season Archetypes)**:
+   - **Archetype A (Recommended Default)**: Pivot to Starter + £4.0m Fodder (e.g. Raya £6.0m / Donnarumma £5.5m + £4.0m). Reallocates £0.5m–£1.0m to outfield premiums (Haaland/Palmer/Saka/Gabriel) per MILP WC4 Opt1.
+   - **Archetype B (Alternative)**: Retain £9.0m–£9.5m active rotation (Verbruggen+Lammens, Leno+Kinsky) only when targeting specific fixture swing coverage and accepting bench capital drag.
+3. **Historical Reality Check**: 2025/26 archive backtest confirms unrotated premium S&F (144.0 pts) and solo budget S&F (119.7 pts) beat average pair rotation (126.8 pts) after accounting for £0.5m+ outfield reinvestment.
+4. **Method note**: Forward RQI uses horizon-matched hybrid xP under forced flat-90 starter minutes; rankings indicate pair complementarity, not absolute realized score levels.
 
 ---
 

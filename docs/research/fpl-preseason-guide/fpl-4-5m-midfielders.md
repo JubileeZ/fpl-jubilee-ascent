@@ -6,7 +6,7 @@
 **Status**: Source synthesis · Playwright extracted & cross-checked  
 **Purpose**: Capture source-led £4.5m midfielder minutes evidence, player statistics, and enabler evaluation  
 **Scope**: 25 £4.5m midfielders pool context and Coventry City detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 

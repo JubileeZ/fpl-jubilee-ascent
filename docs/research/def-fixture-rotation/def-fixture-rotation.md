@@ -1,13 +1,13 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
-**Updated**: 2026-08-14T02:30:00+07:00  
+**Updated**: 2026-08-14T19:00:00+07:00  
 **Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff  
 **Season**: 2026/27  
 **Status**: Active  
-**Purpose**: Determine the optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint (GW1–3 Bench Boost), post-Wildcard (GW4–19), and full first-half (GW1–19). Constrained WC4 (1–2 slot swaps) lives in child notes.  
-**Related**: [WC4 SUN bridge](wc4-sun-bridge.md) · [WC4 overall bridge](wc4-overall-bridge.md)  
+**Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19). Constrained WC4 (1–2 slot swaps) lives in child notes.  
+**Related**: [WC4 SUN bridge](wc4-sun-bridge.md) · [WC4 overall bridge](wc4-overall-bridge.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
-**Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`  
+**Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`  
 **Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)`  
 **Downstream**: `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py` (full parent + both WC4 bridges)
 
@@ -19,7 +19,7 @@ After Stage 2 rate / new-player change:
 This topic only (slow full combinatorics):
   uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py
 Bridges only: --bridges-only / --sun-bridge-only / --overall-bridge-only
-Update parent §1.3 player maps, GW4-19 dest (corr-first), and child bridge stamps from CSVs.
+Update parent §1.3/§1.4 player maps, GW4-19 dest (corr-first), and child bridge stamps from CSVs.
 Ranking lenses: --print-ranks. More negative avg_fdr_corr wins after primary FDR keys.
 ```  
 
@@ -27,6 +27,7 @@ Ranking lenses: --print-ranks. More negative avg_fdr_corr wins after primary FDR
 
 | Lens | Sort | Canonical #1 |
 | --- | --- | --- |
+| BB2 sprint | eff FDR → GW2 FDR → GW1+3 rot FDR → corr (asc) | `HUL-MUN-MUN-TOT-SUN` |
 | BB1 sprint | eff FDR → GW1 FDR → GW2–3 rot FDR → corr (asc) | `ARS-MUN-MUN-NFO-SUN` |
 | GW4–19 dest | rot FDR → zero-diff% → **corr (asc)** → easy% | `AVL-BOU-CHE-LIV-NFO` (r = −0.0994) |
 | GW1–19 | same as GW4–19 on `gw1_19` | `AVL-CHE-LIV-MCI-NFO` |
@@ -36,34 +37,37 @@ More negative correlation is better: club FDR schedules diversify, so the three 
 
 ---
 
-
-
 ## Executive Summary & Core Findings
 
 ```mermaid
 flowchart TD
-    Strategy["5-DEF Strategy Selection"] --> Early["Phase 1: GW1-3 Early Launch (BB1)"]
+    Strategy["5-DEF Strategy Selection"] --> Early["Phase 1: GW1-3 Early Launch (Pre-WC Sprint)"]
     Strategy --> PostWC["Phase 2: GW4-19 Post-Wildcard"]
     Strategy --> Full["Phase 3: GW1-19 Set & Forget"]
 
-    Early --> EarlyPick["<b>4-Club Double-Up (2+1+1+1)</b><br>ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1: 2.00 FDR"]
+    Early --> EarlyBB2["<b>Option 1: Max EV Sprint (BB2 + TC3 + WC4)</b><br>HUL(1)+MUN(2)+TOT(1)+SUN(1) or S13 ARS(1)+BHA(2)+MUN(1)+SUN(1)<br>Eff FDR: 2.27 | GW2: 2.00 FDR | S13: 340.14 xP"]
+    Early --> EarlyBB1["<b>Option 2: Safe Start Sprint (BB1 + TC3 + WC4)</b><br>ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1: 2.00 FDR | S5: 338.88 xP"]
     PostWC --> PostWCPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - BOU - CHE - LIV - NFO<br>100% Zero-Diff | Rot FDR: 2.4375 | r = -0.0994"]
     Full --> FullPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - CHE - LIV - MCI - NFO<br>100% Zero-Diff (19/19 GWs) | Rot FDR: 2.4386"]
 
-    style EarlyPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
+    style EarlyBB2 fill:#1b4d3e,stroke:#2d6a4f,color:#fff
+    style EarlyBB1 fill:#2d6a4f,stroke:#1b4d3e,color:#fff
     style PostWCPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
     style FullPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
 ```
 
-
-
 1. **Why 5 Unique Clubs Dominates Long-Term Rotation (GW4–19 and GW1–19)**:
   - In any standard gameweek where you start 3 defenders and bench 2, selecting 5 defenders across **5 unique clubs** provides 5 distinct fixture schedules.
-  - This achieves **1,024 combinations with 100% Zero-Difficult Gameweeks** (never starting a defender facing FDR $\ge 4$).
-  - In contrast, **2-club setups (3+2)** and **3-club setups (3+1+1)** achieve **0.0% zero-difficult weeks** because the Pigeonhole principle forces you to start defenders from difficult matchups when those clubs clash with top-6 opponents.
-2. **Why 4 Clubs (with 1 Double-Up) is Optimal for GW1 Bench Boost (GW1–3 Sprint)**:
-  - For a **GW1 Bench Boost**, all 5 defenders play in GW1. Pure rotation is unnecessary for GW1 since nobody is benched.
-  - Doubling up on a favorable GW1 fixture (e.g. 2 Manchester United defenders vs home opponent, or 2 Sunderland defenders) yields an **effective FDR of 2.2727** and a **GW1 starting FDR of 2.00–2.20** across all 5 active defenders.
+  - Achieves **1,024 combinations with 100% Zero-Difficult Gameweeks** (never starting a defender facing FDR $\ge 4$).
+  - In contrast, **2-club setups (3+2)** and **3-club setups (3+1+1)** achieve **0.0% zero-difficult weeks** due to Pigeonhole clashes against top-6 opponents.
+2. **Dual Pre-Wildcard Sprint Pathways (BB2 vs BB1)**:
+  - **Option 1: GW2 Bench Boost (BB2 — Max EV Target)**:
+    - In the full 16-scenario Stage 3 optimization matrix, **S13 (BB2 + TC3 + WC4) generates 340.14 xP (+1.26 xP over BB1)**.
+    - Capitalizes on concentrated GW2 home and low-FDR fixtures: Coventry vs Hull (diff 2 vs diff 2), Manchester United vs Ipswich (diff 2), Sunderland vs Fulham (diff 2), Tottenham vs Newcastle (diff 2), Chelsea vs Brighton (diff 2).
+    - Achieves **zero fixture clashes** in GW2 and **average GW2 FDR of 2.00** across all 5 active defenders while benching difficult GW1 matchups.
+  - **Option 2: GW1 Bench Boost (BB1 — Safe Start)**:
+    - Generates **338.88 xP** in S5.
+    - Maximizes operational certainty by exploiting 100% preseason fitness before any match minutes or rotation risks emerge.
 3. **Club Quota Limits (Attack Protection)**:
   - Stacking 3 defenders from Man City, Arsenal, Liverpool, or Chelsea locks out essential captaincy and premium attacking slots (Haaland, Saka, Salah, Palmer).
   - The model enforces a hard ceiling of **maximum 2 defenders from top-4 attack clubs**, and up to 3 for mid/budget clubs.
@@ -73,93 +77,146 @@ flowchart TD
 
 ---
 
+## Part 1: Specialized Pre-Wildcard Early Sprint (GW1–3)
 
-
-## Part 1: Specialized Early Sprint — GW1 Bench Boost (BB1) + GW4 Wildcard
-
-In a **GW1 Bench Boost + GW4 Wildcard** setup:
-
-- **GW1**: All 5 defenders start on Bench Boost (Zero head-to-head opponent clashes, max FDR $\le 3.0$).
-- **GW2 & GW3**: Revert to starting top 3 by lowest FDR / highest xP (2 benched). Total pre-WC starts = **11 player-matches**.
-
-
-
-### 1.1 Overview by Allocation Pattern (GW1–3)
-
-
-| Allocation Pattern       | Unique Clubs | Valid Combinations | Best Effective FDR (11 starts) | Best GW1 Avg FDR (5 def) | Best GW2–3 Rot FDR (6 starts) | Top Recommended Team Set              |
-| ------------------------ | ------------ | ------------------ | ------------------------------ | ------------------------ | ----------------------------- | ------------------------------------- |
-| **4 Clubs (2+1+1+1)**    | **4**        | **3,940**          | **2.2727**                     | **2.00**                 | **2.50**                      | **ARS(1) - MUN(2) - NFO(1) - SUN(1)** |
-| **4 Clubs (2+1+1+1)**    | **4**        | —                  | **2.2727**                     | **2.20**                 | **2.33**                      | **MCI(1) - MUN(2) - NFO(1) - SUN(1)** |
-| **3 Clubs (2+2+1)**      | **3**        | **1,996**          | **2.2727**                     | **2.00**                 | **2.50**                      | **ARS(2) - MUN(2) - SUN(1)**          |
-| **5 Unique Clubs (1x5)** | **5**        | **1,683**          | **2.3636**                     | **2.20**                 | **2.50**                      | **ARS - CHE - MUN - NFO - SUN**       |
-| **2 Clubs (3+2)**        | **2**        | **144**            | **2.2727**                     | **2.00**                 | **2.50**                      | **ARS(2) - MUN(3)**                   |
-
+Pre-Wildcard defensive setups evaluate two distinct tactical pathways before a permanent GW4 Wildcard reset:
+- **Option 1: GW2 Bench Boost (BB2)**: Top 3 start in GW1 (2 benched), all 5 start in GW2 on Bench Boost (0 clashes, max FDR $\le 3.0$), top 3 start in GW3 (2 benched). Total pre-WC starts = **11 player-matches**.
+- **Option 2: GW1 Bench Boost (BB1)**: All 5 start in GW1 on Bench Boost (0 clashes, max FDR $\le 3.0$), top 3 start in GW2 & GW3 (2 benched). Total pre-WC starts = **11 player-matches**.
 
 ---
 
+### 1.1 Strategy Comparison: BB2 (Option 1) vs BB1 (Option 2)
 
-
-### 1.2 Top 10 Team Combinations for GW1–3 (BB1) — 4 Unique Clubs vs 5 Unique Clubs
-
-
-
-#### Top 10 for 4 Unique Clubs (2+1+1+1)
-
-
-| Rank   | 4-Club Set                      | Pattern | Effective Avg FDR | GW1 Avg FDR (5 def) | GW2–3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
-| ------ | ------------------------------- | ------- | ----------------- | ------------------- | --------------------- | ----------------------- |
-| **1**  | **ARS - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727**        | **2.00**            | 2.50                  | +0.4366                 |
-| **2**  | **ARS - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727**        | **2.00**            | 2.50                  | +0.4366                 |
-| **3**  | **BRE - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **4**  | **BRE - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **5**  | **LIV - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **6**  | **LIV - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **7**  | **MCI - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **8**  | **MCI - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | **-0.1000**             |
-| **9**  | **AVL - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | -0.0098                 |
-| **10** | **AVL - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727**        | **2.20**            | **2.33**              | -0.0098                 |
-
-
-
-
-#### Top 10 for 5 Unique Clubs (1+1+1+1+1)
-
-
-| Rank   | 5-Club Set                      | Pattern   | Effective Avg FDR | GW1 Avg FDR (5 def) | GW2–3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
-| ------ | ------------------------------- | --------- | ----------------- | ------------------- | --------------------- | ----------------------- |
-| **1**  | **ARS - BRE - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | **2.20**            | 2.50                  | +0.0366                 |
-| **2**  | **ARS - LIV - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | **2.20**            | 2.50                  | +0.0366                 |
-| **3**  | **ARS - MCI - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | **2.20**            | 2.50                  | +0.0366                 |
-| **4**  | **ARS - MUN - NFO - TOT - SUN** | 1+1+1+1+1 | **2.3636**        | **2.20**            | 2.50                  | +0.2500                 |
-| **5**  | **ARS - CHE - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | **2.20**            | 2.50                  | +0.4618                 |
-| **6**  | **ARS - BRE - LIV - MUN - SUN** | 1+1+1+1+1 | **2.3636**        | 2.40                | **2.33**              | **-0.2000**             |
-| **7**  | **ARS - BRE - MCI - MUN - SUN** | 1+1+1+1+1 | **2.3636**        | 2.40                | **2.33**              | **-0.2000**             |
-| **8**  | **ARS - LIV - MCI - MUN - SUN** | 1+1+1+1+1 | **2.3636**        | 2.40                | **2.33**              | **-0.2000**             |
-| **9**  | **BRE - LIV - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | 2.40                | **2.33**              | **-0.2000**             |
-| **10** | **BRE - MCI - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636**        | 2.40                | **2.33**              | **-0.2000**             |
-
+| Metric / Dimension | Option 1: GW2 Bench Boost (BB2) | Option 2: GW1 Bench Boost (BB1) | Tactical Edge |
+| :--- | :--- | :--- | :--- |
+| **Stage 3 MILP Score** | **340.14 xP (Scenario 13)** | **338.88 xP (Scenario 5)** | **+1.26 xP for BB2** |
+| **Bench Boost Gameweek** | **GW2** (all 5 defenders start) | **GW1** (all 5 defenders start) | BB2 targets COV–HUL & MUN–IPS |
+| **Best Effective FDR** | **2.2727** (11 starts) | **2.2727** (11 starts) | Tied |
+| **BB GW Starting FDR** | **2.00** across all 5 active defs | **2.00** across all 5 active defs | Tied |
+| **Rotated Starts FDR** | **2.50** (GW1 + GW3 rot) | **2.50** (GW2 + GW3 rot) | Tied |
+| **Valid Combinations** | **5,464** valid non-clashing sets | **7,763** valid non-clashing sets | BB1 has larger valid space |
+| **Key Advantage** | High-EV GW2 promoted targets | Maximum Day 1 lineup certainty | Manager risk preference |
 
 ---
 
+### 1.2 Option 1: Overview by Allocation Pattern (GW1–3, BB2)
 
-
-### 1.3 Representative Player Lineups for GW1–3 (BB1 + WC4)
-
-
-| Budget Band                              | Spend  | Representative Lineup                                                                                                             | BB-RQI    | Effective 11-Start xP | GW1 xP (5 def) | Effective FDR |
-| ---------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------- | -------------- | ------------- |
-| **Band 1: Budget (£20.5–22.5m)**         | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m)    | **77.74** | **58.94 xP**          | 27.11 xP       | **2.273**     |
-| **Band 2: Mid-Value (£23.0–24.0m)**      | £23.0m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m)    | **78.57** | **59.90 xP**          | 27.38 xP       | **2.273**     |
-| **Band 3: Single Anchor (£24.5–25.0m)**  | £24.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **77.28** | **59.64 xP**          | 29.75 xP       | **2.273**     |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) | **75.21** | **59.53 xP**          | 29.64 xP       | **2.273**     |
-
+| Allocation Pattern | Unique Clubs | Valid Combinations | Best Effective FDR (11 starts) | Best GW2 Avg FDR (5 def) | Best GW1+3 Rot FDR (6 starts) | Top Recommended Team Set |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **4 Clubs (2+1+1+1)** | **4** | **2,724** | **2.2727** | **2.00** | **2.50** | **HUL(1) - MUN(2) - TOT(1) - SUN(1)** |
+| **4 Clubs (2+1+1+1)** | **4** | — | **2.2727** | **2.00** | **2.50** | **CHE(1) - HUL(1) - MUN(2) - SUN(1)** |
+| **4 Clubs (2+1+1+1)** | **4** | — | **2.2727** | **2.00** | **2.50** | **COV(1) - MUN(2) - TOT(1) - SUN(1)** |
+| **5 Unique Clubs (1x5)** | **5** | **1,002** | **2.3636** | **2.00** | **2.67** | **CHE - HUL - MUN - TOT - SUN** |
+| **5 Unique Clubs (1x5)** | **5** | — | **2.3636** | **2.00** | **2.67** | **CHE - COV - MUN - TOT - SUN** |
+| **3 Clubs (2+2+1)** | **3** | **912** | **2.2727** | **2.00** | **2.50** | **HUL(2) - MUN(2) - SUN(1)** |
+| **3 Clubs (3+1+1)** | **3** | **693** | **2.2727** | **2.00** | **2.50** | **HUL(1) - MUN(3) - TOT(1)** |
+| **2 Clubs (3+2)** | **2** | **133** | **2.2727** | **2.00** | **2.50** | **HUL(2) - MUN(3)** |
 
 ---
 
+### 1.3 Option 1: Top 10 Team Combinations for GW1–3 (BB2)
 
+#### Top 10 for 4 Unique Clubs (2+1+1+1, BB2)
 
-### 1.4 Constrained WC4 sub-reports (open separately)
+| Rank | 4-Club Set | Pattern | Effective Avg FDR | GW2 Avg FDR (5 def) | GW1+3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **1** | **HUL - MUN - MUN - TOT - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.4366 |
+| **2** | **HUL - MUN - TOT - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.4366 |
+| **3** | **CHE - HUL - MUN - MUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.5162 |
+| **4** | **CHE - HUL - MUN - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.5162 |
+| **5** | **COV - MUN - MUN - TOT - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.6000 |
+| **6** | **COV - MUN - TOT - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.6000 |
+| **7** | **CHE - COV - MUN - MUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.7091 |
+| **8** | **CHE - COV - MUN - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.7091 |
+| **9** | **CHE - MUN - MUN - TOT - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.7091 |
+| **10** | **CHE - MUN - TOT - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.7091 |
+
+#### Top 10 for 5 Unique Clubs (1+1+1+1+1, BB2)
+
+| Rank | 5-Club Set | Pattern | Effective Avg FDR | GW2 Avg FDR (5 def) | GW1+3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **1** | **CHE - HUL - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | **2.00** | 2.67 | +0.5839 |
+| **2** | **CHE - COV - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | **2.00** | 2.67 | +0.7402 |
+| **3** | **BRE - CHE - HUL - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | **+0.0272** |
+| **4** | **CHE - HUL - LIV - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | **+0.0272** |
+| **5** | **CHE - HUL - MCI - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | **+0.0272** |
+| **6** | **BRE - HUL - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | +0.0366 |
+| **7** | **HUL - LIV - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | +0.0366 |
+| **8** | **HUL - MCI - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | +0.0366 |
+| **9** | **BRE - COV - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | +0.1000 |
+| **10** | **COV - LIV - MUN - TOT - SUN** | 1+1+1+1+1 | **2.3636** | 2.20 | **2.50** | +0.1000 |
+
+---
+
+### 1.4 Option 1: Representative Player Lineups for GW1–3 (BB2 + WC4)
+
+| Budget Band | Spend | Representative Lineup | BB-RQI | Effective 11-Start xP | GW2 xP (5 def) | Effective FDR |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Thomas** (COV £4.0m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **79.06** | **58.56 xP** | 28.35 xP | **2.273** |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Thomas** (COV £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) + **Van Hecke** (TOT £5.0m) | **78.75** | **59.94 xP** | 28.99 xP | **2.273** |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £24.5m | **Lacroix** (CHE £6.0m) + **Thomas** (COV £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **76.71** | **60.00 xP** | 29.45 xP | **2.364** |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Wieffer** (BHA £5.0m) + **Maguire** (MUN £5.0m) + **Ballard** (SUN £5.0m) *(S13 Defense)* | **75.40** | **61.32 xP** | 27.69 xP | **2.364** |
+
+---
+
+### 1.5 Option 2: Overview by Allocation Pattern (GW1–3, BB1)
+
+| Allocation Pattern | Unique Clubs | Valid Combinations | Best Effective FDR (11 starts) | Best GW1 Avg FDR (5 def) | Best GW2–3 Rot FDR (6 starts) | Top Recommended Team Set |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **4 Clubs (2+1+1+1)** | **4** | **3,940** | **2.2727** | **2.00** | **2.50** | **ARS(1) - MUN(2) - NFO(1) - SUN(1)** |
+| **4 Clubs (2+1+1+1)** | **4** | — | **2.2727** | **2.20** | **2.33** | **MCI(1) - MUN(2) - NFO(1) - SUN(1)** |
+| **3 Clubs (2+2+1)** | **3** | **1,996** | **2.2727** | **2.00** | **2.50** | **ARS(2) - MUN(2) - SUN(1)** |
+| **5 Unique Clubs (1x5)** | **5** | **1,683** | **2.3636** | **2.20** | **2.50** | **ARS - CHE - MUN - NFO - SUN** |
+| **2 Clubs (3+2)** | **2** | **144** | **2.2727** | **2.00** | **2.50** | **ARS(2) - MUN(3)** |
+
+---
+
+### 1.6 Option 2: Top 10 Team Combinations for GW1–3 (BB1)
+
+#### Top 10 for 4 Unique Clubs (2+1+1+1, BB1)
+
+| Rank | 4-Club Set | Pattern | Effective Avg FDR | GW1 Avg FDR (5 def) | GW2–3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **1** | **ARS - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.4366 |
+| **2** | **ARS - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727** | **2.00** | 2.50 | +0.4366 |
+| **3** | **BRE - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **4** | **BRE - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **5** | **LIV - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **6** | **LIV - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **7** | **MCI - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **8** | **MCI - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | **-0.1000** |
+| **9** | **AVL - MUN - MUN - NFO - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | -0.0098 |
+| **10** | **AVL - MUN - NFO - SUN - SUN** | 2+1+1+1 | **2.2727** | 2.20 | **2.33** | -0.0098 |
+
+#### Top 10 for 5 Unique Clubs (1+1+1+1+1, BB1)
+
+| Rank | 5-Club Set | Pattern | Effective Avg FDR | GW1 Avg FDR (5 def) | GW2–3 Rot FDR (6 def) | Avg Pairwise Corr ($r$) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **1** | **ARS - BRE - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | **2.20** | 2.50 | +0.0366 |
+| **2** | **ARS - LIV - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | **2.20** | 2.50 | +0.0366 |
+| **3** | **ARS - MCI - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | **2.20** | 2.50 | +0.0366 |
+| **4** | **ARS - MUN - NFO - TOT - SUN** | 1+1+1+1+1 | **2.3636** | **2.20** | 2.50 | +0.2500 |
+| **5** | **ARS - CHE - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | **2.20** | 2.50 | +0.4618 |
+| **6** | **ARS - BRE - LIV - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.40 | **2.33** | **-0.2000** |
+| **7** | **ARS - BRE - MCI - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.40 | **2.33** | **-0.2000** |
+| **8** | **ARS - LIV - MCI - MUN - SUN** | 1+1+1+1+1 | **2.3636** | 2.40 | **2.33** | **-0.2000** |
+| **9** | **BRE - LIV - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | 2.40 | **2.33** | **-0.2000** |
+| **10** | **BRE - MCI - MUN - NFO - SUN** | 1+1+1+1+1 | **2.3636** | 2.40 | **2.33** | **-0.2000** |
+
+---
+
+### 1.7 Option 2: Representative Player Lineups for GW1–3 (BB1 + WC4)
+
+| Budget Band | Spend | Representative Lineup | BB-RQI | Effective 11-Start xP | GW1 xP (5 def) | Effective FDR |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) | **77.74** | **58.94 xP** | 27.11 xP | **2.273** |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £23.0m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m) | **78.57** | **59.90 xP** | 27.38 xP | **2.273** |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £24.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **77.28** | **59.64 xP** | 29.75 xP | **2.273** |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) | **75.21** | **59.53 xP** | 29.64 xP | **2.273** |
+
+---
+
+### 1.8 Constrained WC4 Sub-Reports & Bridge Links
 
 Independent GW1–3 and GW4–19 top-10s are **not** 1–2 swaps apart. Child notes rank GW1–3 4–5 unique sets that reach a strong GW4–19 set after 1–2 club-slot replacements.
 
@@ -170,9 +227,10 @@ Independent GW1–3 and GW4–19 top-10s are **not** 1–2 swaps apart. Child no
 
 Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags, or `refresh_downstream.py` after a Stage 2 rate change. Rank tables: `--print-ranks`.
 
-- Overall pick: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE onto `AVL-CHE-LIV-MCI-NFO`. Path FDR 2.4237.
-- SUN pick: `LIV-MCI-MUN-NFO-SUN` → AVL+CHE. Same path FDR, 5 unique in GW1–3.
-- GW4–19 standalone #1 (corr-first): `AVL-BOU-CHE-LIV-NFO`. Used as dest when the pre-set already holds 3 of those clubs.
+- **S13/S5 MILP Pre-WC Defense**: `Calafiori (ARS £5.5m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Maguire (MUN £5.0m) + Ballard (SUN £5.0m)` (£25.5m). Bridges directly at WC4 to `Gabriel + Tarkowski + Vuskovic + Wieffer + Thiaw` or pure rotation `AVL-BOU-CHE-LIV-NFO` / `AVL-CHE-LIV-MCI-NFO`.
+- **Overall pick**: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE onto `AVL-CHE-LIV-MCI-NFO`. Path FDR 2.4237.
+- **SUN pick**: `LIV-MCI-MUN-NFO-SUN` → AVL+CHE. Same path FDR, 5 unique in GW1–3.
+- **GW4–19 standalone #1 (corr-first)**: `AVL-BOU-CHE-LIV-NFO`. Used as dest when the pre-set already holds 3 of those clubs.
 
 ---
 
@@ -382,28 +440,32 @@ For managers executing a set-and-forget defensive strategy across the entire fir
 
 ```mermaid
 graph TD
-    A["FPL Defensive Strategy"] --> B{"Planning GW1 Bench Boost?"}
-    B -- "YES (GW1 BB + GW4 WC)" --> C["<b>Step 1: Pick Early Sprint Teams (GW1-3)</b><br>4 Clubs: ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1 FDR: 2.00"]
+    A["FPL Defensive Strategy"] --> B{"Planning Pre-WC Bench Boost?"}
+    B -- "Option 1: Max EV (BB2 + TC3 + WC4)" --> C1["<b>Step 1: Pick Early Sprint Teams (BB2)</b><br>4-Club: HUL(1)+MUN(2)+TOT(1)+SUN(1) or S13 ARS(1)+BHA(2)+MUN(1)+SUN(1)<br>Eff FDR: 2.27 | GW2 FDR: 2.00 | S13: 340.14 xP"]
+    B -- "Option 2: Safe Start (BB1 + TC3 + WC4)" --> C2["<b>Step 1: Pick Early Sprint Teams (BB1)</b><br>4-Club: ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1 FDR: 2.00 | S5: 338.88 xP"]
     B -- "NO (Set & Forget / Normal Start)" --> D["<b>Step 1: Pick Long-Term Rotation Teams (GW1-19)</b><br>5 Unique Clubs: AVL - CHE - LIV - MCI - NFO<br>100% Zero-Difficult GWs | Rot FDR: 2.4386"]
     
-    C --> E["<b>Step 2: Map Players to Budget (£22.5m-£24.5m)</b><br>Shaw / Yoro + Jair Cunha + Ballard / Meunier + O'Nien"]
+    C1 --> E1["<b>Step 2: Map Players to Budget (£22.5m-£25.5m)</b><br>Thomas + Ballard + Meunier/Mukiele + Van Hecke + Lacroix/Calafiori/Maguire"]
+    C2 --> E2["<b>Step 2: Map Players to Budget (£22.5m-£25.5m)</b><br>Shaw / Yoro + Jair Cunha + Ballard / Meunier + O'Nien / Calafiori"]
     D --> F["<b>Step 2: Map Players to Budget (£22.0m-£25.5m)</b><br>Maatsen/Pau + Colwill/Lacroix + Jacquet + Gvardiol/Hill + Jair Cunha"]
 ```
-
-
-
-
 
 ### Summary of Best Team Combinations
 
 1. **For Early Sprint (GW1–3 Bench Boost + GW4 Wildcard)**:
-  - **Recommended Teams**: `Arsenal (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)`
-  - **Why**: Best GW1 FDR (2.00) at the shared 2.2727 11-start eff FDR. GW2–3 rot FDR 2.50 (worse than the 2.33 BRE/LIV/MCI variants at GW1 2.20).
-  - **If WC4 is limited to 1–2 defender swaps**: do **not** use this BB1 specialist (Hamming 4 from every 2.4375 dest). Open [`wc4-overall-bridge.md`](wc4-overall-bridge.md) (`LIV-MCI-MUN-MUN-NFO`) or [`wc4-sun-bridge.md`](wc4-sun-bridge.md) (`LIV-MCI-MUN-NFO-SUN`).
+  - **Option 1: Max EV Target (GW2 Bench Boost, S13)**:
+    - **Recommended Teams**: `Hull City (1) + Manchester United (2) + Tottenham (1) + Sunderland (1)` or S13 Draft `Arsenal (1) + Brighton (2) + Manchester United (1) + Sunderland (1)`.
+    - **Why**: Captures peak GW2 matchups (COV vs HUL, MUN vs IPS, SUN vs FUL, TOT vs NEW) with **GW2 FDR 2.00** and **340.14 xP (+1.26 xP over BB1)** in S13.
+    - **WC4 Bridge Destination**: Bridges at WC4 to `Gabriel + Tarkowski + Vuskovic + Wieffer + Thiaw` or pure rotation `AVL-BOU-CHE-LIV-NFO` / `AVL-CHE-LIV-MCI-NFO`.
+  - **Option 2: Safe Start Target (GW1 Bench Boost, S5)**:
+    - **Recommended Teams**: `Arsenal (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)` or `LIV(1) + MCI(1) + MUN(2) + NFO(1)`.
+    - **Why**: Best GW1 FDR (2.00) at shared 2.2727 11-start eff FDR. Eliminates Day 1 bench point waste before any match minutes are played.
+    - **If WC4 is limited to 1–2 defender swaps**: do **not** use the `ARS-MUN-MUN-NFO-SUN` specialist (Hamming 4 from every 2.4375 dest). Open [`wc4-overall-bridge.md`](wc4-overall-bridge.md) (`LIV-MCI-MUN-MUN-NFO`) or [`wc4-sun-bridge.md`](wc4-sun-bridge.md) (`LIV-MCI-MUN-NFO-SUN`).
 2. **For Post-Wildcard (GW4–19)**:
   - **Recommended Teams**: `Aston Villa (1) + Bournemouth (1) + Chelsea (1) + Liverpool (1) + Nottingham Forest (1)`
   - **Why**: Tied lowest rotated FDR (2.4375) and 100% zero-diff; **best correlation** (r = −0.0994) in that tier. `AVL-CHE-LIV-MCI-NFO` is rank 3 (r = −0.0529) — keep it when the WC4 dump must retain City.
 3. **For Set & Forget (GW1–19)**:
   - **Recommended Teams**: `Aston Villa (1) + Chelsea (1) + Liverpool (1) + Manchester City (1) + Nottingham Forest (1)`
   - **Why**: Unique #1 on the 19-GW horizon (rot FDR 2.4386, 100% zero-diff). `AVL-BOU-CHE-LIV-NFO` is rank 3 here (2.4561).
+
 

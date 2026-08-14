@@ -6,12 +6,12 @@
 **Status**: Active · audited & cross-checked  
 **Purpose**: Capture source-led £4.0m–£4.5m goalkeeper shortlist, extracted defensive stats tables, role cross-checks, and minutes risks  
 **Scope**: Player prices, role evidence, extracted image data tables, fixture/ranking signals, £4.0m backup routes, and cross-checks against project role/transfer models. No independent fixture or projection validation.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 
 - **Primary**: [Best £4.0m-£4.5m goalkeepers for FPL 2026/27 — FPL Marc, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/28/best-4-0m-4-5m-goalkeepers-for-fpl-2026-27) — published 2026-07-28; last modified 2026-07-28; accessed 2026-08-13; role: budget goalkeeper analysis and image stats extraction
-- **Cross-check**: [Expected Role GW1–5](expected-role-gw1-5.md) — updated 2026-07-31; role: pre-season expected roles, starter status, and draft availability audit
+- **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-07-31; role: pre-season expected roles, starter status, and draft availability audit
 - **Cross-check**: [Summer transfers](fpl-summer-transfers.md) — updated 2026-07-31; role: confirmed transfer register (Dubravka, Scherpen, Van Oevelen, Butland, Senesi)
 
 **Source boundary**: Source claims not independently validated. Non-data promotional graphics, ads, site logos, and editorial celebration images omitted; article statistical image tables and fixture ticker graphics transcribed directly.

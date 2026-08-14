@@ -6,14 +6,14 @@
 **Status**: Active  
 **Purpose**: Assess £5.5m+ premium and mid-premium defenders for FPL 2026/27 squad structure and defensive line selections  
 **Scope**: Defenders priced at £5.5m, £6.0m, and £6.5m  
-**Related**: [Pre-season guide](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Expected role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 > Note revision updated 2026-08-03. Primary article published 2026-08-01. Source claims cross-checked with expected-role-gw1-5.md and fpl-summer-transfers.md.
 
 ## Sources
 
 - **Primary**: [Best £5.5m+ defenders for FPL 2026/27 — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/01/best-5-5m-defenders-for-fpl-2026-27) — published 2026-08-01; accessed 2026-08-13; role: premium defender price bracket analysis (£5.5m–£6.5m)
-- **Cross-check**: [Expected Role GW1–5](../expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-07-31; role: player availability, pre-season friendly minutes, starter roles
+- **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-07-31; role: player availability, pre-season friendly minutes, starter roles
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — register through 2026-07-30; role: confirmed transfer moves and squad context
 
 **Source boundary**: Source claims cross-checked against internal research notes. No direct FPL API live refresh or solver optimization run performed in this note.

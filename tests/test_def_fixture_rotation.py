@@ -124,6 +124,8 @@ def test_def_rotation_artifacts_exist() -> None:
     tier_csv = base_dir / "def_tier_player_rotations.csv"
     bb_club_csv = base_dir / "def_bb1_wc4_club_matrix.csv"
     bb_tier_csv = base_dir / "def_bb1_wc4_tier_lineups.csv"
+    bb2_club_csv = base_dir / "def_bb2_wc4_club_matrix.csv"
+    bb2_tier_csv = base_dir / "def_bb2_wc4_tier_lineups.csv"
     baseline_csv = base_dir / "def_performance_baseline.csv"
     sun_bridge_csv = base_dir / "def_wc4_sun_bridge_matrix.csv"
 
@@ -133,6 +135,8 @@ def test_def_rotation_artifacts_exist() -> None:
     assert tier_csv.exists()
     assert bb_club_csv.exists()
     assert bb_tier_csv.exists()
+    assert bb2_club_csv.exists()
+    assert bb2_tier_csv.exists()
     assert baseline_csv.exists()
     assert sun_bridge_csv.exists()
     assert overall_bridge_csv.exists()
@@ -141,6 +145,8 @@ def test_def_rotation_artifacts_exist() -> None:
     df_tiers = pd.read_csv(tier_csv)
     df_bb_clubs = pd.read_csv(bb_club_csv)
     df_bb_tiers = pd.read_csv(bb_tier_csv)
+    df_bb2_clubs = pd.read_csv(bb2_club_csv)
+    df_bb2_tiers = pd.read_csv(bb2_tier_csv)
     df_base = pd.read_csv(baseline_csv)
     df_bridge = pd.read_csv(sun_bridge_csv)
     df_overall = pd.read_csv(overall_bridge_csv)
@@ -155,6 +161,10 @@ def test_def_rotation_artifacts_exist() -> None:
     assert len(df_bb_clubs) > 1000
     assert set(df_bb_clubs["num_unique_clubs"].unique()) == {2, 3, 4, 5}
     assert len(df_bb_tiers) > 100
+    assert len(df_bb2_clubs) > 1000
+    assert set(df_bb2_clubs["num_unique_clubs"].unique()) == {2, 3, 4, 5}
+    assert len(df_bb2_tiers) > 100
+    assert (df_bb2_clubs["gw2_max_fdr"] <= 3.0).all()
     assert len(df_base) >= 50
     assert (df_base["expected_role"].isin(["Nailed Starter", "Regular Starter"])).all()
     assert (df_bb_clubs["gw1_max_fdr"] <= 3.0).all()

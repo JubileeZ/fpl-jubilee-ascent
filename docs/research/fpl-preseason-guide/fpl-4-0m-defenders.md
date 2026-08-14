@@ -6,12 +6,12 @@
 **Status**: Source synthesis · Playwright full-page extracted · Cross-checked against expected-role & summer-transfers  
 **Purpose**: Capture source-led £4.0m defender shortlist, player statistics, set-piece threat, and promoted-team minutes evidence  
 **Scope**: 46 £4.0m defenders pool context and accessible Coventry City 10-player detailed evaluation. Non-data promotional graphics omitted; player card graphics noted.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](expected-role-gw1-5.md) · [Confirmed Summer Transfers](fpl-summer-transfers.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Confirmed Summer Transfers](fpl-summer-transfers.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [£5.0m defenders](fpl-5-0m-defenders.md)
 
 ## Sources
 
 - **Primary**: [Best £4.0m defenders for FPL 2026/27: All 46 assessed — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/24/best-4-0m-defenders-for-fpl-2026-27-all-46-assessed) — published 2026-07-24; accessed 2026-07-31; role: £4.0m defender analysis
-- **Cross-reference**: [Expected Role (GW1–5)](expected-role-gw1-5.md) — updated 2026-07-31; role: starting role priors and XI contention set validation
+- **Cross-reference**: [Expected Role (GW1–5)](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-07-31; role: starting role priors and XI contention set validation
 - **Cross-reference**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — register through 2026-07-30; role: confirmed transfer arrivals (e.g. Amenda £17m to COV)
 
 **Source boundary**: Source claims not independently validated. Playwright rendered full-page content extracted. Promoted-team introductory analysis and Coventry City 10-player assessment transcribed in full. Text following Coventry heading requires free user account login; source gap noted. Cross-checked with internal models for role alignment.

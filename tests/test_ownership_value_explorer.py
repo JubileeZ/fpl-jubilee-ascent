@@ -71,9 +71,9 @@ def test_build_explorer_frame_season_overlays(explorer_mod: ModuleType) -> None:
     )
     simulation = pd.DataFrame(
         {
-            "scenario": ["S1: example", "S5: example"],
-            "phase": ["GW1-2 Pre-FH", "GW1-3 Pre-WC"],
-            "player_id": [1, 2],
+            "scenario": ["S1: example", "S5: example", "S13: example", "S13: example"],
+            "phase": ["GW1-2 Pre-FH", "GW1-3 Pre-WC", "GW1-3 Pre-WC", "GW4-6 Post-WC"],
+            "player_id": [1, 2, 2, 1],
         }
     )
     user_picks = pd.DataFrame({"player_id": [1]})
@@ -86,7 +86,11 @@ def test_build_explorer_frame_season_overlays(explorer_mod: ModuleType) -> None:
     assert float(alpha["ownership_pct"]) == 12.5
     assert bool(alpha["in_s1"]) is True
     assert bool(alpha["in_user"]) is True
+    assert bool(alpha["in_wc4_core"]) is True
+    assert bool(alpha["in_s13"]) is False
     assert bool(beta["in_s5"]) is True
+    assert bool(beta["in_s13"]) is True
+    assert bool(beta["in_wc4_core"]) is False
     assert bool(beta["in_user"]) is False
 
 
@@ -163,5 +167,9 @@ def test_explorer_metrics_identity() -> None:
     assert bruno_g["club_short"] == "ARS"
     bfer = metrics.loc[metrics["web_name"] == "B.Fernandes"].iloc[0]
     assert bfer["club_short"] == "MUN"
+    assert bool(bfer["in_s13"]) is True
     virgil = metrics.loc[metrics["web_name"] == "Virgil"].iloc[0]
     assert float(virgil["avg_xmins_season"]) >= 45.0
+    haaland = metrics.loc[metrics["web_name"] == "Haaland"].iloc[0]
+    assert bool(haaland["in_s13"]) is True
+    assert bool(haaland["in_wc4_core"]) is True

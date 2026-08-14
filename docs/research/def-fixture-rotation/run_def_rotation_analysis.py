@@ -63,6 +63,9 @@ CLUB_5WAY_SORT_ASC = [True, True, False, True, False]
 # BB1 club tables: 11-start eff FDR, then GW1, then GW2-3, then corr-first.
 BB1_CLUB_SORT_COLS = ["effective_avg_fdr", "gw1_avg_fdr", "gw2_3_rot_fdr", "avg_fdr_corr"]
 BB1_CLUB_SORT_ASC = [True, True, True, True]
+# BB2 club tables: 11-start eff FDR, then GW2, then GW1+GW3, then corr-first.
+BB2_CLUB_SORT_COLS = ["effective_avg_fdr", "gw2_avg_fdr", "gw1_3_rot_fdr", "avg_fdr_corr"]
+BB2_CLUB_SORT_ASC = [True, True, True, True]
 # Published WC4 bridge Top 10 among eligible rows.
 BRIDGE_RANK_SORT_COLS = ["path_eff_fdr", "gw1_avg_fdr", "n_swaps", "pre_corr", "pre_clubs"]
 BRIDGE_RANK_SORT_ASC = [True, True, True, True, True]
@@ -285,6 +288,73 @@ def run_bb1_wc4_club_combinatorial_analysis(
                 "gw2_avg_fdr": round(gw2_avg_fdr, 2),
                 "gw3_avg_fdr": round(gw3_avg_fdr, 2),
                 "gw2_3_rot_fdr": round(gw2_3_rot_fdr, 2),
+                "effective_avg_fdr": round(effective_avg_fdr, 4),
+                "avg_fdr_corr": round(avg_corr, 4),
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def run_bb2_wc4_club_combinatorial_analysis(
+    fdr_mat: np.ndarray,
+    idx_to_short: dict[int, str],
+    fixtures: pd.DataFrame,
+    id_to_idx: dict[int, int],
+) -> pd.DataFrame:
+    """Evaluate non-clashing BB2 + WC4 5-club sets across GW1-3."""
+    gw2_f = fixtures[fixtures["gameweek_id"] == 2]
+    clash_pairs = set()
+    for _, f in gw2_f.iterrows():
+        h_idx = id_to_idx[int(f["home_club_id"])]
+        a_idx = id_to_idx[int(f["away_club_id"])]
+        clash_pairs.add(frozenset([h_idx, a_idx]))
+
+    valid_combos, patterns, num_uniques, club_names = generate_valid_club_multisets(idx_to_short)
+    pair_indices = list(itertools.combinations(range(5), 2))
+    corr_mat = precompute_pairwise_corr(fdr_mat[:, 0:3])
+
+    rows: list[dict] = []
+    for i, c in enumerate(valid_combos):
+        has_clash = any(frozenset([c[a], c[b]]) in clash_pairs for a in range(5) for b in range(a + 1, 5) if c[a] != c[b])
+        if has_clash:
+            continue
+
+        # GW2: all 5 start on Bench Boost
+        gw2_fdrs = fdr_mat[c, 1]
+        gw2_max_fdr = float(gw2_fdrs.max())
+        if gw2_max_fdr > 3.0:  # Strict ceiling rule
+            continue
+        gw2_avg_fdr = float(gw2_fdrs.mean())
+
+        # GW1 and GW3: top 3 start
+        gw1_fdrs = np.sort(fdr_mat[c, 0])[:3]
+        gw3_fdrs = np.sort(fdr_mat[c, 2])[:3]
+        gw1_avg_fdr = float(gw1_fdrs.mean())
+        gw3_avg_fdr = float(gw3_fdrs.mean())
+        gw1_3_rot_fdr = float((gw1_fdrs.sum() + gw3_fdrs.sum()) / 6.0)
+
+        tot_effective_fdr = float(gw1_fdrs.sum() + gw2_fdrs.sum() + gw3_fdrs.sum())
+        effective_avg_fdr = tot_effective_fdr / 11.0
+
+        corrs = [corr_mat[c[a], c[b]] for a, b in pair_indices]
+        avg_corr = float(np.mean(corrs)) if corrs else 0.0
+
+        rows.append(
+            {
+                "num_unique_clubs": num_uniques[i],
+                "allocation_pattern": patterns[i],
+                "clubs": club_names[i],
+                "club1": idx_to_short[c[0]],
+                "club2": idx_to_short[c[1]],
+                "club3": idx_to_short[c[2]],
+                "club4": idx_to_short[c[3]],
+                "club5": idx_to_short[c[4]],
+                "gw1_avg_fdr": round(gw1_avg_fdr, 2),
+                "gw2_avg_fdr": round(gw2_avg_fdr, 2),
+                "gw2_max_fdr": round(gw2_max_fdr, 1),
+                "gw3_avg_fdr": round(gw3_avg_fdr, 2),
+                "gw1_3_rot_fdr": round(gw1_3_rot_fdr, 2),
                 "effective_avg_fdr": round(effective_avg_fdr, 4),
                 "avg_fdr_corr": round(avg_corr, 4),
             }
@@ -693,6 +763,166 @@ def simulate_bb1_wc4_player_tier_combinations(
     return pd.DataFrame(rows)
 
 
+def simulate_bb2_wc4_player_tier_combinations(
+    starters: pd.DataFrame,
+    gw_xp: pd.DataFrame,
+    fdr_mat: np.ndarray,
+    id_to_idx: dict[int, int],
+    idx_to_short: dict[int, str],
+    fixtures: pd.DataFrame,
+) -> pd.DataFrame:
+    """Simulate player lineups specifically for GW2 BB (5 starters) + GW1 & GW3 rotation (3 starters) up to £26.0m."""
+    xp_lookup = {
+        int(pid): grp.set_index("gameweek_id")["projected_points"].to_dict()
+        for pid, grp in gw_xp.groupby("player_id")
+    }
+
+    rep_defs_list = []
+    for (_, _), grp in starters.groupby(["club_short", "price"]):
+        best = grp.sort_values(["per90_xg", "per90_defcon", "per90_xa"], ascending=[False, False, False]).iloc[0]
+        rep_defs_list.append(best)
+    df_rep = pd.DataFrame(rep_defs_list)
+
+    player_meta = df_rep.set_index("player_id").to_dict("index")
+    pids = list(player_meta.keys())
+    n_players = len(pids)
+
+    p_prices = np.array([player_meta[pid]["price"] for pid in pids], dtype=np.float32)
+    p_cids = np.array([id_to_idx[int(player_meta[pid]["club_id"])] for pid in pids], dtype=np.int32)
+    p_all_fdrs = np.array([fdr_mat[cid, :] for cid in p_cids], dtype=np.float32)
+    p_all_xps = np.array(
+        [[float(xp_lookup[pid].get(gw, 0.0)) for gw in range(1, 39)] for pid in pids],
+        dtype=np.float32,
+    )
+
+    all_5combos = np.array(list(itertools.combinations(range(n_players), 5)), dtype=np.int32)
+    combo_prices = p_prices[all_5combos].sum(axis=1)
+    combo_cids = p_cids[all_5combos]
+
+    gw2_f = fixtures[fixtures["gameweek_id"] == 2]
+    clash_pairs = set()
+    for _, f in gw2_f.iterrows():
+        h_idx = id_to_idx[int(f["home_club_id"])]
+        a_idx = id_to_idx[int(f["away_club_id"])]
+        clash_pairs.add(frozenset([h_idx, a_idx]))
+
+    valid_indices = []
+    patterns = []
+    num_uniques = []
+    for i in range(len(all_5combos)):
+        if combo_prices[i] > MAX_TOTAL_PRICE:
+            continue
+        c_counts = Counter(combo_cids[i])
+        valid = True
+        for cid, cnt in c_counts.items():
+            c_short = idx_to_short[cid]
+            if c_short in TOP_ATTACK_CLUBS and cnt > MAX_DEF_PER_TOP_CLUB:
+                valid = False
+                break
+            elif cnt > MAX_DEF_PER_OTHER_CLUB:
+                valid = False
+                break
+        if not valid:
+            continue
+
+        has_clash = any(
+            frozenset([combo_cids[i, j], combo_cids[i, k]]) in clash_pairs
+            for j in range(5)
+            for k in range(j + 1, 5)
+            if combo_cids[i, j] != combo_cids[i, k]
+        )
+        if has_clash:
+            continue
+
+        if p_all_fdrs[all_5combos[i], 1].max() > 3.0:
+            continue
+
+        valid_indices.append(i)
+        p_tup = tuple(sorted(c_counts.values(), reverse=True))
+        patterns.append("+".join(str(x) for x in p_tup))
+        num_uniques.append(len(p_tup))
+
+    valid_indices = np.array(valid_indices, dtype=np.int32)
+    valid_bb2_combos = all_5combos[valid_indices]
+    valid_bb2_prices = combo_prices[valid_indices]
+    valid_cids = combo_cids[valid_indices]
+    patterns_arr = np.array(patterns)
+    num_uniques_arr = np.array(num_uniques, dtype=np.int32)
+
+    corr_mat = precompute_pairwise_corr(fdr_mat[:, 0:3])
+    pair_indices = list(itertools.combinations(range(5), 2))
+
+    gw1_combo_fdr = p_all_fdrs[valid_bb2_combos, 0]
+    gw1_combo_xp = p_all_xps[valid_bb2_combos, 0]
+    gw1_order = np.argsort(gw1_combo_fdr - gw1_combo_xp * 1e-4, axis=1)[:, :3]
+    gw1_top3_xp = np.take_along_axis(gw1_combo_xp, gw1_order, axis=1).sum(axis=1)
+    gw1_top3_fdr = np.take_along_axis(gw1_combo_fdr, gw1_order, axis=1).sum(axis=1)
+
+    gw2_xps = p_all_xps[valid_bb2_combos, 1].sum(axis=1)
+    gw2_fdrs = p_all_fdrs[valid_bb2_combos, 1].mean(axis=1)
+
+    gw3_combo_fdr = p_all_fdrs[valid_bb2_combos, 2]
+    gw3_combo_xp = p_all_xps[valid_bb2_combos, 2]
+    gw3_order = np.argsort(gw3_combo_fdr - gw3_combo_xp * 1e-4, axis=1)[:, :3]
+    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order, axis=1).sum(axis=1)
+    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order, axis=1).sum(axis=1)
+
+    tot_effective_xp = gw1_top3_xp + gw2_xps + gw3_top3_xp
+    gw1_3_rot_fdr = (gw1_top3_fdr + gw3_top3_fdr) / 6.0
+    effective_avg_fdr = (gw1_top3_fdr + p_all_fdrs[valid_bb2_combos, 1].sum(axis=1) + gw3_top3_fdr) / 11.0
+
+    s_xp = np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100)
+    s_fdr2 = np.clip((3.5 - gw2_fdrs) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_eff_fdr = np.clip((3.5 - effective_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_cost = np.clip((28.0 - valid_bb2_prices) / (28.0 - 20.0) * 100.0, 0, 100)
+    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr2 + 0.20 * s_eff_fdr + 0.15 * s_cost, 2)
+
+    band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
+    for i in range(len(valid_bb2_combos)):
+        _, b_id = classify_budget_band(float(valid_bb2_prices[i]))
+        band_indices[b_id].append(i)
+
+    selected_indices = set()
+    for b_id, idx_list in band_indices.items():
+        if not idx_list:
+            continue
+        sub_rqi = bb_rqi_arr[idx_list]
+        sub_xp = tot_effective_xp[idx_list]
+        top_rqi_idx = [idx_list[k] for k in np.argsort(-sub_rqi)[:1000]]
+        top_xp_idx = [idx_list[k] for k in np.argsort(-sub_xp)[:200]]
+        selected_indices.update(top_rqi_idx)
+        selected_indices.update(top_xp_idx)
+
+    rows: list[dict] = []
+    for i in selected_indices:
+        tot_p = float(valid_bb2_prices[i])
+        band_name, band_id = classify_budget_band(tot_p)
+        avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
+
+        p_objs = [player_meta[pids[idx]] for idx in valid_bb2_combos[i]]
+        rows.append(
+            {
+                "tier": band_name,
+                "tier_id": band_id,
+                "num_unique_clubs": int(num_uniques_arr[i]),
+                "allocation_pattern": str(patterns_arr[i]),
+                "lineup_summary": " + ".join(f"{p['web_name']} ({p['club_short']} £{p['price']:.1f}m)" for p in p_objs),
+                "clubs": "-".join(p["club_short"] for p in p_objs),
+                "total_price": round(tot_p, 1),
+                "bb_rqi": float(bb_rqi_arr[i]),
+                "tot_effective_xp": round(float(tot_effective_xp[i]), 2),
+                "gw2_xp_5def": round(float(gw2_xps[i]), 2),
+                "gw1_3_xp_6def": round(float(gw1_top3_xp[i] + gw3_top3_xp[i]), 2),
+                "gw2_avg_fdr": round(float(gw2_fdrs[i]), 2),
+                "gw1_3_rot_fdr": round(float(gw1_3_rot_fdr[i]), 2),
+                "effective_avg_fdr": round(float(effective_avg_fdr[i]), 4),
+                "avg_fdr_corr": round(avg_corr, 4),
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
 def club_slot_hamming(pre_clubs: str, post_clubs: str) -> int:
     """Defender-slot Hamming distance: 5 minus multiset overlap of hyphenated club codes."""
     pre_counts = Counter(pre_clubs.split("-"))
@@ -896,7 +1126,8 @@ def _write_bridge_csvs(bb1_clubs: pd.DataFrame, club_5way: pd.DataFrame, *, sun:
 def apply_ranking_sorts(
     df_club_5way: pd.DataFrame,
     df_bb1_clubs: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df_bb2_clubs: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame] | tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Apply published ranking lenses. Correlation-first after primary FDR keys."""
     club_sorted = df_club_5way.sort_values(
         CLUB_5WAY_SORT_COLS, ascending=CLUB_5WAY_SORT_ASC
@@ -904,15 +1135,32 @@ def apply_ranking_sorts(
     bb1_sorted = df_bb1_clubs.sort_values(
         BB1_CLUB_SORT_COLS, ascending=BB1_CLUB_SORT_ASC
     ).reset_index(drop=True)
+    if df_bb2_clubs is not None:
+        bb2_sorted = df_bb2_clubs.sort_values(
+            BB2_CLUB_SORT_COLS, ascending=BB2_CLUB_SORT_ASC
+        ).reset_index(drop=True)
+        return club_sorted, bb1_sorted, bb2_sorted
     return club_sorted, bb1_sorted
 
 
-def print_rank_tables(df_club_5way: pd.DataFrame, df_bb1_clubs: pd.DataFrame) -> None:
+def print_rank_tables(
+    df_club_5way: pd.DataFrame,
+    df_bb1_clubs: pd.DataFrame,
+    df_bb2_clubs: pd.DataFrame | None = None,
+) -> None:
     """Print Top-10 blocks used by the research notes (correlation-first GW4-19)."""
     def _top(frame: pd.DataFrame, n: int, cols: list[str]) -> None:
         for i, row in enumerate(frame.head(n).itertuples(), 1):
             bits = " ".join(f"{c}={getattr(row, c)}" for c in cols)
             print(f"  {i:2d} {row.clubs} {bits}")
+
+    if df_bb2_clubs is not None:
+        print("=== BB2 4 unique (eff FDR lens) ===")
+        b2_4 = df_bb2_clubs[df_bb2_clubs["num_unique_clubs"] == 4]
+        _top(b2_4, 10, ["effective_avg_fdr", "gw2_avg_fdr", "gw1_3_rot_fdr", "avg_fdr_corr"])
+        print("=== BB2 5 unique (eff FDR lens) ===")
+        b2_5 = df_bb2_clubs[df_bb2_clubs["num_unique_clubs"] == 5]
+        _top(b2_5, 10, ["effective_avg_fdr", "gw2_avg_fdr", "gw1_3_rot_fdr", "avg_fdr_corr"])
 
     print("=== BB1 4 unique (eff FDR lens) ===")
     b4 = df_bb1_clubs[df_bb1_clubs["num_unique_clubs"] == 4]
@@ -929,7 +1177,7 @@ def print_rank_tables(df_club_5way: pd.DataFrame, df_bb1_clubs: pd.DataFrame) ->
     _top(g19, 10, ["rot_avg_fdr", "no_diff_pct", "all_easy_pct", "avg_fdr_corr"])
 
 
-def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Execute complete DEF rotation analysis and write CSV artifacts."""
     print("Loading data...")
     players = pd.read_parquet(DATA_DIR / "players.parquet")
@@ -966,6 +1214,10 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     df_bb1_clubs = run_bb1_wc4_club_combinatorial_analysis(fdr_mat, idx_to_short, fixtures, id_to_idx)
     df_bb1_tiers = simulate_bb1_wc4_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, idx_to_short, fixtures)
 
+    print("Simulating specialized GW2 BB + GW4 WC pre-wildcard scenario (up to £26.0m across 2-5 unique clubs)...")
+    df_bb2_clubs = run_bb2_wc4_club_combinatorial_analysis(fdr_mat, idx_to_short, fixtures, id_to_idx)
+    df_bb2_tiers = simulate_bb2_wc4_player_tier_combinations(starters, gw_xp, fdr_mat, id_to_idx, idx_to_short, fixtures)
+
     baseline = starters[
         [
             "player_id",
@@ -984,12 +1236,16 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     baseline = baseline.sort_values(["price", "per90_defcon", "web_name"], ascending=[False, False, True]).reset_index(drop=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df_club_5way, df_bb1_clubs = apply_ranking_sorts(df_club_5way, df_bb1_clubs)
+    df_club_5way, df_bb1_clubs, df_bb2_clubs = apply_ranking_sorts(df_club_5way, df_bb1_clubs, df_bb2_clubs)
     df_tiers = df_tiers.sort_values(
         ["horizon", "tier_id", "rqi", "tot_rot_xp"],
         ascending=[True, True, False, False],
     ).reset_index(drop=True)
     df_bb1_tiers = df_bb1_tiers.sort_values(
+        ["tier_id", "bb_rqi", "tot_effective_xp"],
+        ascending=[True, False, False],
+    ).reset_index(drop=True)
+    df_bb2_tiers = df_bb2_tiers.sort_values(
         ["tier_id", "bb_rqi", "tot_effective_xp"],
         ascending=[True, False, False],
     ).reset_index(drop=True)
@@ -1001,6 +1257,8 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     df_tiers.to_csv(OUT_DIR / "def_tier_player_rotations.csv", index=False)
     df_bb1_clubs.to_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv", index=False)
     df_bb1_tiers.to_csv(OUT_DIR / "def_bb1_wc4_tier_lineups.csv", index=False)
+    df_bb2_clubs.to_csv(OUT_DIR / "def_bb2_wc4_club_matrix.csv", index=False)
+    df_bb2_tiers.to_csv(OUT_DIR / "def_bb2_wc4_tier_lineups.csv", index=False)
     baseline.to_csv(OUT_DIR / "def_performance_baseline.csv", index=False)
 
     print(f"Analysis complete. Outputs written to {OUT_DIR}:")
@@ -1008,9 +1266,11 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     print(f" - def_tier_player_rotations.csv ({len(df_tiers)} rows)")
     print(f" - def_bb1_wc4_club_matrix.csv ({len(df_bb1_clubs)} rows)")
     print(f" - def_bb1_wc4_tier_lineups.csv ({len(df_bb1_tiers)} rows)")
+    print(f" - def_bb2_wc4_club_matrix.csv ({len(df_bb2_clubs)} rows)")
+    print(f" - def_bb2_wc4_tier_lineups.csv ({len(df_bb2_tiers)} rows)")
     print(f" - def_performance_baseline.csv ({len(baseline)} rows)")
 
-    return df_club_5way, df_tiers, df_bb1_clubs, df_bb1_tiers, baseline
+    return df_club_5way, df_tiers, df_bb1_clubs, df_bb1_tiers, df_bb2_clubs, df_bb2_tiers, baseline
 
 
 if __name__ == "__main__":
@@ -1041,14 +1301,25 @@ if __name__ == "__main__":
     if args.print_ranks:
         club_5way = pd.read_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv")
         bb1 = pd.read_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv")
-        club_5way, bb1 = apply_ranking_sorts(club_5way, bb1)
-        print_rank_tables(club_5way, bb1)
+        bb2 = pd.read_csv(OUT_DIR / "def_bb2_wc4_club_matrix.csv") if (OUT_DIR / "def_bb2_wc4_club_matrix.csv").exists() else None
+        res = apply_ranking_sorts(club_5way, bb1, bb2)
+        if bb2 is not None:
+            c_sorted, b1_sorted, b2_sorted = res
+            print_rank_tables(c_sorted, b1_sorted, b2_sorted)
+        else:
+            c_sorted, b1_sorted = res
+            print_rank_tables(c_sorted, b1_sorted)
         raise SystemExit(0)
     bridge_only = args.sun_bridge_only or args.overall_bridge_only or args.bridges_only
     if bridge_only:
         bb1 = pd.read_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv")
         club_5way = pd.read_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv")
-        club_5way, bb1 = apply_ranking_sorts(club_5way, bb1)
+        bb2 = pd.read_csv(OUT_DIR / "def_bb2_wc4_club_matrix.csv") if (OUT_DIR / "def_bb2_wc4_club_matrix.csv").exists() else None
+        if bb2 is not None:
+            club_5way, bb1, bb2 = apply_ranking_sorts(club_5way, bb1, bb2)
+            bb2.to_csv(OUT_DIR / "def_bb2_wc4_club_matrix.csv", index=False)
+        else:
+            club_5way, bb1 = apply_ranking_sorts(club_5way, bb1)
         club_5way.to_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv", index=False)
         bb1.to_csv(OUT_DIR / "def_bb1_wc4_club_matrix.csv", index=False)
         write_sun = args.sun_bridge_only or args.bridges_only

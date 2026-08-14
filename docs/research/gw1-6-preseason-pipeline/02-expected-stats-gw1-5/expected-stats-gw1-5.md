@@ -8,8 +8,8 @@
 **Scope**: XI Contention rates; Draft Shortlist projections export (Nailed + Regular). Softmax bonus over full XI Contention.  
 **Related**: [Expected Role GW1–5](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Preseason Pipeline Master README](../README.md) · [Downstream refresh](../refresh_downstream.py) · ADR 0003 · ADR 0004 · ADR 0005 · ADR 0014  
 **Artifacts**:
-- [Expected Stats CSV](../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv)
-- [GW1–5 Projections CSV](../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
+- [Expected Stats CSV](../../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv)
+- [GW1–5 Projections CSV](../../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
 
 ---
 

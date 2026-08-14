@@ -88,14 +88,16 @@ Ranks 2 / 5 / 7 / 9 / 10 land on corr-first dest `AVL-BOU-CHE-LIV-NFO`. Ranks 1 
 
 | Role | Club set | Spend | Lineup | Notes |
 | --- | --- | --- | --- | --- |
+| **S13 / S5 Pre-WC Defense (1 SUN)** | ARS-BHA-BHA-MUN-SUN | £25.5m | Calafiori (ARS £5.5m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Maguire (MUN £5.0m) + Ballard (SUN £5.0m) | S13 BB2 (340.14 xP) / S5 BB1 (338.88 xP); Ballard dumped at WC4 |
 | **GW1–3 pick (1 SUN)** | LIV-MCI-MUN-NFO-SUN | £24.5m | Jacquet (LIV £5.0m) + Gvardiol (MCI £5.5m) + Shaw (MUN £4.5m) + Jair Cunha (NFO £4.5m) + Ballard (SUN £5.0m) | BB-RQI 71.08; 59.10 xP / 11 starts |
 | **WC4 (keep City)** | AVL-CHE-LIV-MCI-NFO | £24.5m | Maatsen (AVL £4.5m) + Colwill (CHE £5.0m) + Jacquet + Gvardiol + Jair Cunha | Shaw + Ballard → Maatsen + Colwill |
 | **GW1–3 pick (2 SUN)** | LIV-MCI-NFO-SUN-SUN | £24.5m | Jacquet + Gvardiol + Jair Cunha + Meunier (SUN £4.5m) + Ballard (SUN £5.0m) | BB-RQI 72.71; 60.29 xP / 11 starts |
 | **WC4 (corr-first dest)** | AVL-BOU-CHE-LIV-NFO | £25.5m | Pau (AVL £4.5m) + Hill (BOU £5.5m) + Lacroix (CHE £6.0m) + Jacquet + Jair Cunha | From AVL-LIV-NFO-SUN-SUN dump both SUN → BOU+CHE |
+| **WC4 Opt1 (MILP Squad)** | ARS-BHA-BHA-EVE-NEW | £29.0m | Gabriel (ARS £8.0m) + Tarkowski (EVE £6.0m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Thiaw (NEW £5.0m) | Ballard dumped to upgrade starting XI budget; 155.37 xP GW4-6 |
 
 ## Decision
 
-**Verdict**: Endorse 1 SUN for GW1–3; dump SUN at WC4. Pick `LIV-MCI-MUN-NFO-SUN` → AVL + CHE onto `AVL-CHE-LIV-MCI-NFO`. Standalone GW4–19 #1 is `AVL-BOU-CHE-LIV-NFO` (best corr); take it when the pre-set already holds AVL+LIV+NFO.
+**Verdict**: Endorse 1 SUN for GW1–3; dump SUN at WC4. Pick `LIV-MCI-MUN-NFO-SUN` → AVL + CHE onto `AVL-CHE-LIV-MCI-NFO`. Standalone GW4–19 #1 is `AVL-BOU-CHE-LIV-NFO` (best corr); take it when the pre-set already holds AVL+LIV+NFO. For full-squad MILP optimization, S13 BB2 / S5 BB1 (`ARS-BHA-BHA-MUN-SUN`) holds 1 SUN (Ballard) in GW1-3 and liquidates at WC4.
 
 **Recommended action**: Open this note for SUN-constrained WC4 planning. Use the overall sibling if Sunderland is not required.
 

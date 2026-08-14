@@ -6,12 +6,12 @@
 **Status**: Source synthesis · image stats extracted · cross-checked  
 **Purpose**: Capture source-led £4.5m defender shortlist, team defensive metrics, clean-sheet probabilities, long-throw statistics, and minutes/rotation evidence  
 **Scope**: Featured candidates across Manchester United, Crystal Palace, Leeds, Brentford, Nottingham Forest, Brighton, Aston Villa, and Fulham. Extracted image data tables included. Cross-checked against GW1-5 role priors and summer transfer register.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [Expected role GW1-5](expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£5.0m defenders](fpl-5-0m-defenders.md) · [Expected role GW1-5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Summer transfers](fpl-summer-transfers.md)
 
 ## Sources
 
 - **Primary**: [Best £4.5m defenders for FPL 2026/27 — avfc82, Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/07/29/best-4-5m-defenders-for-fpl-2026-27) — published 2026-07-29; accessed 2026-07-31; re-verified 2026-08-01; role: £4.5m defender analysis and image stats extraction
-- **Cross-check**: [Expected Role GW1–5](expected-role-gw1-5.md) — role priors & availability overlay (verified 2026-08-01)
+- **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — role priors & availability overlay (verified 2026-08-01)
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — confirmed transfers register (verified 2026-08-01)
 
 **Source boundary**: Source claims not independently validated. Promotional graphics, ads, logos, and non-relevant photos omitted; article statistical image tables and clean-sheet odds graphics transcribed directly into Markdown tables.

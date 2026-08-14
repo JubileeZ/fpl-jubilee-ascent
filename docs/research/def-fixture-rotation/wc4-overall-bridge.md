@@ -51,6 +51,7 @@ Both bridges: `--bridges-only`. Full parent pipeline (slow): run the script with
 
 | Pattern | Example | Role |
 | --- | --- | --- |
+| **S13 / S5 Pre-WC Defense** | `ARS-BHA-BHA-MUN-SUN` | **Stage 3 MILP Benchmark.** `Calafiori + Vuskovic + Wieffer + Maguire + Ballard`. Bridges to WC4 Opt1 (`Gabriel + Tarkowski + Vuskovic + Wieffer + Thiaw`) or pure rotation (`AVL-BOU-CHE-LIV-NFO` / `AVL-CHE-LIV-MCI-NFO`). |
 | **MUN double, 0 SUN** | `LIV-MCI-MUN-MUN-NFO` | **Unconstrained #1.** Dump both MUN → AVL + CHE onto `AVL-CHE-LIV-MCI-NFO`. |
 | **SUN double, 2 SUN** | `LIV-MCI-NFO-SUN-SUN` | Tied #1 on path FDR / correlation. See SUN sibling. |
 | **5 unique, 1 SUN** | `LIV-MCI-MUN-NFO-SUN` | Best 5-unique in this Top 10 (rank 7). Dump MUN + SUN. |
@@ -82,14 +83,16 @@ Ranks 1 / 5 / 7 / 10 keep City. Ranks 3 / 4 / 8 / 9 take corr-first dest `AVL-BO
 
 | Role | Club set | Spend | Lineup | Notes |
 | --- | --- | --- | --- | --- |
+| **S13 / S5 Pre-WC Defense** | ARS-BHA-BHA-MUN-SUN | £25.5m | Calafiori (ARS £5.5m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Maguire (MUN £5.0m) + Ballard (SUN £5.0m) | S13 BB2 (340.14 xP) / S5 BB1 (338.88 xP); 61.32 xP / 11 starts |
 | **GW1–3 pick (no SUN)** | LIV-MCI-MUN-MUN-NFO | £24.5m | Jacquet (LIV £5.0m) + Gvardiol (MCI £5.5m) + Shaw (MUN £4.5m) + Maguire (MUN £5.0m) + Jair Cunha (NFO £4.5m) | BB-RQI 72.71; 61.05 xP / 11 starts |
 | **WC4 (keep City)** | AVL-CHE-LIV-MCI-NFO | £24.5m | Maatsen (AVL £4.5m) + Colwill (CHE £5.0m) + Jacquet + Gvardiol + Jair Cunha | Shaw + Maguire → Maatsen + Colwill |
 | **GW1–3 pick (5 unique)** | LIV-MCI-MUN-NFO-SUN | £24.5m | Jacquet + Gvardiol + Shaw + Jair Cunha + Ballard (SUN £5.0m) | BB-RQI 71.08; 59.10 xP / 11 starts |
 | **WC4 (corr-first dest)** | AVL-BOU-CHE-LIV-NFO | £25.5m | Pau (AVL £4.5m) + Hill (BOU £5.5m) + Lacroix (CHE £6.0m) + Jacquet + Jair Cunha | From AVL-LIV-MUN-MUN-NFO dump both MUN → BOU+CHE |
+| **WC4 Opt1 (MILP Squad)** | ARS-BHA-BHA-EVE-NEW | £29.0m | Gabriel (ARS £8.0m) + Tarkowski (EVE £6.0m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Thiaw (NEW £5.0m) | Liquidated bench funds £84.0m+ premium starting XI; 155.37 xP GW4-6 |
 
 ## Decision
 
-**Verdict**: Unconstrained pick is `LIV-MCI-MUN-MUN-NFO` — dump both United defenders at WC4 for Villa + Chelsea onto `AVL-CHE-LIV-MCI-NFO`. Standalone GW4–19 #1 is `AVL-BOU-CHE-LIV-NFO` (best corr); take it when the pre-set already holds AVL+LIV+NFO (rank 3).
+**Verdict**: Unconstrained pick is `LIV-MCI-MUN-MUN-NFO` — dump both United defenders at WC4 for Villa + Chelsea onto `AVL-CHE-LIV-MCI-NFO`. Standalone GW4–19 #1 is `AVL-BOU-CHE-LIV-NFO` (best corr); take it when the pre-set already holds AVL+LIV+NFO (rank 3). For full-squad MILP optimization, S13 BB2 (`ARS-BHA-BHA-MUN-SUN`) delivers max EV (340.14 xP) bridging to WC4 Opt1.
 
 **Recommended action**: Use this note when club choice is open. Use [wc4-sun-bridge.md](wc4-sun-bridge.md) when 1–2 SUN is a hard constraint. Prefer rank 7 (`LIV-MCI-MUN-NFO-SUN`) if 5 unique clubs in GW1–3 matters more than a MUN double.
 

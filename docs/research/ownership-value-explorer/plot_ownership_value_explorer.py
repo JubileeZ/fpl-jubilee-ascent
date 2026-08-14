@@ -3,7 +3,7 @@
 Standalone research tool (not part of GW1–6 pipeline Stage sequence).
 Axes: ownership % vs xP per 90; size = avg expected minutes.
 Filters: position, club, price, avg-xMins floor (default 45).
-Overlays: optional preseason S1/S5 picks + user_picks.
+Overlays: S13 (BB2+TC3 Pre-WC), WC4 Core (Opt1), S5 (BB1+TC3), S1 (FH3), user_picks.
 """
 
 from __future__ import annotations
@@ -22,8 +22,27 @@ OUT_METRICS = OUT_DIR / "ownership_value_metrics.csv"
 OUT_HTML = OUT_DIR / "ownership_value_explorer.html"
 
 DEFAULT_XMINS_FLOOR = 45.0
-S1_PREFIX = "S1:"
+S13_PREFIX = "S13:"
 S5_PREFIX = "S5:"
+S1_PREFIX = "S1:"
+
+WC4_CORE_NAMES = {
+    "Raya",
+    "Kinsky",
+    "Gabriel",
+    "Tarkowski",
+    "Vuskovic",
+    "Wieffer",
+    "Thiaw",
+    "Palmer",
+    "Tzolis",
+    "Sarr",
+    "Ndiaye",
+    "Slater",
+    "Haaland",
+    "Thomas-Asante",
+    "Walle Egeli",
+}
 
 
 def build_explorer_frame(
@@ -51,21 +70,48 @@ def build_explorer_frame(
         raise ValueError(f"season projections missing columns: {sorted(missing)}")
 
     frame = season.copy()
-    s1_ids: set[int] = set()
+    s13_ids: set[int] = set()
     s5_ids: set[int] = set()
+    s1_ids: set[int] = set()
+    wc4_ids: set[int] = set()
+
     if simulation is not None and not simulation.empty:
-        s1_ids = set(
-            simulation.loc[simulation["scenario"].astype(str).str.startswith(S1_PREFIX), "player_id"].astype(int)
-        )
-        s5_ids = set(
-            simulation.loc[simulation["scenario"].astype(str).str.startswith(S5_PREFIX), "player_id"].astype(int)
-        )
+        # S13 Pre-WC (BB2 + TC3)
+        s13_mask = simulation["scenario"].astype(str).str.startswith(S13_PREFIX)
+        if "phase" in simulation.columns and (simulation.loc[s13_mask, "phase"] == "GW1-3 Pre-WC").any():
+            s13_ids = set(simulation.loc[s13_mask & (simulation["phase"] == "GW1-3 Pre-WC"), "player_id"].astype(int))
+        else:
+            s13_ids = set(simulation.loc[s13_mask, "player_id"].astype(int))
+
+        # S5 Pre-WC (BB1 + TC3)
+        s5_mask = simulation["scenario"].astype(str).str.startswith(S5_PREFIX)
+        if "phase" in simulation.columns and (simulation.loc[s5_mask, "phase"] == "GW1-3 Pre-WC").any():
+            s5_ids = set(simulation.loc[s5_mask & (simulation["phase"] == "GW1-3 Pre-WC"), "player_id"].astype(int))
+        else:
+            s5_ids = set(simulation.loc[s5_mask, "player_id"].astype(int))
+
+        # S1 Pre-FH (BB1 + FH3)
+        s1_mask = simulation["scenario"].astype(str).str.startswith(S1_PREFIX)
+        if "phase" in simulation.columns and (simulation.loc[s1_mask, "phase"] == "GW1-2 Pre-FH").any():
+            s1_ids = set(simulation.loc[s1_mask & (simulation["phase"] == "GW1-2 Pre-FH"), "player_id"].astype(int))
+        else:
+            s1_ids = set(simulation.loc[s1_mask, "player_id"].astype(int))
+
+        # WC4 Core Squad (Stage 3 WC4 Opt1)
+        if "phase" in simulation.columns and (simulation["phase"] == "GW4-6 Post-WC").any():
+            wc4_ids = set(simulation.loc[simulation["phase"] == "GW4-6 Post-WC", "player_id"].astype(int))
+
+    if not wc4_ids and "web_name" in frame.columns:
+        wc4_ids = set(frame.loc[frame["web_name"].isin(WC4_CORE_NAMES), "player_id"].astype(int))
+
     user_ids: set[int] = set()
     if user_picks is not None and not user_picks.empty and "player_id" in user_picks.columns:
         user_ids = set(user_picks["player_id"].astype(int))
 
-    frame["in_s1"] = frame["player_id"].astype(int).isin(s1_ids)
+    frame["in_s13"] = frame["player_id"].astype(int).isin(s13_ids)
     frame["in_s5"] = frame["player_id"].astype(int).isin(s5_ids)
+    frame["in_s1"] = frame["player_id"].astype(int).isin(s1_ids)
+    frame["in_wc4_core"] = frame["player_id"].astype(int).isin(wc4_ids) | frame["web_name"].isin(WC4_CORE_NAMES)
     frame["in_user"] = frame["player_id"].astype(int).isin(user_ids)
     frame["xp_per_m_season"] = frame["total_season_xp"] / frame["cost"].replace(0, pd.NA)
 
@@ -88,8 +134,10 @@ def build_explorer_frame(
         "xp_per_90_gw1_6",
         "xp_per_m_season",
         "n_gameweeks",
-        "in_s1",
+        "in_s13",
         "in_s5",
+        "in_s1",
+        "in_wc4_core",
         "in_user",
     ]
     keep = [c for c in cols if c in frame.columns]
@@ -119,9 +167,11 @@ def _records_for_html(frame: pd.DataFrame) -> list[dict]:
                 "avg_xmins_gw1_6": float(row.avg_xmins_gw1_6),
                 "xp_per_90_gw1_6": float(row.xp_per_90_gw1_6),
                 "total_gw1_6_xp": float(row.total_gw1_6_xp),
-                "in_s1": bool(row.in_s1),
-                "in_s5": bool(row.in_s5),
-                "in_user": bool(row.in_user),
+                "in_s13": bool(getattr(row, "in_s13", False)),
+                "in_s5": bool(getattr(row, "in_s5", False)),
+                "in_s1": bool(getattr(row, "in_s1", False)),
+                "in_wc4_core": bool(getattr(row, "in_wc4_core", False)),
+                "in_user": bool(getattr(row, "in_user", False)),
             }
         )
     return out
@@ -184,6 +234,12 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     table.players th {{ position: sticky; top: 0; background: #f3f4f6; z-index: 1; }}
     table.players tr.off-chart {{ color: #777; }}
     table.players tr.hit {{ background: #fff6d6; }}
+    .badge {{ display: inline-block; padding: 0.1rem 0.35rem; font-size: 0.7rem; font-weight: 600; border-radius: 3px; margin-right: 0.2rem; }}
+    .badge-s13 {{ background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }}
+    .badge-wc4 {{ background: #e0f2fe; color: #075985; border: 1px solid #0284c7; }}
+    .badge-s5 {{ background: #f3e8ff; color: #6b21a8; border: 1px solid #9333ea; }}
+    .badge-s1 {{ background: #e6fffa; color: #0d9488; border: 1px solid #14b8a6; }}
+    .badge-user {{ background: #f3f4f6; color: #111827; border: 1px solid #374151; }}
   </style>
 </head>
 <body>
@@ -230,9 +286,11 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     <div class="group">
       <label class="title">Overlays</label>
       <div class="toggles">
-        <label><input type="checkbox" id="hl-s1" checked/> Preseason S1</label>
-        <label><input type="checkbox" id="hl-s5" checked/> Preseason S5</label>
-        <label><input type="checkbox" id="hl-user" checked/> User squad</label>
+        <label><input type="checkbox" id="hl-s13" checked/> ★ S13 (BB2+TC3)</label>
+        <label><input type="checkbox" id="hl-wc4" checked/> ⬡ WC4 Core</label>
+        <label><input type="checkbox" id="hl-s5" checked/> ■ S5 (BB1+TC3)</label>
+        <label><input type="checkbox" id="hl-s1" checked/> ▲ S1 (FH3)</label>
+        <label><input type="checkbox" id="hl-user" checked/> ◆ User squad</label>
         <label><input type="checkbox" id="only-overlay"/> Only overlay players</label>
       </div>
     </div>
@@ -244,13 +302,13 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
   <div id="meta"></div>
   <div id="search-hint"></div>
   <div id="chart"></div>
-  <p class="note">Ownership is FPL <code>selected_by_percent</code> (not EO). Season xP uses Stage 2 rates × GW1–38 fixtures with availability priors. xP/90 = horizon xP ÷ (Σ xMins / 90). Default floor hides low-minute spikes from the chart; the table below lists every player. Chart labels show when avg xMins ≥ 60 or the row matches search.</p>
+  <p class="note">Ownership is FPL <code>selected_by_percent</code> (not EO). Season xP uses Stage 2 rates × GW1–38 fixtures with availability priors. xP/90 = horizon xP ÷ (Σ xMins / 90). Default floor hides low-minute spikes from the chart; the table below lists every player. Chart labels show when avg xMins ≥ 60 or the row matches search. Overlays: ★ S13 (BB2 + TC3 Pre-WC) · ⬡ WC4 Core (Opt1) · ■ S5 (BB1 + TC3) · ▲ S1 (FH3) · ◆ User squad.</p>
   <div id="player-table-wrap">
     <table class="players">
       <thead>
         <tr>
           <th>Player</th><th>Club</th><th>Pos</th><th>£m</th><th>Own%</th>
-          <th>xP/90</th><th>Avg xMins</th><th>On chart</th><th>Role</th>
+          <th>xP/90</th><th>Avg xMins</th><th>On chart</th><th>Role</th><th>Overlays</th>
         </tr>
       </thead>
       <tbody id="player-table"></tbody>
@@ -323,8 +381,10 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         document.getElementById('price-min'),
         document.getElementById('price-max'),
         document.getElementById('xmins-floor'),
-        document.getElementById('hl-s1'),
+        document.getElementById('hl-s13'),
+        document.getElementById('hl-wc4'),
         document.getElementById('hl-s5'),
+        document.getElementById('hl-s1'),
         document.getElementById('hl-user'),
         document.getElementById('only-overlay'),
         document.getElementById('player-search'),
@@ -354,8 +414,10 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       const pmax = parseFloat(document.getElementById('price-max').value);
       const floor = parseFloat(document.getElementById('xmins-floor').value);
       const only = document.getElementById('only-overlay').checked;
-      const hlS1 = document.getElementById('hl-s1').checked;
+      const hlS13 = document.getElementById('hl-s13').checked;
+      const hlWc4 = document.getElementById('hl-wc4').checked;
       const hlS5 = document.getElementById('hl-s5').checked;
+      const hlS1 = document.getElementById('hl-s1').checked;
       const hlUser = document.getElementById('hl-user').checked;
       const m = metrics(r);
       const why = [];
@@ -364,7 +426,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       if (r.cost < pmin || r.cost > pmax) why.push('price band');
       if (m.avgMins < floor) why.push('xMins floor ' + floor + ' (avg ' + m.avgMins.toFixed(1) + ')');
       if (only) {{
-        const hit = (hlS1 && r.in_s1) || (hlS5 && r.in_s5) || (hlUser && r.in_user);
+        const hit = (hlS13 && r.in_s13) || (hlWc4 && r.in_wc4_core) || (hlS5 && r.in_s5) || (hlS1 && r.in_s1) || (hlUser && r.in_user);
         if (!hit) why.push('overlay-only');
       }}
       if (!Number.isFinite(m.xp90)) why.push('non-finite xP/90');
@@ -383,21 +445,43 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
     }}
 
     function markerStyle(r) {{
-      const hlS1 = document.getElementById('hl-s1').checked;
-      const hlS5 = document.getElementById('hl-s5').checked;
       const hlUser = document.getElementById('hl-user').checked;
+      const hlS13 = document.getElementById('hl-s13').checked;
+      const hlWc4 = document.getElementById('hl-wc4').checked;
+      const hlS5 = document.getElementById('hl-s5').checked;
+      const hlS1 = document.getElementById('hl-s1').checked;
       const m = metrics(r);
       let symbol = 'circle';
       let line = {{width: 0.5, color: '#333'}};
-      if (hlUser && r.in_user) {{ symbol = 'diamond'; line = {{width: 2, color: '#111'}}; }}
-      else if (hlS5 && r.in_s5) {{ symbol = 'square'; line = {{width: 2, color: '#6f42c1'}}; }}
-      else if (hlS1 && r.in_s1) {{ symbol = 'triangle-up'; line = {{width: 2, color: '#0b7285'}}; }}
-      const size = Math.max(7, Math.min(28, 6 + m.avgMins / 4.5));
+      let bonusSize = 0;
+
+      if (hlUser && r.in_user) {{
+        symbol = 'diamond';
+        line = {{width: 2.5, color: '#111'}};
+        bonusSize = 2;
+      }} else if (hlS13 && r.in_s13) {{
+        symbol = 'star';
+        line = {{width: 2.5, color: '#d97706'}};
+        bonusSize = 3;
+      }} else if (hlWc4 && r.in_wc4_core) {{
+        symbol = 'hexagon';
+        line = {{width: 2.5, color: '#0284c7'}};
+        bonusSize = 2;
+      }} else if (hlS5 && r.in_s5) {{
+        symbol = 'square';
+        line = {{width: 2, color: '#6f42c1'}};
+        bonusSize = 1;
+      }} else if (hlS1 && r.in_s1) {{
+        symbol = 'triangle-up';
+        line = {{width: 2, color: '#0b7285'}};
+        bonusSize = 1;
+      }}
+
+      const size = Math.max(7 + bonusSize, Math.min(30, 6 + bonusSize + m.avgMins / 4.5));
       return {{symbol, size, line, color: POS_COLORS[r.position] || '#888'}};
     }}
 
     function renderTable(onChartIds, needle) {{
-      const h = metrics(DATA.records[0] || {{avg_xmins_season:0, xp_per_90_season:0, total_season_xp:0, avg_xmins_gw1_6:0, xp_per_90_gw1_6:0, total_gw1_6_xp:0}});
       let rows = DATA.records.slice();
       if (needle) rows = rows.filter(r => nameHit(r, needle));
       rows.sort((a, b) => metrics(b).xp90 - metrics(a).xp90);
@@ -406,11 +490,19 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
         const m = metrics(r);
         const on = onChartIds.has(r.player_id);
         const hit = needle && nameHit(r, needle);
+        const badges = [];
+        if (r.in_s13) badges.push('<span class="badge badge-s13">★ S13</span>');
+        if (r.in_wc4_core) badges.push('<span class="badge badge-wc4">⬡ WC4</span>');
+        if (r.in_s5) badges.push('<span class="badge badge-s5">■ S5</span>');
+        if (r.in_s1) badges.push('<span class="badge badge-s1">▲ S1</span>');
+        if (r.in_user) badges.push('<span class="badge badge-user">◆ User</span>');
+        const badgeHtml = badges.length ? badges.join('') : '—';
         return `<tr class="${{on ? '' : 'off-chart'}}${{hit ? ' hit' : ''}}">
           <td>${{r.web_name}}</td><td>${{r.club_short}}</td><td>${{r.position}}</td>
           <td>${{r.cost.toFixed(1)}}</td><td>${{r.ownership_pct.toFixed(1)}}</td>
           <td>${{m.xp90.toFixed(2)}}</td><td>${{m.avgMins.toFixed(1)}}</td>
           <td>${{on ? 'yes' : 'no'}}</td><td>${{r.expected_role}}</td>
+          <td>${{badgeHtml}}</td>
         </tr>`;
       }}).join('');
       const hint = document.getElementById('search-hint');
@@ -441,7 +533,7 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
       const onChartIds = new Set(rows.map(r => r.player_id));
       const h = metrics(rows[0] || {{avg_xmins_season:0, xp_per_90_season:0, total_season_xp:0, avg_xmins_gw1_6:0, xp_per_90_gw1_6:0, total_gw1_6_xp:0}});
       document.getElementById('meta').textContent =
-        `Horizon ${{h.label}} · chart ${{base.length}} / ${{DATA.records.length}} · table ${{needle ? 'search' : 'all ' + DATA.records.length}} · diamond=user · square=S5 · triangle=S1`;
+        `Horizon ${{h.label}} · chart ${{base.length}} / ${{DATA.records.length}} · table ${{needle ? 'search' : 'all ' + DATA.records.length}} · ★ S13 · ⬡ WC4 Core · ■ S5 · ▲ S1 · ◆ User`;
       const traces = DATA.positions.map(pos => {{
         const subset = rows.filter(r => r.position === pos);
         const styles = subset.map(markerStyle);
@@ -455,7 +547,20 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
           text: subset.map((r, i) => (ms[i].avgMins >= 60 || nameHit(r, needle)) ? r.web_name : ''),
           textposition: 'top center',
           textfont: {{size: 10}},
-          customdata: subset.map((r, i) => [r.web_name, r.club_short, r.cost, r.expected_role, ms[i].avgMins, ms[i].totalXp, r.in_s1, r.in_s5, r.in_user, ms[i].label]),
+          customdata: subset.map((r, i) => [
+            r.web_name,
+            r.club_short,
+            r.cost,
+            r.expected_role,
+            ms[i].avgMins,
+            ms[i].totalXp,
+            r.in_s13 ? 'Yes' : 'No',
+            r.in_wc4_core ? 'Yes' : 'No',
+            r.in_s5 ? 'Yes' : 'No',
+            r.in_s1 ? 'Yes' : 'No',
+            r.in_user ? 'Yes' : 'No',
+            ms[i].label,
+          ]),
           marker: {{
             size: styles.map(s => s.size),
             color: styles.map(s => s.color),
@@ -465,10 +570,11 @@ def write_explorer_html(frame: pd.DataFrame, path: Path, default_xmins_floor: fl
           }},
           hovertemplate:
             '<b>%{{customdata[0]}}</b> (%{{customdata[1]}} %{{fullData.name}})<br>' +
-            'Own %: %{{x:.1f}}<br>xP/90 (%{{customdata[9]}}): %{{y:.2f}}<br>' +
+            'Own %: %{{x:.1f}}%<br>' +
+            'xP/90 (%{{customdata[11]}}): %{{y:.2f}}<br>' +
             'Cost: £%{{customdata[2]:.1f}}m · Role: %{{customdata[3]}}<br>' +
             'Avg xMins: %{{customdata[4]:.1f}} · Horizon xP: %{{customdata[5]:.2f}}<br>' +
-            'S1:%{{customdata[6]}} S5:%{{customdata[7]}} User:%{{customdata[8]}}' +
+            '<b>Overlays:</b> S13:%{{customdata[6]}} · WC4:%{{customdata[7]}} · S5:%{{customdata[8]}} · S1:%{{customdata[9]}} · User:%{{customdata[10]}}' +
             '<extra></extra>',
         }};
       }});
