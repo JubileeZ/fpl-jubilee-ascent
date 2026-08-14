@@ -68,14 +68,18 @@ Authority = `expected-stats-gw1-5.csv` inputs consumed by the hybrid scorer (`pe
 
 ## Method
 
+## Method
+
 1. **Goalkeeper Selection**: Nailed Starter or Regular Starter (role CSV ∩ expected-stats).
-2. **Projection**: `ParticipationStateHybridModel.predict` on Feature-Contract-like rows for GW1–38; attack/defence strength multipliers from `_fixture_maps`. Minutes forced flat (90 start / fit) for this study — Regular/promoted risk stays as tags, not minutes haircuts.
-3. **Weekly pick (primary)**: FDR-min (easier defence FDR; home wins ties) — matches 2025/26 historical backtest rule.
-4. **Weekly pick (footnote)**: max(xP) each GW → `tot_rot_xp_maxxp` and `maxxp_delta`.
-5. **Horizons**: gw1_6, gw1_10, gw1_19, full_season — each uses **its own** rotated xP sum (no GW1–6 reuse).
-6. **Points-Heavy RQI** (0–100):
-   $$\text{RQI} = 0.40 \cdot S_{\text{tot_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
-   $S_{\text{tot_xp}}$ from **rotated xP / GW** on a 2.5–4.2 scale. Caveat: flat-90 hybrid GKP xP/GW often exceeds 4.2 → $S_{\text{tot_xp}}$ saturates; rank differentiation shifts toward FDR/corr/ease/cost.
+2. **Projection**: `ParticipationStateHybridModel.predict` on Feature-Contract-like rows for GW1–38; attack/defence strength multipliers from `_fixture_maps`. Minutes forced flat (90 start / fit) for this study.
+3. **Weekly pick (primary)**: **Unconditional $\max(xP)$** — starters selected solely on projected points (shot-stopping baseline + Poisson clean sheets + defcon).
+4. **Schedule Diversification**: **Fixture Overlap Index (FOI)** measuring joint clean-sheet failure risk ($\text{FOI} = \frac{1}{T}\sum (1 - p_{\text{cs1}})(1 - p_{\text{cs2}})$).
+5. **Opportunity-Cost Adjusted Net Value (OC-RQI)**:
+   $$\text{OC-RQI} = \frac{\text{Rotated xP}}{N} - \gamma \times (\text{Total Spend} - £8.5\text{m})$$
+   Where $\gamma \approx 0.24-0.25\text{ xP/£1.0m/GW}$ is the empirical outfield slope estimated via OLS across drafted outfield assets from Stage 2.
+6. **Recalibrated Non-Saturating RQI** (0–100):
+   $$\text{RQI} = 0.50 \cdot S_{\text{xp}} + 0.20 \cdot S_{\text{foi}} + 0.15 \cdot S_{\text{fdr}} + 0.15 \cdot S_{\text{cost}}$$
+   $S_{\text{xp}}$ evaluated on a wide $3.0-7.5\text{ xP/GW}$ range to eliminate saturation.
 
 ---
 
@@ -86,35 +90,33 @@ Authority = `expected-stats-gw1-5.csv` inputs consumed by the hybrid scorer (`pe
 #### **1.1 GW1–6 Top 10 Overall Pairs**
 *🔥 **£9.0m** = double £4.5m. `⚠️` = promoted proxy (COV/HUL/IPS).*
 
-| Rank | GKP 1 (Club, Price) | GKP 1 Baseline (Saves/90 \| GC/90) | GKP 2 (Club, Price) | GKP 2 Baseline (Saves/90 \| GC/90) | Total Price | RQI Score | GW1–6 Rotated $xP$ (FDR-min) | max(xP) Δ | FDR Corr ($r$) | Rot Avg FDR | Easy GWs ($\le 2$) |
+| Rank | GKP 1 (Club, Price) | GKP 1 Rates (Saves / GC) | GKP 2 (Club, Price) | GKP 2 Rates (Saves / GC) | Total Price | OC-RQI | Rotated xP (max) | Exp CS | FOI | FDR Loss | RQI Score |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **1** | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **Scherpen** (IPS £4.5m) | 1.900 \| 1.375 | 🔥 **£9.0m** ⚠️ | **88.74 / 100** | **35.94 $xP$** | 0.00 | **-0.7071** | **2.50** | 3 / 6 (50.0%) |
-| **2** | **Rushworth** (COV £4.5m) | 3.110 \| 1.375 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** ⚠️ | **87.89 / 100** | **38.53 $xP$** | 0.00 | **-0.5941** | **2.33** | 4 / 6 (66.7%) |
-| **3** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **87.89 / 100** | **38.77 $xP$** | 0.00 | **-0.5941** | **2.33** | 4 / 6 (66.7%) |
-| **4** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Scherpen** (IPS £4.5m) | 1.900 \| 1.375 | 🔥 **£9.0m** ⚠️ | **87.10 / 100** | **34.04 $xP$** | 0.00 | **-0.8216** | **2.67** | 2 / 6 (33.3%) |
-| **5** | **Trafford** (LEE £5.0m) | 3.786 \| 1.474 | **Scherpen** (IPS £4.5m) | 1.900 \| 1.375 | **£9.5m** ⚠️ | **86.95 / 100** | **35.77 $xP$** | 0.00 | **-0.5000** | **2.33** | 4 / 6 (66.7%) |
-| **6** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** | **85.20 / 100** | **36.29 $xP$** | 0.39 | **-0.3536** | **2.50** | 3 / 6 (50.0%) |
-| **7** | **Rushworth** (COV £4.5m) | 3.110 \| 1.375 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** ⚠️ | **85.20 / 100** | **35.75 $xP$** | 0.55 | **-0.3536** | **2.50** | 3 / 6 (50.0%) |
-| **8** | **Kelleher** (BRE £5.0m) | 2.946 \| 1.324 | **Scherpen** (IPS £4.5m) | 1.900 \| 1.375 | **£9.5m** ⚠️ | **85.11 / 100** | **36.01 $xP$** | 0.00 | **-0.5941** | **2.50** | 3 / 6 (50.0%) |
-| **9** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Pope** (NEW £5.0m) | 3.315 \| 1.416 | **£9.5m** | **84.92 / 100** | **38.73 $xP$** | 0.00 | **-0.2970** | **2.33** | 4 / 6 (66.7%) |
-| **10** | **Rushworth** (COV £4.5m) | 3.110 \| 1.375 | **Pope** (NEW £5.0m) | 3.315 \| 1.416 | **£9.5m** ⚠️ | **84.92 / 100** | **38.34 $xP$** | 0.00 | **-0.2970** | **2.33** | 4 / 6 (66.7%) |
-
-Overall #1 is FDR complementarity (Kinsky+Scherpen), not points. Prefer PL-proven #1 for a points-sensible pair.
+| **1** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.227** | **38.82 xP** | 2.17 | 0.4862 | 1.19 | 66.33 / 100 |
+| **2** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Lammens** (MUN £5.0m) | 2.47 / 1.22 | **£9.5m** | **6.219** | **38.77 xP** | 2.37 | 0.4549 | 0.00 | 67.70 / 100 |
+| **3** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **£9.5m** | **6.212** | **38.73 xP** | 2.21 | 0.4931 | 0.00 | 66.86 / 100 |
+| **4** | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.199** | **38.65 xP** | 2.15 | 0.4497 | 0.50 | 66.75 / 100 |
+| **5** | **Rushworth** (COV £4.5m) | 3.11 / 1.38 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** ⚠️ | **6.185** | **38.57 xP** | 2.07 | 0.5174 | 1.47 | 65.24 / 100 |
+| **6** | **Rushworth** (COV £4.5m) | 3.11 / 1.38 | **Lammens** (MUN £5.0m) | 2.47 / 1.22 | **£9.5m** ⚠️ | **6.179** | **38.53 xP** | 2.28 | 0.4843 | 0.00 | 66.67 / 100 |
+| **7** | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.174** | **38.50 xP** | 2.25 | 0.4442 | 0.00 | 66.58 / 100 |
+| **8** | **Rushworth** (COV £4.5m) | 3.11 / 1.38 | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **£9.5m** ⚠️ | **6.147** | **38.34 xP** | 2.07 | 0.5248 | 0.00 | 65.50 / 100 |
+| **9** | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **Scherpen** (IPS £4.5m) | 1.90 / 1.38 | **£9.5m** ⚠️ | **6.124** | **38.20 xP** | 1.91 | 0.5284 | 1.03 | 64.34 / 100 |
+| **10** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Roefs** (SUN £5.0m) | 3.11 / 1.31 | **£9.5m** | **6.065** | **37.85 xP** | 2.34 | 0.4768 | 0.00 | 65.56 / 100 |
 
 #### **1.2 GW1–6 Top 10 PL-Proven Pairs (Excluding Promoted Proxies)**
 
-| Rank | GKP 1 (Club, Price) | GKP 1 Baseline (Saves/90 \| GC/90) | GKP 2 (Club, Price) | GKP 2 Baseline (Saves/90 \| GC/90) | Total Price | RQI Score | GW1–6 Rotated $xP$ (FDR-min) | max(xP) Δ | FDR Corr ($r$) | Rot Avg FDR | Easy GWs ($\le 2$) |
+| Rank | GKP 1 (Club, Price) | GKP 1 Rates (Saves / GC) | GKP 2 (Club, Price) | GKP 2 Rates (Saves / GC) | Total Price | OC-RQI | Rotated xP (max) | Exp CS | FOI | FDR Loss | RQI Score |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **1** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **87.89 / 100** | **38.77 $xP$** | 0.00 | **-0.5941** | **2.33** | 4 / 6 (66.7%) |
-| **2** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** | **85.20 / 100** | **36.29 $xP$** | 0.39 | **-0.3536** | **2.50** | 3 / 6 (50.0%) |
-| **3** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Pope** (NEW £5.0m) | 3.315 \| 1.416 | **£9.5m** | **84.92 / 100** | **38.73 $xP$** | 0.00 | **-0.2970** | **2.33** | 4 / 6 (66.7%) |
-| **4** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **£9.5m** | **84.60 / 100** | **37.33 $xP$** | 0.00 | **-0.8216** | **2.67** | 2 / 6 (33.3%) |
-| **5** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** | **83.61 / 100** | **37.85 $xP$** | 0.00 | **0.0000** | **2.33** | 5 / 6 (83.3%) |
-| **6** | **Pope** (NEW £5.0m) | 3.315 \| 1.416 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **£9.5m** | **83.37 / 100** | **38.15 $xP$** | 0.50 | **-0.4201** | **2.50** | 3 / 6 (50.0%) |
-| **7** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **£9.5m** | **83.34 / 100** | **37.63 $xP$** | 1.19 | **-0.2500** | **2.50** | 4 / 6 (66.7%) |
-| **8** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Sánchez** (CHE £5.0m) | 2.901 \| 1.451 | **£9.5m** | **83.25 / 100** | **36.16 $xP$** | 0.25 | **-0.4082** | **2.50** | 3 / 6 (50.0%) |
-| **9** | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** | **82.76 / 100** | **35.91 $xP$** | 0.15 | **-0.3873** | **2.67** | 2 / 6 (33.3%) |
-| **10** | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **£9.5m** | **82.70 / 100** | **38.50 $xP$** | 0.00 | **-0.3536** | **2.50** | 3 / 6 (50.0%) |
+| **1** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.227** | **38.82 xP** | 2.17 | 0.4862 | 1.19 | 66.33 / 100 |
+| **2** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Lammens** (MUN £5.0m) | 2.47 / 1.22 | **£9.5m** | **6.219** | **38.77 xP** | 2.37 | 0.4549 | 0.00 | 67.70 / 100 |
+| **3** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **£9.5m** | **6.212** | **38.73 xP** | 2.21 | 0.4931 | 0.00 | 66.86 / 100 |
+| **4** | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.199** | **38.65 xP** | 2.15 | 0.4497 | 0.50 | 66.75 / 100 |
+| **5** | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.174** | **38.50 xP** | 2.25 | 0.4442 | 0.00 | 66.58 / 100 |
+| **6** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Roefs** (SUN £5.0m) | 3.11 / 1.31 | **£9.5m** | **6.065** | **37.85 xP** | 2.34 | 0.4768 | 0.00 | 65.56 / 100 |
+| **7** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.004** | **37.48 xP** | 2.19 | 0.4363 | 0.58 | 64.01 / 100 |
+| **8** | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **5.999** | **37.45 xP** | 1.94 | 0.5410 | 0.69 | 61.87 / 100 |
+| **9** | **Verbruggen** (BHA £4.5m) | 2.79 / 1.21 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | 🔥 **£9.0m** | **5.992** | **36.68 xP** | 2.44 | 0.4261 | 0.39 | 68.57 / 100 |
+| **10** | **Petrović** (BOU £4.5m) | 2.87 / 1.42 | **Pope** (NEW £5.0m) | 3.32 / 1.42 | **£9.5m** | **5.987** | **37.38 xP** | 1.66 | 0.5884 | 0.95 | 59.95 / 100 |
 
 ---
 
@@ -122,45 +124,46 @@ Overall #1 is FDR complementarity (Kinsky+Scherpen), not points. Prefer PL-prove
 
 #### **2.1 Full Season Top 10 Overall Pairs**
 
-| Rank | GKP 1 (Club, Price) | GKP 1 Baseline (Saves/90 \| GC/90) | GKP 2 (Club, Price) | GKP 2 Baseline (Saves/90 \| GC/90) | Total Price | RQI Score | Full Season Rotated $xP$ (FDR-min) | max(xP) Δ | FDR Corr ($r$) | Rot Avg FDR | Easy GWs ($\le 2$) |
+| Rank | GKP 1 (Club, Price) | GKP 1 Rates (Saves / GC) | GKP 2 (Club, Price) | GKP 2 Rates (Saves / GC) | Total Price | OC-RQI | Rotated xP (max) | Exp CS | FOI | FDR Loss | RQI Score |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **1** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **83.87 / 100** | **232.35 $xP$** | 4.01 | **-0.4170** | **2.50** | 21 / 38 (55.3%) |
-| **2** | **Rushworth** (COV £4.5m) | 3.110 \| 1.375 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** ⚠️ | **83.87 / 100** | **229.99 $xP$** | 4.93 | **-0.4170** | **2.50** | 21 / 38 (55.3%) |
-| **3** | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** | **83.75 / 100** | **232.64 $xP$** | 2.13 | **-0.2254** | **2.53** | 19 / 38 (50.0%) |
-| **4** | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **£9.5m** | **83.58 / 100** | **240.72 $xP$** | 1.90 | **-0.3981** | **2.47** | 20 / 38 (52.6%) |
-| **5** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **£9.5m** | **83.23 / 100** | **239.23 $xP$** | 2.00 | **-0.3623** | **2.47** | 20 / 38 (52.6%) |
-| **6** | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** | **82.78 / 100** | **240.20 $xP$** | 0.96 | **-0.3352** | **2.50** | 20 / 38 (52.6%) |
-| **7** | **Rushworth** (COV £4.5m) | 3.110 \| 1.375 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** ⚠️ | **82.70 / 100** | **228.07 $xP$** | 4.11 | **-0.3451** | **2.53** | 20 / 38 (52.6%) |
-| **8** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** | **82.70 / 100** | **231.15 $xP$** | 3.15 | **-0.3451** | **2.53** | 20 / 38 (52.6%) |
-| **9** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **82.57 / 100** | **236.55 $xP$** | 0.88 | **-0.2971** | **2.47** | 20 / 38 (52.6%) |
-| **10** | **Martinez** (AVL £5.0m) | 3.016 \| 1.238 | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **£9.5m** | **82.00 / 100** | **240.19 $xP$** | 1.62 | **-0.3007** | **2.53** | 19 / 38 (50.0%) |
+| **1** | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.142** | **242.62 xP** | 14.52 | 0.4457 | 1.90 | 66.33 / 100 |
+| **2** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **£9.5m** | **6.121** | **241.82 xP** | 13.29 | 0.5062 | 1.62 | 64.62 / 100 |
+| **3** | **Petrović** (BOU £4.5m) | 2.87 / 1.42 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.105** | **241.23 xP** | 12.65 | 0.5336 | 2.00 | 64.16 / 100 |
+| **4** | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **Roefs** (SUN £5.0m) | 3.11 / 1.31 | **£9.5m** | **6.103** | **241.16 xP** | 14.72 | 0.4481 | 0.96 | 65.72 / 100 |
+| **5** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Petrović** (BOU £4.5m) | 2.87 / 1.42 | **£9.5m** | **6.073** | **240.00 xP** | 12.76 | 0.5186 | 1.63 | 63.71 / 100 |
+| **6** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.070** | **239.87 xP** | 14.13 | 0.4375 | 1.21 | 64.76 / 100 |
+| **7** | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | 🔥 **£9.0m** | **6.057** | **234.77 xP** | 15.27 | 0.4538 | 2.13 | 68.61 / 100 |
+| **8** | **Lammens** (MUN £5.0m) | 2.47 / 1.22 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.037** | **238.63 xP** | 15.12 | 0.4289 | 0.73 | 65.10 / 100 |
+| **9** | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.031** | **238.39 xP** | 12.69 | 0.5243 | 2.33 | 63.12 / 100 |
+| **10** | **Kelleher** (BRE £5.0m) | 2.95 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.016** | **237.85 xP** | 14.24 | 0.4510 | 4.83 | 64.04 / 100 |
 
 #### **2.2 Full Season Top 10 PL-Proven Pairs (Excluding Promoted Proxies)**
 
-| Rank | GKP 1 (Club, Price) | GKP 1 Baseline (Saves/90 \| GC/90) | GKP 2 (Club, Price) | GKP 2 Baseline (Saves/90 \| GC/90) | Total Price | RQI Score | Full Season Rotated $xP$ (FDR-min) | max(xP) Δ | FDR Corr ($r$) | Rot Avg FDR | Easy GWs ($\le 2$) |
+| Rank | GKP 1 (Club, Price) | GKP 1 Rates (Saves / GC) | GKP 2 (Club, Price) | GKP 2 Rates (Saves / GC) | Total Price | OC-RQI | Rotated xP (max) | Exp CS | FOI | FDR Loss | RQI Score |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **1** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **83.87 / 100** | **232.35 $xP$** | 4.01 | **-0.4170** | **2.50** | 21 / 38 (55.3%) |
-| **2** | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | 🔥 **£9.0m** | **83.75 / 100** | **232.64 $xP$** | 2.13 | **-0.2254** | **2.53** | 19 / 38 (50.0%) |
-| **3** | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **£9.5m** | **83.58 / 100** | **240.72 $xP$** | 1.90 | **-0.3981** | **2.47** | 20 / 38 (52.6%) |
-| **4** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Sels** (NFO £5.0m) | 3.206 \| 1.316 | **£9.5m** | **83.23 / 100** | **239.23 $xP$** | 2.00 | **-0.3623** | **2.47** | 20 / 38 (52.6%) |
-| **5** | **Kinsky** (TOT £4.5m) | 1.429 \| 1.000 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** | **82.78 / 100** | **240.20 $xP$** | 0.96 | **-0.3352** | **2.50** | 20 / 38 (52.6%) |
-| **6** | **Verbruggen** (BHA £4.5m) | 2.789 \| 1.211 | **Roefs** (SUN £5.0m) | 3.114 \| 1.314 | **£9.5m** | **82.70 / 100** | **231.15 $xP$** | 3.15 | **-0.3451** | **2.53** | 20 / 38 (52.6%) |
-| **7** | **Petrović** (BOU £4.5m) | 2.868 \| 1.421 | **Lammens** (MUN £5.0m) | 2.469 \| 1.219 | **£9.5m** | **82.57 / 100** | **236.55 $xP$** | 0.88 | **-0.2971** | **2.47** | 20 / 38 (52.6%) |
-| **8** | **Martinez** (AVL £5.0m) | 3.016 \| 1.238 | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **£9.5m** | **82.00 / 100** | **240.19 $xP$** | 1.62 | **-0.3007** | **2.53** | 19 / 38 (50.0%) |
-| **9** | **Sánchez** (CHE £5.0m) | 2.901 \| 1.451 | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **£9.5m** | **81.53 / 100** | **230.89 $xP$** | 2.64 | **-0.2275** | **2.53** | 20 / 38 (52.6%) |
-| **10** | **Henderson** (CRY £5.0m) | 2.865 \| 1.378 | **Leno** (FUL £4.5m) | 2.579 \| 1.342 | **£9.5m** | **81.35 / 100** | **231.37 $xP$** | 2.22 | **-0.2620** | **2.53** | 18 / 38 (47.4%) |
+| **1** | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.142** | **242.62 xP** | 14.52 | 0.4457 | 1.90 | 66.33 / 100 |
+| **2** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **£9.5m** | **6.121** | **241.82 xP** | 13.29 | 0.5062 | 1.62 | 64.62 / 100 |
+| **3** | **Petrović** (BOU £4.5m) | 2.87 / 1.42 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.105** | **241.23 xP** | 12.65 | 0.5336 | 2.00 | 64.16 / 100 |
+| **4** | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **Roefs** (SUN £5.0m) | 3.11 / 1.31 | **£9.5m** | **6.103** | **241.16 xP** | 14.72 | 0.4481 | 0.96 | 65.72 / 100 |
+| **5** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Petrović** (BOU £4.5m) | 2.87 / 1.42 | **£9.5m** | **6.073** | **240.00 xP** | 12.76 | 0.5186 | 1.63 | 63.71 / 100 |
+| **6** | **Martinez** (AVL £5.0m) | 3.02 / 1.24 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.070** | **239.87 xP** | 14.13 | 0.4375 | 1.21 | 64.76 / 100 |
+| **7** | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | 🔥 **£9.0m** | **6.057** | **234.77 xP** | 15.27 | 0.4538 | 2.13 | 68.61 / 100 |
+| **8** | **Lammens** (MUN £5.0m) | 2.47 / 1.22 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.037** | **238.63 xP** | 15.12 | 0.4289 | 0.73 | 65.10 / 100 |
+| **9** | **Leno** (FUL £4.5m) | 2.58 / 1.34 | **Sels** (NFO £5.0m) | 3.21 / 1.32 | **£9.5m** | **6.031** | **238.39 xP** | 12.69 | 0.5243 | 2.33 | 63.12 / 100 |
+| **10** | **Kelleher** (BRE £5.0m) | 2.95 / 1.32 | **Kinsky** (TOT £4.5m) | 1.43 / 1.00 | **£9.5m** | **6.016** | **237.85 xP** | 14.24 | 0.4510 | 4.83 | 64.04 / 100 |
 
 ---
 
 ### 3. Top Pairings by Budget Tier & Risk Category
 
 #### **Tier A: Premier League Proven Rotation Pairs (£9.5m)**
-- **Verbruggen (BHA £4.5m) + Lammens (MUN £5.0m)**: PL-proven #1 on both GW1–6 (**RQI 87.89**, **38.77 $xP$**) and full season (**RQI 83.87**, **232.35 $xP$** FDR-min; max(xP) Δ **4.01**). Strong negative full-season FDR corr ($r = -0.417$).
-- **Sels (NFO £5.0m) + Kinsky (TOT £4.5m)**: Highest PL-proven full-season points (**240.72 $xP$**) at RQI **83.58**.
+- **Verbruggen (BHA £4.5m) + Sels (NFO £5.0m)**: GW1–6 leader under OC-RQI (**6.227**, **38.82 xP**, **2.17 Exp CS**). Note that following max(xP) saves **+1.19 xP** vs legacy FDR-min picks.
+- **Verbruggen (BHA £4.5m) + Lammens (MUN £5.0m)**: Premier clean-sheet pairing (**2.37 Exp CS**, **38.77 xP**, FOI **0.4549**).
+- **Sels (NFO £5.0m) + Kinsky (TOT £4.5m)**: Full-season champion (**OC-RQI 6.142**, **242.62 xP**, **14.52 Exp CS**).
 
 #### **Tier B: £9.0m Budget Pairs (Double £4.5m)**
-- **Leno (FUL £4.5m) + Kinsky (TOT £4.5m)**: Top PL-proven £9.0m full-season pair (**RQI 83.75**, **232.64 $xP$**).
-- **Kinsky + Scherpen** / **Rushworth** pairs: overall RQI leaders tagged `⚠️ Promoted Proxy` — do not treat as PL-proven.
+- **Verbruggen (BHA £4.5m) + Kinsky (TOT £4.5m)**: Highest GW1–6 budget pair (**36.68 xP**, **2.44 Exp CS**, **RQI 68.57**).
+- **Leno (FUL £4.5m) + Kinsky (TOT £4.5m)**: Full-season £9.0m benchmark (**OC-RQI 6.057**, **234.77 xP**, **15.27 Exp CS**). Saves £0.5m with zero sacrifice in clean-sheet coverage.
 
 ---
 

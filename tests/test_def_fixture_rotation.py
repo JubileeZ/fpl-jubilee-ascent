@@ -27,9 +27,9 @@ def rotation_mod() -> ModuleType:
 
 
 def test_def_rqi_scoring_bounds(rotation_mod: ModuleType) -> None:
-    # High quality: 16.5 xP/GW, 2.0 avg FDR, 100% no-diff, -1.0 corr, £20.0m price
-    rqi_max = rotation_mod.compute_def_rqi(
-        tot_rot_xp=16.5 * 19,
+    # High quality: 22.0 xP/GW, 2.0 avg FDR, 100% no-diff, -1.0 corr, £20.0m price
+    rqi_max, oc_max = rotation_mod.compute_def_rqi(
+        tot_rot_xp=22.0 * 19,
         num_gws=19,
         rot_avg_fdr=2.0,
         no_diff_pct=100.0,
@@ -37,23 +37,24 @@ def test_def_rqi_scoring_bounds(rotation_mod: ModuleType) -> None:
         total_price=20.0,
     )
     assert rqi_max == 100.0
+    assert oc_max == 22.0
 
-    # Low quality: 9.0 xP/GW, 3.5 avg FDR, 0% no-diff, +1.0 corr, £28.0m price
-    rqi_min = rotation_mod.compute_def_rqi(
-        tot_rot_xp=9.0 * 19,
+    # Low quality: 10.0 xP/GW, 3.5 avg FDR, 0% no-diff, +1.0 corr, £26.0m price
+    rqi_min, oc_min = rotation_mod.compute_def_rqi(
+        tot_rot_xp=10.0 * 19,
         num_gws=19,
         rot_avg_fdr=3.5,
         no_diff_pct=0.0,
         fdr_corr=1.0,
-        total_price=28.0,
+        total_price=26.0,
     )
     assert rqi_min == 0.0
 
 
 def test_bb_rqi_scoring_bounds(rotation_mod: ModuleType) -> None:
-    # Max quality: 60.0 xP across 11 starts, 2.0 GW1 FDR, 2.0 GW2-3 FDR, 2.0 eff FDR, -1.0 corr, £20.0m price
-    bb_rqi_max = rotation_mod.compute_bb_rqi(
-        tot_effective_xp=60.0,
+    # Max quality: 75.0 xP across 11 starts, 2.0 GW1 FDR, 2.0 GW2-3 FDR, 2.0 eff FDR, -1.0 corr, £20.0m price
+    bb_rqi_max, bb_oc_max = rotation_mod.compute_bb_rqi(
+        tot_effective_xp=75.0,
         gw1_avg_fdr=2.0,
         gw2_3_rot_fdr=2.0,
         effective_avg_fdr=2.0,
@@ -62,16 +63,25 @@ def test_bb_rqi_scoring_bounds(rotation_mod: ModuleType) -> None:
     )
     assert bb_rqi_max == 100.0
 
-    # Min quality: 38.0 xP, 3.5 GW1 FDR, 3.5 GW2-3 FDR, 3.5 eff FDR, +1.0 corr, £28.0m price
-    bb_rqi_min = rotation_mod.compute_bb_rqi(
-        tot_effective_xp=38.0,
+    # Min quality: 40.0 xP, 3.5 GW1 FDR, 3.5 GW2-3 FDR, 3.5 eff FDR, +1.0 corr, £26.0m price
+    bb_rqi_min, bb_oc_min = rotation_mod.compute_bb_rqi(
+        tot_effective_xp=40.0,
         gw1_avg_fdr=3.5,
         gw2_3_rot_fdr=3.5,
         effective_avg_fdr=3.5,
         avg_corr=1.0,
-        total_price=28.0,
+        total_price=26.0,
     )
     assert bb_rqi_min == 0.0
+
+
+def test_precompute_pairwise_corr_diagonal_is_one(rotation_mod: ModuleType) -> None:
+    # Intra-club diagonal correlation must be 1.0 (identical fixtures)
+    import numpy as np
+    dummy_fdr = np.array([[2.0, 3.0, 4.0], [3.0, 2.0, 4.0]], dtype=float)
+    corr_mat = rotation_mod.precompute_pairwise_corr(dummy_fdr)
+    assert corr_mat[0, 0] == 1.0
+    assert corr_mat[1, 1] == 1.0
 
 
 def test_club_slot_hamming(rotation_mod: ModuleType) -> None:
@@ -127,10 +137,6 @@ def test_def_rotation_artifacts_exist() -> None:
     bb2_club_csv = base_dir / "def_bb2_wc4_club_matrix.csv"
     bb2_tier_csv = base_dir / "def_bb2_wc4_tier_lineups.csv"
     baseline_csv = base_dir / "def_performance_baseline.csv"
-    sun_bridge_csv = base_dir / "def_wc4_sun_bridge_matrix.csv"
-
-    overall_bridge_csv = base_dir / "def_wc4_overall_bridge_matrix.csv"
-
     assert club_csv.exists()
     assert tier_csv.exists()
     assert bb_club_csv.exists()
@@ -138,8 +144,6 @@ def test_def_rotation_artifacts_exist() -> None:
     assert bb2_club_csv.exists()
     assert bb2_tier_csv.exists()
     assert baseline_csv.exists()
-    assert sun_bridge_csv.exists()
-    assert overall_bridge_csv.exists()
 
     df_clubs = pd.read_csv(club_csv)
     df_tiers = pd.read_csv(tier_csv)
@@ -148,8 +152,6 @@ def test_def_rotation_artifacts_exist() -> None:
     df_bb2_clubs = pd.read_csv(bb2_club_csv)
     df_bb2_tiers = pd.read_csv(bb2_tier_csv)
     df_base = pd.read_csv(baseline_csv)
-    df_bridge = pd.read_csv(sun_bridge_csv)
-    df_overall = pd.read_csv(overall_bridge_csv)
 
     assert set(df_clubs["horizon"].unique()) >= {"gw1_3", "gw4_19", "gw1_19", "full_season"}
     gw4_5 = df_clubs[(df_clubs["horizon"] == "gw4_19") & (df_clubs["num_unique_clubs"] == 5)].iloc[0]
@@ -168,19 +170,3 @@ def test_def_rotation_artifacts_exist() -> None:
     assert len(df_base) >= 50
     assert (df_base["expected_role"].isin(["Nailed Starter", "Regular Starter"])).all()
     assert (df_bb_clubs["gw1_max_fdr"] <= 3.0).all()
-    assert len(df_bridge) > 100
-    assert df_bridge["pre_sun"].isin([1, 2]).all()
-    assert df_bridge["n_swaps"].isin([1, 2]).all()
-    assert df_bridge["pre_unique"].isin([4, 5]).all()
-    top = df_bridge[df_bridge["scenario_rank"] == 1].iloc[0]
-    assert top["gw419_rot_fdr"] == pytest.approx(2.4375)
-    assert int(top["n_swaps"]) == 2
-    assert "SUN" in str(top["out_clubs"])
-    assert len(df_overall) > len(df_bridge)
-    assert df_overall["n_swaps"].isin([1, 2]).all()
-    assert df_overall["pre_unique"].isin([4, 5]).all()
-    overall_top = df_overall[df_overall["scenario_rank"] == 1].iloc[0]
-    assert overall_top["gw419_rot_fdr"] == pytest.approx(2.4375)
-    assert int(overall_top["pre_sun"]) == 0
-    assert Path("docs/research/def-fixture-rotation/wc4-sun-bridge.md").exists()
-    assert Path("docs/research/def-fixture-rotation/wc4-overall-bridge.md").exists()

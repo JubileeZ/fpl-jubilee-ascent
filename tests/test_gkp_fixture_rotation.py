@@ -46,17 +46,17 @@ def test_horizon_rotation_sums_match_window_length() -> None:
 
     assert short["num_gws"] == 6
     assert full["num_gws"] == 8
-    # FDR-min: weeks 1-2 g1, 3-4 g2, 5-6 g1, 7-8 g2 → 4+4+5+5+4+4+4+4 = 34
+    # max(xP): 4,4,5,5,4,4,4,4 = 34
     assert full["tot_rot_xp"] == 34.0
     assert short["tot_rot_xp"] == 26.0
     assert full["tot_rot_xp"] != short["tot_rot_xp"]
-    # max(xP): 4,4,5,5,4,4,4,4 = 34
-    assert full["tot_rot_xp_maxxp"] == 34.0
+    # FDR-min pick:
+    assert full["tot_rot_xp_fdr"] == 34.0
 
 
 def test_rqi_uses_per_gw_rotated_xp() -> None:
-    # Same per-GW quality → same RQI regardless of horizon length scaling of totals
-    rqi_6 = mod.compute_rqi(
+    # Same per-GW quality → same RQI and OC-RQI regardless of horizon length scaling of totals
+    rqi_6, oc_6 = mod.compute_rqi(
         tot_rot_xp=24.0,
         num_gws=6,
         rot_avg_fdr=2.5,
@@ -64,7 +64,7 @@ def test_rqi_uses_per_gw_rotated_xp() -> None:
         easy_gw_pct=50.0,
         total_price=9.5,
     )
-    rqi_38 = mod.compute_rqi(
+    rqi_38, oc_38 = mod.compute_rqi(
         tot_rot_xp=24.0 * (38 / 6),
         num_gws=38,
         rot_avg_fdr=2.5,
@@ -73,6 +73,7 @@ def test_rqi_uses_per_gw_rotated_xp() -> None:
         total_price=9.5,
     )
     assert rqi_6 == rqi_38
+    assert oc_6 == oc_38
 
 
 def test_promoted_clubs_are_cov_hul_ips() -> None:
@@ -84,12 +85,16 @@ def test_run_analysis_full_season_xp_not_gw1_6_capped() -> None:
     assert set(df["horizon"].unique()) >= {"gw1_6", "gw1_10", "gw1_19", "full_season"}
     required = {
         "tot_rot_xp",
-        "tot_rot_xp_maxxp",
+        "tot_rot_xp_fdr",
+        "fdr_selection_loss",
         "xp_gain_vs_best_single",
         "fdr_corr",
         "rotated_avg_fdr",
+        "expected_cs",
+        "foi",
         "easy_gws",
         "rqi",
+        "oc_rqi",
         "per90_saves1",
         "per90_goals_conceded1",
         "per90_saves2",

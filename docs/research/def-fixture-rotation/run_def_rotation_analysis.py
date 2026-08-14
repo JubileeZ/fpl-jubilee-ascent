@@ -71,6 +71,34 @@ BRIDGE_RANK_SORT_COLS = ["path_eff_fdr", "gw1_avg_fdr", "n_swaps", "pre_corr", "
 BRIDGE_RANK_SORT_ASC = [True, True, True, True, True]
 
 
+def compute_outfield_capital_slope(
+    stats_csv: Path = STATS_CSV,
+    players_parquet: Path = DATA_DIR / "players.parquet",
+) -> float:
+    """Compute empirical marginal xP per £1.0m per GW across drafted MID/FWD assets."""
+    if not stats_csv.exists() or not players_parquet.exists():
+        return 0.25
+    df_stats = pd.read_csv(stats_csv)
+    players = pd.read_parquet(players_parquet)
+    cost_map = players.set_index("id")["now_cost"] / 10.0
+    df_stats["price"] = df_stats["player_id"].map(cost_map)
+    outfield = df_stats[
+        df_stats["position"].isin(["MID", "FWD"])
+        & (df_stats["expected_role"].isin(DRAFT_ROLES))
+        & (df_stats["price"] >= 4.5)
+        & (df_stats["price"] <= 15.5)
+    ].dropna(subset=["price"])
+    if len(outfield) < 10:
+        return 0.25
+    xg = outfield["per90_xg"].fillna(0.0)
+    xa = outfield["per90_xa"].fillna(0.0)
+    defcon = outfield.get("per90_defensive_contribution", outfield["per90_defcon"]).fillna(0.0)
+    p_start = outfield["p_start"].fillna(0.75)
+    est_gw_xp = p_start * (xg * 4.5 + xa * 3.0 + defcon * 0.15 + 2.0)
+    slope, _ = np.polyfit(outfield["price"], est_gw_xp, 1)
+    return float(max(0.15, min(0.60, slope)))
+
+
 def compute_def_rqi(
     *,
     tot_rot_xp: float,
@@ -79,17 +107,19 @@ def compute_def_rqi(
     no_diff_pct: float,
     fdr_corr: float,
     total_price: float,
-) -> float:
-    """DEF Rotation Quality Index (0-100 scale)."""
+    gamma: float = 0.25,
+) -> tuple[float, float]:
+    """DEF Rotation Quality Index (0-100 scale) and Opportunity-Cost Adjusted RQI (OC-RQI)."""
     rot_xp_per_gw = tot_rot_xp / num_gws
-    s_xp = float(np.clip((rot_xp_per_gw - 9.0) / (16.5 - 9.0) * 100.0, 0, 100))
+    s_xp = float(np.clip((rot_xp_per_gw - 10.0) / (22.0 - 10.0) * 100.0, 0, 100))
     s_fdr = float(np.clip((3.5 - rot_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
     s_no_diff = float(np.clip(no_diff_pct, 0, 100))
     s_corr = float(np.clip((-fdr_corr + 1.0) / 2.0 * 100.0, 0, 100))
-    s_cost = float(np.clip((28.0 - total_price) / (28.0 - 20.0) * 100.0, 0, 100))
+    s_cost = float(np.clip((26.0 - total_price) / (26.0 - 20.0) * 100.0, 0, 100))
 
-    score = 0.35 * s_xp + 0.25 * s_fdr + 0.15 * s_no_diff + 0.15 * s_corr + 0.10 * s_cost
-    return round(score, 2)
+    score = round(0.40 * s_xp + 0.20 * s_fdr + 0.15 * s_no_diff + 0.10 * s_corr + 0.15 * s_cost, 2)
+    oc_rqi = round(rot_xp_per_gw - gamma * (total_price - 20.0), 3)
+    return score, oc_rqi
 
 
 def compute_bb_rqi(
@@ -100,17 +130,19 @@ def compute_bb_rqi(
     effective_avg_fdr: float,
     avg_corr: float,
     total_price: float,
-) -> float:
-    """Bench Boost Rotation Quality Index (BB-RQI, 0-100 scale) for 11 starter-matches."""
-    s_xp = float(np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100))
+    gamma: float = 0.25,
+) -> tuple[float, float]:
+    """Bench Boost Rotation Quality Index (BB-RQI, 0-100 scale) and BB OC-RQI."""
+    s_xp = float(np.clip((tot_effective_xp - 40.0) / (75.0 - 40.0) * 100.0, 0, 100))
     s_fdr1 = float(np.clip((3.5 - gw1_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
     s_fdr23 = float(np.clip((3.5 - gw2_3_rot_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
     s_eff_fdr = float(np.clip((3.5 - effective_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100))
     s_corr = float(np.clip((-avg_corr + 1.0) / 2.0 * 100.0, 0, 100))
-    s_cost = float(np.clip((28.0 - total_price) / (28.0 - 20.0) * 100.0, 0, 100))
+    s_cost = float(np.clip((26.0 - total_price) / (26.0 - 20.0) * 100.0, 0, 100))
 
-    score = 0.40 * s_xp + 0.15 * s_fdr1 + 0.10 * s_fdr23 + 0.10 * s_eff_fdr + 0.10 * s_corr + 0.15 * s_cost
-    return round(score, 2)
+    score = round(0.40 * s_xp + 0.15 * s_fdr1 + 0.10 * s_fdr23 + 0.10 * s_eff_fdr + 0.10 * s_corr + 0.15 * s_cost, 2)
+    bb_oc_rqi = round(tot_effective_xp - gamma * (total_price - 20.0) * 3, 3)
+    return score, bb_oc_rqi
 
 
 def build_club_fdr_matrix(fixtures: pd.DataFrame, clubs: pd.DataFrame) -> tuple[np.ndarray, dict[int, str], dict[int, int]]:
@@ -134,7 +166,7 @@ def build_club_fdr_matrix(fixtures: pd.DataFrame, clubs: pd.DataFrame) -> tuple[
 def precompute_pairwise_corr(fdr_mat_sub: np.ndarray) -> np.ndarray:
     """Precompute 20x20 pairwise correlation matrix for a given gameweek slice."""
     n_clubs = fdr_mat_sub.shape[0]
-    corr_mat = np.zeros((n_clubs, n_clubs), dtype=float)
+    corr_mat = np.eye(n_clubs, dtype=float)  # Intra-club diagonal correlation is 1.0
     for i in range(n_clubs):
         for j in range(i + 1, n_clubs):
             s1, s2 = fdr_mat_sub[i], fdr_mat_sub[j]
@@ -529,27 +561,36 @@ def simulate_player_tier_combinations(
         combo_fdr = p_all_fdrs[valid_5combos][:, :, gw_indices]
         combo_xp = p_all_xps[valid_5combos][:, :, gw_indices]
 
-        sort_key = combo_fdr - combo_xp * 1e-4
-        top3_idx = np.argsort(sort_key, axis=1)[:, :3, :]
+        # Pure max(xP) weekly selection:
+        top3_xp_order = np.argsort(-combo_xp, axis=1)
+        top3_idx = top3_xp_order[:, :3, :]
         top3_fdr = np.take_along_axis(combo_fdr, top3_idx, axis=1)
         top3_xp = np.take_along_axis(combo_xp, top3_idx, axis=1)
 
-        tot_rot_xp = top3_xp.sum(axis=(1, 2))
+        # Auto-sub EV: 4th defender has 12% entry probability, 5th defender has 3%
+        bench_idx = top3_xp_order[:, 3:, :]
+        bench_xp = np.take_along_axis(combo_xp, bench_idx, axis=1)
+        bench_eff_xp = (0.12 * bench_xp[:, 0, :] + 0.03 * bench_xp[:, 1, :]).sum(axis=1)
+
+        tot_rot_xp = top3_xp.sum(axis=(1, 2)) + bench_eff_xp
         rot_avg_fdr = top3_fdr.mean(axis=(1, 2))
         worst_starter = top3_fdr.max(axis=1)
         no_diff_gws = (worst_starter <= 3.0).sum(axis=1)
         no_diff_pct = no_diff_gws / float(n_gws) * 100.0
         max_worst_starter = worst_starter.max(axis=1)
 
-        top3_xp_order = np.argsort(-combo_xp, axis=1)[:, :3, :]
-        tot_max_xp = np.take_along_axis(combo_xp, top3_xp_order, axis=1).sum(axis=(1, 2))
+        pair_corrs = np.array([[corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices] for i in range(len(valid_5combos))])
+        avg_corrs = pair_corrs.mean(axis=1)
 
-        # Vectorized RQI
-        s_xp = np.clip((tot_rot_xp / float(n_gws) - 9.0) / (16.5 - 9.0) * 100.0, 0, 100)
+        # Vectorized RQI & OC-RQI
+        gamma = compute_outfield_capital_slope(STATS_CSV, DATA_DIR / "players.parquet")
+        s_xp = np.clip((tot_rot_xp / float(n_gws) - 10.0) / (22.0 - 10.0) * 100.0, 0, 100)
         s_fdr = np.clip((3.5 - rot_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
         s_no_diff = np.clip(no_diff_pct, 0, 100)
-        s_cost = np.clip((28.0 - valid_prices) / (28.0 - 20.0) * 100.0, 0, 100)
-        rqi_arr = np.round(0.35 * s_xp + 0.25 * s_fdr + 0.15 * s_no_diff + 0.10 * s_cost, 2)
+        s_corr = np.clip((-avg_corrs + 1.0) / 2.0 * 100.0, 0, 100)
+        s_cost = np.clip((26.0 - valid_prices) / (26.0 - 20.0) * 100.0, 0, 100)
+        rqi_arr = np.round(0.40 * s_xp + 0.20 * s_fdr + 0.15 * s_no_diff + 0.10 * s_corr + 0.15 * s_cost, 2)
+        oc_rqi_arr = np.round((tot_rot_xp / float(n_gws)) - gamma * (valid_prices - 20.0), 3)
 
         # Select top candidates per band to write
         band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
@@ -572,7 +613,7 @@ def simulate_player_tier_combinations(
         for i in selected_indices:
             tot_p = float(valid_prices[i])
             band_name, band_id = classify_budget_band(tot_p)
-            avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
+            avg_corr = float(avg_corrs[i])
 
             p_objs = [player_meta[pids[idx]] for idx in valid_5combos[i]]
             all_tier_rows.append(
@@ -589,9 +630,8 @@ def simulate_player_tier_combinations(
                     "clubs": "-".join(p["club_short"] for p in p_objs),
                     "total_price": round(tot_p, 1),
                     "rqi": float(rqi_arr[i]),
+                    "oc_rqi": float(oc_rqi_arr[i]),
                     "tot_rot_xp": round(float(tot_rot_xp[i]), 2),
-                    "tot_rot_xp_maxxp": round(float(tot_max_xp[i]), 2),
-                    "maxxp_delta": round(float(tot_max_xp[i] - tot_rot_xp[i]), 2),
                     "rot_avg_fdr": round(float(rot_avg_fdr[i]), 4),
                     "max_worst_starter": round(float(max_worst_starter[i]), 1),
                     "no_diff_gws": int(no_diff_gws[i]),
@@ -697,25 +737,34 @@ def simulate_bb1_wc4_player_tier_combinations(
 
     gw2_combo_fdr = p_all_fdrs[valid_bb1_combos, 1]
     gw2_combo_xp = p_all_xps[valid_bb1_combos, 1]
-    gw2_order = np.argsort(gw2_combo_fdr - gw2_combo_xp * 1e-4, axis=1)[:, :3]
-    gw2_top3_xp = np.take_along_axis(gw2_combo_xp, gw2_order, axis=1).sum(axis=1)
-    gw2_top3_fdr = np.take_along_axis(gw2_combo_fdr, gw2_order, axis=1).sum(axis=1)
+    gw2_order = np.argsort(-gw2_combo_xp, axis=1)
+    gw2_top3_xp = np.take_along_axis(gw2_combo_xp, gw2_order[:, :3], axis=1).sum(axis=1)
+    gw2_bench_xp = (0.12 * np.take_along_axis(gw2_combo_xp, gw2_order[:, 3:4], axis=1) + 0.03 * np.take_along_axis(gw2_combo_xp, gw2_order[:, 4:5], axis=1)).sum(axis=1)
+    gw2_top3_fdr = np.take_along_axis(gw2_combo_fdr, gw2_order[:, :3], axis=1).sum(axis=1)
 
     gw3_combo_fdr = p_all_fdrs[valid_bb1_combos, 2]
     gw3_combo_xp = p_all_xps[valid_bb1_combos, 2]
-    gw3_order = np.argsort(gw3_combo_fdr - gw3_combo_xp * 1e-4, axis=1)[:, :3]
-    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order, axis=1).sum(axis=1)
-    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order, axis=1).sum(axis=1)
+    gw3_order = np.argsort(-gw3_combo_xp, axis=1)
+    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order[:, :3], axis=1).sum(axis=1)
+    gw3_bench_xp = (0.12 * np.take_along_axis(gw3_combo_xp, gw3_order[:, 3:4], axis=1) + 0.03 * np.take_along_axis(gw3_combo_xp, gw3_order[:, 4:5], axis=1)).sum(axis=1)
+    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order[:, :3], axis=1).sum(axis=1)
 
-    tot_effective_xp = gw1_xps + gw2_top3_xp + gw3_top3_xp
+    tot_effective_xp = gw1_xps + (gw2_top3_xp + gw2_bench_xp) + (gw3_top3_xp + gw3_bench_xp)
     gw2_3_rot_fdr = (gw2_top3_fdr + gw3_top3_fdr) / 6.0
     effective_avg_fdr = (p_all_fdrs[valid_bb1_combos, 0].sum(axis=1) + gw2_top3_fdr + gw3_top3_fdr) / 11.0
 
-    s_xp = np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100)
+    pair_corrs = np.array([[corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices] for i in range(len(valid_bb1_combos))])
+    avg_corrs = pair_corrs.mean(axis=1)
+
+    gamma = compute_outfield_capital_slope(STATS_CSV, DATA_DIR / "players.parquet")
+    s_xp = np.clip((tot_effective_xp - 40.0) / (75.0 - 40.0) * 100.0, 0, 100)
     s_fdr1 = np.clip((3.5 - gw1_fdrs) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_fdr23 = np.clip((3.5 - gw2_3_rot_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
     s_eff_fdr = np.clip((3.5 - effective_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
-    s_cost = np.clip((28.0 - valid_bb1_prices) / (28.0 - 20.0) * 100.0, 0, 100)
-    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr1 + 0.20 * s_eff_fdr + 0.15 * s_cost, 2)
+    s_corr = np.clip((-avg_corrs + 1.0) / 2.0 * 100.0, 0, 100)
+    s_cost = np.clip((26.0 - valid_bb1_prices) / (26.0 - 20.0) * 100.0, 0, 100)
+    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr1 + 0.10 * s_fdr23 + 0.10 * s_eff_fdr + 0.10 * s_corr + 0.15 * s_cost, 2)
+    bb_oc_rqi_arr = np.round(tot_effective_xp - gamma * (valid_bb1_prices - 20.0) * 3, 3)
 
     band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
     for i in range(len(valid_bb1_combos)):
@@ -737,7 +786,7 @@ def simulate_bb1_wc4_player_tier_combinations(
     for i in selected_indices:
         tot_p = float(valid_bb1_prices[i])
         band_name, band_id = classify_budget_band(tot_p)
-        avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
+        avg_corr = float(avg_corrs[i])
 
         p_objs = [player_meta[pids[idx]] for idx in valid_bb1_combos[i]]
         rows.append(
@@ -750,6 +799,7 @@ def simulate_bb1_wc4_player_tier_combinations(
                 "clubs": "-".join(p["club_short"] for p in p_objs),
                 "total_price": round(tot_p, 1),
                 "bb_rqi": float(bb_rqi_arr[i]),
+                "bb_oc_rqi": float(bb_oc_rqi_arr[i]),
                 "tot_effective_xp": round(float(tot_effective_xp[i]), 2),
                 "gw1_xp_5def": round(float(gw1_xps[i]), 2),
                 "gw2_3_xp_6def": round(float(gw2_top3_xp[i] + gw3_top3_xp[i]), 2),
@@ -854,28 +904,37 @@ def simulate_bb2_wc4_player_tier_combinations(
 
     gw1_combo_fdr = p_all_fdrs[valid_bb2_combos, 0]
     gw1_combo_xp = p_all_xps[valid_bb2_combos, 0]
-    gw1_order = np.argsort(gw1_combo_fdr - gw1_combo_xp * 1e-4, axis=1)[:, :3]
-    gw1_top3_xp = np.take_along_axis(gw1_combo_xp, gw1_order, axis=1).sum(axis=1)
-    gw1_top3_fdr = np.take_along_axis(gw1_combo_fdr, gw1_order, axis=1).sum(axis=1)
+    gw1_order = np.argsort(-gw1_combo_xp, axis=1)
+    gw1_top3_xp = np.take_along_axis(gw1_combo_xp, gw1_order[:, :3], axis=1).sum(axis=1)
+    gw1_bench_xp = (0.12 * np.take_along_axis(gw1_combo_xp, gw1_order[:, 3:4], axis=1) + 0.03 * np.take_along_axis(gw1_combo_xp, gw1_order[:, 4:5], axis=1)).sum(axis=1)
+    gw1_top3_fdr = np.take_along_axis(gw1_combo_fdr, gw1_order[:, :3], axis=1).sum(axis=1)
 
     gw2_xps = p_all_xps[valid_bb2_combos, 1].sum(axis=1)
     gw2_fdrs = p_all_fdrs[valid_bb2_combos, 1].mean(axis=1)
 
     gw3_combo_fdr = p_all_fdrs[valid_bb2_combos, 2]
     gw3_combo_xp = p_all_xps[valid_bb2_combos, 2]
-    gw3_order = np.argsort(gw3_combo_fdr - gw3_combo_xp * 1e-4, axis=1)[:, :3]
-    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order, axis=1).sum(axis=1)
-    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order, axis=1).sum(axis=1)
+    gw3_order = np.argsort(-gw3_combo_xp, axis=1)
+    gw3_top3_xp = np.take_along_axis(gw3_combo_xp, gw3_order[:, :3], axis=1).sum(axis=1)
+    gw3_bench_xp = (0.12 * np.take_along_axis(gw3_combo_xp, gw3_order[:, 3:4], axis=1) + 0.03 * np.take_along_axis(gw3_combo_xp, gw3_order[:, 4:5], axis=1)).sum(axis=1)
+    gw3_top3_fdr = np.take_along_axis(gw3_combo_fdr, gw3_order[:, :3], axis=1).sum(axis=1)
 
-    tot_effective_xp = gw1_top3_xp + gw2_xps + gw3_top3_xp
+    tot_effective_xp = (gw1_top3_xp + gw1_bench_xp) + gw2_xps + (gw3_top3_xp + gw3_bench_xp)
     gw1_3_rot_fdr = (gw1_top3_fdr + gw3_top3_fdr) / 6.0
     effective_avg_fdr = (gw1_top3_fdr + p_all_fdrs[valid_bb2_combos, 1].sum(axis=1) + gw3_top3_fdr) / 11.0
 
-    s_xp = np.clip((tot_effective_xp - 38.0) / (60.0 - 38.0) * 100.0, 0, 100)
+    pair_corrs = np.array([[corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices] for i in range(len(valid_bb2_combos))])
+    avg_corrs = pair_corrs.mean(axis=1)
+
+    gamma = compute_outfield_capital_slope(STATS_CSV, DATA_DIR / "players.parquet")
+    s_xp = np.clip((tot_effective_xp - 40.0) / (75.0 - 40.0) * 100.0, 0, 100)
     s_fdr2 = np.clip((3.5 - gw2_fdrs) / (3.5 - 2.0) * 100.0, 0, 100)
+    s_fdr13 = np.clip((3.5 - gw1_3_rot_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
     s_eff_fdr = np.clip((3.5 - effective_avg_fdr) / (3.5 - 2.0) * 100.0, 0, 100)
-    s_cost = np.clip((28.0 - valid_bb2_prices) / (28.0 - 20.0) * 100.0, 0, 100)
-    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr2 + 0.20 * s_eff_fdr + 0.15 * s_cost, 2)
+    s_corr = np.clip((-avg_corrs + 1.0) / 2.0 * 100.0, 0, 100)
+    s_cost = np.clip((26.0 - valid_bb2_prices) / (26.0 - 20.0) * 100.0, 0, 100)
+    bb_rqi_arr = np.round(0.40 * s_xp + 0.15 * s_fdr2 + 0.10 * s_fdr13 + 0.10 * s_eff_fdr + 0.10 * s_corr + 0.15 * s_cost, 2)
+    bb_oc_rqi_arr = np.round(tot_effective_xp - gamma * (valid_bb2_prices - 20.0) * 3, 3)
 
     band_indices: dict[int, list[int]] = {1: [], 2: [], 3: [], 4: []}
     for i in range(len(valid_bb2_combos)):
@@ -897,7 +956,7 @@ def simulate_bb2_wc4_player_tier_combinations(
     for i in selected_indices:
         tot_p = float(valid_bb2_prices[i])
         band_name, band_id = classify_budget_band(tot_p)
-        avg_corr = float(np.mean([corr_mat[valid_cids[i, a], valid_cids[i, b]] for a, b in pair_indices]))
+        avg_corr = float(avg_corrs[i])
 
         p_objs = [player_meta[pids[idx]] for idx in valid_bb2_combos[i]]
         rows.append(
@@ -910,6 +969,7 @@ def simulate_bb2_wc4_player_tier_combinations(
                 "clubs": "-".join(p["club_short"] for p in p_objs),
                 "total_price": round(tot_p, 1),
                 "bb_rqi": float(bb_rqi_arr[i]),
+                "bb_oc_rqi": float(bb_oc_rqi_arr[i]),
                 "tot_effective_xp": round(float(tot_effective_xp[i]), 2),
                 "gw2_xp_5def": round(float(gw2_xps[i]), 2),
                 "gw1_3_xp_6def": round(float(gw1_top3_xp[i] + gw3_top3_xp[i]), 2),
@@ -1238,20 +1298,17 @@ def run_def_rotation_pipeline() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFram
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     df_club_5way, df_bb1_clubs, df_bb2_clubs = apply_ranking_sorts(df_club_5way, df_bb1_clubs, df_bb2_clubs)
     df_tiers = df_tiers.sort_values(
-        ["horizon", "tier_id", "rqi", "tot_rot_xp"],
+        ["horizon", "tier_id", "oc_rqi", "tot_rot_xp"],
         ascending=[True, True, False, False],
     ).reset_index(drop=True)
     df_bb1_tiers = df_bb1_tiers.sort_values(
-        ["tier_id", "bb_rqi", "tot_effective_xp"],
+        ["tier_id", "bb_oc_rqi", "tot_effective_xp"],
         ascending=[True, False, False],
     ).reset_index(drop=True)
     df_bb2_tiers = df_bb2_tiers.sort_values(
-        ["tier_id", "bb_rqi", "tot_effective_xp"],
+        ["tier_id", "bb_oc_rqi", "tot_effective_xp"],
         ascending=[True, False, False],
     ).reset_index(drop=True)
-
-    print("Scoring constrained WC4 bridges (SUN filter + overall)...")
-    _write_bridge_csvs(df_bb1_clubs, df_club_5way, sun=True, overall=True)
 
     df_club_5way.to_csv(OUT_DIR / "def_club_5way_rotation_matrix.csv", index=False)
     df_tiers.to_csv(OUT_DIR / "def_tier_player_rotations.csv", index=False)

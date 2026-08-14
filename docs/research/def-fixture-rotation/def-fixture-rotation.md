@@ -4,8 +4,8 @@
 **Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff  
 **Season**: 2026/27  
 **Status**: Active  
-**Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19). Constrained WC4 (1–2 slot swaps) lives in child notes.  
-**Related**: [WC4 SUN bridge](wc4-sun-bridge.md) · [WC4 overall bridge](wc4-overall-bridge.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)  
+**Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19).  
+**Related**: [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [GKP rotation](../gkp-fixture-rotation/gkp-fixture-rotation.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
 **Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`  
 **Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)`  
@@ -71,9 +71,8 @@ flowchart TD
 3. **Club Quota Limits (Attack Protection)**:
   - Stacking 3 defenders from Man City, Arsenal, Liverpool, or Chelsea locks out essential captaincy and premium attacking slots (Haaland, Saka, Salah, Palmer).
   - The model enforces a hard ceiling of **maximum 2 defenders from top-4 attack clubs**, and up to 3 for mid/budget clubs.
-4. **Constrained WC4 (1–2 slot swaps)** — child notes, open/refresh separately:
-  - **Overall (any clubs):** [`wc4-overall-bridge.md`](wc4-overall-bridge.md) — pick `LIV-MCI-MUN-MUN-NFO` → dump both MUN for AVL+CHE (`AVL-CHE-LIV-MCI-NFO`, only 2-swap dest at 2.4375).
-  - **1–2 Sunderland:** [`wc4-sun-bridge.md`](wc4-sun-bridge.md) — pick `LIV-MCI-MUN-NFO-SUN` → dump MUN+SUN for AVL+CHE. Paths that already hold AVL+LIV+NFO dump to corr-first dest `AVL-BOU-CHE-LIV-NFO`.
+4. **Post-WC4 Migration**:
+  - Pre-WC setups (e.g. S13 `ARS-BHA-BHA-MUN-SUN` or `HUL-MUN-MUN-TOT-SUN`) bridge directly at GW4 Wildcard to balanced units (`Gabriel + Tarkowski + Vuskovic + Wieffer + Thiaw` per S13) or pure long-term rotations (`AVL-BOU-CHE-LIV-NFO`).
 
 ---
 
@@ -150,12 +149,12 @@ Pre-Wildcard defensive setups evaluate two distinct tactical pathways before a p
 
 ### 1.4 Option 1: Representative Player Lineups for GW1–3 (BB2 + WC4)
 
-| Budget Band | Spend | Representative Lineup | BB-RQI | Effective 11-Start xP | GW2 xP (5 def) | Effective FDR |
-| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Thomas** (COV £4.0m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **79.06** | **58.56 xP** | 28.35 xP | **2.273** |
-| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Thomas** (COV £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) + **Van Hecke** (TOT £5.0m) | **78.75** | **59.94 xP** | 28.99 xP | **2.273** |
-| **Band 3: Single Anchor (£24.5–25.0m)** | £24.5m | **Lacroix** (CHE £6.0m) + **Thomas** (COV £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **76.71** | **60.00 xP** | 29.45 xP | **2.364** |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Wieffer** (BHA £5.0m) + **Maguire** (MUN £5.0m) + **Ballard** (SUN £5.0m) *(S13 Defense)* | **75.40** | **61.32 xP** | 27.69 xP | **2.364** |
+| Budget Band | Spend | Representative Lineup | BB-RQI | OC-RQI | Effective 11-Start xP | GW2 xP (5 def) | Effective FDR |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Thomas** (COV £4.0m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **61.38** | **58.303** | **60.12 xP** | 28.35 xP | **2.364** |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Thomas** (COV £4.0m) + **Gvardiol** (MCI £5.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **63.48** | **60.478** | **63.39 xP** | 28.99 xP | **2.364** |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £25.0m | **Thomas** (COV £4.0m) + **Gvardiol** (MCI £5.5m) + **O'Reilly** (MCI £6.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m) | **61.42** | **61.109** | **64.75 xP** | 29.45 xP | **2.454** |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £26.0m | **Thomas** (COV £4.0m) + **Gvardiol** (MCI £5.5m) + **O'Reilly** (MCI £6.5m) + **Ballard** (SUN £5.0m) + **Van Hecke** (TOT £5.0m) | **60.26** | **61.991** | **66.36 xP** | 27.69 xP | **2.454** |
 
 ---
 
@@ -207,30 +206,22 @@ Pre-Wildcard defensive setups evaluate two distinct tactical pathways before a p
 
 ### 1.7 Option 2: Representative Player Lineups for GW1–3 (BB1 + WC4)
 
-| Budget Band | Spend | Representative Lineup | BB-RQI | Effective 11-Start xP | GW1 xP (5 def) | Effective FDR |
-| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) | **77.74** | **58.94 xP** | 27.11 xP | **2.273** |
-| **Band 2: Mid-Value (£23.0–24.0m)** | £23.0m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m) | **78.57** | **59.90 xP** | 27.38 xP | **2.273** |
-| **Band 3: Single Anchor (£24.5–25.0m)** | £24.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **77.28** | **59.64 xP** | 29.75 xP | **2.273** |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Yoro** (MUN £5.0m) + **Jair Cunha** (NFO £4.5m) + **Ballard** (SUN £5.0m) + **Mukiele** (SUN £5.5m) | **75.21** | **59.53 xP** | 29.64 xP | **2.273** |
+| Budget Band | Spend | Representative Lineup | BB-RQI | OC-RQI | Effective 11-Start xP | GW1 xP (5 def) | Effective FDR |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Vuskovic** (BHA £5.0m) + **Shaw** (MUN £4.5m) + **Jair Cunha** (NFO £4.5m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) | **62.29** | **58.707** | **60.53 xP** | 27.11 xP | **2.454** |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **O'Nien** (SUN £4.0m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **65.58** | **65.719** | **68.63 xP** | 27.38 xP | **2.546** |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £25.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Gvardiol** (MCI £5.5m) + **O'Nien** (SUN £4.0m) + **Ballard** (SUN £5.0m) | **64.00** | **66.649** | **70.29 xP** | 29.75 xP | **2.636** |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Gvardiol** (MCI £5.5m) + **Meunier** (SUN £4.5m) + **Ballard** (SUN £5.0m) | **65.58** | **67.256** | **71.26 xP** | 29.64 xP | **2.546** |
 
 ---
 
-### 1.8 Constrained WC4 Sub-Reports & Bridge Links
+### 1.8 Post-Wildcard (WC4) Transition Paths
 
-Independent GW1–3 and GW4–19 top-10s are **not** 1–2 swaps apart. Child notes rank GW1–3 4–5 unique sets that reach a strong GW4–19 set after 1–2 club-slot replacements.
-
-| Sub-report | Question | Open | Refresh |
-| --- | --- | --- | --- |
-| **Overall (any clubs)** | Best GW1–3 → 1–2 WC4 swaps → GW4–19, no SUN filter | [`wc4-overall-bridge.md`](wc4-overall-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --overall-bridge-only` |
-| **1–2 Sunderland** | Same scorer, pre-sets must hold 1 or 2 SUN | [`wc4-sun-bridge.md`](wc4-sun-bridge.md) | `uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py --sun-bridge-only` |
-
-Both CSVs: `--bridges-only`. Parent full pipeline (slow): run the script with no flags, or `refresh_downstream.py` after a Stage 2 rate change. Rank tables: `--print-ranks`.
+Pre-WC sprint setups migrate seamlessly to long-term foundations at the GW4 Wildcard reset:
 
 - **S13/S5 MILP Pre-WC Defense**: `Calafiori (ARS £5.5m) + Vuskovic (BHA £5.0m) + Wieffer (BHA £5.0m) + Maguire (MUN £5.0m) + Ballard (SUN £5.0m)` (£25.5m). Bridges directly at WC4 to `Gabriel + Tarkowski + Vuskovic + Wieffer + Thiaw` or pure rotation `AVL-BOU-CHE-LIV-NFO` / `AVL-CHE-LIV-MCI-NFO`.
-- **Overall pick**: `LIV-MCI-MUN-MUN-NFO` → AVL+CHE onto `AVL-CHE-LIV-MCI-NFO`. Path FDR 2.4237.
-- **SUN pick**: `LIV-MCI-MUN-NFO-SUN` → AVL+CHE. Same path FDR, 5 unique in GW1–3.
-- **GW4–19 standalone #1 (corr-first)**: `AVL-BOU-CHE-LIV-NFO`. Used as dest when the pre-set already holds 3 of those clubs.
+- **Top 5-Club GW4–19 Destination (corr-first)**: `AVL-BOU-CHE-LIV-NFO` (rot FDR 2.4375, $r = -0.0994$, 100% zero-difficult GWs).
+- **Alternative Destination**: `AVL-CHE-LIV-MCI-NFO` (rot FDR 2.4375, $r = -0.0529$, 100% zero-difficult GWs) when retaining City defensive assets.
 
 ---
 
@@ -306,13 +297,12 @@ For managers activating their Wildcard in GW4, this 16-gameweek block establishe
 
 ### 2.3 Representative Player Lineups for GW4–19 (Post-Wildcard)
 
-
-| Budget Band                              | Spend  | Representative Lineup                                                                                                               | RQI       | 16-GW Rotated xP | Weekly Avg xP | Rotated FDR | Zero-Diff % |
-| ---------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------- | ------------- | ----------- | ----------- |
-| **Band 1: Budget (£20.5–22.5m)**         | £22.0m | **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Jacquet** (LIV £5.0m) + **Jacob** (NEW £4.0m) + **O'Nien** (SUN £4.0m)        | **73.47** | **266.94 xP**    | 16.68 xP/GW   | 2.542       | **100.0%**  |
-| **Band 2: Mid-Value (£23.0–24.0m)**      | £23.0m | **Maatsen** (AVL £4.5m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Tete** (FUL £4.5m) + **Jair Cunha** (NFO £4.5m)         | **73.32** | **262.99 xP**    | 16.44 xP/GW   | 2.458       | **100.0%**  |
-| **Band 3: Single Anchor (£24.5–25.0m)**  | £24.5m | **Maatsen** (AVL £4.5m) + **Hill** (BOU £5.5m) + **Colwill** (CHE £5.0m) + **Jacquet** (LIV £5.0m) + **Jair Cunha** (NFO £4.5m)     | **71.89** | **263.35 xP**    | 16.46 xP/GW   | 2.438       | **100.0%**  |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Hill** (BOU £5.5m) + **Colwill** (CHE £5.0m) + **Branthwaite** (EVE £5.5m) + **Jacquet** (LIV £5.0m) + **Jair Cunha** (NFO £4.5m) | **70.83** | **265.63 xP**    | 16.60 xP/GW   | 2.438       | **100.0%**  |
+| Budget Band | Spend | Representative Lineup | RQI | OC-RQI | 16-GW Rotated xP | Weekly Avg xP | Rotated FDR | Zero-Diff % |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Ajayi** (HUL £4.0m) + **O'Nien** (SUN £4.0m) | **63.80** | **18.627** | **307.74 xP** | 19.23 xP/GW | 2.792 | 62.5% |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Ajayi** (HUL £4.0m) | **63.48** | **19.335** | **324.91 xP** | 20.31 xP/GW | 2.812 | 62.5% |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £25.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) | **64.66** | **19.373** | **329.40 xP** | 20.59 xP/GW | 2.667 | 68.8% |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £26.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) + **O'Reilly** (MCI £6.5m) | **64.39** | **19.341** | **332.77 xP** | 20.80 xP/GW | 2.646 | 75.0% |
 
 
 ---
@@ -385,13 +375,12 @@ For managers executing a set-and-forget defensive strategy across the entire fir
 
 ### 3.3 Top Representative Player Lineups (GW1–19)
 
-
-| Budget Band                              | Spend  | Representative Lineup                                                                                                               | RQI       | 19-GW Rotated xP | Weekly Avg xP | Rotated FDR | Zero-Diff % |
-| ---------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------------- | ------------- | ----------- | ----------- |
-| **Band 1: Budget (£20.5–22.5m)**         | £22.0m | **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Ajayi** (HUL £4.0m) + **Jacquet** (LIV £5.0m) + **O'Nien** (SUN £4.0m)        | **74.02** | **319.50 xP**    | 16.82 xP/GW   | 2.509       | **100.0%**  |
-| **Band 2: Mid-Value (£23.0–24.0m)**      | £23.0m | **Maatsen** (AVL £4.5m) + **Thomas** (COV £4.0m) + **Jacquet** (LIV £5.0m) + **Gvardiol** (MCI £5.5m) + **Jacob** (NEW £4.0m)       | **73.06** | **317.14 xP**    | 16.69 xP/GW   | 2.491       | **100.0%**  |
-| **Band 3: Single Anchor (£24.5–25.0m)**  | £24.5m | **Dunk** (BHA £4.5m) + **Thomas** (COV £4.0m) + **Jacquet** (LIV £5.0m) + **O'Reilly** (MCI £6.5m) + **Hume** (SUN £4.5m)           | **71.77** | **321.76 xP**    | 16.93 xP/GW   | 2.456       | **100.0%**  |
-| **Band 4: Premium Anchor (£25.5–26.0m)** | £25.5m | **Maatsen** (AVL £4.5m) + **Lacroix** (CHE £6.0m) + **Jacquet** (LIV £5.0m) + **Gvardiol** (MCI £5.5m) + **Jair Cunha** (NFO £4.5m) | **70.82** | **319.77 xP**    | 16.83 xP/GW   | 2.439       | **100.0%**  |
+| Budget Band | Spend | Representative Lineup | RQI | OC-RQI | 19-GW Rotated xP | Weekly Avg xP | Rotated FDR | Zero-Diff % |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Band 1: Budget (£20.5–22.5m)** | £22.5m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Ajayi** (HUL £4.0m) + **O'Nien** (SUN £4.0m) | **63.46** | **18.599** | **364.92 xP** | 19.21 xP/GW | 2.772 | 57.9% |
+| **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **O'Nien** (SUN £4.0m) | **62.59** | **19.241** | **384.04 xP** | 20.21 xP/GW | 2.807 | 57.9% |
+| **Band 3: Single Anchor (£24.5–25.0m)** | £25.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) | **63.01** | **19.273** | **389.26 xP** | 20.49 xP/GW | 2.702 | 63.2% |
+| **Band 4: Premium Anchor (£25.5–26.0m)** | £26.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) + **O'Reilly** (MCI £6.5m) | **63.12** | **19.325** | **394.86 xP** | 20.78 xP/GW | 2.667 | 68.4% |
 
 
 ---
@@ -460,7 +449,7 @@ graph TD
   - **Option 2: Safe Start Target (GW1 Bench Boost, S5)**:
     - **Recommended Teams**: `Arsenal (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)` or `LIV(1) + MCI(1) + MUN(2) + NFO(1)`.
     - **Why**: Best GW1 FDR (2.00) at shared 2.2727 11-start eff FDR. Eliminates Day 1 bench point waste before any match minutes are played.
-    - **If WC4 is limited to 1–2 defender swaps**: do **not** use the `ARS-MUN-MUN-NFO-SUN` specialist (Hamming 4 from every 2.4375 dest). Open [`wc4-overall-bridge.md`](wc4-overall-bridge.md) (`LIV-MCI-MUN-MUN-NFO`) or [`wc4-sun-bridge.md`](wc4-sun-bridge.md) (`LIV-MCI-MUN-NFO-SUN`).
+    - **WC4 Reset**: Wipes pre-season structure cleanly at GW4 to deploy long-term rotation or premium anchor defenses.
 2. **For Post-Wildcard (GW4–19)**:
   - **Recommended Teams**: `Aston Villa (1) + Bournemouth (1) + Chelsea (1) + Liverpool (1) + Nottingham Forest (1)`
   - **Why**: Tied lowest rotated FDR (2.4375) and 100% zero-diff; **best correlation** (r = −0.0994) in that tier. `AVL-CHE-LIV-MCI-NFO` is rank 3 (r = −0.0529) — keep it when the WC4 dump must retain City.
