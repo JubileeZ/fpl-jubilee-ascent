@@ -58,6 +58,7 @@ docs/         # Durable project documentation and decision records
 - Store machine-readable research companions and mock/research model CSVs in topic subfolders under `data/research/<topic-slug>/`.
 - Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
 - Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
+- Metric documentation: define every custom or domain metric in research notes with explicit table specifying Definition/Formula, Direction (Higher $\uparrow$ / Lower $\downarrow$), and Ideal Benchmark.
 
 ---
 

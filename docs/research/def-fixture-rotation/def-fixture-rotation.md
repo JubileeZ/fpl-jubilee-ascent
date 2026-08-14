@@ -37,6 +37,27 @@ More negative correlation is better: club FDR schedules diversify, so the three 
 
 ---
 
+## Method & Metric Definitions
+
+1. **Unit Specification**: 5-defender allocations across 2, 3, 4, and 5 unique clubs with a total budget cap of $\le £26.0\text{m}$ (baseline floor $5 \times £4.0\text{m} = £20.0\text{m}$).
+2. **Weekly Starting Decision**: Unconditional $\max(xP)$ for top 3 starting defenders per GW, with auto-sub expected value (+12% for 4th defender, +3% for 5th defender).
+3. **Bench Boost Horizon Evaluation**: 11 total starting appearances in GW1–3 (GW1 or GW2 Bench Boost with 5 starters + two 3-defender rotation gameweeks).
+4. **Post-Wildcard & Full-Season Horizons**: GW4–19 (16 GWs, 48 starts) and GW1–19 (19 GWs, 57 starts).
+
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Opportunity-Cost Adjusted RQI** | `OC-RQI` | $\frac{\text{Rotated xP}}{N} - \gamma \times (\text{Total Spend} - £20.0\text{m})$ | Higher is better $\uparrow$ | **$> 13.50$** / GW | Net weekly expected points for the 5-DEF unit after deducting outfield shadow price ($\gamma \approx 0.25/\text{£1.0m/GW}$). |
+| **Bench Boost OC-RQI** | `BB OC-RQI` | $\text{Effective xP} - \gamma \times (\text{Total Spend} - £20.0\text{m}) \times 3$ | Higher is better $\uparrow$ | **$> 42.0\text{ xP}$** | Net 3-GW sprint points under BB1/BB2 after deducting opportunity cost across the 3 gameweeks. |
+| **Zero-Difficult Gameweeks** | `Zero-Diff %` | $\frac{\text{GWs with 0 starts facing FDR } \ge 4}{\text{Total GWs}} \times 100\%$ | Higher is better $\uparrow$ | **$100.0\%$** | Percentage of weeks where no started defender faces an FDR $\ge 4$ opponent (5-club setups achieve 100%). |
+| **Rotated / Effective FDR** | `Rot FDR` | $\frac{1}{N_{\text{starts}}} \sum \text{FDR}(\text{Started DEF})$ | Lower is better $\downarrow$ | **$\le 2.27$** (Sprint) / **$\le 2.44$** (GW4–19) | Average fixture difficulty of the selected starting defenders. |
+| **Average Schedule Correlation** | `avg_corr` ($r$) | $\frac{1}{\binom{K}{2}} \sum_{i < j} \text{Pearson } r(\text{FDR}_i, \text{FDR}_j)$ | Lower is better $\downarrow$ (Negative) | **$r \le -0.09$** | Mean pairwise FDR correlation across the clubs in the defensive unit. More negative guarantees staggered difficulty. |
+| **Easy Gameweek Rate** | `Easy %` | $\frac{\text{Starts with FDR } \le 2}{\text{Total Starts}} \times 100\%$ | Higher is better $\uparrow$ | **$\ge 45.0\%$** | Proportion of starting appearances facing favorable FDR 2 fixtures. |
+| **Effective Lineup xP** | `Effective xP` | $\sum \text{Top3 } xP + 0.12 \cdot xP(\text{Def 4}) + 0.03 \cdot xP(\text{Def 5})$ | Higher is better $\uparrow$ | **$\ge 42.5\text{ xP}$** (Sprint) / **$\ge 225\text{ xP}$** (GW4–19) | Sum of started defender points plus empirical auto-sub expectation from the bench. |
+
+---
+
 ## Executive Summary & Core Findings
 
 ```mermaid

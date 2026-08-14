@@ -56,6 +56,16 @@ Run parameterized GW1-6 Chip Exploration Matrix & Wildcard Optimization (Stage 3
 3. **FT banking**: rolls GW2/GW3/GW5; `gw5_transfers=0`; `banked_fts_gw6` computed (4). Banked FTs survive Wildcard in 2026/27.
 4. **User comparison**: `user_picks` vs allow/allow peer.
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Scenario Expected Points** | `Total xP` | $\sum_{t=1}^6 \text{Lineup xP}_t + \text{Chip Bonus}_t$ | Higher is better $\uparrow$ | **$\ge 340.0\text{ xP}$** (S13: $340.14\text{ xP}$) | Full 6-gameweek MILP optimized score across pre-chip, chip deployment, and WC4 phases. |
+| **Value Over Chip Baseline** | `VoC` | $\text{Total xP}(\text{Scenario } k) - \text{Total xP}(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Net gain achieved by executing early Bench Boost and Triple Captain relative to unassisted starting XI. |
+| **Pre-Wildcard Score** | `GW1–3 xP` | $\sum_{t=1}^3 \text{Lineup xP}_t + \text{Chip Bonus}_t$ | Higher is better $\uparrow$ | **$\ge 195.0\text{ xP}$** (S13: $196.44\text{ xP}$) | Sprint phase points generated via 15-man active bench deployment (BB1/BB2) and TC3. |
+| **Post-Wildcard Score** | `GW4–6 xP` | $\sum_{t=4}^6 \text{Lineup xP}_t$ | Higher is better $\uparrow$ | **$\ge 143.0\text{ xP}$** (WC4 Core: $143.70\text{ xP}$) | Optimized starting XI score following GW4 Wildcard reset. |
+| **Banked Free Transfers** | `Banked FTs GW6` | Free transfers accumulated into GW6 deadline | Higher is better $\uparrow$ | **$4\text{ FTs}$** (Max allowed by rules) | Strategic agility post-international break. Preserves maximum flexibility to adapt to early injuries and form swings. |
+
 ---
 
 ## Findings

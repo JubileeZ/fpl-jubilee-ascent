@@ -68,8 +68,6 @@ Authority = `expected-stats-gw1-5.csv` inputs consumed by the hybrid scorer (`pe
 
 ## Method
 
-## Method
-
 1. **Goalkeeper Selection**: Nailed Starter or Regular Starter (role CSV ∩ expected-stats).
 2. **Projection**: `ParticipationStateHybridModel.predict` on Feature-Contract-like rows for GW1–38; attack/defence strength multipliers from `_fixture_maps`. Minutes forced flat (90 start / fit) for this study.
 3. **Weekly pick (primary)**: **Unconditional $\max(xP)$** — starters selected solely on projected points (shot-stopping baseline + Poisson clean sheets + defcon).
@@ -80,6 +78,18 @@ Authority = `expected-stats-gw1-5.csv` inputs consumed by the hybrid scorer (`pe
 6. **Recalibrated Non-Saturating RQI** (0–100):
    $$\text{RQI} = 0.50 \cdot S_{\text{xp}} + 0.20 \cdot S_{\text{foi}} + 0.15 \cdot S_{\text{fdr}} + 0.15 \cdot S_{\text{cost}}$$
    $S_{\text{xp}}$ evaluated on a wide $3.0-7.5\text{ xP/GW}$ range to eliminate saturation.
+
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Opportunity-Cost Adjusted RQI** | `OC-RQI` | $\frac{\text{Rotated xP}}{N} - \gamma \times (\text{Total Spend} - £8.5\text{m})$ | Higher is better $\uparrow$ | **$> 6.10$** (GW1–6) / **$> 6.00$** (GW1–38) | Net weekly expected points after deducting empirical outfield shadow price ($\gamma \approx 0.25/\text{£1.0m/GW}$). Prevents overpaying for marginal GKP gains. |
+| **Rotation Quality Index** | `RQI` | $0.50 S_{\text{xp}} + 0.20 S_{\text{foi}} + 0.15 S_{\text{fdr}} + 0.15 S_{\text{cost}}$ | Higher is better $\uparrow$ | **$\ge 66.0$ / 100** | Multi-attribute score balancing points output ($50\%$), fixture non-overlap ($20\%$), schedule ease ($15\%$), and budget tier ($15\%$). |
+| **Rotated Expected Points** | `Rotated xP` | $\sum_{t=1}^N \max(xP_{1,t}, xP_{2,t})$ | Higher is better $\uparrow$ | **$\ge 38.5\text{ xP}$** (GW1–6) / **$\ge 235\text{ xP}$** (GW1–38) | Horizon-total projected points under the weekly $\max(xP)$ starting decision rule. |
+| **Expected Clean Sheets** | `Exp CS` | $\sum_{t=1}^N e^{-\lambda_{i^*,t}}$ | Higher is better $\uparrow$ | **$\ge 2.20$** (GW1–6) / **$\ge 14.50$** (GW1–38) | Poisson clean-sheet expectation for the selected weekly starter. |
+| **Fixture Overlap Index** | `FOI` | $\frac{1}{T}\sum (1 - p_{\text{cs1}})(1 - p_{\text{cs2}})$ | Lower is better $\downarrow$ | **$< 0.50$** (Min $\approx 0.44$) | Joint clean-sheet failure risk. Lower values indicate stronger schedule diversification where both keepers rarely fail together. |
+| **FDR Selection Loss** | `FDR Loss` | $\sum \text{FDR}(\max xP) - \sum \text{FDR}(\min \text{FDR})$ | Lower is better $\downarrow$ | **$0.00$** | Difference between the FDR of the $\max(xP)$ starter vs the minimum FDR available. $0.00$ means points and fixture ease align perfectly. |
+| **Schedule Correlation** | $r$ | $\text{Pearson } r(\text{FDR}_1, \text{FDR}_2)$ | Lower is better $\downarrow$ (Negative) | **$r \le -0.10$** | Linear correlation between the two clubs' 38-GW FDR schedules. Negative correlation guarantees complementary fixture runs. |
 
 ---
 

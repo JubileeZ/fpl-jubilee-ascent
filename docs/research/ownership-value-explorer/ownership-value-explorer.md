@@ -62,6 +62,15 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 | **Overlays** | Toggle checkboxes for ★ S13, ⬡ WC4 Core, ■ S5, ▲ S1, ◆ User squad; **Only overlay players** filters chart to flagged squad members |
 | **Player list** | Interactive search filtering table and pinning matching players to chart |
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Projected Rate** | `xP/90` | $\frac{\text{Horizon xP}}{\text{Expected Minutes}} \times 90$ | Higher is better $\uparrow$ | **$\ge 5.0$** (Enabler) / **$\ge 7.0$** (Premium) | Normalized per-match point generation rate accounting for role and opponents. |
+| **Ownership Popularity** | `Ownership %` | `selected_by_percent` from FPL API | Context-dependent | **$< 5.0\%$** (Diff) / **$> 30.0\%$** (Template) | Proportion of FPL managers owning the player. Identifies leverage opportunities. |
+| **Differential Leverage** | `Diff Value` | $\text{High } xP/90 \text{ with Low Ownership } (<5\%)$ | Higher is better $\uparrow$ | **$xP/90 \ge 5.5$, Own $< 5\%$** | Assets positioned in the top-left quadrant of the chart providing maximum rank climb potential. |
+| **Average Expected Minutes** | `avg_xMins` | $\frac{1}{N}\sum_{t=1}^N \text{Expected Minutes}_t$ | Higher is better $\uparrow$ | **$\ge 75.0\text{ mins}$** (Starter) / **$90.0\text{ mins}$** (Nailed) | Starting security indicator. Low minutes ($<45\text{m}$) filter out per-90 sample distortions. |
+
 ---
 
 ## Strategy Integration: Pre-WC Sprint & Post-WC4 Core

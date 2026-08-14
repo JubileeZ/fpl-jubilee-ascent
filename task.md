@@ -3,16 +3,15 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `docs/research/gkp-fixture-rotation/run_gkp_rotation_analysis.py`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/gkp-fixture-rotation/gkp-fixture-rotation.md`, `docs/research/INDEX.md`, `tests/test_def_fixture_rotation.py`, `tests/test_gkp_fixture_rotation.py`, `task.md`
-- **Decisions:** Implemented unconditional max(xP) weekly selection, Poisson clean sheets, Fixture Overlap Index (FOI), data-derived outfield shadow price slope ($\gamma \approx 0.24-0.25$), Opportunity-Cost Adjusted Net Value (OC-RQI), intra-club diagonal correlation ($r=1.0$), and auto-sub defender EV (12% 4th def, 3% 5th def); executed full downstream refresh pipeline across Stage 2, Stage 3, GKP rotation, DEF rotation, and Ownership Value Explorer; updated research documentation tables and findings; verified full test suite (170/170 passed) and delivery gate checks (29/29 green).
+- **Files:** `AGENTS.md`, `docs/research/INDEX.md`, `docs/research/template/research-note.md`, `docs/research/gkp-fixture-rotation/gkp-fixture-rotation.md`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md`, `docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md`, `docs/research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md`, `docs/research/fpl-set-piece-analysis/fpl-set-piece-analysis.md`, `task.md`
+- **Decisions:** Standardized metric documentation across all research notes, template, and master index; added explicit `Metric Definitions & Direction` tables detailing exact formulas, target directions (Higher $\uparrow$ / Lower $\downarrow$), benchmarks/ideal targets, and domain descriptions; codified rule in AGENTS.md.
 - **Blocked:** None.
-- **Next:** Propose commit for metrics redesign and research documentation update.
-- **Objective:** Redesign DEF and GKP rotation ranking metrics to eliminate legacy FDR artifacts, implement OC-RQI and FOI, execute full downstream refresh, and update research documentation.
+- **Next:** Await user directions or propose commit.
+- **Objective:** Add standardized metric definitions with target directions and ideal benchmarks across all research notes, template, and AGENTS.md.
 - **Acceptance:**
-  - [x] Multi-agent mathematical & decision audit completed with concrete failure modes diagnosed
-  - [x] Grilling session completed with agreed replacement metrics (max(xP), Poisson xCS, OC-RQI, FOI)
-  - [x] Implemented OC-RQI, FOI, diagonal fix, auto-sub EV, and max(xP) in GKP and DEF rotation scripts
-  - [x] Full downstream pipeline executed (`refresh_downstream.py`) regenerating all CSV artifacts
-  - [x] Research markdown notes updated with new tables, formulas, and findings
-  - [x] Test suite and linting 100% clean (170 tests passed, ruff clean, verify.sh 29/29 green)
+  - [x] AGENTS.md updated with telegraphic metric documentation standard
+  - [x] docs/research/template/research-note.md updated with Metric Definitions & Direction template
+  - [x] docs/research/INDEX.md updated with Master Metric Reference Table
+  - [x] All active research notes updated with explicit Metric Definitions & Direction tables (GKP rotation, DEF rotation, Ownership Explorer, Stage 3 Chip Matrix, Stage 2 Expected Stats, First-Half Chip Strategy, Set-Piece Analysis)
+  - [x] Verification checks passing (ruff, pytest, verify.sh)
 

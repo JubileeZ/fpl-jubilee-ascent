@@ -47,6 +47,12 @@ Full redo docs/research/[topic-slug].md
 **Definitions and assumptions**:
 - [Term, threshold, or interpretation rule]
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| [Metric Name] | `[Symbol]` | [Formula / Calculation] | Higher is better $\uparrow$ / Lower is better $\downarrow$ | [Target value] | [Concise rationale] |
+
 **Validation boundary**: [Validated evidence, unvalidated claims, and known leakage or freshness limits]
 
 ## Source synthesis

@@ -69,6 +69,17 @@ Thin samples (`minutes` < 450) shrink toward Research Position Baseline. Club-ch
 - Softmax bonus over full 357 XI Contention; CSV export = Nailed + Regular only (227 rows).
 - Appearance blend 3→8 unchanged; GW1 weight = 0 (Cold-Start).
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Expected Goals per 90** | `xG/90` | Expected non-penalty goals per 90 minutes | Higher is better $\uparrow$ | **$> 0.40$** (FWD/MID) / **$> 0.10$** (DEF) | Primary goal threat generator. |
+| **Expected Assists per 90** | `xA/90` | Expected assisted goals per 90 minutes | Higher is better $\uparrow$ | **$> 0.25$** (Playmaker) / **$> 0.15$** (Attacking FB) | Primary creative opportunity generator. |
+| **Goals Conceded per 90** | `GC/90` | Projected goals conceded per match | Lower is better $\downarrow$ | **$< 1.10$** (Elite Defense) / **$< 1.35$** (Mid-table) | Directly determines Poisson clean-sheet probability ($e^{-\lambda}$). |
+| **Saves per 90** | `Saves/90` | Goalkeeper saves projected per 90 minutes | Higher is better $\uparrow$ | **$\ge 3.20$** (Volume keeper) | Generates baseline save points ($+1\text{ pt per 3 saves}$) and BPS accumulation. |
+| **Defensive Contribution** | `Defcon` | Tackle/interception baseline event rate per 90 | Higher is better $\uparrow$ | **$> 2.00$** (Elite ball-winner) | Informs BPS baseline for defensive midfielders and center-backs. |
+| **Expected Points per GW** | `xP` | `ParticipationStateHybridModel.predict` output | Higher is better $\uparrow$ | **$\ge 5.0\text{ xP/GW}$** (Starters) / **$\ge 6.5\text{ xP/GW}$** (Captains) | Comprehensive projection integrating role, rates, opponents, and bonus distribution. |
+
 ---
 
 ## Findings

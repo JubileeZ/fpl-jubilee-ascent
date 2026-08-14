@@ -50,6 +50,15 @@ Full redo docs/research/fpl-set-piece-analysis/fpl-set-piece-analysis.md
 4. Compile individual player case studies (Fernandes, Szoboszlai, Stach vs Wilson, Rice vs Guimarães, Thiago, Van Dijk, Thiaw).
 5. Map practical implications to our Feature Contract, Expected Role audits, and component rate expectations.
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Set-Piece Net Swing** | `Net Swing` | $\text{Set-Piece Goals For} - \text{Set-Piece Goals Against}$ | Higher is better $\uparrow$ | **$> +5.0\text{ goals}$** / season | Club-level tactical advantage in dead-ball situations over opponents. |
+| **Corner Share %** | `Corner %` | Proportion of flank corner kicks taken by player | Higher is better $\uparrow$ | **$\ge 70.0\%$** | Monopoly corner taker status conferring high baseline $xA$ expectation. |
+| **Target Aerial xG** | `Target xG` | Expected goals generated from set-piece deliveries per 90 | Higher is better $\uparrow$ | **$> 0.12\text{ xG/90}$** (Target CB) | Identifies high-threat defenders (e.g. Gabriel, Tarkowski, Van Dijk) for attacking returns. |
+| **Penalty Monopoly** | `Pen Taker` | Designated #1 penalty taker status | Higher is better $\uparrow$ | **$1.0$ (Sole taker)** | Confers $+0.15\text{ to }+0.22\text{ xG/match}$ baseline penalty bump. |
+
 ---
 
 ## Source synthesis

@@ -59,6 +59,16 @@ Refresh and evaluate all first-half chip strategies in docs/research/fpl-first-h
    - Calculate MILP-optimized 15-man squad scores and bench contributions.
 4. **Comparative Analysis & Proof**: Prove the strengths, weaknesses, expected point spreads, and risk factors for each candidate branch before establishing the final synthesized recommendation.
 
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Scenario Expected Points** | `Total xP` | Full multi-gameweek MILP score under active chip schedule | Higher is better $\uparrow$ | **$\ge 340.0\text{ xP}$** (S13: $340.14\text{ xP}$) | Primary evaluation metric comparing 16 early-chip pathways. |
+| **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Points directly harvested from chip activation above standard starting XI play. |
+| **Bench Boost Active Score** | `BB Score` | $\sum_{i \in \text{squad}} xP_{i,\text{BB\_GW}}$ (all 15 players) | Higher is better $\uparrow$ | **$\ge 75.0\text{ xP}$** | Full-squad scoring power on the Bench Boost gameweek. |
+| **Average Fixture Ease** | `FDR` | Mean official fixture difficulty rating | Lower is better $\downarrow$ | **$\le 2.30$** (Targeted run) | Schedule favorability across the target gameweek block. |
+| **Banked Transfer Liquidity** | `Banked FTs` | Preserved free transfers at conclusion of chip window | Higher is better $\uparrow$ | **$4\text{ to } 5\text{ FTs}$** | Strategic adaptability post-chip deployment to react to new data and injuries. |
+
 ---
 
 ## Comprehensive Strategy Inventory & Source Synthesis
