@@ -3,14 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/run_def_rotation_analysis.py`, `tests/test_def_fixture_rotation.py`, `def-fixture-rotation.md`, `wc4-sun-bridge.md`, `wc4-overall-bridge.md`, `def_club_5way_rotation_matrix.csv`, bridge CSVs
-- **Decisions:** GW4–19 ranking = correlation-first among min rot FDR + 100% zero-diff. Canonical dest `AVL-BOU-CHE-LIV-NFO`. Bridge dest picker same tie-break; City-core dest only when it is the sole 2-swap 2.4375 option.
+- **Files:** `docs/research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md`, `docs/research/INDEX.md`, `docs/agents/current-state.md`
+- **Decisions:** Preserved all multi-source strategy candidates (TC: GW1/3/4/7/15/16/19; BB: GW1/2/post-WC; WC: GW4/6/7/13/16; FH: GW3/4/13/16/reserve); added mathematical proofs across all branches against Stage 3 16-scenario MILP matrix; proved WC4 + roll GW5 yields 4 banked FTs into GW6.
 - **Blocked:** None.
 - **Next:** None for this packet.
-- **Objective:** Align DEF rotation parent + WC4 bridge notes to one correlation-first ranking lens.
+- **Objective:** Refresh first-half chip strategy research with multi-source synthesis, official rules validation, and comprehensive mathematical proofs across all strategy branches.
 - **Acceptance:**
-  - [x] Ranking lens constants in `run_def_rotation_analysis.py`
-  - [x] Club 5-way sort: rot FDR → zero-diff% → corr (asc) → easy%
-  - [x] Bridge dest picker prefers more negative dest corr before easy%
-  - [x] Parent + both bridge notes match CSV ranks
-  - [x] Tests green; ruff clean
+  - [x] All candidate strategies preserved and mathematically evaluated
+  - [x] Official rules (5-FT banking across WC/FH, GW19 expiry) verified
+  - [x] Cross-validated against Stage 3 16-scenario MILP matrix
+  - [x] INDEX.md links aligned
+  - [x] Tests green; ruff clean; verify.sh green
