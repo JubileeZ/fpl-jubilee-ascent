@@ -3,15 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete / Verified
-- **Files:** `AGENTS.md`, `docs/research/INDEX.md`, `docs/research/template/research-note.md`, `docs/research/gkp-fixture-rotation/gkp-fixture-rotation.md`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md`, `docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md`, `docs/research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md`, `docs/research/fpl-set-piece-analysis/fpl-set-piece-analysis.md`, `task.md`
-- **Decisions:** Standardized metric documentation across all research notes, template, and master index; added explicit `Metric Definitions & Direction` tables detailing exact formulas, target directions (Higher $\uparrow$ / Lower $\downarrow$), benchmarks/ideal targets, and domain descriptions; codified rule in AGENTS.md.
+- **Files:** `data/archive/solio/solio_gw1.parquet`, `data/solio_raw.json`, `data/solio_projections.csv`, `data/event_rate_hybrid.csv`, `data/expert_template_hybrid.csv`, `.cursor/rules/read-agents-md.md`, `solver/.cache/http_cache.json`, `data/reports/promotion_evidence/`, `tmp/`, `task.md`
+- **Decisions:** Removed deprecated Solio archive and data files (ADR 0009), removed obsolete experimental model projection CSVs, deleted redundant `.cursor/rules/read-agents-md.md`, removed 160 historical promotion test run logs, purged solver HTTP cache, and removed empty root `tmp/` folder.
 - **Blocked:** None.
-- **Next:** Await user directions or propose commit.
-- **Objective:** Add standardized metric definitions with target directions and ideal benchmarks across all research notes, template, and AGENTS.md.
+- **Next:** Propose commit or await user instruction.
+- **Objective:** Audit all folders, identify obsolete/transient files, and perform confirmed cleanup.
 - **Acceptance:**
-  - [x] AGENTS.md updated with telegraphic metric documentation standard
-  - [x] docs/research/template/research-note.md updated with Metric Definitions & Direction template
-  - [x] docs/research/INDEX.md updated with Master Metric Reference Table
-  - [x] All active research notes updated with explicit Metric Definitions & Direction tables (GKP rotation, DEF rotation, Ownership Explorer, Stage 3 Chip Matrix, Stage 2 Expected Stats, First-Half Chip Strategy, Set-Piece Analysis)
-  - [x] Verification checks passing (ruff, pytest, verify.sh)
+  - [x] Comprehensive folder-by-folder audit completed
+  - [x] Obsolete & deprecated files removed (Solio artifacts, old model CSVs, duplicate rule)
+  - [x] Transient test/solver run artifacts purged (`promotion_evidence/`, `solver/.cache/`)
+  - [x] All 170 unit tests, ruff linting, and gate verification passing
 
