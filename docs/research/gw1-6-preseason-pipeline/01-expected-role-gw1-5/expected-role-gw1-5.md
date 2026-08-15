@@ -1,7 +1,7 @@
 # FPL 2026/27 Expected Role (GW1–5) — 20-Club Audit & Mins Priors
 
-**Updated**: 2026-08-13T03:20:00+07:00  
-**Data stamp**: FFS Team News + FPL Meerkat scraped 2026-08-13; official overlays 2026-08-12; `players.parquet` 2026-07-29  
+**Updated**: 2026-08-15T13:40:00+07:00  
+**Data stamp**: FFS Team News + FPL Meerkat scraped 2026-08-13; official overlays 2026-08-15; World Cup 2026 fitness audit; `players.parquet` 2026-07-29  
 **Season**: 2026/27  
 **Status**: Active Research Model  
 **Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors across all 20 clubs for GW1–5 seeding  

@@ -1,12 +1,12 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-14T18:50:00+07:00  
-**Data stamp**: Dual-source role scrape 2026-08-13; Stage 2 Prior-Season Seed + Career Individual Rate (ADR-0014); downstream refresh 2026-08-14; FFS + Meerkat accessed 2026-08-13; API pricing 2026-07-29  
+**Updated**: 2026-08-15T13:40:00+07:00  
+**Data stamp**: Dual-source role scrape 2026-08-13; Stage 2 Prior-Season Seed + Career Individual Rate (ADR-0014); downstream refresh 2026-08-15; World Cup 2026 fitness audit; FFS + Meerkat accessed 2026-08-13; API pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
 **Purpose**: End-to-end preseason research — dual-source Expected Role rebuild (Stage 1), Prior-Season Seed + Career Individual Rate Event Rates + $xP$ (Stage 2), and 16-scenario chip exploration with WC4 Opt1 (Stage 3).  
 **Scope**: 20-club XI Contention role audit; availability-aware Participation State scoring; exploration matrix (BB1|BB2) × WC4 Opt1 × (FH3|TC3) × (Allow|Ban Haaland pre) × (Allow|Ban B.Fernandes pre).  
-**Strategy Core**: **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)** canonical #1 Max EV Target; **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)** canonical #2 Safe Start. Bank 4 Free Transfers into GW6 post-international break.  
+**Strategy Core**: **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)** canonical #1 Max EV Target; **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)** canonical #2 Safe Start; **S15 (Ban Haaland Balanced, 339.43 xP)** proves high mathematical flexibility (-0.71 xP). Bank 4 Free Transfers into GW6 post-international break.  
 **Pipeline Runner**: [`run_pipeline.py`](run_pipeline.py) (includes Stage 1 HTTP scrape)  
 **Downstream refresh**: [`refresh_downstream.py`](refresh_downstream.py) (skip scrape; rates → Stage 3 / GKP / DEF / ownership)
 
@@ -163,8 +163,9 @@ Delivery: uv run ruff check . && uv run pytest && bash tests/verify.sh
 
 1. **#1 Canonical Strategy Recommendation (Max EV Target)**: **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)**. Deploys Bench Boost in GW2 (capitalizing on COV vs HUL and MUN vs IPS), Triple Captains Haaland in GW3 vs Coventry (diff 2), rebuilds on Wildcard GW4 into high-ceiling ARS/CHE/EVE assets, rolls GW5 transfer, and enters GW6 with **4 banked Free Transfers**.
 2. **#2 Safe Start Recommendation (Max Lineup Certainty)**: **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)**. Deploys BB1 for zero lineup risk pre-deadline, follows identical TC3 Haaland and WC4 Opt1 progression, trailing S13 by only 1.26 xP while eliminating GW2 bench rotation uncertainty.
-3. **Alternative Structural Path (Top FH3)**: **S9 (BB2 + FH3 + WC4 Opt1, 332.34 xP)**. High-midfield pre-squad without Haaland, Free Hit in GW3 to capture Haaland vs COV, then permanent Haaland integration on WC4. Trails S13 by 7.80 xP.
-4. **Structural Rules**: Bruno ban is binding across all paths (-0.63 to -3.81 xP). Haaland ban is non-binding on FH3 allow-Bruno paths (S1=S3, S9=S11). GW4–6 WC Opt1 generates identical **155.37 xP** across all 16 scenarios.
+3. **Balanced No-Haaland Structural Route**: **S15 (BB2 + TC3 Vuskovic + WC4 Opt1, 339.43 xP)**. Trailing by only **0.71 xP** (0.2%), proving high mathematical viability and flexibility for managers preferring a balanced premium midfield (Palmer, Bruno Fernandes, Wirtz, Gabriel, Calafiori) over solo Haaland.
+4. **Alternative Structural Path (Top FH3)**: **S9 (BB2 + FH3 + WC4 Opt1, 332.34 xP)**. High-midfield pre-squad without Haaland, Free Hit in GW3 to capture Haaland vs COV, then permanent Haaland integration on WC4. Trails S13 by 7.80 xP.
+5. **Structural Rules**: Bruno ban is binding across all paths (-1.06 to -4.44 xP). Haaland ban on FH3 is non-binding on allow-Bruno paths (S1=S3, S9=S11). GW4–6 WC Opt1 generates identical **155.37 xP** across all 16 scenarios.
 
 ---
 

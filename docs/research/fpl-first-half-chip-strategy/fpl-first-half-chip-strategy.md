@@ -1,7 +1,7 @@
 # FPL 2026/27 — First-Half Chip Strategy & Multi-Source Comprehensive Evaluation
 
-**Updated**: 2026-08-14T18:35:00+07:00  
-**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; Stage 3 ADR-0014 MILP rates 2026-08-14  
+**Updated**: 2026-08-15T13:40:00+07:00  
+**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; Stage 3 ADR-0014 MILP rates 2026-08-15; World Cup 2026 fitness audit  
 **Season**: 2026/27 · first-half horizon GW1–19  
 **Status**: Multi-Source Consolidated Research & Model-Validated Strategy  
 **Purpose**: Synthesize all proposed first-half chip strategies across expert sources (FPL Focal, Fantasy Football Scout, Fantasy Football Hub, Official Rules) and evaluate/prove each alternative branch mathematically against the repo's Stage 3 16-scenario MILP optimization engine, 5-defender rotation matrix, and ADR-0014 rates.  
@@ -237,9 +237,10 @@ Free Hit Scenario Comparison:
 | :--- | :---: | :---: | :---: | ---: | :---: | :---: | :---: |
 | **Option 1: Max EV Aggressive (S13)** | **GW2** | **TC3 (Haaland)** | **GW4** | **340.14** | **4** | Moderate | Managers seeking highest mathematical ceiling. |
 | **Option 2: Safe Start Compounding (S5)** | **GW1** | **TC3 (Haaland)** | **GW4** | **338.88** | **4** | Low | Managers prioritizing zero GW1 lineup surprises. |
-| **Option 3: No-Haaland Midfield Stack (S9)** | **GW2** | **FH3 (Haaland in)**| **GW4** | **332.34** | **4** | Moderate | Managers wanting 5 elite midfielders in GW1–2. |
-| **Option 4: Traditional Information-Led** | Post-WC | TC (GW7/16) | **GW6** | ~326–331 | 1–2 | Low | Managers wanting full summer transfer clarity. |
-| **Option 5: Emergency Reserve Path** | **GW1/2**| Save TC/FH | **GW4/6** | ~325–330 | 4 | Very Low | Managers holding chips for first-half postponements. |
+| **Option 3: Balanced No-Haaland Draft (S15)**| **GW2** | **TC3 (Vuskovic)** | **GW4** | **339.43** | **4** | Moderate | Managers preferring diversified premium midfield (trails by 0.71 xP). |
+| **Option 4: No-Haaland Midfield Stack (S9)** | **GW2** | **FH3 (Haaland in)**| **GW4** | **332.34** | **4** | Moderate | Managers wanting 5 elite midfielders in GW1–2. |
+| **Option 5: Traditional Information-Led** | Post-WC | TC (GW7/16) | **GW6** | ~326–331 | 1–2 | Low | Managers wanting full summer transfer clarity. |
+| **Option 6: Emergency Reserve Path** | **GW1/2**| Save TC/FH | **GW4/6** | ~325–330 | 4 | Very Low | Managers holding chips for first-half postponements. |
 
 ---
 

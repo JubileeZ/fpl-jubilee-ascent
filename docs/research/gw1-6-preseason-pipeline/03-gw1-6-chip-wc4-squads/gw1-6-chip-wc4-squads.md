@@ -1,10 +1,10 @@
 # GW1–6 Chip Exploration Matrix (BB × FH3|TC3 × Haaland × Bruno × WC4 Opt1)
 
-**Updated**: 2026-08-14T18:50:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; projections horizon 6 + availability overlays; FPL API pricing 2026-07-29  
+**Updated**: 2026-08-15T13:40:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-15; projections horizon 6 + availability overlays; FPL API pricing 2026-07-29; World Cup 2026 fitness audit  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Research Model  
-**Purpose**: Explore 16 chip/structure paths: (BB1|BB2) × WC4 Opt1 × (FH3|TC3) × (Allow|Ban Haaland in pre squad) × (Allow|Ban B.Fernandes in pre squad). Establish **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)** as canonical #1 Max EV Strategy and **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)** as #2 Safe Start Strategy.  
+**Purpose**: Explore 16 chip/structure paths: (BB1|BB2) × WC4 Opt1 × (FH3|TC3) × (Allow|Ban Haaland in pre squad) × (Allow|Ban B.Fernandes in pre squad). Prove mathematical viability of Big Haaland vs Diversified Balanced structures, establish **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)** as canonical #1 Max EV Strategy, and **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)** as #2 Safe Start Strategy.  
 **Scope**: 15-player MILP drafts, Free Hit / Triple Captain GW3, GW4 Wildcard Opt1, reproducible user_picks comparison, FT banking with GW5 roll enforced (4 banked FTs into GW6).  
 **Related**: [Preseason Pipeline Master README](../README.md) · [Expected Role](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Expected Stats](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [FPL First-Half Chip Strategy](../../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Ownership Explorer](../../ownership-value-explorer/ownership-value-explorer.md) · [Downstream refresh](../refresh_downstream.py) · [Runner](run_wc4_simulation.py)  
 **Artifacts**:
@@ -73,16 +73,16 @@ Run parameterized GW1-6 Chip Exploration Matrix & Wildcard Optimization (Stage 3
 ### 1. Master Summary Table (All 16 Scenarios) — ADR-0014 rates
 
 | Rank | ID | Strategy Class | BB | Mid | Ban H | Ban Bruno | TC Pick | GW1–3 | GW4–6 | Total xP | Banked FTs GW6 |
-| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
+| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
 | **#1** | **S13** | **Max EV Target (Canonical #1)** | **GW2** | **TC3** | allow | allow | Haaland | **184.77** | **155.37** | **340.14** | **4** |
-| #2 | S15 | Ban Haaland Pre-Squad | GW2 | TC3 | ban | allow | Vuskovic | 184.06 | 155.37 | 339.43 | 4 |
+| #2 | S15 | Ban Haaland Pre-Squad (Balanced) | GW2 | TC3 | ban | allow | Vuskovic | 184.06 | 155.37 | 339.43 | 4 |
 | #3 | S14 | Ban Bruno Pre-Squad | GW2 | TC3 | allow | ban | Haaland | 183.71 | 155.37 | 339.08 | 4 |
 | **#4** | **S5** | **Safe Start Target (Canonical #2)**| **GW1** | **TC3** | allow | allow | Haaland | **183.51** | **155.37** | **338.88** | **4** |
 | #5 | S6 | Ban Bruno Pre-Squad | GW1 | TC3 | allow | ban | Haaland | 183.38 | 155.37 | 338.75 | 4 |
 | #5 | S7 | Ban Haaland Pre-Squad | GW1 | TC3 | ban | allow | Vuskovic | 183.38 | 155.37 | 338.75 | 4 |
 | #7 | S8 | Ban Both Pre-Squad | GW1 | TC3 | ban | ban | Vuskovic | 180.55 | 155.37 | 335.92 | 4 |
 | #8 | S16 | Ban Both Pre-Squad | GW2 | TC3 | ban | ban | Vuskovic | 180.33 | 155.37 | 335.70 | 4 |
-| **#9** | **S9** | **Top FH3 Path** | **GW2** | **FH3** | allow | allow | — | **176.97** | **155.37** | **332.34** | **4** |
+| #9 | S9 | Top FH3 Path | GW2 | FH3 | allow | allow | — | 176.97 | 155.37 | 332.34 | 4 |
 | #9 | S11 | Ban Haaland FH3 Path | GW2 | FH3 | ban | allow | — | 176.97 | 155.37 | 332.34 | 4 |
 | #11 | S1 | BB1 FH3 Allow All | GW1 | FH3 | allow | allow | — | 176.79 | 155.37 | 332.16 | 4 |
 | #11 | S3 | BB1 FH3 Ban Haaland | GW1 | FH3 | ban | allow | — | 176.79 | 155.37 | 332.16 | 4 |
@@ -91,12 +91,12 @@ Run parameterized GW1-6 Chip Exploration Matrix & Wildcard Optimization (Stage 3
 | #15 | S4 | BB1 FH3 Ban Both | GW1 | FH3 | ban | ban | — | 173.96 | 155.37 | 329.33 | 4 |
 | #16 | S12 | BB2 FH3 Ban Both | GW2 | FH3 | ban | ban | — | 173.93 | 155.37 | 329.30 | 4 |
 
-**Structural Takeaways**:
-- **TC3 Haaland dominates**: S13 (340.14 xP) beats top FH3 path S9 (332.34 xP) by **+7.80 xP**.
-- **BB2 vs BB1**: S13 (+1.26 xP over S5) targets Coventry vs Hull in GW2. S5 offers zero lineup ambiguity prior to GW1 kickoff.
-- **Bruno ban is binding**: -0.63 to -3.81 xP penalty across all scenarios.
-- **Haaland ban on FH3 non-binding**: S1=S3 (332.16 xP) and S9=S11 (332.34 xP) because FH3 pre-squad naturally allocates budget to 5-midfield stack.
-- **GW4–6 Wildcard Opt1 identical across all 16 scenarios**: **155.37 xP**.
+**Structural Takeaways & Mathematical Proof**:
+- **TC3 Haaland Dominance**: S13 (340.14 xP) beats top FH3 path S9 (332.34 xP) by **+7.80 xP**.
+- **Haaland vs Balanced Flexibility**: Banning Haaland in GW1–3 (S15: 339.43 xP) drops only **-0.71 xP** below S13. The MILP reallocates budget into high-ceiling defenders (Gabriel, Calafiori, Vuskovic) and captaining Vuskovic vs promoted Ipswich in GW3. Both routes are mathematically viable and within 0.2% EV spread.
+- **Bruno Fernandes is Binding**: Banning Bruno costs **-1.06 xP** (S14 vs S13) to **-4.44 xP** (S16 vs S13). Bruno is #1 FPL midfielder (25.17 xP GW1–5) with 100% penalty share and 78% set-pieces against promoted Hull (GW1) and Ipswich (GW2).
+- **World Cup 2026 Fitness Proof**: Haaland had zero World Cup matches (Norway did not qualify) $\rightarrow$ 100% pre-season fitness, 90 mins baseline. Deep tournament returnees (Saka, Mac Allister) carry `watch` penalties (0.70x) and Saliba is out (`exclude_gw1-5`).
+- **GW4–6 Wildcard Opt1 Invariance**: Identical **155.37 xP** across all 16 scenarios with 4 banked FTs entering GW6.
 
 ---
 

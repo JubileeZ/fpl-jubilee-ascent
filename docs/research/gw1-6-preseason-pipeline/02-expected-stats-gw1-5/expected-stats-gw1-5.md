@@ -1,7 +1,7 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-14T01:30:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-13 (357 rows); Prior-Season Seed + Career Individual Rate + Destination Team Concede Rate (ADR-0014); downstream consumers refreshed 2026-08-14; archive 2026-07-29  
+**Updated**: 2026-08-15T13:40:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-13 (357 rows); Prior-Season Seed + Career Individual Rate + Destination Team Concede Rate (ADR-0014); downstream consumers refreshed 2026-08-15; archive 2026-07-29  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
 **Purpose**: Build Event Rates for XI Contention Set via Prior-Season Seed, Career Individual Rate, and Destination Team Concede Rate; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict` with Draft Availability overlays.  
