@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-15T13:40:00+07:00  
+**Updated**: 2026-08-15T22:50:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -37,7 +37,7 @@
 - **Role & Chip Strategy Models**:
   - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Stage 3 Exploration Matrix](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)
   - [Starter Goalkeeper Fixture Rotation & FDR Correlation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [CSV Companion](../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv) · [Baseline Rates](../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)
-  - [5-Defender Fixture Diversification & Long-Term Rotation](def-fixture-rotation/def-fixture-rotation.md) · [5-Club Matrix](../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv) · [Tier Rotations](../../data/research/def-fixture-rotation/def_tier_player_rotations.csv) · [BB1+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv) · [BB1+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv) · [BB2+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv) · [BB2+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv) · [Baseline Rates](../../data/research/def-fixture-rotation/def_performance_baseline.csv)
+  - [5-Defender Fixture Diversification & Long-Term Rotation](def-fixture-rotation/def-fixture-rotation.md) · [5-Club Matrix](../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv) · [Tier Rotations](../../data/research/def-fixture-rotation/def_tier_player_rotations.csv) · [BB1+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv) · [BB1+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv) · [BB2+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv) · [BB2+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv) · [Baseline Rates](../../data/research/def-fixture-rotation/def_performance_baseline.csv) · [Club CS Priors](../../data/research/def-fixture-rotation/def_club_cs_priors.csv) · [GW1–19 Zero-Diff CS Picks](../../data/research/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv)
 
 - **Tactical & Dead-Ball Analytics**:
   - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)
