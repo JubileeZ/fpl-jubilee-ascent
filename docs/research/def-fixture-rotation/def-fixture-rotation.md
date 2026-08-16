@@ -1,14 +1,14 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
-**Updated**: 2026-08-15T22:50:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff; GW1–19 zero-diff all-easy + CS-gate overlay 2026-08-15  
+**Updated**: 2026-08-16T11:26:41+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff; zero-diff all-easy + CS-gate overlays GW1–19 / GW1–3 / BB2 / GW4–19 2026-08-16  
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19).  
 **Related**: [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [GKP rotation](../gkp-fixture-rotation/gkp-fixture-rotation.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
-**Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`, `[def_club_cs_priors.csv](../../../data/research/def-fixture-rotation/def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv)`  
-**Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)`  
+**Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/research/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/research/def-fixture-rotation/def_performance_baseline.csv)`, `[def_club_cs_priors.csv](../../../data/research/def-fixture-rotation/def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv)`, `[def_gw1_3_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv)`, `[def_bb2_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv)`, `[def_gw4_19_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv)`  
+**Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)` · `[build_zero_diff_cs_picks.py](build_zero_diff_cs_picks.py)`  
 **Downstream**: `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py` (full parent + both WC4 bridges)
 
 ## Agent Prompt
@@ -19,9 +19,11 @@ After Stage 2 rate / new-player change:
 This topic only (slow full combinatorics):
   uv run python docs/research/def-fixture-rotation/run_def_rotation_analysis.py
 Bridges only: --bridges-only / --sun-bridge-only / --overall-bridge-only
-Update parent §1.3/§1.4 player maps, GW4-19 dest (corr-first), §3.4 zero-diff all-easy + CS picks, and child bridge stamps from CSVs.
+Update parent §1.3/§1.4 player maps, GW4-19 dest (corr-first), §1.9/§1.10/§2.4/§3.4 zero-diff all-easy + CS picks, and child bridge stamps from CSVs.
 Ranking lenses: --print-ranks. More negative avg_fdr_corr wins after primary FDR keys.
-GW1-19 CS overlay (unordered 5-club sets): filter no_diff_gws=19; sort all_easy_gws desc, avg_fdr_corr asc; gate n_cs_plus>=2 and n_prom<=1; write def_club_cs_priors.csv + def_gw1_19_zero_diff_cs_picks.csv.
+Zero-diff all-easy + CS overlays (unordered 5-club; same gate n_cs_plus>=2 and n_prom<=1):
+  uv run python docs/research/def-fixture-rotation/build_zero_diff_cs_picks.py
+Writes def_gw1_3 / def_bb2 / def_gw4_19 pick CSVs. BB2 all-easy uses worst started FDR (GW2 = max of 5; GW1/GW3 = 3rd-easiest). Do not replace FDR-min canonical #1s.
 ```  
 
 **Ranking lenses** (script constants; `--print-ranks` reprints Top-10s):
@@ -33,6 +35,9 @@ GW1-19 CS overlay (unordered 5-club sets): filter no_diff_gws=19; sort all_easy_
 | GW4–19 dest | rot FDR → zero-diff% → **corr (asc)** → easy% | `AVL-BOU-CHE-LIV-NFO` (r = −0.0994) |
 | GW1–19 FDR-min | same as GW4–19 on `gw1_19` | `AVL-CHE-LIV-MCI-NFO` |
 | GW1–19 zero-diff all-easy + CS | 100% zero-diff → all-easy desc → corr (asc) → CS gate (`n_cs_plus` ≥ 2, `n_prom` ≤ 1) | Start-here: `ARS-COV-LIV-MCI-SUN` / `AVL-CHE-LIV-MCI-NFO` / `BHA-COV-LIV-MCI-SUN` |
+| GW1–3 3-start zero-diff all-easy + CS | same gate; max all-easy = 2/3 | Start-here: `ARS-HUL-MCI-MUN-SUN` / `ARS-HUL-LIV-MUN-SUN` / `MCI-MUN-NFO-SUN-TOT` |
+| BB2 11-start zero-diff all-easy + CS | same gate; all-easy = worst started FDR (GW2 max-of-5; GW1/3 3rd-easiest); max = 1/3 | Start-here: `BRE-LIV-MCI-MUN-SUN` / `BRE-EVE-LIV-MCI-MUN` / `BRE-LIV-MCI-MUN-TOT` |
+| GW4–19 zero-diff all-easy + CS | same gate; 16 GWs; dest FDR-min #1 stays §2.2 | Start-here: `ARS-COV-LIV-MCI-SUN` / `BHA-COV-LIV-MCI-SUN` / `AVL-CHE-LIV-MCI-NFO` |
 | WC4 bridge | path FDR → GW1 → n_swaps → pre corr. Dest picker: zero-diff → path FDR → dest FDR → **dest corr** → easy% | Overall `LIV-MCI-MUN-MUN-NFO` |
 
 More negative correlation is better: club FDR schedules diversify, so the three you start are less likely to hit FDR 4+ together.
@@ -71,13 +76,19 @@ flowchart TD
 
     Early --> EarlyBB2["<b>Option 1: Max EV Sprint (BB2 + TC3 + WC4)</b><br>HUL(1)+MUN(2)+TOT(1)+SUN(1) or S13 ARS(1)+BHA(2)+MUN(1)+SUN(1)<br>Eff FDR: 2.27 | GW2: 2.00 FDR | S13: 340.14 xP"]
     Early --> EarlyBB1["<b>Option 2: Safe Start Sprint (BB1 + TC3 + WC4)</b><br>ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1: 2.00 FDR | S5: 338.88 xP"]
+    Early --> EarlyCs["<b>GW1-3 3-start all-easy + CS</b><br>ARS-HUL-MCI-MUN-SUN / ARS-HUL-LIV-MUN-SUN / MCI-MUN-NFO-SUN-TOT<br>Max 2/3 all-easy | rot FDR 2.2222"]
+    Early --> Bb2Cs["<b>BB2 11-start all-easy + CS</b><br>BRE-LIV-MCI-MUN-SUN / BRE-EVE-LIV-MCI-MUN / BRE-LIV-MCI-MUN-TOT<br>Max 1/3 all-easy | mostly GW3 not GW2"]
     PostWC --> PostWCPick["<b>5 Unique Clubs (1+1+1+1+1)</b><br>AVL - BOU - CHE - LIV - NFO<br>100% Zero-Diff | Rot FDR: 2.4375 | r = -0.0994"]
+    PostWC --> PostWCCs["<b>GW4-19 all-easy + CS start-here</b><br>ARS-COV-LIV-MCI-SUN / BHA-COV-LIV-MCI-SUN / AVL-CHE-LIV-MCI-NFO"]
     Full --> FullPick["<b>FDR-min #1</b><br>AVL - CHE - LIV - MCI - NFO<br>100% Zero-Diff (19/19 GWs) | Rot FDR: 2.4386"]
     Full --> FullCs["<b>All-easy + CS start-here</b><br>ARS-COV-LIV-MCI-SUN / AVL-CHE-LIV-MCI-NFO / BHA-COV-LIV-MCI-SUN<br>Gate: 2+ CS-core, ≤1 promoted"]
 
     style EarlyBB2 fill:#1b4d3e,stroke:#2d6a4f,color:#fff
     style EarlyBB1 fill:#2d6a4f,stroke:#1b4d3e,color:#fff
+    style EarlyCs fill:#1b4d3e,stroke:#2d6a4f,color:#fff
+    style Bb2Cs fill:#1b4d3e,stroke:#2d6a4f,color:#fff
     style PostWCPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
+    style PostWCCs fill:#1b4d3e,stroke:#2d6a4f,color:#fff
     style FullPick fill:#1b4d3e,stroke:#2d6a4f,color:#fff
     style FullCs fill:#1b4d3e,stroke:#2d6a4f,color:#fff
 ```
@@ -103,6 +114,15 @@ flowchart TD
   - **1,024** unique 5-club sets with 19/19 zero-diff. Sort: all-easy GWs desc, then more-negative pairwise $r$. Only **22** have 5+ all-easy GWs.
   - CS core = ARS/MCI (elite) + LIV/BHA/MUN/AVL (strong). Gate: $\ge 2$ CS-core and $\le 1$ promoted (COV/HUL/IPS). Cuts 13/22 fixture leaders.
   - Start-here PICK: `ARS-COV-LIV-MCI-SUN` (mean xCS 0.3493), `AVL-CHE-LIV-MCI-NFO` (rot FDR 2.4386, 0 promoted), `BHA-COV-LIV-MCI-SUN` (r = −0.1487). Full 20 in §3.4.
+6. **GW1–3 3-start overlay** (same method; does not replace BB1/BB2 FDR-min tables):
+  - **11,450** unique 5-club sets with 3/3 zero-diff. Max all-easy = **2/3** (176 sets). 79/176 pass CS gate.
+  - Start-here PICK: `ARS-HUL-MCI-MUN-SUN` (xCS 0.3477), `ARS-HUL-LIV-MUN-SUN` (0.3232), `MCI-MUN-NFO-SUN-TOT` (0 promoted, 0.3253). Fixture #1 `BRE-HUL-MUN-NFO-SUN` is CUT (thin CS core). Full 20 in §1.9.
+7. **BB2 11-start overlay** (GW1 top-3 + GW2 all-5 + GW3 top-3):
+  - **824** five-club BB2 rows with 3/3 zero-diff. Max all-easy = **1/3** (43 sets). Easy week is GW3 for 41/43, GW2 for 2 (`CHE-HUL-MUN-SUN-TOT`, `CHE-COV-MUN-SUN-TOT` — both fail CS gate; only MUN as core).
+  - Start-here PICK: `BRE-LIV-MCI-MUN-SUN` (r = −0.2000, 11-start FDR 2.3636, xCS 0.3120), `BRE-EVE-LIV-MCI-MUN`, `BRE-LIV-MCI-MUN-TOT` (xCS 0.3318). Canonical FDR-min #1 `HUL-MUN-MUN-TOT-SUN` is 4-club — out of this 5-unique lens. Full 20 in §1.10.
+8. **GW4–19 overlay** (does not replace dest FDR-min #1 `AVL-BOU-CHE-LIV-NFO`):
+  - **1,752** unique 5-club with 16/16 zero-diff. 10 have 5+ all-easy; 5/10 pass gate. Dest FDR-min #1 has only 3/16 all-easy.
+  - Start-here PICK: `ARS-COV-LIV-MCI-SUN` (5/16 easy, xCS 0.3493), `BHA-COV-LIV-MCI-SUN` (r = −0.1292), `AVL-CHE-LIV-MCI-NFO` (pick 13, rot FDR **2.4375**). Full 20 in §2.4.
 
 ---
 
@@ -255,6 +275,153 @@ Pre-WC sprint setups migrate seamlessly to long-term foundations at the GW4 Wild
 
 ---
 
+### 1.9 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (GW1–3, 3-start, 5 unique clubs)
+
+Unordered club sets. Filter `horizon = gw1_3`, `no_diff_gws = 3`. Standard rotation: start 3 / bench 2 each GW. Sort all-easy desc, then `avg_fdr_corr` asc. Same CS gate as §3.4. Does not replace §1.3 BB2 or §1.6 BB1 FDR-min tables. Companion: `[def_gw1_3_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv)`. Rebuild: `uv run python docs/research/def-fixture-rotation/build_zero_diff_cs_picks.py`.
+
+| Universe | Count |
+| --- | ---: |
+| Unique 5-club zero-diff sets | 11,450 |
+| With 2/3 all-easy GWs (max) | 176 (2: 176; 1: 2,882; 0: 8,392) |
+| Of those 176 passing CS gate | 79 |
+| Final 20 after walking fixture rank | 7 PICK / 3 SOLID / 10 CAUTION |
+
+N=3 inflates the zero-diff universe vs GW1–19. Interesting head is the **176 with 2 all-easy GWs**. Rot FDR of that cluster is typically **2.2222**. Table below = top 22 of 176; full head in CSV.
+
+#### Fixture head — top 22 of 176 with 2/3 all-easy GWs
+
+| Fix # | 5-Club Set | All Easy | Pairwise $r$ | Rot FDR | Mean xCS | CS core | Gate |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
+| 1 | BRE-HUL-MUN-NFO-SUN | 2/3 | -0.2000 | 2.2222 | 0.2703 | MUN | CUT thin CS core |
+| 2 | HUL-LIV-MUN-NFO-SUN | 2/3 | -0.2000 | 2.2222 | 0.2778 | LIV-MUN | PASS (CAUTION) |
+| 3 | HUL-MCI-MUN-NFO-SUN | 2/3 | -0.2000 | 2.2222 | 0.3023 | MCI-MUN | PASS (CAUTION) |
+| 4 | AVL-HUL-MUN-NFO-SUN | 2/3 | -0.1732 | 2.2222 | 0.2750 | AVL-MUN | PASS (CAUTION) |
+| 5 | BHA-HUL-MUN-NFO-SUN | 2/3 | -0.1732 | 2.2222 | 0.2767 | BHA-MUN | PASS (CAUTION) |
+| 6 | ARS-BRE-HUL-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.3157 | ARS-MUN | PASS (CAUTION) |
+| 7 | ARS-HUL-LIV-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.3232 | ARS-LIV-MUN | PASS (PICK) |
+| 8 | ARS-HUL-MCI-MUN-SUN | 2/3 | -0.1366 | 2.2222 | **0.3477** | ARS-MCI-MUN | PASS (PICK) |
+| 9 | BRE-COV-MUN-NFO-SUN | 2/3 | -0.1366 | 2.2222 | 0.2703 | MUN | CUT thin CS core |
+| 10 | BRE-HUL-IPS-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.2672 | MUN | CUT thin CS core; 2+ promoted |
+| 11 | BRE-MUN-NFO-SUN-TOT | 2/3 | -0.1366 | 2.2222 | 0.2933 | MUN | CUT thin CS core |
+| 12 | COV-LIV-MUN-NFO-SUN | 2/3 | -0.1366 | 2.2222 | 0.2778 | LIV-MUN | PASS (CAUTION) |
+| 13 | COV-MCI-MUN-NFO-SUN | 2/3 | -0.1366 | 2.2222 | 0.3023 | MCI-MUN | PASS (CAUTION) |
+| 14 | HUL-IPS-LIV-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.2747 | LIV-MUN | CUT 2+ promoted |
+| 15 | HUL-IPS-MCI-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.2992 | MCI-MUN | CUT 2+ promoted |
+| 16 | LIV-MUN-NFO-SUN-TOT | 2/3 | -0.1366 | 2.2222 | 0.3008 | LIV-MUN | PASS (SOLID) |
+| 17 | MCI-MUN-NFO-SUN-TOT | 2/3 | -0.1366 | 2.2222 | 0.3253 | MCI-MUN | PASS (PICK) |
+| 18 | ARS-AVL-HUL-MUN-SUN | 2/3 | -0.1098 | 2.2222 | 0.3205 | ARS-AVL-MUN | PASS (PICK) |
+| 19 | ARS-BHA-HUL-MUN-SUN | 2/3 | -0.1098 | 2.2222 | 0.3221 | ARS-BHA-MUN | PASS (PICK) |
+| 20 | AVL-HUL-IPS-MUN-SUN | 2/3 | -0.1098 | 2.2222 | 0.2720 | AVL-MUN | CUT 2+ promoted |
+| 21 | BHA-HUL-IPS-MUN-SUN | 2/3 | -0.1098 | 2.2222 | 0.2736 | BHA-MUN | CUT 2+ promoted |
+| 22 | BOU-HUL-MUN-NFO-SUN | 2/3 | -0.1000 | 2.3333 | 0.2653 | MUN | CUT thin CS core |
+
+Fix #1 `BRE-HUL-MUN-NFO-SUN` has the best pairwise ($r = -0.2000$) but only MUN as CS-core — CUT. HUL is the fixture enabler across most of the 2-easy cluster.
+
+#### Final 20 combinations to pick
+
+Walk fixture rank through CS gate. Mean GKP xCS of this 20: 0.3047.
+
+| Pick | 5-Club Set | Easy | Pairwise $r$ | Rot FDR | Mean xCS | CS core | Leaks | Verdict |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| 1 | HUL-LIV-MUN-NFO-SUN | 2/3 | **-0.2000** | 2.2222 | 0.2778 | LIV-MUN | HUL | CAUTION |
+| 2 | HUL-MCI-MUN-NFO-SUN | 2/3 | **-0.2000** | 2.2222 | 0.3023 | MCI-MUN | HUL | CAUTION |
+| 3 | AVL-HUL-MUN-NFO-SUN | 2/3 | -0.1732 | 2.2222 | 0.2750 | AVL-MUN | HUL | CAUTION |
+| 4 | BHA-HUL-MUN-NFO-SUN | 2/3 | -0.1732 | 2.2222 | 0.2767 | BHA-MUN | HUL | CAUTION |
+| 5 | ARS-BRE-HUL-MUN-SUN | 2/3 | -0.1366 | 2.2222 | 0.3157 | ARS-MUN | HUL | CAUTION |
+| **6** | **ARS-HUL-LIV-MUN-SUN** | 2/3 | -0.1366 | 2.2222 | 0.3232 | ARS-LIV-MUN | HUL | **PICK** |
+| **7** | **ARS-HUL-MCI-MUN-SUN** | 2/3 | -0.1366 | 2.2222 | **0.3477** | ARS-MCI-MUN | HUL | **PICK** |
+| 8 | COV-LIV-MUN-NFO-SUN | 2/3 | -0.1366 | 2.2222 | 0.2778 | LIV-MUN | COV | CAUTION |
+| 9 | COV-MCI-MUN-NFO-SUN | 2/3 | -0.1366 | 2.2222 | 0.3023 | MCI-MUN | COV | CAUTION |
+| 10 | LIV-MUN-NFO-SUN-TOT | 2/3 | -0.1366 | 2.2222 | 0.3008 | LIV-MUN | — | SOLID |
+| **11** | **MCI-MUN-NFO-SUN-TOT** | 2/3 | -0.1366 | 2.2222 | 0.3253 | MCI-MUN | — | **PICK** |
+| **12** | **ARS-AVL-HUL-MUN-SUN** | 2/3 | -0.1098 | 2.2222 | 0.3205 | ARS-AVL-MUN | HUL | **PICK** |
+| **13** | **ARS-BHA-HUL-MUN-SUN** | 2/3 | -0.1098 | 2.2222 | 0.3221 | ARS-BHA-MUN | HUL | **PICK** |
+| 14 | AVL-COV-MUN-NFO-SUN | 2/3 | -0.0964 | 2.2222 | 0.2750 | AVL-MUN | COV | CAUTION |
+| 15 | AVL-MUN-NFO-SUN-TOT | 2/3 | -0.0964 | 2.2222 | 0.2980 | AVL-MUN | — | SOLID |
+| 16 | BHA-COV-MUN-NFO-SUN | 2/3 | -0.0964 | 2.2222 | 0.2767 | BHA-MUN | COV | CAUTION |
+| 17 | BHA-MUN-NFO-SUN-TOT | 2/3 | -0.0964 | 2.2222 | 0.2997 | BHA-MUN | — | SOLID |
+| 18 | ARS-BRE-COV-MUN-SUN | 2/3 | -0.0500 | 2.2222 | 0.3157 | ARS-MUN | COV | CAUTION |
+| **19** | **ARS-BRE-MUN-SUN-TOT** | 2/3 | -0.0500 | 2.2222 | 0.3387 | ARS-MUN | — | **PICK** |
+| **20** | **ARS-COV-LIV-MUN-SUN** | 2/3 | -0.0500 | 2.2222 | 0.3232 | ARS-LIV-MUN | COV | **PICK** |
+
+Start-here: `ARS-HUL-MCI-MUN-SUN` (highest xCS, dual elite) / `ARS-HUL-LIV-MUN-SUN` (3 CS-core) / `MCI-MUN-NFO-SUN-TOT` (0 promoted).
+
+---
+
+### 1.10 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (BB2 11-start, 5 unique clubs)
+
+BB2 sprint: GW1 top-3, GW2 all-5, GW3 top-3. All-easy / zero-diff use **worst started** FDR: GW2 = max of 5; GW1/GW3 = 3rd-easiest of 5. Population = 5 unique clubs in `[def_bb2_wc4_club_matrix.csv](../../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)` (already GW2 max FDR ≤ 3, no GW2 clashes) plus FDR rebuilt from `fixtures.parquet`. `rot_avg_fdr` in the companion is **11-start effective FDR**. Does not replace §1.3 FDR-min #1 `HUL-MUN-MUN-TOT-SUN` (4-club). Companion: `[def_bb2_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv)`.
+
+| Universe | Count |
+| --- | ---: |
+| Five-club BB2 rows | 1,002 |
+| With 3/3 zero-diff | 824 |
+| With 1/3 all-easy (max) | 43 (1: 43; 0: 781; none with 2 or 3) |
+| Of those 43 passing CS gate | 41 |
+| Final 20 | 13 PICK / 7 CAUTION |
+
+All-easy week among the 43: **GW3 for 41, GW2 for 2, GW1 for 0**. The two GW2-easy 5-club sets are the classic FDR-min 5-clubs `CHE-HUL-MUN-SUN-TOT` (fix 39, r = +0.5839) and `CHE-COV-MUN-SUN-TOT` (fix 43, r = +0.7402) — both CUT (only MUN as CS-core). BB2 “all-easy” on this lens is almost always a **rotation week**, not the Bench Boost week.
+
+#### Fixture head — top 22 of 43 with 1/3 all-easy GWs
+
+| Fix # | 5-Club Set | All Easy | Pairwise $r$ | Eff FDR | Mean xCS | CS core | Gate |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
+| 1 | BRE-LIV-MCI-MUN-SUN | 1/3 | **-0.2000** | **2.3636** | 0.3120 | LIV-MCI-MUN | PASS (PICK) |
+| 2 | BRE-EVE-LIV-MCI-MUN | 1/3 | **-0.2000** | 2.5455 | 0.3119 | LIV-MCI-MUN | PASS (PICK) |
+| 3 | BRE-EVE-LIV-MCI-SUN | 1/3 | **-0.2000** | 2.5455 | 0.3065 | LIV-MCI | PASS (PICK) |
+| 4 | BRE-CHE-LIV-MCI-MUN | 1/3 | -0.1890 | 2.4545 | 0.3051 | LIV-MCI-MUN | PASS (PICK) |
+| 5 | BRE-CHE-LIV-MCI-SUN | 1/3 | -0.1890 | 2.4545 | 0.2998 | LIV-MCI | PASS (PICK) |
+| 6 | BRE-CHE-EVE-LIV-MCI | 1/3 | -0.1890 | 2.6364 | 0.2997 | LIV-MCI | PASS (PICK) |
+| 7 | BRE-COV-LIV-MCI-MUN | 1/3 | -0.1000 | 2.4545 | 0.3088 | LIV-MCI-MUN | PASS (PICK) |
+| 8 | BRE-COV-LIV-MCI-SUN | 1/3 | -0.1000 | 2.4545 | 0.3034 | LIV-MCI | PASS (CAUTION) |
+| 9 | BRE-LIV-MCI-MUN-TOT | 1/3 | -0.1000 | 2.4545 | **0.3318** | LIV-MCI-MUN | PASS (PICK) |
+| 10 | BRE-LIV-MCI-SUN-TOT | 1/3 | -0.1000 | 2.4545 | 0.3264 | LIV-MCI | PASS (PICK) |
+| 11 | BRE-COV-EVE-LIV-MCI | 1/3 | -0.1000 | 2.6364 | 0.3034 | LIV-MCI | PASS (CAUTION) |
+| 12 | BRE-EVE-LIV-MCI-TOT | 1/3 | -0.1000 | 2.6364 | 0.3264 | LIV-MCI | PASS (PICK) |
+| 13 | BRE-CHE-COV-LIV-MCI | 1/3 | -0.0579 | 2.5455 | 0.2966 | LIV-MCI | PASS (CAUTION) |
+| 14 | BRE-CHE-LIV-MCI-TOT | 1/3 | -0.0579 | 2.5455 | 0.3196 | LIV-MCI | PASS (PICK) |
+| 15 | BRE-HUL-LIV-MCI-MUN | 1/3 | 0.0000 | 2.4545 | 0.3088 | LIV-MCI-MUN | PASS (PICK) |
+| 16 | BRE-HUL-LIV-MCI-SUN | 1/3 | 0.0000 | 2.4545 | 0.3034 | LIV-MCI | PASS (CAUTION) |
+| 17 | BRE-EVE-HUL-LIV-MCI | 1/3 | 0.0000 | 2.6364 | 0.3034 | LIV-MCI | PASS (CAUTION) |
+| 18 | BRE-CHE-HUL-LIV-MCI | 1/3 | 0.0493 | 2.5455 | 0.2966 | LIV-MCI | PASS (CAUTION) |
+| 19 | BRE-COV-LIV-MCI-TOT | 1/3 | 0.1000 | 2.5455 | 0.3233 | LIV-MCI | PASS (CAUTION) |
+| 20 | BOU-BRE-LIV-MCI-MUN | 1/3 | 0.1000 | 2.5455 | 0.3065 | LIV-MCI-MUN | PASS (PICK) |
+| 21 | BOU-BRE-LIV-MCI-SUN | 1/3 | 0.1000 | 2.5455 | 0.3012 | LIV-MCI | PASS (PICK) |
+| 22 | BRE-FUL-LIV-MCI-MUN | 1/3 | 0.1000 | 2.5455 | 0.3105 | LIV-MCI-MUN | PASS (PICK) |
+
+LIV-MCI is the CS backbone of the entire 1-easy cluster. BRE is the fixture enabler (mid-tier, not a leak).
+
+#### Final 20 combinations to pick
+
+Mean GKP xCS of this 20: 0.3097.
+
+| Pick | 5-Club Set | Easy | Pairwise $r$ | Eff FDR | Mean xCS | CS core | Leaks | Verdict |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| **1** | **BRE-LIV-MCI-MUN-SUN** | 1/3 | **-0.2000** | **2.3636** | 0.3120 | LIV-MCI-MUN | — | **PICK** |
+| **2** | **BRE-EVE-LIV-MCI-MUN** | 1/3 | **-0.2000** | 2.5455 | 0.3119 | LIV-MCI-MUN | — | **PICK** |
+| **3** | **BRE-EVE-LIV-MCI-SUN** | 1/3 | **-0.2000** | 2.5455 | 0.3065 | LIV-MCI | — | **PICK** |
+| **4** | **BRE-CHE-LIV-MCI-MUN** | 1/3 | -0.1890 | 2.4545 | 0.3051 | LIV-MCI-MUN | CHE | **PICK** |
+| **5** | **BRE-CHE-LIV-MCI-SUN** | 1/3 | -0.1890 | 2.4545 | 0.2998 | LIV-MCI | CHE | **PICK** |
+| **6** | **BRE-CHE-EVE-LIV-MCI** | 1/3 | -0.1890 | 2.6364 | 0.2997 | LIV-MCI | CHE | **PICK** |
+| **7** | **BRE-COV-LIV-MCI-MUN** | 1/3 | -0.1000 | 2.4545 | 0.3088 | LIV-MCI-MUN | COV | **PICK** |
+| 8 | BRE-COV-LIV-MCI-SUN | 1/3 | -0.1000 | 2.4545 | 0.3034 | LIV-MCI | COV | CAUTION |
+| **9** | **BRE-LIV-MCI-MUN-TOT** | 1/3 | -0.1000 | 2.4545 | **0.3318** | LIV-MCI-MUN | — | **PICK** |
+| **10** | **BRE-LIV-MCI-SUN-TOT** | 1/3 | -0.1000 | 2.4545 | 0.3264 | LIV-MCI | — | **PICK** |
+| 11 | BRE-COV-EVE-LIV-MCI | 1/3 | -0.1000 | 2.6364 | 0.3034 | LIV-MCI | COV | CAUTION |
+| **12** | **BRE-EVE-LIV-MCI-TOT** | 1/3 | -0.1000 | 2.6364 | 0.3264 | LIV-MCI | — | **PICK** |
+| 13 | BRE-CHE-COV-LIV-MCI | 1/3 | -0.0579 | 2.5455 | 0.2966 | LIV-MCI | CHE-COV | CAUTION |
+| **14** | **BRE-CHE-LIV-MCI-TOT** | 1/3 | -0.0579 | 2.5455 | 0.3196 | LIV-MCI | CHE | **PICK** |
+| **15** | **BRE-HUL-LIV-MCI-MUN** | 1/3 | 0.0000 | 2.4545 | 0.3088 | LIV-MCI-MUN | HUL | **PICK** |
+| 16 | BRE-HUL-LIV-MCI-SUN | 1/3 | 0.0000 | 2.4545 | 0.3034 | LIV-MCI | HUL | CAUTION |
+| 17 | BRE-EVE-HUL-LIV-MCI | 1/3 | 0.0000 | 2.6364 | 0.3034 | LIV-MCI | HUL | CAUTION |
+| 18 | BRE-CHE-HUL-LIV-MCI | 1/3 | 0.0493 | 2.5455 | 0.2966 | LIV-MCI | CHE-HUL | CAUTION |
+| 19 | BRE-COV-LIV-MCI-TOT | 1/3 | 0.1000 | 2.5455 | 0.3233 | LIV-MCI | COV | CAUTION |
+| **20** | **BOU-BRE-LIV-MCI-MUN** | 1/3 | 0.1000 | 2.5455 | 0.3065 | LIV-MCI-MUN | BOU | **PICK** |
+
+Start-here: `BRE-LIV-MCI-MUN-SUN` (best $r$ and lowest 11-start FDR among the 43) / `BRE-EVE-LIV-MCI-MUN` (same $r$, 3 CS-core) / `BRE-LIV-MCI-MUN-TOT` (highest xCS among 3-core passers).
+
+---
+
 
 
 ## Part 2: Long-Term Post-Wildcard Rotation (GW4–19)
@@ -333,6 +500,69 @@ For managers activating their Wildcard in GW4, this 16-gameweek block establishe
 | **Band 2: Mid-Value (£23.0–24.0m)** | £24.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Ajayi** (HUL £4.0m) | **63.48** | **19.335** | **324.91 xP** | 20.31 xP/GW | 2.812 | 62.5% |
 | **Band 3: Single Anchor (£24.5–25.0m)** | £25.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Hill** (BOU £5.5m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) | **64.66** | **19.373** | **329.40 xP** | 20.59 xP/GW | 2.667 | 68.8% |
 | **Band 4: Premium Anchor (£25.5–26.0m)** | £26.0m | **Calafiori** (ARS £5.5m) + **Vuskovic** (BHA £5.0m) + **Thomas** (COV £4.0m) + **Muharemović** (LEE £5.0m) + **O'Reilly** (MCI £6.5m) | **64.39** | **19.341** | **332.77 xP** | 20.80 xP/GW | 2.646 | 75.0% |
+
+---
+
+### 2.4 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (GW4–19, 5 unique clubs)
+
+Unordered club sets. Filter `horizon = gw4_19`, `no_diff_gws = 16`. Same sort + CS gate as §3.4. Does not replace §2.2 dest FDR-min #1 `AVL-BOU-CHE-LIV-NFO` (only 3/16 all-easy — not in this head). Companion: `[def_gw4_19_zero_diff_cs_picks.csv](../../../data/research/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv)`.
+
+| Universe | Count |
+| --- | ---: |
+| Unique 5-club zero-diff sets | 1,752 |
+| With 5+ all-easy GWs | 10 (6: 1; 5: 9; 4: 53) |
+| Of those 10 passing CS gate | 5 |
+| Final 20 after walking fixture rank | 5 PICK / 2 SOLID / 13 CAUTION |
+
+`AVL-CHE-LIV-MCI-NFO` is pick **13** here (4/16 all-easy, rot FDR **2.4375**) — still the FDR-min overlap when keeping City.
+
+#### Fixture head — 10 sets with 5+ all-easy GWs
+
+| Fix # | 5-Club Set | All Easy | Pairwise $r$ | Rot FDR | Mean xCS | CS core | Gate |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
+| 1 | AVL-BHA-BRE-CHE-LEE | 6/16 | +0.0256 | 2.5208 | 0.2635 | AVL-BHA | PASS (SOLID) |
+| 2 | BOU-COV-EVE-FUL-NFO | 5/16 | -0.1021 | 2.4583 | 0.2584 | — | CUT thin CS core |
+| 3 | BOU-COV-EVE-NFO-SUN | 5/16 | -0.0867 | 2.4792 | 0.2599 | — | CUT thin CS core |
+| 4 | ARS-COV-LIV-MCI-SUN | 5/16 | -0.0733 | 2.5000 | **0.3493** | ARS-LIV-MCI | PASS (PICK) |
+| 5 | ARS-BOU-COV-LIV-SUN | 5/16 | -0.0643 | 2.5000 | 0.3123 | ARS-LIV | PASS (CAUTION) |
+| 6 | ARS-BOU-COV-NFO-SUN | 5/16 | -0.0469 | 2.5208 | 0.3053 | ARS | CUT thin CS core |
+| 7 | ARS-BOU-FUL-IPS-MCI | 5/16 | -0.0453 | 2.5000 | 0.3354 | ARS-MCI | PASS (CAUTION) |
+| 8 | CHE-COV-IPS-NFO-SUN | 5/16 | -0.0341 | 2.5208 | 0.2554 | — | CUT thin CS core; 2+ promoted |
+| 9 | ARS-BOU-COV-FUL-MCI | 5/16 | -0.0210 | 2.4792 | 0.3354 | ARS-MCI | PASS (CAUTION) |
+| 10 | ARS-COV-IPS-NFO-SUN | 5/16 | +0.0468 | 2.5833 | 0.3076 | ARS | CUT thin CS core; 2+ promoted |
+
+Fix #1 is the same 6-easy king as GW1–19, but $r$ is slightly **positive** (+0.0256) on the 16-GW window — extra all-easy GWs are not diversified. CHE+LEE still drag mean xCS below league median.
+
+#### Final 20 combinations to pick
+
+Walk fixture rank through CS gate. Mean GKP xCS of this 20: 0.2972.
+
+| Pick | 5-Club Set | Easy | Pairwise $r$ | Rot FDR | Mean xCS | CS core | Leaks | Verdict |
+| ---: | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| 1 | AVL-BHA-BRE-CHE-LEE | 6/16 | +0.0256 | 2.5208 | 0.2635 | AVL-BHA | CHE-LEE | SOLID |
+| **2** | **ARS-COV-LIV-MCI-SUN** | 5/16 | -0.0733 | 2.5000 | **0.3493** | ARS-LIV-MCI | COV | **PICK** |
+| 3 | ARS-BOU-COV-LIV-SUN | 5/16 | -0.0643 | 2.5000 | 0.3123 | ARS-LIV | BOU-COV | CAUTION |
+| 4 | ARS-BOU-FUL-IPS-MCI | 5/16 | -0.0453 | 2.5000 | 0.3354 | ARS-MCI | BOU-IPS | CAUTION |
+| 5 | ARS-BOU-COV-FUL-MCI | 5/16 | -0.0210 | 2.4792 | 0.3354 | ARS-MCI | BOU-COV | CAUTION |
+| **6** | **BHA-COV-LIV-MCI-SUN** | 4/16 | **-0.1292** | 2.4792 | 0.3098 | BHA-LIV-MCI | COV | **PICK** |
+| **7** | **BHA-CRY-LIV-MCI-NFO** | 4/16 | -0.0977 | 2.4792 | 0.3096 | BHA-LIV-MCI | CRY | **PICK** |
+| 8 | BHA-COV-LIV-NFO-SUN | 4/16 | -0.0796 | 2.5208 | 0.2783 | BHA-LIV | COV | CAUTION |
+| 9 | AVL-CHE-HUL-LEE-LIV | 4/16 | -0.0755 | 2.5000 | 0.2620 | AVL-LIV | CHE-HUL-LEE | CAUTION |
+| 10 | BHA-COV-CRY-MCI-SUN | 4/16 | -0.0677 | 2.5208 | 0.2995 | BHA-MCI | COV-CRY | CAUTION |
+| 11 | AVL-BHA-BRE-HUL-LEE | 4/16 | -0.0564 | 2.5625 | 0.2672 | AVL-BHA | HUL-LEE | CAUTION |
+| **12** | **AVL-BHA-CRY-LIV-NEW** | 4/16 | -0.0550 | 2.5208 | 0.2773 | AVL-BHA-LIV | CRY-NEW | **PICK** |
+| **13** | **AVL-CHE-LIV-MCI-NFO** | 4/16 | -0.0529 | **2.4375** | 0.3044 | AVL-LIV-MCI | CHE | **PICK** |
+| 14 | AVL-BHA-COV-CRY-FUL | 4/16 | -0.0473 | 2.5208 | 0.2708 | AVL-BHA | COV-CRY | CAUTION |
+| 15 | AVL-BHA-CHE-HUL-LEE | 4/16 | -0.0224 | 2.5625 | 0.2609 | AVL-BHA | CHE-HUL-LEE | CAUTION |
+| 16 | BHA-CRY-LEE-MUN-TOT | 4/16 | -0.0058 | 2.5833 | 0.2885 | BHA-MUN | CRY-LEE | SOLID |
+| 17 | AVL-BRE-CHE-HUL-MCI | 4/16 | -0.0035 | 2.5417 | 0.2939 | AVL-MCI | CHE-HUL | CAUTION |
+| 18 | ARS-IPS-LIV-NEW-NFO | 4/16 | +0.0121 | 2.5417 | 0.3125 | ARS-LIV | IPS-NEW | CAUTION |
+| 19 | AVL-IPS-MCI-NEW-NFO | 4/16 | +0.0182 | 2.5000 | 0.2960 | AVL-MCI | IPS-NEW | CAUTION |
+| 20 | ARS-COV-LIV-NFO-SUN | 4/16 | +0.0236 | 2.5625 | 0.3177 | ARS-LIV | COV | CAUTION |
+
+Start-here: `ARS-COV-LIV-MCI-SUN` (only 5-easy PICK) / `BHA-COV-LIV-MCI-SUN` (best pairwise among passers) / `AVL-CHE-LIV-MCI-NFO` (FDR-min overlap, 0 promoted besides CHE leak).
+
+---
 
 
 ---
@@ -544,7 +774,7 @@ graph TD
     A["FPL Defensive Strategy"] --> B{"Planning Pre-WC Bench Boost?"}
     B -- "Option 1: Max EV (BB2 + TC3 + WC4)" --> C1["<b>Step 1: Pick Early Sprint Teams (BB2)</b><br>4-Club: HUL(1)+MUN(2)+TOT(1)+SUN(1) or S13 ARS(1)+BHA(2)+MUN(1)+SUN(1)<br>Eff FDR: 2.27 | GW2 FDR: 2.00 | S13: 340.14 xP"]
     B -- "Option 2: Safe Start (BB1 + TC3 + WC4)" --> C2["<b>Step 1: Pick Early Sprint Teams (BB1)</b><br>4-Club: ARS(1) + MUN(2) + NFO(1) + SUN(1)<br>Eff FDR: 2.27 | GW1 FDR: 2.00 | S5: 338.88 xP"]
-    B -- "NO (Set & Forget / Normal Start)" --> D["<b>Step 1: Pick Long-Term Rotation Teams (GW1-19)</b><br>5 Unique Clubs: AVL - CHE - LIV - MCI - NFO<br>100% Zero-Difficult GWs | Rot FDR: 2.4386"]
+    B -- "NO (Set & Forget / Normal Start)" --> D["<b>Step 1: Pick Long-Term Rotation Teams (GW1-19)</b><br>5 Unique Clubs: AVL - CHE - LIV - MCI - NFO<br>100% Zero-Difficult GWs | Rot FDR: 2.4386<br>or all-easy+CS: ARS-COV-LIV-MCI-SUN"]
     
     C1 --> E1["<b>Step 2: Map Players to Budget (£22.5m-£25.5m)</b><br>Thomas + Ballard + Meunier/Mukiele + Van Hecke + Lacroix/Calafiori/Maguire"]
     C2 --> E2["<b>Step 2: Map Players to Budget (£22.5m-£25.5m)</b><br>Shaw / Yoro + Jair Cunha + Ballard / Meunier + O'Nien / Calafiori"]
@@ -562,9 +792,11 @@ graph TD
     - **Recommended Teams**: `Arsenal (1) + Manchester United (2) + Nottingham Forest (1) + Sunderland (1)` or `LIV(1) + MCI(1) + MUN(2) + NFO(1)`.
     - **Why**: Best GW1 FDR (2.00) at shared 2.2727 11-start eff FDR. Eliminates Day 1 bench point waste before any match minutes are played.
     - **WC4 Reset**: Wipes pre-season structure cleanly at GW4 to deploy long-term rotation or premium anchor defenses.
+  - **5-club all-easy + CS (standard 3-start, §1.9)**: `ARS-HUL-MCI-MUN-SUN` / `ARS-HUL-LIV-MUN-SUN` / `MCI-MUN-NFO-SUN-TOT`. Max 2/3 all-easy; rot FDR 2.2222. Fixture #1 `BRE-HUL-MUN-NFO-SUN` is CUT.
+  - **5-club all-easy + CS (BB2 11-start, §1.10)**: `BRE-LIV-MCI-MUN-SUN` (eff FDR 2.3636) / `BRE-EVE-LIV-MCI-MUN` / `BRE-LIV-MCI-MUN-TOT`. Max 1/3 all-easy, almost always GW3 not GW2. 4-club FDR-min `HUL-MUN-MUN-TOT-SUN` stays the S13 sprint #1.
 2. **For Post-Wildcard (GW4–19)**:
-  - **Recommended Teams**: `Aston Villa (1) + Bournemouth (1) + Chelsea (1) + Liverpool (1) + Nottingham Forest (1)`
-  - **Why**: Tied lowest rotated FDR (2.4375) and 100% zero-diff; **best correlation** (r = −0.0994) in that tier. `AVL-CHE-LIV-MCI-NFO` is rank 3 (r = −0.0529) — keep it when the WC4 dump must retain City.
+  - **FDR-min #1**: `Aston Villa (1) + Bournemouth (1) + Chelsea (1) + Liverpool (1) + Nottingham Forest (1)` — rot FDR 2.4375, r = −0.0994. Unchanged §2.2.
+  - **All-easy + CS start-here**: `ARS-COV-LIV-MCI-SUN` (5/16 easy, xCS 0.3493) / `BHA-COV-LIV-MCI-SUN` (r = −0.1292) / `AVL-CHE-LIV-MCI-NFO` (pick 13, rot FDR 2.4375). Full 20 in §2.4. Dest FDR-min #1 has only 3/16 all-easy.
 3. **For Set & Forget (GW1–19)**:
   - **FDR-min #1**: `AVL-CHE-LIV-MCI-NFO` (rot FDR 2.4386, 100% zero-diff). Unchanged §3.2 lens.
   - **All-easy + CS start-here**: `ARS-COV-LIV-MCI-SUN` (mean xCS 0.3493) / `AVL-CHE-LIV-MCI-NFO` (0 promoted) / `BHA-COV-LIV-MCI-SUN` (r = −0.1487).

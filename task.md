@@ -2,14 +2,14 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Complete / Verified
-- **Files:** `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/INDEX.md`, `data/research/def-fixture-rotation/def_club_cs_priors.csv`, `data/research/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv`, `docs/agents/current-state.md`, `task.md`
-- **Decisions:** GW1–19 zero-diff 5-club sets ranked all-easy desc then pairwise $r$ (unordered `A-B-C-D-E` = `E-B-A-C-D`). CS gate: ≥2 CS-core (ARS/MCI elite + LIV/BHA/MUN/AVL) and ≤1 promoted. Start-here PICK: `ARS-COV-LIV-MCI-SUN` / `AVL-CHE-LIV-MCI-NFO` / `BHA-COV-LIV-MCI-SUN`. FDR-min #1 `AVL-CHE-LIV-MCI-NFO` unchanged.
+- **Status:** Complete
+- **Files:** `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/def-fixture-rotation/build_zero_diff_cs_picks.py`, `docs/research/INDEX.md`, `data/research/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv`, `data/research/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv`, `data/research/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv`, `docs/agents/current-state.md`, `task.md`
+- **Decisions:** Same GW1–19 method on three horizons. Unordered 5-club. 100% zero-diff. Sort all-easy desc then corr. CS gate ≥2 CS-core ≤1 promoted. Does not replace FDR-min #1s. BB2 all-easy = worst started FDR (GW2 max-of-5; GW1/3 3rd-easiest). Rebuild: `uv run python docs/research/def-fixture-rotation/build_zero_diff_cs_picks.py`.
 - **Blocked:** None.
-- **Next:** None.
-- **Objective:** Rank GW1–19 100% zero-diff 5-club combinations by all-easy GWs then pairwise correlation, overlay Stage 2 GKP clean-sheet priors, finalize top 20, consolidate into def-fixture-rotation research note.
+- **Next:** None. Packet done.
+- **Objective:** Rank GW1–3, BB2 sprint, and GW4–19 100% zero-diff 5-club sets by all-easy then pairwise correlation, overlay Stage 2 GKP CS priors, finalize top 20 each, consolidate into def-fixture-rotation note.
 - **Acceptance:**
-  - [x] Unique 5-club zero-diff universe counted (1,024) and sorted all-easy then corr
-  - [x] CS gate applied; 22-row fixture head + final 20 written
-  - [x] Companions `def_club_cs_priors.csv` and `def_gw1_19_zero_diff_cs_picks.csv` generated from matrix + Stage 2 rates
-  - [x] Research note §3.4, ranking lens, exec summary, Part 5, and INDEX updated
+  - [x] GW1–3 zero-diff 5-club ranking + CS-gated top 20
+  - [x] BB2 sprint zero-diff ranking + CS-gated top 20 (all-easy uses GW2 all-5 + GW1/GW3 top-3)
+  - [x] GW4–19 zero-diff 5-club ranking + CS-gated top 20
+  - [x] Companions written; research note + INDEX updated
