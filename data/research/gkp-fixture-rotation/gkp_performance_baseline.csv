@@ -1,9 +1,10 @@
 player_id,web_name,club_short,price,expected_role,per90_saves,per90_goals_conceded,rate_source,usable_mins_total,provenance_note,has_promoted_proxy
-385,Trafford,LEE,5.0,Nailed Starter,3.7857,1.4737,career_fpl_prior_year+destination_gc,0.0,Older FPL 2023/24 (2520m); destination GC overlay; dest GC LEE=1.474,False
+385,Trafford,MCI,5.0,Nailed Starter,3.45,0.9211,career_individual+destination_gc,0.0,"Burnley PL 2023/24 (2520m, 107 saves = 3.82 saves/90); confirmed £45m Leeds #1 GK; dest GC MCI=0.921",False
 442,Pope,NEW,5.0,Regular Starter,3.3154,1.4156,prior_season_seed+defcon_baseline_fill,2416.0,Prior-Season Seed 2025/26 (2416m); defcon_baseline_fill,False
 467,Sels,NFO,5.0,Nailed Starter,3.2058,1.3161,prior_season_seed+defcon_baseline_fill,2667.0,Prior-Season Seed 2025/26 (2667m); defcon_baseline_fill,False
+496,Kinsky,TOT,4.5,Regular Starter,3.15,1.5,career_individual+destination_gc,0.0,Spurs / Slavia Prague GKP saves (~3.15/90); dest GC TOT=1.500,False
 529,Roefs,SUN,5.0,Nailed Starter,3.1143,1.3143,prior_season_seed+defcon_external_fill,3150.0,Prior-Season Seed 2025/26 (3150m); defcon_external_fill,False
-110,Rushworth,COV,4.5,Regular Starter,3.11,1.375,career_individual+destination_gc,0.0,2023/24 Championship Swansea GKP; 4140m; FBref 143 saves/46.0 90s; dest GC COV=1.375,True
+110,Rushworth,BHA,4.5,Regular Starter,3.11,1.2105,career_individual+destination_gc,0.0,2023/24 Championship Swansea GKP; 4140m; FBref 143 saves/46.0 90s; dest GC BHA=1.211,False
 28,Martinez,AVL,5.0,Nailed Starter,3.0159,1.2381,prior_season_seed+defcon_baseline_fill,2835.0,Prior-Season Seed 2025/26 (2835m); defcon_baseline_fill,False
 82,Kelleher,BRE,5.0,Nailed Starter,2.9459,1.3243,prior_season_seed+defcon_baseline_fill,3330.0,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,False
 140,Sánchez,CHE,5.0,Nailed Starter,2.9013,1.4507,prior_season_seed+defcon_baseline_fill,3040.0,Prior-Season Seed 2025/26 (3040m); defcon_baseline_fill,False
@@ -17,4 +18,3 @@ player_id,web_name,club_short,price,expected_role,per90_saves,per90_goals_conced
 350,A.Becker,LIV,5.5,Nailed Starter,2.1923,1.1923,prior_season_seed+defcon_baseline_fill,2340.0,Prior-Season Seed 2025/26 (2340m); defcon_baseline_fill,False
 564,Scherpen,IPS,4.5,Regular Starter,1.9,1.375,career_individual+destination_gc,0.0,Union SG Belgian Pro League 2025/26; 2835 min; FotMob 60 saves (1.90/90); dest GC IPS=1.375,True
 1,Raya,ARS,6.0,Nailed Starter,1.6216,0.7027,prior_season_seed+defcon_baseline_fill,3330.0,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,False
-496,Kinsky,TOT,4.5,Regular Starter,1.4286,1.0,prior_season_seed+defcon_baseline_fill,630.0,Prior-Season Seed 2025/26 (630m); defcon_baseline_fill,False

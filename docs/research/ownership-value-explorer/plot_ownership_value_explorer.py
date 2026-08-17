@@ -27,21 +27,21 @@ S5_PREFIX = "S5:"
 S1_PREFIX = "S1:"
 
 WC4_CORE_NAMES = {
-    "Raya",
-    "Kinsky",
     "Gabriel",
-    "Tarkowski",
     "Vuskovic",
+    "Haaland",
+    "Isak",
     "Wieffer",
-    "Thiaw",
-    "Palmer",
+    "Calafiori",
     "Tzolis",
     "Sarr",
-    "Ndiaye",
-    "Slater",
-    "Haaland",
-    "Thomas-Asante",
+    "Trafford",
+    "Enzo",
+    "Tarkowski",
+    "Roefs",
     "Walle Egeli",
+    "Andrews",
+    "Johnson",
 }
 
 
@@ -76,33 +76,31 @@ def build_explorer_frame(
     wc4_ids: set[int] = set()
 
     if simulation is not None and not simulation.empty:
-        # S13 Pre-WC (BB2 + TC3)
-        s13_mask = simulation["scenario"].astype(str).str.startswith(S13_PREFIX)
-        if "phase" in simulation.columns and (simulation.loc[s13_mask, "phase"] == "GW1-3 Pre-WC").any():
-            s13_ids = set(simulation.loc[s13_mask & (simulation["phase"] == "GW1-3 Pre-WC"), "player_id"].astype(int))
-        else:
+        # S13 Pre-WC
+        s13_mask = simulation["scenario"].astype(str).str.contains("S13|GW1 BB", case=False)
+        if "phase" in simulation.columns and (simulation.loc[s13_mask, "phase"].str.contains("Pre-WC|BB", case=False)).any():
+            s13_ids = set(simulation.loc[s13_mask & simulation["phase"].str.contains("Pre-WC|BB", case=False), "player_id"].astype(int))
+        elif s13_mask.any():
             s13_ids = set(simulation.loc[s13_mask, "player_id"].astype(int))
 
-        # S5 Pre-WC (BB1 + TC3)
-        s5_mask = simulation["scenario"].astype(str).str.startswith(S5_PREFIX)
-        if "phase" in simulation.columns and (simulation.loc[s5_mask, "phase"] == "GW1-3 Pre-WC").any():
-            s5_ids = set(simulation.loc[s5_mask & (simulation["phase"] == "GW1-3 Pre-WC"), "player_id"].astype(int))
-        else:
+        # S5 Pre-WC
+        s5_mask = simulation["scenario"].astype(str).str.contains("S5|GW1 BB", case=False)
+        if "phase" in simulation.columns and (simulation.loc[s5_mask, "phase"].str.contains("Pre-WC|BB", case=False)).any():
+            s5_ids = set(simulation.loc[s5_mask & simulation["phase"].str.contains("Pre-WC|BB", case=False), "player_id"].astype(int))
+        elif s5_mask.any():
             s5_ids = set(simulation.loc[s5_mask, "player_id"].astype(int))
 
-        # S1 Pre-FH (BB1 + FH3)
-        s1_mask = simulation["scenario"].astype(str).str.startswith(S1_PREFIX)
-        if "phase" in simulation.columns and (simulation.loc[s1_mask, "phase"] == "GW1-2 Pre-FH").any():
-            s1_ids = set(simulation.loc[s1_mask & (simulation["phase"] == "GW1-2 Pre-FH"), "player_id"].astype(int))
-        else:
+        # S1 Pre-FH
+        s1_mask = simulation["scenario"].astype(str).str.contains("S1|Pre-FH", case=False)
+        if "phase" in simulation.columns and (simulation.loc[s1_mask, "phase"].str.contains("Pre-FH", case=False)).any():
+            s1_ids = set(simulation.loc[s1_mask & simulation["phase"].str.contains("Pre-FH", case=False), "player_id"].astype(int))
+        elif s1_mask.any():
             s1_ids = set(simulation.loc[s1_mask, "player_id"].astype(int))
 
-        # WC4 Core Squad (Stage 3 WC4 Opt1)
-        if "phase" in simulation.columns and (simulation["phase"] == "GW4-6 Post-WC").any():
-            wc4_ids = set(simulation.loc[simulation["phase"] == "GW4-6 Post-WC", "player_id"].astype(int))
-
-    if not wc4_ids and "web_name" in frame.columns:
-        wc4_ids = set(frame.loc[frame["web_name"].isin(WC4_CORE_NAMES), "player_id"].astype(int))
+        # WC4 Core Squad (Stage 3 WC4 Opt1 Rebuild)
+        post_mask = simulation["phase"].astype(str).str.contains("Post-WC|WC4", case=False)
+        if post_mask.any():
+            wc4_ids = set(simulation.loc[post_mask, "player_id"].astype(int))
 
     user_ids: set[int] = set()
     if user_picks is not None and not user_picks.empty and "player_id" in user_picks.columns:
@@ -111,7 +109,10 @@ def build_explorer_frame(
     frame["in_s13"] = frame["player_id"].astype(int).isin(s13_ids)
     frame["in_s5"] = frame["player_id"].astype(int).isin(s5_ids)
     frame["in_s1"] = frame["player_id"].astype(int).isin(s1_ids)
-    frame["in_wc4_core"] = frame["player_id"].astype(int).isin(wc4_ids) | frame["web_name"].isin(WC4_CORE_NAMES)
+    if wc4_ids:
+        frame["in_wc4_core"] = frame["player_id"].astype(int).isin(wc4_ids)
+    else:
+        frame["in_wc4_core"] = frame["web_name"].isin(WC4_CORE_NAMES)
     frame["in_user"] = frame["player_id"].astype(int).isin(user_ids)
     frame["xp_per_m_season"] = frame["total_season_xp"] / frame["cost"].replace(0, pd.NA)
 

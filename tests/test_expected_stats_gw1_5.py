@@ -29,7 +29,9 @@ def test_build_expected_stats_outputs():
     roles = pd.read_csv(ROLE_CSV)
     df_stats = build_mod.build_expected_stats()
     assert len(df_stats) == len(roles)
-    assert set(df_stats["expected_role"].unique()).issubset({"Nailed Starter", "Regular Starter", "Rotation", "Cameo"})
+    assert set(df_stats["expected_role"].unique()).issubset(
+        {"Nailed Starter", "Regular Starter", "Rotation", "Cameo", "Out of Contention"}
+    )
     assert "per90_xg" in df_stats.columns
     assert "per90_xa" in df_stats.columns
     assert "per90_defcon" in df_stats.columns

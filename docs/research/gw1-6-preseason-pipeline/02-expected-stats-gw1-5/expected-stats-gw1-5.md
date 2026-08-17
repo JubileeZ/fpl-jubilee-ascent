@@ -1,11 +1,11 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-15T13:40:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-13 (357 rows); Prior-Season Seed + Career Individual Rate + Destination Team Concede Rate (ADR-0014); downstream consumers refreshed 2026-08-15; archive 2026-07-29  
+**Updated**: 2026-08-17T23:00:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-17 (564 rows); Prior-Season Seed (min 900m) + Career Individual Rate + Destination Team Concede Rate (ADR-0014); downstream consumers refreshed 2026-08-17; archive 2026-07-29  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
-**Purpose**: Build Event Rates for XI Contention Set via Prior-Season Seed, Career Individual Rate, and Destination Team Concede Rate; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict` with Draft Availability overlays.  
-**Scope**: XI Contention rates; Draft Shortlist projections export (Nailed + Regular). Softmax bonus over full XI Contention.  
+**Purpose**: Build Event Rates for all 564 FPL API players via Prior-Season Seed (>=900 mins), Career Individual Rate (FBref/European/Championship stats), and Destination Team Concede Rate; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict` with Draft Availability overlays.  
+**Scope**: 564 player rates; Draft Shortlist projections export (Nailed + Regular, 250 rows). Softmax bonus over full 564 players.  
 **Related**: [Expected Role GW1–5](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Preseason Pipeline Master README](../README.md) · [Downstream refresh](../refresh_downstream.py) · ADR 0003 · ADR 0004 · ADR 0005 · ADR 0014  
 **Artifacts**:
 - [Expected Stats CSV](../../../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv)
@@ -30,15 +30,15 @@
 Run parameterized GW1-5 Expected Stats & Projections (Stage 2):
 
 1. Command: uv run python docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py
-   - Prior-Season Seed: 2025/26 FPL archive via Player Code Mapping (ADR 0004); minutes >= 450.
-   - No seed: Career Individual Rate (xG/xA/Defcon/saves) from last-season package, else most recent older FPL history_past >= 450.
+   - Prior-Season Seed: 2025/26 FPL archive via Player Code Mapping (ADR 0004); minutes >= 900.
+   - No seed: Career Individual Rate (xG/xA/Defcon/saves) from last-season package, else most recent older FPL history_past >= 900.
    - No seed GC/CS: Destination Team Concede Rate (2025/26 PL GC/game; COV/HUL/IPS → league avg 1.375).
-   - Thin career samples (<450m) shrink toward Research Position Baseline.
+   - Thin career samples (<900m) shrink toward Research Position Baseline.
    - Zero Draft on fallback_baseline (SystemExit lists names).
    - Export CSV to data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv.
 2. Command: uv run python docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py
    - Build feature frame with Expected Role priors and availability overlays (Watch 0.70x, Exclude GW1-5).
-   - Predict xP via ParticipationStateHybridModel across horizon 5 with Softmax bonus over 357 XI Contention.
+   - Predict xP via ParticipationStateHybridModel across horizon 5 with Softmax bonus over 564 players.
    - Export Draft Shortlist (Nailed + Regular) to data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv.
 3. After rate or new-player package change, refresh consumers:
    uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
@@ -51,10 +51,10 @@ Run parameterized GW1-5 Expected Stats & Projections (Stage 2):
 
 ### 1. Event Rates (ADR-0014, 2026-08-14)
 - **Identity**: Permanent Player Code Mapping (ADR 0004).
-- **Returning Players**: Prior-Season Seed only (2025/26, ≥450 mins). No 3-year dual-floor blend. Club-changers with a seed keep player-level GC/CS.
+- **Returning Players**: Prior-Season Seed only (2025/26, ≥900 mins). No 3-year dual-floor blend. Club-changers with a seed keep player-level GC/CS.
 - **No seed**: Career Individual Rate for xG/xA/Defcon/saves; Destination Team Concede Rate for GC/CS.
 - **Promoted Clubs** (COV, HUL, IPS): league-average 2025/26 PL GC/game (1.375), not Championship GC.
-- **Thin career sample**: minutes < 450 shrink linearly toward Research Position Baseline (Dowman).
+- **Thin career sample**: minutes < 900 shrink linearly toward Research Position Baseline (Dowman).
 - **Zero Draft on Fallback Baseline Invariant**: Nailed/Regular never sit on `fallback_baseline`. Builder raises `SystemExit` listing names.
 
 ### New Draft player
@@ -62,11 +62,11 @@ When Stage 1 injects a Nailed/Regular with no Prior-Season Seed:
 1. Last completed senior league season: xG, xA, Defcon, saves. Omit GC.
 2. Add `{player_id: {xg, xa, saves, defcon, defcon_cbit, minutes?, note}}` to `CAREER_INDIVIDUAL_RATES` in `build_expected_stats.py`.
 3. `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py`.
-Thin samples (`minutes` < 450) shrink toward Research Position Baseline. Club-changers with a 2025/26 seed keep that seed — do not add them here.
+Thin samples (`minutes` < 900) shrink toward Research Position Baseline. Club-changers with a 2025/26 seed keep that seed — do not add them here.
 
 ### 2. $xP$ reconstruction
 - Feature rows GW1–5 with Expected Role Priors + availability overlays.
-- Softmax bonus over full 357 XI Contention; CSV export = Nailed + Regular only (227 rows).
+- Softmax bonus over full 564 players; CSV export = Nailed + Regular only (250 rows).
 - Appearance blend 3→8 unchanged; GW1 weight = 0 (Cold-Start).
 
 ### Metric Definitions & Direction
@@ -88,32 +88,30 @@ Thin samples (`minutes` < 450) shrink toward Research Position Baseline. Club-ch
 
 | Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Haaland | MCI | FWD | 5.18 | 5.07 | 6.44 | 3.90 | 6.40 | **26.98** |
-| 2 | Vuskovic | BHA | DEF | 5.21 | 4.13 | 6.27 | 6.21 | 4.16 | **25.98** |
-| 3 | Gabriel | ARS | DEF | 5.88 | 4.55 | 4.54 | 5.15 | 5.15 | **25.27** |
-| 4 | B.Fernandes | MUN | MID | 5.90 | 5.82 | 4.79 | 3.84 | 4.82 | **25.17** |
-| 5 | Wieffer | BHA | DEF | 4.70 | 3.83 | 5.58 | 5.54 | 3.86 | **23.51** |
-| 6 | Palmer | CHE | MID | 4.53 | 5.45 | 2.96 | 5.54 | 4.48 | **22.96** |
-| 7 | Muharemović | LEE | DEF | 4.30 | 4.29 | 4.25 | 5.33 | 4.30 | **22.47** |
-| 8 | Calafiori | ARS | DEF | 5.08 | 4.08 | 4.07 | 4.55 | 4.55 | **22.33** |
-| 9 | Sarr | CRY | MID | 4.31 | 3.41 | 4.34 | 5.22 | 4.25 | **21.52** |
-| 10 | Wirtz | LIV | MID | 3.98 | 3.97 | 4.65 | 4.66 | 3.94 | **21.20** |
-| 11 | Virgil | LIV | DEF | 3.88 | 3.87 | 4.76 | 4.77 | 3.85 | **21.13** |
-| 12 | Van Hecke | TOT | DEF | 3.98 | 4.92 | 4.03 | 4.01 | 4.01 | **20.96** |
-| 13 | Tzolis | ARS | MID | 5.27 | 3.53 | 3.52 | 4.32 | 4.32 | **20.95** |
-| 14 | Schade | BRE | MID | 4.18 | 4.12 | 4.92 | 4.15 | 3.40 | **20.76** |
-| 15 | Maguire | MUN | DEF | 4.77 | 4.73 | 3.95 | 3.27 | 3.97 | **20.69** |
+| 1 | Haaland | MCI | FWD | 5.05 | 4.91 | 6.31 | 3.81 | 6.28 | **26.35** |
+| 2 | Isak | LIV | FWD | 4.73 | 4.72 | 5.86 | 5.85 | 4.68 | **25.84** |
+| 3 | Vuskovic | BHA | DEF | 5.15 | 4.09 | 6.24 | 6.15 | 4.14 | **25.77** |
+| 4 | Gabriel | ARS | DEF | 5.87 | 4.53 | 4.51 | 5.14 | 5.12 | **25.17** |
+| 5 | B.Fernandes | MUN | MID | 5.77 | 5.72 | 4.66 | 3.79 | 4.72 | **24.66** |
+| 6 | Wieffer | BHA | DEF | 4.66 | 3.79 | 5.56 | 5.50 | 3.84 | **23.34** |
+| 7 | Muharemović | LEE | DEF | 4.30 | 4.29 | 4.23 | 5.33 | 4.27 | **22.42** |
+| 8 | Calafiori | ARS | DEF | 5.08 | 4.06 | 4.05 | 4.54 | 4.53 | **22.26** |
+| 9 | Trafford | MCI | GKP | 4.20 | 4.14 | 4.76 | 3.68 | 4.75 | **21.54** |
+| 10 | Sarr | CRY | MID | 4.16 | 3.36 | 4.20 | 5.07 | 4.19 | **20.98** |
+| 11 | Enzo | CHE | MID | 4.13 | 4.86 | 2.90 | 4.92 | 4.12 | **20.93** |
+| 12 | Tzolis | ARS | MID | 5.25 | 3.51 | 3.48 | 4.31 | 4.29 | **20.84** |
+| 13 | Virgil | LIV | DEF | 3.82 | 3.82 | 4.68 | 4.68 | 3.80 | **20.80** |
+| 14 | Van Hecke | TOT | DEF | 3.95 | 4.87 | 3.99 | 3.93 | 3.97 | **20.71** |
+| 15 | Wirtz | LIV | MID | 3.89 | 3.89 | 4.51 | 4.50 | 3.87 | **20.66** |
 
-Isak **16.78** (was ~23.9 on 3-year blend): 2025/26 seed is 694m with low xG — Prior-Season Seed, not injury-year replacement by 2024/25. Jacquet **19.73** (career Rennes + LIV dest GC 1.395). Tzolis **20.95** (Club Brugge career + ARS dest GC 0.711).
-
-### 2. Rate source mix (357 rows)
-- `prior_season_seed`: 252 · `+defcon_baseline_fill`: 16 · `+defcon_external_fill`: 2
-- `career_individual+destination_gc`: 32 · `career_fpl_prior_year+destination_gc`: 20 · `external_3season_research+destination_gc`: 10
-- `fallback_baseline+destination_gc`: 25 (Rotation/Cameo only)
+### 2. Rate source mix (564 rows)
+- `prior_season_seed`: 252 · `+defcon_baseline_fill`: 17 · `+defcon_external_fill`: 2
+- `career_individual+destination_gc`: 111 · `career_fpl_prior_year+destination_gc`: 53
+- `fallback_baseline+destination_gc`: 129 (Rotation/Cameo/Out of Contention only)
 - **Zero** Draft (Nailed/Regular) on fallback.
 
 ### 3. Softmax
-- Full XI Contention competitor set (357 players) evaluated for realistic baseline bonus allocation.
+- Full 564 player competitor set evaluated for realistic baseline bonus allocation.
 
 ---
 

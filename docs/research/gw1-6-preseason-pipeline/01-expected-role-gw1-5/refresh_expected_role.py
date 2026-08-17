@@ -23,6 +23,7 @@ ROLE_PRIORS = {
     "Regular Starter": (0.75, 0.10, 0.15, 80, 20),
     "Rotation": (0.40, 0.25, 0.35, 70, 20),
     "Cameo": (0.10, 0.35, 0.55, 60, 15),
+    "Out of Contention": (0.00, 0.05, 0.95, 45, 10),
 }
 
 FFS_CODE_TO_SHORT = {
@@ -464,7 +465,7 @@ CLUB_MD_ORDER = [
     "ARS", "AVL", "BOU", "BRE", "BHA", "CHE", "COV", "CRY", "EVE", "FUL",
     "HUL", "IPS", "LEE", "LIV", "MCI", "MUN", "NEW", "NFO", "TOT", "SUN",
 ]
-_ROLE_SORT = {"Nailed Starter": 0, "Regular Starter": 1, "Rotation": 2, "Cameo": 3}
+_ROLE_SORT = {"Nailed Starter": 0, "Regular Starter": 1, "Rotation": 2, "Cameo": 3, "Out of Contention": 4}
 _POS_SORT = {"GKP": 0, "DEF": 1, "MID": 2, "FWD": 3}
 
 
@@ -481,7 +482,7 @@ def render_club_tables(df: pd.DataFrame) -> str:
         "",
         (
             f"Complete roster of all {n} players across the 20 Premier League clubs "
-            "in the XI Contention Set, showing assigned fit-role, baseline starter "
+            "in the FPL API, showing assigned fit-role, baseline starter "
             "probability ($p_{\\text{start}}$), Draft Availability overlay, and source signals."
         ),
         "",
@@ -499,11 +500,12 @@ def render_club_tables(df: pd.DataFrame) -> str:
         n_reg = int(roles.get("Regular Starter", 0))
         n_rot = int(roles.get("Rotation", 0))
         n_cam = int(roles.get("Cameo", 0))
+        n_out = int(roles.get("Out of Contention", 0))
         n_draft = n_nail + n_reg
         chunks.append(f"#### {i}. {club_name} (`{short}`) — {len(club_df)} players")
         chunks.append(
             f"- **Summary**: Nailed: {n_nail} · Regular: {n_reg} · Rotation: {n_rot} · "
-            f"Cameo: {n_cam} | Draft Eligible: {n_draft}"
+            f"Cameo: {n_cam} · Out of Contention: {n_out} | Draft Eligible: {n_draft}"
         )
         chunks.append("")
         chunks.append(
@@ -529,11 +531,12 @@ def sync_expected_role_markdown(df: pd.DataFrame, md_path: Path) -> None:
     n_reg = int(roles.get("Regular Starter", 0))
     n_rot = int(roles.get("Rotation", 0))
     n_cam = int(roles.get("Cameo", 0))
+    n_out = int(roles.get("Out of Contention", 0))
     n_draft = n_nail + n_reg
     av = _avail_counts(df)
     summary = (
         f"- Contention set: **{n}** rows. Roles: Nailed {n_nail} · Regular {n_reg} · "
-        f"Rotation {n_rot} · Cameo {n_cam}.\n"
+        f"Rotation {n_rot} · Cameo {n_cam} · Out of Contention {n_out}.\n"
         f"- Draft Eligible: **{n_draft}** players (Nailed {n_nail} + Regular {n_reg}).\n"
         f"- Availability: eligible {av['eligible']} · not_role_eligible {av['not_role_eligible']} · "
         f"exclude_gw1 {av['exclude_gw1']} · watch {av['watch']} · exclude_gw1-5 {av['exclude_gw1-5']}."
@@ -547,7 +550,7 @@ def sync_expected_role_markdown(df: pd.DataFrame, md_path: Path) -> None:
     tables = render_club_tables(df)
     text = re.sub(
         r"### 2\. 20-Club Player Role & Draft Availability Breakdown\n.*?(?=\n## Decision\n)",
-        tables + "\n",
+        lambda _: tables + "\n",
         text,
         count=1,
         flags=re.S,

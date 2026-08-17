@@ -46,7 +46,7 @@ def test_career_package_ignores_package_gc() -> None:
 
 def test_thin_career_sample_shrinks_toward_baseline() -> None:
     rates, _src, note = _MOD._career_attack(20, "MID", Path("missing.json"))
-    weight = 153 / 450
+    weight = 153 / _MOD.MIN_USABLE_MINUTES
     expected_xg = weight * 0.690 + (1.0 - weight) * float(_MOD.POSITION_BASELINES["MID"]["xg"])
     assert abs(rates["xg"] - expected_xg) < 1e-9
     assert "thin-sample shrink" in note

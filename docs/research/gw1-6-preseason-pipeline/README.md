@@ -1,12 +1,12 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-15T13:40:00+07:00  
-**Data stamp**: Dual-source role scrape 2026-08-13; Stage 2 Prior-Season Seed + Career Individual Rate (ADR-0014); downstream refresh 2026-08-15; World Cup 2026 fitness audit; FFS + Meerkat accessed 2026-08-13; API pricing 2026-07-29  
+**Updated**: 2026-08-17T23:00:00+07:00  
+**Data stamp**: Dual-source role scrape & completed preseason friendlies 2026-08-17 (564 players); Stage 2 Prior-Season Seed (min 900m) + Career Individual Rate (ADR-0014); downstream refresh 2026-08-17; API pricing 2026-07-29  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
-**Purpose**: End-to-end preseason research — dual-source Expected Role rebuild (Stage 1), Prior-Season Seed + Career Individual Rate Event Rates + $xP$ (Stage 2), and 16-scenario chip exploration with WC4 Opt1 (Stage 3).  
-**Scope**: 20-club XI Contention role audit; availability-aware Participation State scoring; exploration matrix (BB1|BB2) × WC4 Opt1 × (FH3|TC3) × (Allow|Ban Haaland pre) × (Allow|Ban B.Fernandes pre).  
-**Strategy Core**: **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)** canonical #1 Max EV Target; **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)** canonical #2 Safe Start; **S15 (Ban Haaland Balanced, 339.43 xP)** proves high mathematical flexibility (-0.71 xP). Bank 4 Free Transfers into GW6 post-international break.  
+**Purpose**: End-to-end preseason research — 564-player Expected Role rebuild (Stage 1), Prior-Season Seed + Career Individual Rate Event Rates + $xP$ (Stage 2), and canonical GW1 BB + WC4 optimization (Stage 3).  
+**Scope**: 20-club exhaustive role audit (564 players); availability-aware Participation State scoring; GW1 Bench Boost + locked GW1-3 + GW4 Wildcard rebuild + 4 banked FTs into GW6.  
+**Strategy Core**: **GW1 BB + WC4 Canonical (362.48 xP)**. 15 fit starters score in GW1 Bench Boost (75.34 xP), locked transfers across GW1-3 (190.10 xP), Wildcard rebuild in GW4 (172.38 GW4-6 xP), and 4 banked Free Transfers preserved into GW6 post-international break.  
 **Pipeline Runner**: [`run_pipeline.py`](run_pipeline.py) (includes Stage 1 HTTP scrape)  
 **Downstream refresh**: [`refresh_downstream.py`](refresh_downstream.py) (skip scrape; rates → Stage 3 / GKP / DEF / ownership)
 
@@ -37,7 +37,7 @@
 ┌─────────────────────────────────────────────────────────┐
 │ Stage 3: 03-gw1-6-chip-wc4-squads/                      │
 │ ├── gw1-6_projections.csv                               │
-│ ├── gw1-6_wc4_summary.csv (16 scenarios)                │
+│ ├── gw1-6_wc4_summary.csv                               │
 │ ├── gw1-6_wc4_simulation.csv                            │
 │ └── gw1-6_user_squad_comparison.csv                     │
 └──────────────┬──────────────────────────┬───────────────┘
@@ -58,24 +58,24 @@ Shared overlay module: [`availability_priors.py`](availability_priors.py) — Wa
 ## Strategy Hierarchy & Key Mechanisms
 
 ```
-Canonical Preseason Strategy Trajectory (S13 / S5):
+Canonical Preseason Strategy Trajectory (GW1 BB + WC4):
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ GW1 or GW2: Bench Boost (BB2 Max EV 340.14 xP; BB1 Safe Start 338.88 xP)      │
+│ GW1: Bench Boost (BB1 75.34 xP; 15 fit starters score, £100.0m spend)        │
 │ └─ Captures 15 fit starters with zero bench capital penalty pre-Wildcard      │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ GW3: Triple Captain Erling Haaland (Home vs COV, diff 2, 8.85 xP ceiling)     │
-│ └─ S13 generates 66.72 xP in GW3 alone (+7.80 xP over FH3 alternative)        │
+│ GW2–3: Locked Pre-WC Squad (52.89 xP in GW2; 61.87 xP in GW3; 0 transfers)    │
+│ └─ 190.10 xP Pre-Wildcard sprint; Haaland captain in GW3 (diff 2 home vs COV) │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ GW4: Wildcard Option 1 Rebuild (£97.5m spend, £2.5m ITB, 155.37 GW4-6 xP)     │
-│ └─ Pivots into ARS (Gabriel, Raya, Tzolis), CHE (Palmer), EVE (Tarkowski)     │
+│ GW4: Wildcard Rebuild (£99.0m spend, £1.0m ITB, 59.09 xP in GW4)              │
+│ └─ Pivots into ARS (Gabriel, Calafiori, Tzolis), CRY (Sarr, Johnson), CHE     │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ GW5: Free Transfer Rolled (gw5_transfers=0)                                   │
-│ └─ Banked FTs preserved through WC under 2026/27 rules                        │
+│ GW5: Free Transfer Rolled (gw5_transfers=0; 57.04 xP)                         │
+│ └─ Banked FTs preserved through Wildcard under 2026/27 rules                  │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ GW6: Enter Post-International Break with 4 Banked Free Transfers              │
-│ └─ Full flexibility to target injuries, deadline transfers, and FUL run      │
+│ GW6: Enter Post-International Break with 4 Banked Free Transfers (56.25 xP)  │
+│ └─ 362.48 Total 6-GW xP; full strategic agility into autumn run               │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ GW7–19: Hold Free Hit as Emergency / Winter Rotation Reserve                  │
+│ GW7–19: Hold Free Hit & Triple Captain as Emergency / Double GW Reserves      │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -138,34 +138,17 @@ Delivery: uv run ruff check . && uv run pytest && bash tests/verify.sh
 
 ---
 
-## Master Scenario Summary (Stage 3 — 16 exploration paths)
+## Master Scenario Summary (Stage 3 Canonical Simulation)
 
-| Rank | ID | Strategy Class | BB | Mid chip | Ban H | Ban Bruno | GW1–3 xP | GW4–6 xP | Total xP | Banked FTs GW6 |
-| :---: | :--- | :--- | :---: | :---: | :---: | :---: | ---: | ---: | ---: | :---: |
-| **#1** | **S13** | **Max EV Target (Canonical #1)** | **GW2** | **TC3 (Haaland)** | allow | allow | **184.77** | **155.37** | **340.14** | **4** |
-| #2 | S15 | Ban Haaland Pre-Squad | GW2 | TC3 (Vuskovic) | ban | allow | 184.06 | 155.37 | 339.43 | 4 |
-| #3 | S14 | Ban Bruno Pre-Squad | GW2 | TC3 (Haaland) | allow | ban | 183.71 | 155.37 | 339.08 | 4 |
-| **#4** | **S5** | **Safe Start Target (Canonical #2)**| **GW1** | **TC3 (Haaland)** | allow | allow | **183.51** | **155.37** | **338.88** | **4** |
-| #5 | S6 | Ban Bruno Pre-Squad | GW1 | TC3 (Haaland) | allow | ban | 183.38 | 155.37 | 338.75 | 4 |
-| #5 | S7 | Ban Haaland Pre-Squad | GW1 | TC3 (Vuskovic) | ban | allow | 183.38 | 155.37 | 338.75 | 4 |
-| #7 | S8 | Ban Both Pre-Squad | GW1 | TC3 (Vuskovic) | ban | ban | 180.55 | 155.37 | 335.92 | 4 |
-| #8 | S16 | Ban Both Pre-Squad | GW2 | TC3 (Vuskovic) | ban | ban | 180.33 | 155.37 | 335.70 | 4 |
-| **#9** | **S9** | **Top FH3 Path** | **GW2** | **FH3** | allow | allow | **176.97** | **155.37** | **332.34** | **4** |
-| #9 | S11 | Ban Haaland FH3 Path | GW2 | FH3 | ban | allow | 176.97 | 155.37 | 332.34 | 4 |
-| #11 | S1 | BB1 FH3 Allow All | GW1 | FH3 | allow | allow | 176.79 | 155.37 | 332.16 | 4 |
-| #11 | S3 | BB1 FH3 Ban Haaland | GW1 | FH3 | ban | allow | 176.79 | 155.37 | 332.16 | 4 |
-| #13 | S10 | BB2 FH3 Ban Bruno | GW2 | FH3 | allow | ban | 175.27 | 155.37 | 330.64 | 4 |
-| #14 | S2 | BB1 FH3 Ban Bruno | GW1 | FH3 | allow | ban | 174.77 | 155.37 | 330.14 | 4 |
-| #15 | S4 | BB1 FH3 Ban Both | GW1 | FH3 | ban | ban | 173.96 | 155.37 | 329.33 | 4 |
-| #16 | S12 | BB2 FH3 Ban Both | GW2 | FH3 | ban | ban | 173.93 | 155.37 | 329.30 | 4 |
+| Scenario ID | Strategy Description | BB Chip | WC Chip | GW1–3 xP | GW4–6 xP | Total 6-GW xP | Pre Spend | Post Spend | ITB GW6 | Banked FTs GW6 |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **S1** | **GW1 BB + WC4 Canonical (Locked GW1-3, Roll GW5)** | **GW1** | **GW4** | **190.10** | **172.38** | **362.48** | £100.0m | £99.0m | £1.0m | **4** |
 
 ### Strategic Verdict & Key Decisions
 
-1. **#1 Canonical Strategy Recommendation (Max EV Target)**: **S13 (BB2 + TC3 Haaland + WC4 Opt1, 340.14 xP)**. Deploys Bench Boost in GW2 (capitalizing on COV vs HUL and MUN vs IPS), Triple Captains Haaland in GW3 vs Coventry (diff 2), rebuilds on Wildcard GW4 into high-ceiling ARS/CHE/EVE assets, rolls GW5 transfer, and enters GW6 with **4 banked Free Transfers**.
-2. **#2 Safe Start Recommendation (Max Lineup Certainty)**: **S5 (BB1 + TC3 Haaland + WC4 Opt1, 338.88 xP)**. Deploys BB1 for zero lineup risk pre-deadline, follows identical TC3 Haaland and WC4 Opt1 progression, trailing S13 by only 1.26 xP while eliminating GW2 bench rotation uncertainty.
-3. **Balanced No-Haaland Structural Route**: **S15 (BB2 + TC3 Vuskovic + WC4 Opt1, 339.43 xP)**. Trailing by only **0.71 xP** (0.2%), proving high mathematical viability and flexibility for managers preferring a balanced premium midfield (Palmer, Bruno Fernandes, Wirtz, Gabriel, Calafiori) over solo Haaland.
-4. **Alternative Structural Path (Top FH3)**: **S9 (BB2 + FH3 + WC4 Opt1, 332.34 xP)**. High-midfield pre-squad without Haaland, Free Hit in GW3 to capture Haaland vs COV, then permanent Haaland integration on WC4. Trails S13 by 7.80 xP.
-5. **Structural Rules**: Bruno ban is binding across all paths (-1.06 to -4.44 xP). Haaland ban on FH3 is non-binding on allow-Bruno paths (S1=S3, S9=S11). GW4–6 WC Opt1 generates identical **155.37 xP** across all 16 scenarios.
+1. **Canonical Strategy Implementation**: **S1 (GW1 BB + WC4 Canonical, 362.48 xP)**. Deploys Bench Boost in GW1 (all 15 players score, 75.34 xP with Gabriel captain), locks transfers across GW1–3 sprint (190.10 xP), executes complete Wildcard rebuild in GW4 targeting high-ceiling ARS/BHA/CRY/CHE/EVE assets (172.38 xP across GW4–6), rolls the GW5 free transfer, and enters GW6 post-international break with **4 banked Free Transfers**.
+2. **Lineup Certainty & Zero Bench Penalty**: Deploying BB in GW1 completely eliminates bench headache and lineup regret for the season opener, converting bench capital directly into scoring output.
+3. **Strategic Agility**: Preserving 4 banked Free Transfers into GW6 provides maximum flexibility to respond to early-season form, injuries, and price swings post-international break.
 
 ---
 
