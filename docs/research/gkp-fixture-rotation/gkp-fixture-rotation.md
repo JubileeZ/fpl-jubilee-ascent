@@ -1,10 +1,10 @@
 # Starter Goalkeeper Fixture Rotation & FDR Correlation Study
 
 > [!NOTE]
-> **Consolidated & Superseded**: This standalone goalkeeper research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Please refer to the unified note for the latest 564-player baseline, two-factor DCS scoring, and integrated GW1 BB + WC4 backline simulations.
+> **Consolidated & Superseded**: This standalone goalkeeper research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Refer there for the 2026-08-18 API refresh (Trafford LEE, Rushworth COV) and corrected GW1 opponents.
 
-**Updated**: 2026-08-18T00:20:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; FPL API processed snapshot; ParticipationStateHybridModel GW1–38 flat-90 projections  
+**Updated**: 2026-08-18T01:15:00+07:00  
+**Data stamp**: Superseded. Live numbers in `docs/research/defensive-fixture-rotation/`. FPL API 2026-08-18.  
 **Season**: 2026/27  
 **Purpose**: Identify pairs of **genuine starting goalkeepers** (Nailed Starter or Regular Starter) costing <= £9.5m combined with the highest horizon-matched rotated expected points under FDR-min weekly picks, negative FDR correlation, and lowest rotated average FDR.  
 **Related**: [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  

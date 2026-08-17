@@ -1,10 +1,10 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
 > [!NOTE]
-> **Consolidated & Superseded**: This standalone defender research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Please refer to the unified note for the latest 564-player baseline, two-factor DCS scoring, and integrated GW1 BB + WC4 backline simulations.
+> **Consolidated & Superseded**: This standalone defender research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Club-level FDR ranks are unchanged (same 2026/27 fixture grid). Player xP rebuilt 2026-08-18.
 
-**Updated**: 2026-08-18T00:20:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; GW4–19 ranking = correlation-first after min rot FDR + 100% zero-diff; zero-diff all-easy + CS-gate overlays GW1–19 / GW1–3 / BB2 / GW4–19 2026-08-16  
+**Updated**: 2026-08-18T01:15:00+07:00  
+**Data stamp**: Superseded. Live numbers in `docs/research/defensive-fixture-rotation/`. FPL API 2026-08-18.  
 **Season**: 2026/27  
 **Status**: Consolidated (See unified defensive authority)  
 **Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19).  

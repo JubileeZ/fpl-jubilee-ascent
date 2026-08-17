@@ -1,2 +1,2 @@
 scenario_id,scenario,bb_chip,wc_chip,gw1_captain,gw2_captain,gw3_captain,gw4_captain,gw5_captain,gw6_captain,gw1_xp,gw2_xp,gw3_xp,gw1_3_xp,gw4_xp,gw5_xp,gw6_xp,gw4_6_xp,total_6gw_xp,pre_spend,post_spend,itb_gw6,gw5_transfers,banked_fts_gw6
-S1,"GW1 BB + WC4 Canonical (Locked GW1-3, Roll GW5)",GW1,GW4,Gabriel,Ballard,Haaland,Vuskovic,Haaland,Gabriel,75.34,52.89,61.87,190.1,59.09,57.04,56.25,172.38,362.48,100.0,99.0,1.0,0,4
+S1,"GW1 BB + WC4 Canonical (Locked GW1-3, Roll GW5)",GW1,GW4,Gabriel,B.Fernandes,Vuskovic,Vuskovic,Haaland,Gabriel,75.82,53.84,61.18,190.84,59.43,57.14,56.8,173.37,364.21,100.0,100.0,0.0,0,4

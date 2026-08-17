@@ -64,6 +64,11 @@ def _name_parts(text: str) -> tuple[set[str], set[str]]:
     return {p for p in parts if len(p) > 1}, {p for p in parts if len(p) == 1}
 
 
+def _surname_last_token(second_name: str) -> str:
+    last_parts = [p for p in _norm(second_name).split() if len(p) > 1]
+    return last_parts[-1] if last_parts else ""
+
+
 def player_matches_source(
     source_name: str,
     web_name: str,
@@ -74,6 +79,9 @@ def player_matches_source(
 
     Identity is web_name + first_name + second_name, so 'Van Dijk' matches
     web_name 'Virgil' and 'Bruno Fernandes' matches 'B.Fernandes' not 'Bruno G.'.
+    Single-token sources match web_name or surname last token only — not middle
+    names ('Nunes' → Matheus N., not Vitor Reis) or given names ('James' →
+    Reece James, not James Trafford).
     """
     src_sig, src_init = _name_parts(source_name)
     if not src_sig:
@@ -86,6 +94,10 @@ def player_matches_source(
         return False
     if _norm(source_name) == _norm(web_name):
         return True
+    if len(src_sig) == 1 and not src_init:
+        token = next(iter(src_sig))
+        surname_last = _surname_last_token(second_name)
+        return token in web_sig or (bool(surname_last) and token == surname_last)
     if not src_sig <= identity:
         return False
     identity_letters = {t[0] for t in identity} | web_init | first_init | last_init
@@ -285,6 +297,55 @@ def apply_api_and_official_availability(df: pd.DataFrame, players: pd.DataFrame)
     return df
 
 
+def sync_clubs_from_api(
+    df: pd.DataFrame,
+    players: pd.DataFrame,
+    clubs: pd.DataFrame,
+) -> pd.DataFrame:
+    """Remap role-table club from live FPL `players.club_id` after a data refresh."""
+    df = df.copy()
+    club_name = dict(zip(clubs["id"], clubs["name"], strict=False))
+    club_short = dict(zip(clubs["id"], clubs["short_name"], strict=False))
+    pmap = players.set_index("id", drop=False)
+    moved = 0
+    for idx, row in df.iterrows():
+        pid = int(row["player_id"])
+        if pid not in pmap.index:
+            continue
+        cid = int(pmap.loc[pid, "club_id"])
+        short = club_short.get(cid)
+        if short is None:
+            continue
+        if str(row["club_short"]) != short:
+            moved += 1
+            vacate = str(row.get("availability_reason") or "").lower()
+            if any(k in vacate for k in ("vacat", "left ", "transferred")):
+                if "draft_availability" in df.columns:
+                    df.at[idx, "draft_availability"] = "eligible"
+                if "availability_reason" in df.columns:
+                    df.at[idx, "availability_reason"] = ""
+            if "expected_role" in df.columns and str(row.get("expected_role")) in (
+                "Out of Contention",
+                "Cameo",
+            ):
+                _apply_role_priors(
+                    df,
+                    idx,
+                    "Rotation",
+                    "Club changed on API refresh; starter status pending FFS/Meerkat.",
+                    "FPL API club_id",
+                )
+        df.at[idx, "club_short"] = short
+        df.at[idx, "club"] = club_name.get(cid, short)
+        if "api_club_id" in df.columns:
+            df.at[idx, "api_club_id"] = cid
+        if "api_club_short" in df.columns:
+            df.at[idx, "api_club_short"] = short
+    if moved:
+        print(f"  synced {moved} role rows to API club_id")
+    return df
+
+
 def apply_transfer_club_moves(df: pd.DataFrame) -> pd.DataFrame:
     """Hard club corrections for confirmed moves still wrong in scaffold."""
     df = df.copy()
@@ -305,6 +366,24 @@ def apply_transfer_club_moves(df: pd.DataFrame) -> pd.DataFrame:
             df.loc[mask, "club_short"] = short
             df.loc[mask, "club"] = club
             df.loc[mask, "reason"] = reason
+    # Incoming transfers: do not keep vacated-old-club Out of Contention copy.
+    for web, *_rest in moves:
+        mask = df["web_name"] == web
+        if not mask.any():
+            continue
+        for idx in df.index[mask]:
+            if str(df.at[idx, "expected_role"]) in ("Out of Contention", "Cameo"):
+                _apply_role_priors(
+                    df,
+                    idx,
+                    "Rotation",
+                    "Confirmed club move; starter status pending FFS/Meerkat at new club.",
+                    "FPL API; transfer overlay",
+                )
+            if "availability_reason" in df.columns:
+                vacate = str(df.at[idx, "availability_reason"] or "").lower()
+                if any(k in vacate for k in ("vacat", "left ", "transferred")):
+                    df.at[idx, "availability_reason"] = ""
     # Welbeck depth
     welbeck = df["web_name"] == "Welbeck"
     if welbeck.any():
@@ -312,6 +391,11 @@ def apply_transfer_club_moves(df: pd.DataFrame) -> pd.DataFrame:
             df, df.index[welbeck][0], "Rotation",
             "Confirmed £5m transfer to Chelsea as forward depth.",
             "FFS transfers; FFS Team News",
+        )
+    bruno = df["web_name"] == "Bruno G."
+    if bruno.any() and str(df.loc[bruno, "expected_role"].iloc[0]) == "Rotation":
+        df.loc[bruno, "reason"] = (
+            "Confirmed £75m transfer to Arsenal; not in current FFS/Meerkat Arsenal XI."
         )
     return df
 
@@ -435,6 +519,7 @@ def refresh_expected_roles(
     meerkat = scrape_meerkat_nailed(client)
     print(f"  nailed markers={sum(len(v) for v in meerkat.values())}")
 
+    df = sync_clubs_from_api(df, players, clubs)
     df = apply_transfer_club_moves(df)
     df = inject_missing_ffs_starters(df, ffs_xis, meerkat, players, clubs)
     df = rebuild_roles_from_sources(df, ffs_xis, meerkat, players=players)

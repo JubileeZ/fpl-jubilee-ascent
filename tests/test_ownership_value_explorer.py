@@ -148,12 +148,12 @@ def test_html_includes_player_table_and_search(explorer_mod: ModuleType, tmp_pat
     assert '"club_short":"MUN"' not in html
 
 
-def test_role_csv_bruno_g_is_newcastle_not_united() -> None:
+def test_role_csv_bruno_g_is_arsenal_not_united() -> None:
     roles = pd.read_csv(
         "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
     )
     bruno_g = roles.loc[roles["web_name"] == "Bruno G."].iloc[0]
-    assert bruno_g["club_short"] == "NEW"
+    assert bruno_g["club_short"] == "ARS"
     bfer = roles.loc[roles["web_name"] == "B.Fernandes"].iloc[0]
     assert bfer["club_short"] == "MUN"
     virgil = roles.loc[roles["web_name"] == "Virgil"].iloc[0]
@@ -164,12 +164,12 @@ def test_role_csv_bruno_g_is_newcastle_not_united() -> None:
 def test_explorer_metrics_identity() -> None:
     metrics = pd.read_csv("data/research/ownership-value-explorer/ownership_value_metrics.csv")
     bruno_g = metrics.loc[metrics["web_name"] == "Bruno G."].iloc[0]
-    assert bruno_g["club_short"] == "NEW"
+    assert bruno_g["club_short"] == "ARS"
     bfer = metrics.loc[metrics["web_name"] == "B.Fernandes"].iloc[0]
     assert bfer["club_short"] == "MUN"
     assert float(bfer["ownership_pct"]) > 0.0
     virgil = metrics.loc[metrics["web_name"] == "Virgil"].iloc[0]
     assert float(virgil["avg_xmins_season"]) >= 45.0
     haaland = metrics.loc[metrics["web_name"] == "Haaland"].iloc[0]
-    assert bool(haaland["in_s13"]) is True
     assert bool(haaland["in_wc4_core"]) is True
+    assert bool(haaland["in_s1"]) is False

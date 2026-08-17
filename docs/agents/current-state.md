@@ -23,12 +23,17 @@ Blocked, wait for deps:
 
 Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`, `docs/adr/0004-cross-season-player-code-mapping.md`, `docs/adr/0005-hybrid-metrics-component-projection-model.md`, `docs/adr/0006-fixture-first-projection-contract.md`, and `docs/adr/0010-participation-state-snapshots-and-evaluation.md`; vocabulary in `CONTEXT.md`.
 
-- **Unified Defensive Architecture & Strategy Overhaul (18 Aug):**
-  - Consolidated `gkp-fixture-rotation` and `def-fixture-rotation` into master authority `docs/research/defensive-fixture-rotation/` with companion `data/research/defensive-fixture-rotation/`.
-  - Implemented Two-Factor Defensive Composite Score ($\text{DCS} = 0.60 \times S_{\text{Score}} + 0.40 \times S_{\text{Risk}}$) combining Opportunity-Cost Adjusted Net xP ($\gamma = 0.2627$), Zero-Difficult %, Rotated FDR, and schedule correlation.
-  - Proved Goalkeeper strategy hierarchy: Active 2-GKP rotation (`Trafford + Lammens` / `Trafford + Roefs`) generates **27.30–27.58 xP** in GW1–3 BB1 (+8.0 xP vs S&F, Net OC +2.41) and **6.63–6.73 xP/GW** in GW1–19 with 94.7% Zero-Diff coverage.
-  - Enforced Max 2 DEF per club across all 20 clubs: 153,216 valid partitions evaluated; PL-proven #1 5-club multiset `AVL-CHE-LIV-MCI-NFO` (rot FDR 2.4386, 100% zero-diff, 26.3% all-easy). Top budget lineup: `Calafiori + Vuskovic + Thomas + Egan + O'Nien` (£22.5m, 81.85 DCS).
-  - Simulated 7-asset backlines for GW1 BB + WC4: Top BB1 backline `Trafford + Lammens` + `Calafiori + Vuskovic + O'Reilly + O'Nien + Ballard` (£36.0m, 88.17 xP, 2.23 eff FDR); top WC4 backline `Trafford + Pope` + `Calafiori + Vuskovic + Thomas + Muharemović + O'Reilly` (£36.0m, 430.83 xP, 2.50 rot FDR). Generated 10 CSV datasets; updated `refresh_downstream.py`, master `INDEX.md`, and deprecated legacy notes.
+- **Role/stats/score audit (18 Aug, post-refresh):**
+  - Score matrix OK (CS 4 / GK goal 10 / Defcon). Trafford dest GC LEE=1.474; Rushworth COV=1.375.
+  - Role bugs: Meerkat `Nunes` matched Vitor Reis (middle name); Bruno G. stuck Out of Contention after ARS move.
+  - Fix: single-token source names match `web_name` or surname last token only; incoming transfers floor Cameo/Out of Contention → Rotation.
+  - Rebuild: Bruno G. ARS Rotation; Vitor Reis Rotation; Matheus N. Regular; Draft 234; Stage 3 canonical **364.21 xP**. Club FDR #1 still `AVL-CHE-LIV-MCI-NFO`. GKP DCS #1 still `Rushworth + Donnarumma`.
+
+- **Unified Defensive Architecture refresh vs live FPL (18 Aug):**
+  - `refresh_data` 2026-08-18: 590 players, 380 fixtures. Trafford **LEE**, Rushworth **COV**. GW1 calendar matches live `/fixtures/?event=1` (no Wolves/Leicester).
+  - Stage 1 rematch: 11 club rows synced from API; 575 contention; Trafford Leeds Nailed; Rushworth Coventry Regular.
+  - Downstream rebuilt. GKP DCS #1 GW1–19: `Rushworth + Donnarumma`. GW1 BB opponents from parquet. Club FDR #1 still `AVL-CHE-LIV-MCI-NFO`. Stage 3 canonical **363.34 xP** (superseded 18 Aug name-match rebuild → **364.21 xP**).
+  - Legacy `gkp-fixture-rotation` / `def-fixture-rotation` notes stamped superseded; not re-run.
 
 - **Pre-Season Guide & Summer Transfers Refresh (17 Aug):**
   - Scraped live FFS guide index (modified 17 Aug) and child sources. Ingested new post-preseason friendly article: `docs/research/fpl-preseason-guide/fpl-4-0m-defenders-ranked.md` with full player profiles, DefCon rates, FotMob Coventry lineup, and GW1 Clean Sheet Odds.
