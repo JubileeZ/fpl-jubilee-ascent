@@ -23,6 +23,18 @@ Blocked, wait for deps:
 
 Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-components.md`, `docs/adr/0004-cross-season-player-code-mapping.md`, `docs/adr/0005-hybrid-metrics-component-projection-model.md`, `docs/adr/0006-fixture-first-projection-contract.md`, and `docs/adr/0010-participation-state-snapshots-and-evaluation.md`; vocabulary in `CONTEXT.md`.
 
+- **Unified Defensive Architecture & Strategy Overhaul (18 Aug):**
+  - Consolidated `gkp-fixture-rotation` and `def-fixture-rotation` into master authority `docs/research/defensive-fixture-rotation/` with companion `data/research/defensive-fixture-rotation/`.
+  - Implemented Two-Factor Defensive Composite Score ($\text{DCS} = 0.60 \times S_{\text{Score}} + 0.40 \times S_{\text{Risk}}$) combining Opportunity-Cost Adjusted Net xP ($\gamma = 0.2627$), Zero-Difficult %, Rotated FDR, and schedule correlation.
+  - Proved Goalkeeper strategy hierarchy: Active 2-GKP rotation (`Trafford + Lammens` / `Trafford + Roefs`) generates **27.30–27.58 xP** in GW1–3 BB1 (+8.0 xP vs S&F, Net OC +2.41) and **6.63–6.73 xP/GW** in GW1–19 with 94.7% Zero-Diff coverage.
+  - Enforced Max 2 DEF per club across all 20 clubs: 153,216 valid partitions evaluated; PL-proven #1 5-club multiset `AVL-CHE-LIV-MCI-NFO` (rot FDR 2.4386, 100% zero-diff, 26.3% all-easy). Top budget lineup: `Calafiori + Vuskovic + Thomas + Egan + O'Nien` (£22.5m, 81.85 DCS).
+  - Simulated 7-asset backlines for GW1 BB + WC4: Top BB1 backline `Trafford + Lammens` + `Calafiori + Vuskovic + O'Reilly + O'Nien + Ballard` (£36.0m, 88.17 xP, 2.23 eff FDR); top WC4 backline `Trafford + Pope` + `Calafiori + Vuskovic + Thomas + Muharemović + O'Reilly` (£36.0m, 430.83 xP, 2.50 rot FDR). Generated 10 CSV datasets; updated `refresh_downstream.py`, master `INDEX.md`, and deprecated legacy notes.
+
+- **Pre-Season Guide & Summer Transfers Refresh (17 Aug):**
+  - Scraped live FFS guide index (modified 17 Aug) and child sources. Ingested new post-preseason friendly article: `docs/research/fpl-preseason-guide/fpl-4-0m-defenders-ranked.md` with full player profiles, DefCon rates, FotMob Coventry lineup, and GW1 Clean Sheet Odds.
+  - Refreshed confirmed summer transfers register (`fpl-summer-transfers.md`) through 15 August (33 August signings; added Khalaili to Palace, Gelhardt/Gourna-Douath to Hull).
+  - Updated parent directory `fpl-preseason-guide.md` (15 child notes active) and master research index `INDEX.md`. Tests 170/170 passing, verify.sh 29/29 green.
+
 - **564-Player Preseason Pipeline & GW1 BB + WC4 Canonical Overhaul (17 Aug):**
   - Exhaustive 20-club role classification for all 564 FPL API players (92 Nailed, 158 Regular, 112 Rotation, 119 Cameo, 83 Out of Contention; 250 Draft-Eligible). Synced all 20 club markdown tables in `01-expected-role-gw1-5`.
   - Re-anchored Prior-Season Seed floor to $\ge 900$ mins in 2025/26 archive per user invariant. Added 132 researched FBref/senior league career packages in `build_expected_stats.py` ensuring zero Draft-Eligible players sit on `fallback_baseline`.

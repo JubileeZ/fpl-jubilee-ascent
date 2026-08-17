@@ -1,7 +1,7 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-13T23:15:00+07:00  
-**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-12 (modified 2026-08-13); page reviewed 2026-08-13  
+**Updated**: 2026-08-17T23:55:00+07:00  
+**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-15 (modified 2026-08-17T11:55:58Z); page reviewed 2026-08-17  
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
 **Purpose**: Capture confirmed-move register and identify FPL-relevant follow-up questions  
@@ -10,7 +10,7 @@
 
 ## Sources
 
-- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — modified 2026-08-13; register current through 2026-08-12; accessed 2026-08-13; role: transfer register and FPL watchlist source
+- **Primary**: [FPL 2026/27 transfer news: Confirmed summer signings — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/fpl-2026-27-transfer-news-confirmed-summer-signings) — modified 2026-08-17T11:55:58Z; register current through 2026-08-15; accessed 2026-08-17; role: transfer register and FPL watchlist source
 
 **Source boundary**: Source claims not independently validated. Fetched page exposes publisher intro and dated transfer register, but no detailed role/minutes or FPL-price data for listed players.
 
@@ -42,7 +42,7 @@ Full redo docs/research/fpl-preseason-guide/fpl-summer-transfers.md
 - Verified transfer register note `docs/research/fpl-preseason-guide/fpl-summer-transfers.md`
 
 **Data stamp / freshness**:
-- Register snapshot contains transfers announced 15 May through 8 August 2026.
+- Register snapshot contains transfers announced 15 May through 15 August 2026.
 
 ## Assumptions & Boundaries
 
@@ -63,12 +63,13 @@ Full redo docs/research/fpl-preseason-guide/fpl-summer-transfers.md
 ### Publisher scope
 
 - Summer window open for 2026/27; lists confirmed Premier League moves through Tuesday 1 September deadline.
-- Register snapshot contains moves announced from 15 May through 12 August 2026.
+- Register snapshot contains moves announced from 15 May through 15 August 2026.
 
 ### Confirmed-move register
 
 Amounts represent source-reported transfer fees.
 
+- **15 August**: Anan Khalaili, Union Saint-Gilloise → Crystal Palace (£21m); Joe Gelhardt, Leeds United → Hull City (£6.5m); Lucas Gourna-Douath, Red Bull Salzburg → Hull City (£3m).
 - **12–9 August**: Lucas Harrington, Colorado Rapids → Hull (£12.6m); Nobel Mendy, Rayo Vallecano → Hull (£21m); Geronimo Rulli, Marseille → Man City (£1.7m); Evann Guessand, Aston Villa → Crystal Palace (loan); Pep Chavarria, Rayo Vallecano → Chelsea (£16.3m); Gustavo Hamer, Sheffield United → Coventry (£6m); Ousmane Diomande, Sporting → Nottingham Forest (£34m); Brennan Johnson, Crystal Palace → Everton (swap); Dwight McNeil, Everton → Crystal Palace (swap); Shea Charles, Southampton → Fulham (£30m); Ronald Araujo, Barcelona → Liverpool (loan); Elliot Stroud, Mjallby → Hull (£3.5m).
 - **8–6 August**: Bruno Guimaraes, Newcastle → Arsenal (£75m); Sasa Lukic, Fulham → Ipswich (£9m); Jens Hjerto-Dahl, Tromso → Hull (£10m); Caleb Yirenkyi, Nordsjaelland → Coventry (£23m); James Trafford, Manchester City → Leeds (£45m); Juanlu Sanchez, Sevilla → Bournemouth (£10.4m); Christian Norgaard, Arsenal → Everton (£7m).
 - **5–1 August**: Konstantinos Tzolakis, Olympiacos → Hull (£20m); Florentino Luis, Burnley → Ipswich (£16m); Carl Rushworth, Brighton → Coventry (£22m); Gonzalo Garcia, Real Madrid → Fulham (£34.2m); César Palacios, Real Madrid → Fulham (£8.6m); Jordan Henderson, Brentford → Chelsea (free); Lukas Hornicek, Braga → Newcastle (£25.7m); Valentin Barco, Strasbourg → Chelsea (£33.6m); Mamadou Sangare, Lens → Brentford (£38.5m); Danny Welbeck, Brighton → Chelsea (£5m); Antonio Silva, Benfica → Bournemouth (£25.7m).
@@ -93,8 +94,8 @@ Amounts represent source-reported transfer fees.
 
 ### Practical implications
 
-- **Promoted depth**: Ipswich GKs/attack/defence/MID (Lukic, Florentino Luis, Scherpen, Maeda, Diop), Coventry CBs/midfield/GK (Yirenkyi, Rushworth, Amenda, Tchaouna, Onyeka, Hamer), Hull GK/defence/midfield (Harrington, Mendy, Stroud, Hjerto-Dahl, Tzolakis, Morita, Targett, Butland, Zambrano) require lineup review.
-- **High-impact moves**: Arsenal (Bruno Guimaraes, Tzolis, Hincapie, Meslier), Chelsea (Welbeck, Henderson, Barco, Lacroix, Rogers, Quenda, Palestra, Chavarria), Leeds (Trafford, Muharemovic, H. Wilson), Tottenham (Tonali, M. Fernandes, Struijk, Senesi, Robertson), Man Utd (Tielemans, Santos, Darlow), Bournemouth (Juanlu Sanchez, A. Silva, A. Rodriguez), Liverpool (Araujo loan, Munoz), Man City (Rulli), Forest (Diomande), Fulham (Shea Charles), Palace/Everton (Johnson/McNeil swap, Guessand loan).
+- **Promoted depth**: Ipswich GKs/attack/defence/MID (Lukic, Florentino Luis, Scherpen, Maeda, Diop), Coventry CBs/midfield/GK (Yirenkyi, Rushworth, Amenda, Tchaouna, Onyeka, Hamer), Hull GK/defence/midfield/attack (Gelhardt, Gourna-Douath, Harrington, Mendy, Stroud, Hjerto-Dahl, Tzolakis, Morita, Targett, Butland, Zambrano) require lineup review.
+- **High-impact moves**: Crystal Palace (Khalaili, Guessand loan, McNeil swap, Mingueza), Arsenal (Bruno Guimaraes, Tzolis, Hincapie, Meslier), Chelsea (Welbeck, Henderson, Barco, Lacroix, Rogers, Quenda, Palestra, Chavarria), Leeds (Trafford, Muharemovic, H. Wilson), Tottenham (Tonali, M. Fernandes, Struijk, Senesi, Robertson), Man Utd (Tielemans, Santos, Darlow), Bournemouth (Juanlu Sanchez, A. Silva, A. Rodriguez), Liverpool (Araujo loan, Munoz), Man City (Rulli), Forest (Diomande), Fulham (Shea Charles), Everton (Johnson swap).
 - **Vacancy checks**: Bruno Guimaraes / Tonali departures from Newcastle; Anderson departure from Forest; Rogers departure from Villa.
 - **Defensive competition**: Trafford at Leeds, Tzolakis at Hull, Rushworth at Coventry, Juanlu at Bournemouth alter starter hierarchies.
 
@@ -102,8 +103,8 @@ Amounts represent source-reported transfer fees.
 
 ### Evidence
 
-- Register current through 12 August (latest: Harrington/Mendy to Hull, Rulli to Man City, Chavarria to Chelsea, Hamer to Coventry, Diomande to Forest, Johnson/McNeil swap, Shea Charles to Fulham, Araujo loan to Liverpool, Stroud to Hull).
-- Total of 30 August moves recorded (1–12 August).
+- Register current through 15 August (latest: Khalaili to Palace, Gelhardt and Gourna-Douath to Hull, Harrington/Mendy to Hull, Rulli to Man City, Chavarria to Chelsea, Hamer to Coventry, Diomande to Forest, Johnson/McNeil swap, Shea Charles to Fulham, Araujo loan to Liverpool, Stroud to Hull).
+- Total of 33 August moves recorded (1–15 August).
 - Fees range from free transfers to £117m; covers promoted and established PL clubs.
 - FPL prices, minutes evidence, rankings, and player-stat tables absent from fetched text.
 - Cross-check against [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md): starter statuses for Trafford (Leeds #1), Tzolakis (Hull #1), Rushworth (Coventry #1), and Norgaard (Everton pivot) verified.

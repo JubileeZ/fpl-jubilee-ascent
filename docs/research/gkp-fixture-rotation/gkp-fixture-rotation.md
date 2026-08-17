@@ -1,10 +1,13 @@
 # Starter Goalkeeper Fixture Rotation & FDR Correlation Study
 
-**Updated**: 2026-08-14T18:55:00+07:00  
+> [!NOTE]
+> **Consolidated & Superseded**: This standalone goalkeeper research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Please refer to the unified note for the latest 564-player baseline, two-factor DCS scoring, and integrated GW1 BB + WC4 backline simulations.
+
+**Updated**: 2026-08-18T00:20:00+07:00  
 **Data stamp**: Stage 2 ADR-0014 rates 2026-08-14; FPL API processed snapshot; ParticipationStateHybridModel GW1–38 flat-90 projections  
 **Season**: 2026/27  
 **Purpose**: Identify pairs of **genuine starting goalkeepers** (Nailed Starter or Regular Starter) costing <= £9.5m combined with the highest horizon-matched rotated expected points under FDR-min weekly picks, negative FDR correlation, and lowest rotated average FDR.  
-**Related**: [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [DEF rotation](../def-fixture-rotation/def-fixture-rotation.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  
+**Related**: [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
 **Artifacts**: [`gkp_rotation_matrix.csv`](../../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv), [`gkp_performance_baseline.csv`](../../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)  
 **Script**: [`run_gkp_rotation_analysis.py`](run_gkp_rotation_analysis.py)

@@ -46,17 +46,10 @@ def main() -> None:
         "run_full_wc4_study",
     )()
 
-    print("\n--- GKP fixture rotation ---")
-    gkp_df = _load(
-        "docs/research/gkp-fixture-rotation/run_gkp_rotation_analysis.py",
-        "run_analysis",
-    )()
-    print(f"Wrote {len(gkp_df)} GKP rotation rows")
-
-    print("\n--- DEF fixture rotation (incl. WC4 bridges) ---")
+    print("\n--- Defensive Architecture & Fixture Rotation (Unified GKP + DEF) ---")
     _load(
-        "docs/research/def-fixture-rotation/run_def_rotation_analysis.py",
-        "run_def_rotation_pipeline",
+        "docs/research/defensive-fixture-rotation/run_defensive_rotation_analysis.py",
+        "run_defensive_rotation_pipeline",
     )()
 
     print("\n--- Ownership Value Explorer ---")

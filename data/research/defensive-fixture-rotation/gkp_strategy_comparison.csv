@@ -1,0 +1,569 @@
+horizon,strategy,type,pairing,gkp1,club1,price1,gkp2,club2,price2,total_price,num_gws,tot_rot_xp,rot_xp_per_gw,oc_score,dcs,s_risk,rot_avg_fdr,no_diff_pct,all_easy_pct,fdr_corr,foi,expected_cs
+gw1_3,Premium Set & Forget,Single S&F,Raya (ARS) + Fodder (£4.0m),Raya,ARS,6.0,Fodder,-,4.0,10.0,3,19.72,6.57,6.178,62.7,20.56,3.33,33.3,33.3,1.0,0.5301,1.41
+gw4_19,Premium Set & Forget,Single S&F,Raya (ARS) + Fodder (£4.0m),Raya,ARS,6.0,Fodder,-,4.0,10.0,16,105.74,6.61,6.215,76.03,52.29,3.0,81.2,18.8,1.0,0.4996,8.01
+gw1_19,Premium Set & Forget,Single S&F,Raya (ARS) + Fodder (£4.0m),Raya,ARS,6.0,Fodder,-,4.0,10.0,19,125.46,6.6,6.209,73.92,47.28,3.05,73.7,21.1,1.0,0.5045,9.42
+full_season,Premium Set & Forget,Single S&F,Raya (ARS) + Fodder (£4.0m),Raya,ARS,6.0,Fodder,-,4.0,10.0,38,253.23,6.66,6.27,76.23,50.44,2.97,76.3,28.9,1.0,0.4936,19.24
+gw1_3,Mid-Value Set & Forget,Single S&F,Martinez (AVL) + Fodder (£4.0m),Martinez,AVL,5.0,Fodder,-,4.0,9.0,3,17.98,5.99,5.863,67.09,45.0,3.0,66.7,33.3,1.0,0.6934,0.92
+gw4_19,Mid-Value Set & Forget,Single S&F,Martinez (AVL) + Fodder (£4.0m),Martinez,AVL,5.0,Fodder,-,4.0,9.0,16,97.58,6.1,5.968,71.12,50.62,2.94,75.0,31.2,1.0,0.6883,4.99
+gw1_19,Mid-Value Set & Forget,Single S&F,Martinez (AVL) + Fodder (£4.0m),Martinez,AVL,5.0,Fodder,-,4.0,9.0,19,115.57,6.08,5.951,70.49,49.74,2.95,73.7,31.6,1.0,0.6891,5.91
+full_season,Mid-Value Set & Forget,Single S&F,Martinez (AVL) + Fodder (£4.0m),Martinez,AVL,5.0,Fodder,-,4.0,9.0,38,229.3,6.03,5.903,68.92,47.89,3.03,73.7,28.9,1.0,0.6964,11.54
+gw1_3,Budget Set & Forget,Single S&F,Verbruggen (BHA) + Fodder (£4.0m),Verbruggen,BHA,4.5,Fodder,-,4.0,8.5,3,16.67,5.56,5.557,61.84,45.0,3.0,66.7,33.3,1.0,0.6856,0.94
+gw4_19,Budget Set & Forget,Single S&F,Verbruggen (BHA) + Fodder (£4.0m),Verbruggen,BHA,4.5,Fodder,-,4.0,8.5,16,86.02,5.38,5.377,59.82,47.71,3.06,75.0,25.0,1.0,0.6938,4.9
+gw1_19,Budget Set & Forget,Single S&F,Verbruggen (BHA) + Fodder (£4.0m),Verbruggen,BHA,4.5,Fodder,-,4.0,8.5,19,102.7,5.41,5.405,60.14,47.28,3.05,73.7,26.3,1.0,0.6925,5.84
+full_season,Budget Set & Forget,Single S&F,Verbruggen (BHA) + Fodder (£4.0m),Verbruggen,BHA,4.5,Fodder,-,4.0,8.5,38,204.92,5.39,5.393,59.16,45.35,3.08,71.1,26.3,1.0,0.6951,11.59
+gw1_3,Budget Set & Forget,Single S&F,Rushworth (BHA) + Fodder (£4.0m),Rushworth,BHA,4.5,Fodder,-,4.0,8.5,3,17.19,5.73,5.729,64.79,45.0,3.0,66.7,33.3,1.0,0.6856,0.94
+gw4_19,Budget Set & Forget,Single S&F,Rushworth (BHA) + Fodder (£4.0m),Rushworth,BHA,4.5,Fodder,-,4.0,8.5,16,88.89,5.56,5.555,62.89,47.71,3.06,75.0,25.0,1.0,0.6938,4.9
+gw1_19,Budget Set & Forget,Single S&F,Rushworth (BHA) + Fodder (£4.0m),Rushworth,BHA,4.5,Fodder,-,4.0,8.5,19,106.08,5.58,5.583,63.19,47.28,3.05,73.7,26.3,1.0,0.6925,5.84
+full_season,Budget Set & Forget,Single S&F,Rushworth (BHA) + Fodder (£4.0m),Rushworth,BHA,4.5,Fodder,-,4.0,8.5,38,211.69,5.57,5.571,62.21,45.35,3.08,71.1,26.3,1.0,0.6951,11.59
+gw1_3,Budget Set & Forget,Single S&F,Petrović (BOU) + Fodder (£4.0m),Petrović,BOU,4.5,Fodder,-,4.0,8.5,3,14.88,4.96,4.962,46.96,33.33,3.67,66.7,0.0,1.0,0.8078,0.58
+gw4_19,Budget Set & Forget,Single S&F,Petrović (BOU) + Fodder (£4.0m),Petrović,BOU,4.5,Fodder,-,4.0,8.5,16,92.4,5.78,5.775,67.82,50.62,2.94,75.0,37.5,1.0,0.73,4.32
+gw1_19,Budget Set & Forget,Single S&F,Petrović (BOU) + Fodder (£4.0m),Petrović,BOU,4.5,Fodder,-,4.0,8.5,19,107.29,5.65,5.647,64.28,47.28,3.05,73.7,31.6,1.0,0.7423,4.9
+full_season,Budget Set & Forget,Single S&F,Petrović (BOU) + Fodder (£4.0m),Petrović,BOU,4.5,Fodder,-,4.0,8.5,38,214.06,5.63,5.633,63.53,45.96,3.05,71.1,28.9,1.0,0.7456,9.67
+gw1_3,Mid-Value Set & Forget,Single S&F,Kelleher (BRE) + Fodder (£4.0m),Kelleher,BRE,5.0,Fodder,-,4.0,9.0,3,18.68,6.23,6.095,80.84,69.44,2.67,100.0,33.3,1.0,0.6848,0.95
+gw4_19,Mid-Value Set & Forget,Single S&F,Kelleher (BRE) + Fodder (£4.0m),Kelleher,BRE,5.0,Fodder,-,4.0,9.0,16,91.88,5.74,5.611,60.76,40.0,3.12,62.5,25.0,1.0,0.7327,4.28
+gw1_19,Mid-Value Set & Forget,Single S&F,Kelleher (BRE) + Fodder (£4.0m),Kelleher,BRE,5.0,Fodder,-,4.0,9.0,19,110.56,5.82,5.687,63.93,44.65,3.05,68.4,26.3,1.0,0.7251,5.22
+full_season,Mid-Value Set & Forget,Single S&F,Kelleher (BRE) + Fodder (£4.0m),Kelleher,BRE,5.0,Fodder,-,4.0,9.0,38,221.6,5.83,5.7,64.68,45.96,3.05,71.1,28.9,1.0,0.722,10.56
+gw1_3,Mid-Value Set & Forget,Single S&F,Sánchez (CHE) + Fodder (£4.0m),Sánchez,CHE,5.0,Fodder,-,4.0,9.0,3,16.13,5.38,5.247,53.4,37.22,3.33,66.7,33.3,1.0,0.7654,0.7
+gw4_19,Mid-Value Set & Forget,Single S&F,Sánchez (CHE) + Fodder (£4.0m),Sánchez,CHE,5.0,Fodder,-,4.0,9.0,16,92.12,5.76,5.626,66.52,53.75,2.94,81.2,31.2,1.0,0.7404,4.15
+gw1_19,Mid-Value Set & Forget,Single S&F,Sánchez (CHE) + Fodder (£4.0m),Sánchez,CHE,5.0,Fodder,-,4.0,9.0,19,108.26,5.7,5.566,64.45,51.14,3.0,78.9,31.6,1.0,0.7443,4.86
+full_season,Mid-Value Set & Forget,Single S&F,Sánchez (CHE) + Fodder (£4.0m),Sánchez,CHE,5.0,Fodder,-,4.0,9.0,38,216.0,5.68,5.553,63.69,49.82,3.0,76.3,28.9,1.0,0.7476,9.59
+gw1_3,Mid-Value Set & Forget,Single S&F,Henderson (CRY) + Fodder (£4.0m),Henderson,CRY,5.0,Fodder,-,4.0,9.0,3,15.67,5.22,5.093,50.76,37.22,3.33,66.7,0.0,1.0,0.779,0.66
+gw4_19,Mid-Value Set & Forget,Single S&F,Henderson (CRY) + Fodder (£4.0m),Henderson,CRY,5.0,Fodder,-,4.0,9.0,16,91.6,5.73,5.594,62.3,44.58,3.06,68.8,25.0,1.0,0.7403,4.16
+gw1_19,Mid-Value Set & Forget,Single S&F,Henderson (CRY) + Fodder (£4.0m),Henderson,CRY,5.0,Fodder,-,4.0,9.0,19,107.27,5.65,5.515,60.48,43.42,3.11,68.4,21.1,1.0,0.7464,4.82
+full_season,Mid-Value Set & Forget,Single S&F,Henderson (CRY) + Fodder (£4.0m),Henderson,CRY,5.0,Fodder,-,4.0,9.0,38,216.79,5.7,5.574,62.5,45.96,3.05,71.1,28.9,1.0,0.7354,10.05
+gw1_3,Premium Set & Forget,Single S&F,Pickford (EVE) + Fodder (£4.0m),Pickford,EVE,5.5,Fodder,-,4.0,9.5,3,16.39,5.46,5.202,52.63,37.22,3.33,66.7,0.0,1.0,0.7635,0.71
+gw4_19,Premium Set & Forget,Single S&F,Pickford (EVE) + Fodder (£4.0m),Pickford,EVE,5.5,Fodder,-,4.0,9.5,16,91.44,5.71,5.452,59.87,44.58,3.06,68.8,31.2,1.0,0.7192,4.49
+gw1_19,Premium Set & Forget,Single S&F,Pickford (EVE) + Fodder (£4.0m),Pickford,EVE,5.5,Fodder,-,4.0,9.5,19,107.83,5.68,5.413,58.73,43.42,3.11,68.4,26.3,1.0,0.7262,5.2
+full_season,Premium Set & Forget,Single S&F,Pickford (EVE) + Fodder (£4.0m),Pickford,EVE,5.5,Fodder,-,4.0,9.5,38,217.14,5.71,5.451,60.41,45.96,3.05,71.1,28.9,1.0,0.7198,10.65
+gw1_3,Budget Set & Forget,Single S&F,Leno (FUL) + Fodder (£4.0m),Leno,FUL,4.5,Fodder,-,4.0,8.5,3,16.05,5.35,5.35,55.18,37.22,3.33,66.7,0.0,1.0,0.7701,0.69
+gw4_19,Budget Set & Forget,Single S&F,Leno (FUL) + Fodder (£4.0m),Leno,FUL,4.5,Fodder,-,4.0,8.5,16,89.76,5.61,5.61,62.58,44.58,3.06,68.8,31.2,1.0,0.7259,4.39
+gw1_19,Budget Set & Forget,Single S&F,Leno (FUL) + Fodder (£4.0m),Leno,FUL,4.5,Fodder,-,4.0,8.5,19,105.81,5.57,5.569,61.41,43.42,3.11,68.4,26.3,1.0,0.7328,5.08
+full_season,Budget Set & Forget,Single S&F,Leno (FUL) + Fodder (£4.0m),Leno,FUL,4.5,Fodder,-,4.0,8.5,38,212.12,5.58,5.582,62.41,45.35,3.08,71.1,26.3,1.0,0.7304,10.25
+gw1_3,Budget Set & Forget,Single S&F,Scherpen (IPS) + Fodder (£4.0m),Scherpen,IPS,4.5,Fodder,-,4.0,8.5,3,15.21,5.07,5.069,43.69,20.56,3.33,33.3,33.3,1.0,0.7601,0.72
+gw4_19,Budget Set & Forget,Single S&F,Scherpen (IPS) + Fodder (£4.0m),Scherpen,IPS,4.5,Fodder,-,4.0,8.5,16,83.96,5.25,5.247,58.86,50.83,3.06,81.2,25.0,1.0,0.7352,4.24
+gw1_19,Budget Set & Forget,Single S&F,Scherpen (IPS) + Fodder (£4.0m),Scherpen,IPS,4.5,Fodder,-,4.0,8.5,19,99.17,5.22,5.219,56.47,46.05,3.11,73.7,26.3,1.0,0.7391,4.96
+full_season,Budget Set & Forget,Single S&F,Scherpen (IPS) + Fodder (£4.0m),Scherpen,IPS,4.5,Fodder,-,4.0,8.5,38,197.82,5.21,5.206,55.71,44.74,3.11,71.1,23.7,1.0,0.7423,9.79
+gw1_3,Premium Set & Forget,Single S&F,A.Becker (LIV) + Fodder (£4.0m),A.Becker,LIV,5.5,Fodder,-,4.0,9.5,3,18.07,6.02,5.762,75.12,69.44,2.67,100.0,33.3,1.0,0.6471,1.06
+gw4_19,Premium Set & Forget,Single S&F,A.Becker (LIV) + Fodder (£4.0m),A.Becker,LIV,5.5,Fodder,-,4.0,9.5,16,93.82,5.86,5.601,63.59,47.5,2.94,68.8,37.5,1.0,0.672,5.25
+gw1_19,Premium Set & Forget,Single S&F,A.Becker (LIV) + Fodder (£4.0m),A.Becker,LIV,5.5,Fodder,-,4.0,9.5,19,111.89,5.89,5.626,65.41,50.96,2.89,73.7,36.8,1.0,0.6681,6.31
+full_season,Premium Set & Forget,Single S&F,A.Becker (LIV) + Fodder (£4.0m),A.Becker,LIV,5.5,Fodder,-,4.0,9.5,38,220.89,5.81,5.55,63.65,49.82,3.0,76.3,28.9,1.0,0.6807,12.13
+gw1_3,Premium Set & Forget,Single S&F,Donnarumma (MCI) + Fodder (£4.0m),Donnarumma,MCI,5.5,Fodder,-,4.0,9.5,3,18.85,6.28,6.021,79.57,69.44,2.67,100.0,33.3,1.0,0.5271,1.42
+gw4_19,Premium Set & Forget,Single S&F,Donnarumma (MCI) + Fodder (£4.0m),Donnarumma,MCI,5.5,Fodder,-,4.0,9.5,16,95.99,6.0,5.737,65.34,46.04,3.0,68.8,37.5,1.0,0.5592,7.05
+gw1_19,Premium Set & Forget,Single S&F,Donnarumma (MCI) + Fodder (£4.0m),Donnarumma,MCI,5.5,Fodder,-,4.0,9.5,19,114.85,6.04,5.782,67.58,49.74,2.95,73.7,36.8,1.0,0.5541,8.47
+full_season,Premium Set & Forget,Single S&F,Donnarumma (MCI) + Fodder (£4.0m),Donnarumma,MCI,5.5,Fodder,-,4.0,9.5,38,228.63,6.02,5.754,67.38,50.44,2.97,76.3,28.9,1.0,0.5603,16.71
+gw1_3,Mid-Value Set & Forget,Single S&F,Trafford (MCI) + Fodder (£4.0m),Trafford,MCI,5.0,Fodder,-,4.0,9.0,3,20.2,6.73,6.602,87.78,69.44,2.67,100.0,33.3,1.0,0.5542,1.34
+gw4_19,Mid-Value Set & Forget,Single S&F,Trafford (MCI) + Fodder (£4.0m),Trafford,MCI,5.0,Fodder,-,4.0,9.0,16,103.49,6.47,6.337,75.62,46.04,3.0,68.8,37.5,1.0,0.586,6.62
+gw1_19,Mid-Value Set & Forget,Single S&F,Trafford (MCI) + Fodder (£4.0m),Trafford,MCI,5.0,Fodder,-,4.0,9.0,19,123.69,6.51,6.379,77.82,49.74,2.95,73.7,36.8,1.0,0.581,7.96
+full_season,Mid-Value Set & Forget,Single S&F,Trafford (MCI) + Fodder (£4.0m),Trafford,MCI,5.0,Fodder,-,4.0,9.0,38,246.27,6.48,6.349,77.59,50.44,2.97,76.3,28.9,1.0,0.5875,15.68
+gw1_3,Mid-Value Set & Forget,Single S&F,Lammens (MUN) + Fodder (£4.0m),Lammens,MUN,5.0,Fodder,-,4.0,9.0,3,19.58,6.53,6.394,89.07,77.22,2.33,100.0,66.7,1.0,0.6057,1.18
+gw4_19,Mid-Value Set & Forget,Single S&F,Lammens (MUN) + Fodder (£4.0m),Lammens,MUN,5.0,Fodder,-,4.0,9.0,16,91.12,5.69,5.563,61.86,44.79,3.19,75.0,12.5,1.0,0.7147,4.57
+gw1_19,Mid-Value Set & Forget,Single S&F,Lammens (MUN) + Fodder (£4.0m),Lammens,MUN,5.0,Fodder,-,4.0,9.0,19,110.69,5.83,5.695,66.16,49.91,3.05,78.9,21.1,1.0,0.6975,5.75
+full_season,Mid-Value Set & Forget,Single S&F,Lammens (MUN) + Fodder (£4.0m),Lammens,MUN,5.0,Fodder,-,4.0,9.0,38,223.25,5.87,5.744,66.96,49.82,3.0,76.3,28.9,1.0,0.6884,11.84
+gw1_3,Mid-Value Set & Forget,Single S&F,Pope (NEW) + Fodder (£4.0m),Pope,NEW,5.0,Fodder,-,4.0,9.0,3,16.8,5.6,5.468,57.19,37.22,3.33,66.7,0.0,1.0,0.7877,0.64
+gw4_19,Mid-Value Set & Forget,Single S&F,Pope (NEW) + Fodder (£4.0m),Pope,NEW,5.0,Fodder,-,4.0,9.0,16,93.77,5.86,5.729,66.45,49.17,3.0,75.0,25.0,1.0,0.7435,4.1
+gw1_19,Mid-Value Set & Forget,Single S&F,Pope (NEW) + Fodder (£4.0m),Pope,NEW,5.0,Fodder,-,4.0,9.0,19,110.57,5.82,5.688,64.99,47.28,3.05,73.7,21.1,1.0,0.7504,4.74
+full_season,Mid-Value Set & Forget,Single S&F,Pope (NEW) + Fodder (£4.0m),Pope,NEW,5.0,Fodder,-,4.0,9.0,38,221.1,5.82,5.687,64.2,45.35,3.08,71.1,26.3,1.0,0.7481,9.57
+gw1_3,Mid-Value Set & Forget,Single S&F,Sels (NFO) + Fodder (£4.0m),Sels,NFO,5.0,Fodder,-,4.0,9.0,3,18.34,6.11,5.982,69.11,45.0,3.0,66.7,33.3,1.0,0.7143,0.86
+gw4_19,Mid-Value Set & Forget,Single S&F,Sels (NFO) + Fodder (£4.0m),Sels,NFO,5.0,Fodder,-,4.0,9.0,16,95.19,5.95,5.818,66.73,46.04,3.0,68.8,31.2,1.0,0.7154,4.55
+gw1_19,Mid-Value Set & Forget,Single S&F,Sels (NFO) + Fodder (£4.0m),Sels,NFO,5.0,Fodder,-,4.0,9.0,19,113.53,5.98,5.844,67.1,45.88,3.0,68.4,31.6,1.0,0.7153,5.41
+full_season,Mid-Value Set & Forget,Single S&F,Sels (NFO) + Fodder (£4.0m),Sels,NFO,5.0,Fodder,-,4.0,9.0,38,225.83,5.94,5.812,66.58,45.96,3.05,71.1,28.9,1.0,0.7199,10.64
+gw1_3,Mid-Value Set & Forget,Single S&F,Roefs (SUN) + Fodder (£4.0m),Roefs,SUN,5.0,Fodder,-,4.0,9.0,3,19.26,6.42,6.289,87.27,77.22,2.33,100.0,66.7,1.0,0.6329,1.1
+gw4_19,Mid-Value Set & Forget,Single S&F,Roefs (SUN) + Fodder (£4.0m),Roefs,SUN,5.0,Fodder,-,4.0,9.0,16,92.42,5.78,5.645,60.76,38.54,3.19,62.5,25.0,1.0,0.734,4.26
+gw1_19,Mid-Value Set & Forget,Single S&F,Roefs (SUN) + Fodder (£4.0m),Roefs,SUN,5.0,Fodder,-,4.0,9.0,19,111.68,5.88,5.747,64.94,44.65,3.05,68.4,31.6,1.0,0.718,5.36
+full_season,Mid-Value Set & Forget,Single S&F,Roefs (SUN) + Fodder (£4.0m),Roefs,SUN,5.0,Fodder,-,4.0,9.0,38,222.44,5.85,5.722,64.81,45.35,3.08,71.1,26.3,1.0,0.7233,10.51
+gw1_3,Budget Set & Forget,Single S&F,Kinsky (TOT) + Fodder (£4.0m),Kinsky,TOT,4.5,Fodder,-,4.0,8.5,3,17.54,5.85,5.848,76.6,69.44,2.67,100.0,33.3,1.0,0.7286,0.81
+gw4_19,Budget Set & Forget,Single S&F,Kinsky (TOT) + Fodder (£4.0m),Kinsky,TOT,4.5,Fodder,-,4.0,8.5,16,90.31,5.64,5.644,63.17,44.58,3.06,68.8,31.2,1.0,0.7624,3.8
+gw1_19,Budget Set & Forget,Single S&F,Kinsky (TOT) + Fodder (£4.0m),Kinsky,TOT,4.5,Fodder,-,4.0,8.5,19,107.85,5.68,5.677,65.29,48.51,3.0,73.7,31.6,1.0,0.7571,4.62
+full_season,Budget Set & Forget,Single S&F,Kinsky (TOT) + Fodder (£4.0m),Kinsky,TOT,4.5,Fodder,-,4.0,8.5,38,214.08,5.63,5.634,63.53,45.96,3.05,71.1,28.9,1.0,0.7632,9.0
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Verbruggen (BHA),Martinez,AVL,5.0,Verbruggen,BHA,4.5,9.5,3,23.34,7.78,7.516,71.33,28.33,3.0,33.3,33.3,1.0,0.4856,1.22
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Verbruggen (BHA),Martinez,AVL,5.0,Verbruggen,BHA,4.5,9.5,16,99.26,6.2,5.941,80.31,74.74,2.62,93.8,43.8,0.0063,0.4783,5.5
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Verbruggen (BHA),Martinez,AVL,5.0,Verbruggen,BHA,4.5,9.5,19,117.24,6.17,5.908,77.84,69.98,2.68,89.5,42.1,0.1724,0.4794,6.42
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Verbruggen (BHA),Martinez,AVL,5.0,Verbruggen,BHA,4.5,9.5,38,235.07,6.19,5.923,78.79,71.68,2.63,89.5,47.4,0.1087,0.4849,13.1
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Rushworth (BHA),Martinez,AVL,5.0,Rushworth,BHA,4.5,9.5,3,23.52,7.84,7.576,71.33,28.33,3.0,33.3,33.3,1.0,0.4856,1.22
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Rushworth (BHA),Martinez,AVL,5.0,Rushworth,BHA,4.5,9.5,16,99.99,6.25,5.987,81.1,74.74,2.62,93.8,43.8,0.0063,0.4783,5.62
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Rushworth (BHA),Martinez,AVL,5.0,Rushworth,BHA,4.5,9.5,19,118.08,6.21,5.952,78.6,69.98,2.68,89.5,42.1,0.1724,0.4794,6.55
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Rushworth (BHA),Martinez,AVL,5.0,Rushworth,BHA,4.5,9.5,38,237.15,6.24,5.978,79.73,71.68,2.63,89.5,47.4,0.1087,0.4849,13.4
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Petrović (BOU),Martinez,AVL,5.0,Petrović,BOU,4.5,9.5,3,21.96,7.32,7.059,72.0,30.0,3.25,33.3,33.3,0.0,0.5609,1.06
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Petrović (BOU),Martinez,AVL,5.0,Petrović,BOU,4.5,9.5,16,102.17,6.39,6.123,85.77,80.61,2.44,93.8,62.5,-0.1918,0.5006,5.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Petrović (BOU),Martinez,AVL,5.0,Petrović,BOU,4.5,9.5,19,120.39,6.34,6.074,84.65,79.89,2.47,94.7,57.9,-0.143,0.5101,6.5
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Petrović (BOU),Martinez,AVL,5.0,Petrović,BOU,4.5,9.5,38,239.74,6.31,6.046,83.24,77.53,2.55,94.7,50.0,-0.0748,0.5186,12.76
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kelleher (BRE),Martinez,AVL,5.0,Kelleher,BRE,5.0,10.0,3,24.68,8.23,7.834,74.07,35.17,2.75,33.3,33.3,0.866,0.4813,1.26
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kelleher (BRE),Martinez,AVL,5.0,Kelleher,BRE,5.0,10.0,16,102.85,6.43,6.034,85.27,83.14,2.5,100.0,50.0,-0.308,0.5021,5.65
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kelleher (BRE),Martinez,AVL,5.0,Kelleher,BRE,5.0,10.0,19,122.11,6.43,6.033,84.61,81.55,2.53,100.0,47.4,-0.1779,0.4988,6.62
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kelleher (BRE),Martinez,AVL,5.0,Kelleher,BRE,5.0,10.0,38,244.23,6.43,6.033,85.32,83.31,2.5,100.0,50.0,-0.33,0.5001,13.47
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sánchez (CHE),Martinez,AVL,5.0,Sánchez,CHE,5.0,10.0,3,24.29,8.1,7.703,81.95,54.86,2.5,33.3,33.3,-0.982,0.5188,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sánchez (CHE),Martinez,AVL,5.0,Sánchez,CHE,5.0,10.0,16,101.49,6.34,5.949,83.51,82.4,2.5,100.0,50.0,-0.2086,0.5087,5.43
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sánchez (CHE),Martinez,AVL,5.0,Sánchez,CHE,5.0,10.0,19,120.35,6.33,5.94,84.12,84.28,2.47,100.0,52.6,-0.3778,0.5103,6.48
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sánchez (CHE),Martinez,AVL,5.0,Sánchez,CHE,5.0,10.0,38,239.65,6.31,5.912,82.28,80.89,2.53,97.4,50.0,-0.2643,0.5186,12.77
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Henderson (CRY),Martinez,AVL,5.0,Henderson,CRY,5.0,10.0,3,23.65,7.88,7.491,71.74,29.34,3.0,33.3,33.3,0.866,0.5437,1.17
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Henderson (CRY),Martinez,AVL,5.0,Henderson,CRY,5.0,10.0,16,100.95,6.31,5.915,79.88,74.74,2.62,93.8,43.8,0.007,0.51,5.31
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Henderson (CRY),Martinez,AVL,5.0,Henderson,CRY,5.0,10.0,19,119.18,6.27,5.878,77.53,70.47,2.68,89.5,42.1,0.1068,0.5153,6.19
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Henderson (CRY),Martinez,AVL,5.0,Henderson,CRY,5.0,10.0,38,238.25,6.27,5.876,76.06,66.9,2.71,86.8,44.7,0.3262,0.5148,12.44
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Leno (FUL),Martinez,AVL,5.0,Leno,FUL,4.5,9.5,3,23.09,7.7,7.433,74.33,35.83,3.0,33.3,33.3,0.0,0.5345,1.16
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Leno (FUL),Martinez,AVL,5.0,Leno,FUL,4.5,9.5,16,103.07,6.44,6.179,86.4,79.76,2.5,93.8,56.2,-0.2732,0.4971,5.73
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Leno (FUL),Martinez,AVL,5.0,Leno,FUL,4.5,9.5,19,121.19,6.38,6.116,85.15,79.35,2.53,94.7,52.6,-0.2356,0.503,6.72
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Leno (FUL),Martinez,AVL,5.0,Leno,FUL,4.5,9.5,38,241.63,6.36,6.096,85.54,81.16,2.53,97.4,50.0,-0.3007,0.5062,13.29
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Scherpen (IPS),Martinez,AVL,5.0,Scherpen,IPS,4.5,9.5,3,24.02,8.01,7.743,76.67,41.67,2.75,33.3,33.3,0.0,0.5257,1.32
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Scherpen (IPS),Martinez,AVL,5.0,Scherpen,IPS,4.5,9.5,16,98.72,6.17,5.907,78.9,72.66,2.62,93.8,43.8,0.2848,0.509,5.27
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Scherpen (IPS),Martinez,AVL,5.0,Scherpen,IPS,4.5,9.5,19,117.3,6.17,5.911,78.2,70.73,2.63,89.5,47.4,0.2362,0.5117,6.3
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Scherpen (IPS),Martinez,AVL,5.0,Scherpen,IPS,4.5,9.5,38,234.15,6.16,5.899,79.37,74.17,2.61,92.1,47.4,0.0341,0.5171,12.59
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Trafford (MCI),Martinez,AVL,5.0,Trafford,MCI,5.0,10.0,3,25.63,8.54,8.149,74.07,35.17,2.75,33.3,33.3,0.866,0.3906,1.63
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Trafford (MCI),Martinez,AVL,5.0,Trafford,MCI,5.0,10.0,16,107.71,6.73,6.338,88.57,78.38,2.5,93.8,56.2,-0.0894,0.4027,7.03
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Trafford (MCI),Martinez,AVL,5.0,Trafford,MCI,5.0,10.0,19,127.91,6.73,6.338,88.27,77.62,2.53,94.7,52.6,-0.0041,0.4008,8.36
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Trafford (MCI),Martinez,AVL,5.0,Trafford,MCI,5.0,10.0,38,253.29,6.67,6.272,87.27,77.97,2.58,97.4,44.7,-0.0391,0.4093,16.4
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Lammens (MUN),Martinez,AVL,5.0,Lammens,MUN,5.0,10.0,3,26.39,8.8,8.402,83.93,59.83,2.25,33.3,33.3,-0.866,0.4134,1.62
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Lammens (MUN),Martinez,AVL,5.0,Lammens,MUN,5.0,10.0,16,101.69,6.36,5.962,80.97,75.49,2.62,93.8,43.8,-0.0936,0.4904,5.61
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Lammens (MUN),Martinez,AVL,5.0,Lammens,MUN,5.0,10.0,19,122.65,6.46,6.061,84.05,78.92,2.53,94.7,52.6,-0.1779,0.4782,6.93
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Lammens (MUN),Martinez,AVL,5.0,Lammens,MUN,5.0,10.0,38,243.8,6.42,6.022,82.06,75.66,2.55,92.1,52.6,0.0,0.4791,13.78
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Pope (NEW),Martinez,AVL,5.0,Pope,NEW,5.0,10.0,3,23.59,7.86,7.469,74.33,35.83,3.0,33.3,33.3,0.0,0.5466,1.12
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Pope (NEW),Martinez,AVL,5.0,Pope,NEW,5.0,10.0,16,103.13,6.45,6.051,85.0,81.72,2.5,100.0,50.0,-0.1183,0.5111,5.44
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Pope (NEW),Martinez,AVL,5.0,Pope,NEW,5.0,10.0,19,121.51,6.4,6.001,83.82,80.94,2.53,100.0,47.4,-0.0957,0.5167,6.41
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Pope (NEW),Martinez,AVL,5.0,Pope,NEW,5.0,10.0,38,243.59,6.41,6.016,84.03,80.8,2.53,100.0,47.4,-0.0774,0.5208,12.87
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sels (NFO),Martinez,AVL,5.0,Sels,NFO,5.0,10.0,3,25.14,8.38,7.984,75.17,37.92,2.75,33.3,33.3,0.5,0.4981,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sels (NFO),Martinez,AVL,5.0,Sels,NFO,5.0,10.0,16,104.18,6.51,6.117,85.74,80.75,2.44,93.8,62.5,-0.2116,0.49,5.87
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sels (NFO),Martinez,AVL,5.0,Sels,NFO,5.0,10.0,19,123.89,6.52,6.126,84.33,76.84,2.47,89.5,63.2,-0.0872,0.4913,6.91
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Sels (NFO),Martinez,AVL,5.0,Sels,NFO,5.0,10.0,38,245.07,6.45,6.055,82.33,74.9,2.55,89.5,55.3,-0.0748,0.4999,13.43
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Roefs (SUN),Martinez,AVL,5.0,Roefs,SUN,5.0,10.0,3,26.11,8.7,8.31,83.93,59.83,2.25,33.3,33.3,-0.866,0.4323,1.56
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Roefs (SUN),Martinez,AVL,5.0,Roefs,SUN,5.0,10.0,16,102.21,6.39,5.994,79.65,70.82,2.62,87.5,50.0,0.1126,0.506,5.52
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Roefs (SUN),Martinez,AVL,5.0,Roefs,SUN,5.0,10.0,19,122.89,6.47,6.074,82.66,74.93,2.53,89.5,57.9,0.0041,0.4944,6.79
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Roefs (SUN),Martinez,AVL,5.0,Roefs,SUN,5.0,10.0,38,243.62,6.41,6.017,80.64,72.3,2.61,89.5,50.0,0.1087,0.5046,13.14
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kinsky (TOT),Martinez,AVL,5.0,Kinsky,TOT,4.5,9.5,3,24.62,8.21,7.946,81.6,54.0,2.5,33.3,33.3,-0.866,0.4997,1.32
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kinsky (TOT),Martinez,AVL,5.0,Kinsky,TOT,4.5,9.5,16,100.55,6.28,6.021,79.61,69.53,2.62,87.5,50.0,0.2848,0.5273,5.29
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kinsky (TOT),Martinez,AVL,5.0,Kinsky,TOT,4.5,9.5,19,119.74,6.3,6.039,81.11,72.52,2.58,89.5,52.6,0.1616,0.5229,6.32
+full_season,Active 2-GKP Rotation,Active 2-GKP,Martinez (AVL) + Kinsky (TOT),Martinez,AVL,5.0,Kinsky,TOT,4.5,9.5,38,237.47,6.25,5.986,79.19,69.99,2.66,89.5,44.7,0.2533,0.5341,12.27
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Rushworth (BHA),Verbruggen,BHA,4.5,Rushworth,BHA,4.5,9.0,3,22.54,7.51,7.382,71.33,28.33,3.0,33.3,33.3,1.0,0.4803,1.24
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Rushworth (BHA),Verbruggen,BHA,4.5,Rushworth,BHA,4.5,9.0,16,88.89,5.56,5.424,60.64,47.71,3.06,75.0,25.0,1.0,0.4903,4.9
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Rushworth (BHA),Verbruggen,BHA,4.5,Rushworth,BHA,4.5,9.0,19,106.08,5.58,5.452,60.94,47.28,3.05,73.7,26.3,1.0,0.4887,5.84
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Rushworth (BHA),Verbruggen,BHA,4.5,Rushworth,BHA,4.5,9.0,38,211.69,5.57,5.439,59.96,45.35,3.08,71.1,26.3,1.0,0.4926,11.59
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Petrović (BOU),Verbruggen,BHA,4.5,Petrović,BOU,4.5,9.0,3,21.32,7.11,6.976,72.0,30.0,3.25,33.3,33.3,0.0,0.5546,1.08
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Petrović (BOU),Verbruggen,BHA,4.5,Petrović,BOU,4.5,9.0,16,96.4,6.03,5.894,78.59,72.46,2.56,87.5,56.2,0.0893,0.5072,5.29
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Petrović (BOU),Verbruggen,BHA,4.5,Petrović,BOU,4.5,9.0,19,113.99,6.0,5.868,78.46,73.25,2.58,89.5,52.6,0.064,0.5147,6.27
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Petrović (BOU),Verbruggen,BHA,4.5,Petrović,BOU,4.5,9.0,38,225.42,5.93,5.801,75.07,67.65,2.66,84.2,50.0,0.2138,0.5199,12.21
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kelleher (BRE),Verbruggen,BHA,4.5,Kelleher,BRE,5.0,9.5,3,24.04,8.01,7.752,74.07,35.17,2.75,33.3,33.3,0.866,0.476,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kelleher (BRE),Verbruggen,BHA,4.5,Kelleher,BRE,5.0,9.5,16,96.07,6.0,5.741,76.95,74.88,2.62,93.8,43.8,-0.0121,0.5085,5.45
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kelleher (BRE),Verbruggen,BHA,4.5,Kelleher,BRE,5.0,9.5,19,114.76,6.04,5.777,77.42,74.53,2.63,94.7,42.1,0.0796,0.5034,6.43
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kelleher (BRE),Verbruggen,BHA,4.5,Kelleher,BRE,5.0,9.5,38,230.95,6.08,5.815,78.6,75.85,2.58,94.7,47.4,0.0674,0.5026,13.16
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sánchez (CHE),Verbruggen,BHA,4.5,Sánchez,CHE,5.0,9.5,3,23.65,7.88,7.621,81.95,54.86,2.5,33.3,33.3,-0.982,0.5128,1.36
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sánchez (CHE),Verbruggen,BHA,4.5,Sánchez,CHE,5.0,9.5,16,95.33,5.96,5.695,75.28,72.69,2.62,93.8,43.8,0.28,0.5162,4.94
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sánchez (CHE),Verbruggen,BHA,4.5,Sánchez,CHE,5.0,9.5,19,113.62,5.98,5.717,77.13,76.36,2.58,94.7,47.4,0.0,0.5156,6.0
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sánchez (CHE),Verbruggen,BHA,4.5,Sánchez,CHE,5.0,9.5,38,227.17,5.98,5.715,77.73,77.96,2.58,97.4,44.7,-0.0379,0.5198,12.01
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Henderson (CRY),Verbruggen,BHA,4.5,Henderson,CRY,5.0,9.5,3,22.34,7.45,7.184,71.74,29.34,3.0,33.3,33.3,0.866,0.5376,1.2
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Henderson (CRY),Verbruggen,BHA,4.5,Henderson,CRY,5.0,9.5,16,94.15,5.88,5.622,74.94,74.99,2.69,100.0,31.2,0.196,0.5167,5.14
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Henderson (CRY),Verbruggen,BHA,4.5,Henderson,CRY,5.0,9.5,19,111.14,5.85,5.587,72.64,70.75,2.74,94.7,31.6,0.2571,0.52,6.03
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Henderson (CRY),Verbruggen,BHA,4.5,Henderson,CRY,5.0,9.5,38,224.82,5.92,5.654,74.87,73.46,2.66,94.7,39.5,0.1406,0.5136,12.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pickford (EVE),Verbruggen,BHA,4.5,Pickford,EVE,5.5,10.0,3,23.34,7.78,7.385,79.26,48.16,2.75,33.3,33.3,-0.866,0.5192,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pickford (EVE),Verbruggen,BHA,4.5,Pickford,EVE,5.5,10.0,16,97.3,6.08,5.687,77.16,77.75,2.5,93.8,56.2,-0.0053,0.498,5.79
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pickford (EVE),Verbruggen,BHA,4.5,Pickford,EVE,5.5,10.0,19,115.28,6.07,5.673,77.11,78.21,2.53,94.7,52.6,-0.0827,0.5014,6.78
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pickford (EVE),Verbruggen,BHA,4.5,Pickford,EVE,5.5,10.0,38,230.04,6.05,5.66,76.73,77.84,2.55,94.7,50.0,-0.1156,0.4993,13.32
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Leno (FUL),Verbruggen,BHA,4.5,Leno,FUL,4.5,9.0,3,22.45,7.48,7.35,74.33,35.83,3.0,33.3,33.3,0.0,0.5285,1.17
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Leno (FUL),Verbruggen,BHA,4.5,Leno,FUL,4.5,9.0,16,95.65,5.98,5.847,78.32,73.79,2.56,87.5,56.2,-0.0893,0.5018,5.51
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Leno (FUL),Verbruggen,BHA,4.5,Leno,FUL,4.5,9.0,19,113.13,5.95,5.823,78.13,74.35,2.58,89.5,52.6,-0.0827,0.506,6.51
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Leno (FUL),Verbruggen,BHA,4.5,Leno,FUL,4.5,9.0,38,226.18,5.95,5.821,77.38,72.57,2.63,89.5,47.4,-0.0088,0.5072,12.65
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Scherpen (IPS),Verbruggen,BHA,4.5,Scherpen,IPS,4.5,9.0,3,22.7,7.57,7.436,76.67,41.67,2.75,33.3,33.3,0.0,0.5198,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Scherpen (IPS),Verbruggen,BHA,4.5,Scherpen,IPS,4.5,9.0,16,93.51,5.84,5.713,77.03,76.29,2.56,93.8,50.0,-0.0053,0.5094,5.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Scherpen (IPS),Verbruggen,BHA,4.5,Scherpen,IPS,4.5,9.0,19,110.87,5.84,5.704,75.86,73.78,2.58,89.5,52.6,-0.0074,0.511,6.58
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Scherpen (IPS),Verbruggen,BHA,4.5,Scherpen,IPS,4.5,9.0,38,220.16,5.79,5.662,74.45,72.02,2.63,89.5,47.4,0.0644,0.5163,12.95
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + A.Becker (LIV),Verbruggen,BHA,4.5,A.Becker,LIV,5.5,10.0,3,23.43,7.81,7.414,74.07,35.17,2.75,33.3,33.3,0.866,0.4501,1.36
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + A.Becker (LIV),Verbruggen,BHA,4.5,A.Becker,LIV,5.5,10.0,16,97.59,6.1,5.706,77.45,77.67,2.5,93.8,56.2,0.0057,0.4657,6.05
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + A.Becker (LIV),Verbruggen,BHA,4.5,A.Becker,LIV,5.5,10.0,19,115.67,6.09,5.694,76.94,76.92,2.53,94.7,52.6,0.0895,0.4632,7.11
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + A.Becker (LIV),Verbruggen,BHA,4.5,A.Becker,LIV,5.5,10.0,38,231.11,6.08,5.688,77.32,78.11,2.55,94.7,50.0,-0.1516,0.4717,14.08
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Donnarumma (MCI),Verbruggen,BHA,4.5,Donnarumma,MCI,5.5,10.0,3,24.2,8.07,7.673,74.07,35.17,2.75,33.3,33.3,0.866,0.3675,1.72
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Donnarumma (MCI),Verbruggen,BHA,4.5,Donnarumma,MCI,5.5,10.0,16,98.74,6.17,5.777,78.84,78.07,2.56,93.8,50.0,-0.2424,0.3861,7.36
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Donnarumma (MCI),Verbruggen,BHA,4.5,Donnarumma,MCI,5.5,10.0,19,117.59,6.19,5.795,78.88,77.41,2.58,94.7,47.4,-0.14,0.3832,8.78
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Donnarumma (MCI),Verbruggen,BHA,4.5,Donnarumma,MCI,5.5,10.0,38,234.48,6.17,5.776,79.02,78.56,2.58,97.4,44.7,-0.1178,0.3889,17.28
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Trafford (MCI),Verbruggen,BHA,4.5,Trafford,MCI,5.0,9.5,3,25.55,8.52,8.255,74.07,35.17,2.75,33.3,33.3,0.866,0.3862,1.64
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Trafford (MCI),Verbruggen,BHA,4.5,Trafford,MCI,5.0,9.5,16,105.25,6.58,6.316,88.07,78.07,2.56,93.8,50.0,-0.2424,0.4047,7.01
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Trafford (MCI),Verbruggen,BHA,4.5,Trafford,MCI,5.0,9.5,19,125.46,6.6,6.34,88.22,77.41,2.58,94.7,47.4,-0.14,0.4018,8.35
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Trafford (MCI),Verbruggen,BHA,4.5,Trafford,MCI,5.0,9.5,38,249.45,6.56,6.302,88.02,78.56,2.58,97.4,44.7,-0.1178,0.4078,16.42
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Lammens (MUN),Verbruggen,BHA,4.5,Lammens,MUN,5.0,9.5,3,25.75,8.58,8.32,83.93,59.83,2.25,33.3,33.3,-0.866,0.4087,1.63
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Lammens (MUN),Verbruggen,BHA,4.5,Lammens,MUN,5.0,9.5,16,96.7,6.04,5.781,77.69,75.04,2.69,93.8,37.5,-0.2277,0.4936,5.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Lammens (MUN),Verbruggen,BHA,4.5,Lammens,MUN,5.0,9.5,19,117.1,6.16,5.9,81.03,78.28,2.58,94.7,47.4,-0.2564,0.4802,6.86
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Lammens (MUN),Verbruggen,BHA,4.5,Lammens,MUN,5.0,9.5,38,235.89,6.21,5.945,83.02,81.33,2.5,94.7,55.3,-0.417,0.474,14.18
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pope (NEW),Verbruggen,BHA,4.5,Pope,NEW,5.0,9.5,3,22.95,7.65,7.387,74.33,35.83,3.0,33.3,33.3,0.0,0.5405,1.14
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pope (NEW),Verbruggen,BHA,4.5,Pope,NEW,5.0,9.5,16,98.12,6.13,5.87,80.01,77.05,2.56,93.8,50.0,-0.1069,0.5145,5.3
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pope (NEW),Verbruggen,BHA,4.5,Pope,NEW,5.0,9.5,19,115.85,6.1,5.835,79.43,77.09,2.58,94.7,47.4,-0.0978,0.5186,6.29
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Pope (NEW),Verbruggen,BHA,4.5,Pope,NEW,5.0,9.5,38,230.33,6.06,5.798,76.66,71.73,2.63,89.5,47.4,0.1032,0.5208,12.28
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sels (NFO),Verbruggen,BHA,4.5,Sels,NFO,5.0,9.5,3,24.43,8.14,7.882,75.17,37.92,2.75,33.3,33.3,0.5,0.4926,1.33
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sels (NFO),Verbruggen,BHA,4.5,Sels,NFO,5.0,9.5,16,99.59,6.22,5.962,85.13,85.88,2.44,100.0,56.2,-0.4781,0.4917,5.83
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sels (NFO),Verbruggen,BHA,4.5,Sels,NFO,5.0,9.5,19,118.68,6.25,5.983,83.63,81.22,2.47,94.7,57.9,-0.3209,0.4919,6.87
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Sels (NFO),Verbruggen,BHA,4.5,Sels,NFO,5.0,9.5,38,234.98,6.18,5.921,81.68,79.0,2.53,94.7,52.6,-0.1888,0.4984,13.44
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Roefs (SUN),Verbruggen,BHA,4.5,Roefs,SUN,5.0,9.5,3,25.47,8.49,8.227,83.93,59.83,2.25,33.3,33.3,-0.866,0.4274,1.58
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Roefs (SUN),Verbruggen,BHA,4.5,Roefs,SUN,5.0,9.5,16,97.33,6.08,5.82,79.92,78.94,2.56,93.8,50.0,-0.359,0.5051,5.62
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Roefs (SUN),Verbruggen,BHA,4.5,Roefs,SUN,5.0,9.5,19,117.44,6.18,5.919,82.65,81.54,2.47,94.7,57.9,-0.3632,0.4928,6.9
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Roefs (SUN),Verbruggen,BHA,4.5,Roefs,SUN,5.0,9.5,38,233.7,6.15,5.887,81.56,80.18,2.53,94.7,52.6,-0.3451,0.4988,13.47
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kinsky (TOT),Verbruggen,BHA,4.5,Kinsky,TOT,4.5,9.0,3,23.98,7.99,7.863,81.6,54.0,2.5,33.3,33.3,-0.866,0.4939,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kinsky (TOT),Verbruggen,BHA,4.5,Kinsky,TOT,4.5,9.0,16,95.07,5.94,5.81,76.11,69.81,2.62,87.5,50.0,0.2469,0.5308,5.08
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kinsky (TOT),Verbruggen,BHA,4.5,Kinsky,TOT,4.5,9.0,19,113.7,5.98,5.853,77.95,72.61,2.58,89.5,52.6,0.1486,0.525,6.12
+full_season,Active 2-GKP Rotation,Active 2-GKP,Verbruggen (BHA) + Kinsky (TOT),Verbruggen,BHA,4.5,Kinsky,TOT,4.5,9.0,38,226.19,5.95,5.821,76.3,69.86,2.63,86.8,50.0,0.1772,0.5315,12.08
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Petrović (BOU),Rushworth,BHA,4.5,Petrović,BOU,4.5,9.0,3,21.66,7.22,7.088,72.0,30.0,3.25,33.3,33.3,0.0,0.5546,1.08
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Petrović (BOU),Rushworth,BHA,4.5,Petrović,BOU,4.5,9.0,16,97.25,6.08,5.947,79.5,72.46,2.56,87.5,56.2,0.0893,0.5072,5.29
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Petrović (BOU),Rushworth,BHA,4.5,Petrović,BOU,4.5,9.0,19,115.17,6.06,5.93,79.53,73.25,2.58,89.5,52.6,0.064,0.5147,6.27
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Petrović (BOU),Rushworth,BHA,4.5,Petrović,BOU,4.5,9.0,38,227.82,6.0,5.864,76.15,67.65,2.66,84.2,50.0,0.2138,0.5199,12.26
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kelleher (BRE),Rushworth,BHA,4.5,Kelleher,BRE,5.0,9.5,3,24.38,8.13,7.863,74.07,35.17,2.75,33.3,33.3,0.866,0.476,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kelleher (BRE),Rushworth,BHA,4.5,Kelleher,BRE,5.0,9.5,16,97.46,6.09,5.828,78.44,74.88,2.62,93.8,43.8,-0.0121,0.5085,5.45
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kelleher (BRE),Rushworth,BHA,4.5,Kelleher,BRE,5.0,9.5,19,116.3,6.12,5.858,78.82,74.53,2.63,94.7,42.1,0.0796,0.5034,6.43
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kelleher (BRE),Rushworth,BHA,4.5,Kelleher,BRE,5.0,9.5,38,234.04,6.16,5.896,79.99,75.85,2.58,94.7,47.4,0.0674,0.5026,13.16
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sánchez (CHE),Rushworth,BHA,4.5,Sánchez,CHE,5.0,9.5,3,23.99,8.0,7.732,81.95,54.86,2.5,33.3,33.3,-0.982,0.5128,1.36
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sánchez (CHE),Rushworth,BHA,4.5,Sánchez,CHE,5.0,9.5,16,96.04,6.0,5.74,76.05,72.69,2.62,93.8,43.8,0.28,0.5162,4.94
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sánchez (CHE),Rushworth,BHA,4.5,Sánchez,CHE,5.0,9.5,19,114.49,6.03,5.763,77.91,76.36,2.58,94.7,47.4,0.0,0.5156,6.0
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sánchez (CHE),Rushworth,BHA,4.5,Sánchez,CHE,5.0,9.5,38,229.07,6.03,5.765,78.59,77.96,2.58,97.4,44.7,-0.0379,0.5198,12.01
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Henderson (CRY),Rushworth,BHA,4.5,Henderson,CRY,5.0,9.5,3,22.86,7.62,7.357,71.74,29.34,3.0,33.3,33.3,0.866,0.5376,1.2
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Henderson (CRY),Rushworth,BHA,4.5,Henderson,CRY,5.0,9.5,16,95.57,5.97,5.71,76.46,74.99,2.69,100.0,31.2,0.196,0.5167,5.14
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Henderson (CRY),Rushworth,BHA,4.5,Henderson,CRY,5.0,9.5,19,112.89,5.94,5.679,74.22,70.75,2.74,94.7,31.6,0.2571,0.52,6.03
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Henderson (CRY),Rushworth,BHA,4.5,Henderson,CRY,5.0,9.5,38,227.81,5.99,5.732,76.22,73.46,2.66,94.7,39.5,0.1406,0.5136,12.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pickford (EVE),Rushworth,BHA,4.5,Pickford,EVE,5.5,10.0,3,23.67,7.89,7.496,79.26,48.16,2.75,33.3,33.3,-0.866,0.5192,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pickford (EVE),Rushworth,BHA,4.5,Pickford,EVE,5.5,10.0,16,98.87,6.18,5.785,78.84,77.75,2.5,93.8,56.2,-0.0053,0.498,5.79
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pickford (EVE),Rushworth,BHA,4.5,Pickford,EVE,5.5,10.0,19,117.0,6.16,5.764,78.67,78.21,2.53,94.7,52.6,-0.0827,0.5014,6.78
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pickford (EVE),Rushworth,BHA,4.5,Pickford,EVE,5.5,10.0,38,232.94,6.13,5.736,78.04,77.84,2.55,94.7,50.0,-0.1156,0.4993,13.32
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Leno (FUL),Rushworth,BHA,4.5,Leno,FUL,4.5,9.0,3,22.78,7.59,7.462,74.33,35.83,3.0,33.3,33.3,0.0,0.5285,1.17
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Leno (FUL),Rushworth,BHA,4.5,Leno,FUL,4.5,9.0,16,96.49,6.03,5.899,79.22,73.79,2.56,87.5,56.2,-0.0893,0.5018,5.51
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Leno (FUL),Rushworth,BHA,4.5,Leno,FUL,4.5,9.0,19,114.31,6.02,5.885,79.19,74.35,2.58,89.5,52.6,-0.0827,0.506,6.51
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Leno (FUL),Rushworth,BHA,4.5,Leno,FUL,4.5,9.0,38,228.18,6.0,5.873,78.28,72.57,2.63,89.5,47.4,-0.0088,0.5072,12.65
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Scherpen (IPS),Rushworth,BHA,4.5,Scherpen,IPS,4.5,9.0,3,23.22,7.74,7.609,76.67,41.67,2.75,33.3,33.3,0.0,0.5198,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Scherpen (IPS),Rushworth,BHA,4.5,Scherpen,IPS,4.5,9.0,16,95.09,5.94,5.811,78.71,76.29,2.56,93.8,50.0,-0.0053,0.5094,5.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Scherpen (IPS),Rushworth,BHA,4.5,Scherpen,IPS,4.5,9.0,19,112.77,5.94,5.804,77.58,73.78,2.58,89.5,52.6,-0.0074,0.511,6.58
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Scherpen (IPS),Rushworth,BHA,4.5,Scherpen,IPS,4.5,9.0,38,224.34,5.9,5.772,76.33,72.02,2.63,89.5,47.4,0.0644,0.5163,12.95
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + A.Becker (LIV),Rushworth,BHA,4.5,A.Becker,LIV,5.5,10.0,3,23.74,7.91,7.519,74.07,35.17,2.75,33.3,33.3,0.866,0.4501,1.35
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + A.Becker (LIV),Rushworth,BHA,4.5,A.Becker,LIV,5.5,10.0,16,98.8,6.17,5.781,78.74,77.67,2.5,93.8,56.2,0.0057,0.4657,6.05
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + A.Becker (LIV),Rushworth,BHA,4.5,A.Becker,LIV,5.5,10.0,19,117.01,6.16,5.764,78.15,76.92,2.53,94.7,52.6,0.0895,0.4632,7.1
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + A.Becker (LIV),Rushworth,BHA,4.5,A.Becker,LIV,5.5,10.0,38,233.47,6.14,5.75,78.39,78.11,2.55,94.7,50.0,-0.1516,0.4717,14.07
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Donnarumma (MCI),Rushworth,BHA,4.5,Donnarumma,MCI,5.5,10.0,3,24.38,8.13,7.734,74.07,35.17,2.75,33.3,33.3,0.866,0.3675,1.72
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Donnarumma (MCI),Rushworth,BHA,4.5,Donnarumma,MCI,5.5,10.0,16,99.47,6.22,5.823,79.62,78.07,2.56,93.8,50.0,-0.2424,0.3861,7.22
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Donnarumma (MCI),Rushworth,BHA,4.5,Donnarumma,MCI,5.5,10.0,19,118.32,6.23,5.833,79.53,77.41,2.58,94.7,47.4,-0.14,0.3832,8.64
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Donnarumma (MCI),Rushworth,BHA,4.5,Donnarumma,MCI,5.5,10.0,38,236.17,6.21,5.821,79.78,78.56,2.58,97.4,44.7,-0.1178,0.3889,17.12
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Trafford (MCI),Rushworth,BHA,4.5,Trafford,MCI,5.0,9.5,3,25.73,8.58,8.315,74.07,35.17,2.75,33.3,33.3,0.866,0.3862,1.64
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Trafford (MCI),Rushworth,BHA,4.5,Trafford,MCI,5.0,9.5,16,105.59,6.6,6.336,88.42,78.07,2.56,93.8,50.0,-0.2424,0.4047,7.01
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Trafford (MCI),Rushworth,BHA,4.5,Trafford,MCI,5.0,9.5,19,125.79,6.62,6.358,88.52,77.41,2.58,94.7,47.4,-0.14,0.4018,8.35
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Trafford (MCI),Rushworth,BHA,4.5,Trafford,MCI,5.0,9.5,38,250.28,6.59,6.323,88.4,78.56,2.58,97.4,44.7,-0.1178,0.4078,16.46
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Lammens (MUN),Rushworth,BHA,4.5,Lammens,MUN,5.0,9.5,3,26.08,8.69,8.431,83.93,59.83,2.25,33.3,33.3,-0.866,0.4087,1.63
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Lammens (MUN),Rushworth,BHA,4.5,Lammens,MUN,5.0,9.5,16,97.36,6.09,5.823,78.4,75.04,2.69,93.8,37.5,-0.2277,0.4936,5.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Lammens (MUN),Rushworth,BHA,4.5,Lammens,MUN,5.0,9.5,19,117.91,6.21,5.943,81.77,78.28,2.58,94.7,47.4,-0.2564,0.4802,6.86
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Lammens (MUN),Rushworth,BHA,4.5,Lammens,MUN,5.0,9.5,38,237.88,6.26,5.997,83.92,81.33,2.5,94.7,55.3,-0.417,0.474,14.18
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pope (NEW),Rushworth,BHA,4.5,Pope,NEW,5.0,9.5,3,23.28,7.76,7.498,74.33,35.83,3.0,33.3,33.3,0.0,0.5405,1.14
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pope (NEW),Rushworth,BHA,4.5,Pope,NEW,5.0,9.5,16,99.14,6.2,5.934,81.11,77.05,2.56,93.8,50.0,-0.1069,0.5145,5.3
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pope (NEW),Rushworth,BHA,4.5,Pope,NEW,5.0,9.5,19,117.21,6.17,5.906,80.66,77.09,2.58,94.7,47.4,-0.0978,0.5186,6.29
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Pope (NEW),Rushworth,BHA,4.5,Pope,NEW,5.0,9.5,38,232.89,6.13,5.866,77.82,71.73,2.63,89.5,47.4,0.1032,0.5208,12.28
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sels (NFO),Rushworth,BHA,4.5,Sels,NFO,5.0,9.5,3,24.77,8.26,7.994,75.17,37.92,2.75,33.3,33.3,0.5,0.4926,1.33
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sels (NFO),Rushworth,BHA,4.5,Sels,NFO,5.0,9.5,16,100.8,6.3,6.037,86.42,85.88,2.44,100.0,56.2,-0.4781,0.4917,5.83
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sels (NFO),Rushworth,BHA,4.5,Sels,NFO,5.0,9.5,19,120.04,6.32,6.055,84.86,81.22,2.47,94.7,57.9,-0.3209,0.4919,6.87
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Sels (NFO),Rushworth,BHA,4.5,Sels,NFO,5.0,9.5,38,238.01,6.26,6.001,83.04,79.0,2.53,94.7,52.6,-0.1888,0.4984,13.5
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Roefs (SUN),Rushworth,BHA,4.5,Roefs,SUN,5.0,9.5,3,25.8,8.6,8.339,83.93,59.83,2.25,33.3,33.3,-0.866,0.4274,1.58
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Roefs (SUN),Rushworth,BHA,4.5,Roefs,SUN,5.0,9.5,16,98.72,6.17,5.907,81.41,78.94,2.56,93.8,50.0,-0.359,0.5051,5.62
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Roefs (SUN),Rushworth,BHA,4.5,Roefs,SUN,5.0,9.5,19,118.99,6.26,6.0,84.04,81.54,2.47,94.7,57.9,-0.3632,0.4928,6.9
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Roefs (SUN),Rushworth,BHA,4.5,Roefs,SUN,5.0,9.5,38,236.6,6.23,5.964,82.87,80.18,2.53,94.7,52.6,-0.3451,0.4988,13.47
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kinsky (TOT),Rushworth,BHA,4.5,Kinsky,TOT,4.5,9.0,3,24.32,8.11,7.975,81.6,54.0,2.5,33.3,33.3,-0.866,0.4939,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kinsky (TOT),Rushworth,BHA,4.5,Kinsky,TOT,4.5,9.0,16,96.28,6.02,5.886,77.4,69.81,2.62,87.5,50.0,0.2469,0.5308,5.08
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kinsky (TOT),Rushworth,BHA,4.5,Kinsky,TOT,4.5,9.0,19,115.06,6.06,5.925,79.18,72.61,2.58,89.5,52.6,0.1486,0.525,6.12
+full_season,Active 2-GKP Rotation,Active 2-GKP,Rushworth (BHA) + Kinsky (TOT),Rushworth,BHA,4.5,Kinsky,TOT,4.5,9.0,38,229.1,6.03,5.897,77.61,69.86,2.63,86.8,50.0,0.1772,0.5315,12.08
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kelleher (BRE),Petrović,BOU,4.5,Kelleher,BRE,5.0,9.5,3,22.42,7.47,7.21,70.5,26.25,3.25,33.3,33.3,0.5,0.5556,1.04
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kelleher (BRE),Petrović,BOU,4.5,Kelleher,BRE,5.0,9.5,16,99.53,6.22,5.958,80.19,73.71,2.56,87.5,56.2,-0.0779,0.5338,5.21
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kelleher (BRE),Petrović,BOU,4.5,Kelleher,BRE,5.0,9.5,19,118.21,6.22,5.959,80.45,74.31,2.58,89.5,52.6,-0.0773,0.5373,6.16
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kelleher (BRE),Petrović,BOU,4.5,Kelleher,BRE,5.0,9.5,38,236.77,6.23,5.968,81.59,76.76,2.55,92.1,52.6,-0.1472,0.5368,12.39
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sánchez (CHE),Petrović,BOU,4.5,Sánchez,CHE,5.0,9.5,3,20.95,6.98,6.721,72.57,31.42,3.25,33.3,33.3,-0.189,0.6183,0.95
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sánchez (CHE),Petrović,BOU,4.5,Sánchez,CHE,5.0,9.5,16,100.04,6.25,5.99,82.43,77.95,2.44,93.8,68.8,0.1629,0.5394,5.27
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sánchez (CHE),Petrović,BOU,4.5,Sánchez,CHE,5.0,9.5,19,117.26,6.17,5.909,81.02,77.9,2.47,94.7,63.2,0.1215,0.5519,6.12
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sánchez (CHE),Petrović,BOU,4.5,Sánchez,CHE,5.0,9.5,38,233.52,6.15,5.882,80.45,77.59,2.53,94.7,55.3,0.0,0.5564,11.86
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Henderson (CRY),Petrović,BOU,4.5,Henderson,CRY,5.0,9.5,3,20.68,6.89,6.632,71.17,27.92,3.5,33.3,0.0,-0.5,0.6277,0.84
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Henderson (CRY),Petrović,BOU,4.5,Henderson,CRY,5.0,9.5,16,100.32,6.27,6.007,83.76,80.52,2.44,93.8,62.5,-0.1802,0.5377,5.33
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Henderson (CRY),Petrović,BOU,4.5,Henderson,CRY,5.0,9.5,19,117.26,6.17,5.909,81.39,78.81,2.53,94.7,52.6,-0.1634,0.5519,6.08
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Henderson (CRY),Petrović,BOU,4.5,Henderson,CRY,5.0,9.5,38,232.76,6.13,5.863,79.87,77.0,2.55,94.7,50.0,-0.0038,0.5483,11.95
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pickford (EVE),Petrović,BOU,4.5,Pickford,EVE,5.5,10.0,3,20.64,6.88,6.485,70.91,27.92,3.5,33.3,0.0,-0.5,0.6152,0.87
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pickford (EVE),Petrović,BOU,4.5,Pickford,EVE,5.5,10.0,16,98.89,6.18,5.786,78.83,77.67,2.5,93.8,56.2,0.0048,0.5248,5.31
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pickford (EVE),Petrović,BOU,4.5,Pickford,EVE,5.5,10.0,19,115.78,6.09,5.7,76.85,76.41,2.58,94.7,47.4,-0.0069,0.5391,6.09
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pickford (EVE),Petrović,BOU,4.5,Pickford,EVE,5.5,10.0,38,232.63,6.12,5.728,77.99,78.08,2.55,94.7,50.0,-0.1472,0.5352,12.4
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Leno (FUL),Petrović,BOU,4.5,Leno,FUL,4.5,9.0,3,19.89,6.63,6.5,66.66,16.67,3.75,33.3,0.0,1.0,0.6252,0.76
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Leno (FUL),Petrović,BOU,4.5,Leno,FUL,4.5,9.0,16,97.82,6.11,5.983,82.2,77.67,2.5,93.8,56.2,0.0048,0.5302,5.19
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Leno (FUL),Petrović,BOU,4.5,Leno,FUL,4.5,9.0,19,113.98,6.0,5.867,77.78,71.57,2.63,89.5,47.4,0.1239,0.5452,5.86
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Leno (FUL),Petrović,BOU,4.5,Leno,FUL,4.5,9.0,38,228.89,6.02,5.892,78.26,71.72,2.63,89.5,47.4,0.104,0.5454,11.79
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Scherpen (IPS),Petrović,BOU,4.5,Scherpen,IPS,4.5,9.0,3,20.92,6.97,6.841,75.0,37.5,3.25,33.3,0.0,-1.0,0.6062,0.98
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Scherpen (IPS),Petrović,BOU,4.5,Scherpen,IPS,4.5,9.0,16,96.2,6.01,5.881,82.4,82.54,2.5,100.0,50.0,-0.2271,0.5355,5.09
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Scherpen (IPS),Petrović,BOU,4.5,Scherpen,IPS,4.5,9.0,19,113.38,5.97,5.836,81.64,82.56,2.53,100.0,47.4,-0.3121,0.5466,5.98
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Scherpen (IPS),Petrović,BOU,4.5,Scherpen,IPS,4.5,9.0,38,224.7,5.91,5.782,78.99,78.24,2.61,97.4,42.1,-0.1576,0.5531,11.58
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + A.Becker (LIV),Petrović,BOU,4.5,A.Becker,LIV,5.5,10.0,3,21.81,7.27,6.877,70.5,26.25,3.25,33.3,33.3,0.5,0.5252,1.15
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + A.Becker (LIV),Petrović,BOU,4.5,A.Becker,LIV,5.5,10.0,16,101.49,6.34,5.949,83.58,82.56,2.38,93.8,68.8,-0.2574,0.4878,5.89
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + A.Becker (LIV),Petrović,BOU,4.5,A.Becker,LIV,5.5,10.0,19,119.56,6.29,5.899,82.32,81.58,2.42,94.7,63.2,-0.2048,0.4937,6.95
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + A.Becker (LIV),Petrović,BOU,4.5,A.Becker,LIV,5.5,10.0,38,235.97,6.21,5.816,79.64,78.42,2.53,94.7,52.6,-0.1114,0.5063,13.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Donnarumma (MCI),Petrović,BOU,4.5,Donnarumma,MCI,5.5,10.0,3,22.59,7.53,7.136,70.5,26.25,3.25,33.3,33.3,0.5,0.4281,1.51
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Donnarumma (MCI),Petrović,BOU,4.5,Donnarumma,MCI,5.5,10.0,16,99.27,6.2,5.81,73.45,63.18,2.69,81.2,50.0,0.5201,0.4143,6.72
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Donnarumma (MCI),Petrović,BOU,4.5,Donnarumma,MCI,5.5,10.0,19,118.12,6.22,5.823,74.52,65.32,2.68,84.2,47.4,0.4431,0.4165,8.14
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Donnarumma (MCI),Petrović,BOU,4.5,Donnarumma,MCI,5.5,10.0,38,235.12,6.19,5.793,74.43,66.36,2.71,86.8,42.1,0.3971,0.4215,15.91
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Trafford (MCI),Petrović,BOU,4.5,Trafford,MCI,5.0,9.5,3,23.94,7.98,7.717,70.5,26.25,3.25,33.3,33.3,0.5,0.4501,1.43
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Trafford (MCI),Petrović,BOU,4.5,Trafford,MCI,5.0,9.5,16,104.56,6.53,6.272,81.36,63.18,2.69,81.2,50.0,0.5201,0.4339,6.48
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Trafford (MCI),Petrović,BOU,4.5,Trafford,MCI,5.0,9.5,19,124.76,6.57,6.303,82.76,65.32,2.68,84.2,47.4,0.4431,0.4365,7.81
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Trafford (MCI),Petrović,BOU,4.5,Trafford,MCI,5.0,9.5,38,248.66,6.54,6.281,82.79,66.36,2.71,86.8,42.1,0.3971,0.4418,15.6
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Lammens (MUN),Petrović,BOU,4.5,Lammens,MUN,5.0,9.5,3,23.31,7.77,7.509,75.83,39.58,3.0,33.3,33.3,-0.5,0.4868,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Lammens (MUN),Petrović,BOU,4.5,Lammens,MUN,5.0,9.5,16,97.84,6.11,5.852,81.16,80.68,2.56,100.0,43.8,-0.1735,0.521,5.32
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Lammens (MUN),Petrović,BOU,4.5,Lammens,MUN,5.0,9.5,19,117.41,6.18,5.917,82.99,82.45,2.53,100.0,47.4,-0.2975,0.5156,6.51
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Lammens (MUN),Petrović,BOU,4.5,Lammens,MUN,5.0,9.5,38,237.22,6.24,5.98,84.56,83.68,2.47,100.0,52.6,-0.2971,0.5107,13.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pope (NEW),Petrović,BOU,4.5,Pope,NEW,5.0,9.5,3,20.54,6.85,6.582,66.67,16.67,3.75,33.3,0.0,1.0,0.6393,0.73
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pope (NEW),Petrović,BOU,4.5,Pope,NEW,5.0,9.5,16,100.67,6.29,6.029,86.03,85.24,2.44,100.0,56.2,-0.3932,0.5398,5.19
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pope (NEW),Petrović,BOU,4.5,Pope,NEW,5.0,9.5,19,117.47,6.18,5.92,81.1,77.61,2.58,94.7,47.4,-0.1667,0.5555,5.83
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Pope (NEW),Petrović,BOU,4.5,Pope,NEW,5.0,9.5,38,234.59,6.17,5.911,79.8,74.75,2.61,92.1,47.4,-0.0424,0.5575,11.47
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sels (NFO),Petrović,BOU,4.5,Sels,NFO,5.0,9.5,3,22.38,7.46,7.197,74.6,36.5,3.25,33.3,0.0,-0.866,0.5706,1.02
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sels (NFO),Petrović,BOU,4.5,Sels,NFO,5.0,9.5,16,101.85,6.37,6.103,86.64,83.61,2.44,100.0,56.2,-0.1758,0.5211,5.4
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sels (NFO),Petrović,BOU,4.5,Sels,NFO,5.0,9.5,19,120.49,6.34,6.079,86.2,83.55,2.47,100.0,52.6,-0.2805,0.5289,6.32
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Sels (NFO),Petrović,BOU,4.5,Sels,NFO,5.0,9.5,38,241.09,6.34,6.082,86.5,84.16,2.47,100.0,52.6,-0.3623,0.5336,12.65
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Roefs (SUN),Petrović,BOU,4.5,Roefs,SUN,5.0,9.5,3,23.0,7.67,7.404,75.83,39.58,3.0,33.3,33.3,-0.5,0.5088,1.2
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Roefs (SUN),Petrović,BOU,4.5,Roefs,SUN,5.0,9.5,16,99.55,6.22,5.959,82.0,78.19,2.5,93.8,56.2,-0.0641,0.5347,5.28
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Roefs (SUN),Petrović,BOU,4.5,Roefs,SUN,5.0,9.5,19,118.81,6.25,5.99,83.36,80.25,2.47,94.7,57.9,-0.1918,0.5306,6.39
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Roefs (SUN),Petrović,BOU,4.5,Roefs,SUN,5.0,9.5,38,235.42,6.2,5.932,81.52,78.11,2.55,94.7,50.0,-0.1522,0.5378,12.23
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kinsky (TOT),Petrović,BOU,4.5,Kinsky,TOT,4.5,9.0,3,21.28,7.09,6.963,70.5,26.25,3.25,33.3,33.3,0.5,0.591,0.93
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kinsky (TOT),Petrović,BOU,4.5,Kinsky,TOT,4.5,9.0,16,97.8,6.11,5.981,80.34,73.09,2.56,87.5,56.2,0.0048,0.5569,4.83
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kinsky (TOT),Petrović,BOU,4.5,Kinsky,TOT,4.5,9.0,19,115.35,6.07,5.939,79.88,73.73,2.58,89.5,52.6,0.0,0.5622,5.66
+full_season,Active 2-GKP Rotation,Active 2-GKP,Petrović (BOU) + Kinsky (TOT),Petrović,BOU,4.5,Kinsky,TOT,4.5,9.0,38,228.17,6.0,5.873,76.5,68.13,2.68,84.2,47.4,0.0679,0.5698,10.87
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sánchez (CHE),Kelleher,BRE,5.0,Sánchez,CHE,5.0,10.0,3,24.3,8.1,7.707,81.83,54.59,2.5,33.3,33.3,-0.9449,0.517,1.18
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sánchez (CHE),Kelleher,BRE,5.0,Sánchez,CHE,5.0,10.0,16,97.92,6.12,5.726,75.74,72.52,2.62,93.8,43.8,0.3026,0.5457,4.84
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sánchez (CHE),Kelleher,BRE,5.0,Sánchez,CHE,5.0,10.0,19,116.6,6.14,5.743,77.34,75.79,2.58,94.7,47.4,0.0756,0.5411,5.79
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sánchez (CHE),Kelleher,BRE,5.0,Sánchez,CHE,5.0,10.0,38,233.41,6.14,5.748,76.85,74.35,2.61,94.7,44.7,0.1857,0.542,11.61
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Henderson (CRY),Kelleher,BRE,5.0,Henderson,CRY,5.0,10.0,3,24.35,8.12,7.723,75.17,37.92,2.75,33.3,33.3,0.5,0.535,1.2
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Henderson (CRY),Kelleher,BRE,5.0,Henderson,CRY,5.0,10.0,16,97.68,6.1,5.711,74.27,69.51,2.69,87.5,43.8,0.0937,0.5431,4.92
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Henderson (CRY),Kelleher,BRE,5.0,Henderson,CRY,5.0,10.0,19,116.36,6.12,5.73,75.05,70.62,2.68,89.5,42.1,0.0864,0.5418,5.87
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Henderson (CRY),Kelleher,BRE,5.0,Henderson,CRY,5.0,10.0,38,237.49,6.25,5.856,80.12,77.91,2.53,92.1,55.3,-0.2189,0.5285,12.62
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Leno (FUL),Kelleher,BRE,5.0,Leno,FUL,4.5,9.5,3,23.65,7.88,7.619,72.83,32.08,3.0,33.3,33.3,0.5,0.5289,1.11
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Leno (FUL),Kelleher,BRE,5.0,Leno,FUL,4.5,9.5,16,98.01,6.13,5.863,79.03,74.88,2.62,93.8,43.8,-0.0111,0.5325,5.17
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Leno (FUL),Kelleher,BRE,5.0,Leno,FUL,4.5,9.5,19,116.69,6.14,5.879,79.43,75.2,2.63,94.7,42.1,-0.0086,0.5319,6.11
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Leno (FUL),Kelleher,BRE,5.0,Leno,FUL,4.5,9.5,38,234.36,6.17,5.905,80.11,75.79,2.61,94.7,44.7,-0.0058,0.5279,12.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Scherpen (IPS),Kelleher,BRE,5.0,Scherpen,IPS,4.5,9.5,3,24.71,8.24,7.975,80.5,51.25,2.5,33.3,33.3,-0.5,0.5166,1.35
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Scherpen (IPS),Kelleher,BRE,5.0,Scherpen,IPS,4.5,9.5,16,96.9,6.06,5.793,78.69,77.0,2.56,93.8,50.0,-0.1002,0.537,5.25
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Scherpen (IPS),Kelleher,BRE,5.0,Scherpen,IPS,4.5,9.5,19,115.83,6.1,5.833,80.09,78.79,2.53,94.7,52.6,-0.1601,0.5337,6.33
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Scherpen (IPS),Kelleher,BRE,5.0,Scherpen,IPS,4.5,9.5,38,232.47,6.12,5.855,79.9,77.4,2.55,92.1,52.6,-0.2325,0.5334,12.46
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Trafford (MCI),Kelleher,BRE,5.0,Trafford,MCI,5.0,10.0,3,25.98,8.66,8.267,73.67,34.17,2.75,33.3,33.3,1.0,0.3842,1.6
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Trafford (MCI),Kelleher,BRE,5.0,Trafford,MCI,5.0,10.0,16,105.88,6.62,6.223,84.51,73.12,2.56,87.5,56.2,0.0,0.4289,6.72
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Trafford (MCI),Kelleher,BRE,5.0,Trafford,MCI,5.0,10.0,19,126.08,6.64,6.242,84.82,73.11,2.58,89.5,52.6,0.0823,0.4218,8.06
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Trafford (MCI),Kelleher,BRE,5.0,Trafford,MCI,5.0,10.0,38,251.21,6.61,6.217,85.03,74.73,2.58,92.1,50.0,0.0416,0.4244,15.94
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Lammens (MUN),Kelleher,BRE,5.0,Lammens,MUN,5.0,10.0,3,26.17,8.72,8.328,84.33,60.83,2.25,33.3,33.3,-1.0,0.4099,1.57
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Lammens (MUN),Kelleher,BRE,5.0,Lammens,MUN,5.0,10.0,16,98.69,6.17,5.774,78.92,78.42,2.69,100.0,31.2,-0.2619,0.5226,5.2
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Lammens (MUN),Kelleher,BRE,5.0,Lammens,MUN,5.0,10.0,19,119.07,6.27,5.873,81.41,80.4,2.58,100.0,42.1,-0.1875,0.5048,6.5
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Lammens (MUN),Kelleher,BRE,5.0,Lammens,MUN,5.0,10.0,38,240.97,6.34,5.947,83.99,83.68,2.47,100.0,52.6,-0.2971,0.4946,13.6
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Pope (NEW),Kelleher,BRE,5.0,Pope,NEW,5.0,10.0,3,23.89,7.96,7.569,72.83,32.08,3.0,33.3,33.3,0.5,0.5409,1.1
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Pope (NEW),Kelleher,BRE,5.0,Pope,NEW,5.0,10.0,16,100.75,6.3,5.903,81.29,78.8,2.56,93.8,50.0,-0.3397,0.5418,5.04
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Pope (NEW),Kelleher,BRE,5.0,Pope,NEW,5.0,10.0,19,119.43,6.29,5.892,81.05,78.67,2.58,94.7,47.4,-0.3084,0.5417,5.98
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Pope (NEW),Kelleher,BRE,5.0,Pope,NEW,5.0,10.0,38,239.21,6.3,5.901,79.99,75.64,2.58,92.1,50.0,-0.079,0.5392,12.06
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sels (NFO),Kelleher,BRE,5.0,Sels,NFO,5.0,10.0,3,25.83,8.61,8.216,79.0,47.5,2.5,33.3,33.3,0.0,0.4883,1.36
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sels (NFO),Kelleher,BRE,5.0,Sels,NFO,5.0,10.0,16,99.99,6.25,5.855,77.92,72.43,2.62,87.5,50.0,-0.1013,0.5232,5.27
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sels (NFO),Kelleher,BRE,5.0,Sels,NFO,5.0,10.0,19,120.04,6.32,5.924,79.88,74.38,2.58,89.5,52.6,-0.0872,0.5177,6.36
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Sels (NFO),Kelleher,BRE,5.0,Sels,NFO,5.0,10.0,38,238.67,6.28,5.887,78.71,73.07,2.63,89.5,47.4,-0.0755,0.5192,12.44
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Roefs (SUN),Kelleher,BRE,5.0,Roefs,SUN,5.0,10.0,3,25.89,8.63,8.235,84.33,60.83,2.25,33.3,33.3,-1.0,0.4286,1.51
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Roefs (SUN),Kelleher,BRE,5.0,Roefs,SUN,5.0,10.0,16,98.5,6.16,5.762,74.99,69.1,2.69,87.5,43.8,0.1476,0.5389,5.12
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Roefs (SUN),Kelleher,BRE,5.0,Roefs,SUN,5.0,10.0,19,118.6,6.24,5.848,77.86,72.59,2.58,89.5,52.6,0.1522,0.5215,6.37
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Roefs (SUN),Kelleher,BRE,5.0,Roefs,SUN,5.0,10.0,38,238.25,6.27,5.876,78.69,73.5,2.58,89.5,52.6,0.0308,0.5219,12.74
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Kinsky (TOT),Kelleher,BRE,5.0,Kinsky,TOT,4.5,9.5,3,24.4,8.13,7.871,80.5,51.25,2.5,33.3,33.3,-0.5,0.4966,1.27
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Kinsky (TOT),Kelleher,BRE,5.0,Kinsky,TOT,4.5,9.5,16,98.83,6.18,5.914,78.93,72.42,2.62,87.5,50.0,-0.1002,0.5576,4.9
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Kinsky (TOT),Kelleher,BRE,5.0,Kinsky,TOT,4.5,9.5,19,117.67,6.19,5.93,79.96,74.33,2.58,89.5,52.6,-0.0808,0.548,5.95
+full_season,Active 2-GKP Rotation,Active 2-GKP,Kelleher (BRE) + Kinsky (TOT),Kelleher,BRE,5.0,Kinsky,TOT,4.5,9.5,38,234.85,6.18,5.918,78.7,71.72,2.63,89.5,50.0,0.1038,0.5513,11.78
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Henderson (CRY),Sánchez,CHE,5.0,Henderson,CRY,5.0,10.0,3,23.01,7.67,7.277,78.93,47.34,2.75,33.3,33.3,-0.7559,0.5917,1.12
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Henderson (CRY),Sánchez,CHE,5.0,Henderson,CRY,5.0,10.0,16,97.03,6.06,5.67,72.63,67.13,2.69,87.5,43.8,0.4109,0.5511,4.73
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Henderson (CRY),Sánchez,CHE,5.0,Henderson,CRY,5.0,10.0,19,114.42,6.02,5.628,72.84,69.47,2.68,89.5,42.1,0.2397,0.5575,5.62
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Henderson (CRY),Sánchez,CHE,5.0,Henderson,CRY,5.0,10.0,38,231.92,6.1,5.709,76.57,75.32,2.58,92.1,50.0,-0.0371,0.5494,11.78
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Leno (FUL),Sánchez,CHE,5.0,Leno,FUL,4.5,9.5,3,22.22,7.41,7.144,74.9,37.25,3.0,33.3,33.3,-0.189,0.5895,1.04
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Leno (FUL),Sánchez,CHE,5.0,Leno,FUL,4.5,9.5,16,99.28,6.21,5.943,82.01,78.93,2.5,93.8,56.2,-0.1629,0.5358,5.19
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Leno (FUL),Sánchez,CHE,5.0,Leno,FUL,4.5,9.5,19,116.54,6.13,5.871,80.66,78.6,2.53,94.7,52.6,-0.1346,0.5443,6.07
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Leno (FUL),Sánchez,CHE,5.0,Leno,FUL,4.5,9.5,38,233.45,6.14,5.881,81.1,79.29,2.53,94.7,52.6,-0.2275,0.5439,12.12
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Scherpen (IPS),Sánchez,CHE,5.0,Scherpen,IPS,4.5,9.5,3,22.29,7.43,7.167,76.1,40.25,2.75,33.3,33.3,0.189,0.5818,1.17
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Scherpen (IPS),Sánchez,CHE,5.0,Scherpen,IPS,4.5,9.5,16,98.35,6.15,5.884,83.85,86.04,2.44,100.0,56.2,-0.4991,0.5396,5.16
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Scherpen (IPS),Sánchez,CHE,5.0,Scherpen,IPS,4.5,9.5,19,115.01,6.05,5.791,80.31,81.18,2.47,94.7,57.9,-0.3146,0.5463,6.1
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Scherpen (IPS),Sánchez,CHE,5.0,Scherpen,IPS,4.5,9.5,38,227.54,5.99,5.725,78.57,79.62,2.53,94.7,52.6,-0.2714,0.5522,11.89
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Trafford (MCI),Sánchez,CHE,5.0,Trafford,MCI,5.0,10.0,3,25.83,8.61,8.214,81.83,54.59,2.5,33.3,33.3,-0.9449,0.4173,1.57
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Trafford (MCI),Sánchez,CHE,5.0,Trafford,MCI,5.0,10.0,16,105.6,6.6,6.206,86.38,78.56,2.44,93.8,62.5,0.0808,0.4339,6.68
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Trafford (MCI),Sánchez,CHE,5.0,Trafford,MCI,5.0,10.0,19,125.8,6.62,6.227,87.53,80.53,2.42,94.7,63.2,-0.0647,0.4313,8.01
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Trafford (MCI),Sánchez,CHE,5.0,Trafford,MCI,5.0,10.0,38,250.13,6.58,6.188,85.94,78.2,2.53,94.7,52.6,-0.0818,0.4383,15.6
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Lammens (MUN),Sánchez,CHE,5.0,Lammens,MUN,5.0,10.0,3,25.2,8.4,8.006,76.17,40.41,2.5,33.3,33.3,0.9449,0.4708,1.42
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Lammens (MUN),Sánchez,CHE,5.0,Lammens,MUN,5.0,10.0,16,98.29,6.14,5.749,76.71,73.97,2.69,93.8,37.5,-0.0846,0.5286,5.2
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Lammens (MUN),Sánchez,CHE,5.0,Lammens,MUN,5.0,10.0,19,117.87,6.2,5.809,78.21,75.13,2.63,94.7,42.1,0.0,0.5195,6.39
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Lammens (MUN),Sánchez,CHE,5.0,Lammens,MUN,5.0,10.0,38,237.34,6.25,5.852,79.02,75.33,2.58,92.1,50.0,-0.0385,0.5143,13.12
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Pope (NEW),Sánchez,CHE,5.0,Pope,NEW,5.0,10.0,3,22.71,7.57,7.176,74.9,37.25,3.0,33.3,33.3,-0.189,0.6029,1.01
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Pope (NEW),Sánchez,CHE,5.0,Pope,NEW,5.0,10.0,16,101.31,6.33,5.938,85.2,87.1,2.44,100.0,56.2,-0.6414,0.5454,5.14
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Pope (NEW),Sánchez,CHE,5.0,Pope,NEW,5.0,10.0,19,118.81,6.25,5.859,83.09,85.21,2.47,100.0,52.6,-0.5015,0.5545,6.0
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Pope (NEW),Sánchez,CHE,5.0,Pope,NEW,5.0,10.0,38,237.41,6.25,5.854,82.16,83.11,2.5,100.0,50.0,-0.3033,0.557,11.87
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Sels (NFO),Sánchez,CHE,5.0,Sels,NFO,5.0,10.0,3,24.71,8.24,7.841,79.98,49.95,2.5,33.3,33.3,-0.3273,0.5422,1.3
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Sels (NFO),Sánchez,CHE,5.0,Sels,NFO,5.0,10.0,16,101.71,6.36,5.963,84.28,83.73,2.44,100.0,56.2,-0.1912,0.528,5.38
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Sels (NFO),Sánchez,CHE,5.0,Sels,NFO,5.0,10.0,19,120.79,6.36,5.963,84.52,84.3,2.42,100.0,57.9,-0.2165,0.5303,6.44
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Sels (NFO),Sánchez,CHE,5.0,Sels,NFO,5.0,10.0,38,239.32,6.3,5.904,83.03,83.12,2.47,100.0,52.6,-0.2228,0.5363,12.49
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Roefs (SUN),Sánchez,CHE,5.0,Roefs,SUN,5.0,10.0,3,24.89,8.3,7.901,76.17,40.41,2.5,33.3,33.3,0.9449,0.4916,1.34
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Roefs (SUN),Sánchez,CHE,5.0,Roefs,SUN,5.0,10.0,16,100.69,6.29,5.899,82.75,82.64,2.5,100.0,50.0,-0.2411,0.5414,5.23
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Roefs (SUN),Sánchez,CHE,5.0,Roefs,SUN,5.0,10.0,19,119.95,6.31,5.919,83.01,82.42,2.47,100.0,52.6,-0.1293,0.5335,6.33
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Roefs (SUN),Sánchez,CHE,5.0,Roefs,SUN,5.0,10.0,38,238.28,6.27,5.876,82.08,81.93,2.53,100.0,47.4,-0.2275,0.5392,12.37
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Kinsky (TOT),Sánchez,CHE,5.0,Kinsky,TOT,4.5,9.5,3,23.17,7.72,7.46,74.4,36.0,2.75,33.3,33.3,0.7559,0.5647,1.05
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Kinsky (TOT),Sánchez,CHE,5.0,Kinsky,TOT,4.5,9.5,16,98.44,6.15,5.89,80.27,76.84,2.56,93.8,50.0,-0.0788,0.5646,4.77
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Kinsky (TOT),Sánchez,CHE,5.0,Kinsky,TOT,4.5,9.5,19,116.04,6.11,5.845,79.31,76.36,2.58,94.7,47.4,0.0,0.5646,5.59
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sánchez (CHE) + Kinsky (TOT),Sánchez,CHE,5.0,Kinsky,TOT,4.5,9.5,38,231.55,6.09,5.831,78.07,73.87,2.61,92.1,47.4,0.0743,0.5715,11.07
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Leno (FUL),Henderson,CRY,5.0,Leno,FUL,4.5,9.5,3,21.81,7.27,7.007,73.5,33.75,3.25,33.3,0.0,-0.5,0.5989,0.93
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Leno (FUL),Henderson,CRY,5.0,Leno,FUL,4.5,9.5,16,99.02,6.19,5.926,83.62,83.67,2.5,100.0,50.0,-0.3778,0.5346,5.29
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Leno (FUL),Henderson,CRY,5.0,Leno,FUL,4.5,9.5,19,115.86,6.1,5.835,81.29,81.71,2.58,100.0,42.1,-0.3624,0.5448,6.06
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Leno (FUL),Henderson,CRY,5.0,Leno,FUL,4.5,9.5,38,233.26,6.14,5.876,82.17,82.18,2.53,100.0,47.4,-0.262,0.5354,12.4
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Scherpen (IPS),Henderson,CRY,5.0,Scherpen,IPS,4.5,9.5,3,21.96,7.32,7.058,72.83,32.08,3.0,33.3,0.0,0.5,0.5946,1.06
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Scherpen (IPS),Henderson,CRY,5.0,Scherpen,IPS,4.5,9.5,16,96.83,6.05,5.789,80.73,82.27,2.5,100.0,50.0,-0.1918,0.5424,5.21
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Scherpen (IPS),Henderson,CRY,5.0,Scherpen,IPS,4.5,9.5,19,113.12,5.95,5.691,76.97,77.09,2.58,94.7,47.4,-0.0974,0.5507,6.03
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Scherpen (IPS),Henderson,CRY,5.0,Scherpen,IPS,4.5,9.5,38,227.97,6.0,5.737,77.95,77.59,2.55,94.7,50.0,-0.0828,0.5449,12.2
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Trafford (MCI),Henderson,CRY,5.0,Trafford,MCI,5.0,10.0,3,25.87,8.62,8.23,75.17,37.92,2.75,33.3,33.3,0.5,0.4332,1.59
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Trafford (MCI),Henderson,CRY,5.0,Trafford,MCI,5.0,10.0,16,106.74,6.67,6.277,88.06,79.72,2.5,93.8,56.2,-0.2682,0.4312,7.02
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Trafford (MCI),Henderson,CRY,5.0,Trafford,MCI,5.0,10.0,19,126.94,6.68,6.287,88.1,79.38,2.53,94.7,52.6,-0.2393,0.4315,8.36
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Trafford (MCI),Henderson,CRY,5.0,Trafford,MCI,5.0,10.0,38,252.62,6.65,6.254,86.43,76.64,2.58,94.7,47.4,-0.0374,0.4319,16.29
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Lammens (MUN),Henderson,CRY,5.0,Lammens,MUN,5.0,10.0,3,25.25,8.42,8.021,80.5,51.25,2.5,33.3,33.3,-0.5,0.4702,1.44
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Lammens (MUN),Henderson,CRY,5.0,Lammens,MUN,5.0,10.0,16,98.94,6.18,5.789,80.09,80.67,2.62,100.0,37.5,-0.3671,0.5265,5.26
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Lammens (MUN),Henderson,CRY,5.0,Lammens,MUN,5.0,10.0,19,118.51,6.24,5.843,81.53,81.97,2.58,100.0,42.1,-0.3966,0.5176,6.45
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Lammens (MUN),Henderson,CRY,5.0,Lammens,MUN,5.0,10.0,38,239.43,6.3,5.907,82.53,81.75,2.5,97.4,52.6,-0.2971,0.5036,13.43
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Pope (NEW),Henderson,CRY,5.0,Pope,NEW,5.0,10.0,3,22.47,7.49,7.095,73.5,33.75,3.25,33.3,0.0,-0.5,0.6126,0.89
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Pope (NEW),Henderson,CRY,5.0,Pope,NEW,5.0,10.0,16,99.43,6.21,5.82,77.37,72.55,2.62,87.5,50.0,-0.1183,0.5488,4.93
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Pope (NEW),Henderson,CRY,5.0,Pope,NEW,5.0,10.0,19,116.69,6.14,5.747,75.96,72.16,2.68,89.5,42.1,-0.1181,0.5589,5.67
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Pope (NEW),Henderson,CRY,5.0,Pope,NEW,5.0,10.0,38,235.39,6.19,5.8,77.79,74.47,2.61,92.1,47.4,-0.0058,0.5503,11.74
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Sels (NFO),Henderson,CRY,5.0,Sels,NFO,5.0,10.0,3,24.01,8.0,7.609,71.74,29.34,3.0,33.3,0.0,0.866,0.5599,1.11
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Sels (NFO),Henderson,CRY,5.0,Sels,NFO,5.0,10.0,16,99.75,6.23,5.841,77.68,72.46,2.62,87.5,50.0,-0.1058,0.5285,5.12
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Sels (NFO),Henderson,CRY,5.0,Sels,NFO,5.0,10.0,19,118.09,6.22,5.821,75.82,68.64,2.68,84.2,47.4,0.0,0.5335,5.98
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Sels (NFO),Henderson,CRY,5.0,Sels,NFO,5.0,10.0,38,238.03,6.26,5.87,78.14,72.36,2.61,86.8,52.6,-0.0755,0.5281,12.36
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Roefs (SUN),Henderson,CRY,5.0,Roefs,SUN,5.0,10.0,3,24.93,8.31,7.916,80.5,51.25,2.5,33.3,33.3,-0.5,0.4915,1.35
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Roefs (SUN),Henderson,CRY,5.0,Roefs,SUN,5.0,10.0,16,99.48,6.22,5.823,76.25,69.63,2.69,87.5,43.8,0.0771,0.5441,5.06
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Roefs (SUN),Henderson,CRY,5.0,Roefs,SUN,5.0,10.0,19,118.74,6.25,5.855,77.98,72.57,2.63,89.5,47.4,-0.0087,0.5358,6.16
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Roefs (SUN),Henderson,CRY,5.0,Roefs,SUN,5.0,10.0,38,238.14,6.27,5.873,77.87,71.57,2.61,86.8,52.6,0.0308,0.5316,12.46
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Kinsky (TOT),Henderson,CRY,5.0,Kinsky,TOT,4.5,9.5,3,23.35,7.78,7.519,79.67,49.17,2.75,33.3,33.3,-1.0,0.5646,1.09
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Kinsky (TOT),Henderson,CRY,5.0,Kinsky,TOT,4.5,9.5,16,98.61,6.16,5.9,80.51,76.99,2.56,93.8,50.0,-0.0988,0.5636,4.93
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Kinsky (TOT),Henderson,CRY,5.0,Kinsky,TOT,4.5,9.5,19,116.38,6.13,5.863,80.13,77.64,2.58,94.7,47.4,-0.1708,0.5638,5.8
+full_season,Active 2-GKP Rotation,Active 2-GKP,Henderson (CRY) + Kinsky (TOT),Henderson,CRY,5.0,Kinsky,TOT,4.5,9.5,38,233.8,6.15,5.89,81.19,79.12,2.55,97.4,47.4,-0.1113,0.5608,11.74
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Leno (FUL),Pickford,EVE,5.5,Leno,FUL,4.5,10.0,3,21.91,7.3,6.908,73.5,33.75,3.25,33.3,0.0,-0.5,0.587,0.96
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Leno (FUL),Pickford,EVE,5.5,Leno,FUL,4.5,10.0,16,98.3,6.14,5.75,77.07,74.83,2.62,93.8,43.8,-0.0048,0.5233,5.18
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Leno (FUL),Pickford,EVE,5.5,Leno,FUL,4.5,10.0,19,115.25,6.07,5.671,75.4,74.02,2.68,94.7,36.8,-0.0153,0.5334,5.98
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Leno (FUL),Pickford,EVE,5.5,Leno,FUL,4.5,10.0,38,232.33,6.11,5.72,78.04,78.54,2.58,97.4,44.7,-0.1156,0.5253,12.5
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Scherpen (IPS),Pickford,EVE,5.5,Scherpen,IPS,4.5,10.0,3,22.43,7.48,7.081,72.83,32.08,3.0,33.3,0.0,0.5,0.5829,1.11
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Scherpen (IPS),Pickford,EVE,5.5,Scherpen,IPS,4.5,10.0,16,96.0,6.0,5.606,72.66,69.96,2.62,87.5,50.0,0.2271,0.5305,5.19
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Scherpen (IPS),Pickford,EVE,5.5,Scherpen,IPS,4.5,10.0,19,112.76,5.93,5.541,70.24,66.71,2.68,84.2,47.4,0.2568,0.5388,6.03
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Scherpen (IPS),Pickford,EVE,5.5,Scherpen,IPS,4.5,10.0,38,226.53,5.96,5.567,71.06,67.63,2.66,84.2,50.0,0.2167,0.5357,12.09
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Kinsky (TOT),Pickford,EVE,5.5,Kinsky,TOT,4.5,10.0,3,23.21,7.74,7.344,75.17,37.92,2.75,33.3,33.3,0.5,0.5578,1.08
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Kinsky (TOT),Pickford,EVE,5.5,Kinsky,TOT,4.5,10.0,16,100.01,6.25,5.856,81.35,80.94,2.44,93.8,62.5,-0.2367,0.5448,5.35
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Kinsky (TOT),Pickford,EVE,5.5,Kinsky,TOT,4.5,10.0,19,117.66,6.19,5.798,80.14,80.44,2.47,94.7,57.9,-0.2159,0.5468,6.21
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pickford (EVE) + Kinsky (TOT),Pickford,EVE,5.5,Kinsky,TOT,4.5,10.0,38,233.35,6.14,5.747,78.32,78.08,2.55,94.7,50.0,-0.1472,0.5479,12.11
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Scherpen (IPS),Leno,FUL,4.5,Scherpen,IPS,4.5,9.0,3,22.08,7.36,7.23,77.33,43.33,3.0,33.3,0.0,-1.0,0.5804,1.09
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Scherpen (IPS),Leno,FUL,4.5,Scherpen,IPS,4.5,9.0,16,95.53,5.97,5.839,79.42,76.87,2.56,93.8,50.0,-0.0821,0.5331,5.21
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Scherpen (IPS),Leno,FUL,4.5,Scherpen,IPS,4.5,9.0,19,112.65,5.93,5.798,78.95,77.48,2.58,94.7,47.4,-0.1498,0.5406,6.13
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Scherpen (IPS),Leno,FUL,4.5,Scherpen,IPS,4.5,9.0,38,224.37,5.9,5.773,77.99,76.12,2.61,94.7,44.7,-0.0503,0.5419,12.1
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + A.Becker (LIV),Leno,FUL,4.5,A.Becker,LIV,5.5,10.0,3,23.04,7.68,7.285,72.83,32.08,3.0,33.3,33.3,0.5,0.4999,1.23
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + A.Becker (LIV),Leno,FUL,4.5,A.Becker,LIV,5.5,10.0,16,99.28,6.2,5.811,74.58,65.98,2.62,81.2,56.2,0.3415,0.4906,5.63
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + A.Becker (LIV),Leno,FUL,4.5,A.Becker,LIV,5.5,10.0,19,117.35,6.18,5.782,74.65,67.39,2.63,84.2,52.6,0.3302,0.492,6.69
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + A.Becker (LIV),Leno,FUL,4.5,A.Becker,LIV,5.5,10.0,38,234.66,6.18,5.781,76.81,72.83,2.61,89.5,50.0,0.0379,0.4971,13.33
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Donnarumma (MCI),Leno,FUL,4.5,Donnarumma,MCI,5.5,10.0,3,23.82,7.94,7.545,72.83,32.08,3.0,33.3,33.3,0.5,0.4074,1.59
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Donnarumma (MCI),Leno,FUL,4.5,Donnarumma,MCI,5.5,10.0,16,100.55,6.28,5.89,82.1,81.4,2.44,93.8,62.5,-0.2972,0.4027,7.0
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Donnarumma (MCI),Leno,FUL,4.5,Donnarumma,MCI,5.5,10.0,19,119.4,6.28,5.89,81.88,80.85,2.47,94.7,57.9,-0.2713,0.4034,8.42
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Donnarumma (MCI),Leno,FUL,4.5,Donnarumma,MCI,5.5,10.0,38,236.5,6.22,5.83,79.52,77.55,2.58,94.7,47.4,-0.1581,0.4082,16.26
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Trafford (MCI),Leno,FUL,4.5,Trafford,MCI,5.0,9.5,3,25.17,8.39,8.126,72.83,32.08,3.0,33.3,33.3,0.5,0.4283,1.5
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Trafford (MCI),Leno,FUL,4.5,Trafford,MCI,5.0,9.5,16,105.7,6.61,6.344,89.88,81.4,2.44,93.8,62.5,-0.2972,0.4221,6.91
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Trafford (MCI),Leno,FUL,4.5,Trafford,MCI,5.0,9.5,19,125.9,6.63,6.364,90.01,80.85,2.47,94.7,57.9,-0.2713,0.4231,8.25
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Trafford (MCI),Leno,FUL,4.5,Trafford,MCI,5.0,9.5,38,249.72,6.57,6.309,87.74,77.55,2.58,94.7,47.4,-0.1581,0.428,16.1
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Lammens (MUN),Leno,FUL,4.5,Lammens,MUN,5.0,9.5,3,24.54,8.18,7.918,78.17,45.42,2.75,33.3,33.3,-0.5,0.4649,1.35
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Lammens (MUN),Leno,FUL,4.5,Lammens,MUN,5.0,9.5,16,96.39,6.02,5.762,72.78,63.61,2.75,81.2,43.8,0.2692,0.5201,5.2
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Lammens (MUN),Leno,FUL,4.5,Lammens,MUN,5.0,9.5,19,115.96,6.1,5.841,75.69,67.48,2.68,84.2,47.4,0.1542,0.5114,6.38
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Lammens (MUN),Leno,FUL,4.5,Lammens,MUN,5.0,9.5,38,233.8,6.15,5.89,77.56,70.05,2.63,86.8,50.0,0.1516,0.5035,13.08
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Pope (NEW),Leno,FUL,4.5,Pope,NEW,5.0,9.5,3,21.76,7.25,6.991,66.67,16.67,3.5,33.3,0.0,1.0,0.6085,0.8
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Pope (NEW),Leno,FUL,4.5,Pope,NEW,5.0,9.5,16,99.61,6.23,5.963,80.99,75.51,2.56,93.8,50.0,0.0983,0.54,5.12
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Pope (NEW),Leno,FUL,4.5,Pope,NEW,5.0,9.5,19,116.4,6.13,5.864,77.09,69.99,2.68,89.5,42.1,0.1706,0.5508,5.75
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Pope (NEW),Leno,FUL,4.5,Pope,NEW,5.0,9.5,38,233.87,6.15,5.892,77.79,70.55,2.66,89.5,47.4,0.178,0.5471,11.74
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Sels (NFO),Leno,FUL,4.5,Sels,NFO,5.0,9.5,3,23.5,7.83,7.571,76.93,42.33,3.0,33.3,0.0,-0.866,0.546,1.11
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Sels (NFO),Leno,FUL,4.5,Sels,NFO,5.0,9.5,16,100.51,6.28,6.019,83.37,79.03,2.5,93.8,56.2,-0.1758,0.5175,5.48
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Sels (NFO),Leno,FUL,4.5,Sels,NFO,5.0,9.5,19,119.05,6.27,6.003,83.21,79.34,2.53,94.7,52.6,-0.2332,0.522,6.42
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Sels (NFO),Leno,FUL,4.5,Sels,NFO,5.0,9.5,38,238.21,6.27,6.006,82.78,78.11,2.55,94.7,50.0,-0.1522,0.5243,12.69
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Roefs (SUN),Leno,FUL,4.5,Roefs,SUN,5.0,9.5,3,24.23,8.08,7.813,78.17,45.42,2.75,33.3,33.3,-0.5,0.4858,1.27
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Roefs (SUN),Leno,FUL,4.5,Roefs,SUN,5.0,9.5,16,96.67,6.04,5.779,70.69,57.61,2.81,75.0,43.8,0.4582,0.5367,4.9
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Roefs (SUN),Leno,FUL,4.5,Roefs,SUN,5.0,9.5,19,115.94,6.1,5.839,73.56,62.22,2.74,78.9,47.4,0.3409,0.5287,6.0
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Roefs (SUN),Leno,FUL,4.5,Roefs,SUN,5.0,9.5,38,232.67,6.12,5.86,75.73,66.75,2.68,84.2,47.4,0.2527,0.5298,12.08
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Kinsky (TOT),Leno,FUL,4.5,Kinsky,TOT,4.5,9.0,3,22.55,7.52,7.387,72.83,32.08,3.0,33.3,33.3,0.5,0.5626,1.02
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Kinsky (TOT),Leno,FUL,4.5,Kinsky,TOT,4.5,9.0,16,97.99,6.12,5.993,85.17,84.65,2.44,100.0,56.2,-0.314,0.5507,5.23
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Kinsky (TOT),Leno,FUL,4.5,Kinsky,TOT,4.5,9.0,19,115.58,6.08,5.952,84.04,83.61,2.47,100.0,52.6,-0.2879,0.5526,6.08
+full_season,Active 2-GKP Rotation,Active 2-GKP,Leno (FUL) + Kinsky (TOT),Leno,FUL,4.5,Kinsky,TOT,4.5,9.0,38,230.59,6.07,5.937,82.58,80.59,2.53,97.4,50.0,-0.2254,0.5556,11.82
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + A.Becker (LIV),Scherpen,IPS,4.5,A.Becker,LIV,5.5,10.0,3,24.11,8.04,7.641,80.5,51.25,2.5,33.3,33.3,-0.5,0.4879,1.46
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + A.Becker (LIV),Scherpen,IPS,4.5,A.Becker,LIV,5.5,10.0,16,97.89,6.12,5.724,77.44,76.84,2.56,93.8,50.0,-0.0788,0.4938,5.69
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + A.Becker (LIV),Scherpen,IPS,4.5,A.Becker,LIV,5.5,10.0,19,116.29,6.12,5.727,78.17,78.57,2.53,94.7,52.6,-0.1312,0.4929,6.84
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + A.Becker (LIV),Scherpen,IPS,4.5,A.Becker,LIV,5.5,10.0,38,231.14,6.08,5.689,78.22,80.33,2.55,97.4,47.4,-0.2714,0.503,13.39
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Donnarumma (MCI),Scherpen,IPS,4.5,Donnarumma,MCI,5.5,10.0,3,24.88,8.29,7.9,80.5,51.25,2.5,33.3,33.3,-0.5,0.3969,1.82
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Donnarumma (MCI),Scherpen,IPS,4.5,Donnarumma,MCI,5.5,10.0,16,98.1,6.13,5.737,79.71,81.95,2.5,100.0,50.0,-0.1486,0.4102,7.06
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Donnarumma (MCI),Scherpen,IPS,4.5,Donnarumma,MCI,5.5,10.0,19,117.05,6.16,5.766,80.56,82.86,2.47,100.0,52.6,-0.1884,0.4081,8.45
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Donnarumma (MCI),Scherpen,IPS,4.5,Donnarumma,MCI,5.5,10.0,38,233.05,6.13,5.739,78.5,78.88,2.58,97.4,44.7,-0.1607,0.415,16.61
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Trafford (MCI),Scherpen,IPS,4.5,Trafford,MCI,5.0,9.5,3,26.23,8.74,8.482,80.5,51.25,2.5,33.3,33.3,-0.5,0.4175,1.74
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Trafford (MCI),Scherpen,IPS,4.5,Trafford,MCI,5.0,9.5,16,103.98,6.5,6.236,88.26,81.95,2.5,100.0,50.0,-0.1486,0.43,6.84
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Trafford (MCI),Scherpen,IPS,4.5,Trafford,MCI,5.0,9.5,19,124.19,6.54,6.273,89.26,82.86,2.47,100.0,52.6,-0.1884,0.428,8.18
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Trafford (MCI),Scherpen,IPS,4.5,Trafford,MCI,5.0,9.5,38,247.66,6.52,6.255,87.35,78.88,2.58,97.4,44.7,-0.1607,0.4352,15.89
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Lammens (MUN),Scherpen,IPS,4.5,Lammens,MUN,5.0,9.5,3,25.61,8.54,8.273,79.83,49.58,2.25,33.3,33.3,0.5,0.4643,1.58
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Lammens (MUN),Scherpen,IPS,4.5,Lammens,MUN,5.0,9.5,16,94.65,5.92,5.653,77.27,79.49,2.62,100.0,37.5,-0.2094,0.5238,5.14
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Lammens (MUN),Scherpen,IPS,4.5,Lammens,MUN,5.0,9.5,19,114.22,6.01,5.749,79.2,80.19,2.58,100.0,42.1,-0.1601,0.5144,6.32
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Lammens (MUN),Scherpen,IPS,4.5,Lammens,MUN,5.0,9.5,38,229.79,6.05,5.784,80.16,81.06,2.55,100.0,44.7,-0.1939,0.5097,13.01
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Pope (NEW),Scherpen,IPS,4.5,Pope,NEW,5.0,9.5,3,22.83,7.61,7.347,77.33,43.33,3.0,33.3,0.0,-1.0,0.5939,1.04
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Pope (NEW),Scherpen,IPS,4.5,Pope,NEW,5.0,9.5,16,96.73,6.05,5.783,76.15,71.12,2.69,93.8,37.5,0.2949,0.5491,4.72
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Pope (NEW),Scherpen,IPS,4.5,Pope,NEW,5.0,9.5,19,114.35,6.02,5.756,76.32,72.71,2.68,94.7,36.8,0.1594,0.5562,5.61
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Pope (NEW),Scherpen,IPS,4.5,Pope,NEW,5.0,9.5,38,230.11,6.06,5.793,76.44,71.4,2.66,89.5,44.7,0.0644,0.5556,11.32
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Sels (NFO),Scherpen,IPS,4.5,Sels,NFO,5.0,9.5,3,24.37,8.12,7.861,74.07,35.17,2.75,33.3,33.3,0.866,0.5534,1.26
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Sels (NFO),Scherpen,IPS,4.5,Sels,NFO,5.0,9.5,16,96.89,6.06,5.793,78.11,75.59,2.56,93.8,50.0,0.0879,0.5266,5.03
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Sels (NFO),Scherpen,IPS,4.5,Sels,NFO,5.0,9.5,19,115.23,6.06,5.802,76.38,70.87,2.63,89.5,47.4,0.2179,0.5309,5.88
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Sels (NFO),Scherpen,IPS,4.5,Sels,NFO,5.0,9.5,38,230.65,6.07,5.807,74.34,65.56,2.71,84.2,44.7,0.329,0.5372,11.52
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Roefs (SUN),Scherpen,IPS,4.5,Roefs,SUN,5.0,9.5,3,25.29,8.43,8.168,79.83,49.58,2.25,33.3,33.3,0.5,0.485,1.5
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Roefs (SUN),Scherpen,IPS,4.5,Roefs,SUN,5.0,9.5,16,95.52,5.97,5.707,75.78,73.44,2.69,93.8,37.5,-0.0148,0.5406,4.82
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Roefs (SUN),Scherpen,IPS,4.5,Roefs,SUN,5.0,9.5,19,114.78,6.04,5.778,77.7,75.18,2.63,94.7,42.1,-0.0069,0.5319,5.92
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Roefs (SUN),Scherpen,IPS,4.5,Roefs,SUN,5.0,9.5,38,228.17,6.0,5.742,77.37,75.92,2.66,97.4,36.8,-0.0121,0.5379,11.59
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Kinsky (TOT),Scherpen,IPS,4.5,Kinsky,TOT,4.5,9.0,3,23.58,7.86,7.727,80.5,51.25,2.5,33.3,33.3,-0.5,0.55,1.21
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Kinsky (TOT),Scherpen,IPS,4.5,Kinsky,TOT,4.5,9.0,16,94.09,5.88,5.749,76.02,72.21,2.69,93.8,43.8,0.1498,0.5613,4.53
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Kinsky (TOT),Scherpen,IPS,4.5,Kinsky,TOT,4.5,9.0,19,112.1,5.9,5.769,77.31,74.63,2.63,94.7,47.4,0.0673,0.5595,5.52
+full_season,Active 2-GKP Rotation,Active 2-GKP,Scherpen (IPS) + Kinsky (TOT),Scherpen,IPS,4.5,Kinsky,TOT,4.5,9.0,38,224.1,5.9,5.766,78.07,76.65,2.61,94.7,47.4,-0.1202,0.5652,11.22
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,A.Becker (LIV) + Kinsky (TOT),A.Becker,LIV,5.5,Kinsky,TOT,4.5,10.0,3,24.36,8.12,7.726,80.5,51.25,2.5,33.3,33.3,-0.5,0.4691,1.35
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,A.Becker (LIV) + Kinsky (TOT),A.Becker,LIV,5.5,Kinsky,TOT,4.5,10.0,16,98.64,6.16,5.771,76.98,73.72,2.56,87.5,56.2,-0.0788,0.5119,5.51
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,A.Becker (LIV) + Kinsky (TOT),A.Becker,LIV,5.5,Kinsky,TOT,4.5,10.0,19,117.43,6.18,5.786,77.98,75.54,2.53,89.5,57.9,-0.0778,0.5051,6.63
+full_season,Active 2-GKP Rotation,Active 2-GKP,A.Becker (LIV) + Kinsky (TOT),A.Becker,LIV,5.5,Kinsky,TOT,4.5,10.0,38,233.48,6.14,5.75,76.64,73.73,2.58,89.5,52.6,0.0,0.519,12.97
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Donnarumma (MCI) + Kinsky (TOT),Donnarumma,MCI,5.5,Kinsky,TOT,4.5,10.0,3,24.94,8.31,7.918,80.5,51.25,2.5,33.3,33.3,-0.5,0.3818,1.58
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Donnarumma (MCI) + Kinsky (TOT),Donnarumma,MCI,5.5,Kinsky,TOT,4.5,10.0,16,98.96,6.18,5.791,75.84,69.99,2.62,87.5,50.0,0.2229,0.4294,6.52
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Donnarumma (MCI) + Kinsky (TOT),Donnarumma,MCI,5.5,Kinsky,TOT,4.5,10.0,19,118.32,6.23,5.833,77.44,72.17,2.58,89.5,52.6,0.2074,0.4218,7.88
+full_season,Active 2-GKP Rotation,Active 2-GKP,Donnarumma (MCI) + Kinsky (TOT),Donnarumma,MCI,5.5,Kinsky,TOT,4.5,10.0,38,236.89,6.23,5.84,78.21,73.82,2.61,92.1,47.4,0.0811,0.4285,15.6
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Lammens (MUN),Trafford,MCI,5.0,Lammens,MUN,5.0,10.0,3,27.58,9.19,8.8,84.33,60.83,2.25,33.3,33.3,-1.0,0.331,1.83
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Lammens (MUN),Trafford,MCI,5.0,Lammens,MUN,5.0,10.0,16,104.97,6.56,6.167,85.61,78.32,2.56,93.8,50.0,-0.276,0.4164,6.8
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Lammens (MUN),Trafford,MCI,5.0,Lammens,MUN,5.0,10.0,19,126.15,6.64,6.245,87.85,80.54,2.47,94.7,57.9,-0.2304,0.4029,8.23
+full_season,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Lammens (MUN),Trafford,MCI,5.0,Lammens,MUN,5.0,10.0,38,250.68,6.6,6.203,86.31,78.51,2.5,94.7,55.3,-0.0409,0.4037,16.13
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Pope (NEW),Trafford,MCI,5.0,Pope,NEW,5.0,10.0,3,25.41,8.47,8.076,72.83,32.08,3.0,33.3,33.3,0.5,0.438,1.49
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Pope (NEW),Trafford,MCI,5.0,Pope,NEW,5.0,10.0,16,106.55,6.66,6.265,89.74,84.42,2.44,100.0,56.2,-0.2835,0.4332,6.71
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Pope (NEW),Trafford,MCI,5.0,Pope,NEW,5.0,10.0,19,126.75,6.67,6.277,89.52,83.36,2.47,100.0,52.6,-0.2549,0.434,8.05
+full_season,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Pope (NEW),Trafford,MCI,5.0,Pope,NEW,5.0,10.0,38,254.48,6.7,6.303,90.4,84.45,2.47,100.0,52.6,-0.4001,0.4359,16.13
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Sels (NFO),Trafford,MCI,5.0,Sels,NFO,5.0,10.0,3,27.35,9.12,8.723,79.0,47.5,2.5,33.3,33.3,0.0,0.3951,1.75
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Sels (NFO),Trafford,MCI,5.0,Sels,NFO,5.0,10.0,16,105.14,6.57,6.177,82.95,71.22,2.56,87.5,56.2,0.2535,0.4215,6.59
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Sels (NFO),Trafford,MCI,5.0,Sels,NFO,5.0,10.0,19,126.08,6.64,6.242,84.88,73.28,2.53,89.5,57.9,0.224,0.4173,7.95
+full_season,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Sels (NFO),Trafford,MCI,5.0,Sels,NFO,5.0,10.0,38,251.72,6.62,6.23,85.63,75.64,2.55,92.1,52.6,0.0021,0.4227,15.81
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Roefs (SUN),Trafford,MCI,5.0,Roefs,SUN,5.0,10.0,3,27.3,9.1,8.707,84.33,60.83,2.25,33.3,33.3,-1.0,0.3461,1.77
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Roefs (SUN),Trafford,MCI,5.0,Roefs,SUN,5.0,10.0,16,106.94,6.68,6.29,88.39,79.98,2.5,93.8,56.2,-0.3031,0.4271,6.79
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Roefs (SUN),Trafford,MCI,5.0,Roefs,SUN,5.0,10.0,19,127.84,6.73,6.334,89.97,82.02,2.42,94.7,63.2,-0.2641,0.4143,8.17
+full_season,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Roefs (SUN),Trafford,MCI,5.0,Roefs,SUN,5.0,10.0,38,253.02,6.66,6.264,87.23,78.17,2.53,94.7,52.6,-0.0775,0.4239,15.96
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Kinsky (TOT),Trafford,MCI,5.0,Kinsky,TOT,4.5,9.5,3,25.82,8.61,8.343,80.5,51.25,2.5,33.3,33.3,-0.5,0.4015,1.53
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Kinsky (TOT),Trafford,MCI,5.0,Kinsky,TOT,4.5,9.5,16,104.85,6.55,6.29,84.4,69.99,2.62,87.5,50.0,0.2229,0.4498,6.71
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Kinsky (TOT),Trafford,MCI,5.0,Kinsky,TOT,4.5,9.5,19,125.1,6.58,6.321,85.81,72.17,2.58,89.5,52.6,0.2074,0.4422,8.01
+full_season,Active 2-GKP Rotation,Active 2-GKP,Trafford (MCI) + Kinsky (TOT),Trafford,MCI,5.0,Kinsky,TOT,4.5,9.5,38,250.06,6.58,6.318,86.4,73.82,2.61,92.1,47.4,0.0811,0.4492,15.82
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Pope (NEW),Lammens,MUN,5.0,Pope,NEW,5.0,10.0,3,24.81,8.27,7.875,78.17,45.42,2.75,33.3,33.3,-0.5,0.4755,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Pope (NEW),Lammens,MUN,5.0,Pope,NEW,5.0,10.0,16,98.15,6.13,5.74,75.0,70.05,2.75,93.8,31.2,0.2434,0.5334,5.0
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Pope (NEW),Lammens,MUN,5.0,Pope,NEW,5.0,10.0,19,117.75,6.2,5.803,77.33,73.19,2.68,94.7,36.8,0.0957,0.5243,6.13
+full_season,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Pope (NEW),Lammens,MUN,5.0,Pope,NEW,5.0,10.0,38,239.5,6.3,5.908,80.99,77.83,2.55,94.7,50.0,-0.1137,0.5138,12.94
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Sels (NFO),Lammens,MUN,5.0,Sels,NFO,5.0,10.0,3,26.8,8.93,8.541,81.33,53.33,2.25,33.3,33.3,0.0,0.4335,1.57
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Sels (NFO),Lammens,MUN,5.0,Sels,NFO,5.0,10.0,16,99.89,6.24,5.849,77.52,71.7,2.69,93.8,37.5,0.2177,0.5134,5.25
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Sels (NFO),Lammens,MUN,5.0,Sels,NFO,5.0,10.0,19,119.65,6.3,5.904,79.3,73.82,2.63,94.7,42.1,0.1745,0.5008,6.37
+full_season,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Sels (NFO),Lammens,MUN,5.0,Sels,NFO,5.0,10.0,38,240.36,6.33,5.931,80.46,75.52,2.58,94.7,47.4,0.1114,0.4969,13.07
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Roefs (SUN),Lammens,MUN,5.0,Roefs,SUN,5.0,10.0,3,26.34,8.78,8.385,78.33,45.83,2.25,33.3,33.3,1.0,0.3882,1.57
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Roefs (SUN),Lammens,MUN,5.0,Roefs,SUN,5.0,10.0,16,98.73,6.17,5.777,75.26,69.16,2.75,87.5,37.5,-0.0549,0.5239,5.18
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Roefs (SUN),Lammens,MUN,5.0,Roefs,SUN,5.0,10.0,19,118.33,6.23,5.834,76.64,70.13,2.68,89.5,42.1,0.1522,0.5025,6.34
+full_season,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Roefs (SUN),Lammens,MUN,5.0,Roefs,SUN,5.0,10.0,38,236.41,6.22,5.827,75.93,68.67,2.71,89.5,42.1,0.2654,0.5002,12.64
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Kinsky (TOT),Lammens,MUN,5.0,Kinsky,TOT,4.5,9.5,3,25.15,8.38,8.119,77.5,43.75,2.5,33.3,33.3,0.5,0.4437,1.41
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Kinsky (TOT),Lammens,MUN,5.0,Kinsky,TOT,4.5,9.5,16,96.95,6.06,5.797,77.05,72.75,2.69,93.8,37.5,0.0778,0.5456,4.94
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Kinsky (TOT),Lammens,MUN,5.0,Kinsky,TOT,4.5,9.5,19,116.53,6.13,5.87,78.78,73.92,2.63,94.7,42.1,0.1616,0.5295,6.12
+full_season,Active 2-GKP Rotation,Active 2-GKP,Lammens (MUN) + Kinsky (TOT),Lammens,MUN,5.0,Kinsky,TOT,4.5,9.5,38,235.89,6.21,5.945,81.5,77.53,2.55,94.7,50.0,-0.0743,0.5247,12.82
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Sels (NFO),Pope,NEW,5.0,Sels,NFO,5.0,10.0,3,24.0,8.0,7.607,76.93,42.33,3.0,33.3,0.0,-0.866,0.5587,1.08
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Sels (NFO),Pope,NEW,5.0,Sels,NFO,5.0,10.0,16,100.42,6.28,5.882,78.99,73.95,2.62,93.8,43.8,0.1118,0.5332,4.98
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Sels (NFO),Pope,NEW,5.0,Sels,NFO,5.0,10.0,19,119.21,6.27,5.88,79.43,75.13,2.63,94.7,42.1,0.0,0.5372,5.9
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Sels (NFO),Pope,NEW,5.0,Sels,NFO,5.0,10.0,38,238.87,6.29,5.892,78.9,73.31,2.63,92.1,44.7,0.0674,0.5393,11.93
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Roefs (SUN),Pope,NEW,5.0,Roefs,SUN,5.0,10.0,3,24.53,8.18,7.782,78.17,45.42,2.75,33.3,33.3,-0.5,0.497,1.23
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Roefs (SUN),Pope,NEW,5.0,Roefs,SUN,5.0,10.0,16,100.55,6.28,5.891,77.64,70.21,2.69,87.5,43.8,0.0,0.5459,4.91
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Roefs (SUN),Pope,NEW,5.0,Roefs,SUN,5.0,10.0,19,119.87,6.31,5.915,79.24,73.18,2.63,89.5,47.4,-0.091,0.5382,5.99
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Roefs (SUN),Pope,NEW,5.0,Roefs,SUN,5.0,10.0,38,241.14,6.35,5.952,81.54,77.35,2.58,92.1,50.0,-0.3078,0.5384,12.23
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Kinsky (TOT),Pope,NEW,5.0,Kinsky,TOT,4.5,9.5,3,23.04,7.68,7.418,72.83,32.08,3.0,33.3,33.3,0.5,0.5754,0.99
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Kinsky (TOT),Pope,NEW,5.0,Kinsky,TOT,4.5,9.5,16,99.64,6.23,5.965,81.62,76.99,2.56,93.8,50.0,-0.0983,0.5655,4.8
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Kinsky (TOT),Pope,NEW,5.0,Kinsky,TOT,4.5,9.5,19,117.47,6.18,5.92,80.87,77.03,2.58,94.7,47.4,-0.0893,0.567,5.63
+full_season,Active 2-GKP Rotation,Active 2-GKP,Pope (NEW) + Kinsky (TOT),Pope,NEW,5.0,Kinsky,TOT,4.5,9.5,38,234.07,6.16,5.897,79.98,75.79,2.61,94.7,44.7,-0.0058,0.5712,11.14
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Roefs (SUN),Sels,NFO,5.0,Roefs,SUN,5.0,10.0,3,26.53,8.84,8.448,81.33,53.33,2.25,33.3,33.3,0.0,0.4529,1.52
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Roefs (SUN),Sels,NFO,5.0,Roefs,SUN,5.0,10.0,16,99.75,6.23,5.841,76.51,69.54,2.69,87.5,43.8,0.0897,0.5267,5.14
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Roefs (SUN),Sels,NFO,5.0,Roefs,SUN,5.0,10.0,19,119.54,6.29,5.898,78.45,71.94,2.63,89.5,47.4,0.0747,0.5151,6.24
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Roefs (SUN),Sels,NFO,5.0,Roefs,SUN,5.0,10.0,38,239.86,6.31,5.918,79.81,74.47,2.61,92.1,47.4,-0.0058,0.5207,12.57
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Kinsky (TOT),Sels,NFO,5.0,Kinsky,TOT,4.5,9.5,3,25.04,8.35,8.084,81.6,54.0,2.5,33.3,33.3,-0.866,0.515,1.28
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Kinsky (TOT),Sels,NFO,5.0,Kinsky,TOT,4.5,9.5,16,101.03,6.31,6.051,86.28,84.93,2.44,100.0,56.2,-0.3517,0.5428,5.25
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Kinsky (TOT),Sels,NFO,5.0,Kinsky,TOT,4.5,9.5,19,120.5,6.34,6.079,87.01,85.57,2.42,100.0,57.9,-0.3858,0.5384,6.3
+full_season,Active 2-GKP Rotation,Active 2-GKP,Sels (NFO) + Kinsky (TOT),Sels,NFO,5.0,Kinsky,TOT,4.5,9.5,38,239.95,6.31,6.052,86.09,84.43,2.47,100.0,52.6,-0.3981,0.5462,12.34
+gw1_3,Active 2-GKP Rotation,Active 2-GKP,Roefs (SUN) + Kinsky (TOT),Roefs,SUN,5.0,Kinsky,TOT,4.5,9.5,3,24.83,8.28,8.014,77.5,43.75,2.5,33.3,33.3,0.5,0.4635,1.32
+gw4_19,Active 2-GKP Rotation,Active 2-GKP,Roefs (SUN) + Kinsky (TOT),Roefs,SUN,5.0,Kinsky,TOT,4.5,9.5,16,100.93,6.31,6.045,86.82,86.54,2.44,100.0,56.2,-0.5666,0.5541,5.25
+gw1_19,Active 2-GKP Rotation,Active 2-GKP,Roefs (SUN) + Kinsky (TOT),Roefs,SUN,5.0,Kinsky,TOT,4.5,9.5,19,120.19,6.33,6.063,86.83,85.79,2.42,100.0,57.9,-0.4148,0.5398,6.35
+full_season,Active 2-GKP Rotation,Active 2-GKP,Roefs (SUN) + Kinsky (TOT),Roefs,SUN,5.0,Kinsky,TOT,4.5,9.5,38,238.14,6.27,6.004,84.31,82.03,2.5,97.4,52.6,-0.3352,0.5491,12.27

@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-16T11:26:41+07:00  
+**Updated**: 2026-08-17T23:55:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -21,6 +21,7 @@
   - [Budget Goalkeepers (£4.0m–£4.5m)](fpl-preseason-guide/fpl-budget-goalkeepers.md)
   - [£5.0m+ Goalkeepers](fpl-preseason-guide/fpl-5-0m-goalkeepers.md)
   - [£4.0m Defenders](fpl-preseason-guide/fpl-4-0m-defenders.md)
+  - [£4.0m Defenders (GW1 Post-Preseason Ranked)](fpl-preseason-guide/fpl-4-0m-defenders-ranked.md)
   - [£4.5m Defenders](fpl-preseason-guide/fpl-4-5m-defenders.md)
   - [£5.0m Defenders](fpl-preseason-guide/fpl-5-0m-defenders.md)
   - [£5.5m+ Defenders](fpl-preseason-guide/fpl-5-5m-defenders.md)
@@ -35,9 +36,9 @@
   - [Confirmed Summer Transfers](fpl-preseason-guide/fpl-summer-transfers.md)
 
 - **Role & Chip Strategy Models**:
+  - [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](defensive-fixture-rotation/defensive-fixture-rotation.md) · [GKP Strategy](../../data/research/defensive-fixture-rotation/gkp_strategy_comparison.csv) · [GKP Rotation](../../data/research/defensive-fixture-rotation/gkp_rotation_matrix.csv) · [5-DEF Partitions](../../data/research/defensive-fixture-rotation/def_club_partitions_matrix.csv) · [5-DEF Tier Rotations](../../data/research/defensive-fixture-rotation/def_tier_player_rotations.csv) · [BB1 Backlines](../../data/research/defensive-fixture-rotation/backline_bb1_wc4_lineups.csv) · [WC4 Backlines](../../data/research/defensive-fixture-rotation/backline_gw4_19_lineups.csv) · [GW1–19 Backlines](../../data/research/defensive-fixture-rotation/backline_gw1_19_lineups.csv)
   - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Stage 3 Exploration Matrix](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)
-  - [Starter Goalkeeper Fixture Rotation & FDR Correlation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [CSV Companion](../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv) · [Baseline Rates](../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)
-  - [5-Defender Fixture Diversification & Long-Term Rotation](def-fixture-rotation/def-fixture-rotation.md) · [5-Club Matrix](../../data/research/def-fixture-rotation/def_club_5way_rotation_matrix.csv) · [Tier Rotations](../../data/research/def-fixture-rotation/def_tier_player_rotations.csv) · [BB1+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb1_wc4_club_matrix.csv) · [BB1+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv) · [BB2+WC4 Matrix](../../data/research/def-fixture-rotation/def_bb2_wc4_club_matrix.csv) · [BB2+WC4 Lineups](../../data/research/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv) · [Baseline Rates](../../data/research/def-fixture-rotation/def_performance_baseline.csv) · [Club CS Priors](../../data/research/def-fixture-rotation/def_club_cs_priors.csv) · [GW1–19 Zero-Diff CS Picks](../../data/research/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv) · [GW1–3 Zero-Diff CS Picks](../../data/research/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv) · [BB2 Zero-Diff CS Picks](../../data/research/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv) · [GW4–19 Zero-Diff CS Picks](../../data/research/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv)
+  - *(Consolidated legacy)*: [Starter Goalkeeper Fixture Rotation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [5-Defender Fixture Diversification](def-fixture-rotation/def-fixture-rotation.md)
 
 - **Tactical & Dead-Ball Analytics**:
   - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)

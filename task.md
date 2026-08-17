@@ -3,19 +3,20 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete
-- **Files:** `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md`, `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv`, `docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py`, `docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md`, `data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv`, `data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv`, `docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md`, `docs/research/gw1-6-preseason-pipeline/README.md`, `data/research/ownership-value-explorer/ownership_value_explorer.html`, `data/research/ownership-value-explorer/ownership_value_metrics.csv`, `data/research/ownership-value-explorer/season_projections.csv`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `docs/agents/current-state.md`, `task.md`
+- **Files:** `docs/research/defensive-fixture-rotation/defensive-fixture-rotation.md`, `docs/research/defensive-fixture-rotation/run_defensive_rotation_analysis.py`, `data/research/defensive-fixture-rotation/*.csv`, `docs/research/gw1-6-preseason-pipeline/refresh_downstream.py`, `docs/research/gkp-fixture-rotation/gkp-fixture-rotation.md`, `docs/research/def-fixture-rotation/def-fixture-rotation.md`, `docs/research/INDEX.md`, `docs/agents/current-state.md`, `task.md`
 - **Decisions:** 
-  1. Full 564 FPL API player coverage in Expected Role dataset (5 roles: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention).
-  2. Multi-source consensus combining final preseason friendly lineups, Community Shield, official club news, FFS Team News, and FPL Meerkat.
-  3. Minimum 900 minutes floor for 2025/26 Prior-Season Seed in Stage 2; researched career packages (FBref/European/Championship stats) for non-seed starters/rotation players; zero Draft on fallback baseline.
-  4. Single canonical scenario in Stage 3: GW1 BB + WC4 with locked transfers in GW1-3, GW4 WC rebuild, GW5 roll FT (bank 4 FTs into GW6).
-  5. Full-season (GW1-38) and GW1-6 Ownership Value Explorer updated with GW1 BB Core (★) and WC4 Core (⬡) overlays.
+  1. Consolidated `gkp-fixture-rotation` and `def-fixture-rotation` into master unified topic `docs/research/defensive-fixture-rotation/` with companion `data/research/defensive-fixture-rotation/`.
+  2. Implemented Two-Factor Defensive Composite Score ($\text{DCS} = 0.60 \times S_{\text{Score}} + 0.40 \times S_{\text{Risk}}$) combining Opportunity-Cost Adjusted Net xP ($\gamma = 0.2627$), Zero-Difficult %, Rotated FDR, and schedule correlation.
+  3. Formally proved GKP strategy hierarchy: Active 2-GKP rotation (`Trafford + Lammens` / `Trafford + Roefs` / `Kelleher + Roefs`) outperforms Set-and-Forget by +8.0 xP in GW1–3 BB1 (+2.41 Net OC-Score) and provides 94.7% Zero-Diff coverage across GW1–19.
+  4. Enforced Max 2 DEF per club across all 20 clubs: evaluated 153,216 valid 5-DEF club multisets; `AVL-CHE-LIV-MCI-NFO` #1 across GW1–19 (2.4386 rot FDR, 100% zero-diff).
+  5. Evaluated full 7-asset backlines (2 GKP + 5 DEF) across GW1–3 (BB1), GW4–19 (WC4), and GW1–19. Top BB1 backline: `Trafford + Lammens` + `Calafiori + Vuskovic + O'Reilly + O'Nien + Ballard` (£36.0m, 88.17 xP, 2.23 eff FDR).
 - **Blocked:** None.
-- **Next:** Ready for commit and review.
-- **Objective:** Overhaul preseason pipeline across Stages 1-3 and Ownership Value Explorer to reflect complete preseason evidence, 564-player coverage, 900-min seed floor with FBref career packages, GW1 BB + WC4 optimization, and interactive HTML refresh.
+- **Next:** Ready for review and commit.
+- **Objective:** Consolidate GKP and DEF fixture rotation research into a unified defensive strategy authority refreshed against 564-player preseason pipeline with two-factor ranking and GW1 BB + WC4 backline lineups.
 - **Acceptance:**
-  - [x] Stage 1: All 564 FPL API players classified into 5 Expected Roles with Participation State priors; `expected-role-gw1-5.csv` and doc updated.
-  - [x] Stage 2: `MIN_USABLE_MINUTES = 900` applied; career stats packages provided for all non-seed Draft-Eligible/Rotation players; `expected-stats-gw1-5.csv` and projections generated with zero Draft on fallback.
-  - [x] Stage 3: GW1 BB + locked GW1-3 + WC4 + GW5 roll simulation executed; `gw1-6_wc4_simulation.csv` and `gw1-6_wc4_summary.csv` generated; markdown documentation updated.
-  - [x] Ownership Value Explorer: Season projections (GW1-38) and value metrics recalculated across all 564 players; interactive HTML and note refreshed with ★/⬡ badges.
+  - [x] Unified computation script `run_defensive_rotation_analysis.py` created and operational.
+  - [x] All 10 companion CSV datasets generated in `data/research/defensive-fixture-rotation/`.
+  - [x] Comprehensive research note `defensive-fixture-rotation.md` written with complete metric definitions, findings, and strategic decisions.
+  - [x] `refresh_downstream.py` updated to run the unified defensive analysis.
+  - [x] Deprecation notices placed in legacy topic folders and `docs/research/INDEX.md` updated.
   - [x] Code quality: `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` green.
