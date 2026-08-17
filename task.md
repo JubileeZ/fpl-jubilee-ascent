@@ -4,9 +4,9 @@
 
 - **Status:** Complete
 - **Files:** `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py`, `tests/test_expected_role_name_match.py`, role/stats/projection CSVs, research notes, `task.md`
-- **Decisions:** Score matrix correct. Role matcher was wrong: single-token source names hit middle/given names. Incoming transfers kept vacated Out of Contention. Floor those to Rotation; rebuild downstream.
+- **Decisions:** Score matrix correct. Role matcher was wrong: single-token source names hit middle/given names. Incoming transfers kept vacated Out of Contention. Floor those to Rotation; rebuild downstream. Pushed `9e4ce74` (`main`).
 - **Blocked:** None.
-- **Next:** None. Dual NEW GKP (Pope Meerkat + Horníček FFS) left as two Regulars — conflict rules, not two Nailed.
+- **Next:** None. Dual NEW GKP (Pope Meerkat + Horníček FFS) left as two Regulars — conflict rules, not two Nailed. DCS = 0.60 S_Score + 0.40 S_Risk (defensive-fixture-rotation note).
 - **Objective:** Role, event rates, and xP for transferred/new starters match live FPL clubs and Stage 1 conflict rules.
 - **Acceptance:**
   - [x] Role `club_short` equals API club for every contention row.

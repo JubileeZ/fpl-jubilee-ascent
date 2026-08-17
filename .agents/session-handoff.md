@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Ownership Value Explorer club filter — search + All/None on visible clubs; HTML regenerated; research note updated.
-- **Files:** `docs/research/ownership-value-explorer/plot_ownership_value_explorer.py`, `docs/research/ownership-value-explorer/ownership-value-explorer.md`, `data/research/ownership-value-explorer/ownership_value_explorer.html`, `task.md`, `docs/agents/current-state.md`, `.agents/session-handoff.md`.
-- **Decisions:** All/None apply to search-visible clubs only (empty search = all clubs).
+- **Status:** Complete. Role/stats/score audit after 18 Aug API refresh; pushed `9e4ce74` on `main`.
+- **Files:** `refresh_expected_role.py`, `tests/test_expected_role_name_match.py`, Stage 1–3 / defensive-rotation / ownership CSVs, `docs/research/defensive-fixture-rotation/defensive-fixture-rotation.md`, `task.md`, `docs/agents/current-state.md`.
+- **Decisions:** Score matrix OK. Single-token FFS/Meerkat names match web_name or surname last token only. Incoming transfers floor Cameo/Out of Contention → Rotation. DCS = 0.60×S_Score + 0.40×S_Risk; γ = 0.2944 xP/£1.0m/GW.
 - **Blocked:** None.
-- **Next:** Commit; browser refresh to verify club search/deselect workflow.
+- **Next:** Idle. Dual NEW GKP Pope+Horníček stay two Regulars. Canonical GW1 BB + WC4 **364.21 xP**.

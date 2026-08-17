@@ -27,7 +27,7 @@ Design decisions recorded in `docs/adr/0003-reconstruct-points-from-event-compon
   - Score matrix OK (CS 4 / GK goal 10 / Defcon). Trafford dest GC LEE=1.474; Rushworth COV=1.375.
   - Role bugs: Meerkat `Nunes` matched Vitor Reis (middle name); Bruno G. stuck Out of Contention after ARS move.
   - Fix: single-token source names match `web_name` or surname last token only; incoming transfers floor Cameo/Out of Contention → Rotation.
-  - Rebuild: Bruno G. ARS Rotation; Vitor Reis Rotation; Matheus N. Regular; Draft 234; Stage 3 canonical **364.21 xP**. Club FDR #1 still `AVL-CHE-LIV-MCI-NFO`. GKP DCS #1 still `Rushworth + Donnarumma`.
+  - Rebuild: Bruno G. ARS Rotation; Vitor Reis Rotation; Matheus N. Regular; Draft 234; Stage 3 canonical **364.21 xP**. Club FDR #1 still `AVL-CHE-LIV-MCI-NFO`. GKP DCS #1 still `Rushworth + Donnarumma`. Pushed `9e4ce74`. DCS = 0.60 S_Score + 0.40 S_Risk (OC-adjusted xP vs Zero-Diff / Rot FDR / corr).
 
 - **Unified Defensive Architecture refresh vs live FPL (18 Aug):**
   - `refresh_data` 2026-08-18: 590 players, 380 fixtures. Trafford **LEE**, Rushworth **COV**. GW1 calendar matches live `/fixtures/?event=1` (no Wolves/Leicester).
