@@ -1,0 +1,121 @@
+wc,fh,tc,phase,player_id,web_name,club_short,position,cost,expected_role
+3,6,17,pre-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter
+3,6,17,pre-WC,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+3,6,17,pre-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+3,6,17,pre-WC,557,Tzolis,ARS,MID,6.5,Regular Starter
+3,6,17,pre-WC,379,Isak,LIV,FWD,9.0,Nailed Starter
+3,6,17,pre-WC,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+3,6,17,pre-WC,1,Raya,ARS,GKP,6.0,Nailed Starter
+3,6,17,pre-WC,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+3,6,17,pre-WC,208,Sarr,CRY,MID,6.5,Nailed Starter
+3,6,17,pre-WC,68,Tavernier,BOU,MID,6.0,Nailed Starter
+3,6,17,pre-WC,334,Muharemović,LEE,DEF,5.0,Nailed Starter
+3,6,17,pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter
+3,6,17,pre-WC,346,Calvert-Lewin,LEE,FWD,6.0,Nailed Starter
+3,6,17,pre-WC,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+3,6,17,pre-WC,309,Núñez,IPS,MID,5.0,Regular Starter
+3,6,17,FH,411,Haaland,MCI,FWD,15.5,Nailed Starter
+3,6,17,FH,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+3,6,17,FH,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+3,6,17,FH,557,Tzolis,ARS,MID,6.5,Regular Starter
+3,6,17,FH,8,Calafiori,ARS,DEF,5.5,Regular Starter
+3,6,17,FH,154,Palmer,CHE,MID,9.5,Nailed Starter
+3,6,17,FH,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+3,6,17,FH,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+3,6,17,FH,208,Sarr,CRY,MID,6.5,Nailed Starter
+3,6,17,FH,165,João Pedro,CHE,FWD,7.5,Nailed Starter
+3,6,17,FH,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+3,6,17,FH,250,Leno,FUL,GKP,4.5,Nailed Starter
+3,6,17,FH,371,Gravenberch,LIV,MID,6.0,Nailed Starter
+3,6,17,FH,574,Hjertø-Dahl,HUL,MID,4.5,Regular Starter
+3,6,17,FH,249,Barry,EVE,FWD,5.5,Regular Starter
+3,6,17,WC rebuild,411,Haaland,MCI,FWD,15.5,Nailed Starter
+3,6,17,WC rebuild,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+3,6,17,WC rebuild,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+3,6,17,WC rebuild,557,Tzolis,ARS,MID,6.5,Regular Starter
+3,6,17,WC rebuild,379,Isak,LIV,FWD,9.0,Nailed Starter
+3,6,17,WC rebuild,154,Palmer,CHE,MID,9.5,Nailed Starter
+3,6,17,WC rebuild,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+3,6,17,WC rebuild,1,Raya,ARS,GKP,6.0,Nailed Starter
+3,6,17,WC rebuild,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+3,6,17,WC rebuild,60,Hill,BOU,DEF,5.5,Nailed Starter
+3,6,17,WC rebuild,68,Tavernier,BOU,MID,6.0,Nailed Starter
+3,6,17,WC rebuild,250,Leno,FUL,GKP,4.5,Nailed Starter
+3,6,17,WC rebuild,569,Gonzalo,FUL,FWD,4.5,Regular Starter
+3,6,17,WC rebuild,574,Hjertø-Dahl,HUL,MID,4.5,Regular Starter
+3,6,17,WC rebuild,575,Yirenkyi,COV,MID,4.5,Regular Starter
+3,6,17,after FTs,411,Haaland,MCI,FWD,15.5,Nailed Starter
+3,6,17,after FTs,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+3,6,17,after FTs,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+3,6,17,after FTs,557,Tzolis,ARS,MID,6.5,Regular Starter
+3,6,17,after FTs,379,Isak,LIV,FWD,9.0,Nailed Starter
+3,6,17,after FTs,154,Palmer,CHE,MID,9.5,Nailed Starter
+3,6,17,after FTs,60,Hill,BOU,DEF,5.5,Nailed Starter
+3,6,17,after FTs,1,Raya,ARS,GKP,6.0,Nailed Starter
+3,6,17,after FTs,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+3,6,17,after FTs,334,Muharemović,LEE,DEF,5.0,Nailed Starter
+3,6,17,after FTs,94,Schade,BRE,MID,6.0,Nailed Starter
+3,6,17,after FTs,250,Leno,FUL,GKP,4.5,Nailed Starter
+3,6,17,after FTs,569,Gonzalo,FUL,FWD,4.5,Regular Starter
+3,6,17,after FTs,574,Hjertø-Dahl,HUL,MID,4.5,Regular Starter
+3,6,17,after FTs,575,Yirenkyi,COV,MID,4.5,Regular Starter
+4,19,17,pre-WC,411,Haaland,MCI,FWD,15.5,Nailed Starter
+4,19,17,pre-WC,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+4,19,17,pre-WC,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+4,19,17,pre-WC,557,Tzolis,ARS,MID,6.5,Regular Starter
+4,19,17,pre-WC,8,Calafiori,ARS,DEF,5.5,Regular Starter
+4,19,17,pre-WC,379,Isak,LIV,FWD,9.0,Nailed Starter
+4,19,17,pre-WC,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+4,19,17,pre-WC,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+4,19,17,pre-WC,208,Sarr,CRY,MID,6.5,Nailed Starter
+4,19,17,pre-WC,68,Tavernier,BOU,MID,6.0,Nailed Starter
+4,19,17,pre-WC,94,Schade,BRE,MID,6.0,Nailed Starter
+4,19,17,pre-WC,384,Donnarumma,MCI,GKP,5.5,Nailed Starter
+4,19,17,pre-WC,346,Calvert-Lewin,LEE,FWD,6.0,Nailed Starter
+4,19,17,pre-WC,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+4,19,17,pre-WC,309,Núñez,IPS,MID,5.0,Regular Starter
+4,19,17,FH,411,Haaland,MCI,FWD,15.5,Nailed Starter
+4,19,17,FH,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+4,19,17,FH,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+4,19,17,FH,557,Tzolis,ARS,MID,6.5,Regular Starter
+4,19,17,FH,8,Calafiori,ARS,DEF,5.5,Regular Starter
+4,19,17,FH,379,Isak,LIV,FWD,9.0,Nailed Starter
+4,19,17,FH,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+4,19,17,FH,60,Hill,BOU,DEF,5.5,Nailed Starter
+4,19,17,FH,94,Schade,BRE,MID,6.0,Nailed Starter
+4,19,17,FH,106,Thiago,BRE,FWD,8.0,Nailed Starter
+4,19,17,FH,384,Donnarumma,MCI,GKP,5.5,Nailed Starter
+4,19,17,FH,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+4,19,17,FH,289,Crooks,HUL,MID,4.5,Regular Starter
+4,19,17,FH,565,Sangaré,BRE,MID,4.5,Regular Starter
+4,19,17,FH,290,Slater,HUL,MID,4.5,Regular Starter
+4,19,17,WC rebuild,411,Haaland,MCI,FWD,15.5,Nailed Starter
+4,19,17,WC rebuild,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+4,19,17,WC rebuild,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+4,19,17,WC rebuild,557,Tzolis,ARS,MID,6.5,Regular Starter
+4,19,17,WC rebuild,379,Isak,LIV,FWD,9.0,Nailed Starter
+4,19,17,WC rebuild,154,Palmer,CHE,MID,9.5,Nailed Starter
+4,19,17,WC rebuild,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+4,19,17,WC rebuild,1,Raya,ARS,GKP,6.0,Nailed Starter
+4,19,17,WC rebuild,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+4,19,17,WC rebuild,60,Hill,BOU,DEF,5.5,Nailed Starter
+4,19,17,WC rebuild,68,Tavernier,BOU,MID,6.0,Nailed Starter
+4,19,17,WC rebuild,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+4,19,17,WC rebuild,569,Gonzalo,FUL,FWD,4.5,Regular Starter
+4,19,17,WC rebuild,576,Stroud,HUL,MID,4.5,Regular Starter
+4,19,17,WC rebuild,574,Hjertø-Dahl,HUL,MID,4.5,Regular Starter
+4,19,17,after FTs,411,Haaland,MCI,FWD,15.5,Nailed Starter
+4,19,17,after FTs,4,Gabriel,ARS,DEF,8.0,Nailed Starter
+4,19,17,after FTs,504,Vuskovic,BHA,DEF,5.0,Nailed Starter
+4,19,17,after FTs,557,Tzolis,ARS,MID,6.5,Regular Starter
+4,19,17,after FTs,379,Isak,LIV,FWD,9.0,Nailed Starter
+4,19,17,after FTs,154,Palmer,CHE,MID,9.5,Nailed Starter
+4,19,17,after FTs,130,Wieffer,BHA,DEF,5.0,Nailed Starter
+4,19,17,after FTs,1,Raya,ARS,GKP,6.0,Nailed Starter
+4,19,17,after FTs,388,Guéhi,MCI,DEF,6.0,Nailed Starter
+4,19,17,after FTs,418,Maguire,MUN,DEF,5.0,Nailed Starter
+4,19,17,after FTs,208,Sarr,CRY,MID,6.5,Nailed Starter
+4,19,17,after FTs,109,Verbruggen,BHA,GKP,4.5,Nailed Starter
+4,19,17,after FTs,569,Gonzalo,FUL,FWD,4.5,Regular Starter
+4,19,17,after FTs,576,Stroud,HUL,MID,4.5,Regular Starter
+4,19,17,after FTs,574,Hjertø-Dahl,HUL,MID,4.5,Regular Starter

@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** Complete. Role/stats/score audit after 18 Aug API refresh; pushed `9e4ce74` on `main`.
-- **Files:** `refresh_expected_role.py`, `tests/test_expected_role_name_match.py`, Stage 1–3 / defensive-rotation / ownership CSVs, `docs/research/defensive-fixture-rotation/defensive-fixture-rotation.md`, `task.md`, `docs/agents/current-state.md`.
-- **Decisions:** Score matrix OK. Single-token FFS/Meerkat names match web_name or surname last token only. Incoming transfers floor Cameo/Out of Contention → Rotation. DCS = 0.60×S_Score + 0.40×S_Risk; γ = 0.2944 xP/£1.0m/GW.
+- **Status:** Complete. First-Half Chip Path suite published.
+- **Files:** `docs/research/gw1-19-first-half-chip-path/`, `data/research/gw1-19-first-half-chip-path/`, `tests/test_gw1_19_first_half_chip_path.py`.
+- **Decisions:** Recommend WC4 + BB1 + TC17 Haaland + FH19 = 1201.59 Dual-Vector xP. Do not overwrite Canonical 364.21. Dual-Vector is research-only.
 - **Blocked:** None.
-- **Next:** Idle. Dual NEW GKP Pope+Horníček stay two Regulars. Canonical GW1 BB + WC4 **364.21 xP**.
+- **Next:** Idle. Promote Dual-Vector / overwrite Canonical only on explicit user request.

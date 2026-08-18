@@ -6,13 +6,15 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Maintenance, real-data validation, and future model improvements.
+First-Half Chip Path published (sibling). Recommended **WC4 BB1 TC17 FH19 = 1201.59** Dual-Vector xP. Canonical **364.21** still live. Production `_fixture_maps` unchanged.
 
 Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
 
 ## Research truth (18 Aug)
 
 - Live chip path = Canonical Preseason Chip Path S1 **364.21 xP** (`gw1-6_wc4_summary.csv` one row).
+- **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue (home FDR = `strength_overall_home`; away FDR = `strength_overall_away`). 760/760 identity. Live API attack/defence = 0; `strength` null. Dual-Vector Strength (npxG) not in Python.
+- First-Half Chip Path sibling: WC4 **1201.59** Dual-Vector xP (BB1, WC4, TC17, FH19); WC3 1194.20. Canonical S1 Dual-Vector re-score 379.94 ≠ 364.21. Live DCS CSVs unchanged; Dual-Vector DCS under `data/research/gw1-19-first-half-chip-path/dcs/`.
 - Ranking metric = **DCS** (ADR 0015). RQI historical.
 - Stage 1/2/ownership: **575** rows, **234** Draft-eligible. API **590** players. Trafford LEE, Rushworth COV.
 - GKP DCS GW1–19 #1: Rushworth+Donnarumma **127.13 xP / DCS 89.33**. Club FDR-min #1: `AVL-CHE-LIV-MCI-NFO` **2.4386**.

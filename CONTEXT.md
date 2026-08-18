@@ -54,7 +54,11 @@ _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
 The configurable lookahead window (3-8 gameweeks) used by the MILP solver to optimize transfer strategy and team selection.
-_Avoid_: Optimization length, gameweek plan
+_Avoid_: Optimization length, gameweek plan, First-Half Horizon
+
+**First-Half Horizon**:
+Research window GW1–19 covering Set 1 chips. Not a Planning Horizon.
+_Avoid_: Planning Horizon, full-season, GW1–6 Canonical window
 
 **Event Component**:
 A decomposed scoring input (minutes, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, penalty events) used by a component model to reconstruct a Projection via the FPL scoring matrix, rather than predicting total points directly.
@@ -292,9 +296,21 @@ _Avoid_: Merged research report, complete source transcription
 Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes.
 _Avoid_: Top-down power rating, single composite score xP prediction
 
+**Official Fixture Difficulty**:
+Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. In 2026/27 it equals the opponent Club Strength Vector overall at the focal venue (home FDR = opponent `strength_overall_home`; away FDR = opponent `strength_overall_away`). Not a blend of attack and defence.
+_Avoid_: Dual-Vector Strength, Club Strength Vector, treating API strength as a finer FDR
+
+**Club Strength Vector**:
+Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Live 2026/27: `strength` null, attack/defence all 0, overall already the 2–5 Official Fixture Difficulty ticks.
+_Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only)
+
 **Dual-Vector Strength**:
-Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to official FDR only when data is sparse.
-_Avoid_: Static FDR multiplier, single team rating
+Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Not implemented in production Python; not the API Club Strength Vector.
+_Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed
+
+**Prior-Season Dual-Vector Seed**:
+Cold-Start Dual-Vector Strength from the latest archive season: club attack = sum of player `expected_goals` per club-fixture; club defence = that fixture’s `expected_goals_conceded` (one team value, not summed across players); home/away split; scaled to league average. Promoted Clubs use league average. FPL-xG proxy, not npxG. Feeds research xP multipliers and DCS effective FDR (`defence_multiplier × 3`).
+_Avoid_: Dual-Vector Strength (live rolling npxG), Club Strength Vector, Official Fixture Difficulty
 
 **Recency-Weighted Prior Shrinkage**:
 Event Rate estimation method blending a multi-season prior with exponential recency decay over recent matches (e.g. 10 appearances) and applying Bayesian shrinkage for sample-constrained / low-minute players.
@@ -314,7 +330,11 @@ _Avoid_: OC-RQI, net value, RQI points term
 
 **Canonical Preseason Chip Path**:
 The live GW1–6 research plan: Bench Boost in GW1, locked transfers GW1–3, Wildcard in GW4, roll the GW5 free transfer, enter GW6 with four banked Free Transfers. Stage 3 publishes this path only. Its 15-man keepers are a MILP squad pick, not a DCS pair.
-_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum
+_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum, First-Half Chip Path
+
+**First-Half Chip Path**:
+Sibling GW1–19 research plan under `docs/research/gw1-19-first-half-chip-path/`. Bench Boost GW1; two published Wildcard calendars (GW3 and GW4); Free Hit and Triple Captain forced in any week except GW1 and the Wildcard week; pre-WC and Wildcard 15s skip the Free Hit week in their objective; post-WC greedy Free Transfers, zero hits; greenfield Draft 15; Prior-Season Dual-Vector Seed on research xP and DCS only (production `_fixture_maps` unchanged). Headline metric = undiscounted Total xP. Does not replace Canonical Preseason Chip Path until accepted.
+_Avoid_: Canonical Preseason Chip Path, S13, spending Set 2 chips before GW20, writing Dual-Vector into production builder
 
 **Set-Piece Hierarchy**:
 Ordered ranking of designated set-piece takers (corners left/right, direct free-kicks, indirect free-kicks, penalties) per Club.
