@@ -1,7 +1,7 @@
 # FPL 2026/27 £4.5m Midfielders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-13T23:15:00+07:00
-**Data stamp**: Fantasy Football Scout article modified 2026-07-24 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
+**Updated**: 2026-08-18T15:05:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-07-24 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-18: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Source synthesis · Playwright extracted & cross-checked  
 **Purpose**: Capture source-led £4.5m midfielder minutes evidence, player statistics, and enabler evaluation  

@@ -1,5 +1,7 @@
 # 0013: Bottom-Up Calibrated Component Metrics, Dual-Vector Strength, and RQI
 
+**Status:** Accepted. Clause 4 (Points-Heavy RQI) superseded by [ADR 0015](0015-defensive-composite-score.md). Clauses 1–3 unchanged.
+
 ## Context
 
 Evaluating players, team strength, and complementary rotation pairs requires aligning metric architecture with FPL's discrete event scoring rules. Relying solely on static official FDR ratings or top-down composite power ratings obscures underlying event rates (xG, xA, defcon, saves) and prevents precise backtesting.
@@ -20,4 +22,4 @@ We establish the foundational metric and ability modeling architecture for proje
 
 - $xP$ projections remain fully auditable, event-decomposed, and backtestable against official FPL scoring rules.
 - Match-level strength adjustments react dynamically to team form and venue splits rather than relying on static integer FDR ratings.
-- Research reporting gains a standardized single-number benchmark (RQI) for evaluating complementary squad pairings.
+- Research reporting historically used RQI for complementary pairings. Live ranking is DCS (ADR 0015).

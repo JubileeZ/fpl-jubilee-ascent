@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-18T02:45:00+07:00  
+**Updated**: 2026-08-18T17:30:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -11,7 +11,7 @@
   - [**GW1–6 Preseason Pipeline Master README**](gw1-6-preseason-pipeline/README.md) · [Pipeline Runner](gw1-6-preseason-pipeline/run_pipeline.py) · [Downstream refresh](gw1-6-preseason-pipeline/refresh_downstream.py)
   - [Stage 1: Expected Role (GW1–5)](gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv)
   - [Stage 2: Expected Stats & Points Projections](gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv) · [GW1–5 Projections](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
-  - [Stage 3: GW1–6 Chip Exploration Matrix (16 scenarios)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
+  - [Stage 3: Canonical Preseason Chip Path (GW1 BB + WC4)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
 
 - **Ownership & Differential Screening**:
   - [Ownership Value Explorer (GW1–38)](ownership-value-explorer/ownership-value-explorer.md) · [Season projections](../../data/research/ownership-value-explorer/season_projections.csv) · [Metrics](../../data/research/ownership-value-explorer/ownership_value_metrics.csv) · [Interactive HTML](../../data/research/ownership-value-explorer/ownership_value_explorer.html)
@@ -37,8 +37,9 @@
 
 - **Role & Chip Strategy Models**:
   - [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](defensive-fixture-rotation/defensive-fixture-rotation.md) · [GKP Strategy](../../data/research/defensive-fixture-rotation/gkp_strategy_comparison.csv) · [GKP Rotation](../../data/research/defensive-fixture-rotation/gkp_rotation_matrix.csv) · [5-DEF Partitions](../../data/research/defensive-fixture-rotation/def_club_partitions_matrix.csv) · [5-DEF Tier Rotations](../../data/research/defensive-fixture-rotation/def_tier_player_rotations.csv) · [BB1 Backlines](../../data/research/defensive-fixture-rotation/backline_bb1_wc4_lineups.csv) · [WC4 Backlines](../../data/research/defensive-fixture-rotation/backline_gw4_19_lineups.csv) · [GW1–19 Backlines](../../data/research/defensive-fixture-rotation/backline_gw1_19_lineups.csv)
-  - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Stage 3 Exploration Matrix](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)
-  - *(Consolidated legacy)*: [Starter Goalkeeper Fixture Rotation](gkp-fixture-rotation/gkp-fixture-rotation.md) · [5-Defender Fixture Diversification](def-fixture-rotation/def-fixture-rotation.md)
+  - Stage 3 15-man keepers (MILP) are not the DCS goalkeeper pair. DCS ranks a Defensive Rotation Set; Canonical Preseason Chip Path picks a 15-man squad.
+  - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Stage 3 Canonical Path](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)
+  - Archived (not live): `docs/archive/gkp-fixture-rotation/`, `docs/archive/def-fixture-rotation/`; historical CSVs in `data/archive/gkp-fixture-rotation/`, `data/archive/def-fixture-rotation/`.
 
 - **Tactical & Dead-Ball Analytics**:
   - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)
@@ -66,9 +67,8 @@
 
 | Domain / Area | Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
 |---|---|---|---|---|---|---|
-| **Rotation** | **Opportunity-Cost Adjusted RQI** | `OC-RQI` | $\frac{\text{Rotated xP}}{N} - \gamma \times (\text{Total Spend} - \text{Floor})$ | Higher is better $\uparrow$ | **$> 6.10$** (GKP) / **$> 13.50$** (DEF) | Net weekly expected points after deducting empirical outfield shadow price ($\gamma \approx 0.25/\text{£1.0m/GW}$). Prevents over-investing in defensive capital. |
-| **Rotation** | **Rotation Quality Index** | `RQI` | Weighted score ($0\text{--}100$) combining $xP$, FOI/diff, FDR, and cost | Higher is better $\uparrow$ | **$\ge 65.0$ / 100** | Multi-dimensional composite evaluating fixture complementarity, point ceiling, and budget efficiency. |
-| **Rotation** | **Bench Boost RQI** | `BB-RQI` | Weighted score ($0\text{--}100$) evaluating BB active week + rotated weeks | Higher is better $\uparrow$ | **$\ge 60.0$ / 100** | Composite score for early 3-GW sprint (BB1/BB2) balancing full-squad starting strength with rotation weeks. |
+| **Rotation** | **Defensive Composite Score** | `DCS` | $0.60 \times S_{\text{Score}} + 0.40 \times S_{\text{Risk}}$ | Higher is better $\uparrow$ | **$\ge 80.0$ / 100** | Live ranking metric for a Defensive Rotation Set. Replaces RQI / OC-RQI. Not the Canonical Preseason Chip Path 15-man keepers. |
+| **Rotation** | **Opportunity-Cost Adjusted Score** | `OC-Score` | $\frac{\text{Rotated xP}}{N} - \gamma \times (\text{Spend} - \text{Floor})$ | Higher is better $\uparrow$ | **$> 6.00$** (GKP) / **$> 18.00$** (DEF) | Points factor inside DCS. $\gamma = 0.2944\text{ xP/£1.0m/GW}$. Floors: GKP £8.5m, DEF £20.0m, backline £28.5m. |
 | **Rotation** | **Fixture Overlap Index** | `FOI` | $\frac{1}{T}\sum (1 - p_{\text{cs1}})(1 - p_{\text{cs2}})$ | Lower is better $\downarrow$ | **$< 0.50$** (Min $\approx 0.40$) | Probability of joint clean-sheet failure across paired goalkeepers. Lower values guarantee schedule diversification. |
 | **Rotation** | **FDR Schedule Correlation** | $r$ / `avg_corr` | Pearson correlation between club FDR sequences across gameweeks | Lower is better $\downarrow$ (Negative) | **$r \le -0.10$** | Measures fixture alignment. Negative correlation ensures one team has an easy fixture when the other faces a top-6 opponent. |
 | **Rotation** | **Zero-Difficult Gameweeks** | `Zero-Diff %` | % of GWs where all started assets face FDR $\le 3$ | Higher is better $\uparrow$ | **$100.0\%$** | Completely avoids fielding starters against FDR $\ge 4$ elite attacks. |
@@ -76,7 +76,7 @@
 | **Rotation** | **Rotated / Effective FDR** | `Rot FDR` | Average weekly fixture difficulty rating across started slots | Lower is better $\downarrow$ | **$\le 2.40$** | Benchmark baseline for unrotated schedule is $3.00$; rotation targets $\le 2.40$. |
 | **Rotation** | **Rotated Expected Points** | `Rotated xP` | $\sum_{t=1}^N \max_{i \in \text{squad}} xP_{i,t}$ | Higher is better $\uparrow$ | Maximized | Sum of weekly projected points under optimal starting selection. |
 | **Rotation** | **Expected Clean Sheets** | `Exp CS` / $xCS$ | $\sum_{t=1}^N e^{-\lambda_{i^*,t}}$ where $\lambda$ = expected goals conceded | Higher is better $\uparrow$ | **$\ge 14.0$ / season** (or $\ge 2.20$ in GW1–6) | Poisson-derived clean-sheet expectation for the started goalkeeper or defense. |
-| **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across GW1–6 under specific chip path | Higher is better $\uparrow$ | **$\ge 340.0\text{ xP}$** (S13: $340.14\text{ xP}$) | MILP-optimized points under transfer, captain, and chip constraints. |
+| **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across GW1–6 under Canonical Preseason Chip Path | Higher is better $\uparrow$ | **$\ge 364.0\text{ xP}$** (S1: $364.21\text{ xP}$) | MILP-optimized points under locked GW1–3 Bench Boost, GW4 Wildcard, and GW5 roll. Historical 16-scenario S13 $340.14$ is not this experiment. |
 | **Chip Strategy** | **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Net points gained by deploying specific chip combinations early vs holding. |
 | **Chip Strategy** | **Auto-Sub Expected Value** | `Auto-sub EV` | $+12\% \times xP(\text{Def 4}) + 3\% \times xP(\text{Def 5})$ | Higher is better $\uparrow$ | Inherent buffer | Expected points harvested from benched defenders when starters are unexpectedly benched or rested. |
 | **Ownership** | **Projected Rate** | `xP/90` | Expected points per 90 minutes normalized by role and fixture | Higher is better $\uparrow$ | **$\ge 5.0$** (Enabler) / **$\ge 7.0$** (Premium) | Normalized per-minute scoring potential. |

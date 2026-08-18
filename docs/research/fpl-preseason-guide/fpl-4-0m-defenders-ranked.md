@@ -1,21 +1,21 @@
 # FPL 2026/27: £4.0m Defenders Ranked for Gameweek 1 After Pre-Season
 
-**Updated**: 2026-08-17T23:55:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-17 (modified 2026-08-17T14:44:39Z); author `avfc82` / `Villans82`; final preseason friendlies completed; cross-checked against `expected-role-gw1-5.md` (564-player coverage) and `fpl-summer-transfers.md`  
+**Updated**: 2026-08-18T15:05:00+07:00
+**Data stamp**: Fantasy Football Scout article published 2026-08-17 (modified 2026-08-17T14:44:39Z); Playwright recheck 2026-08-18 unmodified; cross-checked against `expected-role-gw1-5.md` (575 contention rows) and `fpl-summer-transfers.md`  
 **Season**: 2026/27  
 **Status**: Active · Source synthesis · Playwright full-page extracted  
 **Purpose**: Capture definitive post-preseason ranking of £4.0m defenders for Gameweek 1 Bench Boost and starting XI appeal  
 **Scope**: 7 ranked £4.0m defenders (Bobby Thomas, Aurele Amenda, Issa Diop, Luke O'Nien, Leif Davis, Dara O'Shea, Milan van Ewijk) plus watchlist pool (Hull City CBs Egan/Ajayi/Mendy, Giles/Targett, Jacob Greaves). Non-data promotional graphics omitted; FotMob Coventry defensive lineup graphic transcribed; Fixture Ticker GW1 Clean Sheet Odds transcribed.  
-**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.0m defenders initial assessment](fpl-4-0m-defenders.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Summer transfers](fpl-summer-transfers.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [5-Defender Fixture Rotation](../def-fixture-rotation/def-fixture-rotation.md)
+**Related**: [Pre-season guide directory](fpl-preseason-guide.md) · [£4.0m defenders initial assessment](fpl-4-0m-defenders.md) · [£4.5m defenders](fpl-4-5m-defenders.md) · [Summer transfers](fpl-summer-transfers.md) · [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md)
 
 > Note created 2026-08-17 from new Fantasy Football Scout ranking article published following the conclusion of all club pre-season friendlies. Source claims not independently validated.
 
 ## Sources
 
 - **Primary**: [£4.0m FPL defenders ranked for Gameweek 1 after pre-season — Fantasy Football Scout](https://www.fantasyfootballscout.co.uk/2026/08/17/4-0m-fpl-defenders-ranked-for-gameweek-1-after-pre-season) — published 2026-08-17T14:15:00Z; modified 2026-08-17T14:44:39Z; author `avfc82` (`Villans82`); role: definitive post-preseason £4.0m defender rankings for Gameweek 1
-- **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-08-17; role: 564-player starting role priors and XI contention validation
+- **Cross-check**: [Expected Role GW1–5](../gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) — updated 2026-08-18; role: 575-row starting role priors and XI contention validation
 - **Cross-check**: [Confirmed Summer Transfers](fpl-summer-transfers.md) — updated 2026-08-17; role: transfer arrivals (Diop £8.5m to IPS, Amenda £17m to COV, Mendy £21m to HUL, Targett to HUL)
-- **Cross-check**: [5-Defender Fixture Rotation & Diversification](../def-fixture-rotation/def-fixture-rotation.md) — updated 2026-08-16; role: combinatorial 5-defender lineups and BB1/BB2 optimal rotations
+- **Cross-check**: [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) — DCS ranking; club FDR-min #1 `AVL-CHE-LIV-MCI-NFO`
 
 **Source boundary**: Source claims cross-checked against internal project notes. No live FPL API refresh or solver optimization run performed in this note.
 
@@ -48,7 +48,7 @@ Full redo docs/research/fpl-preseason-guide/fpl-4-0m-defenders-ranked.md
 2. Transcribe FotMob lineup confirmation for Coventry's defensive unit against Monaco.
 3. Transcribe Fixture Ticker Clean Sheet Odds for Gameweek 1.
 4. Extract watchlist assessment for Hull City defenders and unranked rotation risks.
-5. Cross-check rankings and tactical deployments against 564-player Expected Role classifications.
+5. Cross-check rankings and tactical deployments against 575-row Expected Role classifications.
 
 ### Metric Definitions & Direction
 
@@ -151,7 +151,7 @@ Transcribed from source graphic:
    - Centre-backs (Thomas, Amenda, Diop) offer higher DefCon baselines and set-piece target potential.
    - Full-backs (van Ewijk, Davis, O'Shea) offer open-play assist and long-throw routes but lower DefCon floors.
 4. **Starter Validation**:
-   - All 7 ranked defenders are validated as `Regular Starter` or `Nailed Starter` in our 564-player `expected-role-gw1-5.csv` and Stage 2 projection models.
+   - All 7 ranked defenders are validated as `Regular Starter` or `Nailed Starter` in our 575-row `expected-role-gw1-5.csv` and Stage 2 projection models.
 
 ### Practical implications
 
@@ -188,6 +188,6 @@ Transcribed from source graphic:
 - [x] Confirm author (`avfc82`), publication date (2026-08-17), and exact ranking order (1–7).
 - [x] Transcribe full player profiles, DefCon statistics, Championship data, and pre-season friendly notes.
 - [x] Transcribe FotMob lineup confirmation and FFS Fixture Ticker Clean Sheet Odds graphic.
-- [x] Cross-check against `expected-role-gw1-5.md` (564-player coverage) and `fpl-summer-transfers.md`.
+- [x] Cross-check against `expected-role-gw1-5.md` (575-row coverage) and `fpl-summer-transfers.md`.
 - [x] Update parent guide index (`fpl-preseason-guide.md`) and master research index (`INDEX.md`).
 - [x] Delete `.tmp/agent/` scratch files before completion.

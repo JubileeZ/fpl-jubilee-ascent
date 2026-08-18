@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "data" / "research" / "def-fixture-rotation"
+OUT = ROOT / "data" / "archive" / "def-fixture-rotation"
 MATRIX = OUT / "def_club_5way_rotation_matrix.csv"
 BB2_MATRIX = OUT / "def_bb2_wc4_club_matrix.csv"
 PRIORS = OUT / "def_club_cs_priors.csv"

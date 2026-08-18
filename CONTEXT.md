@@ -300,10 +300,21 @@ _Avoid_: Static FDR multiplier, single team rating
 Event Rate estimation method blending a multi-season prior with exponential recency decay over recent matches (e.g. 10 appearances) and applying Bayesian shrinkage for sample-constrained / low-minute players.
 _Avoid_: Simple unweighted current-season average, static role rates
 
-**Rotation Quality Index (RQI)**:
-A composite 0–100 score synthesizing horizon-matched rotated expected points per gameweek under the FDR-min pick rule ($S_{\text{tot\_xp}}$, 40%), schedule difficulty ($S_{\text{fdr}}$, 20%), Pearson correlation ($S_{\text{corr}}$, 20%), easy fixture percentage ($S_{\text{easy}}$, 10%), and budget efficiency ($S_{\text{cost}}$, 10%) to rank complementary player rotation pairs (e.g. GKP or DEF pairings). Optional max(xP) total is a separate upper-bound column, not the RQI points term.
-$$\text{RQI} = 0.40 \cdot S_{\text{tot\_xp}} + 0.20 \cdot S_{\text{fdr}} + 0.20 \cdot S_{\text{corr}} + 0.10 \cdot S_{\text{easy}} + 0.10 \cdot S_{\text{cost}}$$
-_Avoid_: Relative gain alone without total points weighting, unweighted rotation score, raw FDR correlation alone, reusing a short-horizon xP total inside a longer-horizon RQI
+**Defensive Composite Score (DCS)**:
+A 0–100 ranking of a Defensive Rotation Set: 60% opportunity-cost-adjusted rotated expected points plus 40% fixture-risk (zero-difficult weeks, rotated FDR, schedule correlation).
+_Avoid_: RQI, OC-RQI, Rotation Quality Index
+
+**Defensive Rotation Set**:
+A goalkeeper pair, five-defender set, or seven-asset backline ranked by DCS. Distinct from the Canonical Preseason Chip Path 15-man squad (including its keepers).
+_Avoid_: GKP pick (ambiguous vs squad keepers), the defensive squad, RQI pair
+
+**Opportunity-Cost Adjusted Score (OC-Score)**:
+Weekly rotated expected points minus the outfield shadow price $\gamma$ times spend above the position floor (GKP £8.5m, DEF £20.0m, backline £28.5m). Points factor inside DCS, not a separate ranking metric.
+_Avoid_: OC-RQI, net value, RQI points term
+
+**Canonical Preseason Chip Path**:
+The live GW1–6 research plan: Bench Boost in GW1, locked transfers GW1–3, Wildcard in GW4, roll the GW5 free transfer, enter GW6 with four banked Free Transfers. Stage 3 publishes this path only. Its 15-man keepers are a MILP squad pick, not a DCS pair.
+_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum
 
 **Set-Piece Hierarchy**:
 Ordered ranking of designated set-piece takers (corners left/right, direct free-kicks, indirect free-kicks, penalties) per Club.

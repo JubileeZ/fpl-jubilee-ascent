@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £5.0m+ Goalkeepers
 
-**Updated**: 2026-08-13T23:15:00+07:00
-**Data stamp**: Fantasy Football Scout article modified 2026-07-31 (unchanged on 2026-08-13 recheck); accessed 2026-08-13
+**Updated**: 2026-08-18T15:05:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-07-31 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-18: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £5.0m+ goalkeepers for FPL 2026/27 squad structure and goalkeeper selection  

@@ -1,7 +1,7 @@
 # FPL 2026/27 Summer Transfers — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-17T23:55:00+07:00  
-**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-15 (modified 2026-08-17T11:55:58Z); page reviewed 2026-08-17  
+**Updated**: 2026-08-18T15:05:00+07:00
+**Data stamp**: Fantasy Football Scout transfer register includes moves announced through 2026-08-15 (modified 2026-08-17T11:55:58Z); page reviewed 2026-08-17  ; Playwright recheck 2026-08-18: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Source synthesis · not independently validated  
 **Purpose**: Capture confirmed-move register and identify FPL-relevant follow-up questions  

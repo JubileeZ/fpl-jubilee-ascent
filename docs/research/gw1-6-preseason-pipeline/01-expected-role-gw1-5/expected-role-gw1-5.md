@@ -1,12 +1,12 @@
 # FPL 2026/27 Expected Role (GW1–5) — 20-Club Audit & Mins Priors
 
-**Updated**: 2026-08-18T02:30:00+07:00  
+**Updated**: 2026-08-18T15:05:00+07:00  
 **Data stamp**: FFS Team News + FPL Meerkat scraped 2026-08-18 (post name-match fix); `players.parquet` 2026-08-18 (590 players; Trafford LEE, Rushworth COV)  
 **Season**: 2026/27  
 **Status**: Active Research Model  
 **Purpose**: Assign fit-conditional Expected Role, dated Draft Availability, and Participation State priors across all 20 clubs for GW1–5 seeding  
 **Scope**: XI Contention Set (scaffold + FFS XI injects); Draft Shortlist = Nailed + Regular; Availability Overlay separately applies `eligible`, `watch`, `exclude_gw1`, `exclude_gw1-5`  
-**Related**: [Preseason Pipeline Master README](../README.md) · [Expected Stats (Stage 2)](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [GW1–6 Chip Matrix (Stage 3)](../03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)  
+**Related**: [Preseason Pipeline Master README](../README.md) · [Expected Stats (Stage 2)](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [Canonical Preseason Chip Path (Stage 3)](../03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md)  
 **Artifacts**:
 - [Expected Role CSV](../../../../data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv)
 
@@ -773,7 +773,7 @@ Complete roster of all 575 players across the 20 Premier League clubs in the FPL
 
 ## Decision
 
-**Verdict**: 20-club Expected Role scaffold refreshed from dual live scrape (FFS + Meerkat), 357 contention rows, 227 Draft-eligible players categorized. Identity match uses FPL first/second name so B.Fernandes ≠ Bruno G. and Virgil matches Van Dijk.
+**Verdict**: 20-club Expected Role scaffold refreshed from dual live scrape (FFS + Meerkat), **575** contention rows, **234** Draft-eligible (Nailed 77 + Regular 157). Identity match uses FPL first/second name so B.Fernandes ≠ Bruno G. and Virgil matches Van Dijk. Single-token source names match `web_name` or surname last token only.
 
 ---
 

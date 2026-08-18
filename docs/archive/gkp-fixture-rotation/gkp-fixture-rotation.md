@@ -1,15 +1,15 @@
 # Starter Goalkeeper Fixture Rotation & FDR Correlation Study
 
 > [!NOTE]
-> **Consolidated & Superseded**: This standalone goalkeeper research note has been consolidated into the unified authority: [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](../defensive-fixture-rotation/defensive-fixture-rotation.md). Refer there for the 2026-08-18 API refresh (Trafford LEE, Rushworth COV) and corrected GW1 opponents.
+> **Consolidated & Superseded**: Archived 2026-08-18. Live authority: [**Defensive Architecture, Strategy & Fixture Rotation**](../../research/defensive-fixture-rotation/defensive-fixture-rotation.md). S13 340.14 / RQI tables below are historical.
 
 **Updated**: 2026-08-18T01:15:00+07:00  
 **Data stamp**: Superseded. Live numbers in `docs/research/defensive-fixture-rotation/`. FPL API 2026-08-18.  
 **Season**: 2026/27  
 **Purpose**: Identify pairs of **genuine starting goalkeepers** (Nailed Starter or Regular Starter) costing <= £9.5m combined with the highest horizon-matched rotated expected points under FDR-min weekly picks, negative FDR correlation, and lowest rotated average FDR.  
-**Related**: [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py)  
+**Related**: [Unified Defensive Rotation](../../research/defensive-fixture-rotation/defensive-fixture-rotation.md) · [Expected Stats (Stage 2)](../../research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [First-Half Chip Strategy](../../research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Downstream refresh](../../research/gw1-6-preseason-pipeline/refresh_downstream.py)  
 **Sources**: `data/processed/fixtures.parquet`, `data/processed/players.parquet`, `data/processed/clubs.parquet`, `data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv`, `data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv`  
-**Artifacts**: [`gkp_rotation_matrix.csv`](../../../data/research/gkp-fixture-rotation/gkp_rotation_matrix.csv), [`gkp_performance_baseline.csv`](../../../data/research/gkp-fixture-rotation/gkp_performance_baseline.csv)  
+**Artifacts**: [`gkp_rotation_matrix.csv`](../../../data/archive/gkp-fixture-rotation/gkp_rotation_matrix.csv), [`gkp_performance_baseline.csv`](../../../data/archive/gkp-fixture-rotation/gkp_performance_baseline.csv)  
 **Script**: [`run_gkp_rotation_analysis.py`](run_gkp_rotation_analysis.py)
 
 ---
@@ -22,7 +22,7 @@ Refresh starter GKP fixture rotation (consumes Stage 2 rates):
 1. Prefer full downstream after a rate / new-player change:
    uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
    This topic only:
-   uv run python docs/research/gkp-fixture-rotation/run_gkp_rotation_analysis.py
+   uv run python docs/archive/gkp-fixture-rotation/run_gkp_rotation_analysis.py
 2. Rank Nailed/Regular pairs, different clubs, combined cost <= £9.5m.
    Flat-90 ParticipationStateHybridModel GW1-38. FDR-min pick. Horizon-matched RQI.
    Promoted proxy tag: COV, HUL, IPS.
@@ -182,7 +182,7 @@ Authority = `expected-stats-gw1-5.csv` inputs consumed by the hybrid scorer (`pe
 
 ## Pre-WC Bench Boost Pairings vs Post-WC4 Structural Archetypes
 
-Strategic linkage: [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) establishes **BB2 + TC3 (Haaland) + WC4 Opt1** (Scenario S13, **340.14 xP**) as repo baseline. Decouples goalkeeper planning into two distinct structural phases:
+Strategic linkage: [First-Half Chip Strategy](../../research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) establishes **BB2 + TC3 (Haaland) + WC4 Opt1** (Scenario S13, **340.14 xP**) as repo baseline. Decouples goalkeeper planning into two distinct structural phases:
 
 ```
 Pre-WC Sprint (GW1–3)                       Post-WC4 Horizon (GW4–19 / Full Season)
@@ -233,7 +233,7 @@ GW4 Wildcard wipes pre-season squad constraints, resetting goalkeeper architectu
 
 **Data Source**: `data/archive/2025-26/processed/` (38 Gameweeks)  
 **Script**: [`run_historical_backtest.py`](run_historical_backtest.py)  
-**Artifacts**: [`historical_single_gkps_2025_26.csv`](../../../data/research/gkp-fixture-rotation/historical_single_gkps_2025_26.csv), [`historical_pair_rotations_2025_26.csv`](../../../data/research/gkp-fixture-rotation/historical_pair_rotations_2025_26.csv)
+**Artifacts**: [`historical_single_gkps_2025_26.csv`](../../../data/archive/gkp-fixture-rotation/historical_single_gkps_2025_26.csv), [`historical_pair_rotations_2025_26.csv`](../../../data/archive/gkp-fixture-rotation/historical_pair_rotations_2025_26.csv)
 
 ### 1. Revised Strategy Comparison & Category Averages (Regular Starters)
 

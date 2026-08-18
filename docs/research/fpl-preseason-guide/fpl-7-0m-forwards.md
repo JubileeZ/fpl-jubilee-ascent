@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £7.0m+ Forwards
 
-**Updated**: 2026-08-13T23:15:00+07:00  
-**Data stamp**: Fantasy Football Scout article published 2026-08-11 (modified 2026-08-11); accessed 2026-08-13; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md  
+**Updated**: 2026-08-18T15:05:00+07:00
+**Data stamp**: Fantasy Football Scout article published 2026-08-11 (modified 2026-08-11); accessed 2026-08-13; cross-checked against expected-role-gw1-5.md and fpl-summer-transfers.md  ; Playwright recheck 2026-08-18: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £7.0m+ premium forwards for FPL 2026/27 captaincy, ownership, and opening-fixture appeal  

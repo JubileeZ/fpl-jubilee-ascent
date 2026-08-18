@@ -1,6 +1,6 @@
 # GW1–6 Preseason Research & Optimization Pipeline (Consolidated Suite)
 
-**Updated**: 2026-08-18T02:45:00+07:00  
+**Updated**: 2026-08-18T15:05:00+07:00  
 **Data stamp**: FPL API refresh 2026-08-18 (590 players); Stage 1 scrape 575 rows (name-match fix; Trafford LEE, Rushworth COV); Stage 2 ADR-0014; downstream 2026-08-18; GW1 deadline 2026-08-21T17:30:00Z  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Master Pipeline  
@@ -44,12 +44,12 @@
                │                          │
                ▼                          ▼
 ┌──────────────────────────┐   ┌────────────────────────────┐
-│ GKP / DEF rotation notes │   │ Ownership Value Explorer   │
-│ (standalone topics)      │   │ (standalone; needs Stage 3)│
+│ Unified DCS rotation     │   │ Ownership Value Explorer   │
+│ (standalone topic)       │   │ (standalone; needs Stage 3)│
 └──────────────────────────┘   └────────────────────────────┘
 ```
 
-Standalone (not pipeline stages): [Ownership Value Explorer (GW1–38)](../ownership-value-explorer/ownership-value-explorer.md) · [GKP rotation](../gkp-fixture-rotation/gkp-fixture-rotation.md) · [DEF rotation](../def-fixture-rotation/def-fixture-rotation.md) — all consume Stage 2 rates.
+Standalone (not pipeline stages): [Ownership Value Explorer (GW1–38)](../ownership-value-explorer/ownership-value-explorer.md) · [Unified defensive rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) — consume Stage 2 rates. Archived GKP/DEF notes: `docs/archive/`.
 
 Shared overlay module: [`availability_priors.py`](availability_priors.py) — Watch $p_{\text{start}}\times0.70$ on GW1–5; `exclude_gw1-5` zeros GW1–5 only.
 

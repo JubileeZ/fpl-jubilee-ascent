@@ -1,6 +1,6 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-18T02:45:00+07:00  
+**Updated**: 2026-08-18T15:05:00+07:00  
 **Data stamp**: Expected Role Table 2026-08-18 (575 rows; name-match fix); Prior-Season Seed (min 900m) + Career Individual Rate + Destination Team Concede Rate (ADR-0014); FPL API refresh 2026-08-18  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
@@ -66,7 +66,7 @@ Thin samples (`minutes` < 900) shrink toward Research Position Baseline. Club-ch
 
 ### 2. $xP$ reconstruction
 - Feature rows GW1–5 with Expected Role Priors + availability overlays.
-- Softmax bonus over full 575 players; CSV export = Nailed + Regular only (239 rows).
+- Softmax bonus over full 575 players; CSV export = Nailed + Regular only (**234** rows).
 - Appearance blend 3→8 unchanged; GW1 weight = 0 (Cold-Start).
 
 ### Metric Definitions & Direction

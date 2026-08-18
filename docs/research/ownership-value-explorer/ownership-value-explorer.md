@@ -1,6 +1,6 @@
-# Ownership Value Explorer (Full Season & Early Chip Matrix)
+# Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-18T02:45:00+07:00  
+**Updated**: 2026-08-18T15:05:00+07:00  
 **Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-18; Stage 3 GW1 BB + WC4 364.21 xP  
 **Season**: 2026/27 · default horizon GW1–38 (GW1–6 toggle)  
 **Status**: Active Research Model & Visualization Suite  
@@ -45,10 +45,10 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 - **Overlay markers**:
   - `★` (gold star / amber border) = **GW1 BB Pre-WC Squad** (GW1 Bench Boost sprint; 15 starters scoring, 190.84 xP GW1–3).
   - `⬡` (hexagon / sky blue border) = **WC4 Core Squad** (Stage 3 WC4 optimal 15 post-WC lineup, 173.37 xP GW4–6).
-  - `■` (square / purple border) = **S5 Pre-WC Squad** (Legacy BB1 + TC3 Pre-Wildcard).
-  - `▲` (triangle-up / teal border) = **S1 Pre-FH Squad** (Legacy BB1 + FH3).
+  - `■` (square / purple border) = **S5 Pre-WC Squad** (historical 16-scenario BB1 + TC3; not live Stage 3).
+  - `▲` (triangle-up / teal border) = **S1 Pre-FH Squad** (historical 16-scenario BB1 + FH3 tag in the CSV; live Canonical S1 is the ★ GW1 BB overlay).
   - `◆` (diamond / black border) = **User squad** (`data/processed/user_picks.parquet`).
-- **Player table**: complete player list (564 players) under chart. Search by player name, club, or expected role. **On chart** shows filter status. Off-chart players display reasons (e.g. xMins floor). Search highlights and forces marker onto chart. Squad overlay badges list membership tags (GW1 BB, WC4, S5, S1, User).
+- **Player table**: complete player list (**575** players) under chart. Search by player name, club, or expected role. **On chart** shows filter status. Off-chart players display reasons (e.g. xMins floor). Search highlights and forces marker onto chart. Squad overlay badges list membership tags (GW1 BB, WC4, historical S5/S1, User).
 
 ### Filters
 
@@ -58,7 +58,7 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 | **Position** | Checkbox per position GKP / DEF / MID / FWD |
 | **Club** | Search box narrows visible clubs; **All** / **None** buttons toggle visible clubs; individual club checkboxes |
 | **Price (£m)** | Min / max price band range |
-| **Avg xMins floor** | Hide low-minute spikes from chart (default **45.0** mins; slider 0–90). Full table retains all 564 players. |
+| **Avg xMins floor** | Hide low-minute spikes from chart (default **45.0** mins; slider 0–90). Full table retains all **575** players. |
 | **Overlays** | Toggle checkboxes for ★ GW1 BB (Pre-WC), ⬡ WC4 Core, ■ S5, ▲ S1, ◆ User squad; **Only overlay players** filters chart to flagged squad members |
 | **Player list** | Interactive search filtering table and pinning matching players to chart |
 
@@ -127,7 +127,7 @@ The explorer allows managers to evaluate both phases of the **GW1 BB + WC4** can
 ## Findings
 
 - Default view is **GW1–38** differentials (own% vs season xP/90).
-- Contention list contains 564 players; chart default floor 45.0 xMins plots 250 regular/nailed starters.
+- Contention list contains **575** players; chart default floor 45.0 xMins plots regular/nailed starters.
 - GW1 BB Pre-WC sprint features high-ceiling low-owned differential assets (Tzolis 1.4%, Vuskovic 2.8%, Wieffer 0.3%, Maeda 0.4%, Núñez 0.2%, Ballard 3.2%).
 - WC4 Core squad pairs template anchors (Haaland 75.1%, Gabriel 25.7%, Calafiori 14.5%, Isak 11.6%, Sarr 10.5%) with low-owned value drivers (Tzolis 1.4%, Vuskovic 2.8%, Wieffer 0.3%, Enzo 5.4%, Roefs 5.4%, Andrews 0.7%, Johnson 0.2%).
 - Low-xMins cameo players inflate raw xP/90 — maintain floor ≥ 45 unless explicitly analyzing cameo efficiency.

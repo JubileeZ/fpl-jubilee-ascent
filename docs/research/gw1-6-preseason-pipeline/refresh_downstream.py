@@ -4,7 +4,7 @@ Does not scrape Stage 1 (HTTP). When roles change, run run_pipeline.py first
 (or refresh_expected_role.py), add CAREER_INDIVIDUAL_RATES for any new Draft
 player without a Prior-Season Seed, then run this script.
 
-Order: Stage 2 → Stage 3 → GKP rotation → DEF rotation (incl. WC4 bridges)
+Order: Stage 2 → Stage 3 Canonical Preseason Chip Path → unified DCS defensive rotation
 → ownership explorer (needs Stage 3 overlays).
 """
 
@@ -40,7 +40,7 @@ def main() -> None:
         "project_gw1_5_points",
     )()
 
-    print("\n--- Stage 3: GW1–6 chip matrix ---")
+    print("\n--- Stage 3: Canonical Preseason Chip Path ---")
     _load(
         "docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/run_wc4_simulation.py",
         "run_full_wc4_study",

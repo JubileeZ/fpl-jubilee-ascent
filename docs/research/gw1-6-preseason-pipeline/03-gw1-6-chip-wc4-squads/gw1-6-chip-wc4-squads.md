@@ -1,6 +1,6 @@
 # GW1–6 Chip Strategy & Wildcard Squad Optimization (GW1 BB + WC4)
 
-**Updated**: 2026-08-18T02:45:00+07:00  
+**Updated**: 2026-08-18T15:05:00+07:00  
 **Data stamp**: FPL API refresh 2026-08-18 (590 players); Stage 1 575 rows (name-match fix); Stage 2 ADR-0014 rates; Trafford LEE / Rushworth COV; GW1 deadline 2026-08-21T17:30:00Z  
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Research Model  
@@ -84,4 +84,18 @@ Haaland is **not** in the pre-WC 15. Trafford is no longer a City option (LEE af
 
 ## Decision
 
-**Verdict**: The **GW1 Bench Boost + GW4 Wildcard** strategy achieves **364.21 xP** across GW1–6 while preserving **4 Banked Free Transfers** into GW6. Wildcard brings Haaland in for GW4–6 (captain GW5, home vs Coventry is GW3 — he is not owned until WC4).
+**Verdict**: The **GW1 Bench Boost + GW4 Wildcard** strategy achieves **364.21 xP** across GW1–6 while preserving **4 Banked Free Transfers** into GW6. Wildcard brings Haaland in for GW4–6 (captain GW5, home vs Coventry is GW3 — he is not owned until WC4). Pre-WC keepers **Raya + Donnarumma** are the MILP 15-man pick, not the DCS GW1–19 pair (**Rushworth + Donnarumma**).
+
+## Risks and unknowns
+
+- Locked GW1–3: no modelled hits if BB1 assets DNP.
+- Triple Captain / Free Hit not in live Stage 3 CSV; do not mix frozen S13 340.14 with 364.21.
+- Trafford is LEE; Rushworth is COV. City GKP is Donnarumma.
+
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| **Scenario Expected Points** | `Total xP` | Sum of GW1–6 MILP scores under Canonical Preseason Chip Path | Higher $\uparrow$ | **364.21** (S1) | Only published Stage 3 row. |
+| **Bench Boost Active Score** | `BB Score` | 15-man GW1 sum including captain extra | Higher $\uparrow$ | **75.82** | Live S1 GW1. |
+| **Banked Transfer Liquidity** | `Banked FTs` | Free transfers entering GW6 | Higher $\uparrow$ | **4** | GW5 roll enforced. |

@@ -3,13 +3,14 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Complete
-- **Files:** `docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py`, `tests/test_expected_role_name_match.py`, role/stats/projection CSVs, research notes, `task.md`
-- **Decisions:** Score matrix correct. Role matcher was wrong: single-token source names hit middle/given names. Incoming transfers kept vacated Out of Contention. Floor those to Rotation; rebuild downstream. Pushed `9e4ce74` (`main`).
+- **Files:** `docs/adr/0015-defensive-composite-score.md`, `docs/adr/0013-*.md`, `CONTEXT.md`, `docs/agents/current-state.md`, `docs/archive/current-state-research-log.md`, `data/archive/gkp-fixture-rotation/`, `data/archive/def-fixture-rotation/`, `tests/test_defensive_fixture_rotation.py`, INDEX / chip / defensive notes
+- **Decisions:** ADR 0015 DCS supersedes 0013 clause 4. current-state compacted. Legacy CSVs → `data/archive/`. Tests on DCS runner. Glossary term Defensive Rotation Set (MILP 15 ≠ DCS pair).
 - **Blocked:** None.
-- **Next:** None. Dual NEW GKP (Pope Meerkat + Horníček FFS) left as two Regulars — conflict rules, not two Nailed. DCS = 0.60 S_Score + 0.40 S_Risk (defensive-fixture-rotation note).
-- **Objective:** Role, event rates, and xP for transferred/new starters match live FPL clubs and Stage 1 conflict rules.
+- **Next:** Idle.
+- **Objective:** Close leftover alignment: ADR, glossary split, archive CSVs, DCS tests, compact current-state.
 - **Acceptance:**
-  - [x] Role `club_short` equals API club for every contention row.
-  - [x] No club with two Nailed GKs; transferred #1s keep Draft role when FFS/Meerkat still start them.
-  - [x] Trafford/Rushworth dest GC from LEE/COV, not old clubs.
-  - [x] `uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh` green.
+  - [x] ADR 0015 accepted; 0013 clause 4 superseded.
+  - [x] `Defensive Rotation Set` in `CONTEXT.md`.
+  - [x] Legacy CSVs at `data/archive/gkp-fixture-rotation/` and `data/archive/def-fixture-rotation/`.
+  - [x] `uv run pytest tests/test_defensive_fixture_rotation.py` 9 passed. Full suite 168 passed, 2 failed (`fixtures.parquet` missing locally; pre-existing). Ruff green on touched Python.
+  - [x] current-state snapshot; diary in `docs/archive/current-state-research-log.md`.
