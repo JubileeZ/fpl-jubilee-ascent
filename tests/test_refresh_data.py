@@ -26,7 +26,7 @@ async def test_refresh_data_fetches_player_summaries():
          patch("commands.refresh_data.append_price_snapshot") as mock_price_snapshot:
          
         from commands.refresh_data import main
-        await main()
+        await main([])
         
         # Verify that bootstrap and fixtures were called
         mock_fetch_bootstrap.assert_called_once()

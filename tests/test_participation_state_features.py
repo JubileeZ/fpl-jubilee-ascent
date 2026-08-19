@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from features.builder import build_features
+from tests.expected_role_fixtures import role_kwargs, write_role_table
 
 
 def _write_processed(tmp_path: Path) -> Path:
@@ -40,7 +41,16 @@ def _write_processed(tmp_path: Path) -> Path:
 
 
 def test_participation_features_use_current_club_fixture_tenure(tmp_path):
-    features = build_features(_write_processed(tmp_path), target_gw=5, use_archive_seed=False)
+    processed = _write_processed(tmp_path)
+    table = write_role_table(tmp_path / "roles.csv", [1])
+    features = build_features(
+        processed,
+        target_gw=5,
+        use_archive_seed=False,
+        blend_start_appearances=0,
+        blend_full_appearances=1,
+        **role_kwargs(table),
+    )
     player = features.iloc[0]
 
     assert player["state_observation_weight"] == pytest.approx(1.0 + 0.95**2 + 0.95**3)
@@ -53,17 +63,24 @@ def test_participation_features_use_current_club_fixture_tenure(tmp_path):
 
 def test_state_recency_parameter_increases_weight_of_older_current_club_starts(tmp_path):
     processed = _write_processed(tmp_path)
+    table = write_role_table(tmp_path / "roles.csv", [1])
     lower_decay = build_features(
         processed,
         target_gw=5,
         use_archive_seed=False,
         state_recency_decay=0.85,
+        blend_start_appearances=0,
+        blend_full_appearances=1,
+        **role_kwargs(table),
     ).iloc[0]
     selected_decay = build_features(
         processed,
         target_gw=5,
         use_archive_seed=False,
         state_recency_decay=0.95,
+        blend_start_appearances=0,
+        blend_full_appearances=1,
+        **role_kwargs(table),
     ).iloc[0]
 
     assert selected_decay["state_observation_weight"] > lower_decay["state_observation_weight"]
@@ -91,4 +108,5 @@ def test_state_feature_parameters_are_validated(
             use_archive_seed=False,
             state_recency_decay=state_recency_decay,
             state_prior_strength=state_prior_strength,
+            **role_kwargs(write_role_table(tmp_path / "roles.csv", [1])),
         )

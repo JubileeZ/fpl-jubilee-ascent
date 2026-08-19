@@ -501,6 +501,7 @@ def refresh_expected_roles(
     players_parquet: str = "data/processed/players.parquet",
     clubs_parquet: str = "data/processed/clubs.parquet",
     client: httpx.Client | None = None,
+    season: str = "2026-27",
 ) -> pd.DataFrame:
     if output_csvs is None:
         output_csvs = [
@@ -524,6 +525,11 @@ def refresh_expected_roles(
     df = inject_missing_ffs_starters(df, ffs_xis, meerkat, players, clubs)
     df = rebuild_roles_from_sources(df, ffs_xis, meerkat, players=players)
     df = apply_api_and_official_availability(df, players)
+    df["season"] = season
+
+    from features.expected_role_prior import DEFAULT_LINEUP_SIGNALS, write_lineup_signals
+
+    write_lineup_signals(DEFAULT_LINEUP_SIGNALS, season, ffs_xis, meerkat)
 
     for web in ("Rushworth", "Kinsky", "Trafford", "Tzolakis"):
         mask = df["web_name"].map(lambda x, w=web: name_match(w, str(x)))

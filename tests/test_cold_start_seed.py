@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from features.builder import build_features
+from tests.expected_role_fixtures import role_kwargs, write_role_table
 
 
 def _write_current_processed(root):
@@ -63,7 +64,8 @@ def _write_archive_seed(root):
 def test_new_player_uses_position_price_prior_not_zero(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
-    df = build_features(processed, target_gw=2)
+    table = write_role_table(tmp_path / "roles.csv", [1])
+    df = build_features(processed, target_gw=2, **role_kwargs(table))
     newcomer = df[df["player_id"] == 2].iloc[0]
     assert bool(newcomer["has_prior_seed"]) is False
     assert bool(newcomer["has_fallback_prior"]) is True
@@ -76,17 +78,19 @@ def test_new_player_uses_position_price_prior_not_zero(tmp_path):
 def test_cold_start_uses_per_player_seed_and_prior_appearance_probability(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
-    df = build_features(processed, target_gw=2)
+    table = write_role_table(tmp_path / "roles.csv", [1])
+    df = build_features(processed, target_gw=2, **role_kwargs(table))
     player_one = df[df["player_id"] == 1].iloc[0]
     assert bool(player_one["has_prior_seed"]) is True
     assert player_one["per90_goals"] == 1.8
-    assert player_one["avg_mins_3gw"] == 100.0
-    assert player_one["chance_of_playing"] == 100.0
+    assert player_one["avg_mins_3gw"] == pytest.approx((0.90 * 85.0 + 0.05 * 20.0) / 0.95)
+    assert player_one["chance_of_playing"] == pytest.approx(95.0)
 
 
 def test_availability_override_caps_seeded_minutes(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
+    table = write_role_table(tmp_path / "roles.csv", [1])
     overrides = tmp_path / "availability_overrides.csv"
     overrides.write_text(
         "player_code,xmins_cap,source,expires_after_gw\n"
@@ -94,7 +98,7 @@ def test_availability_override_caps_seeded_minutes(tmp_path):
         encoding="utf-8",
     )
 
-    df = build_features(processed, target_gw=2, availability_overrides=overrides)
+    df = build_features(processed, target_gw=2, availability_overrides=overrides, **role_kwargs(table))
 
     assert df.loc[df["player_id"] == 1, "xmins_cap"].iloc[0] == 60.0
 
@@ -102,6 +106,7 @@ def test_availability_override_caps_seeded_minutes(tmp_path):
 def test_expired_availability_override_rejects_projection(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
+    table = write_role_table(tmp_path / "roles.csv", [1])
     overrides = tmp_path / "availability_overrides.csv"
     overrides.write_text(
         "player_code,xmins_cap,source,expires_after_gw\n"
@@ -110,4 +115,4 @@ def test_expired_availability_override_rejects_projection(tmp_path):
     )
 
     with pytest.raises(ValueError, match="expired before GW2"):
-        build_features(processed, target_gw=2, availability_overrides=overrides)
+        build_features(processed, target_gw=2, availability_overrides=overrides, **role_kwargs(table))

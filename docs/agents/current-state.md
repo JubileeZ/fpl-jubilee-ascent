@@ -8,7 +8,9 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 Live Canonical `gw1-6_wc4_summary.csv` `total_6gw_xp` = **383.76** (Prior-Season Dual-Vector Seed; BB1+WC4). Select 11: `gw1-6_select_11.csv`. First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. Live DCS on Seed under `data/research/defensive-fixture-rotation/`. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
+ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
+
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
 
 ## Research truth (19 Aug)
 
@@ -34,7 +36,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
-| Features & Projections | `features/`, `projections/` | Data compilers, solver projection exporters, Ownership Explorer slice metrics |
+| Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Interactive Squad Builder + Ownership Explorer. Full-Season Window Champion export. Usage: README §8. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
@@ -48,6 +50,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 - Committed Comparison Slate lives in `config/model_selection.json`; `commands.compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
 - Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
 - Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate.
+- Dual-Source Lineup Signals JSON is written on Expected Role Rebuild; no committed `lineup-signals.json` until next `--rebuild-roles`.
 
 ---
 
@@ -57,6 +60,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 uv run pytest                                          # Run pytest
 uv run ruff check .                                    # Lint code
 uv run python -m commands.refresh_data                 # Ingest current gameweek data
+uv run python -m commands.refresh_data --rebuild-roles # Ingest + Expected Role Rebuild
 uv run python -m commands.run_model linear_baseline    # Generate projections
 uv run python -m commands.run_model component_baseline # Generate component projections
 uv run python -m commands.run_model participation_state_hybrid # Operational default

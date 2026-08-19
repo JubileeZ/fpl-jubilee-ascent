@@ -1,11 +1,13 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
 
 from features.availability_snapshots import write_availability_snapshot
 from features.builder import build_features, history_before_target
+from tests.expected_role_fixtures import role_kwargs, write_role_table
 
 
 def _write_fixture_data(root: Path) -> Path:
@@ -75,12 +77,18 @@ def _write_fixture_data(root: Path) -> Path:
             "assists": 0,
         },
     ]).to_parquet(processed / "player_performances.parquet", index=False)
+    write_role_table(root / "roles.csv", [1])
     return processed
+
+
+def _build(processed: Path, **kwargs: Any) -> pd.DataFrame:
+    table = processed.parent / "roles.csv"
+    return build_features(processed, **{**role_kwargs(table), **kwargs})
 
 
 def test_feature_contract_retains_fixture_rows_and_horizon(tmp_path):
     processed = _write_fixture_data(tmp_path)
-    features = build_features(processed, target_gw=2, horizon=2, as_of_gw=2)
+    features = _build(processed, target_gw=2, horizon=2, as_of_gw=2)
 
     target = features[features["player_id"] == 1]
     assert list(target[target["gameweek_id"] == 2]["fixture_id"]) == [10, 11]
@@ -95,7 +103,7 @@ def test_feature_contract_does_not_trust_legacy_gameweek_labelled_snapshot(tmp_p
         {"player_id": 1, "snapshot_gameweek_id": 2, "chance_of_playing_next_round": 50.0},
     ]).to_parquet(processed / "player_snapshots.parquet", index=False)
 
-    features = build_features(processed, target_gw=2, as_of_gw=2)
+    features = _build(processed, target_gw=2, as_of_gw=2)
 
     assert features["chance_of_playing"].eq(100.0).all()
 
@@ -120,7 +128,7 @@ def test_point_in_time_features_require_verified_complete_snapshot(tmp_path):
     processed = _write_fixture_data(tmp_path)
     deadline = _write_verified_snapshot(processed, tmp_path / "snapshots")
 
-    features = build_features(
+    features = _build(
         processed,
         target_gw=2,
         as_of_gw=2,
@@ -147,8 +155,7 @@ def test_point_in_time_features_ignore_mutated_terminal_metadata(tmp_path):
         "target_deadline": deadline,
         "require_availability_snapshot": True,
     }
-    expected = build_features(processed, **kwargs)
-
+    expected = _build(processed, **kwargs)
     pd.DataFrame([
         {"id": 1, "club_id": 3, "position_id": 1, "now_cost": 1, "status": "u"},
     ]).to_parquet(processed / "players.parquet", index=False)
@@ -160,14 +167,14 @@ def test_point_in_time_features_ignore_mutated_terminal_metadata(tmp_path):
     pd.DataFrame([
         {"id": 99, "gameweek_id": 2, "home_club_id": 3, "away_club_id": 2, "team_h_difficulty": 5, "team_a_difficulty": 1},
     ]).to_parquet(processed / "fixtures.parquet", index=False)
-    actual = build_features(processed, **kwargs)
+    actual = _build(processed, **kwargs)
 
     pd.testing.assert_frame_equal(expected, actual)
 
 
 def test_point_in_time_features_reject_missing_snapshot(tmp_path):
     with pytest.raises(ValueError, match="Missing immutable availability snapshot"):
-        build_features(
+        _build(
             _write_fixture_data(tmp_path),
             target_gw=2,
             as_of_gw=2,
@@ -186,7 +193,7 @@ def test_history_excludes_delayed_fixture_after_target_deadline(tmp_path):
     )
     delayed.to_parquet(processed / "player_performances.parquet", index=False)
 
-    features = build_features(
+    features = _build(
         processed,
         target_gw=2,
         as_of_gw=2,
@@ -206,7 +213,7 @@ def test_point_in_time_features_reject_history_without_kickoff_time(tmp_path):
     performances.to_parquet(processed / "player_performances.parquet", index=False)
 
     with pytest.raises(ValueError, match="requires kickoff_time"):
-        build_features(
+        _build(
             processed,
             target_gw=2,
             as_of_gw=2,

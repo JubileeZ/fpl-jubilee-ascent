@@ -1,4 +1,6 @@
+import argparse
 import asyncio
+import importlib.util
 import logging
 import os
 import sys
@@ -24,13 +26,55 @@ from clients.fpl_auth import get_jwt_token
 from features.processor import process_directory
 from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
+from features.expected_role_prior import (
+    DEFAULT_EXPECTED_ROLE_TABLE,
+    LIVE_SEASON,
+    ensure_expected_role_rebuild_choice,
+    table_season_status,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-async def main():
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Refresh FPL API data into processed Parquet tables.")
+    parser.add_argument(
+        "--season",
+        default=os.getenv("FPL_SEASON", LIVE_SEASON),
+        help="FPL season identity for Expected Role Table (default: FPL_SEASON or 2026-27)",
+    )
+    parser.add_argument(
+        "--rebuild-roles",
+        action="store_true",
+        help="Run Expected Role Rebuild after ingest when the table is missing or other-season",
+    )
+    parser.add_argument(
+        "--keep-roles",
+        action="store_true",
+        help="Defer Expected Role Rebuild; API ingest proceeds, projections refuse until this-season table exists",
+    )
+    return parser.parse_args(argv)
+
+
+def _run_expected_role_rebuild(season: str) -> None:
+    script = (
+        PROJECT_ROOT
+        / "docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"
+    )
+    spec = importlib.util.spec_from_file_location("refresh_expected_role", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load Expected Role Rebuild from {script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.refresh_expected_roles(season=season)
+
+
+async def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    ensure_expected_role_rebuild_choice(args.season, args.rebuild_roles, args.keep_roles)
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         logger.info("Fetching public bootstrap-static data...")
         bootstrap = await fetch_bootstrap_static(client, write_cache=True)
@@ -106,6 +150,15 @@ async def main():
             logger.info(f"Price history appended to {price_history_path}")
         except (FileNotFoundError, ValueError) as e:
             logger.warning(f"Price history snapshot skipped: {e}")
+
+        if args.rebuild_roles:
+            logger.info("Running Expected Role Rebuild...")
+            _run_expected_role_rebuild(args.season)
+        elif args.keep_roles and table_season_status(DEFAULT_EXPECTED_ROLE_TABLE, args.season) != "ok":
+            logger.warning(
+                "Expected Role Rebuild deferred (--keep-roles). "
+                "API data refreshed; Feature Contract will refuse until a this-season table exists."
+            )
 
 if __name__ == "__main__":
     asyncio.run(main())

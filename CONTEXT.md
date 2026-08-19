@@ -117,8 +117,8 @@ One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub
 _Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role
 
 **Expected Role**:
-Club-relative preseason judgment of how a Player is expected to be used over the early-season band (GW1–5). Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible. Dated Research Note snapshot; refresh via dual-source lineup scrape (FFS Team News + FPL Meerkat) with conflict rules.
-_Avoid_: First team, nailed, importance, lineup status, Participation State, GW1-only XI, full-season average
+Club-relative preseason judgment of how a Player is expected to be used over the early-season band (GW1–5). Five values: Nailed Starter, Regular Starter, Rotation, Cameo, Out of Contention. Seeds Participation State priors and Draft eligibility; only Nailed Starter and Regular Starter are Draft-eligible. Dated Research Note snapshot. Method: Dual-Source Lineup Signals plus conflict rules and Expected Role Priors. Concrete websites are replaceable adapters (currently FFS Team News and FPL Meerkat).
+_Avoid_: First team, nailed, importance, lineup status, Participation State, GW1-only XI, full-season average, treating a source URL as the method
 
 **Nailed Starter**:
 Expected Role for a Player who is near-certain to Start when fit.
@@ -141,8 +141,8 @@ Expected Role for a Player unlikely to feature meaningfully; not Draft-eligible.
 _Avoid_: Not play, discarded, out of squad
 
 **Expected Role Prior**:
-Default Participation State probabilities and conditional minutes attached to an Expected Role. Applied to fit Players; per-Player overrides only when sources clearly diverge from the tier default.
-_Avoid_: Hand-tuned minutes for every Player, Appearance Probability
+Default Participation State probabilities and conditional minutes attached to an Expected Role. Feature Contract Cold-Start minutes prior. Applied to fit Players; per-Player overrides only when sources clearly diverge from the tier default.
+_Avoid_: Hand-tuned minutes for every Player, Appearance Probability, Prior-Season Seed minutes
 
 **XI Contention Set**:
 Players with a realistic Start or Sub-in path in the Expected Role horizon (Nailed Starter, Regular Starter, Rotation, and notable Cameo challengers). Research grain for role assignment; Draft shortlist is the Nailed + Regular subset.
@@ -153,19 +153,27 @@ Per-Club list of fit-role Draft-eligible Players (Nailed Starter and Regular Sta
 _Avoid_: First team, starter XI, projected lineup, current available list
 
 **Draft Availability**:
-Date-stamped overlay applied after Expected Role assignment: Eligible, Watch, Exclude GW1, or Exclude GW1–5. Does not change fit-role label. Scoring: Watch multiplies $p_{\text{start}}$ by 0.70 for GW1–5 (cut mass → $p_{\text{dnp}}$); Exclude GW1 zeros GW1 only; Exclude GW1–5 zeros GW1–5 only (GW6 uses fit-role priors).
+Date-stamped overlay applied after Expected Role assignment: Eligible, Watch, Exclude GW1, or Exclude GW1–5. Does not change fit-role label. Feature Contract applies these overlays at Cold-Start. Availability Override wins when present; API chance still caps. Scoring: Watch multiplies $p_{\text{start}}$ by 0.70 for GW1–5 (cut mass → $p_{\text{dnp}}$); Exclude GW1 zeros GW1 only; Exclude GW1–5 zeros GW1–5 only (GW6 uses fit-role priors).
 _Avoid_: Draft eligibility, Expected Role, injury status, treating Watch as annotation-only
 
 **Role Evidence**:
 Per-Player attribution for an Expected Role assignment: stated reason, source references, conflict rule applied, and confidence. Required on every XI Contention Set row so the User can audit logic.
 _Avoid_: Bare Role label, unexplained override
 
+**Dual-Source Lineup Signals**:
+Two inputs to Expected Role conflict rules: a predicted XI per Club, and a nailed-starter marker set. Not a website, URL, or HTML layout. Adapters extract these signals; if a site moves or dies, replace the adapter, keep the signals and rules. Committed extract (club → XI names + nailed set) is the derivation pin; raw HTML is optional.
+_Avoid_: FFS scrape, Meerkat URL, HTML snapshot as the method
+
 **Expected Role Table**:
-Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, Role Evidence, API availability fields, registration status, and Draft Availability. Seeds Participation State priors; does not replace live Availability Override.
-_Avoid_: Research Note prose alone, solver projection CSV
+Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, Role Evidence, API availability fields, registration status, and Draft Availability. Carries the FPL season it belongs to. Feature Contract reads this table at Cold-Start; never scrapes. Refuses to build if the table is missing or its season is not the current season. Players absent from the table take the Out of Contention Expected Role Prior. Does not replace live Availability Override. Updates only via Expected Role Rebuild, then commit.
+_Avoid_: Research Note prose alone, solver projection CSV, live scrape at projection time, implicit refresh inside data ingest, previous-season table as this season's prior
+
+**Expected Role Rebuild**:
+Explicit Stage 1 run that writes a new Expected Role Table and Dual-Source Lineup Signals extract from current adapters. Never runs at projection time. When data refresh runs and the table is missing or belongs to another season: ask rebuild vs defer. Rebuild writes this season's table. Defer still refreshes FPL API data; Feature Contract / Champion / solver / dashboard refuse until a this-season table exists. In-season refresh with a current-season table does not ask.
+_Avoid_: Silent scrape on `refresh_data`, dashboard export scrape, reusing last season's table, nagging every Cold-Start refresh of the same season
 
 **Minutes if Appearance**:
-The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability.
+The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability. Cold-Start value comes from Expected Role Prior; current-season value from realized minutes.
 _Avoid_: Average minutes, expected minutes
 
 **Availability Override**:
@@ -177,12 +185,16 @@ A time-stamped record of Player availability captured before a Gameweek deadline
 _Avoid_: Current status, injury history
 
 **Cold-Start**:
-The state at the start of a new season where current-season Player performances are empty and Event Rates must be seeded entirely from prior-season history or fallback priors.
+The state at the start of a new season where current-season Player performances are empty. Event Rates seed from Prior-Season Seed or fallback priors. Participation State and conditional minutes seed from Expected Role Prior.
 _Avoid_: Preseason (ambiguous), blank season
 
+**Appearance Blend**:
+Linear mix of Cold-Start prior and current-season observation by that Player's current-season appearance count. Weight stays 0 through 1 appearance, then ramps to 100% current-season at 5 appearances. One clock for Event Rates and minutes. Not a calendar Gameweek switch.
+_Avoid_: GW5 flip, dashboard-only minutes mix, two clocks, blend_start 3 / blend_full 8
+
 **Prior-Season Seed**:
-Per-Player Event Rates and minutes carried over from the most recent archived season (`data/archive/<prev-season>/processed/`) to seed Projections during Cold-Start. A summer club change does not discard a usable seed.
-_Avoid_: Carryover, history seed, three-season FPL blend
+Per-Player Event Rates from the most recent archived season (`data/archive/<prev-season>/processed/`) to seed Projections during Cold-Start. A summer club change does not discard a usable seed. Not the Cold-Start minutes prior.
+_Avoid_: Carryover, history seed, three-season FPL blend, Expected Role Prior
 
 **Career Individual Rate**:
 Per-90 xG, xA, Defcon, and GK saves from a Player's last completed senior league season. Used only when no usable Prior-Season Seed exists (foreign arrivals, promoted-Club Players, rookies).

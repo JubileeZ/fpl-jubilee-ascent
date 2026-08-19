@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from features.builder import build_features
+from tests.expected_role_fixtures import role_kwargs, write_role_table
 
 
 def _write_processed(tmp_path: Path) -> Path:
@@ -41,7 +42,8 @@ def _write_processed(tmp_path: Path) -> Path:
 
 def test_build_features_emits_per90_rates_and_seed_flag(tmp_path):
     proc = _write_processed(tmp_path)
-    df = build_features(proc, target_gw=3)
+    table = write_role_table(tmp_path / "roles.csv", [1, 2])
+    df = build_features(proc, target_gw=3, **role_kwargs(table))
 
     p1 = df[df["player_id"] == 1].iloc[0]
     # 1 goal + 0 assists over 180 min -> 0.5 goals/90, 0.5 assists/90.

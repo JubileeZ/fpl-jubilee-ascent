@@ -1,5 +1,6 @@
 import pandas as pd
 from features.builder import build_features
+from tests.expected_role_fixtures import role_kwargs, write_role_table
 from models.linear_baseline import LinearBaseline
 from projections.exporter import export_projections
 
@@ -29,7 +30,13 @@ def test_modeling_pipeline(tmp_path):
     df_perf.to_parquet(processed_dir / "player_performances.parquet")
     
     # 2. Build features
-    df_feat = build_features(processed_dir, target_gw=38)
+    table = write_role_table(tmp_path / "roles.csv", [101])
+    live_minutes = dict(
+        blend_start_appearances=0,
+        blend_full_appearances=1,
+        **role_kwargs(table),
+    )
+    df_feat = build_features(processed_dir, target_gw=38, **live_minutes)
     assert len(df_feat) == 1
     assert df_feat.loc[0, "avg_points_3gw"] == 8.0
     assert df_feat.loc[0, "avg_mins_3gw"] == 90.0
@@ -37,7 +44,7 @@ def test_modeling_pipeline(tmp_path):
     
     # 3. Run model
     model = LinearBaseline()
-    df_feat_horizon = build_features(processed_dir, target_gw=38, horizon=3)
+    df_feat_horizon = build_features(processed_dir, target_gw=38, horizon=3, **live_minutes)
     df_proj = model.predict(df_feat_horizon, horizon=3)
     assert len(df_proj) == 3  # 3 weeks predictions for 1 player
     assert list(df_proj["gameweek_id"]) == [38, 39, 40]

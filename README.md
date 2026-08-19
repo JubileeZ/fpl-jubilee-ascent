@@ -73,7 +73,7 @@ The component seed/current-season blend can be tuned without editing code:
 
 ```bash
 uv run python -m commands.run_model component_baseline \
-  --horizon 5 --blend_start_appearances 3 --blend_full_appearances 8
+  --horizon 5 --blend_start_appearances 1 --blend_full_appearances 5
 ```
 
 For verified preseason availability information, optionally create

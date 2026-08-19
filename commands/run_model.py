@@ -27,12 +27,12 @@ def main():
     parser.add_argument(
         "--blend_start_appearances",
         type=int,
-        help="Appearances before current-season rates enter the blend (default: 3)",
+        help="Appearances before current-season rates enter the blend (default: 1)",
     )
     parser.add_argument(
         "--blend_full_appearances",
         type=int,
-        help="Appearances at which current-season rates fully replace the seed (default: 8)",
+        help="Appearances at which current-season rates fully replace the seed (default: 5)",
     )
     parser.add_argument(
         "--state_recency_decay",

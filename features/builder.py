@@ -5,6 +5,18 @@ from typing import TypedDict
 import pandas as pd
 
 from features.availability_snapshots import resolve_latest_snapshot
+from features.expected_role_prior import (
+    BLEND_FULL_APPEARANCES,
+    BLEND_START_APPEARANCES,
+    DEFAULT_EXPECTED_ROLE_TABLE,
+    LIVE_SEASON,
+    OUT_OF_CONTENTION,
+    appearance_blend_weight,
+    apply_availability_priors,
+    fit_role_prior,
+    load_expected_role_table,
+    minutes_if_appearance,
+)
 
 EVENT_RATE_MAP = [
     ("goals_scored", "per90_goals"),
@@ -25,8 +37,6 @@ EVENT_RATE_MAP = [
     ("creativity", "per90_creativity"),
 ]
 RATE_COLS = [rate_col for _, rate_col in EVENT_RATE_MAP]
-BLEND_START_APPEARANCES = 3
-BLEND_FULL_APPEARANCES = 8
 MIN_PRIOR_MINUTES = 450
 MIN_PRIOR_APPEARANCES = 8
 AVAILABILITY_OVERRIDE_COLUMNS = frozenset({"player_code", "xmins_cap", "source", "expires_after_gw"})
@@ -453,6 +463,8 @@ def build_features(
     availability_overrides: Path | None = None,
     availability_snapshot_root: Path | None = None,
     season: str | None = None,
+    expected_role_season: str | None = None,
+    expected_role_table: Path | None = None,
     target_deadline: datetime | str | None = None,
     state_recency_decay: float = STATE_RECENCY_DECAY,
     state_prior_strength: float = STATE_PRIOR_STRENGTH,
@@ -473,6 +485,12 @@ def build_features(
         raise ValueError("state_recency_decay must be greater than 0 and at most 1")
     if state_prior_strength < 0:
         raise ValueError("state_prior_strength must be non-negative")
+
+    role_season = expected_role_season or LIVE_SEASON
+    role_table_path = (
+        Path(expected_role_table) if expected_role_table is not None else DEFAULT_EXPECTED_ROLE_TABLE
+    )
+    role_table = load_expected_role_table(role_table_path, role_season)
 
     # 1. Load Parquet tables, preferring a complete immutable snapshot package.
     snapshot = (
@@ -603,12 +621,12 @@ def build_features(
             if fn and sn:
                 seed_pid = name_to_seed_id.get((fn, sn))
         if seed_pid is not None:
-            prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = _compute_player_rates(
+            prior_rates, prior_minutes_if_appearance, _, prior_appearances = _compute_player_rates(
                 df_seed_perf,
                 seed_pid,
             )
         else:
-            prior_rates, prior_minutes_if_appearance, prior_appearance_probability, prior_appearances = (
+            prior_rates, prior_minutes_if_appearance, _, prior_appearances = (
                 {col: 0.0 for col in RATE_COLS},
                 0.0,
                 0.0,
@@ -626,18 +644,12 @@ def build_features(
 
         if has_player_prior:
             base_rates = prior_rates
-            base_minutes_if_appearance = prior_minutes_if_appearance
-            base_appearance_probability = prior_appearance_probability
             seed_source = "player_prior"
         elif fallback_prior is not None:
             base_rates = fallback_prior["rates"]
-            base_minutes_if_appearance = float(fallback_prior["minutes_if_appearance"])
-            base_appearance_probability = float(fallback_prior["appearance_probability"])
             seed_source = "position_price_prior"
         else:
             base_rates = {col: 0.0 for col in RATE_COLS}
-            base_minutes_if_appearance = 0.0
-            base_appearance_probability = 0.0
             seed_source = "none"
 
         current_rates, current_minutes_if_appearance, current_appearance_probability, current_appearances = _compute_player_rates(
@@ -673,16 +685,46 @@ def build_features(
             state_prior,
             state_prior_strength,
         )
-        if current_appearances < blend_start_appearances:
-            current_weight = 0.0
-        else:
-            # ponytail: linear blend ramps to full current-season rates by ~8 apps.
-            denom = max(1, blend_full_appearances - blend_start_appearances)
-            current_weight = min(
-                1.0,
-                float(current_appearances - blend_start_appearances) / float(denom),
-            )
+        current_weight = appearance_blend_weight(
+            current_appearances,
+            blend_start_appearances,
+            blend_full_appearances,
+        )
         prior_weight = 1.0 - current_weight
+        role = fit_role_prior(role_table, pid)
+        current_state_total = sum(current_state["counts"].values())
+        if current_state_total > 0:
+            current_p_start = current_state["counts"]["start"] / current_state_total
+            current_p_sub = current_state["counts"]["sub_in"] / current_state_total
+            current_p_dnp = current_state["counts"]["dnp"] / current_state_total
+        else:
+            current_p_start = role["p_start"]
+            current_p_sub = role["p_sub_in"]
+            current_p_dnp = role["p_dnp"]
+        current_xmins_start = (
+            current_state["minutes_sum"]["start"] / current_state["counts"]["start"]
+            if current_state["counts"]["start"] > 0
+            else role["xmins_if_start"]
+        )
+        current_xmins_sub = (
+            current_state["minutes_sum"]["sub_in"] / current_state["counts"]["sub_in"]
+            if current_state["counts"]["sub_in"] > 0
+            else role["xmins_if_sub_in"]
+        )
+        p_start = prior_weight * role["p_start"] + current_weight * current_p_start
+        p_sub_in = prior_weight * role["p_sub_in"] + current_weight * current_p_sub
+        p_dnp = prior_weight * role["p_dnp"] + current_weight * current_p_dnp
+        xmins_if_start = prior_weight * role["xmins_if_start"] + current_weight * current_xmins_start
+        xmins_if_sub_in = prior_weight * role["xmins_if_sub_in"] + current_weight * current_xmins_sub
+        p_60_if_start = min(1.0, max(0.0, (xmins_if_start - 45.0) / 30.0))
+        p_60_if_sub_in = min(1.0, max(0.0, (xmins_if_sub_in - 45.0) / 30.0))
+        role_appearance_probability = 1.0 - role["p_dnp"]
+        blended_appearance_probability = (
+            prior_weight * role_appearance_probability + current_weight * current_appearance_probability
+        )
+        blended_minutes_if_appearance = minutes_if_appearance(
+            p_start, p_sub_in, xmins_if_start, xmins_if_sub_in
+        )
 
         row = {
             "player_id": pid,
@@ -691,18 +733,22 @@ def build_features(
             "has_seed": seed_source != "none",
             "seed_source": seed_source,
             "n_starts_historical": float(prior_appearances + current_appearances),
-            "minutes_if_appearance": (
-                prior_weight * base_minutes_if_appearance
-                + current_weight * current_minutes_if_appearance
-            ),
-            "appearance_probability": (
-                prior_weight * base_appearance_probability
-                + current_weight * current_appearance_probability
-            ),
+            "minutes_if_appearance": blended_minutes_if_appearance,
+            "appearance_probability": blended_appearance_probability,
+            "p_dnp": p_dnp,
+            "p_start": p_start,
+            "p_sub_in": p_sub_in,
+            "xmins_if_start": xmins_if_start,
+            "xmins_if_sub_in": xmins_if_sub_in,
+            "p_60_if_start": p_60_if_start,
+            "p_60_if_sub_in": p_60_if_sub_in,
+            "draft_availability": role["draft_availability"],
+            "availability_override": role["availability_override"],
         }
-        row.update(state_summary)
-        for state in PARTICIPATION_STATES:
-            row[f"p_{state}_prior"] = state_summary[f"p_{state}"]
+        row.update({key: state_summary[key] for key in state_summary if key.startswith("state_") or key.endswith("_observation_weight")})
+        row["p_dnp_prior"] = role["p_dnp"]
+        row["p_start_prior"] = role["p_start"]
+        row["p_sub_in_prior"] = role["p_sub_in"]
         for rate_col in RATE_COLS:
             row[rate_col] = prior_weight * float(base_rates.get(rate_col, 0.0)) + current_weight * float(current_rates.get(rate_col, 0.0))
         seed_rows.append(row)
@@ -715,14 +761,16 @@ def build_features(
     df_rolling["has_prior_seed"] = df_rolling["has_prior_seed"].fillna(False)
     df_rolling["n_starts_historical"] = df_rolling["n_starts_historical"].fillna(0.0)
     df_rolling["appearance_probability"] = df_rolling["appearance_probability"].fillna(0.0)
+    df_rolling["draft_availability"] = df_rolling["draft_availability"].fillna("eligible")
+    df_rolling["availability_override"] = df_rolling["availability_override"].fillna("")
     for state in PARTICIPATION_STATES:
         df_rolling[f"p_{state}"] = df_rolling[f"p_{state}"].fillna(1.0 / len(PARTICIPATION_STATES))
         df_rolling[f"p_{state}_prior"] = df_rolling[f"p_{state}_prior"].fillna(
             df_rolling[f"p_{state}"]
         )
     for column, default in (
-        ("xmins_if_start", 78.0),
-        ("xmins_if_sub_in", 18.0),
+        ("xmins_if_start", OUT_OF_CONTENTION[3]),
+        ("xmins_if_sub_in", OUT_OF_CONTENTION[4]),
         ("p_60_if_start", 1.0),
         ("p_60_if_sub_in", 0.0),
         ("state_observation_weight", 0.0),
@@ -752,7 +800,24 @@ def build_features(
     df_feat["is_home"] = df_feat["is_home"].fillna(False)
     df_feat["difficulty"] = df_feat["difficulty"].fillna(3.0)
     df_feat["opponent_id"] = df_feat["opponent_id"].fillna(0).astype(int)
-    
+
+    overlays = [
+        apply_availability_priors(
+            float(row.p_start),
+            float(row.p_sub_in),
+            float(row.p_dnp),
+            str(row.draft_availability) if pd.notna(row.draft_availability) else "eligible",
+            str(row.availability_override) if pd.notna(row.availability_override) else "",
+            int(row.gameweek_id),
+        )
+        for row in df_feat.itertuples()
+    ]
+    if overlays:
+        df_feat["p_start"] = [item[0] for item in overlays]
+        df_feat["p_sub_in"] = [item[1] for item in overlays]
+        df_feat["p_dnp"] = [item[2] for item in overlays]
+        df_feat["appearance_probability"] = 1.0 - df_feat["p_dnp"]
+
     # Define chance of playing
     chance_col = "chance_of_playing_next_round"
     if as_of_gw is not None and not has_point_in_time_snapshot:

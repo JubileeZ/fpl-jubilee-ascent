@@ -16,7 +16,7 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 ```
 clients/       # FPL API and auth clients
 models/        # Custom scoring models (convention-based auto-discovery)
-features/      # FeatureContract builder (raw to feature dataframe)
+features/      # FeatureContract builder + Expected Role Prior ingest
 projections/   # ProjectionContract exporter + Ownership Explorer slice metrics
 solver/        # Vendored open-fpl-solver source
 backtesting/   # Backtest evaluation engine and metrics
