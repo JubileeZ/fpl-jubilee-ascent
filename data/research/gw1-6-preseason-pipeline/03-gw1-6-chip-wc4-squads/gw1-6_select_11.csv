@@ -1,71 +1,71 @@
 gw,chip,formation,captain,player_id,web_name,club_short,position,cost,xp,is_captain,xi_xp,week_xp,published_week_xp,bench
-1,BB,BB-15,B.Fernandes,384,Donnarumma,MCI,GKP,5.5,3.91,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,467,Sels,NFO,GKP,5.0,3.84,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,4,Gabriel,ARS,DEF,8.0,5.38,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,504,Vuskovic,BHA,DEF,5.0,5.2,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,8,Calafiori,ARS,DEF,5.5,5.02,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,130,Wieffer,BHA,DEF,5.0,4.69,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,388,Guéhi,MCI,DEF,6.0,4.31,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,426,B.Fernandes,MUN,MID,12.0,5.48,True,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,557,Tzolis,ARS,MID,6.5,5.25,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,562,Maeda,IPS,MID,5.5,4.36,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,94,Schade,BRE,MID,6.0,4.14,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,95,O.Dango,BRE,MID,6.5,4.01,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,379,Isak,LIV,FWD,9.0,4.74,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,106,Thiago,BRE,FWD,8.0,4.07,False,68.19,73.67,73.67,
-1,BB,BB-15,B.Fernandes,346,Calvert-Lewin,LEE,FWD,6.0,3.79,False,68.19,73.67,73.67,
-2,,5-3-2,B.Fernandes,384,Donnarumma,MCI,GKP,5.5,3.89,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,4,Gabriel,ARS,DEF,8.0,5.01,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,504,Vuskovic,BHA,DEF,5.0,4.49,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,388,Guéhi,MCI,DEF,6.0,4.29,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,8,Calafiori,ARS,DEF,5.5,4.23,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,130,Wieffer,BHA,DEF,5.0,4.18,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,426,B.Fernandes,MUN,MID,12.0,5.39,True,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,94,Schade,BRE,MID,6.0,4.08,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,95,O.Dango,BRE,MID,6.5,3.97,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,379,Isak,LIV,FWD,9.0,4.71,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-2,,5-3-2,B.Fernandes,106,Thiago,BRE,FWD,8.0,4.01,False,48.25,53.64,53.64,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,384,Donnarumma,MCI,GKP,5.5,4.25,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,504,Vuskovic,BHA,DEF,5.0,5.54,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,4,Gabriel,ARS,DEF,8.0,4.97,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,130,Wieffer,BHA,DEF,5.0,4.89,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,388,Guéhi,MCI,DEF,6.0,4.77,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,8,Calafiori,ARS,DEF,5.5,4.21,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,94,Schade,BRE,MID,6.0,4.79,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,426,B.Fernandes,MUN,MID,12.0,4.69,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,95,O.Dango,BRE,MID,6.5,4.52,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,379,Isak,LIV,FWD,9.0,5.89,True,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-3,,5-3-2,Isak,106,Thiago,BRE,FWD,8.0,4.81,False,53.33,59.22,59.22,"Calvert-Lewin, Sels, Maeda, Tzolis"
-4,WC,5-3-2,Isak,384,Donnarumma,MCI,GKP,5.5,3.68,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,504,Vuskovic,BHA,DEF,5.0,5.53,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,4,Gabriel,ARS,DEF,8.0,5.13,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,130,Wieffer,BHA,DEF,5.0,4.88,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,8,Calafiori,ARS,DEF,5.5,4.54,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,60,Hill,BOU,DEF,5.5,4.43,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,154,Palmer,CHE,MID,9.5,5.31,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,208,Sarr,CRY,MID,6.5,5.1,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,557,Tzolis,ARS,MID,6.5,4.3,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,379,Isak,LIV,FWD,9.0,5.92,True,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-4,WC,5-3-2,Isak,411,Haaland,MCI,FWD,15.5,3.82,False,52.64,58.56,58.56,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,4.24,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.13,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,4.55,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,4.54,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,60,Hill,BOU,DEF,5.5,4.24,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.23,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,154,Palmer,CHE,MID,9.5,4.4,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,557,Tzolis,ARS,MID,6.5,4.3,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,208,Sarr,CRY,MID,6.5,4.21,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,6.33,True,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-5,,5-3-2,Haaland,379,Isak,LIV,FWD,9.0,4.64,False,50.81,57.14,57.14,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,384,Donnarumma,MCI,GKP,5.5,3.68,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,4,Gabriel,ARS,DEF,8.0,5.31,True,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,504,Vuskovic,BHA,DEF,5.0,5.11,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,8,Calafiori,ARS,DEF,5.5,4.97,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,130,Wieffer,BHA,DEF,5.0,4.62,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,60,Hill,BOU,DEF,5.5,4.21,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,557,Tzolis,ARS,MID,6.5,5.13,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,154,Palmer,CHE,MID,9.5,4.39,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,208,Sarr,CRY,MID,6.5,4.27,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,411,Haaland,MCI,FWD,15.5,3.82,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
-6,,5-3-2,Gabriel,379,Isak,LIV,FWD,9.0,3.56,False,49.07,54.38,54.38,"Walle Egeli, Scherpen, Gomez, Slater"
+1,BB,BB-15,Haaland,384,Donnarumma,MCI,GKP,5.5,3.75,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,109,Verbruggen,BHA,GKP,4.5,3.63,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,4,Gabriel,ARS,DEF,8.0,5.42,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,504,Vuskovic,BHA,DEF,5.0,5.24,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,8,Calafiori,ARS,DEF,5.5,5.06,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,130,Wieffer,BHA,DEF,5.0,4.73,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,388,Guéhi,MCI,DEF,6.0,4.64,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,557,Tzolis,ARS,MID,6.5,4.99,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,68,Tavernier,BOU,MID,6.0,4.53,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,94,Schade,BRE,MID,6.0,4.46,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,69,Scott,BOU,MID,6.0,4.23,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,562,Maeda,IPS,MID,5.5,3.92,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,411,Haaland,MCI,FWD,15.5,7.45,True,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,379,Isak,LIV,FWD,9.0,5.86,False,71.79,79.24,79.24,
+1,BB,BB-15,Haaland,346,Calvert-Lewin,LEE,FWD,6.0,3.88,False,71.79,79.24,79.24,
+2,,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,3.86,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.51,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,5.4,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,5.17,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.74,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,388,Guéhi,MCI,DEF,6.0,4.59,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,557,Tzolis,ARS,MID,6.5,5.31,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,68,Tavernier,BOU,MID,6.0,4.12,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,94,Schade,BRE,MID,6.0,3.86,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,6.85,True,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+2,,5-3-2,Haaland,379,Isak,LIV,FWD,9.0,5.5,False,54.91,61.76,61.76,"Calvert-Lewin, Verbruggen, Maeda, Scott"
+3,,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,4.07,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,5.28,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.16,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,4.76,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.73,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,388,Guéhi,MCI,DEF,6.0,4.55,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,68,Tavernier,BOU,MID,6.0,5.49,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,94,Schade,BRE,MID,6.0,4.85,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,69,Scott,BOU,MID,6.0,4.68,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,5.95,True,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+3,,5-3-2,Haaland,379,Isak,LIV,FWD,9.0,5.18,False,54.7,60.65,60.65,"Calvert-Lewin, Verbruggen, Maeda, Tzolis"
+4,WC,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,3.77,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.59,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,5.41,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,5.19,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.81,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,388,Guéhi,MCI,DEF,6.0,4.42,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,557,Tzolis,ARS,MID,6.5,5.11,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,154,Palmer,CHE,MID,9.5,4.88,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,208,Sarr,CRY,MID,6.5,4.47,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,5.93,True,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+4,WC,5-3-2,Haaland,165,João Pedro,CHE,FWD,7.5,4.18,False,53.76,59.69,59.69,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,4.31,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.37,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,5.01,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,388,Guéhi,MCI,DEF,6.0,4.83,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,4.46,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.21,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,154,Palmer,CHE,MID,9.5,5.25,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,557,Tzolis,ARS,MID,6.5,4.88,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,208,Sarr,CRY,MID,6.5,4.15,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,6.35,True,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+5,,5-3-2,Haaland,165,João Pedro,CHE,FWD,7.5,4.47,False,53.29,59.64,59.64,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,384,Donnarumma,MCI,GKP,5.5,3.88,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,4,Gabriel,ARS,DEF,8.0,5.42,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,504,Vuskovic,BHA,DEF,5.0,5.37,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,8,Calafiori,ARS,DEF,5.5,5.1,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,130,Wieffer,BHA,DEF,5.0,4.81,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,388,Guéhi,MCI,DEF,6.0,4.51,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,154,Palmer,CHE,MID,9.5,5.98,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,557,Tzolis,ARS,MID,6.5,5.23,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,208,Sarr,CRY,MID,6.5,4.82,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,411,Haaland,MCI,FWD,15.5,6.33,True,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"
+6,,5-3-2,Haaland,165,João Pedro,CHE,FWD,7.5,5.0,False,56.45,62.78,62.78,"Walle Egeli, Horníček, Crooks, Palacios"

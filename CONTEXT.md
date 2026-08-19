@@ -309,15 +309,15 @@ Match-level team attack and opponent defense strength multipliers derived from 1
 _Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed
 
 **Prior-Season Dual-Vector Seed**:
-Cold-Start Dual-Vector Strength from the latest archive season: club attack = sum of player `expected_goals` per club-fixture; club defence = that fixture’s `expected_goals_conceded` (one team value, not summed across players); home/away split; scaled to league average. Promoted Clubs use league average. FPL-xG proxy, not npxG. Feeds research xP multipliers and DCS effective FDR (`defence_multiplier × 3`).
-_Avoid_: Dual-Vector Strength (live rolling npxG), Club Strength Vector, Official Fixture Difficulty
+Cold-Start Dual-Vector Strength from the latest archive season: club attack = sum of player `expected_goals` per club-fixture; club defence = that fixture’s `expected_goals_conceded` (one team value, not summed across players); home/away split; scaled to league average. Promoted Clubs use league average. FPL-xG proxy, not npxG. Live research xP for Canonical Preseason Chip Path (Stage 3) and First-Half Chip Path. Also research DCS effective FDR (`defence_multiplier × 3`).
+_Avoid_: Dual-Vector Strength (live rolling npxG), Club Strength Vector, Official Fixture Difficulty, FDR-xP Canonical
 
 **Recency-Weighted Prior Shrinkage**:
 Event Rate estimation method blending a multi-season prior with exponential recency decay over recent matches (e.g. 10 appearances) and applying Bayesian shrinkage for sample-constrained / low-minute players.
 _Avoid_: Simple unweighted current-season average, static role rates
 
 **Defensive Composite Score (DCS)**:
-A 0–100 ranking of a Defensive Rotation Set: 60% opportunity-cost-adjusted rotated expected points plus 40% fixture-risk (zero-difficult weeks, rotated FDR, schedule correlation).
+A 0–100 ranking of a Defensive Rotation Set: 60% opportunity-cost-adjusted rotated expected points plus 40% fixture-risk (zero-difficult weeks, rotated FDR, schedule correlation). Live research ranking uses Prior-Season Dual-Vector Seed effective FDR (`defence_multiplier × 3`).
 _Avoid_: RQI, OC-RQI, Rotation Quality Index
 
 **Defensive Rotation Set**:
@@ -329,12 +329,12 @@ Weekly rotated expected points minus the outfield shadow price $\gamma$ times sp
 _Avoid_: OC-RQI, net value, RQI points term
 
 **Canonical Preseason Chip Path**:
-The live GW1–6 research plan: Bench Boost in GW1, locked transfers GW1–3, Wildcard in GW4, roll the GW5 free transfer, enter GW6 with four banked Free Transfers. Stage 3 publishes this path only. Its 15-man keepers are a MILP squad pick, not a DCS pair.
-_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum, First-Half Chip Path
+Live GW1–6 research plan: Bench Boost GW1, locked transfers GW1–3, Wildcard GW4, roll GW5 free transfer, enter GW6 with four banked Free Transfers. Scored on Prior-Season Dual-Vector Seed. Stage 3 publishes this path only. 15-man keepers are a MILP squad pick, not a DCS pair. Path identity is `gw1-6_wc4_summary.csv` `total_6gw_xp`, not a numeric snapshot.
+_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum, First-Half Chip Path, FDR-xP Canonical, treating xP literals as path identity
 
 **First-Half Chip Path**:
-Sibling GW1–19 research plan under `docs/research/gw1-19-first-half-chip-path/`. Bench Boost GW1; two published Wildcard calendars (GW3 and GW4); Free Hit and Triple Captain forced in any week except GW1 and the Wildcard week; pre-WC and Wildcard 15s skip the Free Hit week in their objective; post-WC greedy Free Transfers, zero hits; greenfield Draft 15; Prior-Season Dual-Vector Seed on research xP and DCS only (production `_fixture_maps` unchanged). Headline metric = undiscounted Total xP. Does not replace Canonical Preseason Chip Path until accepted.
-_Avoid_: Canonical Preseason Chip Path, S13, spending Set 2 chips before GW20, writing Dual-Vector into production builder
+Sibling GW1–19 research plan under `docs/research/gw1-19-first-half-chip-path/`. Bench Boost GW1; two published Wildcard calendars (GW3 and GW4); Free Hit and Triple Captain forced in any week except GW1 and the Wildcard week; pre-WC and Wildcard 15s skip the Free Hit week in their objective; post-WC greedy Free Transfers, zero hits; greenfield Draft 15. Same Prior-Season Dual-Vector Seed as Canonical. Headline metric = undiscounted Total xP. Does not replace Canonical chip calendar (no FH/TC in Stage 3; horizon stays GW1–6).
+_Avoid_: Canonical Preseason Chip Path, S13, spending Set 2 chips before GW20, writing Dual-Vector Strength into production builder
 
 **Set-Piece Hierarchy**:
 Ordered ranking of designated set-piece takers (corners left/right, direct free-kicks, indirect free-kicks, penalties) per Club.

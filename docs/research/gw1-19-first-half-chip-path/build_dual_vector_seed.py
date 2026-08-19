@@ -123,6 +123,15 @@ def apply_seed_to_clubs(df_clubs: pd.DataFrame, seed: pd.DataFrame) -> pd.DataFr
     return patched
 
 
+def load_seeded_clubs(live_clubs_path: Path = LIVE_CLUBS, seed_csv: Path = OUT_CSV) -> pd.DataFrame:
+    """Live clubs parquet with Seed strength columns. Builds seed CSV if missing."""
+    if not seed_csv.exists():
+        build_dual_vector_seed(live_clubs_path=live_clubs_path, out_csv=seed_csv)
+    seed = pd.read_csv(seed_csv)
+    clubs = pd.read_parquet(live_clubs_path)
+    return apply_seed_to_clubs(clubs, seed)
+
+
 if __name__ == "__main__":
     df = build_dual_vector_seed()
     print(df.to_string(index=False))

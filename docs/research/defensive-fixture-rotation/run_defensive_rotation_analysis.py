@@ -12,6 +12,7 @@ Consolidates Goalkeeper (GKP) and Defender (DEF) fixture diversification and str
 
 from __future__ import annotations
 
+import importlib.util
 import itertools
 import sys
 from collections import Counter
@@ -26,6 +27,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from clients.env_loader import configure_utf8_stdio
 from features.builder import _fixture_maps
 from models.participation_state_hybrid import ParticipationStateHybridModel
+
+_SEED_SPEC = importlib.util.spec_from_file_location(
+    "dual_vector_seed_dcs",
+    PROJECT_ROOT / "docs/research/gw1-19-first-half-chip-path/build_dual_vector_seed.py",
+)
+_SEED_MOD = importlib.util.module_from_spec(_SEED_SPEC)
+assert _SEED_SPEC.loader is not None
+_SEED_SPEC.loader.exec_module(_SEED_MOD)
 
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 RESEARCH_DIR = PROJECT_ROOT / "data" / "research"
@@ -120,6 +129,25 @@ def build_club_fdr_matrix(fixtures: pd.DataFrame, clubs: pd.DataFrame) -> tuple[
         fdr_mat[h_idx, gw] = float(f["team_h_difficulty"])
         fdr_mat[a_idx, gw] = float(f["team_a_difficulty"])
 
+    return fdr_mat, idx_to_short, id_to_idx
+
+
+def build_seed_fdr_matrix(
+    fmap: pd.DataFrame, clubs: pd.DataFrame, n_gw: int = 38
+) -> tuple[np.ndarray, dict[int, str], dict[int, int]]:
+    """Effective FDR = defence_multiplier × 3 on Prior-Season Dual-Vector Seed clubs."""
+    club_ids = sorted(clubs["id"].tolist())
+    id_to_idx = {cid: i for i, cid in enumerate(club_ids)}
+    idx_to_short = {
+        i: str(clubs.loc[clubs["id"] == cid, "short_name"].iloc[0]) for cid, i in id_to_idx.items()
+    }
+    fdr_mat = np.full((len(club_ids), n_gw), 3.0, dtype=float)
+    for _, row in fmap.iterrows():
+        gw = int(row["gameweek_id"])
+        if gw < 1 or gw > n_gw:
+            continue
+        idx = id_to_idx[int(row["club_id"])]
+        fdr_mat[idx, gw - 1] = float(np.clip(float(row["defence_multiplier"]) * 3.0, 1.2, 5.4))
     return fdr_mat, idx_to_short, id_to_idx
 
 
@@ -932,7 +960,7 @@ def run_defensive_rotation_pipeline() -> None:
     print("=== DEFENSIVE ARCHITECTURE & FIXTURE ROTATION ANALYSIS ===")
 
     players = pd.read_parquet(DATA_DIR / "players.parquet")
-    clubs = pd.read_parquet(DATA_DIR / "clubs.parquet")
+    clubs = _SEED_MOD.load_seeded_clubs()
     fixtures = pd.read_parquet(DATA_DIR / "fixtures.parquet")
     df_stats = pd.read_csv(STATS_CSV)
 
@@ -953,8 +981,8 @@ def run_defensive_rotation_pipeline() -> None:
 
     print(f"Loaded {len(starters_gkp)} starter GKPs and {len(starters_def)} starter DEFs.")
 
-    fdr_mat, idx_to_short, id_to_idx = build_club_fdr_matrix(fixtures, clubs)
     fmap = _fixture_maps(fixtures, clubs, list(range(1, 39)))
+    fdr_mat, idx_to_short, id_to_idx = build_seed_fdr_matrix(fmap, clubs, n_gw=38)
     gamma = compute_outfield_capital_slope(STATS_CSV, DATA_DIR / "players.parquet")
     print(f"Empirical outfield capital slope gamma = {gamma:.4f} xP/£1.0m/GW")
 
@@ -1007,6 +1035,15 @@ def run_defensive_rotation_pipeline() -> None:
     df_wc4_backline.to_csv(OUT_DIR / "backline_gw4_19_lineups.csv", index=False)
     df_gw1_19_backline.to_csv(OUT_DIR / "backline_gw1_19_lineups.csv", index=False)
     print(f"Generated {len(df_bb1_backline)} BB1 lineups, {len(df_wc4_backline)} WC4 lineups, and {len(df_gw1_19_backline)} GW1-19 benchmark lineups.")
+
+    sync_spec = importlib.util.spec_from_file_location(
+        "sync_live_research_figures",
+        PROJECT_ROOT / "docs/research/sync_live_research_figures.py",
+    )
+    sync_mod = importlib.util.module_from_spec(sync_spec)
+    assert sync_spec.loader is not None
+    sync_spec.loader.exec_module(sync_mod)
+    sync_mod.sync_all()
 
     print("\n=== UNIFIED DEFENSIVE ROTATION PIPELINE COMPLETE ===")
 

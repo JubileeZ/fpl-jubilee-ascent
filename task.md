@@ -1,14 +1,14 @@
-# Publish weekly select-11 plans
+# Dual-Vector Canonical xP + generated research figures
 
-**Objective:** Write GW starting XIs into research notes + CSV companions from published starter flags / Dual-Vector 15s.
-**Acceptance:** Canonical `gw1-6_select_11.csv` GW1=15 / GW2–6=11; week xP matches summary; Dual-Vector WC4 `first_half_select_11.csv` 19 GWs; notes §Select 11; `tests/test_select_11_plan.py` pass.
+**Objective:** Rebuild Stage 3 Canonical MILP on Prior-Season Dual-Vector Seed (calendar stays BB1+WC4, GW1–6, GW5 roll). Runners rewrite note/INDEX/current-state figures from CSV cells. AGENTS.md: path+column identity, not numeric literals.
+
+**Acceptance:** `gw1-6_wc4_summary.csv` `total_6gw_xp` is Dual-Vector Seed; Stage 3 note / pipeline README / INDEX chip row / current-state research-truth generated from that CSV; Agent Prompts name the CSV column not a snapshot; First-Half stays sibling calendar (FH/TC, GW1–19). Live DCS on Seed; no first-half `dcs/` copy.
 
 ## Work Packet (SFDBN)
 
-- **Status:** Done on disk. Not committed. Canonical §3 + Dual-Vector Select 11 table live.
-- **Files:** `export_select_11.py` (Stage 3 + first-half); `gw1-6_select_11.csv`; `first_half_select_11.csv`; Stage 3 / first-half notes; `tests/test_select_11_plan.py`.
-- **Decisions:** Live XI = Canonical GW1–6 FDR-xP. Dual-Vector XI applies FTs at recorded GWs (may ≠ `first_half_weeks.csv` after GW4; max |Δ| 1.92 at GW6).
+- **Status:** Done. Canonical Seed `total_6gw_xp` **383.76**. Live DCS on Seed. Figure caches generated. ruff / 182 pytest / verify.sh passed. Committing this turn.
+- **Files:** Stage 3 Seed runner; live DCS `build_seed_fdr_matrix`; `docs/research/sync_live_research_figures.py`; `AGENTS.md`; first-half `run_all.py`; notes/INDEX/current-state.
+- **Decisions:** Live research xP = Prior-Season Dual-Vector Seed. Production `_fixture_maps` FDR. Canonical calendar BB1+WC4. Figure identity = CSV path + column. One live DCS folder.
 - **Blocked:** None.
 - **Next:**
-  - [ ] Commit/push select-11 CSVs, exporters, notes, tests on request.
-  - [ ] Promote Dual-Vector / overwrite Canonical only on explicit request.
+  - [x] Commit/push on request.

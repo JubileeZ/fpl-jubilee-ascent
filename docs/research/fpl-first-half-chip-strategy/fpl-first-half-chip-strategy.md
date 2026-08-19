@@ -1,10 +1,12 @@
 # FPL 2026/27 — First-Half Chip Strategy & Multi-Source Comprehensive Evaluation
 
 **Updated**: 2026-08-19T13:45:00+07:00  
-**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; Stage 3 canonical S1 CSV 2026-08-19 (`total_6gw_xp` = 356.61); historical 16-scenario matrix frozen 2026-08-15  
+**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; live Canonical = `gw1-6_wc4_summary.csv` `total_6gw_xp`; historical 16-scenario matrix frozen 2026-08-15  
 **Season**: 2026/27 · first-half horizon GW1–19  
-**Status**: Source synthesis + project interpretation. Live xP = Canonical Preseason Chip Path only.  
-**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the repo's live Stage 3 path: **GW1 Bench Boost + GW4 Wildcard = 356.61 xP**.  
+**Status**: Source synthesis + project interpretation. Live xP = Canonical Preseason Chip Path (`gw1-6_wc4_summary.csv`).  
+**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the repo's live Stage 3 path: **GW1 Bench Boost + GW4 Wildcard** (`total_6gw_xp` in the Stage 3 summary CSV).
+
+Live Canonical totals are `gw1-6_wc4_summary.csv` `total_6gw_xp`. Numeric tables below that still show 356.61 are the FDR-era synthesis snapshot, not the live Seed path.  
 **Scope**: Wildcard, Free Hit, Triple Captain, and Bench Boost before the GW19 deadline. Expert branches stay qualitative unless Stage 3 currently publishes them.  
 **Related**: [`INDEX.md`](../INDEX.md) · [GW1–6 Preseason Pipeline Master README](../gw1-6-preseason-pipeline/README.md) · [GW1–6 Canonical Chip Path](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Ownership Value Explorer](../ownership-value-explorer/ownership-value-explorer.md)  
 **Artifacts**:

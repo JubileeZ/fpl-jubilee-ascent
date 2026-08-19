@@ -70,7 +70,8 @@ def main() -> None:
     )()
 
     print("\n=== DOWNSTREAM REFRESH COMPLETE ===")
-    print("Update Findings tables in Stage 3 / GKP / DEF / ownership notes from the new CSVs.")
+    _load("docs/research/sync_live_research_figures.py", "sync_all")()
+    print("Research figure caches synced from CSVs.")
 
 
 if __name__ == "__main__":

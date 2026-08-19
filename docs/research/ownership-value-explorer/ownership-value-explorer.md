@@ -1,7 +1,7 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-19T13:45:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-19; Stage 3 GW1 BB + WC4 356.61 xP  
+**Updated**: 2026-08-19T22:22:53+07:00
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-19; Stage 3 GW1 BB + WC4 383.76 xP (`gw1-6_wc4_summary.csv` `total_6gw_xp`) (`gw1-6_wc4_summary.csv` `total_6gw_xp`) (`gw1-6_wc4_summary.csv` `total_6gw_xp`)  
 **Season**: 2026/27 · default horizon GW1–38 (GW1–6 toggle)  
 **Status**: Active Research Model & Visualization Suite  
 **Purpose**: Interactive evaluation of projected rate (xP/90) against ownership popularity across full season and GW1–6 windows, sized by expected minutes, with position/club/price filters and strategic chip overlays.  
@@ -77,7 +77,7 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 
 The explorer allows managers to evaluate both phases of the **GW1 BB + WC4** canonical strategy (Stage 3):
 
-### 1. Pre-WC Sprint Differentials (GW1–3 BB1 Target, 186.53 xP)
+### 1. Pre-WC Sprint Differentials (GW1–3 BB1 Target, 201.65 xP)
 - **Concept**: In GW1 Bench Boost, managers field a 15-man active squad scoring across all positions in GW1, lock transfers across GW1–3, and liquidate short-term picks in GW4 Wildcard.
 - **High-Value Differentials & Anchors**:
   - **Tzolis (ARS MID £6.5m, 1.4% own)**: 6.31 season xP/90; 6.30 GW1–6 xP/90; elite differential midfielder for Arsenal opening run.
@@ -95,7 +95,7 @@ The explorer allows managers to evaluate both phases of the **GW1 BB + WC4** can
   - **Maguire (MUN DEF £5.0m, 7.5% own)**: 4.59 season xP/90; 4.72 GW1–6 xP/90; United opening run.
   - **Sels (NFO GKP £5.0m, 1.4% own)**: 4.07 season xP/90; 4.11 GW1–6 xP/90; Forest rotation goalkeeper.
 
-### 2. Post-WC4 Core Squad Structure (GW4–6 Foundation, 173.37 xP)
+### 2. Post-WC4 Core Squad Structure (GW4–6 Foundation, 182.11 xP)
 - **Concept**: In GW4 Wildcard, squad permanently restructures into Arsenal/Chelsea/Everton/Brighton fixture swings while shifting bench funds into starting XI firepower, banking 4 FTs into GW6.
 - **Core 15 Roster & Ownership Distribution**:
   - **Anchors / Template Premiums**:

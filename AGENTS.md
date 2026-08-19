@@ -59,6 +59,7 @@ docs/         # Durable project documentation and decision records
 - Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
 - Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
 - Metric documentation: define every custom or domain metric in research notes with explicit table specifying Definition/Formula, Direction (Higher $\uparrow$ / Lower $\downarrow$), and Ideal Benchmark.
+- Research figures are caches of named companion CSV cells. Topic runner writes the CSV then regenerates note / INDEX / `current-state` caches (`docs/research/sync_live_research_figures.py`). Agent Prompts name artifact path + column (e.g. `gw1-6_wc4_summary.csv` `total_6gw_xp`), not a numeric snapshot.
 
 ---
 

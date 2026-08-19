@@ -11,8 +11,8 @@ Focuses exclusively on the single canonical scenario (GW1 Bench Boost + GW4 Wild
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -42,13 +42,21 @@ assert _PRIOR_SPEC.loader is not None
 _PRIOR_SPEC.loader.exec_module(_PRIOR_MOD)
 apply_availability_priors = _PRIOR_MOD.apply_availability_priors
 
+_SEED_SPEC = importlib.util.spec_from_file_location(
+    "dual_vector_seed_s3",
+    Path("docs/research/gw1-19-first-half-chip-path/build_dual_vector_seed.py"),
+)
+_SEED_MOD = importlib.util.module_from_spec(_SEED_SPEC)
+assert _SEED_SPEC.loader is not None
+_SEED_SPEC.loader.exec_module(_SEED_MOD)
+
 
 def generate_gw1_6_projections() -> pd.DataFrame:
     df_stats = pd.read_csv(
         "data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv"
     )
     df_fixtures = pd.read_parquet("data/processed/fixtures.parquet")
-    df_clubs = pd.read_parquet("data/processed/clubs.parquet")
+    df_clubs = _SEED_MOD.load_seeded_clubs()
     df_players = pd.read_parquet("data/processed/players.parquet")
 
     club_short_to_id = dict(zip(df_clubs["short_name"], df_clubs["id"], strict=False))
@@ -375,6 +383,7 @@ def run_full_wc4_study() -> pd.DataFrame:
         "itb_gw6": round(100.0 - post_squad.attrs["spend"], 1),
         "gw5_transfers": 0,
         "banked_fts_gw6": 4,
+        "score_world": "prior_season_dual_vector_seed",
     }
 
     df_summary = pd.DataFrame([summary_record])
@@ -450,6 +459,14 @@ def run_full_wc4_study() -> pd.DataFrame:
     assert xi_spec.loader is not None
     xi_spec.loader.exec_module(xi_mod)
     xi_mod.export_select_11()
+    sync_spec = importlib.util.spec_from_file_location(
+        "sync_live_research_figures",
+        Path("docs/research/sync_live_research_figures.py"),
+    )
+    sync_mod = importlib.util.module_from_spec(sync_spec)
+    assert sync_spec.loader is not None
+    sync_spec.loader.exec_module(sync_mod)
+    sync_mod.sync_all()
     return df_summary
 
 

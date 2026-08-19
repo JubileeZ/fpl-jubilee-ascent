@@ -1,4 +1,4 @@
-"""Run First-Half Chip Path research suite (Dual-Vector seed → xP → chips → DCS)."""
+"""Run First-Half Chip Path research suite (Dual-Vector seed → xP → chips). Live DCS is defensive-fixture-rotation."""
 
 from __future__ import annotations
 
@@ -25,13 +25,19 @@ def main() -> None:
     seed = _load("dv_seed", "build_dual_vector_seed.py")
     proj = _load("dv_proj", "project_gw1_19.py")
     chips = _load("dv_chips", "run_chip_path.py")
-    dcs = _load("dv_dcs", "run_dual_vector_dcs.py")
     seed.build_dual_vector_seed()
     proj.project_gw1_19()
     chips.run_chip_path()
     xi = _load("dv_select_11", "export_select_11.py")
     xi.export_select_11("WC4")
-    dcs.run_dual_vector_dcs()
+    sync_spec = importlib.util.spec_from_file_location(
+        "sync_live_research_figures",
+        Path(__file__).resolve().parents[1] / "sync_live_research_figures.py",
+    )
+    sync_mod = importlib.util.module_from_spec(sync_spec)
+    assert sync_spec.loader is not None
+    sync_spec.loader.exec_module(sync_mod)
+    sync_mod.sync_all()
 
 
 if __name__ == "__main__":

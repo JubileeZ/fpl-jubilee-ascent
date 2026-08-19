@@ -341,7 +341,7 @@ def rescore_canonical_s1(pool: pd.DataFrame) -> dict:
     )
     canonical_fdr_xp = round(float(summary.iloc[0]["total_6gw_xp"]), 2)
     return {
-        "note": "Canonical S1 15s re-scored on Prior-Season Dual-Vector Seed (not live FDR-xP)",
+        "note": "Canonical S1 15s scored on Prior-Season Dual-Vector Seed",
         "total_6gw_xp_dv": round(total, 2),
         "captains": caps,
         "canonical_fdr_xp": canonical_fdr_xp,

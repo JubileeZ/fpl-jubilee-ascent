@@ -1,7 +1,7 @@
 # Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)
 
-**Updated**: 2026-08-19T13:45:00+07:00  
-**Data stamp**: Public FPL bootstrap/fixtures 2026-08-19 (592 players); Stage 2 rates 2026-08-18; Champion saves/defcon × defence_multiplier; CSVs rebuilt vs `gkp_strategy_comparison.csv`  
+**Updated**: 2026-08-19T22:22:53+07:00
+**Data stamp**: Prior-Season Dual-Vector Seed effective FDR (`defence_multiplier × 3`); Stage 2 rates 2026-08-18; FPL API 2026-08-19
 **Season**: 2026/27  
 **Status**: Active defensive authority. Supersedes archived `docs/archive/gkp-fixture-rotation/` and `docs/archive/def-fixture-rotation/`.  
 **Artifacts**:
@@ -90,29 +90,29 @@ Comparing the three core goalkeeping archetypes across different planning horizo
 
 | Strategy Archetype | Top Exemplar Pairing | Spend | Total xP (19 GW) | xP / GW | Net OC-Score | DCS | Rot FDR | Zero-Diff % |
 |---|---|---|---|---|---|---|---|---|
-| **Active 2-GKP Rotation** | **Rushworth (COV) + Donnarumma (MCI)** | **£10.0m** | **123.20** | **6.48** | **6.04** | **85.78** | **2.42** | **100.0%** |
-| **Active 2-GKP Rotation** | **Scherpen (IPS) + Donnarumma (MCI)** | **£10.0m** | **123.03** | **6.48** | **6.03** | **85.15** | **2.47** | **100.0%** |
-| **Active 2-GKP Rotation** | **Leno (FUL) + Donnarumma (MCI)** | **£10.0m** | **123.20** | **6.48** | **6.04** | **84.50** | **2.47** | **94.7%** |
-| **Active 2-GKP Rotation** | **Verbruggen (BHA) + Donnarumma (MCI)** | **£10.0m** | **123.28** | **6.49** | **6.05** | **83.19** | **2.58** | **94.7%** |
-| **Dual Budget Rotation** | **Verbruggen (BHA) + Rushworth (COV)** | **£9.0m** | **115.43** | **6.08** | **5.93** | **82.05** | **2.53** | **94.7%** |
-| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 123.03 | 6.48 | 6.18 | 74.43 | 2.95 | 73.7% |
-| **Mid-Value Set & Forget** | Martinez (AVL) + Fodder (£4.0m) | £9.0m | 114.48 | 6.03 | 5.88 | 69.23 | 2.95 | 73.7% |
-| **Budget Set & Forget** | Verbruggen (BHA) + Fodder (£4.0m) | £8.5m | 113.31 | 5.96 | 5.96 | 69.72 | 3.05 | 73.7% |
+| **Active 2-GKP Rotation** | **Verbruggen (BHA) + Petrović (BOU)** | **£9.0m** | **113.72** | **5.99** | **5.84** | **83.86** | **2.25** | **94.7%** |
+| **Active 2-GKP Rotation** | **Rushworth (COV) + Petrović (BOU)** | **£9.0m** | **112.12** | **5.90** | **5.76** | **82.41** | **2.25** | **94.7%** |
+| **Active 2-GKP Rotation** | **Petrović (BOU) + Lammens (MUN)** | **£9.5m** | **116.15** | **6.11** | **5.83** | **81.74** | **2.29** | **89.5%** |
+| **Active 2-GKP Rotation** | **Verbruggen (BHA) + Donnarumma (MCI)** | **£10.0m** | **116.83** | **6.15** | **5.72** | **80.84** | **2.41** | **100.0%** |
+| **Premium Set & Forget** | **Raya (ARS) + Fodder (£4.0m)** | **£10.0m** | **137.72** | **7.25** | **6.82** | **94.00** | **1.71** | **100.0%** |
+| **Mid-Value Set & Forget** | **Lammens (MUN) + Fodder (£4.0m)** | **£9.0m** | **111.68** | **5.88** | **5.74** | **65.65** | **2.84** | **63.2%** |
+| **Budget Set & Forget** | **Verbruggen (BHA) + Fodder (£4.0m)** | **£8.5m** | **105.97** | **5.58** | **5.58** | **65.69** | **2.77** | **73.7%** |
 
 #### 2. Pre-Wildcard Sprint with GW1 Bench Boost (GW1–3 BB1)
 
 | Strategy Archetype | Top Exemplar Pairing | Spend | Total xP (GW1–3) | Net OC-Score | DCS | GW1–3 Avg FDR |
 |---|---|---|---|---|---|---|
-| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Lammens (MUN)** | **£10.0m** | **24.73** | **7.80** | **84.33** | **2.25** |
-| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Roefs (SUN)** | **£10.0m** | **24.69** | **7.79** | **84.33** | **2.25** |
-| **Active 2-GKP Rotation (BB1)** | **Verbruggen (BHA) + Lammens (MUN)** | **£9.5m** | **24.95** | **8.02** | **83.93** | **2.25** |
-| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 19.56 | 6.23 | 83.06 | 2.67 |
-| **Mid-Value Set & Forget** | Roefs (SUN) + Fodder (£4.0m) | £9.0m | 18.55 | 6.04 | 82.92 | 2.33 |
-| **Mid-Value Set & Forget** | Lammens (MUN) + Fodder (£4.0m) | £9.0m | 18.47 | 6.01 | 82.48 | 2.33 |
+| **Active 2-GKP Rotation** | **Scherpen (IPS) + Lammens (MUN)** | **£9.5m** | **24.04** | **7.73** | **80.84** | **2.53** |
+| **Active 2-GKP Rotation** | **Kelleher (BRE) + Pope (NEW)** | **£10.0m** | **24.34** | **7.69** | **80.06** | **2.71** |
+| **Active 2-GKP Rotation** | **Kelleher (BRE) + Roefs (SUN)** | **£10.0m** | **24.02** | **7.58** | **79.90** | **2.70** |
+| **Active 2-GKP Rotation** | **Henderson (CRY) + Pope (NEW)** | **£10.0m** | **24.20** | **7.64** | **79.84** | **2.72** |
+| **Premium Set & Forget** | **Raya (ARS) + Fodder (£4.0m)** | **£10.0m** | **22.04** | **6.92** | **94.00** | **1.73** |
+| **Mid-Value Set & Forget** | **Lammens (MUN) + Fodder (£4.0m)** | **£9.0m** | **18.37** | **5.98** | **79.34** | **2.62** |
+| **Budget Set & Forget** | **Leno (FUL) + Fodder (£4.0m)** | **£8.5m** | **17.00** | **5.67** | **64.29** | **2.94** |
 
 > **Key Goalkeeper Finding**:
-> - **In GW1–3 Bench Boost**: Active 2-GKP now ranks first on DCS (`Kelleher + Lammens` **84.33**) after saves scale with fixture defence. Raw points still ~24.7–25.2 vs S&F ~18.5–19.6.
-> - **In GW1–19 Long-Term**: Active rotation (`Rushworth + Donnarumma` **123.20 xP**, DCS **85.78**) holds FDR **2.42** vs **2.95–3.05** S&F, with **100% Zero-Diff**. City's #1 is Donnarumma, not Trafford.
+> - **In GW1–3 Bench Boost**: `Raya (ARS) + Fodder (£4.0m)` DCS **94.00**, **22.04 xP**. Source: `gkp_strategy_comparison.csv`.
+> - **In GW1–19 Long-Term**: `Raya (ARS) + Fodder (£4.0m)` **137.72 xP**, DCS **94.00**, rot FDR **1.71**. Source: `gkp_strategy_comparison.csv`.
 
 ---
 
@@ -164,11 +164,11 @@ Combining top Goalkeeper structures with 5-Defender quintets into complete 7-pla
 
 | Rank | GKP Unit | 5-DEF Quintet | Spend | DCS | Net OC-Score | Total xP (GW1–3) | Effective FDR |
 |---|---|---|---|---|---|---|---|
-| **1** | **Lammens (MUN) + Fodder** | **Calafiori + Vuskovic + Thomas + O'Reilly + O'Nien** | **£34.0m** | **84.36** | **24.90** | **79.55** | **2.33** |
-| **2** | **Roefs (SUN) + Fodder** | **Calafiori + Vuskovic + Thomas + O'Reilly + O'Nien** | **£34.0m** | **84.35** | **24.89** | **79.54** | **2.33** |
-| **3** | **Donnarumma (MCI) + Fodder** | **Calafiori + Vuskovic + Thomas + O'Reilly + O'Nien** | **£34.5m** | **84.29** | **25.08** | **80.53** | **2.42** |
-| **4** | **Lammens (MUN) + Fodder** | **Calafiori + Vuskovic + O'Reilly + O'Nien + Ballard** | **£35.0m** | **83.85** | **24.61** | **79.58** | **2.25** |
-| **5** | **Lammens (MUN) + Fodder** | **Calafiori + Vuskovic + Thomas + Gvardiol + O'Nien** | **£33.0m** | **83.84** | **24.77** | **78.27** | **2.33** |
+| **1** | **Raya (ARS) + Fodder (£4.0m)** | **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Thomas (COV) + O'Nien (SUN)** | **£35.0m** | **94.09** | **26.64** | **541.29** | **1.92** |
+| **2** | **Raya (ARS) + Fodder (£4.0m)** | **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Greaves (IPS) + O'Nien (SUN)** | **£35.0m** | **94.02** | **26.61** | **540.76** | **1.92** |
+| **3** | **Raya (ARS) + Fodder (£4.0m)** | **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Ajayi (HUL) + Greaves (IPS)** | **£35.0m** | **94.00** | **26.61** | **540.80** | **1.91** |
+| **4** | **Raya (ARS) + Fodder (£4.0m)** | **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Thomas (COV) + Ajayi (HUL)** | **£35.0m** | **93.97** | **26.64** | **541.33** | **1.91** |
+| **5** | **Raya (ARS) + Fodder (£4.0m)** | **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Thomas (COV) + Greaves (IPS)** | **£35.0m** | **93.62** | **26.65** | **541.53** | **1.91** |
 
 #### 2. GW4–19 Post-Wildcard (WC4 Reset)
 
@@ -206,7 +206,7 @@ Average FDR pair (+7.1 vs budget S&F) does not beat reinvesting £0.5m+ into out
 
 Unordered 5-club sets. Filter 19/19 zero-diff. Sort all-easy desc, then `avg_fdr_corr` asc. CS gate: ≥2 CS-core (elite ARS/MCI + strong LIV/BHA/MUN/AVL) and ≤1 promoted (COV/HUL/IPS). Companions remain under `data/archive/def-fixture-rotation/` (`def_club_cs_priors.csv`, `def_gw1_19_zero_diff_cs_picks.csv`). Builder: `docs/archive/def-fixture-rotation/build_zero_diff_cs_picks.py`.
 
-Does **not** replace §2 FDR-min #1 `AVL-CHE-LIV-MCI-NFO` (rot FDR **2.4386**, 100% zero-diff, 26.3% all-easy, $r = -0.0679$).
+Does **not** replace §2 Seed-FDR-min #1 `AVL-CHE-LIV-MCI-NFO` (rot FDR **2.4386**, 100% zero-diff, 26.3% all-easy, $r = -0.0679$).
 
 Start-here PICK (CS gate + fixture walk): `ARS-COV-LIV-MCI-SUN` · `AVL-CHE-LIV-MCI-NFO` · `BHA-COV-LIV-MCI-SUN`.
 
@@ -223,7 +223,7 @@ BB2 11-start overlays are historical (Canonical Preseason Chip Path is BB1). See
 2. **Defensive Lineup Structure (GW1–3 BB1)**:
    - Anchor **Calafiori (ARS)** + **Vuskovic (BHA)** + **Thomas (COV)** + City enabler (**O'Reilly / Gvardiol**) + **O'Nien (SUN)**. Club-level FDR-min #1 remains `AVL-CHE-LIV-MCI-NFO`.
 3. **GW4 Wildcard Pivot**:
-   - **Rushworth (COV) + Donnarumma (MCI)** with **Calafiori + Vuskovic + Thomas + Muharemović + Gvardiol** (**425.80 xP**, DCS **83.50**) or **O'Reilly** (**430.51 xP**, same DCS). Rot FDR **2.50**. This is a Defensive Rotation Set, not a reprint of the Stage 3 15.
+   - **Raya (ARS) + Fodder (£4.0m)** with **Calafiori (ARS) + J.Timber (ARS) + Vuskovic (BHA) + Thomas (COV) + O'Nien (SUN)** (**541.29 xP**, DCS **94.09**). Rot FDR **1.92**. Source: `backline_gw1_19_lineups.csv`. This is a Defensive Rotation Set, not a reprint of the Stage 3 15.
 
 ---
 

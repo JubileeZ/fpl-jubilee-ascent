@@ -1,6 +1,6 @@
 # First-Half Chip Path
 
-Sibling GW1–19 research suite. Live Canonical remains GW1 BB + WC4 **356.61** FDR-xP.
+Sibling GW1–19 research suite. Sibling GW1–19 calendar. Canonical GW1–6 is `gw1-6_wc4_summary.csv` `total_6gw_xp` (**383.76** Seed xP).
 
 ```bash
 uv run python docs/research/gw1-19-first-half-chip-path/run_all.py
