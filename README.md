@@ -181,27 +181,54 @@ uv run python -m commands.decision_regret --entry_id <public-entry-id> \
 
 The command writes `data/reports/decision_regret.csv` by default.
 
-### 8. Explore the Dashboard
+### 8. Open and use the Dashboard
 
-Export Full-Season Window projections and serve the local dashboard (Interactive
-Squad Builder plus Ownership Explorer). Requires processed data from
-`commands.refresh_data`. The first browser load needs network access for the
-Plotly CDN.
-
-```bash
-uv run python -m commands.dashboard
-```
-
-The command compiles Champion and Candidate models, writes
-`dashboard/dashboard_data.json` (and a copy under `data/`), then opens
-`http://localhost:8000`. Use `--export-only` to refresh the JSON without
-starting the server, `--no-browser` to skip auto-open, and `--port` to change
-the port. Override models with `--model` / `--models`.
-
-The header has two tabs. **Squad Builder** is the pitch and 15-man picker
-(Planning Horizon, compare models, Load MILP Squad). **Ownership Explorer** is
-the season-window ranking view described below. It is not the research HTML at
+The local dashboard is Interactive Squad Builder plus Ownership Explorer. It is
+not the research HTML at
 `data/research/ownership-value-explorer/ownership_value_explorer.html`.
+
+**Open it**
+
+1. Refresh processed data if `data/processed/` is empty:
+   ```bash
+   uv run python -m commands.refresh_data
+   ```
+2. Export Full-Season Window projections and start the server:
+   ```bash
+   uv run python -m commands.dashboard
+   ```
+3. The command writes `dashboard/dashboard_data.json` (and a copy under
+   `data/`), then tries to open `http://localhost:8000` in your browser. If
+   the window does not appear, visit that URL yourself. The first load needs
+   network access for the Plotly CDN. Stop the server with Ctrl+C.
+
+Optional flags: `--export-only` refreshes the JSON without serving;
+`--no-browser` skips auto-open; `--port` changes the port; `--model` /
+`--models` override Champion/Candidate export. `--horizon` is the Squad
+Builder Planning Horizon (default 5 gameweeks from the next unfinished GW).
+
+The header has two tabs. **Squad Builder** opens first. **Ownership Explorer**
+is the season-window ranking view.
+
+#### Squad Builder
+
+Pitch on the left (starting XI + 4-man bench), player table on the right.
+On load the pitch is filled from `data/solution.json` when a MILP squad exists;
+otherwise a budget-aware greedy xP 15 is selected.
+
+| Control | What it does |
+|---------|----------------|
+| Primary Model | Which projection drives xP on the pitch, table, and explorer |
+| Compare Models | Extra xP and Diff columns for other exported models |
+| View Horizon | Planning Horizon total, or a single gameweek in that horizon |
+| Load MILP Squad | Reload `data/solution.json`, or greedy xP 15 if no solution |
+| Clear | Empty all 15 slots |
+
+Pick players with **Add** on a table row. Search, team, max price, and
+position tabs filter the table. Click column headers to sort. On a pitch card:
+**×** removes the player; **C** / **VC** set captain and vice (captain xP is
+doubled in Starting 11 xP); drag a card onto another slot to swap. The banner
+checks FPL rules: £100.0m, max 3 per club, 2-5-5-3 squad, legal XI formation.
 
 #### Ownership Explorer
 

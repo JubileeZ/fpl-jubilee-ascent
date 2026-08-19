@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** ADR 0016 Feature Contract ingest shipped. Full pytest 209; ruff clean.
-- **Files:** `features/expected_role_prior.py`; `features/builder.py`; `commands/refresh_data.py`; `docs/adr/0016-expected-role-prior-cold-start-minutes.md`; `tests/test_expected_role_prior.py`
-- **Decisions:** Snapshot `season` is availability-snapshot identity only. Table identity = `expected_role_season` or `LIVE_SEASON` (`2026-27`). Archive backtests keep this-season table; GW15+ blend is full current-season minutes.
+- **Status:** README §8 open + Squad Builder usage written. Uncommitted. ADR 0016 ingest already on `main` (`7fe22b7`); branch still 1 commit ahead of origin plus this docs working tree.
+- **Files:** `README.md`; `task.md`; `docs/agents/current-state.md`
+- **Decisions:** Dashboard how-to lives in README §8. Squad Builder: Add / × / C / VC / drag; Load MILP from `data/solution.json` else greedy xP 15.
 - **Blocked:** none
-- **Next:** User runs `--rebuild-roles` when Stage 1 adapters should refresh Dual-Source extract. No further ingest work.
+- **Next:** Commit README packet if User asks. Else stop. Rebuild Dual-Source extract only via `--rebuild-roles`.
