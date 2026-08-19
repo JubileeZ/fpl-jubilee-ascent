@@ -82,7 +82,12 @@ body {
 .header-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1.5rem;
+}
+
+.app-container[data-view="explorer"] .squad-only {
+  display: none;
 }
 
 .control-group {
@@ -719,5 +724,139 @@ body {
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+}
+
+.view-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-right: 0.75rem;
+}
+
+.view-tab {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.view-tab.active {
+  background: var(--accent);
+  color: #042f2e;
+  border-color: var(--accent);
+}
+
+.explorer-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.explorer-root[hidden],
+.main-grid[hidden] {
+  display: none !important;
+}
+
+.explorer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.explorer-toolbar .group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 10rem;
+}
+
+.explorer-toolbar .title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.explorer-toolbar .checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.explorer-toolbar .range-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.explorer-toolbar input[type=number] {
+  width: 4.5rem;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.2rem 0.35rem;
+}
+
+.explorer-toolbar input[type=search] {
+  min-width: 10rem;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+}
+
+.explorer-meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+}
+
+.explorer-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  min-height: 520px;
+}
+
+.explorer-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  min-height: 500px;
+}
+
+.explorer-table-wrap {
+  max-height: 420px;
+  overflow: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.explorer-table thead th[data-sort] {
+  cursor: pointer;
+}
+
+.explorer-table tr.selected {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.explorer-table tr {
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .explorer-charts {
+    grid-template-columns: 1fr;
   }
 }

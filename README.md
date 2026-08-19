@@ -29,9 +29,11 @@ and [uv.lock](uv.lock).
 ## Repository Layout
 
 - `clients/` — FPL API and authentication clients
-- `features/`, `models/`, `projections/` — feature contracts, projection models, and solver exports
+- `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Ownership Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
+- `dashboard/` — Interactive Squad Builder and Ownership Explorer (`uv run python -m commands.dashboard`)
+- `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
 - `data/` — ignored live caches and reports; tracked historical archives in `data/archive/`
@@ -181,10 +183,10 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Explore the Dashboard
 
-Export dashboard data and serve the local interactive squad builder:
+Export dashboard data and serve the Interactive Squad Builder and Ownership Explorer:
 
 ```bash
-uv run python -m commands.dashboard --model metrics_component_hybrid --horizon 5
+uv run python -m commands.dashboard
 ```
 
 Use `--export-only` to refresh `data/dashboard_data.json` without starting the

@@ -1,11 +1,11 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-19T22:22:53+07:00
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-19; Stage 3 GW1 BB + WC4 383.76 xP (`gw1-6_wc4_summary.csv` `total_6gw_xp`) (`gw1-6_wc4_summary.csv` `total_6gw_xp`) (`gw1-6_wc4_summary.csv` `total_6gw_xp`)  
+**Updated**: 2026-08-20T01:45:00+07:00
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-19; Stage 3 GW1 BB + WC4 383.76 xP (`gw1-6_wc4_summary.csv` `total_6gw_xp`)  
 **Season**: 2026/27 · default horizon GW1–38 (GW1–6 toggle)  
 **Status**: Active Research Model & Visualization Suite  
 **Purpose**: Interactive evaluation of projected rate (xP/90) against ownership popularity across full season and GW1–6 windows, sized by expected minutes, with position/club/price filters and strategic chip overlays.  
-**Scope**: 575 FPL players from Stage 2; Ownership = FPL `selected_by_percent` (not EO); full season vs GW1–6 window; overlay markers for GW1 BB (Pre-WC squad), WC4 Core, and User squad.  
+**Scope**: 575 FPL players from Stage 2; Ownership = FPL `selected_by_percent` (not EO); full season vs GW1–6 window; overlay markers for GW1 BB (Pre-WC squad), WC4 Core, and User squad. Product Ownership Explorer is the dashboard view (Season Window GW1–19 / 20–38 / 1–38), not this HTML.  
 **Related**: [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [GW1–6 Chip Strategy](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Downstream refresh](../gw1-6-preseason-pipeline/refresh_downstream.py) · [Project](project_season_points.py) · [Plot](plot_ownership_value_explorer.py)  
 **Artifacts**:
 - [Season projections CSV](../../../data/research/ownership-value-explorer/season_projections.csv)

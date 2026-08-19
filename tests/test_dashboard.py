@@ -32,6 +32,7 @@ def test_build_dashboard_dataset(tmp_path: Path):
             "threat": "100.0",
             "expected_goals": "15.0",
             "expected_assists": "5.0",
+            "selected_by_percent": 12.5,
         },
         {
             "id": 2,
@@ -122,6 +123,100 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert gw1["xg_pts"] == 4.0  # 1.0 * 4
     assert gw1["xa_pts"] == 1.5  # 0.5 * 3
     assert gw1["total_xp"] == 7.5
+    assert haaland["ownership_pct"] == 12.5
+    assert dataset["meta"]["planning_gw_ids"] == [1]
+    first_half = haaland["explorer"]["first_half"]
+    assert first_half["realized_points"] is None
+    assert first_half["all_projection"]["n_gameweeks"] == 19
+    assert first_half["all_projection"]["total"] == 7.5
+    assert first_half["all_projection"]["xp_goals"] == 1.0
+
+
+def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([{
+        "id": 1, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+        "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+        "status": "a", "chance_of_playing_next_round": 100, "news": "",
+        "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+        "influence": "0", "creativity": "0", "threat": "0",
+        "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 40.0,
+    }]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([{"id": 1, "name": "Manchester City", "short_name": "MCI"}]).to_parquet(
+        processed_dir / "clubs.parquet"
+    )
+    pd.DataFrame([
+        {"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False},
+        {"id": 2, "name": "Gameweek 2", "is_next": False, "finished": False},
+    ]).to_parquet(processed_dir / "gameweeks.parquet")
+    predictions = pd.DataFrame([
+        {
+            "player_id": 1, "gameweek_id": 1, "projected_points": 7.5, "projected_minutes": 85.0,
+            "xp_goals": 1.0, "xp_assists": 0.5, "xp_clean_sheet": 0.0, "xp_defcon": 0.0,
+            "xp_bonus": 1.0, "xp_minutes": 2.0, "xp_conceded": 0.0, "xp_saves": 0.0,
+        },
+        {
+            "player_id": 1, "gameweek_id": 2, "projected_points": 3.0, "projected_minutes": 70.0,
+            "xp_goals": 0.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0,
+            "xp_bonus": 0.0, "xp_minutes": 2.0, "xp_conceded": 0.0, "xp_saves": 0.0,
+        },
+    ])
+    dataset = build_dashboard_dataset(
+        processed_dir=processed_dir,
+        predictions_df=predictions,
+        target_gw=1,
+        horizon=1,
+    )
+    haaland = dataset["players"][0]
+    assert dataset["meta"]["planning_gw_ids"] == [1]
+    assert haaland["total_xp_horizon"] == 7.5
+    assert haaland["explorer"]["full_season"]["all_projection"]["total"] == 10.5
+    assert haaland["explorer"]["full_season"]["all_projection"]["xp_minutes"] == 4.0
+
+
+def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([{
+        "id": 1, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+        "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+        "status": "a", "chance_of_playing_next_round": 100, "news": "",
+        "total_points": 8, "minutes": 90, "starts": 1, "ict_index": "0",
+        "influence": "0", "creativity": "0", "threat": "0",
+        "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 40.0,
+    }]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([{"id": 1, "name": "Manchester City", "short_name": "MCI"}]).to_parquet(
+        processed_dir / "clubs.parquet"
+    )
+    pd.DataFrame([
+        {"id": 1, "name": "Gameweek 1", "is_next": False, "finished": True},
+        {"id": 2, "name": "Gameweek 2", "is_next": True, "finished": False},
+    ]).to_parquet(processed_dir / "gameweeks.parquet")
+    pd.DataFrame([{
+        "player_id": 1, "fixture_id": 10, "gameweek_id": 1, "minutes": 90, "total_points": 8,
+        "goals_scored": 1, "assists": 0, "clean_sheets": 0, "goals_conceded": 2,
+        "saves": 0, "bonus": 2, "defensive_contribution": 0,
+    }]).to_parquet(processed_dir / "player_performances.parquet")
+    predictions = pd.DataFrame([{
+        "player_id": 1, "gameweek_id": 2, "projected_points": 6.0, "projected_minutes": 90.0,
+        "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
+    }])
+    dataset = build_dashboard_dataset(
+        processed_dir=processed_dir,
+        predictions_df=predictions,
+        target_gw=2,
+        horizon=1,
+    )
+    realized = dataset["players"][0]["explorer"]["first_half"]["realized_points"]
+    assert realized is not None
+    assert realized["total"] == 8.0
+    assert realized["n_gameweeks"] == 1
+    assert realized["xp_goals"] == 4.0
+    remaining = dataset["players"][0]["explorer"]["first_half"]["remaining_projection"]
+    assert remaining["total"] == 6.0
+    assert 1 not in dataset["meta"]["planning_gw_ids"]
+    assert dataset["meta"]["planning_gw_ids"] == [2]
 
 
 def test_build_dashboard_dataset_multi_model(tmp_path: Path):

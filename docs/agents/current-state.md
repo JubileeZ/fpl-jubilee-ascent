@@ -34,10 +34,11 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
-| Features & Projections | `features/`, `projections/` | Data compilers and solver projection exporters |
+| Features & Projections | `features/`, `projections/` | Data compilers, solver projection exporters, Ownership Explorer slice metrics |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Interactive Squad Builder + Ownership Explorer. Full-Season Window Champion export. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
-| Research | `docs/research/`, `data/research/` | GW1–5 roles/stats, Canonical Chip Path, DCS rotation, ownership explorer. Legacy GKP/DEF CSVs in `data/archive/` |
+| Research | `docs/research/`, `data/research/` | GW1–5 roles/stats, Canonical Chip Path, DCS rotation. Research Ownership Value Explorer HTML is not the product view. Legacy GKP/DEF CSVs in `data/archive/` |
 
 ---
 

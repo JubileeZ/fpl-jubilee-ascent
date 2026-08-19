@@ -24,6 +24,10 @@ _Avoid_: position_id, player position
 A Premier League footballer available for selection. Maps to `element` in the FPL API.
 _Avoid_: Element, asset
 
+**Price**:
+A Player's current FPL purchase value in £m.
+_Avoid_: cost, now_cost, value
+
 **Raw Cache**:
 Raw JSON responses from the FPL API stored in `data/raw/`. Used as a rate-limit shield.
 _Avoid_: Cache, historical data
@@ -57,8 +61,44 @@ The configurable lookahead window (3-8 gameweeks) used by the MILP solver to opt
 _Avoid_: Optimization length, gameweek plan, First-Half Horizon
 
 **First-Half Horizon**:
-Research window GW1–19 covering Set 1 chips. Not a Planning Horizon.
+Research and Ownership Explorer window GW1–19 covering Set 1 chips. Not a Planning Horizon.
 _Avoid_: Planning Horizon, full-season, GW1–6 Canonical window
+
+**Second-Half Horizon**:
+Ownership Explorer window GW20–38 covering Set 2 chips. Not a Planning Horizon.
+_Avoid_: Planning Horizon, rest of season, second half (unbounded)
+
+**Full-Season Window**:
+Ownership Explorer window GW1–38. First-Half Horizon plus Second-Half Horizon. Not a Planning Horizon.
+_Avoid_: Planning Horizon, season horizon
+
+**Season Window**:
+Selected band for Ownership Explorer ranking and axes: First-Half Horizon, Second-Half Horizon, or Full-Season Window.
+_Avoid_: Planning Horizon, Horizon (ambiguous)
+
+**Score Mode**:
+Ownership Explorer slice: All Projection, Realized Points, or Remaining Projection. Rank, axes, minutes, and Event Component columns all use this slice.
+_Avoid_: xP mode, results toggle, horizon mode
+
+**All Projection**:
+Score Mode summing Gameweek Projection xP for every gameweek in the Season Window, including finished weeks. Default Score Mode.
+_Avoid_: Remaining Projection, Realized Points, hybrid total
+
+**Realized Points**:
+Score Mode summing official FPL total_points over finished gameweeks in the Season Window. Hidden until one gameweek in that window is finished. Not xP.
+_Avoid_: Projection, Remaining Projection, xP
+
+**Remaining Projection**:
+Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Season Window.
+_Avoid_: All Projection, rest-of-season (unbounded), Realized Points
+
+**Projected Rate**:
+Score Mode slice points divided by (Σ slice minutes / 90). Projection slices use xP and expected minutes; Realized Points uses official points and minutes. Cameo minutes do not reduce this number.
+_Avoid_: xP per game, Event Rate, Per-90 average
+
+**xP per Gameweek**:
+Score Mode slice points divided by gameweek count in that slice (all, finished, or unfinished). Named xP on Projection slices; Realized Points uses official points per finished gameweek.
+_Avoid_: xP per game, per-match xP, average points
 
 **Event Component**:
 A decomposed scoring input (minutes, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, penalty events) used by a component model to reconstruct a Projection via the FPL scoring matrix, rather than predicting total points directly.
@@ -193,12 +233,16 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-The exported dataset containing player metadata, historical rate metrics (`Pts/Start`, `Pts/90`, `ICT/90`), and per-gameweek event component projections exported for consumption by the interactive dashboard frontend.
+Exported player metadata, historical rates, and per-gameweek Event Component projections for the dashboard. Covers the Full-Season Window; Interactive Squad Builder displays a Planning Horizon slice.
 _Avoid_: UI state, solver export
 
 **Interactive Squad Builder**:
 The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
-_Avoid_: Roster picker, drag list
+_Avoid_: Roster picker, drag list, Ownership Explorer
+
+**Ownership Explorer**:
+Dashboard view ranking every Feature Contract Player by Season Window score (default First-Half Horizon, Score Mode All Projection) with linked Ownership and Price charts toggling Projected Rate vs xP per Gameweek. Same production Feature Contract, Model Champion, and Official Fixture Difficulty fallback as the solver; not Interactive Squad Builder.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, horizon chart, draft-only First-Half CSV as the explorer pool, Dual-Vector explorer xP
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.

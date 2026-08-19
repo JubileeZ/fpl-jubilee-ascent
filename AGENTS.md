@@ -14,16 +14,20 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 ## Repo Structure
 
 ```
-clients/      # FPL API and auth clients
-models/       # Custom scoring models (convention-based auto-discovery)
-features/     # FeatureContract builder (raw to feature dataframe)
-projections/  # ProjectionContract exporter (features to solver CSV)
-solver/       # Vendored open-fpl-solver source
-backtesting/  # Backtest evaluation engine and metrics
-commands/     # CLI command entry points
-data/         # Raw API cache, season archives, solver reports, research artifacts
+clients/       # FPL API and auth clients
+models/        # Custom scoring models (convention-based auto-discovery)
+features/      # FeatureContract builder (raw to feature dataframe)
+projections/   # ProjectionContract exporter + Ownership Explorer slice metrics
+solver/        # Vendored open-fpl-solver source
+backtesting/   # Backtest evaluation engine and metrics
+commands/      # CLI command entry points
+dashboard/     # Interactive Squad Builder + Ownership Explorer (served by commands.dashboard)
+config/        # Model Champion selection
+tests/         # pytest suite
+data/          # Raw API cache, season archives, solver reports, research artifacts
 data/research/ # Machine-readable companions to durable research notes
-docs/         # Durable project documentation and decision records
+docs/          # Durable project documentation and decision records
+.agents/       # Session handoff and agent skills
 ```
 
 ---
@@ -35,6 +39,7 @@ docs/         # Durable project documentation and decision records
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
+| `uv run python -m commands.dashboard` | Export Full-Season Window JSON; serve Squad Builder + Ownership Explorer |
 
 **Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 

@@ -16,11 +16,22 @@ configure_utf8_stdio()
 
 from features.builder import build_features
 from models import get_default_model_name, get_model
+from projections.explorer_slice import (
+    COMPONENT_KEYS,
+    GameweekScore,
+    build_explorer_slices,
+    realized_gameweek_score,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ROLE_CSV = PROJECT_ROOT / (
+    "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
+)
+SEASON_START_GW = 1
+SEASON_END_GW = 38
 
 import math
 
@@ -54,6 +65,69 @@ def _clean_json_obj(obj: Any) -> Any:
     elif isinstance(obj, list):
         return [_clean_json_obj(v) for v in obj]
     return obj
+
+
+def _load_expected_roles() -> dict[int, str]:
+    if not ROLE_CSV.exists():
+        return {}
+    roles = pd.read_csv(ROLE_CSV)
+    if "player_id" not in roles.columns or "expected_role" not in roles.columns:
+        return {}
+    return dict(zip(roles["player_id"].astype(int), roles["expected_role"].astype(str)))
+
+
+def _finished_gameweeks(processed_dir: Path) -> set[int]:
+    path = processed_dir / "gameweeks.parquet"
+    if not path.exists():
+        return set()
+    df_gw = pd.read_parquet(path)
+    if "finished" not in df_gw.columns:
+        return set()
+    return {int(gid) for gid in df_gw.loc[df_gw["finished"], "id"]}
+
+
+def _planning_gw_ids(target_gw: int, horizon: int) -> list[int]:
+    return [gw for gw in range(target_gw, target_gw + horizon) if SEASON_START_GW <= gw <= SEASON_END_GW]
+
+
+def _groupby_predictions(df_pred: pd.DataFrame) -> pd.DataFrame:
+    agg: dict[str, str] = {"projected_points": "sum", "projected_minutes": "sum"}
+    for col in COMPONENT_KEYS:
+        if col in df_pred.columns:
+            agg[col] = "sum"
+    return df_pred.groupby(["player_id", "gameweek_id"], as_index=False).agg(agg)
+
+
+def _score_from_pred_row(row: pd.Series) -> GameweekScore:
+    return GameweekScore(
+        points=_safe_float(row["projected_points"]),
+        minutes=_safe_float(row["projected_minutes"]),
+        xp_minutes=_safe_float(row.get("xp_minutes")),
+        xp_goals=_safe_float(row.get("xp_goals")),
+        xp_assists=_safe_float(row.get("xp_assists")),
+        xp_clean_sheet=_safe_float(row.get("xp_clean_sheet")),
+        xp_conceded=_safe_float(row.get("xp_conceded")),
+        xp_defcon=_safe_float(row.get("xp_defcon")),
+        xp_saves=_safe_float(row.get("xp_saves")),
+        xp_bonus=_safe_float(row.get("xp_bonus")),
+    )
+
+
+def _realized_by_player(processed_dir: Path, pos_by_player: dict[int, int]) -> dict[int, dict[int, GameweekScore]]:
+    path = processed_dir / "player_performances.parquet"
+    if not path.exists():
+        return {}
+    df_perf = pd.read_parquet(path)
+    if df_perf.empty or "player_id" not in df_perf.columns:
+        return {}
+    out: dict[int, dict[int, GameweekScore]] = {}
+    for (pid, gw), grp in df_perf.groupby(["player_id", "gameweek_id"], sort=False):
+        player_id = int(pid)
+        out.setdefault(player_id, {})[int(gw)] = realized_gameweek_score(
+            grp.to_dict("records"),
+            pos_by_player.get(player_id, 3),
+        )
+    return out
 
 
 def build_dashboard_dataset(
@@ -93,27 +167,22 @@ def build_dashboard_dataset(
         except Exception as e:
             logger.warning(f"Could not load solver solution from {solution_path}: {e}")
 
-    # Process grouped predictions for each model
+    planning_gw_ids = _planning_gw_ids(target_gw, horizon)
+    planning_gw_set = set(planning_gw_ids)
+    finished_gws = _finished_gameweeks(processed_dir)
+    expected_roles = _load_expected_roles()
+    pos_by_player = {int(row["id"]): int(row["position_id"]) for _, row in players_df.iterrows()}
+    realized_map = _realized_by_player(processed_dir, pos_by_player)
+
     grouped_models: Dict[str, pd.DataFrame] = {}
-    all_gw_ids: set[int] = set()
+    all_gw_ids: set[int] = set(planning_gw_ids)
 
     for m_name, df_pred in model_preds_map.items():
-        gw_grp = (
-            df_pred.groupby(["player_id", "gameweek_id"], as_index=False)
-            .agg({
-                "projected_points": "sum",
-                "projected_minutes": "sum",
-                "xp_goals": "sum",
-                "xp_assists": "sum",
-                "xp_clean_sheet": "sum",
-                "xp_defcon": "sum",
-                "xp_bonus": "sum",
-            })
-        )
+        gw_grp = _groupby_predictions(df_pred)
         grouped_models[m_name] = gw_grp
-        all_gw_ids.update(gw_grp["gameweek_id"].unique().tolist())
+        all_gw_ids.update(int(g) for g in gw_grp["gameweek_id"].unique().tolist())
 
-    gw_ids = sorted(all_gw_ids) if all_gw_ids else list(range(target_gw, target_gw + horizon))
+    gw_ids = sorted(all_gw_ids) if all_gw_ids else planning_gw_ids
 
     players_data: List[Dict[str, Any]] = []
 
@@ -150,12 +219,14 @@ def build_dashboard_dataset(
         defcon_pts_factor = _DEFCON_POINTS.get(pos_id, 0.0)
 
         player_models_dict: Dict[str, Any] = {}
+        player_realized = realized_map.get(pid, {})
 
         for m_name, gw_grouped in grouped_models.items():
             p_preds = gw_grouped[gw_grouped["player_id"] == pid]
             projections: Dict[str, Dict[str, float]] = {}
             total_xp_horizon = 0.0
             total_xmins_horizon = 0.0
+            projection_by_gw: dict[int, GameweekScore] = {}
 
             for gw in gw_ids:
                 gw_row = p_preds[p_preds["gameweek_id"] == gw]
@@ -168,12 +239,15 @@ def build_dashboard_dataset(
                     xp_cs = _safe_float(r.get("xp_clean_sheet"))
                     xp_def = _safe_float(r.get("xp_defcon"))
                     xp_b = _safe_float(r.get("xp_bonus"))
-
+                    xp_min = _safe_float(r.get("xp_minutes"))
+                    xp_conc = _safe_float(r.get("xp_conceded"))
+                    xp_saves = _safe_float(r.get("xp_saves"))
                     xg_pts = round(xp_g * g_pts_factor, 2)
                     xa_pts = round(xp_a * _ASSIST_POINTS, 2)
                     xcs_pts = round(xp_cs * cs_pts_factor, 2)
                     xdefcon_pts = round(xp_def * defcon_pts_factor, 2)
                     xb_pts = round(xp_b, 2)
+                    projection_by_gw[gw] = _score_from_pred_row(r)
                 else:
                     xp_pts = 0.0
                     xmins = 0.0
@@ -182,6 +256,9 @@ def build_dashboard_dataset(
                     xcs_pts = 0.0
                     xdefcon_pts = 0.0
                     xb_pts = 0.0
+                    xp_min = 0.0
+                    xp_conc = 0.0
+                    xp_saves = 0.0
 
                 projections[f"gw{gw}"] = {
                     "total_xp": xp_pts,
@@ -191,14 +268,20 @@ def build_dashboard_dataset(
                     "xcs_pts": xcs_pts,
                     "xdefcon_pts": xdefcon_pts,
                     "xb_pts": xb_pts,
+                    "xp_minutes": xp_min,
+                    "xp_conceded": xp_conc,
+                    "xp_saves": xp_saves,
                 }
-                total_xp_horizon += xp_pts
-                total_xmins_horizon += xmins
+                if gw in planning_gw_set:
+                    total_xp_horizon += xp_pts
+                    total_xmins_horizon += xmins
 
+            explorer = build_explorer_slices(projection_by_gw, player_realized, finished_gws)
             player_models_dict[m_name] = {
                 "projections": projections,
                 "total_xp_horizon": round(total_xp_horizon, 2),
                 "total_xmins_horizon": round(total_xmins_horizon, 1),
+                "explorer": explorer,
             }
 
         primary_model_data = player_models_dict.get(primary_model_name) or list(player_models_dict.values())[0]
@@ -225,6 +308,8 @@ def build_dashboard_dataset(
             "status": str(p.get("status", "a")),
             "chance": chance_val,
             "news": str(p.get("news", "") or ""),
+            "ownership_pct": round(_safe_float(p.get("selected_by_percent")), 1),
+            "expected_role": expected_roles.get(pid, ""),
             "pts_per_start": pts_per_start,
             "pts_per_90": pts_per_90,
             "ict_per_90": ict_per_90,
@@ -237,10 +322,10 @@ def build_dashboard_dataset(
             "minutes": int(mins),
             "starts": int(starts),
             "models": player_models_dict,
-            # Top-level defaults for backward compatibility
             "projections": primary_model_data["projections"],
             "total_xp_horizon": primary_model_data["total_xp_horizon"],
             "total_xmins_horizon": primary_model_data["total_xmins_horizon"],
+            "explorer": primary_model_data["explorer"],
         }
         players_data.append(player_dict)
 
@@ -249,6 +334,10 @@ def build_dashboard_dataset(
             "target_gw": target_gw,
             "horizon": horizon,
             "gw_ids": gw_ids,
+            "planning_gw_ids": planning_gw_ids,
+            "finished_gameweeks": sorted(finished_gws),
+            "default_season_window": "first_half",
+            "default_score_mode": "all_projection",
             "models": model_names,
             "default_model": primary_model_name,
             "solution_model_name": solution_model_name,
@@ -315,8 +404,8 @@ def main() -> None:
         except Exception:
             target_gw = 1
 
-    logger.info(f"Building features starting GW {target_gw} over {args.horizon} horizon...")
-    df_feat = build_features(processed_dir, target_gw, horizon=args.horizon)
+    logger.info(f"Building Full-Season Window features GW{SEASON_START_GW}–{SEASON_END_GW}; pitch Planning Horizon {args.horizon} from GW{target_gw}")
+    df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
 
     model_preds: Dict[str, pd.DataFrame] = {}
     perf_path = processed_dir / "player_performances.parquet"
@@ -327,7 +416,7 @@ def main() -> None:
         model = get_model(m_name)
         if hasattr(model, "fit") and df_perf is not None:
             model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-        model_preds[m_name] = model.predict(df_feat, args.horizon)
+        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
 
     sol_path = PROJECT_ROOT / "data" / "solution.json"
     dataset = build_dashboard_dataset(

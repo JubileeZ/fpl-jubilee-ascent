@@ -17,6 +17,8 @@ configure_utf8_stdio()
 
 from commands.export_dashboard import (
     PROJECT_ROOT,
+    SEASON_END_GW,
+    SEASON_START_GW,
     build_dashboard_dataset,
     export_dashboard_data,
 )
@@ -79,8 +81,11 @@ def run_dashboard_export(
         except Exception:
             target_gw = 1
 
-    logger.info(f"Generating projections starting GW {target_gw} over {horizon} GW horizon...")
-    df_feat = build_features(processed_dir, target_gw, horizon=horizon)
+    logger.info(
+        f"Generating Full-Season Window projections GW{SEASON_START_GW}–{SEASON_END_GW}; "
+        f"pitch Planning Horizon {horizon} from GW{target_gw}"
+    )
+    df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
 
     model_preds: dict[str, pd.DataFrame] = {}
     perf_path = processed_dir / "player_performances.parquet"
@@ -91,7 +96,7 @@ def run_dashboard_export(
         model = get_model(m_name)
         if hasattr(model, "fit") and df_perf is not None:
             model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-        model_preds[m_name] = model.predict(df_feat, horizon)
+        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
 
     sol_path = PROJECT_ROOT / "data" / "solution.json"
     dataset = build_dashboard_dataset(

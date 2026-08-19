@@ -7,21 +7,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container" data-view="squad">
     <!-- Top Header -->
     <header class="navbar">
       <div class="brand">
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle">Interactive Squad Builder & Model Projections</span>
+          <span class="subtitle">Interactive Squad Builder &amp; Ownership Explorer</span>
         </div>
       </div>
 
       <div class="header-controls">
+        <div class="view-tabs" role="tablist">
+          <button type="button" class="view-tab active" id="tab-squad" data-view="squad">Squad Builder</button>
+          <button type="button" class="view-tab" id="tab-explorer" data-view="explorer">Ownership Explorer</button>
+        </div>
         <div class="control-group">
           <label for="primaryModelSelect">Primary Model:</label>
           <select id="primaryModelSelect" class="select-input">
@@ -29,19 +33,19 @@
           </select>
         </div>
 
-        <div class="control-group">
+        <div class="control-group squad-only">
           <label>Compare Models:</label>
           <div id="compareModelsContainer" class="compare-checkbox-group"></div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group squad-only">
           <label for="gwSelect">View Horizon:</label>
           <select id="gwSelect" class="select-input">
             <option value="horizon">Full Horizon Total (5 GWs)</option>
           </select>
         </div>
 
-        <div class="button-group">
+        <div class="button-group squad-only">
           <button id="btnLoadMilp" class="btn btn-primary">
             <span class="btn-icon">⚡</span> Load MILP Squad
           </button>
@@ -55,7 +59,7 @@
 
 
     <!-- Main Content Grid -->
-    <main class="main-grid">
+    <main class="main-grid" id="squad-root">
       <!-- Left Column: Squad Builder & Pitch -->
       <section class="squad-section">
         <div class="card squad-summary-card">
@@ -180,8 +184,97 @@
         </div>
       </section>
     </main>
+
+    <section class="explorer-root" id="explorer-root" hidden>
+      <div class="card explorer-toolbar">
+        <div class="group">
+          <label class="title">Season Window</label>
+          <div class="checks">
+            <label><input type="radio" name="season-window" value="first_half" checked> First-Half Horizon (GW1–19)</label>
+            <label><input type="radio" name="season-window" value="second_half"> Second-Half Horizon (GW20–38)</label>
+            <label><input type="radio" name="season-window" value="full_season"> Full-Season Window (GW1–38)</label>
+          </div>
+        </div>
+        <div class="group">
+          <label class="title">Score Mode</label>
+          <div class="checks" id="score-mode-checks">
+            <label><input type="radio" name="score-mode" value="all_projection" checked> All Projection</label>
+            <label id="realized-mode-label" hidden><input type="radio" name="score-mode" value="realized_points"> Realized Points</label>
+            <label><input type="radio" name="score-mode" value="remaining_projection"> Remaining Projection</label>
+          </div>
+        </div>
+        <div class="group">
+          <label class="title">Y-axis</label>
+          <div class="checks">
+            <label><input type="radio" name="y-metric" value="rate_per_90" checked> Projected Rate</label>
+            <label><input type="radio" name="y-metric" value="per_gameweek"> xP per Gameweek</label>
+          </div>
+        </div>
+        <div class="group">
+          <label class="title">Position</label>
+          <div class="checks" id="explorer-pos-checks"></div>
+        </div>
+        <div class="group">
+          <label class="title">Club</label>
+          <select id="explorer-club" class="select-input"></select>
+        </div>
+        <div class="group">
+          <label class="title">Price</label>
+          <div class="range-row">
+            <input type="number" id="explorer-price-min" step="0.5">
+            <span>–</span>
+            <input type="number" id="explorer-price-max" step="0.5">
+          </div>
+        </div>
+        <div class="group">
+          <label class="title">Avg minutes floor</label>
+          <div class="range-row">
+            <input type="range" id="explorer-xmins-floor" min="0" max="90" step="1" value="45">
+            <span id="explorer-xmins-floor-val">45</span>
+          </div>
+        </div>
+        <div class="group">
+          <label class="title">Search</label>
+          <input type="search" id="explorer-search" placeholder="Player, club, role…" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <p id="explorer-meta" class="explorer-meta"></p>
+      <div class="explorer-charts">
+        <div id="chart-ownership" class="explorer-chart"></div>
+        <div id="chart-price" class="explorer-chart"></div>
+      </div>
+      <div id="explorer-table-wrap" class="explorer-table-wrap">
+        <table class="data-table explorer-table">
+          <thead>
+            <tr>
+              <th data-sort="rank">#</th>
+              <th data-sort="name">Player</th>
+              <th data-sort="club">Club</th>
+              <th data-sort="pos">Pos</th>
+              <th data-sort="price">Price</th>
+              <th data-sort="own">Own%</th>
+              <th data-sort="total">Total</th>
+              <th data-sort="rate_per_90">/90</th>
+              <th data-sort="avg_minutes">Avg mins</th>
+              <th data-sort="xp_minutes">Mins</th>
+              <th data-sort="xp_goals">Goals</th>
+              <th data-sort="xp_assists">Assists</th>
+              <th data-sort="xp_clean_sheet">CS</th>
+              <th data-sort="xp_conceded">Conc</th>
+              <th data-sort="xp_defcon">Defcon</th>
+              <th data-sort="xp_saves">Saves</th>
+              <th data-sort="xp_bonus">Bonus</th>
+              <th data-sort="role">Role</th>
+            </tr>
+          </thead>
+          <tbody id="explorer-table"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="app.js?v=6"></script>
+  <script src="explorer.js?v=2"></script>
 </body>
 </html>

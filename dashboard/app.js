@@ -52,6 +52,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const benchContainer = document.getElementById("benchContainer");
   const benchCountText = document.getElementById("benchCountText");
 
+  function setDashboardView(view) {
+    const squad = document.getElementById("squad-root");
+    const explorer = document.getElementById("explorer-root");
+    const app = document.querySelector(".app-container");
+    if (app) app.setAttribute("data-view", view);
+    if (squad) squad.hidden = view !== "squad";
+    if (explorer) explorer.hidden = view !== "explorer";
+    document.getElementById("tab-squad")?.classList.toggle("active", view === "squad");
+    document.getElementById("tab-explorer")?.classList.toggle("active", view === "explorer");
+    if (view === "explorer" && window.renderOwnershipExplorer) {
+      window.renderOwnershipExplorer();
+      if (window.Plotly) {
+        ["chart-ownership", "chart-price"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) window.Plotly.Plots.resize(el);
+        });
+      }
+    }
+  }
+
   // 1. Load Data
   async function init() {
     try {
@@ -68,6 +88,16 @@ document.addEventListener("DOMContentLoaded", () => {
       setupPriceSlider();
       setupGwSelect();
       setupEventListeners();
+
+      if (window.initOwnershipExplorer) {
+        window.initOwnershipExplorer({
+          getPlayers: () => allPlayers,
+          getMeta: () => metaData,
+          getPrimaryModel: () => primaryModel,
+        });
+      }
+      document.getElementById("tab-squad")?.addEventListener("click", () => setDashboardView("squad"));
+      document.getElementById("tab-explorer")?.addEventListener("click", () => setDashboardView("explorer"));
 
       // Pre-fill squad if MILP IDs available
       if (metaData.prefilled_squad_ids && metaData.prefilled_squad_ids.length > 0) {
@@ -127,12 +157,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setupGwSelect() {
-    gwSelect.innerHTML = `<option value="horizon">Full Horizon Total (${metaData.horizon || 5} GWs)</option>`;
-    if (metaData.gw_ids) {
-      metaData.gw_ids.forEach(gw => {
-        gwSelect.innerHTML += `<option value="gw${gw}">Gameweek ${gw}</option>`;
-      });
-    }
+    const ids = metaData.planning_gw_ids || metaData.gw_ids || [];
+    gwSelect.innerHTML = `<option value="horizon">Planning Horizon Total (${ids.length} GWs)</option>`;
+    ids.forEach(gw => {
+      gwSelect.innerHTML += `<option value="gw${gw}">Gameweek ${gw}</option>`;
+    });
   }
 
   function setupTeamSelect() {
@@ -170,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
       compareModels.delete(primaryModel);
       renderCompareCheckboxes();
       renderAll();
+      if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
     });
 
     gwSelect.addEventListener("change", (e) => {
@@ -231,8 +261,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const projections = modelData.projections || player.projections || {};
 
     if (selectedGw === "horizon") {
+      const ids = metaData.planning_gw_ids || [];
+      const keys = ids.length ? ids.map(gw => `gw${gw}`) : Object.keys(projections);
       let xg = 0, xa = 0, xcs = 0, xdef = 0, xb = 0, xmins = 0;
-      Object.values(projections).forEach(proj => {
+      keys.forEach(key => {
+        const proj = projections[key];
+        if (!proj) return;
         xg += proj.xg_pts || 0;
         xa += proj.xa_pts || 0;
         xcs += proj.xcs_pts || 0;

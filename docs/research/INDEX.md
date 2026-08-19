@@ -19,7 +19,8 @@
   - [Stage 3: Canonical Preseason Chip Path (GW1 BB + WC4)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [Select 11](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_select_11.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
 
 - **Ownership & Differential Screening**:
-  - [Ownership Value Explorer (GW1–38)](ownership-value-explorer/ownership-value-explorer.md) · [Season projections](../../data/research/ownership-value-explorer/season_projections.csv) · [Metrics](../../data/research/ownership-value-explorer/ownership_value_metrics.csv) · [Interactive HTML](../../data/research/ownership-value-explorer/ownership_value_explorer.html)
+  - [Ownership Value Explorer (GW1–38 research HTML)](ownership-value-explorer/ownership-value-explorer.md) · [Season projections](../../data/research/ownership-value-explorer/season_projections.csv) · [Metrics](../../data/research/ownership-value-explorer/ownership_value_metrics.csv) · [Interactive HTML](../../data/research/ownership-value-explorer/ownership_value_explorer.html)
+  - Product view: dashboard Ownership Explorer (`commands.dashboard`) — Season Windows GW1–19 / GW20–38 / GW1–38, production Champion + Official Fixture Difficulty fallback.
 
 - **FPL 2026/27 Pre-Season Source Directory**:
   - [Pre-Season Source Directory](fpl-preseason-guide/fpl-preseason-guide.md)
