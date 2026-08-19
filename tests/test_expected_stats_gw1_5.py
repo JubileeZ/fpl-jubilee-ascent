@@ -26,6 +26,13 @@ DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
 
 
 def test_build_expected_stats_outputs():
+    from pathlib import Path
+
+    import pytest
+
+    summaries = list(Path("data/raw").glob("element_summary_*.json"))
+    if len(summaries) < 100:
+        pytest.skip("element_summary cache required for Stage 2 rate rebuild")
     roles = pd.read_csv(ROLE_CSV)
     df_stats = build_mod.build_expected_stats()
     assert len(df_stats) == len(roles)

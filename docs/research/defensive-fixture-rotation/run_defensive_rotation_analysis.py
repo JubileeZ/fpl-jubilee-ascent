@@ -23,6 +23,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from clients.env_loader import configure_utf8_stdio
 from features.builder import _fixture_maps
 from models.participation_state_hybrid import ParticipationStateHybridModel
 
@@ -926,6 +927,7 @@ def run_full_backline_simulation(
 
 def run_defensive_rotation_pipeline() -> None:
     """Execute complete defensive fixture rotation, strategy proof, and combinatorial simulation."""
+    configure_utf8_stdio()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     print("=== DEFENSIVE ARCHITECTURE & FIXTURE ROTATION ANALYSIS ===")
 

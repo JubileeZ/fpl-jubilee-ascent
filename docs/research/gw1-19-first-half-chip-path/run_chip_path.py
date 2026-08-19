@@ -336,11 +336,15 @@ def rescore_canonical_s1(pool: pd.DataFrame) -> dict:
         xp, cap, _ = score_week(squad, gw, bb=bb, tc=False)
         total += xp
         caps[gw] = cap
+    summary = pd.read_csv(
+        ROOT / "data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv"
+    )
+    canonical_fdr_xp = round(float(summary.iloc[0]["total_6gw_xp"]), 2)
     return {
-        "note": "Canonical S1 15s re-scored on Prior-Season Dual-Vector Seed (not 364.21)",
+        "note": "Canonical S1 15s re-scored on Prior-Season Dual-Vector Seed (not live FDR-xP)",
         "total_6gw_xp_dv": round(total, 2),
         "captains": caps,
-        "canonical_fdr_xp": 364.21,
+        "canonical_fdr_xp": canonical_fdr_xp,
     }
 
 

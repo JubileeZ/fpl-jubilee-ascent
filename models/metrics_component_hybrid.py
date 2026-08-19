@@ -224,7 +224,7 @@ class MetricsComponentHybridModel(BaseModel):
         prob_clean_sheet = prob_clean_sheet_on_pitch * p_sixty_mins
 
         defcon_per90 = _number(row, "per90_defensive_contribution", 0.0)
-        lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0)
+        lmbda_defcon = max(0.0, defcon_per90 * expected_minutes / 90.0 * defence_multiplier)
         defcon_threshold = 10 if position == "D" else 12
         defcon_r = 8.5 if position == "D" else 7.0
         prob_defcon = (
@@ -234,7 +234,9 @@ class MetricsComponentHybridModel(BaseModel):
         )
 
         saves_per90 = _number(row, "per90_saves", 0.0)
-        expected_saves = saves_per90 * expected_minutes / 90.0 if position == "GK" else 0.0
+        expected_saves = (
+            saves_per90 * expected_minutes / 90.0 * defence_multiplier if position == "GK" else 0.0
+        )
         yellow_cards = _number(row, "per90_yellow_cards", 0.0) * expected_minutes / 90.0
         red_cards = _number(row, "per90_red_cards", 0.0) * expected_minutes / 90.0
         penalties_saved = _number(row, "per90_penalties_saved", 0.0) * expected_minutes / 90.0

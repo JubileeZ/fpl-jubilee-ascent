@@ -1,7 +1,7 @@
 # Ownership Value Explorer (Full Season)
 
-**Updated**: 2026-08-18T15:05:00+07:00  
-**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-18; Stage 3 GW1 BB + WC4 364.21 xP  
+**Updated**: 2026-08-19T13:45:00+07:00  
+**Data stamp**: Stage 2 ADR-0014 rates 2026-08-18 (575 players); FPL API refresh 2026-08-19; Stage 3 GW1 BB + WC4 356.61 xP  
 **Season**: 2026/27 · default horizon GW1–38 (GW1–6 toggle)  
 **Status**: Active Research Model & Visualization Suite  
 **Purpose**: Interactive evaluation of projected rate (xP/90) against ownership popularity across full season and GW1–6 windows, sized by expected minutes, with position/club/price filters and strategic chip overlays.  
@@ -43,7 +43,7 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 - **Colour**: position (GKP: blue `#4c78a8` · DEF: orange `#f58518` · MID: green `#54a24b` · FWD: red `#e45756`).
 - **Text labels**: player names when avg xMins ≥ 60, or when row matches **Player list** search.
 - **Overlay markers**:
-  - `★` (gold star / amber border) = **GW1 BB Pre-WC Squad** (GW1 Bench Boost sprint; 15 starters scoring, 190.84 xP GW1–3).
+  - `★` (gold star / amber border) = **GW1 BB Pre-WC Squad** (GW1 Bench Boost sprint; 15 starters scoring, 186.53 xP GW1–3).
   - `⬡` (hexagon / sky blue border) = **WC4 Core Squad** (Stage 3 WC4 optimal 15 post-WC lineup, 173.37 xP GW4–6).
   - `■` (square / purple border) = **S5 Pre-WC Squad** (historical 16-scenario BB1 + TC3; not live Stage 3).
   - `▲` (triangle-up / teal border) = **S1 Pre-FH Squad** (historical 16-scenario BB1 + FH3 tag in the CSV; live Canonical S1 is the ★ GW1 BB overlay).
@@ -77,7 +77,7 @@ Requires network on first load (Plotly CDN). Refresh browser tab when HTML regen
 
 The explorer allows managers to evaluate both phases of the **GW1 BB + WC4** canonical strategy (Stage 3):
 
-### 1. Pre-WC Sprint Differentials (GW1–3 BB1 Target, 190.84 xP)
+### 1. Pre-WC Sprint Differentials (GW1–3 BB1 Target, 186.53 xP)
 - **Concept**: In GW1 Bench Boost, managers field a 15-man active squad scoring across all positions in GW1, lock transfers across GW1–3, and liquidate short-term picks in GW4 Wildcard.
 - **High-Value Differentials & Anchors**:
   - **Tzolis (ARS MID £6.5m, 1.4% own)**: 6.31 season xP/90; 6.30 GW1–6 xP/90; elite differential midfielder for Arsenal opening run.

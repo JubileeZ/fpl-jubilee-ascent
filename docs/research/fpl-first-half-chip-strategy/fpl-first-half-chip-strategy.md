@@ -1,10 +1,10 @@
 # FPL 2026/27 — First-Half Chip Strategy & Multi-Source Comprehensive Evaluation
 
-**Updated**: 2026-08-18T15:05:00+07:00  
-**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; Stage 3 canonical S1 CSV 2026-08-18 (`total_6gw_xp` = 364.21); historical 16-scenario matrix frozen 2026-08-15  
+**Updated**: 2026-08-19T13:45:00+07:00  
+**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; Stage 3 canonical S1 CSV 2026-08-19 (`total_6gw_xp` = 356.61); historical 16-scenario matrix frozen 2026-08-15  
 **Season**: 2026/27 · first-half horizon GW1–19  
 **Status**: Source synthesis + project interpretation. Live xP = Canonical Preseason Chip Path only.  
-**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the repo's live Stage 3 path: **GW1 Bench Boost + GW4 Wildcard = 364.21 xP**.  
+**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the repo's live Stage 3 path: **GW1 Bench Boost + GW4 Wildcard = 356.61 xP**.  
 **Scope**: Wildcard, Free Hit, Triple Captain, and Bench Boost before the GW19 deadline. Expert branches stay qualitative unless Stage 3 currently publishes them.  
 **Related**: [`INDEX.md`](../INDEX.md) · [GW1–6 Preseason Pipeline Master README](../gw1-6-preseason-pipeline/README.md) · [GW1–6 Canonical Chip Path](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Ownership Value Explorer](../ownership-value-explorer/ownership-value-explorer.md)  
 **Artifacts**:
@@ -22,9 +22,9 @@
 3. **Fantasy Football Scout & Fantasy Football Hub Consensus**: [Pre-Season Strategy & Fixture Swings](https://www.fantasyfootballscout.co.uk) & [Fantasy Football Hub](https://www.fantasyfootballhub.co.uk); accessed 2026-08-13.
    - *Coverage*: Information-led Wildcard timing at GW5/6 international break vs early fixture swing WC4; Early Bench Boost vs post-Wildcard Bench Boost; Double Gameweek value vs single GW high-ceiling premium matchups; Free Hit as fixture/injury bailout vs planned DGW/BGW attack.
 4. **FPL-Jubilee-Ascent Optimization Engine**:
-   - *Stage 3 Canonical Path* (`run_wc4_simulation.py`): single published scenario S1 — GW1 BB, locked GW1–3, WC4, roll GW5, **364.21 xP**. CSV has one row.
+   - *Stage 3 Canonical Path* (`run_wc4_simulation.py`): single published scenario S1 — GW1 BB, locked GW1–3, WC4, roll GW5, **356.61 xP**. CSV has one row.
    - *Unified defensive DCS runner* (`run_defensive_rotation_analysis.py`).
-   - *Historical 16-scenario matrix* (frozen 2026-08-15): BB1/BB2 × FH3/TC3 × bans. **Not live.** S13 340.14 xP is that experiment, not a reprint of 364.21.
+   - *Historical 16-scenario matrix* (frozen 2026-08-15): BB1/BB2 × FH3/TC3 × bans. **Not live.** S13 340.14 xP is that experiment, not a reprint of 356.61.
    - *Fixtures & Projections Data*: `data/processed/fixtures.parquet`, `gw1-6_projections.csv`.
 
 ---
@@ -41,7 +41,7 @@ Refresh and evaluate all first-half chip strategies in docs/research/fpl-first-h
    - Free Hit: GW3, GW4, GW13, GW16
 2. Prove each strategy branch quantitatively:
    - Analyze exact fixture difficulty ratings (FDR), expected goals conceded of opponents, and points projections.
-   - Cross-check live project numbers against Stage 3 Canonical Preseason Chip Path only (`gw1-6_wc4_summary.csv`, one row, 364.21 xP). Frozen 16-scenario xP is historical, not live.
+   - Cross-check live project numbers against Stage 3 Canonical Preseason Chip Path only (`gw1-6_wc4_summary.csv`, one row, 356.61 xP). Frozen 16-scenario xP is historical, not live.
    - Evaluate structural trade-offs (bench capital allocation, FT banking preservation, international break risks).
 3. Synthesize multi-source views into clear, research-backed verdicts with trigger and kill-switch criteria.
 4. Verify code and formatting: uv run ruff check . && uv run pytest && bash tests/verify.sh.
@@ -53,16 +53,16 @@ Refresh and evaluate all first-half chip strategies in docs/research/fpl-first-h
 
 1. **Multi-Source Inventory**: Catalogue every discrete strategic pathway and candidate gameweek proposed across community and expert sources.
 2. **Official Rule Boundary Check**: Validate constraints (GW19 chip expiry, 1-chip/GW limit, 5-FT banking preservation across chips).
-3. **Live project numbers**: Quote Stage 3 S1 only (`gw1-6_wc4_summary.csv`): GW1 **75.82**, GW1–3 **190.84**, GW4–6 **173.37**, total **364.21**, 4 banked FTs.
-4. **Source vs project**: Expert branches stay qualitative. Frozen 16-scenario xP (S13 340.14) is historical, not additive to 364.21.
+3. **Live project numbers**: Quote Stage 3 S1 only (`gw1-6_wc4_summary.csv`): GW1 **73.67**, GW1–3 **186.53**, GW4–6 **170.08**, total **356.61**, 4 banked FTs.
+4. **Source vs project**: Expert branches stay qualitative. Frozen 16-scenario xP (S13 340.14) is historical, not additive to 356.61.
 
 ### Metric Definitions & Direction
 
 | Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
 |---|---|---|---|---|---|
-| **Scenario Expected Points** | `Total xP` | Canonical Preseason Chip Path MILP score (GW1–6) | Higher is better $\uparrow$ | **$\ge 364.0\text{ xP}$** (S1: $364.21\text{ xP}$) | Live evaluation metric. Historical S13 $340.14$ is a different solver setup. |
+| **Scenario Expected Points** | `Total xP` | Canonical Preseason Chip Path MILP score (GW1–6) | Higher is better $\uparrow$ | **$\ge 356.0\text{ xP}$** (S1: $356.61\text{ xP}$) | Live evaluation metric. Historical S13 $340.14$ is a different solver setup. |
 | **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Points directly harvested from chip activation above standard starting XI play. |
-| **Bench Boost Active Score** | `BB Score` | $\sum_{i \in \text{squad}} xP_{i,\text{BB\_GW}}$ (all 15 players) | Higher is better $\uparrow$ | **$\ge 75.0\text{ xP}$** | Full-squad scoring power on the Bench Boost gameweek. |
+| **Bench Boost Active Score** | `BB Score` | $\sum_{i \in \text{squad}} xP_{i,\text{BB\_GW}}$ (all 15 players) | Higher is better $\uparrow$ | **$\ge 73.0\text{ xP}$** (S1 GW1: $73.67$) | Full-squad scoring power on the Bench Boost gameweek. |
 | **Average Fixture Ease** | `FDR` | Mean official fixture difficulty rating | Lower is better $\downarrow$ | **$\le 2.30$** (Targeted run) | Schedule favorability across the target gameweek block. |
 | **Banked Transfer Liquidity** | `Banked FTs` | Preserved free transfers at conclusion of chip window | Higher is better $\uparrow$ | **$4\text{ to } 5\text{ FTs}$** | Strategic adaptability post-chip deployment to react to new data and injuries. |
 
@@ -129,14 +129,14 @@ Refresh and evaluate all first-half chip strategies in docs/research/fpl-first-h
 
 ## Project interpretation (live)
 
-Canonical Preseason Chip Path from `gw1-6_wc4_summary.csv` (one row, 2026-08-18):
+Canonical Preseason Chip Path from `gw1-6_wc4_summary.csv` (one row, 2026-08-19):
 
 | Phase | Chip | xP | Notes |
 | :--- | :--- | ---: | :--- |
-| GW1 | Bench Boost | **75.82** | 15-man; captain Gabriel |
-| GW1–3 | Locked transfers | **190.84** | No Haaland until WC4 |
-| GW4–6 | Wildcard GW4; roll GW5 | **173.37** | Haaland in; captain GW5 |
-| **GW1–6** | **S1** | **364.21** | **4 banked FTs into GW6** |
+| GW1 | Bench Boost | **73.67** | 15-man; captain B.Fernandes |
+| GW1–3 | Locked transfers | **186.53** | No Haaland until WC4 |
+| GW4–6 | Wildcard GW4; roll GW5 | **170.08** | Haaland in; captain GW5 |
+| **GW1–6** | **S1** | **356.61** | **4 banked FTs into GW6** |
 
 Stage 3 does not currently publish BB2, TC3, or FH3. Expert windows below remain source hypotheses. Triple Captain / Free Hit after GW6 are outside the live 6-GW MILP.
 
@@ -146,7 +146,7 @@ Stage 3 does not currently publish BB2, TC3, or FH3. Expert windows below remain
 
 ### Historical 16-scenario matrix (frozen 2026-08-15 — not live)
 
-Do not add these xP figures to 364.21. Different squad construction, chip mix (BB2 + TC3), and rate stamp. Kept so expert-branch discussion has a dated project number.
+Do not add these xP figures to 356.61. Different squad construction, chip mix (BB2 + TC3), and rate stamp. Kept so expert-branch discussion has a dated project number.
 
 | Frozen scenario | BB | Mid-chip | WC | 6-GW xP (15 Aug) |
 | :--- | :---: | :--- | :---: | ---: |
@@ -172,7 +172,7 @@ Triple Captain Candidate Comparison (source + historical matrix — not in live 
 ```
 
 #### Notes:
-- **GW3 Haaland** remains the strongest *source* TC window. Live S1 does not own Haaland until Wildcard GW4, so TC3 is a future Stage 3 experiment, not the current 364.21 path.
+- **GW3 Haaland** remains the strongest *source* TC window. Live S1 does not own Haaland until Wildcard GW4, so TC3 is a future Stage 3 experiment, not the current 356.61 path.
 - **GW7 / GW16 / GW19** stay source fallbacks after the 6-GW horizon.
 - **GW1 Bruno** remains sub-optimal vs Haaland home-vs-promoted.
 
@@ -185,8 +185,8 @@ Bench Boost Strategy Comparison:
 ┌─────────────────┬───────────┬─────────────┬────────────────────────────────────────────────────────┐
 │ Strategy        │ Timing    │ 6-GW xP     │ Key Mathematical Proof & Operational Assessment        │
 ├─────────────────┼───────────┼─────────────┼────────────────────────────────────────────────────────┤
-│ Live S1 BB1     │ GW1       │ 364.21 xP   │ Canonical path. 15-man GW1 = 75.82. Locked GW1–3.     │
-│ Hist S13 BB2    │ GW2       │ 340.14 xP   │ Frozen 15 Aug matrix. Not comparable to 364.21.        │
+│ Live S1 BB1     │ GW1       │ 356.61 xP   │ Canonical path. 15-man GW1 = 73.67. Locked GW1–3.     │
+│ Hist S13 BB2    │ GW2       │ 340.14 xP   │ Frozen 15 Aug matrix. Not comparable to 356.61.        │
 │ Hist S5 BB1     │ GW1       │ 338.88 xP   │ Frozen 15 Aug matrix with TC3.                         │
 │ Post-WC (GW5/7) │ GW5 / GW7 │ ~325–330 xP │ Ties up £15m+ bench capital post-WC; decays XI ceiling.│
 │ Late Hold (DGW) │ GW15–19   │ Variable    │ Rare first-half DGWs; high risk of expiring unused.    │
@@ -199,7 +199,7 @@ Bench Boost Strategy Comparison:
   - *The Pre-WC Advantage*: Deploying BB in GW1 or GW2 captures 15 active players when all squads are 100% fit, and then **Wildcard immediately liquidates the bench into £4.0m non-playing or ultra-cheap enablers**, maximizing the starting XI budget (£84.0m+ on starting 11).
 - **BB2 vs BB1**:
   - Frozen 15 Aug matrix: BB2 S13 **340.14** vs BB1 S5 **338.88** (+1.26) on that experiment only.
-  - Live Stage 3 publishes BB1 only (**364.21**). BB2 is not a current solver output.
+  - Live Stage 3 publishes BB1 only (**356.61**). BB2 is not a current solver output.
 
 ---
 
@@ -253,7 +253,7 @@ Free Hit Scenario Comparison:
 
 | Strategy Combination | BB | Mid-Chip | Wildcard | Total 6-GW $xP$ | Banked FTs GW6 | Status |
 | :--- | :---: | :---: | :---: | ---: | :---: | :--- |
-| **Live S1 Canonical** | **GW1** | None in GW1–6 | **GW4** | **364.21** | **4** | **Current. CSV one row.** |
+| **Live S1 Canonical** | **GW1** | None in GW1–6 | **GW4** | **356.61** | **4** | **Current. CSV one row.** |
 | Hist S13 (15 Aug) | GW2 | TC3 Haaland | GW4 | 340.14 | 4 | Frozen 16-scenario. Not comparable. |
 | Hist S5 (15 Aug) | GW1 | TC3 Haaland | GW4 | 338.88 | 4 | Frozen 16-scenario. |
 | Hist S15 (15 Aug) | GW2 | TC3 Vuskovic | GW4 | 339.43 | 4 | Frozen 16-scenario. |
@@ -268,16 +268,16 @@ Free Hit Scenario Comparison:
 ```mermaid
 flowchart TD
     Start["Pre-Season Squad Planning"] --> Live["Canonical Preseason Chip Path"]
-    Live --> BB1["Bench Boost GW1<br/>75.82 xP / 15-man"]
-    BB1 --> Lock["Lock transfers GW1-3<br/>190.84 xP"]
+    Live --> BB1["Bench Boost GW1<br/>73.67 xP / 15-man"]
+    BB1 --> Lock["Lock transfers GW1-3<br/>186.53 xP"]
     Lock --> WC4["Wildcard GW4<br/>Haaland in"]
     WC4 --> Roll5["Roll transfer GW5"]
-    Roll5 --> GW6["GW6: 364.21 xP total<br/>4 banked FTs"]
+    Roll5 --> GW6["GW6: 356.61 xP total<br/>4 banked FTs"]
     GW6 --> Hold["Hold FH and leftover TC<br/>for GW7-19 source windows"]
 ```
 
 ### 1. The Core Recommendation: Canonical Preseason Chip Path (live S1)
-- **Bench Boost**: **GW1** (15-man **75.82 xP**). BB2 is not in the live Stage 3 CSV.
+- **Bench Boost**: **GW1** (15-man **73.67 xP**). BB2 is not in the live Stage 3 CSV.
 - **Triple Captain**: Not in the live GW1–6 path (Haaland arrives on WC4). Source fallback remains GW3 Haaland vs Coventry if a later Stage 3 run owns him.
 - **Wildcard**: **GW4**.
 - **Free Transfer Strategy**: Roll GW5 → **4 FTs into GW6**.
@@ -301,7 +301,7 @@ flowchart TD
 ## Refresh Checklist
 
 - [x] Ingest and represent every candidate strategy branch across expert sources.
-- [x] Separate source branches from live Stage 3 S1 **364.21**.
+- [x] Separate source branches from live Stage 3 S1 **356.61**.
 - [x] Stamp frozen 16-scenario S13 **340.14** as historical, not comparable.
 - [x] Point defensive links at unified DCS note.
 - [x] Incorporate 5-FT banking preservation on WC4.

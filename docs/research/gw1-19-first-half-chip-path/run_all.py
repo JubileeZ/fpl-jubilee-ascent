@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+from clients.env_loader import configure_utf8_stdio
 
 
 def _load(name: str, file: str):
@@ -17,6 +21,7 @@ def _load(name: str, file: str):
 
 
 def main() -> None:
+    configure_utf8_stdio()
     seed = _load("dv_seed", "build_dual_vector_seed.py")
     proj = _load("dv_proj", "project_gw1_19.py")
     chips = _load("dv_chips", "run_chip_path.py")

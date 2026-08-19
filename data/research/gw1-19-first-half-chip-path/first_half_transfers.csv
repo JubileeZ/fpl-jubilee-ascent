@@ -1,14 +1,20 @@
 path,gameweek,out,out_id,in,in_id,approx_gain,bank_after
-WC3,15,Tavernier,68,Schade,94,0.195,4
-WC3,16,Schade,94,Tavernier,68,0.614,4
-WC3,17,Hill,60,Maguire,418,0.204,4
-WC3,18,Tavernier,68,Sarr,208,0.813,4
-WC3,19,Maguire,418,Muharemović,334,0.67,4
-WC3,19,Sarr,208,Schade,94,0.22,3
-WC3,19,Wieffer,130,Hill,60,0.62,2
-WC4,15,Hill,60,Muharemović,334,0.141,4
-WC4,15,Tavernier,68,Sarr,208,0.649,3
-WC4,16,Sarr,208,Tavernier,68,0.382,3
-WC4,16,Muharemović,334,Hill,60,0.356,2
-WC4,17,Hill,60,Maguire,418,0.987,2
-WC4,18,Tavernier,68,Sarr,208,0.83,2
+WC3,4,Tavernier,68,Sarr,208,0.462,2
+WC3,6,Sarr,208,Tavernier,68,0.448,3
+WC3,6,Walle Egeli,321,Thomas-Asante,194,0.261,2
+WC3,9,Tavernier,68,Schade,94,0.199,4
+WC3,10,Schade,94,Tavernier,68,0.656,4
+WC3,11,Tavernier,68,Schade,94,0.302,4
+WC3,13,Schade,94,Tavernier,68,0.394,4
+WC3,18,Palmer,154,Sarr,208,0.184,4
+WC3,18,Thomas-Asante,194,Thiago,106,0.462,3
+WC3,19,Sarr,208,Schade,94,0.15,3
+WC4,6,Sarr,208,Tavernier,68,0.448,4
+WC4,6,Walle Egeli,321,Thomas-Asante,194,0.261,3
+WC4,9,Tavernier,68,Schade,94,0.199,4
+WC4,10,Schade,94,Tavernier,68,0.656,4
+WC4,11,Tavernier,68,Schade,94,0.302,4
+WC4,13,Schade,94,Tavernier,68,0.394,4
+WC4,18,Palmer,154,Sarr,208,0.184,4
+WC4,18,Thomas-Asante,194,Thiago,106,0.462,3
+WC4,19,Sarr,208,Schade,94,0.15,3

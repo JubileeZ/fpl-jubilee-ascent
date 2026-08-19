@@ -1,6 +1,6 @@
 # Archived research
 
-Superseded notes. Live defensive authority: `docs/research/defensive-fixture-rotation/`. Live chip path: Stage 3 S1 364.21 xP.
+Superseded notes. Live defensive authority: `docs/research/defensive-fixture-rotation/`. Live chip path: Stage 3 S1 356.61 xP.
 
 - `gkp-fixture-rotation/` — RQI / OC-RQI GKP pairs; 2025/26 backtest. Summary copied into unified note §5. CSVs: `data/archive/gkp-fixture-rotation/`.
 - `def-fixture-rotation/` — FDR-min / BB2 / CS-gate overlays. FDR-min #1 and CS start-here copied into unified note §2 / §6. CSVs: `data/archive/def-fixture-rotation/`.

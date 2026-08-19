@@ -1,235 +1,235 @@
 player_id,web_name,club_short,position,expected_role,draft_availability,rate_source,provenance_note,gw1_xp,gw1_xmins,gw2_xp,gw2_xmins,gw3_xp,gw3_xmins,gw4_xp,gw4_xmins,gw5_xp,gw5_xmins,total_5gw_xp,avg_gw_xp,total_5gw_xmins
-411,Haaland,MCI,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2953m),5.1,77.5,5.01,77.5,6.4,77.5,3.86,77.5,6.36,77.5,26.72,5.34,387.5
-379,Isak,LIV,FWD,Nailed Starter,eligible,career_individual+destination_gc,"Newcastle / Liverpool talisman striker (694m in 25/26 due to injuries; 2758m in 24/25, 23 goals); dest GC LIV=1.395",4.77,77.5,4.74,77.5,5.88,77.5,5.92,77.5,4.69,77.5,26.0,5.2,387.5
-504,Vuskovic,BHA,DEF,Nailed Starter,eligible,career_individual+destination_gc,2025/26 Bundesliga Hamburger SV; ~2441m; FootyStats; dest GC BHA=1.211,5.2,77.5,4.1,77.5,6.23,77.5,6.21,77.5,4.17,77.5,25.91,5.18,387.5
-4,Gabriel,ARS,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2750m),5.91,77.5,4.54,77.5,4.52,77.5,5.15,77.5,5.15,77.5,25.28,5.06,387.5
-426,B.Fernandes,MUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3065m),5.81,77.5,5.73,77.5,4.72,77.5,3.81,77.5,4.76,77.5,24.83,4.97,387.5
-130,Wieffer,BHA,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1901m),4.69,77.5,3.8,77.5,5.56,77.5,5.54,77.5,3.86,77.5,23.44,4.69,387.5
-154,Palmer,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1954m),4.46,77.5,5.37,77.5,2.94,77.5,5.41,77.5,4.42,77.5,22.61,4.52,387.5
-388,Guéhi,MCI,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3150m),4.33,77.5,4.31,77.5,5.17,77.5,3.59,77.5,5.16,77.5,22.55,4.51,387.5
-334,Muharemović,LEE,DEF,Nailed Starter,eligible,career_individual+destination_gc,Sassuolo Serie A 2025/26; 2835 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk; dest GC LEE=1.474,4.28,77.5,4.27,77.5,4.23,77.5,5.29,77.5,4.28,77.5,22.35,4.47,387.5
-8,Calafiori,ARS,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1697m),5.1,62.0,4.07,62.0,4.06,62.0,4.55,62.0,4.55,62.0,22.33,4.47,310.0
-208,Sarr,CRY,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2173m),4.25,77.5,3.39,77.5,4.27,77.5,5.14,77.5,4.21,77.5,21.25,4.25,387.5
-557,Tzolis,ARS,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Belgian Pro League Club Brugge; ~3072m; FotMob; dest GC ARS=0.711,5.32,62.0,3.52,62.0,3.5,62.0,4.33,62.0,4.32,62.0,20.98,4.2,310.0
-356,Virgil,LIV,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3420m),3.84,77.5,3.83,77.5,4.68,77.5,4.69,77.5,3.81,77.5,20.85,4.17,387.5
-112,Van Hecke,TOT,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3210m),3.96,77.5,4.88,77.5,4.0,77.5,3.96,77.5,3.98,77.5,20.78,4.16,387.5
-366,Wirtz,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2374m),3.91,77.5,3.9,77.5,4.52,77.5,4.54,77.5,3.87,77.5,20.74,4.15,387.5
-387,O'Reilly,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2643m),3.97,62.0,3.95,62.0,4.71,62.0,3.28,62.0,4.71,62.0,20.62,4.12,310.0
-94,Schade,BRE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2744m),4.14,77.5,4.08,77.5,4.88,77.5,4.1,77.5,3.37,77.5,20.57,4.11,387.5
-418,Maguire,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1649m),4.73,77.5,4.7,77.5,3.92,77.5,3.25,77.5,3.94,77.5,20.54,4.11,387.5
-142,James,CHE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1957m),4.04,77.5,4.81,77.5,2.78,77.5,4.82,77.5,4.02,77.5,20.47,4.09,387.5
-60,Hill,BOU,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2102m),3.28,77.5,4.44,77.5,4.47,77.5,4.43,77.5,3.81,77.5,20.43,4.09,387.5
-384,Donnarumma,MCI,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3060m); defcon_baseline_fill,3.94,77.5,3.9,77.5,4.5,77.5,3.43,77.5,4.49,77.5,20.25,4.05,387.5
-106,Thiago,BRE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3282m),4.07,77.5,4.01,77.5,4.87,77.5,4.03,77.5,3.25,77.5,20.23,4.05,387.5
-229,Tarkowski,EVE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3330m),4.0,77.5,3.99,77.5,3.31,77.5,4.01,77.5,4.86,77.5,20.17,4.03,387.5
-200,Lacroix,CHE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3085m),3.94,77.5,4.74,77.5,2.73,77.5,4.75,77.5,3.92,77.5,20.07,4.01,387.5
-13,Rice,ARS,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3093m),4.55,77.5,3.69,77.5,3.67,77.5,4.06,77.5,4.05,77.5,20.02,4.0,387.5
-95,O.Dango,BRE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2271m),4.01,77.5,3.97,77.5,4.7,77.5,3.98,77.5,3.32,77.5,19.99,4.0,387.5
-1,Raya,ARS,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,4.6,77.5,3.59,77.5,3.57,77.5,4.03,77.5,4.02,77.5,19.81,3.96,387.5
-481,Anderson,MCI,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3332m),3.9,77.5,3.87,77.5,4.21,77.5,3.6,77.5,4.2,77.5,19.8,3.96,387.5
-202,Richards,CRY,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2825m),3.92,77.5,3.18,77.5,3.93,77.5,4.79,77.5,3.9,77.5,19.72,3.94,387.5
-532,Ballard,SUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2144m),4.87,77.5,4.93,77.5,3.92,77.5,3.23,77.5,2.62,77.5,19.58,3.92,387.5
-391,Gvardiol,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1370m),3.77,62.0,3.75,62.0,4.42,62.0,3.17,62.0,4.41,62.0,19.52,3.9,310.0
-346,Calvert-Lewin,LEE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2721m),3.77,77.5,3.74,77.5,3.67,77.5,4.56,77.5,3.76,77.5,19.51,3.9,387.5
-362,Jacquet,LIV,DEF,Nailed Starter,eligible,career_individual+destination_gc,Rennes Ligue 1 2025/26; 1673 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk; dest GC LIV=1.395,3.58,77.5,3.57,77.5,4.39,77.5,4.4,77.5,3.55,77.5,19.48,3.9,387.5
-165,João Pedro,CHE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2658m),3.85,77.5,4.52,77.5,2.65,77.5,4.57,77.5,3.81,77.5,19.39,3.88,387.5
-84,Collins,BRE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2971m),3.85,77.5,3.82,77.5,4.67,77.5,3.83,77.5,3.13,77.5,19.31,3.86,387.5
-397,Semenyo,MCI,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3200m),3.7,77.5,3.67,77.5,4.3,77.5,3.14,77.5,4.29,77.5,19.1,3.82,387.5
-237,Ndiaye,EVE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2781m),3.8,77.5,3.79,77.5,3.3,77.5,3.8,77.5,4.36,77.5,19.06,3.81,387.5
-368,Szoboszlai,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3232m),3.65,77.5,3.63,77.5,4.06,77.5,4.07,77.5,3.61,77.5,19.02,3.8,387.5
-55,Watkins,AVL,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2833m),3.72,77.5,3.06,77.5,4.51,77.5,3.81,77.5,3.72,77.5,18.84,3.77,387.5
-393,Khusanov,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1427m),3.63,62.0,3.61,62.0,4.16,62.0,3.15,62.0,4.16,62.0,18.7,3.74,310.0
-445,Thiaw,NEW,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2963m),2.9,77.5,3.66,77.5,3.69,77.5,3.62,77.5,4.72,77.5,18.59,3.72,387.5
-542,E.Le Fée,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2930m),4.28,77.5,4.36,77.5,3.71,77.5,3.3,77.5,2.92,77.5,18.57,3.71,387.5
-11,Mosquera,ARS,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (986m),4.25,62.0,3.36,62.0,3.35,62.0,3.76,62.0,3.75,62.0,18.46,3.69,310.0
-68,Tavernier,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2732m),2.91,77.5,4.01,77.5,4.03,77.5,3.99,77.5,3.38,77.5,18.32,3.66,387.5
-335,Stach,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2369m),3.58,77.5,3.56,77.5,3.53,77.5,4.01,77.5,3.57,77.5,18.26,3.65,387.5
-427,Mbeumo,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2611m),4.21,62.0,4.16,62.0,3.49,62.0,2.86,62.0,3.51,62.0,18.23,3.65,310.0
-562,Maeda,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Celtic SPFL 2025/26; 2837 min; FootyStats xG/xA; CBITR proxy; dest GC IPS=1.375,4.48,62.0,3.06,62.0,3.03,62.0,3.71,62.0,3.72,62.0,18.0,3.6,310.0
-69,Scott,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2848m),3.17,77.5,3.78,77.5,3.81,77.5,3.77,77.5,3.44,77.5,17.97,3.59,387.5
-28,Martinez,AVL,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2835m); defcon_baseline_fill,3.53,77.5,2.97,77.5,4.26,77.5,3.59,77.5,3.53,77.5,17.89,3.58,387.5
-467,Sels,NFO,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2667m); defcon_baseline_fill,4.22,77.5,2.9,77.5,3.5,77.5,2.95,77.5,4.26,77.5,17.83,3.57,387.5
-412,Lammens,MUN,GKP,Nailed Starter,eligible,prior_season_seed+defcon_external_fill,Prior-Season Seed 2025/26 (2880m); defcon_external_fill,4.08,77.5,4.05,77.5,3.36,77.5,2.78,77.5,3.38,77.5,17.66,3.53,387.5
-254,Robinson,FUL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1487m),3.24,77.5,3.94,77.5,3.98,77.5,3.2,77.5,3.27,77.5,17.64,3.53,387.5
-260,Wilson,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2674m),3.42,77.5,3.41,77.5,3.37,77.5,3.97,77.5,3.42,77.5,17.6,3.52,387.5
-498,Senesi,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3288m),3.36,62.0,4.1,62.0,3.39,62.0,3.36,62.0,3.38,62.0,17.59,3.52,310.0
-417,Dalot,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2609m),4.2,77.5,4.18,77.5,3.3,77.5,2.57,77.5,3.31,77.5,17.55,3.51,387.5
-338,Ampadu,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3119m),3.45,77.5,3.44,77.5,3.41,77.5,3.74,77.5,3.45,77.5,17.49,3.5,387.5
-236,Dewsbury-Hall,EVE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2629m),3.48,77.5,3.47,77.5,3.04,77.5,3.48,77.5,3.97,77.5,17.45,3.49,387.5
-109,Verbruggen,BHA,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,3.49,77.5,2.81,77.5,4.14,77.5,4.13,77.5,2.87,77.5,17.43,3.49,387.5
-67,Rayan,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1110m),2.82,77.5,3.79,77.5,3.82,77.5,3.77,77.5,3.24,77.5,17.43,3.49,387.5
-244,Armstrong,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,2024/25 PL/Championship Southampton; 2800m; FBref; dest GC EVE=1.316,3.47,62.0,3.46,62.0,2.85,62.0,3.48,62.0,4.15,62.0,17.42,3.48,310.0
-32,Cash,AVL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3016m),3.44,77.5,2.79,77.5,4.25,77.5,3.48,77.5,3.44,77.5,17.39,3.48,387.5
-124,Groß,BHA,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1636m),3.49,77.5,3.0,77.5,3.86,77.5,3.84,77.5,3.04,77.5,17.22,3.44,387.5
-327,Bijol,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1888m),3.31,62.0,3.31,62.0,3.29,62.0,3.95,62.0,3.31,62.0,17.17,3.43,310.0
-385,Trafford,LEE,GKP,Nailed Starter,eligible,career_individual+destination_gc,"Burnley PL 2023/24 (2520m, 107 saves = 3.82 saves/90); confirmed £45m Leeds #1 GK; dest GC LEE=1.474",3.29,77.5,3.27,77.5,3.23,77.5,4.03,77.5,3.28,77.5,17.12,3.42,387.5
-447,Botman,NEW,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1834m),2.84,62.0,3.39,62.0,3.4,62.0,3.36,62.0,4.13,62.0,17.12,3.42,310.0
-398,Foden,MCI,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2078m),3.33,62.0,3.3,62.0,3.78,62.0,2.86,62.0,3.77,62.0,17.04,3.41,310.0
-332,Justin,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1893m),3.27,62.0,3.26,62.0,3.24,62.0,3.97,62.0,3.27,62.0,17.01,3.4,310.0
-423,Shaw,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3220m),3.99,77.5,3.97,77.5,3.21,77.5,2.58,77.5,3.22,77.5,16.97,3.39,387.5
-194,Thomas-Asante,COV,FWD,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Coventry 1865m; FootyStats; dest GC COV=1.375,2.39,62.0,4.35,62.0,2.37,62.0,4.26,62.0,3.6,62.0,16.97,3.39,310.0
-155,Enzo,CHE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3114m),3.36,62.0,3.89,62.0,2.41,62.0,3.91,62.0,3.34,62.0,16.92,3.38,310.0
-204,Mitchell,CRY,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3253m),3.34,77.5,2.65,77.5,3.35,77.5,4.16,77.5,3.32,77.5,16.81,3.36,387.5
-82,Kelleher,BRE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,3.35,77.5,3.32,77.5,4.04,77.5,3.33,77.5,2.75,77.5,16.79,3.36,387.5
-159,Caicedo,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2796m),3.34,77.5,3.56,77.5,2.97,77.5,3.58,77.5,3.32,77.5,16.78,3.36,387.5
-529,Roefs,SUN,GKP,Nailed Starter,eligible,prior_season_seed+defcon_external_fill,Prior-Season Seed 2025/26 (3150m); defcon_external_fill,4.11,77.5,4.17,77.5,3.34,77.5,2.82,77.5,2.32,77.5,16.75,3.35,387.5
-389,Matheus N.,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2861m),3.23,62.0,3.22,62.0,3.75,62.0,2.78,62.0,3.75,62.0,16.73,3.35,310.0
-390,Rúben,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2139m),3.23,62.0,3.22,62.0,3.75,62.0,2.78,62.0,3.75,62.0,16.72,3.34,310.0
-40,Rogers,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3280m),3.32,77.5,3.76,77.5,2.56,77.5,3.78,77.5,3.3,77.5,16.72,3.34,387.5
-544,Xhaka,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2901m),3.64,77.5,3.7,77.5,3.33,77.5,3.13,77.5,2.9,77.5,16.7,3.34,387.5
-309,Núñez,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Ipswich CHA 2025/26; 2234 min; FootyStats xG/xA; CBITR proxy; dest GC IPS=1.375,4.07,62.0,2.88,62.0,2.86,62.0,3.43,62.0,3.43,62.0,16.67,3.33,310.0
-369,Ngumoha,LIV,MID,Regular Starter,eligible,career_individual+destination_gc,Liverpool academy breakout winger proxy (547m in 25/26); dest GC LIV=1.395,3.14,62.0,3.13,62.0,3.62,62.0,3.63,62.0,3.11,62.0,16.62,3.32,310.0
-201,Muñoz,CRY,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2400m),3.28,62.0,2.62,62.0,3.29,62.0,4.03,62.0,3.27,62.0,16.48,3.3,310.0
-226,Pickford,EVE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,3.25,77.5,3.24,77.5,2.7,77.5,3.26,77.5,3.97,77.5,16.42,3.28,387.5
-203,Canvot,CRY,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1331m),3.26,62.0,2.65,62.0,3.27,62.0,3.99,62.0,3.25,62.0,16.41,3.28,310.0
-255,J.Cuenca,FUL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (935m),3.09,62.0,3.55,62.0,3.57,62.0,3.06,62.0,3.11,62.0,16.37,3.27,310.0
-198,Henderson,CRY,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,3.24,77.5,2.63,77.5,3.25,77.5,3.96,77.5,3.21,77.5,16.29,3.26,387.5
-286,Belloumi,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 934m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,2.92,62.0,3.79,62.0,3.33,62.0,2.88,62.0,3.34,62.0,16.27,3.25,310.0
-127,Gomez,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2117m),3.28,62.0,2.8,62.0,3.67,62.0,3.66,62.0,2.84,62.0,16.26,3.25,310.0
-536,Reinildo,SUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1966m),4.0,77.5,4.04,77.5,3.25,77.5,2.7,77.5,2.22,77.5,16.21,3.24,387.5
-149,Colwill,CHE,DEF,Nailed Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (3150m); destination GC overlay; dest GC CHE=1.368,3.15,77.5,3.94,77.5,1.99,77.5,3.95,77.5,3.13,77.5,16.15,3.23,387.5
-358,Kerkez,LIV,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2251m),2.9,77.5,2.9,77.5,3.7,77.5,3.71,77.5,2.88,77.5,16.09,3.22,387.5
-140,Sánchez,CHE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3040m); defcon_baseline_fill,3.14,77.5,3.83,77.5,2.15,77.5,3.85,77.5,3.12,77.5,16.09,3.22,387.5
-367,Gakpo,LIV,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2736m),3.05,62.0,3.04,62.0,3.48,62.0,3.49,62.0,3.02,62.0,16.08,3.22,310.0
-357,Frimpong,LIV,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1032m),2.96,62.0,2.95,62.0,3.6,62.0,3.61,62.0,2.94,62.0,16.07,3.21,310.0
-329,Rodon,LEE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2952m),3.05,77.5,3.04,77.5,3.02,77.5,3.86,77.5,3.04,77.5,16.01,3.2,387.5
-34,Pau,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1673m),3.15,62.0,2.63,62.0,3.78,62.0,3.18,62.0,3.15,62.0,15.89,3.18,310.0
-535,Alderete,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2797m),3.86,62.0,3.9,62.0,3.19,62.0,2.69,62.0,2.24,62.0,15.89,3.18,310.0
-88,Kayode,BRE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3258m),3.14,77.5,3.12,77.5,3.94,77.5,3.12,77.5,2.47,77.5,15.79,3.16,387.5
-371,Gravenberch,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2991m),3.07,77.5,3.06,77.5,3.29,77.5,3.3,77.5,3.05,77.5,15.78,3.16,387.5
-230,Branthwaite,EVE,DEF,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (2509m); destination GC overlay; dest GC EVE=1.316,3.13,62.0,3.12,62.0,2.62,62.0,3.13,62.0,3.76,62.0,15.77,3.15,310.0
-473,Aina,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1587m),3.7,62.0,2.61,62.0,3.11,62.0,2.63,62.0,3.71,62.0,15.75,3.15,310.0
-431,Amad,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2339m),3.5,62.0,3.48,62.0,3.04,62.0,2.63,62.0,3.06,62.0,15.71,3.14,310.0
-400,Doku,MCI,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1773m),3.06,62.0,3.04,62.0,3.45,62.0,2.66,62.0,3.45,62.0,15.66,3.13,310.0
-499,Pedro Porro,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2793m),2.97,62.0,3.68,62.0,2.99,62.0,2.97,62.0,2.98,62.0,15.59,3.12,310.0
-160,Garnacho,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1261m),3.1,62.0,2.62,62.0,3.64,62.0,3.14,62.0,3.1,62.0,15.59,3.12,310.0
-533,Mukiele,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2784m),3.82,62.0,3.86,62.0,3.12,62.0,2.59,62.0,2.12,62.0,15.51,3.1,310.0
-41,Buendía,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1753m),3.08,62.0,2.75,62.0,3.45,62.0,3.11,62.0,3.08,62.0,15.46,3.09,310.0
-502,Robertson,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1165m),2.93,62.0,3.68,62.0,2.95,62.0,2.94,62.0,2.94,62.0,15.44,3.09,310.0
-541,Meunier,SUN,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Ligue 1 Lille DEF; 1910m; FootyStats; CBIT Tkl+Int+Blk+Clr/90; dest GC SUN=1.263,3.78,62.0,3.82,62.0,3.1,62.0,2.59,62.0,2.13,62.0,15.42,3.08,310.0
-539,O'Nien,SUN,DEF,Regular Starter,eligible,career_individual+destination_gc,Sunderland Championship / PL; 565m 25/26; FBref CBIT leader proxy; dest GC SUN=1.263,3.78,62.0,3.82,62.0,3.1,62.0,2.59,62.0,2.13,62.0,15.42,3.08,310.0
-25,Gyökeres,ARS,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2217m),3.74,62.0,2.68,62.0,2.66,62.0,3.16,62.0,3.15,62.0,15.39,3.08,310.0
-61,Truffert,BOU,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3378m),2.25,77.5,3.44,77.5,3.46,77.5,3.43,77.5,2.78,77.5,15.37,3.07,387.5
-480,Gibbs-White,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3101m),3.53,62.0,2.57,62.0,3.04,62.0,2.59,62.0,3.56,62.0,15.29,3.06,310.0
-336,Okafor,LEE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1553m),2.96,62.0,2.96,62.0,2.93,62.0,3.43,62.0,2.96,62.0,15.24,3.05,310.0
-315,Fatawu,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Leicester City / Sporting CP explosive winger (confirmed £20m transfer); dest GC IPS=1.375,3.67,62.0,2.66,62.0,2.64,62.0,3.13,62.0,3.13,62.0,15.24,3.05,310.0
-247,Hackney,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Middlesbrough 3314m; FotMob; dest GC EVE=1.316,3.04,62.0,3.03,62.0,2.67,62.0,3.04,62.0,3.43,62.0,15.21,3.04,310.0
-305,Davis,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,"Ipswich CHA (18 assists, 3012m) / PL elite set-piece creator; dest GC IPS=1.375",3.96,62.0,2.47,62.0,2.45,62.0,3.13,62.0,3.14,62.0,15.15,3.03,310.0
-173,Thomas,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Coventry; ~2924m; FotMob; dest GC COV=1.375,2.07,62.0,3.93,62.0,2.05,62.0,3.91,62.0,3.19,62.0,15.14,3.03,310.0
-558,Schlager,NFO,MID,Regular Starter,eligible,career_individual+destination_gc,External RB Leipzig; FBref CBITR Defcon 12.30/90 (Schlager); dest GC NFO=1.342,3.27,62.0,2.76,62.0,3.01,62.0,2.79,62.0,3.29,62.0,15.11,3.02,310.0
-115,De Cuyper,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1404m),2.99,62.0,2.22,62.0,3.83,62.0,3.82,62.0,2.24,62.0,15.11,3.02,310.0
-306,Greaves,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,Hull / Ipswich dominant aerial & tackling CB (2980m); dest GC IPS=1.375,3.77,62.0,2.52,62.0,2.51,62.0,3.07,62.0,3.07,62.0,14.95,2.99,310.0
-469,N.Williams,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3203m),3.64,62.0,2.34,62.0,2.94,62.0,2.36,62.0,3.66,62.0,14.94,2.99,310.0
-421,Heaven,MUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (920m),3.48,62.0,3.47,62.0,2.83,62.0,2.32,62.0,2.84,62.0,14.94,2.99,310.0
-527,Richarlison,TOT,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1954m),2.88,62.0,3.33,62.0,2.92,62.0,2.89,62.0,2.9,62.0,14.91,2.98,310.0
-206,Chadi Riad,CRY,DEF,Regular Starter,eligible,career_individual+destination_gc,2024/25 La Liga Real Betis; 2300m; FBref; dest GC CRY=1.342,2.95,62.0,2.43,62.0,2.96,62.0,3.57,62.0,2.94,62.0,14.86,2.97,310.0
-461,Touré,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,Hoffenheim Bundesliga 2025/26; 2327 min; FootyStats xG/xA; CBITR proxy; dest GC NEW=1.447,2.53,62.0,2.94,62.0,2.96,62.0,2.91,62.0,3.48,62.0,14.81,2.96,310.0
-241,McNeil,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1161m),2.97,62.0,2.65,62.0,2.98,62.0,3.25,62.0,2.95,62.0,14.8,2.96,310.0
-123,Hinshelwood,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1736m),2.98,62.0,2.5,62.0,3.39,62.0,3.38,62.0,2.53,62.0,14.78,2.96,310.0
-113,F.Kadıoğlu,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3130m),2.94,62.0,2.32,62.0,3.59,62.0,3.58,62.0,2.35,62.0,14.78,2.96,310.0
-210,Wharton,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2552m),2.95,62.0,2.64,62.0,2.96,62.0,3.27,62.0,2.94,62.0,14.76,2.95,310.0
-295,McBurnie,HUL,FWD,Regular Starter,eligible,career_individual+destination_gc,Hull CHA 2025/26 (18 goals) / Las Palmas / Sheff Utd PL; dest GC HUL=1.375,2.54,62.0,3.57,62.0,3.03,62.0,2.5,62.0,3.04,62.0,14.68,2.94,310.0
-116,Dunk,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2837m),2.91,62.0,2.34,62.0,3.53,62.0,3.53,62.0,2.36,62.0,14.68,2.94,310.0
-5,J.Timber,ARS,DEF,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (2452m),0.0,0.0,3.36,62.0,3.34,62.0,3.95,62.0,3.94,62.0,14.59,2.92,248.0
-337,Aaronson,LEE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2449m),2.85,62.0,2.84,62.0,2.82,62.0,3.21,62.0,2.85,62.0,14.57,2.91,310.0
-464,Wissa,NEW,FWD,Regular Starter,eligible,career_individual+destination_gc,Brentford / Newcastle career PL rates (~0.42 xG/90); dest GC NEW=1.447,2.48,62.0,2.89,62.0,2.91,62.0,2.85,62.0,3.42,62.0,14.55,2.91,310.0
-36,Maatsen,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1590m),2.85,62.0,2.24,62.0,3.62,62.0,2.88,62.0,2.85,62.0,14.45,2.89,310.0
+411,Haaland,MCI,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2953m),5.02,77.5,4.97,77.5,6.41,77.5,3.82,77.5,6.33,77.5,26.54,5.31,387.5
+379,Isak,LIV,FWD,Nailed Starter,eligible,career_individual+destination_gc,"Newcastle / Liverpool talisman striker (694m in 25/26 due to injuries; 2758m in 24/25, 23 goals); dest GC LIV=1.395",4.74,77.5,4.71,77.5,5.89,77.5,5.92,77.5,4.64,77.5,25.91,5.18,387.5
+4,Gabriel,ARS,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2750m),5.38,77.5,5.01,77.5,4.97,77.5,5.13,77.5,5.13,77.5,25.63,5.13,387.5
+504,Vuskovic,BHA,DEF,Nailed Starter,eligible,career_individual+destination_gc,2025/26 Bundesliga Hamburger SV; ~2441m; FootyStats; dest GC BHA=1.211,5.2,77.5,4.49,77.5,5.54,77.5,5.53,77.5,4.55,77.5,25.31,5.06,387.5
+426,B.Fernandes,MUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3065m),5.48,77.5,5.39,77.5,4.69,77.5,4.19,77.5,4.73,77.5,24.49,4.9,387.5
+130,Wieffer,BHA,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1901m),4.69,77.5,4.18,77.5,4.89,77.5,4.88,77.5,4.23,77.5,22.86,4.57,387.5
+154,Palmer,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1954m),4.44,77.5,5.25,77.5,3.43,77.5,5.31,77.5,4.4,77.5,22.83,4.57,387.5
+8,Calafiori,ARS,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1697m),5.02,62.0,4.23,62.0,4.21,62.0,4.54,62.0,4.54,62.0,22.54,4.51,310.0
+388,Guéhi,MCI,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3150m),4.31,77.5,4.29,77.5,4.77,77.5,4.02,77.5,4.75,77.5,22.15,4.43,387.5
+334,Muharemović,LEE,DEF,Nailed Starter,eligible,career_individual+destination_gc,Sassuolo Serie A 2025/26; 2835 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk; dest GC LEE=1.474,4.3,77.5,4.27,77.5,4.25,77.5,4.65,77.5,4.28,77.5,21.74,4.35,387.5
+60,Hill,BOU,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2102m),3.94,77.5,4.44,77.5,4.47,77.5,4.43,77.5,4.24,77.5,21.52,4.3,387.5
+208,Sarr,CRY,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2173m),4.25,77.5,3.55,77.5,4.27,77.5,5.1,77.5,4.21,77.5,21.37,4.27,387.5
+557,Tzolis,ARS,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Belgian Pro League Club Brugge; ~3072m; FotMob; dest GC ARS=0.711,5.25,62.0,3.64,62.0,3.61,62.0,4.3,62.0,4.3,62.0,21.11,4.22,310.0
+142,James,CHE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1957m),4.03,77.5,4.63,77.5,3.39,77.5,4.65,77.5,4.01,77.5,20.72,4.14,387.5
+94,Schade,BRE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2744m),4.14,77.5,4.08,77.5,4.79,77.5,4.1,77.5,3.58,77.5,20.7,4.14,387.5
+387,O'Reilly,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2643m),3.95,62.0,3.94,62.0,4.6,62.0,3.48,62.0,4.59,62.0,20.56,4.11,310.0
+366,Wirtz,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2374m),3.9,77.5,3.88,77.5,4.37,77.5,4.39,77.5,3.85,77.5,20.39,4.08,387.5
+106,Thiago,BRE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3282m),4.07,77.5,4.01,77.5,4.81,77.5,4.03,77.5,3.44,77.5,20.35,4.07,387.5
+13,Rice,ARS,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3093m),4.0,77.5,4.15,77.5,4.11,77.5,4.04,77.5,4.04,77.5,20.34,4.07,387.5
+112,Van Hecke,TOT,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3210m),3.96,77.5,4.39,77.5,4.0,77.5,3.96,77.5,3.98,77.5,20.29,4.06,387.5
+95,O.Dango,BRE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2271m),4.01,77.5,3.97,77.5,4.52,77.5,3.98,77.5,3.63,77.5,20.12,4.02,387.5
+418,Maguire,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1649m),4.3,77.5,4.28,77.5,3.91,77.5,3.69,77.5,3.92,77.5,20.1,4.02,387.5
+229,Tarkowski,EVE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3330m),4.0,77.5,3.99,77.5,3.77,77.5,4.01,77.5,4.28,77.5,20.05,4.01,387.5
+384,Donnarumma,MCI,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3060m); defcon_baseline_fill,3.91,77.5,3.89,77.5,4.25,77.5,3.68,77.5,4.24,77.5,19.97,3.99,387.5
+1,Raya,ARS,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,4.45,77.5,3.74,77.5,3.71,77.5,4.01,77.5,4.01,77.5,19.92,3.98,387.5
+356,Virgil,LIV,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3420m),3.83,77.5,3.81,77.5,4.17,77.5,4.17,77.5,3.79,77.5,19.77,3.95,387.5
+202,Richards,CRY,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2825m),3.92,77.5,3.63,77.5,3.93,77.5,4.23,77.5,3.9,77.5,19.61,3.92,387.5
+346,Calvert-Lewin,LEE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2721m),3.79,77.5,3.74,77.5,3.71,77.5,4.62,77.5,3.76,77.5,19.61,3.92,387.5
+165,João Pedro,CHE,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2658m),3.83,77.5,4.49,77.5,2.87,77.5,4.55,77.5,3.78,77.5,19.53,3.91,387.5
+200,Lacroix,CHE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3085m),3.93,77.5,4.13,77.5,3.4,77.5,4.14,77.5,3.9,77.5,19.5,3.9,387.5
+532,Ballard,SUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2144m),4.26,77.5,4.31,77.5,3.93,77.5,3.66,77.5,3.27,77.5,19.43,3.89,387.5
+68,Tavernier,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2732m),3.63,77.5,4.01,77.5,4.03,77.5,3.99,77.5,3.76,77.5,19.42,3.88,387.5
+391,Gvardiol,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1370m),3.75,62.0,3.74,62.0,4.24,62.0,3.44,62.0,4.22,62.0,19.4,3.88,310.0
+84,Collins,BRE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2971m),3.85,77.5,3.82,77.5,4.14,77.5,3.83,77.5,3.59,77.5,19.23,3.85,387.5
+69,Scott,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2848m),3.88,77.5,3.78,77.5,3.81,77.5,3.77,77.5,3.89,77.5,19.13,3.83,387.5
+237,Ndiaye,EVE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2781m),3.8,77.5,3.79,77.5,3.73,77.5,3.8,77.5,4.0,77.5,19.12,3.82,387.5
+254,Robinson,FUL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1487m),3.7,77.5,3.96,77.5,3.98,77.5,3.66,77.5,3.73,77.5,19.03,3.81,387.5
+397,Semenyo,MCI,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3200m),3.68,77.5,3.66,77.5,4.16,77.5,3.38,77.5,4.13,77.5,19.02,3.8,387.5
+542,E.Le Fée,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2930m),3.88,77.5,3.95,77.5,3.72,77.5,3.74,77.5,3.68,77.5,18.98,3.8,387.5
+481,Anderson,MCI,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3332m),3.88,77.5,3.86,77.5,3.58,77.5,4.0,77.5,3.56,77.5,18.87,3.77,387.5
+11,Mosquera,ARS,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (986m),3.91,62.0,3.72,62.0,3.7,62.0,3.75,62.0,3.75,62.0,18.82,3.76,310.0
+55,Watkins,AVL,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2833m),3.72,77.5,3.04,77.5,4.54,77.5,3.78,77.5,3.72,77.5,18.82,3.76,387.5
+445,Thiaw,NEW,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2963m),3.37,77.5,3.67,77.5,3.69,77.5,3.64,77.5,4.23,77.5,18.6,3.72,387.5
+362,Jacquet,LIV,DEF,Nailed Starter,eligible,career_individual+destination_gc,Rennes Ligue 1 2025/26; 1673 min; FootyStats xG/xA; CBIT Tkl+Int+Clr+Blk; dest GC LIV=1.395,3.57,77.5,3.56,77.5,3.96,77.5,3.96,77.5,3.54,77.5,18.58,3.72,387.5
+393,Khusanov,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1427m),3.61,62.0,3.61,62.0,3.9,62.0,3.47,62.0,3.89,62.0,18.49,3.7,310.0
+562,Maeda,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Celtic SPFL 2025/26; 2837 min; FootyStats xG/xA; CBITR proxy; dest GC IPS=1.375,4.36,62.0,3.31,62.0,3.29,62.0,3.73,62.0,3.73,62.0,18.42,3.68,310.0
+67,Rayan,BOU,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1110m),3.37,77.5,3.79,77.5,3.82,77.5,3.77,77.5,3.5,77.5,18.25,3.65,387.5
+427,Mbeumo,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2611m),4.2,62.0,4.15,62.0,3.48,62.0,2.9,62.0,3.5,62.0,18.23,3.65,310.0
+368,Szoboszlai,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3232m),3.63,77.5,3.62,77.5,3.67,77.5,3.68,77.5,3.59,77.5,18.2,3.64,387.5
+28,Martinez,AVL,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2835m); defcon_baseline_fill,3.53,77.5,3.32,77.5,3.9,77.5,3.57,77.5,3.53,77.5,17.86,3.57,387.5
+335,Stach,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2369m),3.59,77.5,3.56,77.5,3.55,77.5,3.58,77.5,3.57,77.5,17.86,3.57,387.5
+467,Sels,NFO,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2667m); defcon_baseline_fill,3.84,77.5,3.29,77.5,3.5,77.5,3.35,77.5,3.87,77.5,17.85,3.57,387.5
+194,Thomas-Asante,COV,FWD,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Coventry 1865m; FootyStats; dest GC COV=1.375,2.76,62.0,4.3,62.0,2.73,62.0,4.23,62.0,3.62,62.0,17.64,3.53,310.0
+236,Dewsbury-Hall,EVE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2629m),3.48,77.5,3.47,77.5,3.4,77.5,3.48,77.5,3.74,77.5,17.57,3.51,387.5
+260,Wilson,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2674m),3.44,77.5,3.41,77.5,3.39,77.5,3.91,77.5,3.42,77.5,17.56,3.51,387.5
+32,Cash,AVL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3016m),3.44,77.5,3.04,77.5,4.11,77.5,3.46,77.5,3.44,77.5,17.5,3.5,387.5
+109,Verbruggen,BHA,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,3.49,77.5,3.13,77.5,3.84,77.5,3.83,77.5,3.18,77.5,17.48,3.5,387.5
+124,Groß,BHA,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1636m),3.49,77.5,3.36,77.5,3.62,77.5,3.61,77.5,3.4,77.5,17.48,3.5,387.5
+255,J.Cuenca,FUL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (935m),3.45,62.0,3.56,62.0,3.57,62.0,3.42,62.0,3.47,62.0,17.48,3.5,310.0
+244,Armstrong,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,2024/25 PL/Championship Southampton; 2800m; FBref; dest GC EVE=1.316,3.47,62.0,3.46,62.0,2.85,62.0,3.48,62.0,4.17,62.0,17.44,3.49,310.0
+417,Dalot,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2609m),4.0,77.5,3.97,77.5,3.28,77.5,2.89,77.5,3.3,77.5,17.44,3.49,387.5
+412,Lammens,MUN,GKP,Nailed Starter,eligible,prior_season_seed+defcon_external_fill,Prior-Season Seed 2025/26 (2880m); defcon_external_fill,3.81,77.5,3.78,77.5,3.34,77.5,3.05,77.5,3.36,77.5,17.35,3.47,387.5
+529,Roefs,SUN,GKP,Nailed Starter,eligible,prior_season_seed+defcon_external_fill,Prior-Season Seed 2025/26 (3150m); defcon_external_fill,3.77,77.5,3.82,77.5,3.35,77.5,3.18,77.5,3.02,77.5,17.14,3.43,387.5
+155,Enzo,CHE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3114m),3.35,62.0,3.78,62.0,2.86,62.0,3.8,62.0,3.33,62.0,17.12,3.42,310.0
+498,Senesi,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3288m),3.36,62.0,3.61,62.0,3.39,62.0,3.36,62.0,3.38,62.0,17.1,3.42,310.0
+309,Núñez,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Ipswich CHA 2025/26; 2234 min; FootyStats xG/xA; CBITR proxy; dest GC IPS=1.375,3.95,62.0,3.12,62.0,3.1,62.0,3.44,62.0,3.45,62.0,17.07,3.41,310.0
+447,Botman,NEW,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1834m),3.21,62.0,3.4,62.0,3.4,62.0,3.37,62.0,3.67,62.0,17.06,3.41,310.0
+398,Foden,MCI,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2078m),3.3,62.0,3.29,62.0,3.68,62.0,3.04,62.0,3.66,62.0,16.97,3.39,310.0
+40,Rogers,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3280m),3.31,77.5,3.65,77.5,3.05,77.5,3.67,77.5,3.29,77.5,16.97,3.39,387.5
+338,Ampadu,LEE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3119m),3.46,77.5,3.44,77.5,3.42,77.5,3.2,77.5,3.45,77.5,16.96,3.39,387.5
+204,Mitchell,CRY,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3253m),3.34,77.5,3.01,77.5,3.35,77.5,3.9,77.5,3.32,77.5,16.92,3.38,387.5
+544,Xhaka,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2901m),3.15,77.5,3.19,77.5,3.34,77.5,3.57,77.5,3.64,77.5,16.9,3.38,387.5
+423,Shaw,MUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3220m),3.79,77.5,3.77,77.5,3.19,77.5,2.9,77.5,3.21,77.5,16.86,3.37,387.5
+82,Kelleher,BRE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,3.35,77.5,3.32,77.5,3.71,77.5,3.33,77.5,3.09,77.5,16.81,3.36,387.5
+385,Trafford,LEE,GKP,Nailed Starter,eligible,career_individual+destination_gc,"Burnley PL 2023/24 (2520m, 107 saves = 3.82 saves/90); confirmed £45m Leeds #1 GK; dest GC LEE=1.474",3.3,77.5,3.27,77.5,3.25,77.5,3.64,77.5,3.28,77.5,16.76,3.35,387.5
+327,Bijol,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1888m),3.32,62.0,3.31,62.0,3.3,62.0,3.51,62.0,3.31,62.0,16.75,3.35,310.0
+536,Reinildo,SUN,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1966m),3.68,77.5,3.71,77.5,3.25,77.5,3.12,77.5,2.98,77.5,16.74,3.35,387.5
+332,Justin,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1893m),3.28,62.0,3.26,62.0,3.25,62.0,3.64,62.0,3.27,62.0,16.7,3.34,310.0
+286,Belloumi,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 934m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,3.3,62.0,3.43,62.0,3.34,62.0,3.26,62.0,3.35,62.0,16.68,3.34,310.0
+389,Matheus N.,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2861m),3.22,62.0,3.21,62.0,3.62,62.0,3.0,62.0,3.61,62.0,16.67,3.33,310.0
+390,Rúben,MCI,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2139m),3.22,62.0,3.21,62.0,3.55,62.0,3.06,62.0,3.55,62.0,16.59,3.32,310.0
+61,Truffert,BOU,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3378m),3.03,77.5,3.44,77.5,3.46,77.5,3.43,77.5,3.22,77.5,16.59,3.32,387.5
+201,Muñoz,CRY,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2400m),3.28,62.0,2.93,62.0,3.29,62.0,3.81,62.0,3.27,62.0,16.57,3.31,310.0
+369,Ngumoha,LIV,MID,Regular Starter,eligible,career_individual+destination_gc,Liverpool academy breakout winger proxy (547m in 25/26); dest GC LIV=1.395,3.13,62.0,3.12,62.0,3.61,62.0,3.62,62.0,3.1,62.0,16.57,3.31,310.0
+226,Pickford,EVE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,3.25,77.5,3.24,77.5,3.0,77.5,3.26,77.5,3.69,77.5,16.44,3.29,387.5
+159,Caicedo,CHE,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2796m),3.33,77.5,3.02,77.5,3.69,77.5,3.04,77.5,3.31,77.5,16.4,3.28,387.5
+149,Colwill,CHE,DEF,Nailed Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (3150m); destination GC overlay; dest GC CHE=1.368,3.14,77.5,3.73,77.5,2.65,77.5,3.74,77.5,3.13,77.5,16.39,3.28,387.5
+127,Gomez,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2117m),3.28,62.0,3.16,62.0,3.37,62.0,3.36,62.0,3.19,62.0,16.36,3.27,310.0
+198,Henderson,CRY,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3330m); defcon_baseline_fill,3.24,77.5,2.95,77.5,3.25,77.5,3.64,77.5,3.21,77.5,16.3,3.26,387.5
+203,Canvot,CRY,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1331m),3.26,62.0,3.0,62.0,3.27,62.0,3.5,62.0,3.25,62.0,16.28,3.26,310.0
+140,Sánchez,CHE,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3040m); defcon_baseline_fill,3.13,77.5,3.51,77.5,2.82,77.5,3.53,77.5,3.11,77.5,16.1,3.22,387.5
+357,Frimpong,LIV,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1032m),2.95,62.0,2.95,62.0,3.6,62.0,3.61,62.0,2.94,62.0,16.05,3.21,310.0
+535,Alderete,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2797m),3.45,62.0,3.48,62.0,3.2,62.0,3.06,62.0,2.86,62.0,16.05,3.21,310.0
+367,Gakpo,LIV,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2736m),3.04,62.0,3.03,62.0,3.46,62.0,3.47,62.0,3.01,62.0,16.01,3.2,310.0
+34,Pau,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1673m),3.15,62.0,2.84,62.0,3.66,62.0,3.17,62.0,3.15,62.0,15.98,3.2,310.0
+473,Aina,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1587m),3.47,62.0,2.92,62.0,3.11,62.0,2.94,62.0,3.49,62.0,15.94,3.19,310.0
+88,Kayode,BRE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3258m),3.14,77.5,3.12,77.5,3.76,77.5,3.12,77.5,2.77,77.5,15.91,3.18,387.5
+533,Mukiele,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2784m),3.49,62.0,3.52,62.0,3.13,62.0,2.95,62.0,2.76,62.0,15.85,3.17,310.0
+358,Kerkez,LIV,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2251m),2.9,77.5,2.89,77.5,3.58,77.5,3.59,77.5,2.87,77.5,15.83,3.17,387.5
+173,Thomas,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Coventry; ~2924m; FotMob; dest GC COV=1.375,2.71,62.0,3.61,62.0,2.69,62.0,3.59,62.0,3.2,62.0,15.81,3.16,310.0
+541,Meunier,SUN,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Ligue 1 Lille DEF; 1910m; FootyStats; CBIT Tkl+Int+Blk+Clr/90; dest GC SUN=1.263,3.45,62.0,3.48,62.0,3.11,62.0,2.95,62.0,2.77,62.0,15.77,3.15,310.0
+539,O'Nien,SUN,DEF,Regular Starter,eligible,career_individual+destination_gc,Sunderland Championship / PL; 565m 25/26; FBref CBIT leader proxy; dest GC SUN=1.263,3.45,62.0,3.48,62.0,3.11,62.0,2.95,62.0,2.77,62.0,15.77,3.15,310.0
+230,Branthwaite,EVE,DEF,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (2509m); destination GC overlay; dest GC EVE=1.316,3.13,62.0,3.12,62.0,3.0,62.0,3.13,62.0,3.36,62.0,15.74,3.15,310.0
+431,Amad,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2339m),3.36,62.0,3.33,62.0,3.03,62.0,2.86,62.0,3.05,62.0,15.63,3.13,310.0
+400,Doku,MCI,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1773m),3.04,62.0,3.03,62.0,3.38,62.0,2.81,62.0,3.36,62.0,15.63,3.13,310.0
+160,Garnacho,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1261m),3.1,62.0,2.68,62.0,3.62,62.0,3.12,62.0,3.1,62.0,15.62,3.12,310.0
+329,Rodon,LEE,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2952m),3.05,77.5,3.04,77.5,3.03,77.5,3.45,77.5,3.04,77.5,15.61,3.12,387.5
+305,Davis,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,"Ipswich CHA (18 assists, 3012m) / PL elite set-piece creator; dest GC IPS=1.375",3.79,62.0,2.75,62.0,2.73,62.0,3.14,62.0,3.14,62.0,15.56,3.11,310.0
+315,Fatawu,IPS,MID,Regular Starter,eligible,career_individual+destination_gc,Leicester City / Sporting CP explosive winger (confirmed £20m transfer); dest GC IPS=1.375,3.62,62.0,2.84,62.0,2.82,62.0,3.14,62.0,3.14,62.0,15.55,3.11,310.0
+41,Buendía,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1753m),3.08,62.0,3.09,62.0,3.13,62.0,3.1,62.0,3.08,62.0,15.48,3.1,310.0
+502,Robertson,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1165m),2.93,62.0,3.66,62.0,2.95,62.0,2.94,62.0,2.94,62.0,15.42,3.08,310.0
+480,Gibbs-White,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3101m),3.51,62.0,2.65,62.0,3.04,62.0,2.67,62.0,3.55,62.0,15.41,3.08,310.0
+499,Pedro Porro,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2793m),2.97,62.0,3.49,62.0,2.99,62.0,2.97,62.0,2.98,62.0,15.39,3.08,310.0
+306,Greaves,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,Hull / Ipswich dominant aerial & tackling CB (2980m); dest GC IPS=1.375,3.42,62.0,2.9,62.0,2.88,62.0,3.08,62.0,3.08,62.0,15.36,3.07,310.0
+25,Gyökeres,ARS,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2217m),3.75,62.0,2.67,62.0,2.64,62.0,3.13,62.0,3.13,62.0,15.32,3.06,310.0
+247,Hackney,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Middlesbrough 3314m; FotMob; dest GC EVE=1.316,3.04,62.0,3.03,62.0,2.98,62.0,3.04,62.0,3.22,62.0,15.3,3.06,310.0
+57,Petrović,BOU,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,2.81,77.5,3.16,77.5,3.18,77.5,3.15,77.5,2.93,77.5,15.24,3.05,387.5
+115,De Cuyper,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1404m),2.99,62.0,2.29,62.0,3.82,62.0,3.82,62.0,2.31,62.0,15.23,3.05,310.0
+257,Bassey,FUL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2532m),2.95,77.5,3.19,77.5,3.2,77.5,2.92,77.5,2.97,77.5,15.23,3.05,387.5
+336,Okafor,LEE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1553m),2.97,62.0,2.96,62.0,2.94,62.0,3.37,62.0,2.96,62.0,15.2,3.04,310.0
+469,N.Williams,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3203m),3.45,62.0,2.63,62.0,2.94,62.0,2.65,62.0,3.47,62.0,15.14,3.03,310.0
+250,Leno,FUL,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,2.91,77.5,3.18,77.5,3.2,77.5,2.86,77.5,2.95,77.5,15.09,3.02,387.5
+371,Gravenberch,LIV,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2991m),3.06,77.5,3.05,77.5,2.96,77.5,2.97,77.5,3.03,77.5,15.08,3.02,387.5
+558,Schlager,NFO,MID,Regular Starter,eligible,career_individual+destination_gc,External RB Leipzig; FBref CBITR Defcon 12.30/90 (Schlager); dest GC NFO=1.342,2.83,62.0,3.13,62.0,3.01,62.0,3.16,62.0,2.85,62.0,14.98,3.0,310.0
+123,Hinshelwood,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1736m),2.98,62.0,2.63,62.0,3.35,62.0,3.35,62.0,2.65,62.0,14.97,2.99,310.0
+113,F.Kadıoğlu,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3130m),2.94,62.0,2.45,62.0,3.54,62.0,3.54,62.0,2.47,62.0,14.95,2.99,310.0
+261,Iwobi,FUL,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2420m),2.97,77.5,3.01,77.5,3.02,77.5,2.94,77.5,3.0,77.5,14.94,2.99,387.5
+241,McNeil,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1161m),2.97,62.0,2.95,62.0,2.98,62.0,3.05,62.0,2.95,62.0,14.9,2.98,310.0
+461,Touré,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,Hoffenheim Bundesliga 2025/26; 2327 min; FootyStats xG/xA; CBITR proxy; dest GC NEW=1.447,2.58,62.0,2.95,62.0,2.96,62.0,2.92,62.0,3.47,62.0,14.89,2.98,310.0
+5,J.Timber,ARS,DEF,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (2452m),0.0,0.0,3.52,62.0,3.5,62.0,3.93,62.0,3.93,62.0,14.89,2.98,248.0
+206,Chadi Riad,CRY,DEF,Regular Starter,eligible,career_individual+destination_gc,2024/25 La Liga Real Betis; 2300m; FBref; dest GC CRY=1.342,2.95,62.0,2.8,62.0,2.96,62.0,3.22,62.0,2.94,62.0,14.88,2.98,310.0
+182,Amenda,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Bundesliga Eintracht Frankfurt; ~1676m; FotMob; dest GC COV=1.375,2.67,62.0,3.29,62.0,2.64,62.0,3.27,62.0,2.99,62.0,14.87,2.97,310.0
+116,Dunk,BHA,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2837m),2.91,62.0,2.65,62.0,3.32,62.0,3.32,62.0,2.67,62.0,14.87,2.97,310.0
+527,Richarlison,TOT,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1954m),2.88,62.0,3.25,62.0,2.92,62.0,2.89,62.0,2.9,62.0,14.83,2.97,310.0
+304,O'Shea,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,Burnley PL / Ipswich starting CB/RB (2880m across senior leagues); dest GC IPS=1.375,3.37,62.0,2.76,62.0,2.74,62.0,2.96,62.0,2.96,62.0,14.8,2.96,310.0
+210,Wharton,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2552m),2.95,62.0,3.0,62.0,2.96,62.0,2.92,62.0,2.94,62.0,14.78,2.96,310.0
+295,McBurnie,HUL,FWD,Regular Starter,eligible,career_individual+destination_gc,Hull CHA 2025/26 (18 goals) / Las Palmas / Sheff Utd PL; dest GC HUL=1.375,2.56,62.0,3.59,62.0,3.04,62.0,2.51,62.0,3.06,62.0,14.76,2.95,310.0
+534,Hume,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3032m),3.44,62.0,3.47,62.0,2.86,62.0,2.54,62.0,2.33,62.0,14.66,2.93,310.0
+464,Wissa,NEW,FWD,Regular Starter,eligible,career_individual+destination_gc,Brentford / Newcastle career PL rates (~0.42 xG/90); dest GC NEW=1.447,2.47,62.0,2.9,62.0,2.91,62.0,2.86,62.0,3.44,62.0,14.59,2.92,310.0
+421,Heaven,MUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (920m),3.12,62.0,3.11,62.0,2.82,62.0,2.68,62.0,2.83,62.0,14.57,2.91,310.0
+36,Maatsen,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1590m),2.85,62.0,2.54,62.0,3.4,62.0,2.87,62.0,2.85,62.0,14.52,2.9,310.0
+129,Ayari,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1921m),2.91,62.0,2.96,62.0,2.82,62.0,2.81,62.0,2.99,62.0,14.49,2.9,310.0
+442,Pope,NEW,GKP,Regular Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2416m); defcon_baseline_fill,2.7,62.0,2.85,62.0,2.86,62.0,2.82,62.0,3.21,62.0,14.45,2.89,310.0
+471,Milenković,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3375m),3.13,62.0,2.67,62.0,2.81,62.0,2.69,62.0,3.14,62.0,14.45,2.89,310.0
 523,Moore,TOT,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Scottish Premiership Rangers loan MID; 2163m; FotMob; CBITR; dest GC TOT=1.500,2.79,62.0,3.25,62.0,2.82,62.0,2.79,62.0,2.8,62.0,14.45,2.89,310.0
-129,Ayari,BHA,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1921m),2.91,62.0,2.6,62.0,3.15,62.0,3.14,62.0,2.63,62.0,14.43,2.89,310.0
-442,Pope,NEW,GKP,Regular Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (2416m); defcon_baseline_fill,2.4,62.0,2.84,62.0,2.86,62.0,2.81,62.0,3.5,62.0,14.42,2.88,310.0
-514,Tel,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1334m),2.78,62.0,3.18,62.0,2.81,62.0,2.78,62.0,2.79,62.0,14.35,2.87,310.0
-304,O'Shea,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,Burnley PL / Ipswich starting CB/RB (2880m across senior leagues); dest GC IPS=1.375,3.65,62.0,2.4,62.0,2.39,62.0,2.95,62.0,2.95,62.0,14.35,2.87,310.0
-98,Janelt,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1434m),2.88,62.0,2.86,62.0,3.1,62.0,2.86,62.0,2.64,62.0,14.34,2.87,310.0
-471,Milenković,NFO,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3375m),3.43,62.0,2.32,62.0,2.81,62.0,2.33,62.0,3.44,62.0,14.34,2.87,310.0
-46,Barkley,AVL,MID,Regular Starter,eligible,career_individual+destination_gc,Prior-Season Seed 2025/26 (844m); dest GC AVL=1.289,2.85,62.0,2.52,62.0,3.23,62.0,2.88,62.0,2.85,62.0,14.33,2.87,310.0
-488,Sangaré,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2073m),3.06,62.0,2.65,62.0,2.86,62.0,2.67,62.0,3.08,62.0,14.33,2.87,310.0
-97,Jensen,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2239m),2.87,62.0,2.85,62.0,3.19,62.0,2.86,62.0,2.54,62.0,14.31,2.86,310.0
-162,Andrey Santos,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1247m),3.1,62.0,3.08,62.0,2.79,62.0,2.52,62.0,2.81,62.0,14.31,2.86,310.0
-330,Bogle,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2795m),2.72,62.0,2.72,62.0,2.7,62.0,3.45,62.0,2.72,62.0,14.31,2.86,310.0
-182,Amenda,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Bundesliga Eintracht Frankfurt; ~1676m; FotMob; dest GC COV=1.375,2.02,62.0,3.64,62.0,2.0,62.0,3.62,62.0,2.98,62.0,14.26,2.85,310.0
-156,Neto,CHE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2629m),2.84,62.0,3.21,62.0,2.17,62.0,3.22,62.0,2.82,62.0,14.26,2.85,310.0
-57,Petrović,BOU,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,2.15,77.5,3.16,77.5,3.18,77.5,3.15,77.5,2.6,77.5,14.25,2.85,387.5
-552,Brobbey,SUN,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1920m),3.23,77.5,3.31,77.5,2.84,77.5,2.54,77.5,2.25,77.5,14.18,2.84,387.5
-250,Leno,FUL,GKP,Nailed Starter,eligible,prior_season_seed+defcon_baseline_fill,Prior-Season Seed 2025/26 (3420m); defcon_baseline_fill,2.61,77.5,3.16,77.5,3.2,77.5,2.57,77.5,2.65,77.5,14.18,2.84,387.5
-534,Hume,SUN,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3032m),3.55,62.0,3.58,62.0,2.86,62.0,2.32,62.0,1.86,62.0,14.17,2.83,310.0
-114,Boscagli,BHA,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC BHA; no Prior-Season Seed; dest GC BHA=1.211,2.81,62.0,2.22,62.0,3.45,62.0,3.44,62.0,2.24,62.0,14.16,2.83,310.0
-496,Kinsky,TOT,GKP,Regular Starter,eligible,career_individual+destination_gc,Spurs / Slavia Prague GKP saves (~3.15/90); dest GC TOT=1.500,2.68,62.0,3.31,62.0,2.71,62.0,2.69,62.0,2.7,62.0,14.09,2.82,310.0
-261,Iwobi,FUL,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2420m),2.69,77.5,2.99,77.5,3.02,77.5,2.66,77.5,2.71,77.5,14.07,2.81,387.5
-316,Emersonn,IPS,FWD,Regular Starter,eligible,career_individual+destination_gc,Toulouse Ligue 1 2025/26; 1526 min; Goalazo xG/xA; CBITR Sporting Life; dest GC IPS=1.375,3.37,62.0,2.46,62.0,2.44,62.0,2.89,62.0,2.89,62.0,14.05,2.81,310.0
-282,Giles,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull / Luton PL: key crossing & set piece creator; dest GC HUL=1.375,2.3,62.0,3.65,62.0,2.9,62.0,2.27,62.0,2.91,62.0,14.04,2.81,310.0
-87,Ajer,BRE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1805m),2.78,62.0,2.77,62.0,3.43,62.0,2.77,62.0,2.26,62.0,14.01,2.8,310.0
-279,Ajayi,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,External best-guess: Ajayi CHA/PL CB; CBIT-style Defcon proxy; dest GC HUL=1.375,2.36,62.0,3.53,62.0,2.88,62.0,2.34,62.0,2.89,62.0,14.0,2.8,310.0
-257,Bassey,FUL,DEF,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2532m),2.54,77.5,3.18,77.5,3.2,77.5,2.51,77.5,2.57,77.5,14.0,2.8,387.5
-214,Kamada,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1899m),2.79,62.0,2.52,62.0,2.8,62.0,3.07,62.0,2.78,62.0,13.95,2.79,310.0
-246,Röhl,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,2024/25 Bundesliga Freiburg; 1800m; FBref; dest GC EVE=1.316,2.77,62.0,2.77,62.0,2.45,62.0,2.78,62.0,3.12,62.0,13.89,2.78,310.0
-503,Van de Ven,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3041m),2.62,62.0,3.33,62.0,2.64,62.0,2.62,62.0,2.63,62.0,13.84,2.77,310.0
-525,Fernandes,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3017m),2.71,62.0,2.96,62.0,2.73,62.0,2.71,62.0,2.72,62.0,13.84,2.77,310.0
-232,O'Brien,EVE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3118m),2.74,62.0,2.74,62.0,2.23,62.0,2.74,62.0,3.39,62.0,13.84,2.77,310.0
-16,Madueke,ARS,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1205m),3.13,62.0,2.53,62.0,2.52,62.0,2.8,62.0,2.8,62.0,13.79,2.76,310.0
-195,Simms,COV,FWD,Regular Starter,eligible,career_individual+destination_gc,Position baseline (FWD); dest GC COV; no Prior-Season Seed; dest GC COV=1.375,2.11,62.0,3.35,62.0,2.09,62.0,3.3,62.0,2.9,62.0,13.77,2.75,310.0
-267,Lukić,IPS,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1730m),3.09,62.0,2.54,62.0,2.53,62.0,2.79,62.0,2.79,62.0,13.74,2.75,310.0
-545,Sadiki,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2891m),2.98,77.5,3.02,77.5,2.72,77.5,2.55,77.5,2.38,77.5,13.66,2.73,387.5
-45,McGinn,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2136m),2.71,62.0,2.4,62.0,3.06,62.0,2.74,62.0,2.71,62.0,13.63,2.73,310.0
-259,Diop,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,"Fulham / West Ham PL CB (812m in 25/26, 1720m in 24/25); confirmed £8.5m signing; dest GC IPS=1.375",3.46,62.0,2.29,62.0,2.28,62.0,2.8,62.0,2.8,62.0,13.62,2.72,310.0
-415,Dorgu,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1440m),2.99,62.0,2.97,62.0,2.65,62.0,2.34,62.0,2.66,62.0,13.61,2.72,310.0
-581,Diomande,NFO,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC NFO; no Prior-Season Seed; dest GC NFO=1.342,3.34,62.0,2.1,62.0,2.66,62.0,2.11,62.0,3.35,62.0,13.55,2.71,310.0
-152,Palestra,CHE,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Serie A Cagliari; ~3084m; FotMob; dest GC CHE=1.368,2.63,62.0,3.3,62.0,1.62,62.0,3.31,62.0,2.62,62.0,13.49,2.7,310.0
-110,Rushworth,COV,GKP,Regular Starter,eligible,career_individual+destination_gc,2023/24 Championship Swansea GKP; 4140m; FBref 143 saves/46.0 90s; dest GC COV=1.375,1.96,62.0,3.4,62.0,1.93,62.0,3.37,62.0,2.82,62.0,13.48,2.7,310.0
-31,Konsa,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3035m),2.64,62.0,2.14,62.0,3.27,62.0,2.66,62.0,2.64,62.0,13.37,2.67,310.0
-289,Crooks,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Hull MID; 2509m; FotMob xG/xA; CBITR; dest GC HUL=1.375,2.45,62.0,3.0,62.0,2.7,62.0,2.43,62.0,2.71,62.0,13.3,2.66,310.0
-207,Mingueza,CRY,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC CRY; no Prior-Season Seed; dest GC CRY=1.342,2.64,62.0,2.07,62.0,2.65,62.0,3.32,62.0,2.63,62.0,13.3,2.66,310.0
-71,Cook,BOU,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (2976m); destination GC overlay; dest GC BOU=1.421,2.44,62.0,2.75,62.0,2.76,62.0,2.74,62.0,2.58,62.0,13.27,2.65,310.0
-449,Hall,NEW,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2176m),2.06,62.0,2.61,62.0,2.62,62.0,2.59,62.0,3.36,62.0,13.22,2.64,310.0
-406,Kovačić,MCI,MID,Regular Starter,eligible,career_individual+destination_gc,"Man City / Chelsea veteran CM proxy (125m in 25/26, 2194m in 24/25); dest GC MCI=0.921",2.6,62.0,2.58,62.0,2.83,62.0,2.37,62.0,2.82,62.0,13.2,2.64,310.0
-321,Walle Egeli,IPS,FWD,Regular Starter,eligible,career_individual+destination_gc,2024/25 Danish Superliga Nordsjælland FWD; 2205m; FootyStats/FBref; CBITR partial; dest GC IPS=1.375,3.1,62.0,2.35,62.0,2.33,62.0,2.71,62.0,2.71,62.0,13.19,2.64,310.0
-175,van Ewijk,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Coventry; ~3784m; FotMob; dest GC COV=1.375,1.75,62.0,3.47,62.0,1.74,62.0,3.45,62.0,2.78,62.0,13.19,2.64,310.0
-233,Mykolenko,EVE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2959m),2.61,62.0,2.61,62.0,2.11,62.0,2.61,62.0,3.25,62.0,13.19,2.64,310.0
-184,Grimes,COV,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Coventry 4125m; FotMob Opta; dest GC COV=1.375,2.28,62.0,2.98,62.0,2.26,62.0,2.95,62.0,2.71,62.0,13.18,2.64,310.0
-249,Barry,EVE,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1898m),2.63,62.0,2.63,62.0,2.3,62.0,2.64,62.0,2.97,62.0,13.17,2.63,310.0
-569,Gonzalo,FUL,FWD,Regular Starter,eligible,career_individual+destination_gc,Position baseline (FWD); dest GC FUL; no Prior-Season Seed; dest GC FUL=1.342,2.46,62.0,2.88,62.0,2.91,62.0,2.43,62.0,2.48,62.0,13.16,2.63,310.0
-455,Tonali,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2534m),2.57,62.0,2.83,62.0,2.6,62.0,2.58,62.0,2.59,62.0,13.16,2.63,310.0
-551,Angulo,SUN,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Belgian Pro League Anderlecht MID; 1902m; FootyStats; CBITR no recoveries; dest GC SUN=1.263,2.94,62.0,2.98,62.0,2.62,62.0,2.38,62.0,2.15,62.0,13.07,2.61,310.0
-10,White,ARS,DEF,Regular Starter,watch,career_individual+destination_gc,Prior-Season Seed 2025/26 (699m); dest GC ARS=0.711,3.03,44.0,2.33,44.0,2.32,44.0,2.65,44.0,2.65,44.0,12.98,2.6,220.0
-565,Sangaré,BRE,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC BRE; no Prior-Season Seed; dest GC BRE=1.368,2.59,62.0,2.58,62.0,2.92,62.0,2.58,62.0,2.27,62.0,12.94,2.59,310.0
-519,Gallagher,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1183m),2.53,62.0,2.78,62.0,2.55,62.0,2.53,62.0,2.54,62.0,12.93,2.59,310.0
-70,Kluivert,BOU,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (945m),2.12,62.0,2.77,62.0,2.78,62.0,2.76,62.0,2.4,62.0,12.83,2.57,310.0
-73,Adams,BOU,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1769m),2.4,62.0,2.64,62.0,2.65,62.0,2.63,62.0,2.5,62.0,12.82,2.56,310.0
-264,Bobb,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1030m),2.43,62.0,2.74,62.0,2.76,62.0,2.4,62.0,2.45,62.0,12.77,2.55,310.0
-290,Slater,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 3156m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,2.41,62.0,2.79,62.0,2.58,62.0,2.38,62.0,2.59,62.0,12.75,2.55,310.0
-567,Horníček,NEW,GKP,Regular Starter,eligible,career_individual+destination_gc,2025/26 Liga Portugal Braga GKP; 2960m; FootyMetrics/FootyStats 74 saves (2.25/90); dest GC NEW=1.447,2.07,62.0,2.5,62.0,2.52,62.0,2.48,62.0,3.14,62.0,12.7,2.54,310.0
-483,Ndoye,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1167m),2.78,62.0,2.28,62.0,2.53,62.0,2.3,62.0,2.8,62.0,12.69,2.54,310.0
-462,Steur,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Eredivisie Ajax MID; 1135m; FotMob; CBITR; dest GC NEW=1.447,2.26,62.0,2.52,62.0,2.53,62.0,2.49,62.0,2.87,62.0,12.67,2.53,310.0
-280,Coyle,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 3187m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,2.09,62.0,3.26,62.0,2.61,62.0,2.07,62.0,2.61,62.0,12.65,2.53,310.0
-574,Hjertø-Dahl,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.27,62.0,2.94,62.0,2.58,62.0,2.24,62.0,2.59,62.0,12.63,2.53,310.0
-576,Stroud,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.27,62.0,2.94,62.0,2.58,62.0,2.24,62.0,2.59,62.0,12.63,2.53,310.0
-12,Saka,ARS,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2218m),2.98,44.0,2.22,44.0,2.22,44.0,2.58,44.0,2.58,44.0,12.58,2.52,220.0
-586,Mendy,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.04,62.0,3.29,62.0,2.59,62.0,2.02,62.0,2.6,62.0,12.55,2.51,310.0
-575,Yirenkyi,COV,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC COV; no Prior-Season Seed; dest GC COV=1.375,2.02,62.0,2.94,62.0,2.01,62.0,2.92,62.0,2.6,62.0,12.48,2.5,310.0
-268,King,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1290m),2.38,62.0,2.65,62.0,2.68,62.0,2.36,62.0,2.4,62.0,12.47,2.49,310.0
-559,Bamba,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,Monaco Ligue 1 2025/26; 1850 min; FBref CBITR proxy; dest GC NEW=1.447,2.27,62.0,2.47,62.0,2.49,62.0,2.45,62.0,2.77,62.0,12.45,2.49,310.0
-104,Onyeka,COV,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2023/24 (1147m); destination GC overlay; dest GC COV=1.375,2.01,62.0,2.91,62.0,2.0,62.0,2.88,62.0,2.57,62.0,12.38,2.48,310.0
-86,Lewis-Potter,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1960m),2.48,62.0,2.46,62.0,2.77,62.0,2.47,62.0,2.19,62.0,12.36,2.47,310.0
-79,Evanilson,BOU,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2741m),2.03,62.0,2.61,62.0,2.63,62.0,2.6,62.0,2.29,62.0,12.16,2.43,310.0
-37,Lindelöf,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (942m),2.4,62.0,1.91,62.0,3.03,62.0,2.42,62.0,2.4,62.0,12.15,2.43,310.0
-564,Scherpen,IPS,GKP,Regular Starter,eligible,career_individual+destination_gc,Union SG Belgian Pro League 2025/26; 2835 min; FotMob 60 saves (1.90/90); dest GC IPS=1.375,3.08,62.0,2.03,62.0,2.02,62.0,2.48,62.0,2.48,62.0,12.09,2.42,310.0
-491,Igor Jesus,NFO,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2293m),2.65,62.0,2.15,62.0,2.41,62.0,2.17,62.0,2.68,62.0,12.06,2.41,310.0
-570,Palacios,FUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC FUL; no Prior-Season Seed; dest GC FUL=1.342,2.28,62.0,2.59,62.0,2.61,62.0,2.26,62.0,2.3,62.0,12.03,2.41,310.0
-239,Garner,EVE,MID,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (3413m),0.0,0.0,2.98,62.0,2.76,62.0,2.99,62.0,3.25,62.0,11.98,2.4,248.0
-572,Tzolakis,HUL,GKP,Regular Starter,eligible,career_individual+destination_gc,2025/26 Super League Olympiacos GKP; 2880m; FootyMetrics 55 saves (1.72/90); dest GC HUL=1.375,2.01,62.0,3.06,62.0,2.46,62.0,1.98,62.0,2.47,62.0,11.97,2.39,310.0
-258,Castagne,FUL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1838m),2.16,62.0,2.73,62.0,2.75,62.0,2.14,62.0,2.18,62.0,11.95,2.39,310.0
-125,Georginio,BHA,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1776m),2.42,62.0,2.14,62.0,2.6,62.0,2.59,62.0,2.17,62.0,11.92,2.38,310.0
-454,Elanga,NEW,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1302m),2.11,62.0,2.33,62.0,2.34,62.0,2.31,62.0,2.64,62.0,11.73,2.35,310.0
-265,Berge,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2904m),2.22,62.0,2.37,62.0,2.39,62.0,2.2,62.0,2.24,62.0,11.43,2.29,310.0
-472,Murillo,NFO,DEF,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2130m),2.64,44.0,1.87,44.0,2.22,44.0,1.89,44.0,2.65,44.0,11.28,2.26,220.0
-566,Silva,BOU,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC BOU; no Prior-Season Seed; dest GC BOU=1.421,1.56,62.0,2.55,62.0,2.56,62.0,2.54,62.0,2.0,62.0,11.19,2.24,310.0
-222,Strand Larsen,CRY,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2301m),2.24,62.0,2.02,62.0,2.25,62.0,2.43,62.0,2.23,62.0,11.17,2.23,310.0
-459,L.Miley,NEW,MID,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (1493m),0.0,0.0,2.69,62.0,2.71,62.0,2.67,62.0,3.01,62.0,11.08,2.22,248.0
-64,Smith,BOU,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1073m),1.64,62.0,2.47,62.0,2.48,62.0,2.46,62.0,2.01,62.0,11.06,2.21,310.0
-7,Lewis-Skelly,ARS,MID,Regular Starter,eligible,career_individual+destination_gc,Prior-Season Seed 2025/26 (697m); dest GC ARS=0.711,2.34,62.0,2.11,62.0,2.11,62.0,2.2,62.0,2.2,62.0,10.96,2.19,310.0
-190,Tchaouna,COV,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1259m),1.88,62.0,2.47,62.0,1.87,62.0,2.45,62.0,2.23,62.0,10.89,2.18,310.0
-47,Kamara,AVL,MID,Nailed Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1410m),2.17,54.5,2.04,54.5,2.32,54.5,2.19,54.5,2.17,54.5,10.88,2.18,272.8
-450,Livramento,NEW,DEF,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1326m),1.8,44.0,2.11,44.0,2.12,44.0,2.1,44.0,2.51,44.0,10.66,2.13,220.0
-161,Lavia,CHE,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2022/23 (2219m); destination GC overlay; dest GC CHE=1.368,2.01,62.0,2.13,62.0,1.82,62.0,2.14,62.0,2.0,62.0,10.09,2.02,310.0
-43,Tielemans,MUN,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1857m),2.12,44.0,2.11,44.0,1.94,44.0,1.78,44.0,1.94,44.0,9.88,1.98,220.0
-372,Mac Allister,LIV,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2654m),1.82,44.0,1.82,44.0,1.98,44.0,1.99,44.0,1.81,44.0,9.42,1.88,220.0
+337,Aaronson,LEE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2449m),2.86,62.0,2.84,62.0,2.83,62.0,3.06,62.0,2.85,62.0,14.44,2.89,310.0
+282,Giles,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull / Luton PL: key crossing & set piece creator; dest GC HUL=1.375,2.57,62.0,3.5,62.0,2.91,62.0,2.54,62.0,2.92,62.0,14.43,2.89,310.0
+46,Barkley,AVL,MID,Regular Starter,eligible,career_individual+destination_gc,Prior-Season Seed 2025/26 (844m); dest GC AVL=1.289,2.85,62.0,2.77,62.0,3.07,62.0,2.87,62.0,2.85,62.0,14.42,2.88,310.0
+279,Ajayi,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,External best-guess: Ajayi CHA/PL CB; CBIT-style Defcon proxy; dest GC HUL=1.375,2.73,62.0,3.22,62.0,2.88,62.0,2.7,62.0,2.89,62.0,14.42,2.88,310.0
+97,Jensen,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2239m),2.87,62.0,2.85,62.0,2.97,62.0,2.86,62.0,2.85,62.0,14.4,2.88,310.0
+552,Brobbey,SUN,FWD,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1920m),3.26,77.5,3.34,77.5,2.85,77.5,2.56,77.5,2.33,77.5,14.34,2.87,387.5
+98,Janelt,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1434m),2.88,62.0,2.86,62.0,2.72,62.0,2.86,62.0,3.01,62.0,14.32,2.86,310.0
+156,Neto,CHE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2629m),2.83,62.0,3.2,62.0,2.26,62.0,3.22,62.0,2.81,62.0,14.32,2.86,310.0
+114,Boscagli,BHA,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC BHA; no Prior-Season Seed; dest GC BHA=1.211,2.81,62.0,2.3,62.0,3.43,62.0,3.43,62.0,2.32,62.0,14.28,2.86,310.0
+488,Sangaré,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2073m),2.66,62.0,3.02,62.0,2.86,62.0,3.05,62.0,2.68,62.0,14.27,2.85,310.0
+545,Sadiki,SUN,MID,Nailed Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2891m),2.78,77.5,2.82,77.5,2.73,77.5,2.89,77.5,3.05,77.5,14.26,2.85,387.5
+71,Cook,BOU,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2024/25 (2976m); destination GC overlay; dest GC BOU=1.421,3.05,62.0,2.75,62.0,2.76,62.0,2.74,62.0,2.94,62.0,14.25,2.85,310.0
+330,Bogle,LEE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2795m),2.73,62.0,2.72,62.0,2.71,62.0,3.35,62.0,2.72,62.0,14.23,2.85,310.0
+514,Tel,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1334m),2.78,62.0,3.06,62.0,2.81,62.0,2.78,62.0,2.79,62.0,14.22,2.84,310.0
+267,Lukić,IPS,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1730m),2.83,62.0,2.88,62.0,2.86,62.0,2.8,62.0,2.8,62.0,14.18,2.84,310.0
+316,Emersonn,IPS,FWD,Regular Starter,eligible,career_individual+destination_gc,Toulouse Ligue 1 2025/26; 1526 min; Goalazo xG/xA; CBITR Sporting Life; dest GC IPS=1.375,3.4,62.0,2.47,62.0,2.45,62.0,2.9,62.0,2.9,62.0,14.13,2.83,310.0
+162,Andrey Santos,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1247m),2.85,62.0,2.83,62.0,2.78,62.0,2.84,62.0,2.8,62.0,14.09,2.82,310.0
+110,Rushworth,COV,GKP,Regular Starter,eligible,career_individual+destination_gc,2023/24 Championship Swansea GKP; 4140m; FBref 143 saves/46.0 90s; dest GC COV=1.375,2.5,62.0,3.15,62.0,2.47,62.0,3.13,62.0,2.83,62.0,14.07,2.81,310.0
+259,Diop,IPS,DEF,Regular Starter,eligible,career_individual+destination_gc,"Fulham / West Ham PL CB (812m in 25/26, 1720m in 24/25); confirmed £8.5m signing; dest GC IPS=1.375",3.2,62.0,2.63,62.0,2.62,62.0,2.81,62.0,2.81,62.0,14.06,2.81,310.0
+246,Röhl,EVE,MID,Regular Starter,eligible,career_individual+destination_gc,2024/25 Bundesliga Freiburg; 1800m; FBref; dest GC EVE=1.316,2.77,62.0,2.77,62.0,2.68,62.0,2.78,62.0,3.0,62.0,14.0,2.8,310.0
+87,Ajer,BRE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1805m),2.78,62.0,2.77,62.0,3.04,62.0,2.77,62.0,2.63,62.0,14.0,2.8,310.0
+214,Kamada,CRY,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1899m),2.79,62.0,2.86,62.0,2.8,62.0,2.78,62.0,2.78,62.0,14.0,2.8,310.0
+175,van Ewijk,COV,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Coventry; ~3784m; FotMob; dest GC COV=1.375,2.28,62.0,3.32,62.0,2.26,62.0,3.31,62.0,2.78,62.0,13.97,2.79,310.0
+232,O'Brien,EVE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3118m),2.74,62.0,2.74,62.0,2.49,62.0,2.74,62.0,3.22,62.0,13.94,2.79,310.0
+184,Grimes,COV,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Coventry 4125m; FotMob Opta; dest GC COV=1.375,2.9,62.0,2.71,62.0,2.88,62.0,2.69,62.0,2.72,62.0,13.9,2.78,310.0
+16,Madueke,ARS,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1205m),3.1,62.0,2.6,62.0,2.59,62.0,2.79,62.0,2.79,62.0,13.88,2.78,310.0
+195,Simms,COV,FWD,Regular Starter,eligible,career_individual+destination_gc,Position baseline (FWD); dest GC COV; no Prior-Season Seed; dest GC COV=1.375,2.11,62.0,3.37,62.0,2.09,62.0,3.33,62.0,2.92,62.0,13.83,2.77,310.0
+496,Kinsky,TOT,GKP,Regular Starter,eligible,career_individual+destination_gc,Spurs / Slavia Prague GKP saves (~3.15/90); dest GC TOT=1.500,2.68,62.0,3.05,62.0,2.71,62.0,2.69,62.0,2.7,62.0,13.82,2.76,310.0
+73,Adams,BOU,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1769m),3.01,62.0,2.64,62.0,2.65,62.0,2.63,62.0,2.87,62.0,13.8,2.76,310.0
+289,Crooks,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Championship Hull MID; 2509m; FotMob xG/xA; CBITR; dest GC HUL=1.375,2.79,62.0,2.76,62.0,2.71,62.0,2.75,62.0,2.72,62.0,13.73,2.75,310.0
+503,Van de Ven,TOT,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3041m),2.62,62.0,3.2,62.0,2.64,62.0,2.62,62.0,2.63,62.0,13.71,2.74,310.0
+45,McGinn,AVL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2136m),2.71,62.0,2.55,62.0,3.0,62.0,2.73,62.0,2.71,62.0,13.7,2.74,310.0
+581,Diomande,NFO,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC NFO; no Prior-Season Seed; dest GC NFO=1.342,3.31,62.0,2.17,62.0,2.66,62.0,2.19,62.0,3.33,62.0,13.66,2.73,310.0
+415,Dorgu,MUN,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1440m),2.94,62.0,2.91,62.0,2.64,62.0,2.47,62.0,2.65,62.0,13.61,2.72,310.0
+551,Angulo,SUN,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Belgian Pro League Anderlecht MID; 1902m; FootyStats; CBITR no recoveries; dest GC SUN=1.263,2.8,62.0,2.84,62.0,2.63,62.0,2.63,62.0,2.68,62.0,13.57,2.71,310.0
+152,Palestra,CHE,DEF,Regular Starter,eligible,career_individual+destination_gc,2025/26 Serie A Cagliari; ~3084m; FotMob; dest GC CHE=1.368,2.62,62.0,3.29,62.0,1.73,62.0,3.3,62.0,2.61,62.0,13.56,2.71,310.0
+525,Fernandes,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3017m),2.71,62.0,2.6,62.0,2.73,62.0,2.71,62.0,2.72,62.0,13.48,2.7,310.0
+31,Konsa,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (3035m),2.64,62.0,2.34,62.0,3.17,62.0,2.66,62.0,2.64,62.0,13.45,2.69,310.0
+207,Mingueza,CRY,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC CRY; no Prior-Season Seed; dest GC CRY=1.342,2.64,62.0,2.15,62.0,2.65,62.0,3.29,62.0,2.63,62.0,13.36,2.67,310.0
+449,Hall,NEW,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2176m),2.36,62.0,2.61,62.0,2.62,62.0,2.59,62.0,3.15,62.0,13.33,2.67,310.0
+70,Kluivert,BOU,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (945m),2.47,62.0,2.77,62.0,2.78,62.0,2.76,62.0,2.55,62.0,13.32,2.66,310.0
+264,Bobb,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1030m),2.6,62.0,2.75,62.0,2.76,62.0,2.58,62.0,2.62,62.0,13.32,2.66,310.0
+233,Mykolenko,EVE,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2959m),2.61,62.0,2.61,62.0,2.4,62.0,2.61,62.0,3.06,62.0,13.29,2.66,310.0
+321,Walle Egeli,IPS,FWD,Regular Starter,eligible,career_individual+destination_gc,2024/25 Danish Superliga Nordsjælland FWD; 2205m; FootyStats/FBref; CBITR partial; dest GC IPS=1.375,3.13,62.0,2.35,62.0,2.33,62.0,2.72,62.0,2.72,62.0,13.25,2.65,310.0
+10,White,ARS,DEF,Regular Starter,watch,career_individual+destination_gc,Prior-Season Seed 2025/26 (699m); dest GC ARS=0.711,2.91,44.0,2.51,44.0,2.5,44.0,2.64,44.0,2.64,44.0,13.22,2.64,220.0
+249,Barry,EVE,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1898m),2.63,62.0,2.63,62.0,2.31,62.0,2.64,62.0,2.99,62.0,13.19,2.64,310.0
+268,King,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1290m),2.61,62.0,2.67,62.0,2.68,62.0,2.59,62.0,2.64,62.0,13.18,2.64,310.0
+406,Kovačić,MCI,MID,Regular Starter,eligible,career_individual+destination_gc,"Man City / Chelsea veteran CM proxy (125m in 25/26, 2194m in 24/25); dest GC MCI=0.921",2.58,62.0,2.58,62.0,2.74,62.0,2.55,62.0,2.73,62.0,13.17,2.63,310.0
+290,Slater,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 3156m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,2.77,62.0,2.48,62.0,2.58,62.0,2.74,62.0,2.59,62.0,13.17,2.63,310.0
+569,Gonzalo,FUL,FWD,Regular Starter,eligible,career_individual+destination_gc,Position baseline (FWD); dest GC FUL; no Prior-Season Seed; dest GC FUL=1.342,2.45,62.0,2.9,62.0,2.91,62.0,2.43,62.0,2.48,62.0,13.16,2.63,310.0
+280,Coyle,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,CHA 2025/26 Hull 3187m; xG/xA/defcon FotMob Opta; dest GC HUL=1.375,2.33,62.0,3.14,62.0,2.61,62.0,2.31,62.0,2.62,62.0,13.01,2.6,310.0
+565,Sangaré,BRE,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC BRE; no Prior-Season Seed; dest GC BRE=1.368,2.59,62.0,2.58,62.0,2.93,62.0,2.58,62.0,2.27,62.0,12.95,2.59,310.0
+455,Tonali,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2534m),2.57,62.0,2.59,62.0,2.6,62.0,2.58,62.0,2.59,62.0,12.93,2.59,310.0
+483,Ndoye,NFO,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1167m),2.66,62.0,2.51,62.0,2.53,62.0,2.53,62.0,2.68,62.0,12.91,2.58,310.0
+258,Castagne,FUL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1838m),2.46,62.0,2.74,62.0,2.75,62.0,2.44,62.0,2.48,62.0,12.87,2.57,310.0
+12,Saka,ARS,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2218m),2.89,44.0,2.38,44.0,2.36,44.0,2.57,44.0,2.57,44.0,12.78,2.56,220.0
+462,Steur,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,2025/26 Eredivisie Ajax MID; 1135m; FotMob; CBITR; dest GC NEW=1.447,2.38,62.0,2.52,62.0,2.53,62.0,2.5,62.0,2.83,62.0,12.76,2.55,310.0
+567,Horníček,NEW,GKP,Regular Starter,eligible,career_individual+destination_gc,2025/26 Liga Portugal Braga GKP; 2960m; FootyMetrics/FootyStats 74 saves (2.25/90); dest GC NEW=1.447,2.25,62.0,2.51,62.0,2.52,62.0,2.49,62.0,2.97,62.0,12.74,2.55,310.0
+586,Mendy,HUL,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.13,62.0,3.27,62.0,2.6,62.0,2.1,62.0,2.61,62.0,12.7,2.54,310.0
+574,Hjertø-Dahl,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.28,62.0,2.95,62.0,2.59,62.0,2.25,62.0,2.6,62.0,12.67,2.53,310.0
+519,Gallagher,TOT,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1183m),2.53,62.0,2.52,62.0,2.55,62.0,2.53,62.0,2.54,62.0,12.67,2.53,310.0
+576,Stroud,HUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC HUL; no Prior-Season Seed; dest GC HUL=1.375,2.28,62.0,2.95,62.0,2.59,62.0,2.25,62.0,2.6,62.0,12.67,2.53,310.0
+559,Bamba,NEW,MID,Regular Starter,eligible,career_individual+destination_gc,Monaco Ligue 1 2025/26; 1850 min; FBref CBITR proxy; dest GC NEW=1.447,2.5,62.0,2.48,62.0,2.49,62.0,2.46,62.0,2.64,62.0,12.58,2.52,310.0
+575,Yirenkyi,COV,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC COV; no Prior-Season Seed; dest GC COV=1.375,2.05,62.0,2.95,62.0,2.04,62.0,2.93,62.0,2.6,62.0,12.57,2.51,310.0
+104,Onyeka,COV,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2023/24 (1147m); destination GC overlay; dest GC COV=1.375,2.01,62.0,2.92,62.0,2.0,62.0,2.9,62.0,2.58,62.0,12.41,2.48,310.0
+86,Lewis-Potter,BRE,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1960m),2.48,62.0,2.46,62.0,2.78,62.0,2.47,62.0,2.19,62.0,12.38,2.48,310.0
+265,Berge,FUL,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2904m),2.52,62.0,2.38,62.0,2.39,62.0,2.5,62.0,2.54,62.0,12.34,2.47,310.0
+79,Evanilson,BOU,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2741m),2.16,62.0,2.61,62.0,2.63,62.0,2.6,62.0,2.32,62.0,12.32,2.46,310.0
+564,Scherpen,IPS,GKP,Regular Starter,eligible,career_individual+destination_gc,Union SG Belgian Pro League 2025/26; 2835 min; FotMob 60 saves (1.90/90); dest GC IPS=1.375,2.96,62.0,2.18,62.0,2.17,62.0,2.49,62.0,2.49,62.0,12.29,2.46,310.0
+37,Lindelöf,AVL,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (942m),2.4,62.0,2.05,62.0,2.96,62.0,2.41,62.0,2.4,62.0,12.22,2.44,310.0
+491,Igor Jesus,NFO,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2293m),2.64,62.0,2.21,62.0,2.41,62.0,2.23,62.0,2.67,62.0,12.16,2.43,310.0
+572,Tzolakis,HUL,GKP,Regular Starter,eligible,career_individual+destination_gc,2025/26 Super League Olympiacos GKP; 2880m; FootyMetrics 55 saves (1.72/90); dest GC HUL=1.375,2.14,62.0,2.96,62.0,2.47,62.0,2.11,62.0,2.48,62.0,12.15,2.43,310.0
+125,Georginio,BHA,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1776m),2.42,62.0,2.32,62.0,2.53,62.0,2.52,62.0,2.34,62.0,12.13,2.43,310.0
+570,Palacios,FUL,MID,Regular Starter,eligible,career_individual+destination_gc,Position baseline (MID); dest GC FUL; no Prior-Season Seed; dest GC FUL=1.342,2.28,62.0,2.6,62.0,2.61,62.0,2.26,62.0,2.3,62.0,12.06,2.41,310.0
+239,Garner,EVE,MID,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (3413m),0.0,0.0,2.98,62.0,3.13,62.0,2.99,62.0,2.83,62.0,11.93,2.39,248.0
+454,Elanga,NEW,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1302m),2.12,62.0,2.34,62.0,2.34,62.0,2.32,62.0,2.65,62.0,11.76,2.35,310.0
+64,Smith,BOU,DEF,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1073m),2.09,62.0,2.47,62.0,2.48,62.0,2.46,62.0,2.22,62.0,11.72,2.34,310.0
+566,Silva,BOU,DEF,Regular Starter,eligible,career_individual+destination_gc,Position baseline (DEF); dest GC BOU; no Prior-Season Seed; dest GC BOU=1.421,1.77,62.0,2.55,62.0,2.56,62.0,2.54,62.0,2.07,62.0,11.48,2.3,310.0
+472,Murillo,NFO,DEF,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2130m),2.38,44.0,2.13,44.0,2.22,44.0,2.15,44.0,2.39,44.0,11.27,2.25,220.0
+190,Tchaouna,COV,MID,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (1259m),2.07,62.0,2.45,62.0,2.06,62.0,2.44,62.0,2.24,62.0,11.26,2.25,310.0
+222,Strand Larsen,CRY,FWD,Regular Starter,eligible,prior_season_seed,Prior-Season Seed 2025/26 (2301m),2.24,62.0,2.04,62.0,2.25,62.0,2.44,62.0,2.23,62.0,11.19,2.24,310.0
+7,Lewis-Skelly,ARS,MID,Regular Starter,eligible,career_individual+destination_gc,Prior-Season Seed 2025/26 (697m); dest GC ARS=0.711,2.34,62.0,2.11,62.0,2.1,62.0,2.2,62.0,2.2,62.0,10.94,2.19,310.0
+47,Kamara,AVL,MID,Nailed Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1410m),2.17,54.5,2.33,54.5,2.06,54.5,2.18,54.5,2.17,54.5,10.91,2.18,272.8
+459,L.Miley,NEW,MID,Regular Starter,exclude_gw1,prior_season_seed,Prior-Season Seed 2025/26 (1493m),0.0,0.0,2.7,62.0,2.71,62.0,2.68,62.0,2.75,62.0,10.84,2.17,248.0
+450,Livramento,NEW,DEF,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1326m),1.88,44.0,2.12,44.0,2.12,44.0,2.11,44.0,2.49,44.0,10.71,2.14,220.0
+161,Lavia,CHE,MID,Regular Starter,eligible,career_fpl_prior_year+destination_gc,Older FPL 2022/23 (2219m); destination GC overlay; dest GC CHE=1.368,2.0,62.0,2.13,62.0,1.8,62.0,2.14,62.0,1.99,62.0,10.07,2.01,310.0
+43,Tielemans,MUN,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (1857m),1.92,44.0,1.91,44.0,1.93,44.0,2.01,44.0,1.94,44.0,9.7,1.94,220.0
+372,Mac Allister,LIV,MID,Regular Starter,watch,prior_season_seed,Prior-Season Seed 2025/26 (2654m),1.82,44.0,1.81,44.0,1.88,44.0,1.89,44.0,1.81,44.0,9.21,1.84,220.0
 78,Kroupi.Jr,BOU,MID,Regular Starter,exclude_gw1-5,prior_season_seed,Prior-Season Seed 2025/26 (1663m),0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

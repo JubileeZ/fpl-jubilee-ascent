@@ -15,6 +15,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT))
+
+from clients.env_loader import configure_utf8_stdio
 
 
 def _load(rel: str, attr: str):
@@ -27,14 +30,22 @@ def _load(rel: str, attr: str):
 
 
 def main() -> None:
+    configure_utf8_stdio()
     sys.path.insert(0, str(ROOT))
     print("=== RESEARCH DOWNSTREAM REFRESH (Stage 2 rates → consumers) ===")
 
     print("\n--- Stage 2: Event Rates + GW1–5 xP ---")
-    _load(
-        "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py",
-        "build_expected_stats",
-    )()
+    summaries = list((ROOT / "data/raw").glob("element_summary_*.json"))
+    if len(summaries) >= 100:
+        _load(
+            "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py",
+            "build_expected_stats",
+        )()
+    else:
+        print(
+            f"Skip rate rebuild ({len(summaries)} element summaries). "
+            "Using committed expected-stats-gw1-5.csv. Run full refresh_data for a rate rebuild."
+        )
     _load(
         "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py",
         "project_gw1_5_points",

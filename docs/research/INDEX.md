@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-19T00:45:00+07:00  
+**Updated**: 2026-08-19T13:45:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -10,7 +10,7 @@
 - **First-Half Chip Path (GW1–19, Dual-Vector)**:
   - [**First-Half Chip Path**](gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.md) · [Runner](gw1-19-first-half-chip-path/run_all.py)
   - [Summary](../../data/research/gw1-19-first-half-chip-path/first_half_summary.csv) · [Weeks](../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv) · [Squads](../../data/research/gw1-19-first-half-chip-path/first_half_squads.csv) · [Transfers](../../data/research/gw1-19-first-half-chip-path/first_half_transfers.csv)
-  - Sibling of Canonical 364.21. Does not replace it. Production `_fixture_maps` unchanged.
+  - Sibling of Canonical 356.61. Does not replace it. Production `_fixture_maps` unchanged.
 
 - **GW1–6 Preseason Research & Optimization Pipeline (Consolidated Master Suite)**:
   - [**GW1–6 Preseason Pipeline Master README**](gw1-6-preseason-pipeline/README.md) · [Pipeline Runner](gw1-6-preseason-pipeline/run_pipeline.py) · [Downstream refresh](gw1-6-preseason-pipeline/refresh_downstream.py)
@@ -81,7 +81,7 @@
 | **Rotation** | **Rotated / Effective FDR** | `Rot FDR` | Average weekly fixture difficulty rating across started slots | Lower is better $\downarrow$ | **$\le 2.40$** | Benchmark baseline for unrotated schedule is $3.00$; rotation targets $\le 2.40$. |
 | **Rotation** | **Rotated Expected Points** | `Rotated xP` | $\sum_{t=1}^N \max_{i \in \text{squad}} xP_{i,t}$ | Higher is better $\uparrow$ | Maximized | Sum of weekly projected points under optimal starting selection. |
 | **Rotation** | **Expected Clean Sheets** | `Exp CS` / $xCS$ | $\sum_{t=1}^N e^{-\lambda_{i^*,t}}$ where $\lambda$ = expected goals conceded | Higher is better $\uparrow$ | **$\ge 14.0$ / season** (or $\ge 2.20$ in GW1–6) | Poisson-derived clean-sheet expectation for the started goalkeeper or defense. |
-| **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across GW1–6 under Canonical Preseason Chip Path | Higher is better $\uparrow$ | **$\ge 364.0\text{ xP}$** (S1: $364.21\text{ xP}$) | MILP-optimized points under locked GW1–3 Bench Boost, GW4 Wildcard, and GW5 roll. Historical 16-scenario S13 $340.14$ is not this experiment. |
+| **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across GW1–6 under Canonical Preseason Chip Path | Higher is better $\uparrow$ | **$\ge 356.0\text{ xP}$** (S1: $356.61\text{ xP}$) | MILP-optimized points under locked GW1–3 Bench Boost, GW4 Wildcard, and GW5 roll. Historical 16-scenario S13 $340.14$ is not this experiment. |
 | **Chip Strategy** | **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Net points gained by deploying specific chip combinations early vs holding. |
 | **Chip Strategy** | **Auto-Sub Expected Value** | `Auto-sub EV` | $+12\% \times xP(\text{Def 4}) + 3\% \times xP(\text{Def 5})$ | Higher is better $\uparrow$ | Inherent buffer | Expected points harvested from benched defenders when starters are unexpectedly benched or rested. |
 | **Ownership** | **Projected Rate** | `xP/90` | Expected points per 90 minutes normalized by role and fixture | Higher is better $\uparrow$ | **$\ge 5.0$** (Enabler) / **$\ge 7.0$** (Premium) | Normalized per-minute scoring potential. |

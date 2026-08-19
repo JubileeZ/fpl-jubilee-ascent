@@ -137,8 +137,8 @@ def test_live_gkp_strategy_csv_dcs_columns() -> None:
     gw119 = gw119[gw119["pairing"].str.contains("Donnarumma", na=False)]
     assert len(gw119) >= 1
     top = gw119.sort_values("dcs", ascending=False).iloc[0]
-    assert float(top["tot_rot_xp"]) == pytest.approx(127.13, abs=0.01)
-    assert float(top["dcs"]) == pytest.approx(89.33, abs=0.01)
+    assert float(top["tot_rot_xp"]) == pytest.approx(123.20, abs=0.01)
+    assert float(top["dcs"]) == pytest.approx(85.78, abs=0.01)
 
 
 def test_live_club_fdr_min_csv() -> None:

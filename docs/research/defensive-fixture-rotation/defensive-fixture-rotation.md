@@ -1,7 +1,7 @@
 # Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)
 
-**Updated**: 2026-08-18T15:05:00+07:00  
-**Data stamp**: FPL API refresh 2026-08-18 (590 players; Trafford LEE, Rushworth COV); Stage 1 575 rows; Stage 2 ADR-0014 rates; CSVs re-audited 2026-08-18 vs `gkp_strategy_comparison.csv` / `def_club_partitions_matrix.csv` / backline CSVs  
+**Updated**: 2026-08-19T13:45:00+07:00  
+**Data stamp**: Public FPL bootstrap/fixtures 2026-08-19 (592 players); Stage 2 rates 2026-08-18; Champion saves/defcon × defence_multiplier; CSVs rebuilt vs `gkp_strategy_comparison.csv`  
 **Season**: 2026/27  
 **Status**: Active defensive authority. Supersedes archived `docs/archive/gkp-fixture-rotation/` and `docs/archive/def-fixture-rotation/`.  
 **Artifacts**:
@@ -49,7 +49,7 @@ uv run python docs/research/defensive-fixture-rotation/run_defensive_rotation_an
 
 ## Method
 
-1. **Hybrid Event-Rate Projection Grid**: Projections are generated via `ParticipationStateHybridModel` with 90 flat starter minutes across GW1–38 for 21 starting Goalkeepers and 93 starting Defenders. Club identity from live `players.parquet` after 2026-08-18 refresh (Trafford = LEE, Rushworth = COV).
+1. **Hybrid Event-Rate Projection Grid**: Projections via `ParticipationStateHybridModel` with 90 flat starter minutes across GW1–38. Saves and defcon scale with `defence_multiplier` (ADR 0005). Club identity from live `players.parquet` (Trafford = LEE, Rushworth = COV).
 2. **Two-Factor Composite Ranking Model (DCS)**:
    Every combination is ranked by a balanced **Defensive Composite Score (DCS - 0 to 100)**:
    $$\text{DCS} = 0.60 \times S_{\text{Score}} + 0.40 \times S_{\text{Risk}}$$
@@ -90,30 +90,29 @@ Comparing the three core goalkeeping archetypes across different planning horizo
 
 | Strategy Archetype | Top Exemplar Pairing | Spend | Total xP (19 GW) | xP / GW | Net OC-Score | DCS | Rot FDR | Zero-Diff % |
 |---|---|---|---|---|---|---|---|---|
-| **Active 2-GKP Rotation** | **Rushworth (COV) + Donnarumma (MCI)** | **£10.0m** | **127.13** | **6.69** | **6.25** | **89.33** | **2.42** | **100.0%** |
-| **Active 2-GKP Rotation** | **Leno (FUL) + Donnarumma (MCI)** | **£10.0m** | **126.53** | **6.66** | **6.22** | **87.50** | **2.47** | **94.7%** |
-| **Active 2-GKP Rotation** | **Scherpen (IPS) + Donnarumma (MCI)** | **£10.0m** | **125.37** | **6.60** | **6.16** | **87.26** | **2.47** | **100.0%** |
-| **Active 2-GKP Rotation** | **Verbruggen (BHA) + Donnarumma (MCI)** | **£10.0m** | **127.10** | **6.69** | **6.25** | **86.64** | **2.58** | **94.7%** |
-| **Dual Budget Rotation** | **Verbruggen (BHA) + Rushworth (COV)** | **£9.0m** | **118.19** | **6.22** | **6.07** | **84.54** | **2.53** | **94.7%** |
-| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 125.37 | 6.60 | 6.30 | 76.53 | 2.95 | 73.7% |
-| **Mid-Value Set & Forget** | Martinez (AVL) + Fodder (£4.0m) | £9.0m | 115.58 | 6.08 | 5.94 | 70.23 | 2.95 | 73.7% |
-| **Budget Set & Forget** | Verbruggen (BHA) + Fodder (£4.0m) | £8.5m | 112.31 | 5.91 | 5.91 | 68.82 | 3.05 | 73.7% |
+| **Active 2-GKP Rotation** | **Rushworth (COV) + Donnarumma (MCI)** | **£10.0m** | **123.20** | **6.48** | **6.04** | **85.78** | **2.42** | **100.0%** |
+| **Active 2-GKP Rotation** | **Scherpen (IPS) + Donnarumma (MCI)** | **£10.0m** | **123.03** | **6.48** | **6.03** | **85.15** | **2.47** | **100.0%** |
+| **Active 2-GKP Rotation** | **Leno (FUL) + Donnarumma (MCI)** | **£10.0m** | **123.20** | **6.48** | **6.04** | **84.50** | **2.47** | **94.7%** |
+| **Active 2-GKP Rotation** | **Verbruggen (BHA) + Donnarumma (MCI)** | **£10.0m** | **123.28** | **6.49** | **6.05** | **83.19** | **2.58** | **94.7%** |
+| **Dual Budget Rotation** | **Verbruggen (BHA) + Rushworth (COV)** | **£9.0m** | **115.43** | **6.08** | **5.93** | **82.05** | **2.53** | **94.7%** |
+| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 123.03 | 6.48 | 6.18 | 74.43 | 2.95 | 73.7% |
+| **Mid-Value Set & Forget** | Martinez (AVL) + Fodder (£4.0m) | £9.0m | 114.48 | 6.03 | 5.88 | 69.23 | 2.95 | 73.7% |
+| **Budget Set & Forget** | Verbruggen (BHA) + Fodder (£4.0m) | £8.5m | 113.31 | 5.96 | 5.96 | 69.72 | 3.05 | 73.7% |
 
 #### 2. Pre-Wildcard Sprint with GW1 Bench Boost (GW1–3 BB1)
 
 | Strategy Archetype | Top Exemplar Pairing | Spend | Total xP (GW1–3) | Net OC-Score | DCS | GW1–3 Avg FDR |
 |---|---|---|---|---|---|---|
-| **Mid-Value Set & Forget** | **Lammens (MUN) + Fodder (£4.0m)** | **£9.0m** | **19.27** | **6.28** | **87.05** | **2.33** |
-| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 20.25 | 6.46 | 87.03 | 2.67 |
-| **Mid-Value Set & Forget** | Roefs (SUN) + Fodder (£4.0m) | £9.0m | 19.26 | 6.27 | 87.00 | 2.33 |
-| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Roefs (SUN)** | **£10.0m** | **25.89** | **8.19** | **84.33** | **2.25** |
-| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Lammens (MUN)** | **£10.0m** | **25.86** | **8.18** | **84.33** | **2.25** |
-| **Active 2-GKP Rotation (BB1)** | **Verbruggen (BHA) + Roefs (SUN)** | **£9.5m** | **26.08** | **8.40** | **83.93** | **2.25** |
-| **Budget Set & Forget** | Kinsky (TOT) + Fodder (£4.0m) | £8.5m | 17.18 | 5.73 | 74.53 | 2.67 |
+| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Lammens (MUN)** | **£10.0m** | **24.73** | **7.80** | **84.33** | **2.25** |
+| **Active 2-GKP Rotation (BB1)** | **Kelleher (BRE) + Roefs (SUN)** | **£10.0m** | **24.69** | **7.79** | **84.33** | **2.25** |
+| **Active 2-GKP Rotation (BB1)** | **Verbruggen (BHA) + Lammens (MUN)** | **£9.5m** | **24.95** | **8.02** | **83.93** | **2.25** |
+| **Premium Set & Forget** | Donnarumma (MCI) + Fodder (£4.0m) | £9.5m | 19.56 | 6.23 | 83.06 | 2.67 |
+| **Mid-Value Set & Forget** | Roefs (SUN) + Fodder (£4.0m) | £9.0m | 18.55 | 6.04 | 82.92 | 2.33 |
+| **Mid-Value Set & Forget** | Lammens (MUN) + Fodder (£4.0m) | £9.0m | 18.47 | 6.01 | 82.48 | 2.33 |
 
 > **Key Goalkeeper Finding**:
-> - **In GW1–3 Bench Boost**: DCS ranks cheaper S&F first (`Lammens + Fodder` **87.05**, `Donnarumma + Fodder` **87.03**) because $\gamma = 0.2944$ taxes the extra £1.5m. Active 2-GKP still wins raw points (**25.89–26.08 xP vs 19.27 xP**). Trafford is **Leeds** (GW1 Forest A).
-> - **In GW1–19 Long-Term**: Active rotation (`Rushworth + Donnarumma` **127.13 xP**, DCS **89.33**) holds FDR **2.42** vs **2.95–3.05** S&F, with **100% Zero-Diff**. City's #1 is Donnarumma, not Trafford.
+> - **In GW1–3 Bench Boost**: Active 2-GKP now ranks first on DCS (`Kelleher + Lammens` **84.33**) after saves scale with fixture defence. Raw points still ~24.7–25.2 vs S&F ~18.5–19.6.
+> - **In GW1–19 Long-Term**: Active rotation (`Rushworth + Donnarumma` **123.20 xP**, DCS **85.78**) holds FDR **2.42** vs **2.95–3.05** S&F, with **100% Zero-Diff**. City's #1 is Donnarumma, not Trafford.
 
 ---
 

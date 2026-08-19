@@ -1,7 +1,7 @@
 # Expected Stats & GW1–5 Points Projection Research Note
 
-**Updated**: 2026-08-18T15:05:00+07:00  
-**Data stamp**: Expected Role Table 2026-08-18 (575 rows; name-match fix); Prior-Season Seed (min 900m) + Career Individual Rate + Destination Team Concede Rate (ADR-0014); FPL API refresh 2026-08-18  
+**Updated**: 2026-08-19T13:45:00+07:00  
+**Data stamp**: Expected Role Table 2026-08-18 (575 rows); Prior-Season Seed + Career Individual Rate + Destination Team Concede Rate (ADR-0014); public fixtures 2026-08-19; Champion saves/defcon × defence_multiplier; Stage 2 rate rebuild skipped (element summaries <100)  
 **Season**: 2026/27  
 **Status**: Active Research Model (Non-Full-Season Candidate)  
 **Purpose**: Build Event Rates for XI Contention via Prior-Season Seed (>=900 mins), Career Individual Rate, and Destination Team Concede Rate; project GW1–5 $xP$ through `ParticipationStateHybridModel.predict` with Draft Availability overlays.  
@@ -88,21 +88,21 @@ Thin samples (`minutes` < 900) shrink toward Research Position Baseline. Club-ch
 
 | Rank | Player | Club | Pos | GW1 | GW2 | GW3 | GW4 | GW5 | Total |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Haaland | MCI | FWD | 5.10 | 5.01 | 6.40 | 3.86 | 6.36 | **26.72** |
-| 2 | Isak | LIV | FWD | 4.77 | 4.74 | 5.88 | 5.92 | 4.69 | **26.00** |
-| 3 | Vuskovic | BHA | DEF | 5.20 | 4.10 | 6.23 | 6.21 | 4.17 | **25.91** |
-| 4 | Gabriel | ARS | DEF | 5.91 | 4.54 | 4.52 | 5.15 | 5.15 | **25.28** |
-| 5 | B.Fernandes | MUN | MID | 5.81 | 5.73 | 4.72 | 3.81 | 4.76 | **24.83** |
-| 6 | Wieffer | BHA | DEF | 4.69 | 3.80 | 5.56 | 5.54 | 3.86 | **23.44** |
-| 7 | Palmer | CHE | MID | 4.46 | 5.37 | 2.94 | 5.41 | 4.42 | **22.61** |
-| 8 | Guéhi | MCI | DEF | 4.33 | 4.31 | 5.17 | 3.59 | 5.16 | **22.55** |
-| 9 | Muharemović | LEE | DEF | 4.28 | 4.27 | 4.23 | 5.29 | 4.28 | **22.35** |
-| 10 | Calafiori | ARS | DEF | 5.10 | 4.07 | 4.06 | 4.55 | 4.55 | **22.33** |
-| 11 | Sarr | CRY | MID | 4.25 | 3.39 | 4.27 | 5.14 | 4.21 | **21.25** |
-| 12 | Tzolis | ARS | MID | 5.32 | 3.52 | 3.50 | 4.33 | 4.32 | **20.98** |
-| 13 | Virgil | LIV | DEF | 3.84 | 3.83 | 4.68 | 4.69 | 3.81 | **20.85** |
-| 14 | Van Hecke | TOT | DEF | 3.96 | 4.88 | 4.00 | 3.96 | 3.98 | **20.78** |
-| 15 | Wirtz | LIV | MID | 3.91 | 3.90 | 4.52 | 4.54 | 3.87 | **20.74** |
+| 1 | Haaland | MCI | FWD | 5.02 | 4.97 | 6.41 | 3.82 | 6.33 | **26.54** |
+| 2 | Isak | LIV | FWD | 4.74 | 4.71 | 5.89 | 5.92 | 4.64 | **25.91** |
+| 3 | Gabriel | ARS | DEF | 5.38 | 5.01 | 4.97 | 5.13 | 5.13 | **25.63** |
+| 4 | Vuskovic | BHA | DEF | 5.20 | 4.49 | 5.54 | 5.53 | 4.55 | **25.31** |
+| 5 | B.Fernandes | MUN | MID | 5.48 | 5.39 | 4.69 | 4.19 | 4.73 | **24.49** |
+| 6 | Wieffer | BHA | DEF | 4.69 | 4.18 | 4.89 | 4.88 | 4.23 | **22.86** |
+| 7 | Palmer | CHE | MID | 4.44 | 5.25 | 3.43 | 5.31 | 4.40 | **22.83** |
+| 8 | Calafiori | ARS | DEF | 5.02 | 4.23 | 4.21 | 4.54 | 4.54 | **22.54** |
+| 9 | Guéhi | MCI | DEF | 4.31 | 4.29 | 4.77 | 4.02 | 4.75 | **22.15** |
+| 10 | Muharemović | LEE | DEF | 4.30 | 4.27 | 4.25 | 4.65 | 4.28 | **21.74** |
+| 11 | Hill | BOU | DEF | 3.94 | 4.44 | 4.47 | 4.43 | 4.24 | **21.52** |
+| 12 | Sarr | CRY | MID | 4.25 | 3.55 | 4.27 | 5.10 | 4.21 | **21.37** |
+| 13 | Tzolis | ARS | MID | 5.25 | 3.64 | 3.61 | 4.30 | 4.30 | **21.11** |
+| 14 | James | CHE | DEF | 4.03 | 4.63 | 3.39 | 4.65 | 4.01 | **20.72** |
+| 15 | Schade | BRE | MID | 4.14 | 4.08 | 4.79 | 4.10 | 3.58 | **20.70** |
 
 ### 2. Rate source mix (575 rows)
 - `prior_season_seed`: 252 · `+defcon_baseline_fill`: 17 · `+defcon_external_fill`: 2

@@ -293,7 +293,7 @@ Research Note mapping related source pages to child notes, freshness, scope, and
 _Avoid_: Merged research report, complete source transcription
 
 **Calibrated Component Architecture**:
-Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes.
+Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → Official FDR fallback in `_fixture_maps`.
 _Avoid_: Top-down power rating, single composite score xP prediction
 
 **Official Fixture Difficulty**:
