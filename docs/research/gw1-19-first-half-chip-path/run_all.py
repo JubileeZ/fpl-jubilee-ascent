@@ -29,6 +29,8 @@ def main() -> None:
     seed.build_dual_vector_seed()
     proj.project_gw1_19()
     chips.run_chip_path()
+    xi = _load("dv_select_11", "export_select_11.py")
+    xi.export_select_11("WC4")
     dcs.run_dual_vector_dcs()
 
 

@@ -1,6 +1,6 @@
 # First-Half Chip Path (GW1–19)
 
-**Updated**: 2026-08-19T13:45:00+07:00  
+**Updated**: 2026-08-19T18:15:00+07:00  
 **Data stamp**: Stage 2 rates 2026-08-18; FPL API clubs/fixtures 2026-08-19; 2025/26 archive performances; Champion saves/defcon × defence_multiplier; GW1 deadline 2026-08-21T17:30:00Z  
 **Season**: 2026/27 · First-Half Horizon GW1–19  
 **Status**: Active sibling of Canonical Preseason Chip Path (does not replace 356.61)  
@@ -12,6 +12,7 @@
 - [Weeks](../../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv)
 - [Squads](../../../data/research/gw1-19-first-half-chip-path/first_half_squads.csv)
 - [Transfers](../../../data/research/gw1-19-first-half-chip-path/first_half_transfers.csv)
+- [Select-11 plan (WC4)](../../../data/research/gw1-19-first-half-chip-path/first_half_select_11.csv)
 - [FH search](../../../data/research/gw1-19-first-half-chip-path/fh_week_search.csv)
 - [Projections](../../../data/research/gw1-19-first-half-chip-path/gw1-19_projections.csv)
 - [Dual-Vector seed](../../../data/research/gw1-19-first-half-chip-path/prior_season_dual_vector_seed.csv)
@@ -35,10 +36,11 @@ Full redo docs/research/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.
 
 1. Re-read CONTEXT.md First-Half Chip Path + Prior-Season Dual-Vector Seed.
 2. uv run python docs/research/gw1-19-first-half-chip-path/run_all.py
-3. Do not write production features/builder.py or live DCS CSVs.
-4. Do not overwrite Canonical 356.61.
-5. Update Updated, Data stamp, Findings, Decision.
-6. Scratch only under .tmp/agent/; delete before finish.
+3. uv run python docs/research/gw1-19-first-half-chip-path/export_select_11.py
+4. Do not write production features/builder.py or live DCS CSVs.
+5. Do not overwrite Canonical 356.61.
+6. Update Updated, Data stamp, Findings, Decision, Select 11 table.
+7. Scratch only under .tmp/agent/; delete before finish.
 ```
 
 ## Method
@@ -56,6 +58,7 @@ Full redo docs/research/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.
 3. For each WC ∈ {3,4} and FH ∈ {2…19}\{WC}: pre-WC 15 on weeks before WC except FH (BB GW1); FH 15 for that week; WC 15 on remaining weeks except FH with decay 0.84 from WC week. TC = max extra captain xP on a legal week. Post-WC greedy same-position FTs, hit_limit 0, bank up to 5.
 4. Publish max Total xP calendar per WC plus FH search table.
 5. DCS: effective FDR = `defence_multiplier × 3`; gw1_19 only; files under `dcs/`.
+6. Select 11: `export_select_11.py` applies recorded FTs at each GW, then max-xP legal XI (1 GKP + DEF 3–5 / MID 2–5 / FWD 1–3). `first_half_weeks.csv` scores post-WC weeks on the end-state 15; the plan CSV uses the 15 after FTs through that GW. Deltas up to 1.92 xP (GW6).
 
 **Definitions and assumptions**:
 - Headline Total xP undiscounted. Decay only in WC-window MILP and FT decisions.
@@ -67,6 +70,7 @@ Full redo docs/research/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.
 | Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
 |---|---|---|---|---|---|
 | Scenario Expected Points | Total xP | Undiscounted sum of weekly XI (or 15 on BB) plus captain extras (TC = +2× cap) GW1–19 | Higher ↑ | Maximize; not comparable to 356.61 | First-Half Chip Path ranking |
+| Select-11 week xP | XI + C | Started xP + captain extra on the FT-timed 15 | Higher ↑ | Operational plan; may ≠ `first_half_weeks.csv` | `first_half_select_11.csv` |
 | Canonical Dual-Vector 6GW | S1 DV | Same Canonical S1 15s scored on Dual-Vector xP GW1–6 | Higher ↑ | vs 356.61 FDR-xP | Scale check only |
 | Rotated FDR (DV) | Rot FDR | Mean `defence_multiplier × 3` on started defensive slots | Lower ↓ | ≤ 2.40 | DCS risk; not official 1–5 identity |
 | Defensive Composite Score | DCS | 0.60 S_Score + 0.40 S_Risk on Dual-Vector FDR | Higher ↑ | ≥ 80 | Sibling ranking; live DCS CSVs unchanged |
@@ -113,6 +117,34 @@ Full redo docs/research/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.
 - **WC4 FH12**: Raya, Tzolakis; Gabriel, Vuskovic, Calafiori, Wieffer, Konsa; B.Fernandes, Palmer, Tavernier, Sarr, Armstrong; Isak, João Pedro, Barry.
 - **Net FTs (WC4)**: greedy ping-pong Sarr/Tavernier/Schade plus Palmer→Sarr and Thomas-Asante→Thiago. Treat log as net moves.
 
+### Select 11 plan (WC4 winner, FT-timed 15)
+
+Companion: `first_half_select_11.csv`. GW1 = all 15. Other GWs = legal 11. Captain in **bold**. `week_xp` here is the operational XI; `published_week_xp` is `first_half_weeks.csv` (end-state 15 after WC).
+
+| GW | Chip | Form | GKP | DEF | MID | FWD | Bench | xP |
+|---|---|---|---|---|---|---|---|---|
+| 1 | BB | BB-15 | Donnarumma, Verbruggen | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Tzolis, Tavernier, Schade, Scott, Maeda | **Haaland (C)**, Isak, Calvert-Lewin | — | 79.24 |
+| 2 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Tzolis, Tavernier, Schade | **Haaland (C)**, Isak | Calvert-Lewin, Verbruggen, Maeda, Scott | 61.76 |
+| 3 | | 5-3-2 | Donnarumma | Vuskovic, Gabriel, Calafiori, Wieffer, Guéhi | Tavernier, Schade, Scott | **Haaland (C)**, Isak | Calvert-Lewin, Verbruggen, Maeda, Tzolis | 60.65 |
+| 4 | WC | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Tzolis, Palmer, Sarr | **Haaland (C)**, Isak | Walle Egeli, Tzolakis, Crooks, Slater | 60.76 |
+| 5 | | 5-3-2 | Donnarumma | Gabriel, Calafiori, Guéhi, Vuskovic, Wieffer | Palmer, Tzolis, Sarr | **Haaland (C)**, Isak | Walle Egeli, Tzolakis, Crooks, Slater | 59.24 |
+| 6 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Palmer, Tzolis, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 62.25 |
+| 7 | | 5-3-2 | Donnarumma | Gabriel, Calafiori, Vuskovic, Wieffer, Guéhi | Palmer, Tzolis, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 60.69 |
+| 8 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Guéhi, Wieffer | Tzolis, Tavernier, Palmer | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 62.27 |
+| 9 | | 5-3-2 | Donnarumma | Gabriel, Calafiori, Vuskovic, Wieffer, Guéhi | Tzolis, Schade, Palmer | **Haaland (C)**, Thomas-Asante | Isak, Tzolakis, Crooks, Slater | 57.33 |
+| 10 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Guéhi, Wieffer | Palmer, Tzolis, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 62.88 |
+| 11 | | 5-3-2 | Donnarumma | Vuskovic, Gabriel, Calafiori, Wieffer, Guéhi | Tzolis, Palmer, Schade | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 62.22 |
+| 12 | FH | 4-4-2 | Raya | Gabriel, Vuskovic, Calafiori, Wieffer | Palmer, B.Fernandes, Tavernier, Sarr | **Isak (C)**, João Pedro | Konsa, Barry, Tzolakis, Armstrong | 58.49 |
+| 13 | | 5-3-2 | Donnarumma | Gabriel, Calafiori, Vuskovic, Guéhi, Wieffer | Tzolis, Palmer, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 60.41 |
+| 14 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Tzolis, Palmer, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 62.36 |
+| 15 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | **Tzolis (C)**, Palmer, Tavernier | Isak, Haaland | Thomas-Asante, Tzolakis, Crooks, Slater | 59.27 |
+| 16 | | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Palmer, Tzolis, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 58.87 |
+| 17 | TC | 5-3-2 | Donnarumma | Gabriel, Vuskovic, Calafiori, Wieffer, Guéhi | Tzolis, Palmer, Tavernier | **Haaland (C)**, Isak | Thomas-Asante, Tzolakis, Crooks, Slater | 72.08 |
+| 18 | | 5-3-2 | Donnarumma | Vuskovic, Gabriel, Calafiori, Wieffer, Guéhi | Sarr, Tzolis, Tavernier | **Haaland (C)**, Isak | Thiago, Tzolakis, Crooks, Slater | 64.66 |
+| 19 | | 5-2-3 | Donnarumma | Gabriel, Vuskovic, Calafiori, Guéhi, Wieffer | Tzolis, Schade | **Haaland (C)**, Isak, Thiago | Tzolakis, Crooks, Slater, Tavernier | 59.08 |
+
+Live Canonical GW1–6 XI lives in [Stage 3 note](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) §3. Do not mix FDR-xP 356.61 with these Dual-Vector week totals.
+
 ### Alternatives
 
 - WC3 if locking a 15 for only GW1–2 (BB + one lock week) is preferred over +2.38 xP.
@@ -133,7 +165,8 @@ Full redo docs/research/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.
 ## Risks and unknowns
 
 - FPL-xG proxy ≠ ADR 0013 npxG.
-- Greedy FTs reverse (Sarr/Tavernier, Hill/Muharemović) — rest-of-horizon approx noise; treat log as net moves.
+- Greedy FTs reverse (Sarr/Tavernier) — rest-of-horizon approx noise; treat log as net moves.
+- Select-11 `week_xp` on FT-timed 15 ≠ `first_half_weeks.csv` after GW4 (max |Δ| 1.92 at GW6).
 - Expected Role frozen GW1–5 for all 19 weeks.
 - Dual-Vector DCS and 15-man MILP still disagree on keepers (Raya+fodder vs Donnarumma/Verbruggen then Tzolakis).
 - User Squad is mostly non-Draft; comparison skipped.

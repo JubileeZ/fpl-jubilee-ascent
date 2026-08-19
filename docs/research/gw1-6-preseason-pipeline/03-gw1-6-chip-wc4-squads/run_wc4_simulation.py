@@ -442,6 +442,14 @@ def run_full_wc4_study() -> pd.DataFrame:
 
     print(f"\nExported detailed simulation to {sim_csv}")
     print(f"Exported summary to {summary_csv}")
+    xi_spec = importlib.util.spec_from_file_location(
+        "export_select_11_canonical",
+        Path("docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/export_select_11.py"),
+    )
+    xi_mod = importlib.util.module_from_spec(xi_spec)
+    assert xi_spec.loader is not None
+    xi_spec.loader.exec_module(xi_mod)
+    xi_mod.export_select_11()
     return df_summary
 
 

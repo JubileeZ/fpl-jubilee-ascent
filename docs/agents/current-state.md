@@ -6,15 +6,15 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Research CSVs rebuilt on Champion that scales `xp_saves` / `xp_defcon` by `defence_multiplier` (ADR 0005). Live Canonical **356.61**. First-Half sibling **WC4 BB1 TC17 FH12 = 1175.12** Dual-Vector xP. `_fixture_maps` FDR fallback when API attack/defence = 0. Dual-Vector remains research-only.
+Research CSVs rebuilt on Champion that scales `xp_saves` / `xp_defcon` by `defence_multiplier` (ADR 0005). Live Canonical **356.61**. Select-11 plan in Stage 3 note §3 + `gw1-6_select_11.csv` (GW1 BB-15, GW2–6 5-3-2). First-Half sibling **WC4 BB1 TC17 FH12 = 1175.12** Dual-Vector xP; FT-timed XI in `first_half_select_11.csv`. `_fixture_maps` FDR fallback when API attack/defence = 0. Dual-Vector remains research-only.
 
 Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
 
 ## Research truth (19 Aug)
 
-- Live chip path = Canonical Preseason Chip Path S1 **356.61 xP** (`gw1-6_wc4_summary.csv` one row). GW1 **73.67** B.Fernandes; GW1–3 **186.53**; GW4–6 **170.08**.
+- Live chip path = Canonical Preseason Chip Path S1 **356.61 xP** (`gw1-6_wc4_summary.csv` one row). GW1 **73.67** B.Fernandes; GW1–3 **186.53**; GW4–6 **170.08**. Select 11: `gw1-6_select_11.csv` (week xP matches summary).
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue (home FDR = `strength_overall_home`; away FDR = `strength_overall_away`). 760/760 identity. Live API attack/defence = 0; `strength` null. Dual-Vector Strength (npxG) not in production Python.
-- First-Half Chip Path sibling: WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12); WC3 1172.74. Canonical S1 Dual-Vector re-score 373.36 ≠ 356.61. Live DCS CSVs rebuilt on FDR world; Dual-Vector DCS under `data/research/gw1-19-first-half-chip-path/dcs/`.
+- First-Half Chip Path sibling: WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12); WC3 1172.74. Canonical S1 Dual-Vector re-score 373.36 ≠ 356.61. FT-timed XI: `first_half_select_11.csv` (may ≠ `first_half_weeks.csv` after GW4). Live DCS CSVs rebuilt on FDR world; Dual-Vector DCS under `data/research/gw1-19-first-half-chip-path/dcs/`.
 - Ranking metric = **DCS** (ADR 0015). RQI historical.
 - Stage 1/2/ownership: **575** rows, **234** Draft-eligible. Public API **592** players this refresh. Trafford LEE, Rushworth COV. Element summaries absent → Stage 2 rate rebuild skipped; committed `expected-stats-gw1-5.csv` kept.
 - GKP DCS GW1–19 #1: Rushworth+Donnarumma **123.20 xP / DCS 85.78**. Club FDR-min #1: `AVL-CHE-LIV-MCI-NFO` **2.4386**.

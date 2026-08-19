@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-19T13:45:00+07:00  
+**Updated**: 2026-08-19T18:15:00+07:00  
 **Status**: Active research directory authority  
 
 ---
@@ -9,14 +9,14 @@
 
 - **First-Half Chip Path (GW1–19, Dual-Vector)**:
   - [**First-Half Chip Path**](gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.md) · [Runner](gw1-19-first-half-chip-path/run_all.py)
-  - [Summary](../../data/research/gw1-19-first-half-chip-path/first_half_summary.csv) · [Weeks](../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv) · [Squads](../../data/research/gw1-19-first-half-chip-path/first_half_squads.csv) · [Transfers](../../data/research/gw1-19-first-half-chip-path/first_half_transfers.csv)
+  - [Summary](../../data/research/gw1-19-first-half-chip-path/first_half_summary.csv) · [Weeks](../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv) · [Squads](../../data/research/gw1-19-first-half-chip-path/first_half_squads.csv) · [Transfers](../../data/research/gw1-19-first-half-chip-path/first_half_transfers.csv) · [Select 11](../../data/research/gw1-19-first-half-chip-path/first_half_select_11.csv)
   - Sibling of Canonical 356.61. Does not replace it. Production `_fixture_maps` unchanged.
 
 - **GW1–6 Preseason Research & Optimization Pipeline (Consolidated Master Suite)**:
   - [**GW1–6 Preseason Pipeline Master README**](gw1-6-preseason-pipeline/README.md) · [Pipeline Runner](gw1-6-preseason-pipeline/run_pipeline.py) · [Downstream refresh](gw1-6-preseason-pipeline/refresh_downstream.py)
   - [Stage 1: Expected Role (GW1–5)](gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv)
   - [Stage 2: Expected Stats & Points Projections](gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv) · [GW1–5 Projections](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
-  - [Stage 3: Canonical Preseason Chip Path (GW1 BB + WC4)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
+  - [Stage 3: Canonical Preseason Chip Path (GW1 BB + WC4)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [Select 11](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_select_11.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
 
 - **Ownership & Differential Screening**:
   - [Ownership Value Explorer (GW1–38)](ownership-value-explorer/ownership-value-explorer.md) · [Season projections](../../data/research/ownership-value-explorer/season_projections.csv) · [Metrics](../../data/research/ownership-value-explorer/ownership_value_metrics.csv) · [Interactive HTML](../../data/research/ownership-value-explorer/ownership_value_explorer.html)
