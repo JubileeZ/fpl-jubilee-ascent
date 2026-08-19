@@ -183,14 +183,79 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Explore the Dashboard
 
-Export dashboard data and serve the Interactive Squad Builder and Ownership Explorer:
+Export Full-Season Window projections and serve the local dashboard (Interactive
+Squad Builder plus Ownership Explorer). Requires processed data from
+`commands.refresh_data`. The first browser load needs network access for the
+Plotly CDN.
 
 ```bash
 uv run python -m commands.dashboard
 ```
 
-Use `--export-only` to refresh `data/dashboard_data.json` without starting the
-local server.
+The command compiles Champion and Candidate models, writes
+`dashboard/dashboard_data.json` (and a copy under `data/`), then opens
+`http://localhost:8000`. Use `--export-only` to refresh the JSON without
+starting the server, `--no-browser` to skip auto-open, and `--port` to change
+the port. Override models with `--model` / `--models`.
+
+The header has two tabs. **Squad Builder** is the pitch and 15-man picker
+(Planning Horizon, compare models, Load MILP Squad). **Ownership Explorer** is
+the season-window ranking view described below. It is not the research HTML at
+`data/research/ownership-value-explorer/ownership_value_explorer.html`.
+
+#### Ownership Explorer
+
+Click **Ownership Explorer** in the header. Squad-only controls (compare models,
+View Horizon, Load MILP, Clear) hide. **Primary Model** still selects which
+projection drives the explorer.
+
+Defaults: First-Half Horizon (GW1–19), All Projection, Projected Rate.
+
+**Season Window** sets the ranking band:
+
+| Window | Gameweeks |
+|--------|-----------|
+| First-Half Horizon | GW1–19 |
+| Second-Half Horizon | GW20–38 |
+| Full-Season Window | GW1–38 |
+
+**Score Mode** applies to rank, chart axes, minutes, and Event Component
+columns:
+
+| Mode | What it sums |
+|------|----------------|
+| All Projection (default) | Projected xP for every gameweek in the window, including finished weeks |
+| Remaining Projection | Projected xP for unfinished gameweeks only |
+| Realized Points | Official FPL `total_points` for finished gameweeks. Hidden until at least one gameweek in the selected window is finished |
+
+**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes in
+the slice) or **xP per Gameweek** (slice total divided by gameweeks in the
+slice).
+
+Two linked scatter charts sit above the table:
+
+- Left: ownership % (`selected_by_percent`) vs the selected Y-axis
+- Right: price (£m) vs the same Y-axis
+
+Marker colour is position (GKP / DEF / MID / FWD). Marker size is average
+minutes in the slice. Click a marker to label that player and highlight the
+table row; click empty chart background or the same row again to clear.
+
+**Filters**
+
+| Control | Effect |
+|---------|--------|
+| Position | GKP / DEF / MID / FWD checkboxes; applies to charts and table |
+| Club | Single club or All clubs; applies to charts and table |
+| Price | Min–max £m band; applies to charts and table |
+| Avg minutes floor | Default 45. Hides low-minute players from **charts only**; the table still lists them |
+| Search | Player name, club, or expected role; applies to charts and table |
+
+The rank table is sorted by slice **Total** descending by default. Click any
+column header to sort. Rank `#` is the player's place by Total in the current
+Season Window and Score Mode, before table-only sort. The status line under the
+toolbar reports how many players are on the chart vs in the table vs in the
+full slice.
 
 ### 9. Season Archiving
 
