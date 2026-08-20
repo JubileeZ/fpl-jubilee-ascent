@@ -38,6 +38,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Interactive Squad Builder + Ownership Explorer. Full-Season Window Champion export. Open + usage: README §8 (`uv run python -m commands.dashboard` → `http://localhost:8000`). |
+| README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
 | Research | `docs/research/`, `data/research/` | GW1–5 roles/stats, Canonical Chip Path, DCS rotation. Research Ownership Value Explorer HTML is not the product view. Legacy GKP/DEF CSVs in `data/archive/` |

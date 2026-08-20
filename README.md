@@ -58,7 +58,7 @@ uv run python -m commands.refresh_data
 Generate per-player per-gameweek expected points (xP) and minutes projections using chosen model. Saves projection table to `data/<model_name>.csv`.
 
 ```bash
-uv run python -m commands.run_model <model_name> --horizon <gws>
+uv run python -m commands.run_model MODEL_NAME --horizon GWS
 ```
 *Example (default 5 gameweeks horizon):*
 ```bash
@@ -92,17 +92,21 @@ the projection run.
 
 Compute optimal squad selection and transfer plans over planning horizon using MILP solver.
 
-- Preseason solver (new squad selection):
-  ```bash
-  uv run python -m commands.solve --preseason --xmin_lb 0
-  ```
-- Regular season solver (optimizes active manager squad):
-  ```bash
-  uv run python -m commands.solve --model participation_state_hybrid --horizon 5
-  ```
-  *Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
-  (for example `--horizon 5 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
-  Unsupported solver options fail before solving.
+**Preseason solver** (new squad selection):
+
+```bash
+uv run python -m commands.solve --preseason --xmin_lb 0
+```
+
+**Regular season solver** (optimizes active manager squad):
+
+```bash
+uv run python -m commands.solve --model participation_state_hybrid --horizon 5
+```
+
+*Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
+(for example `--horizon 5 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
+Unsupported solver options fail before solving.
 
 ### 4. Print Report
 
@@ -175,8 +179,8 @@ Compare a public User Squad's actual one-Gameweek lineup, captain, and
 vice-captain decision against the best legal hindsight alternative:
 
 ```bash
-uv run python -m commands.decision_regret --entry_id <public-entry-id> \
-  --gw_range <start-end> --data_dir <processed-data-dir>
+uv run python -m commands.decision_regret --entry_id PUBLIC_ENTRY_ID \
+  --gw_range START-END --data_dir PROCESSED_DATA_DIR
 ```
 
 The command writes `data/reports/decision_regret.csv` by default.
@@ -190,10 +194,13 @@ not the research HTML at
 **Open it**
 
 1. Refresh processed data if `data/processed/` is empty:
+
    ```bash
    uv run python -m commands.refresh_data
    ```
+
 2. Export Full-Season Window projections and start the server:
+
    ```bash
    uv run python -m commands.dashboard
    ```
@@ -322,17 +329,22 @@ class MyCustomModel(BaseModel):
 
 Run tests and checks before committing changes.
 
-- Lint codebase:
-  ```bash
-  uv run ruff check .
-  ```
-- Run test suite:
-  ```bash
-  uv run pytest
-  ```
-- Run the repository delivery checks in Git Bash:
-  ```bash
-  bash tests/verify.sh
-  ```
+**Lint codebase:**
+
+```bash
+uv run ruff check .
+```
+
+**Run test suite:**
+
+```bash
+uv run pytest
+```
+
+**Run the repository delivery checks in Git Bash:**
+
+```bash
+bash tests/verify.sh
+```
 
 
