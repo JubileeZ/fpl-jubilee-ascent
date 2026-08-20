@@ -72,6 +72,36 @@ def test_writer_skips_unchanged_content_and_resolver_uses_latest_before_deadline
     assert resolve_latest_snapshot(tmp_path, "2026-27", 1, DEADLINE - timedelta(hours=25)) is None
 
 
+def test_writer_hashes_nested_list_columns(tmp_path: Path):
+    nested_players = PLAYERS.assign(
+        price_change_projections=[[{"offset": 1, "likelihood": 0}, {"offset": 0, "likelihood": 1}]],
+        scout_risks=[[]],
+    )
+    nested_fixtures = FIXTURES.assign(stats=[[]])
+    package = write_availability_snapshot(
+        tmp_path,
+        "2026-27",
+        1,
+        DEADLINE,
+        DEADLINE - timedelta(hours=24),
+        nested_players,
+        CLUBS,
+        nested_fixtures,
+    )
+    assert package is not None
+    unchanged = write_availability_snapshot(
+        tmp_path,
+        "2026-27",
+        1,
+        DEADLINE,
+        DEADLINE - timedelta(hours=12),
+        nested_players,
+        CLUBS,
+        nested_fixtures,
+    )
+    assert unchanged is None
+
+
 def test_resolver_rejects_tampered_snapshot_content(tmp_path: Path):
     package = write_availability_snapshot(
         tmp_path,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -27,11 +28,20 @@ def is_inside_capture_window(deadline: datetime | str, captured_at: datetime | s
     return deadline_utc - timedelta(hours=48) <= captured_utc < deadline_utc
 
 
+def _canonical_cell(value: object) -> object:
+    """Serialize nested JSON so row sort stays hashable across FPL payload shapes."""
+    if isinstance(value, dict):
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+    if isinstance(value, (list, tuple)):
+        return json.dumps(list(value), sort_keys=True, separators=(",", ":"), default=str)
+    return value
+
+
 def _canonical_frame(frame: pd.DataFrame) -> list[dict[str, object]]:
     if frame.empty:
         return []
     columns = sorted(frame.columns)
-    normalized = frame.reindex(columns=columns)
+    normalized = frame.reindex(columns=columns).map(_canonical_cell)
     normalized = normalized.sort_values(columns, kind="mergesort", na_position="first").reset_index(drop=True)
     return json.loads(normalized.to_json(orient="records", date_format="iso"))
 
@@ -112,8 +122,16 @@ def write_availability_snapshot(
             json.dumps(metadata, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        temporary_path.replace(package_path)
+        try:
+            temporary_path.replace(package_path)
+        except PermissionError:
+            if os.name != "nt":
+                raise
+            shutil.copytree(temporary_path, package_path)
+            shutil.rmtree(temporary_path, ignore_errors=True)  # DESTRUCTIVE: Windows cannot rename dir with open parquet handles.
     except Exception:
+        if package_path.exists():
+            shutil.rmtree(package_path, ignore_errors=True)  # DESTRUCTIVE: remove incomplete snapshot package.
         shutil.rmtree(temporary_path, ignore_errors=True)  # DESTRUCTIVE: remove failed temporary snapshot package.
         raise
     return package_path

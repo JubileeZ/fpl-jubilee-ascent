@@ -1,23 +1,23 @@
-# Operational First-Half Plan (research playbook)
+# Availability snapshot CI (nested FPL lists)
 
-**Objective:** Record locked GW1–19 user playbook as sibling research topic: same pre-WC 15, First-Half WC4 rebuild, BB1+WC4+FH12+TC17, bank-state FT hurdles, frozen XI (no greedy FT CSV).
+**Objective:** Unblock hourly Capture availability snapshot Action. Keep both GitHub workflows. Hash nested list columns from live bootstrap/fixtures.
 
-**Acceptance:** `operational_summary.csv` `frozen_19gw_xi_xp` is path identity. Note + exporter + CSVs under `docs/research/gw1-19-operational-plan/` and `data/research/gw1-19-operational-plan/`. INDEX / CONTEXT / current-state point at it. Tests cover frozen 15s vs First-Half WC4 IDs and no Tavernier after WC.
+**Acceptance:** `write_availability_snapshot` hashes players/clubs/fixtures with list fields (`price_change_projections`, `scout_risks`, fixture `stats`). Local capture writes GW1 package. Tests cover nested columns. Workflows pin Python 3.14; `checkout@v5` + `setup-uv@v7`.
 
 ## Seams (TDD)
 
-- `docs.research.gw1-19-operational-plan.export_operational_plan` — frozen 15 XI CSVs
-- `tests/test_operational_first_half_plan.py` — identity, squad match, hurdle table
+- `features.availability_snapshots._canonical_frame` — JSON-serialize nested cells before sort/hash
+- `tests.test_availability_snapshots.test_writer_hashes_nested_list_columns`
 
 ## Work Packet (SFDBN)
 
-- **Status:** Implemented. Pushed `17f8d23`.
-- **Files:** `docs/research/gw1-19-operational-plan/*`; `data/research/gw1-19-operational-plan/*`; `tests/test_operational_first_half_plan.py`; `docs/research/INDEX.md`; `CONTEXT.md`; `docs/agents/current-state.md`; `.agents/session-handoff.md`; sibling Related pointers; `task.md`
-- **Decisions:** New topic (not overwrite Canonical or First-Half). Bank-state FT hurdles. FH12 15 rebuild at deadline. Identity `frozen_19gw_xi_xp`. Accidental Stage 2 CSV reorder discarded (`git restore`).
+- **Status:** Implemented. Commit + push this packet. `origin/availability-snapshots` still missing until Capture Action writes.
+- **Files:** `features/availability_snapshots.py`; `tests/test_availability_snapshots.py`; `.github/workflows/capture_availability_snapshot.yml`; `.github/workflows/evaluate_model_promotion.yml`; `task.md`; `docs/agents/current-state.md`; `.agents/session-handoff.md`
+- **Decisions:** Keep both workflows (promotion already green). Root fail = pandas `sort_values` on unhashable lists, not unused YAML. Canonicalize nested JSON; do not drop FPL columns.
 - **Blocked:** none
 - **Next:**
-  - [x] Export frozen XI CSVs
-  - [x] Research note + INDEX + glossary term
-  - [x] Tests
-  - [x] Commit + push `17f8d23`
+  - [x] Reproduce hourly Action fail (list columns)
+  - [x] Canonical hash + test
+  - [x] Pin workflow Python/actions
+  - [x] Commit + push so next hourly run can create `availability-snapshots`
   - [ ] User: copy pre-WC 15 into FPL app before GW1 deadline (`operational_squads.csv` `pre-WC`; XI `operational_select_11.csv` `gw=1`; Bench Boost)
