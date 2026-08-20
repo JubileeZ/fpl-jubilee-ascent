@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** README preview truncation fixed. Uncommitted. `main` = `origin/main` + this docs working tree. Prior §8 dashboard how-to already on `main` (`42e4c2b`).
-- **Files:** `README.md`; `task.md`; `docs/agents/current-state.md`
-- **Decisions:** Cursor/VS Code preview stopped after availability-overrides "the projection run." Cause = `- item:` + indented fence in §3. Fix = bold labels + standalone fences; same for Development; blank line before §8 numbered fences; fence placeholders without `<>`.
+- **Status:** README preview packet on `origin/main` (`78ea991`). Work tree was clean. This device: dashboard server listens IPv4 `:8000`; `::1:8000` refused.
+- **Files:** `README.md` (done); `docs/agents/current-state.md`; this handoff. `task.md` deleted (packet closed).
+- **Decisions:** Open Squad Builder at `http://127.0.0.1:8000` not `localhost:800`. Port **8000**. `localhost` AAAA `::1` not bound. Export JSON ~31MB; dark page until parse. Plotly CDN reachable from this host.
 - **Blocked:** none
-- **Next:** User refresh Markdown preview. Confirm §3 visible. Commit if User asks. Else stop.
+- **Next:** Optional: dual-stack bind + loading banner. Else stop. User confirm Markdown preview §3 if still needed.
