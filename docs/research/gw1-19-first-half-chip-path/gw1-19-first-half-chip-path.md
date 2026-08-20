@@ -1,12 +1,12 @@
 # First-Half Chip Path (GW1–19)
 
-**Updated**: 2026-08-19T22:22:53+07:00
+**Updated**: 2026-08-20T17:17:28+07:00
 **Data stamp**: Stage 2 rates 2026-08-18; FPL API clubs/fixtures 2026-08-19; 2025/26 archive performances; Champion saves/defcon × defence_multiplier; GW1 deadline 2026-08-21T17:30:00Z  
 **Season**: 2026/27 · First-Half Horizon GW1–19  
 **Status**: Active sibling calendar of Canonical Preseason Chip Path (same Prior-Season Dual-Vector Seed; does not replace GW1–6 BB1+WC4)
 **Purpose**: Publish two Set-1 chip calendars (WC3 and WC4) with GW1 Bench Boost, forced Free Hit and Triple Captain, zero hits, greedy Free Transfers, on Prior-Season Dual-Vector Seed xP.  
 **Scope**: Greenfield Draft 15. Research-only multipliers. Production `_fixture_maps` and live DCS CSVs unchanged.  
-**Related**: [Canonical Stage 3](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [First-half chip source note](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Live DCS](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [CONTEXT.md](../../../CONTEXT.md)  
+**Related**: [Canonical Stage 3](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Operational First-Half Plan](../gw1-19-operational-plan/gw1-19-operational-plan.md) · [First-half chip source note](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Live DCS](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [CONTEXT.md](../../../CONTEXT.md)  
 **Artifacts**:
 - [Summary](../../../data/research/gw1-19-first-half-chip-path/first_half_summary.csv)
 - [Weeks](../../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv)
@@ -152,6 +152,7 @@ Live Canonical GW1–6 XI lives in [Stage 3 note](../gw1-6-preseason-pipeline/03
 
 **Recommended action**:
 - Play the WC4 calendar if using this Dual-Vector sheet.
+- User playbook with bank-state FT hurdles: [Operational First-Half Plan](../gw1-19-operational-plan/gw1-19-operational-plan.md). Do not treat `first_half_transfers.csv` as that playbook.
 - Keep production Model Champion / `_fixture_maps` on FDR fallback until a promotion review.
 
 **Trigger / kill switch**:

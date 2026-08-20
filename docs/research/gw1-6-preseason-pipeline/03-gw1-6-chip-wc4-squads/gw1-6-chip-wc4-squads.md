@@ -1,12 +1,12 @@
 # GW1–6 Chip Strategy & Wildcard Squad Optimization (GW1 BB + WC4)
 
-**Updated**: 2026-08-19T22:22:53+07:00
+**Updated**: 2026-08-20T17:17:28+07:00
 **Data stamp**: Stage 2 rates 2026-08-18; Prior-Season Dual-Vector Seed; FPL API clubs/fixtures 2026-08-19; Champion saves/defcon × defence_multiplier
 **Season**: 2026/27 · horizon GW1–6  
 **Status**: Active Research Model  
 **Purpose**: Execute the canonical preseason chip trajectory: **GW1 Bench Boost (BB1) + GW4 Wildcard (WC4)** with locked transfers across GW1–3, GW4 Wildcard squad overhaul, and rolled transfers in GW5 to bank 4 Free Transfers into GW6 post-international break.  
 **Scope**: 15-player MILP optimal drafts, Bench Boost GW1, GW4 Wildcard Rebuild, FT banking with GW5 roll enforced (4 banked FTs into GW6).  
-**Related**: [Preseason Pipeline Master README](../README.md) · [Expected Role](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Expected Stats](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [Ownership Explorer](../../ownership-value-explorer/ownership-value-explorer.md) · [Downstream refresh](../refresh_downstream.py) · [Runner](run_wc4_simulation.py)  
+**Related**: [Preseason Pipeline Master README](../README.md) · [Expected Role](../01-expected-role-gw1-5/expected-role-gw1-5.md) · [Expected Stats](../02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [Ownership Explorer](../../ownership-value-explorer/ownership-value-explorer.md) · [Downstream refresh](../refresh_downstream.py) · [Runner](run_wc4_simulation.py) · [Operational First-Half Plan](../../gw1-19-operational-plan/gw1-19-operational-plan.md)  
 **Artifacts**:
 - [Summary CSV](../../../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv)
 - [Simulation CSV](../../../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv)

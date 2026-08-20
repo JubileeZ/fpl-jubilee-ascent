@@ -6,17 +6,18 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Live Canonical `gw1-6_wc4_summary.csv` `total_6gw_xp` = **383.76** (Prior-Season Dual-Vector Seed; BB1+WC4). Select 11: `gw1-6_select_11.csv`. First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. Live DCS on Seed under `data/research/defensive-fixture-rotation/`. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
+Live Canonical `gw1-6_wc4_summary.csv` `total_6gw_xp` = **383.76** (Prior-Season Dual-Vector Seed; BB1+WC4). Select 11: `gw1-6_select_11.csv`. First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. User playbook = Operational First-Half Plan `operational_summary.csv` `frozen_19gw_xi_xp`. Live DCS on Seed under `data/research/defensive-fixture-rotation/`. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
 Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0017` (Transfer Plan tab). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
 
-## Research truth (19 Aug)
+## Research truth (20 Aug)
 
 - Live chip path = Canonical Preseason Chip Path S1 **383.76 xP** (`gw1-6_wc4_summary.csv` `total_6gw_xp`). GW1 **79.24** Haaland; GW1–3 **201.65**; GW4–6 **182.11**. Select 11: `gw1-6_select_11.csv`.
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python. Research Canonical / DCS use Prior-Season Dual-Vector Seed in-memory.
 - First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. Live DCS CSVs on Seed; no first-half `dcs/` copy.
+- User playbook = Operational First-Half Plan OP1 (`operational_summary.csv` `frozen_19gw_xi_xp`). Same pre-WC 15; First-Half WC rebuild; bank-state FT hurdles; not greedy FT CSV.
 - Ranking metric = **DCS** (ADR 0015). RQI historical.
 - GKP DCS GW1–19 #1: Raya (ARS) + Fodder (£4.0m) **137.72 xP / DCS 94.00**. Club Seed-FDR-min #1: `ARS-BOU-BHA-MCI-NEW` **2.1127**.
 - Stage 3 keepers = MILP 15-man pick, not the DCS pair.
@@ -41,7 +42,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
-| Research | `docs/research/`, `data/research/` | GW1–5 roles/stats, Canonical Chip Path, DCS rotation. Research Ownership Value Explorer HTML is not the product view. Legacy GKP/DEF CSVs in `data/archive/` |
+| Research | `docs/research/`, `data/research/` | GW1–5 roles/stats, Canonical Chip Path, First-Half Chip Path, Operational First-Half Plan, DCS rotation. Research Ownership Value Explorer HTML is not the product view. Legacy GKP/DEF CSVs in `data/archive/` |
 
 ---
 

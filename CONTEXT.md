@@ -398,11 +398,15 @@ _Avoid_: OC-RQI, net value, RQI points term
 
 **Canonical Preseason Chip Path**:
 Live GW1–6 research plan: Bench Boost GW1, locked transfers GW1–3, Wildcard GW4, roll GW5 free transfer, enter GW6 with four banked Free Transfers. Scored on Prior-Season Dual-Vector Seed. Stage 3 publishes this path only. 15-man keepers are a MILP squad pick, not a DCS pair. Path identity is `gw1-6_wc4_summary.csv` `total_6gw_xp`, not a numeric snapshot.
-_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum, First-Half Chip Path, FDR-xP Canonical, treating xP literals as path identity
+_Avoid_: S13, 16-scenario matrix, Chip Exploration Matrix, BB2 + TC3 + WC4 as current optimum, First-Half Chip Path, Operational First-Half Plan, FDR-xP Canonical, treating xP literals as path identity
 
 **First-Half Chip Path**:
 Sibling GW1–19 research plan under `docs/research/gw1-19-first-half-chip-path/`. Bench Boost GW1; two published Wildcard calendars (GW3 and GW4); Free Hit and Triple Captain forced in any week except GW1 and the Wildcard week; pre-WC and Wildcard 15s skip the Free Hit week in their objective; post-WC greedy Free Transfers, zero hits; greenfield Draft 15. Same Prior-Season Dual-Vector Seed as Canonical. Headline metric = undiscounted Total xP. Does not replace Canonical chip calendar (no FH/TC in Stage 3; horizon stays GW1–6).
-_Avoid_: Canonical Preseason Chip Path, S13, spending Set 2 chips before GW20, writing Dual-Vector Strength into production builder
+_Avoid_: Canonical Preseason Chip Path, Operational First-Half Plan, S13, spending Set 2 chips before GW20, writing Dual-Vector Strength into production builder
+
+**Operational First-Half Plan**:
+Locked user GW1–19 playbook under `docs/research/gw1-19-operational-plan/`. Same pre-WC 15 as Canonical and First-Half WC4; First-Half Wildcard rebuild 15; chips BB1, WC4, FH12, TC17; bank-state Free Transfer hurdles; frozen XI (no greedy FT CSV). FH12 15 rebuild at deadline. Path identity is `operational_summary.csv` `frozen_19gw_xi_xp`, not First-Half `total_19gw_xp` or Canonical `total_6gw_xp`.
+_Avoid_: Canonical Preseason Chip Path, First-Half Chip Path, treating `first_half_transfers.csv` as this playbook, DCS keepers as the owned pair
 
 **Set-Piece Hierarchy**:
 Ordered ranking of designated set-piece takers (corners left/right, direct free-kicks, indirect free-kicks, penalties) per Club.

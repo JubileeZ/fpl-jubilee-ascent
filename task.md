@@ -1,26 +1,22 @@
-# Transfer Plan tab (dashboard + solver export)
+# Operational First-Half Plan (research playbook)
 
-**Objective:** Third dashboard tab Transfer Plan: Champion MILP over next 6 GWs, chip calendar + Re-solve, per-GW ledger and read-only pitch, undiscounted xP + labeled Solver Objective. Product Score World only.
+**Objective:** Record locked GW1–19 user playbook as sibling research topic: same pre-WC 15, First-Half WC4 rebuild, BB1+WC4+FH12+TC17, bank-state FT hurdles, frozen XI (no greedy FT CSV).
 
-**Acceptance:** `solution.json` is JSON-safe Transfer Plan. `commands.solve` and dashboard `--horizon` default 6. Tab shows weeks, chips, transfers, pitch. POST Re-solve with Booked Chips. Header Primary Model does not change the plan.
+**Acceptance:** `operational_summary.csv` `frozen_19gw_xi_xp` is path identity. Note + exporter + CSVs under `docs/research/gw1-19-operational-plan/` and `data/research/gw1-19-operational-plan/`. INDEX / CONTEXT / current-state point at it. Tests cover frozen 15s vs First-Half WC4 IDs and no Tavernier after WC.
 
 ## Seams (TDD)
 
-- `solver.transfer_plan.serialize_transfer_plan` — JSON-safe plan from solver solution
-- `solver.utils.DEFAULT_PLANNING_HORIZON` / `load_settings` template — default 6
-- `commands.solve.execute_transfer_plan` — writes `data/solution.json`; Champion datasource
-- `commands.export_dashboard.build_dashboard_dataset` — embeds `transfer_plan`
+- `docs.research.gw1-19-operational-plan.export_operational_plan` — frozen 15 XI CSVs
+- `tests/test_operational_first_half_plan.py` — identity, squad match, hurdle table
 
 ## Work Packet (SFDBN)
 
-- **Status:** Implemented. Uncommitted. Tests green for transfer-plan / solve / dashboard / tuning.
-- **Files:** `solver/transfer_plan.py`; `solver/utils.py`; `commands/solve.py`; `commands/dashboard.py`; `commands/export_dashboard.py`; `dashboard/*`; `CONTEXT.md`; `docs/adr/0017-transfer-plan-dashboard.md`; `README.md`; `tests/test_transfer_plan.py`; `task.md`
-- **Decisions:** Third tab. Viewer + Re-solve. User Squad or preseason. Horizon default 6. Champion + Official FDR. No Canonical CSV. Chip calendar. Ledger + GW pitch. One drop.
+- **Status:** Implemented. Ready to commit.
+- **Files:** `docs/research/gw1-19-operational-plan/*`; `data/research/gw1-19-operational-plan/*`; `tests/test_operational_first_half_plan.py`; `docs/research/INDEX.md`; `CONTEXT.md`; `docs/agents/current-state.md`; sibling Related pointers; `task.md`
+- **Decisions:** New topic (not overwrite Canonical or First-Half). Bank-state FT hurdles. FH12 15 rebuild at deadline. Identity `frozen_19gw_xi_xp`.
 - **Blocked:** none
 - **Next:**
-  - [x] Serialize Transfer Plan (JSON-safe)
-  - [x] Default Planning Horizon 6
-  - [x] CLI + dashboard embed + POST Re-solve
-  - [x] Transfer Plan tab UI
-  - [x] ADR 0017 + README
-  - [ ] User: `uv run python -m commands.dashboard` then Re-solve on Transfer Plan tab
+  - [x] Export frozen XI CSVs
+  - [x] Research note + INDEX + glossary term
+  - [x] Tests
+  - [ ] User: copy pre-WC 15 into FPL app before GW1 deadline

@@ -1,0 +1,8 @@
+fts_at_deadline,nth_at_five,hurdle_xp,rule
+5,1,0.2,use-or-lose first FT at cap
+5,2,,use hurdle for bank after spend
+4,,1.0,not yet wasting incoming FT
+3,,1.5,holding premium
+2,,2.5,or flagged DNP
+1,,2.5,or flagged DNP
+0,,4.0,hit_cost or flagged DNP

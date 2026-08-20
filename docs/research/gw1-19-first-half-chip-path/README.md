@@ -6,4 +6,4 @@ Sibling GW1–19 research suite. Sibling GW1–19 calendar. Canonical GW1–6 is
 uv run python docs/research/gw1-19-first-half-chip-path/run_all.py
 ```
 
-Note: [gw1-19-first-half-chip-path.md](gw1-19-first-half-chip-path.md)
+Note: [gw1-19-first-half-chip-path.md](gw1-19-first-half-chip-path.md) · Playbook: [Operational First-Half Plan](../gw1-19-operational-plan/gw1-19-operational-plan.md)
