@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Live Canonical `gw1-6_wc4_summary.csv` `total_6gw_xp` = **383.76** (Prior-Season Dual-Vector Seed; BB1+WC4). Select 11: `gw1-6_select_11.csv`. First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. User playbook = Operational First-Half Plan `operational_summary.csv` `frozen_19gw_xi_xp`. Live DCS on Seed under `data/research/defensive-fixture-rotation/`. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
+Live Canonical `gw1-6_wc4_summary.csv` `total_6gw_xp` = **383.76** (Prior-Season Dual-Vector Seed; BB1+WC4). Select 11: `gw1-6_select_11.csv`. First-Half sibling WC4 **1175.12** Dual-Vector xP (BB1, WC4, TC17, FH12). FT-timed XI: `first_half_select_11.csv`. User playbook = Operational First-Half Plan `operational_summary.csv` `frozen_19gw_xi_xp` (on `main` `17f8d23`). Live DCS on Seed under `data/research/defensive-fixture-rotation/`. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 

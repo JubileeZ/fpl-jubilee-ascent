@@ -11,12 +11,13 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Implemented. Ready to commit.
-- **Files:** `docs/research/gw1-19-operational-plan/*`; `data/research/gw1-19-operational-plan/*`; `tests/test_operational_first_half_plan.py`; `docs/research/INDEX.md`; `CONTEXT.md`; `docs/agents/current-state.md`; sibling Related pointers; `task.md`
-- **Decisions:** New topic (not overwrite Canonical or First-Half). Bank-state FT hurdles. FH12 15 rebuild at deadline. Identity `frozen_19gw_xi_xp`.
+- **Status:** Implemented. Pushed `17f8d23`.
+- **Files:** `docs/research/gw1-19-operational-plan/*`; `data/research/gw1-19-operational-plan/*`; `tests/test_operational_first_half_plan.py`; `docs/research/INDEX.md`; `CONTEXT.md`; `docs/agents/current-state.md`; `.agents/session-handoff.md`; sibling Related pointers; `task.md`
+- **Decisions:** New topic (not overwrite Canonical or First-Half). Bank-state FT hurdles. FH12 15 rebuild at deadline. Identity `frozen_19gw_xi_xp`. Accidental Stage 2 CSV reorder discarded (`git restore`).
 - **Blocked:** none
 - **Next:**
   - [x] Export frozen XI CSVs
   - [x] Research note + INDEX + glossary term
   - [x] Tests
-  - [ ] User: copy pre-WC 15 into FPL app before GW1 deadline
+  - [x] Commit + push `17f8d23`
+  - [ ] User: copy pre-WC 15 into FPL app before GW1 deadline (`operational_squads.csv` `pre-WC`; XI `operational_select_11.csv` `gw=1`; Bench Boost)
