@@ -74,7 +74,6 @@
       document.getElementById("explorer-price-max"),
       document.getElementById("explorer-xmins-floor"),
       document.getElementById("explorer-search"),
-      document.getElementById("explorer-club"),
     ].forEach((el) => el && el.addEventListener("input", render));
     document.querySelectorAll("input[name=season-window]").forEach((el) => {
       el.addEventListener("change", () => {
@@ -128,17 +127,13 @@
   }
 
   function setupClubAndPrice() {
-    const clubSel = document.getElementById("explorer-club");
-    const current = clubSel.value || "ALL";
-    const clubs = Array.from(new Set(players().map((p) => p.team))).sort();
-    clubSel.innerHTML = '<option value="ALL">All clubs</option>';
-    clubs.forEach((club) => {
-      const opt = document.createElement("option");
-      opt.value = club;
-      opt.textContent = club;
-      clubSel.appendChild(opt);
-    });
-    clubSel.value = clubs.includes(current) ? current : "ALL";
+    const clubRoot = document.getElementById("explorer-club");
+    const clubFilter = window.mountClubMultiSelect
+      ? window.mountClubMultiSelect(clubRoot, { emptyLabel: "All clubs", onChange: render })
+      : null;
+    if (clubFilter) {
+      clubFilter.rebuild(Array.from(new Set(players().map((p) => p.team))).sort());
+    }
     const prices = players().map((p) => p.price);
     const minP = prices.length ? Math.floor(Math.min(...prices) * 2) / 2 : 4;
     const maxP = prices.length ? Math.ceil(Math.max(...prices) * 2) / 2 : 15;
@@ -152,11 +147,11 @@
     const posOn = new Set(
       Array.from(document.querySelectorAll(".explorer-pos:checked")).map((el) => el.value)
     );
-    const club = document.getElementById("explorer-club").value;
+    const clubFilter = document.getElementById("explorer-club")?._clubMulti;
     const pmin = parseFloat(document.getElementById("explorer-price-min").value);
     const pmax = parseFloat(document.getElementById("explorer-price-max").value);
     if (!posOn.has(player.pos)) return "position";
-    if (club !== "ALL" && player.team !== club) return "club";
+    if (clubFilter && !clubFilter.allows(player.team)) return "club";
     if (player.price < pmin || player.price > pmax) return "price";
     if (needle && !nameHit(player, needle)) return "search";
     if (!slice) return "no-slice";

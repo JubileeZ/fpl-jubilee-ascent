@@ -22,6 +22,7 @@ from projections.explorer_slice import (
     build_explorer_slices,
     realized_gameweek_score,
 )
+from solver.utils import DEFAULT_PLANNING_HORIZON
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -130,6 +131,28 @@ def _realized_by_player(processed_dir: Path, pos_by_player: dict[int, int]) -> d
     return out
 
 
+def load_transfer_plan(
+    solution_path: Optional[Path],
+) -> tuple[List[int], Optional[str], Optional[Dict[str, Any]]]:
+    if not solution_path or not solution_path.exists():
+        return [], None, None
+    try:
+        with open(solution_path, "r", encoding="utf-8") as f:
+            sol = json.load(f)
+    except Exception as e:
+        logger.warning(f"Could not load solver solution from {solution_path}: {e}")
+        return [], None, None
+    if isinstance(sol, dict) and "weeks" in sol and "meta" in sol:
+        weeks = sol.get("weeks") or []
+        first = weeks[0] if weeks else {}
+        squad_ids = [int(i) for i in first.get("squad_ids") or []]
+        return squad_ids, sol.get("meta", {}).get("champion"), sol
+    if isinstance(sol, dict) and "picks" in sol:
+        prefilled = [p["element"] for p in sol["picks"] if isinstance(p, dict) and "element" in p]
+        return prefilled, sol.get("model_name"), None
+    return [], None, None
+
+
 def build_dashboard_dataset(
     processed_dir: Path,
     predictions_df: pd.DataFrame | Dict[str, pd.DataFrame],
@@ -154,18 +177,7 @@ def build_dashboard_dataset(
     model_names = list(model_preds_map.keys())
     primary_model_name = default_model_name if default_model_name in model_preds_map else model_names[0]
 
-    # Check for latest solver solution if available
-    prefilled_squad_ids: List[int] = []
-    solution_model_name: Optional[str] = None
-    if solution_path and solution_path.exists():
-        try:
-            with open(solution_path, "r", encoding="utf-8") as f:
-                sol = json.load(f)
-                if "picks" in sol:
-                    prefilled_squad_ids = [p["element"] for p in sol["picks"] if "element" in p]
-                solution_model_name = sol.get("model") or sol.get("model_name")
-        except Exception as e:
-            logger.warning(f"Could not load solver solution from {solution_path}: {e}")
+    prefilled_squad_ids, solution_model_name, transfer_plan = load_transfer_plan(solution_path)
 
     planning_gw_ids = _planning_gw_ids(target_gw, horizon)
     planning_gw_set = set(planning_gw_ids)
@@ -344,6 +356,7 @@ def build_dashboard_dataset(
             "prefilled_squad_ids": prefilled_squad_ids,
         },
         "players": players_data,
+        "transfer_plan": transfer_plan,
     }
     return dataset
 
@@ -360,7 +373,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Export player projections and stats for dashboard.")
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
-    parser.add_argument("--horizon", type=int, default=5, help="Planning horizon")
+    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument(
         "--output",

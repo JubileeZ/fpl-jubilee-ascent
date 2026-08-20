@@ -101,11 +101,11 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 **Regular season solver** (optimizes active manager squad):
 
 ```bash
-uv run python -m commands.solve --model participation_state_hybrid --horizon 5
+uv run python -m commands.solve --horizon 6
 ```
 
 *Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
-(for example `--horizon 5 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
+(for example `--horizon 6 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
 Unsupported solver options fail before solving.
 
 ### 4. Print Report
@@ -205,17 +205,20 @@ not the research HTML at
    uv run python -m commands.dashboard
    ```
 3. The command writes `dashboard/dashboard_data.json` (and a copy under
-   `data/`), then tries to open `http://localhost:8000` in your browser. If
-   the window does not appear, visit that URL yourself. The first load needs
+   `data/`), then tries to open `http://127.0.0.1:8000` in your browser. If
+   the window does not appear, visit that URL yourself (prefer `127.0.0.1` over
+   `localhost` on Windows). The first load needs
    network access for the Plotly CDN. Stop the server with Ctrl+C.
 
 Optional flags: `--export-only` refreshes the JSON without serving;
 `--no-browser` skips auto-open; `--port` changes the port; `--model` /
-`--models` override Champion/Candidate export. `--horizon` is the Squad
-Builder Planning Horizon (default 5 gameweeks from the next unfinished GW).
+`--models` override Champion/Candidate export. `--horizon` is the Planning
+Horizon for Squad Builder and Transfer Plan (default 6 gameweeks from the next
+unfinished GW).
 
-The header has two tabs. **Squad Builder** opens first. **Ownership Explorer**
-is the season-window ranking view.
+The header has three tabs. **Squad Builder** opens first. **Transfer Plan** is
+the Champion MILP view. **Ownership Explorer** is the season-window ranking
+view.
 
 #### Squad Builder
 
@@ -231,17 +234,34 @@ otherwise a budget-aware greedy xP 15 is selected.
 | Load MILP Squad | Reload `data/solution.json`, or greedy xP 15 if no solution |
 | Clear | Empty all 15 slots |
 
-Pick players with **Add** on a table row. Search, team, max price, and
-position tabs filter the table. Click column headers to sort. On a pitch card:
+Pick players with **Add** on a table row. Search, multi-club, max price, and
+position tabs filter the table. Club filter: check any mix of clubs (label
+shows `ARS-BOU-BHA-MCI-NEW`); **All clubs** clears the set. Click column headers
+to sort. On a pitch card:
 **×** removes the player; **C** / **VC** set captain and vice (captain xP is
 doubled in Starting 11 xP); drag a card onto another slot to swap. The banner
 checks FPL rules: £100.0m, max 3 per club, 2-5-5-3 squad, legal XI formation.
+
+#### Transfer Plan
+
+Click **Transfer Plan**. Primary Model and Squad Builder controls hide. This tab
+always uses the **Model Champion** and **Official Fixture Difficulty**. It does
+not load research Dual-Vector chip-path CSVs.
+
+On load it shows the last `data/solution.json` if that file is a Transfer Plan.
+Book chips per gameweek (none or one of WC / BB / FH / TC) and **Re-solve**.
+That POST can take minutes. Pick a gameweek: ledger (chip, FT, hits, buy/sell,
+undiscounted xP, this-week Solver Objective) plus a **read-only** pitch for
+that week’s 15. Header shows decayed **Solver Objective** and undiscounted
+horizon xP as separate numbers.
+
+Without a User Squad, Re-solve uses preseason (same as `commands.solve --preseason`).
 
 #### Ownership Explorer
 
 Click **Ownership Explorer** in the header. Squad-only controls (compare models,
 View Horizon, Load MILP, Clear) hide. **Primary Model** still selects which
-projection drives the explorer.
+projection drives the explorer (not the Transfer Plan).
 
 Defaults: First-Half Horizon (GW1–19), All Projection, Projected Rate.
 
@@ -280,7 +300,7 @@ table row; click empty chart background or the same row again to clear.
 | Control | Effect |
 |---------|--------|
 | Position | GKP / DEF / MID / FWD checkboxes; applies to charts and table |
-| Club | Single club or All clubs; applies to charts and table |
+| Club | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
 | Price | Min–max £m band; applies to charts and table |
 | Avg minutes floor | Default 45. Hides low-minute players from **charts only**; the table still lists them |
 | Search | Player name, club, or expected role; applies to charts and table |

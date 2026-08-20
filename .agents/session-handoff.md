@@ -1,7 +1,7 @@
 # Session Handoff (SFDBN)
 
-- **Status:** README preview packet on `origin/main` (`78ea991`). Work tree was clean. This device: dashboard server listens IPv4 `:8000`; `::1:8000` refused.
-- **Files:** `README.md` (done); `docs/agents/current-state.md`; this handoff. `task.md` deleted (packet closed).
-- **Decisions:** Open Squad Builder at `http://127.0.0.1:8000` not `localhost:800`. Port **8000**. `localhost` AAAA `::1` not bound. Export JSON ~31MB; dark page until parse. Plotly CDN reachable from this host.
+- **Status:** Transfer Plan tab implemented. Uncommitted. Third tab + JSON-safe `solution.json` + Re-solve POST. Club multi-select still in this working tree.
+- **Files:** `solver/transfer_plan.py`; `commands/solve.py`; `commands/dashboard.py`; `dashboard/plan.js`; `docs/adr/0017-transfer-plan-dashboard.md`; `task.md`
+- **Decisions:** Champion-only plan. Horizon default 6. Booked Chip calendar. xP vs Solver Objective labeled. No Canonical CSV.
 - **Blocked:** none
-- **Next:** Optional: dual-stack bind + loading banner. Else stop. User confirm Markdown preview §3 if still needed.
+- **Next:** User run `uv run python -m commands.dashboard`, open Transfer Plan, Re-solve. Commit if User asks (implement skill requested commit).

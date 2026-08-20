@@ -1,5 +1,6 @@
 import argparse
 import http.server
+import json
 import logging
 from pathlib import Path
 import socketserver
@@ -22,16 +23,54 @@ from commands.export_dashboard import (
     build_dashboard_dataset,
     export_dashboard_data,
 )
+from commands.solve import CHIP_KEYS, execute_transfer_plan, transfer_plan_options_for_dashboard
 from features.builder import build_features
 from models import get_default_model_name, get_model
+from solver.utils import DEFAULT_PLANNING_HORIZON
 import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+SOLUTION_PATH = PROJECT_ROOT / "data" / "solution.json"
+
+
+def resolve_next_gw(processed_dir: Path, preseason: bool) -> int:
+    try:
+        df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
+        next_gw = df_gw[df_gw["is_next"]]
+        if not next_gw.empty:
+            return int(next_gw.iloc[0]["id"])
+        unfinished = df_gw[~df_gw["finished"]]
+        if not unfinished.empty:
+            return int(unfinished.iloc[0]["id"])
+    except Exception:
+        pass
+    return 1 if preseason else 38
+
+
+def run_dashboard_transfer_plan(payload: dict[str, object]) -> dict[str, object]:
+    processed_dir = PROJECT_ROOT / "data" / "processed"
+    booked: dict[str, list[int]] = {}
+    for key in CHIP_KEYS:
+        raw = payload.get(key, [])
+        values = raw if isinstance(raw, list) else []
+        booked[key] = [int(g) for g in values]
+    horizon = int(payload.get("horizon") or DEFAULT_PLANNING_HORIZON)
+    options = transfer_plan_options_for_dashboard(booked, horizon)
+    preseason = bool(payload.get("preseason")) or not (processed_dir / "user_picks.parquet").exists()
+    options["preseason"] = preseason
+    target_gw = int(payload["target_gw"]) if payload.get("target_gw") else resolve_next_gw(processed_dir, preseason)
+    return execute_transfer_plan(
+        options,
+        processed_dir=processed_dir,
+        target_gw=target_gw,
+        solution_path=SOLUTION_PATH,
+    )
+
 
 class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """Custom request handler ensuring dashboard/ is served correctly without caching."""
+    """Serves dashboard/ without caching; Transfer Plan Re-solve on /api/transfer-plan."""
 
     def __init__(self, *args, directory=None, **kwargs):
         if directory is None:
@@ -44,10 +83,47 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Expires", "0")
         super().end_headers()
 
+    def _send_json(self, status: int, payload: dict[str, object]) -> None:
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self) -> None:
+        if self.path.split("?", 1)[0].rstrip("/") == "/api/transfer-plan":
+            if SOLUTION_PATH.exists():
+                try:
+                    plan = json.loads(SOLUTION_PATH.read_text(encoding="utf-8"))
+                    self._send_json(200, plan)
+                except Exception:
+                    self._send_json(400, {"error": "solution.json is not a Transfer Plan. Re-solve."})
+            else:
+                self._send_json(404, {"error": "No Transfer Plan yet. Re-solve or run commands.solve."})
+            return
+        super().do_GET()
+
+    def do_POST(self) -> None:
+        if self.path.split("?", 1)[0].rstrip("/") != "/api/transfer-plan":
+            self.send_error(404, "Not found")
+            return
+        length = int(self.headers.get("Content-Length") or 0)
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8") or "{}")
+            plan = run_dashboard_transfer_plan(payload if isinstance(payload, dict) else {})
+            self._send_json(200, plan)
+        except ValueError as exc:
+            self._send_json(400, {"error": str(exc)})
+        except Exception as exc:
+            logger.exception("Transfer Plan Re-solve failed")
+            self._send_json(500, {"error": str(exc)})
+
 
 def run_dashboard_export(
     model_name: str | None = None,
-    horizon: int = 5,
+    horizon: int = DEFAULT_PLANNING_HORIZON,
     target_gw: int | None = None,
     model_names: list[str] | None = None,
 ) -> Path:
@@ -98,7 +174,7 @@ def run_dashboard_export(
             model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
         model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
 
-    sol_path = PROJECT_ROOT / "data" / "solution.json"
+    sol_path = SOLUTION_PATH
     dataset = build_dashboard_dataset(
         processed_dir,
         model_preds,
@@ -131,12 +207,13 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
     def handler(*args, **kwargs):
         return DashboardHTTPRequestHandler(*args, directory=str(dashboard_dir), **kwargs)
 
-    class ReusableTCPServer(socketserver.TCPServer):
+    class ReusableTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         allow_reuse_address = True
+        daemon_threads = True
 
     try:
         with ReusableTCPServer(("", port), handler) as httpd:
-            url = f"http://localhost:{port}"
+            url = f"http://127.0.0.1:{port}"
             logger.info(f"Dashboard web server running at {url}")
             logger.info("Press Ctrl+C to stop the server.")
 
@@ -155,7 +232,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Export dashboard data and launch interactive web dashboard.")
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
-    parser.add_argument("--horizon", type=int, default=5, help="Planning horizon")
+    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")
     parser.add_argument("--export-only", action="store_true", help="Only refresh export data without launching server")

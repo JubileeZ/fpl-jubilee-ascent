@@ -245,15 +245,27 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, and per-gameweek Event Component projections for the dashboard. Covers the Full-Season Window; Interactive Squad Builder displays a Planning Horizon slice.
-_Avoid_: UI state, solver export
+Exported player metadata, historical rates, and per-gameweek Event Component projections for the dashboard. Covers the Full-Season Window; Interactive Squad Builder displays a Planning Horizon slice. Not the Transfer Plan.
+_Avoid_: UI state, solver export, Transfer Plan
 
 **Interactive Squad Builder**:
 The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
-_Avoid_: Roster picker, drag list, Ownership Explorer
+_Avoid_: Roster picker, drag list, Ownership Explorer, Transfer Plan
+
+**Transfer Plan**:
+The MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, and Booked Chips. Always scored with the Model Champion on Official Fixture Difficulty. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Interactive Squad Builder, not Ownership Explorer, not Canonical Preseason Chip Path.
+_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP
+
+**Booked Chip**:
+A chip (Wildcard, Free Hit, Bench Boost, or Triple Captain) forced on one gameweek in the Planning Horizon before solve. At most one chip per gameweek. An unbooked chip is not played in that Transfer Plan.
+_Avoid_: Canonical chip path, optimizer-chosen chip week, playing two chips in one gameweek
+
+**Solver Objective**:
+The decayed quantity the MILP maximises over the Planning Horizon. Distinct from undiscounted Gameweek Projection xP shown per week on the Transfer Plan.
+_Avoid_: xP, score, total_xp, research total_6gw_xp
 
 **Ownership Explorer**:
-Dashboard view ranking every Feature Contract Player by Season Window score (default First-Half Horizon, Score Mode All Projection) with linked Ownership and Price charts toggling Projected Rate vs xP per Gameweek. Same production Feature Contract, Model Champion, and Official Fixture Difficulty fallback as the solver; not Interactive Squad Builder.
+Dashboard view ranking every Feature Contract Player by Season Window score (default First-Half Horizon, Score Mode All Projection) with linked Ownership and Price charts toggling Projected Rate vs xP per Gameweek. Same production Feature Contract, Model Champion, and Official Fixture Difficulty fallback as the solver; not Interactive Squad Builder; not Transfer Plan.
 _Avoid_: Ownership Value Explorer (research HTML), 3D scatter, horizon chart, draft-only First-Half CSV as the explorer pool, Dual-Vector explorer xP
 
 **Decision Regret**:
@@ -269,8 +281,8 @@ A Projection Model evaluated against the Model Champion. At most two Candidates 
 _Avoid_: Experimental model, challenger
 
 **Primary Projection Model**:
-The active model selected in the interactive dashboard to drive pitch xP summaries, bench totals, squad validation, and MILP squad selection. Defaults to the Model Champion.
-_Avoid_: Active UI model, pitch model
+The active model selected in the interactive dashboard to drive Interactive Squad Builder pitch xP, bench totals, and Ownership Explorer ranking. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
+_Avoid_: Active UI model, pitch model, MILP model
 
 **Secondary Comparison Model**:
 A model selected alongside the Primary Projection Model in the interactive dashboard to render overlay side-by-side comparison columns and xP delta metrics.

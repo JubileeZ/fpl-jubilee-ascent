@@ -21,7 +21,7 @@ projections/   # ProjectionContract exporter + Ownership Explorer slice metrics
 solver/        # Vendored open-fpl-solver source
 backtesting/   # Backtest evaluation engine and metrics
 commands/      # CLI command entry points
-dashboard/     # Interactive Squad Builder + Ownership Explorer (served by commands.dashboard)
+dashboard/     # Squad Builder, Transfer Plan, Ownership Explorer (served by commands.dashboard)
 config/        # Model Champion selection
 tests/         # pytest suite
 data/          # Raw API cache, season archives, solver reports, research artifacts
@@ -39,7 +39,7 @@ docs/          # Durable project documentation and decision records
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
-| `uv run python -m commands.dashboard` | Export Full-Season Window JSON; serve Squad Builder + Ownership Explorer |
+| `uv run python -m commands.dashboard` | Export Full-Season Window JSON; serve Squad Builder, Transfer Plan, Ownership Explorer |
 
 **Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 

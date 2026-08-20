@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import sys
 import pandas as pd
@@ -11,8 +12,10 @@ from clients.env_loader import load_env, configure_utf8_stdio
 load_env()
 configure_utf8_stdio()
 
-from solver.utils import load_settings
+from models import get_default_model_name
+from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
+from solver.transfer_plan import serialize_transfer_plan
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -148,6 +151,69 @@ def validate_booked_chips(options: dict[str, object], next_gw: int, horizon: int
             used_gameweeks[gameweek] = chip_key
 
 
+def booked_chips_from_options(options: dict[str, object]) -> dict[str, list[int]]:
+    chips: dict[str, list[int]] = {}
+    for chip_key in CHIP_KEYS:
+        chips[chip_key] = []
+        for raw in _chip_values(options.get(chip_key), chip_key):
+            try:
+                chips[chip_key].append(int(raw))
+            except (TypeError, ValueError):
+                continue
+    return chips
+
+
+def transfer_plan_options_for_dashboard(
+    booked_chips: dict[str, list[int]],
+    horizon: int,
+) -> dict[str, object]:
+    options = load_settings()
+    options["horizon"] = int(horizon)
+    options["datasource"] = get_default_model_name()
+    for chip_key in CHIP_KEYS:
+        options[chip_key] = [int(g) for g in booked_chips.get(chip_key, [])]
+    return options
+
+
+def execute_transfer_plan(
+    options: dict[str, object],
+    *,
+    processed_dir: Path,
+    target_gw: int,
+    solution_path: Path,
+) -> dict:
+    """Run MILP and write a JSON-safe Transfer Plan."""
+    horizon = int(options.get("horizon", DEFAULT_PLANNING_HORIZON))
+    validate_booked_chips(options, target_gw, horizon)
+    options["override_next_gw"] = target_gw
+
+    if options.get("preseason", False):
+        logger.info(f"Solving for Preseason starting from GW {target_gw}...")
+        my_data = {"picks": [], "chips": [], "transfers": {"limit": None, "cost": 4, "bank": 1000, "value": 0}}
+    else:
+        logger.info("Loading current squad picks and state from processed Parquet...")
+        my_data = build_my_data_from_parquet(processed_dir)
+
+    logger.info(f"Preparing solver data using projections from '{options['datasource']}.csv'...")
+    solver_data = prep_data(my_data, options)
+    logger.info("Executing MILP solver...")
+    solutions = solve_multi_period_fpl(solver_data, options)
+    best_sol = solutions[0] if isinstance(solutions, list) and solutions else {}
+    plan = serialize_transfer_plan(
+        best_sol,
+        champion=str(options.get("datasource") or get_default_model_name()),
+        horizon=horizon,
+        next_gw=target_gw,
+        decay_base=float(options.get("decay_base", 0.85)),
+        booked_chips=booked_chips_from_options(options),
+    )
+    solution_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(solution_path, "w", encoding="utf-8") as f:
+        json.dump(plan, f, indent=2)
+    logger.info(f"Saved Transfer Plan to {solution_path}")
+    return plan
+
+
 def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> None:
     """Apply supported solver overrides and reject typos before solving."""
     i = 0
@@ -231,7 +297,7 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the FPL MILP optimization solver.")
-    parser.add_argument("--horizon", type=int, help="Number of gameweeks to optimize")
+    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Number of gameweeks to optimize")
     parser.add_argument("--model", type=str, help="Projections model name to use as datasource")
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
@@ -243,8 +309,7 @@ def main() -> None:
     options = load_settings()
     
     # Apply CLI overrides
-    if args.horizon is not None:
-        options["horizon"] = args.horizon
+    options["horizon"] = args.horizon
     if args.model:
         options["datasource"] = args.model
     if args.decay_base is not None:
@@ -280,55 +345,31 @@ def main() -> None:
             target_gw = 1 if options.get("preseason", False) else 38
         
     options["override_next_gw"] = target_gw
-    
+
     try:
-        validate_booked_chips(options, target_gw, int(options.get("horizon", 3)))
+        plan = execute_transfer_plan(
+            options,
+            processed_dir=processed_dir,
+            target_gw=target_gw,
+            solution_path=PROJECT_ROOT / "data" / "solution.json",
+        )
     except ValueError as exc:
         logger.error(f"Invalid chip configuration: {exc}")
         sys.exit(1)
-
-    # 2. Compile user team data
-    if options.get("preseason", False):
-        logger.info(f"Solving for Preseason starting from GW {target_gw}...")
-        my_data = {"picks": [], "chips": [], "transfers": {"limit": None, "cost": 4, "bank": 1000, "value": 0}}
-    else:
-        logger.info("Loading current squad picks and state from processed Parquet...")
-        try:
-            my_data = build_my_data_from_parquet(processed_dir)
-        except Exception as e:
-            logger.error(e)
-            sys.exit(1)
-            
-    logger.info(f"Preparing solver data using projections from '{options['datasource']}.csv'...")
-    try:
-        solver_data = prep_data(my_data, options)
-    except Exception as e:
-        logger.error(f"Failed to prepare solver data: {e}")
+    except FileNotFoundError as e:
+        logger.error(e)
         sys.exit(1)
-        
-    logger.info("Executing MILP solver...")
-    solutions = solve_multi_period_fpl(solver_data, options)
-    logger.info("Solver run complete!")
-    
-    if solutions and isinstance(solutions, list):
-        best_sol = solutions[0]
-        if "summary" in best_sol:
-            print("\n" + "="*50)
-            print("RECOMMENDED SQUAD & TRANSFER PLAN")
-            print("="*50)
-            print(best_sol["summary"])
-            print("="*50 + "\n")
+    except Exception as e:
+        logger.error(f"Failed to prepare or solve Transfer Plan: {e}")
+        sys.exit(1)
 
-        # Save solution json for dashboard import
-        sol_path = PROJECT_ROOT / "data" / "solution.json"
-        sol_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            import json
-            with open(sol_path, "w", encoding="utf-8") as f:
-                json.dump(best_sol, f, indent=2)
-            logger.info(f"Saved solver solution to {sol_path}")
-        except Exception as e:
-            logger.warning(f"Could not save solver solution: {e}")
+    logger.info("Solver run complete!")
+    if plan.get("summary"):
+        print("\n" + "="*50)
+        print("RECOMMENDED SQUAD & TRANSFER PLAN")
+        print("="*50)
+        print(plan["summary"])
+        print("="*50 + "\n")
 
 if __name__ == "__main__":
     main()

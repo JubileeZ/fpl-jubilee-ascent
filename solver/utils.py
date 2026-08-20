@@ -12,6 +12,8 @@ from models import get_default_model_name
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_PLANNING_HORIZON = 6
+
 CACHE_DIR = Path(__file__).parent / ".cache"
 CACHE_FILE = CACHE_DIR / "http_cache.json"
 CACHE_EXPIRATION = 300
@@ -37,7 +39,7 @@ def load_settings():
         
     if not user_path.exists():
         user_path.write_text(json.dumps({
-            "horizon": 5,
+            "horizon": DEFAULT_PLANNING_HORIZON,
             "decay_base": 0.85,
             "datasource": get_default_model_name(),
             "team_data": "json",

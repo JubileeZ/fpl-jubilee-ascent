@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <div class="app-container" data-view="squad">
@@ -17,16 +17,17 @@
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle">Interactive Squad Builder &amp; Ownership Explorer</span>
+          <span class="subtitle">Squad Builder, Transfer Plan &amp; Ownership Explorer</span>
         </div>
       </div>
 
       <div class="header-controls">
         <div class="view-tabs" role="tablist">
           <button type="button" class="view-tab active" id="tab-squad" data-view="squad">Squad Builder</button>
+          <button type="button" class="view-tab" id="tab-plan" data-view="plan">Transfer Plan</button>
           <button type="button" class="view-tab" id="tab-explorer" data-view="explorer">Ownership Explorer</button>
         </div>
-        <div class="control-group">
+        <div class="control-group not-plan">
           <label for="primaryModelSelect">Primary Model:</label>
           <select id="primaryModelSelect" class="select-input">
             <option value="default">Champion Model</option>
@@ -135,9 +136,7 @@
                 <input type="text" id="searchInput" placeholder="Search player name or team..." class="search-input">
               </div>
 
-              <select id="teamSelect" class="select-input filter-select">
-                <option value="ALL">All Teams</option>
-              </select>
+              <div id="teamSelect" class="club-multi"></div>
 
               <div class="price-slider-group">
                 <label for="priceSlider" class="price-slider-label">Max Price: <span id="priceSliderVal">£15.0m</span></label>
@@ -185,6 +184,57 @@
       </section>
     </main>
 
+    <section class="plan-root" id="plan-root" hidden>
+      <div class="card plan-toolbar">
+        <p id="plan-meta" class="plan-meta"></p>
+        <div class="plan-scores">
+          <div class="summary-stat">
+            <span class="stat-label">Solver Objective (decayed)</span>
+            <span id="plan-objective" class="stat-value text-accent">—</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Horizon xP (undiscounted)</span>
+            <span id="plan-xp" class="stat-value">—</span>
+          </div>
+        </div>
+        <div>
+          <label class="title">Booked Chips</label>
+          <div id="plan-chip-calendar" class="plan-chip-calendar"></div>
+        </div>
+        <button type="button" id="btn-re-solve" class="btn btn-primary">Re-solve</button>
+        <p id="plan-status" class="plan-status"></p>
+      </div>
+      <div class="plan-body">
+        <aside class="card plan-ledger-card">
+          <label for="plan-gw-select">Gameweek</label>
+          <select id="plan-gw-select" class="select-input"></select>
+          <div id="plan-ledger" class="plan-ledger"></div>
+        </aside>
+        <div class="pitch-container plan-pitch">
+          <div class="pitch-grass">
+            <div class="pitch-lines">
+              <div class="penalty-box top"></div>
+              <div class="center-circle"></div>
+              <div class="center-line"></div>
+              <div class="penalty-box bottom"></div>
+            </div>
+            <div class="pitch-layout">
+              <div id="planRowGk" class="pitch-row"></div>
+              <div id="planRowDef" class="pitch-row"></div>
+              <div id="planRowMid" class="pitch-row"></div>
+              <div id="planRowFwd" class="pitch-row"></div>
+            </div>
+          </div>
+          <div class="bench-tray">
+            <div class="bench-header">
+              <span class="bench-title">Bench</span>
+            </div>
+            <div id="planBench" class="bench-slots"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="explorer-root" id="explorer-root" hidden>
       <div class="card explorer-toolbar">
         <div class="group">
@@ -216,7 +266,7 @@
         </div>
         <div class="group">
           <label class="title">Club</label>
-          <select id="explorer-club" class="select-input"></select>
+          <div id="explorer-club" class="club-multi"></div>
         </div>
         <div class="group">
           <label class="title">Price</label>
@@ -274,7 +324,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=6"></script>
-  <script src="explorer.js?v=2"></script>
+  <script src="app.js?v=8"></script>
+  <script src="explorer.js?v=3"></script>
+  <script src="plan.js?v=1"></script>
 </body>
 </html>
