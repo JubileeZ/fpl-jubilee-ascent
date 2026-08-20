@@ -13,6 +13,8 @@ load_env()
 configure_utf8_stdio()
 
 from models import get_default_model_name
+from projections.exporter import pad_solver_csv_horizon
+from solver.paths import DATA_DIR
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
 from solver.transfer_plan import serialize_transfer_plan
@@ -195,6 +197,7 @@ def execute_transfer_plan(
         my_data = build_my_data_from_parquet(processed_dir)
 
     logger.info(f"Preparing solver data using projections from '{options['datasource']}.csv'...")
+    pad_solver_csv_horizon(DATA_DIR / f"{options['datasource']}.csv", target_gw, horizon)
     solver_data = prep_data(my_data, options)
     logger.info("Executing MILP solver...")
     solutions = solve_multi_period_fpl(solver_data, options)

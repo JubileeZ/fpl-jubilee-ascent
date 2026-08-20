@@ -1,5 +1,9 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
+MAX_SOLVER_GAMEWEEK = 38
+
 
 def export_projections(
     predictions_df: pd.DataFrame, 
@@ -56,3 +60,49 @@ def export_projections(
     # Save to CSV
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df_out.to_csv(output_path, index=False)
+
+
+def solver_csv_covers_horizon(csv_path: Path, target_gw: int, horizon: int) -> bool:
+    """True when CSV has `{week}_Pts` for every week the MILP will request."""
+    if not csv_path.exists():
+        return False
+    columns = set(pd.read_csv(csv_path, nrows=0).columns)
+    last_gw = min(MAX_SOLVER_GAMEWEEK, target_gw + horizon - 1)
+    return all(f"{week}_Pts" in columns for week in range(target_gw, last_gw + 1))
+
+
+def pad_solver_csv_horizon(csv_path: Path, target_gw: int, horizon: int) -> Path:
+    """Add missing `{week}_Pts` / `{week}_xMins` columns so prep_data can load the horizon."""
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Data file {csv_path.name} not found in {csv_path.parent}.")
+    df = pd.read_csv(csv_path)
+    last_gw = min(MAX_SOLVER_GAMEWEEK, target_gw + horizon - 1)
+    changed = False
+    for week in range(target_gw, last_gw + 1):
+        pts_col = f"{week}_Pts"
+        mins_col = f"{week}_xMins"
+        if pts_col not in df.columns:
+            df[pts_col] = 0.0
+            changed = True
+        if mins_col not in df.columns:
+            df[mins_col] = 0.0
+            changed = True
+    if changed:
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(csv_path, index=False)
+    return csv_path
+
+
+def write_solver_projection_csvs(
+    predictions_by_model: dict[str, pd.DataFrame],
+    players_df: pd.DataFrame,
+    clubs_df: pd.DataFrame,
+    output_dir: Path,
+) -> list[Path]:
+    """Write one solver ProjectionContract CSV per model name under output_dir."""
+    paths: list[Path] = []
+    for model_name, predictions_df in predictions_by_model.items():
+        path = output_dir / f"{model_name}.csv"
+        export_projections(predictions_df, players_df, clubs_df, path)
+        paths.append(path)
+    return paths

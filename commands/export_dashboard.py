@@ -131,14 +131,27 @@ def _realized_by_player(processed_dir: Path, pos_by_player: dict[int, int]) -> d
     return out
 
 
+def load_transfer_plan_document(solution_path: Optional[Path]) -> Optional[Dict[str, Any]]:
+    """Return a Transfer Plan dict, or None if missing, invalid JSON, or legacy solver dump."""
+    if not solution_path or not solution_path.exists():
+        return None
+    try:
+        sol = json.loads(solution_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        logger.warning(f"Could not load solver solution from {solution_path}: {e}")
+        return None
+    if isinstance(sol, dict) and "weeks" in sol and "meta" in sol:
+        return sol
+    return None
+
+
 def load_transfer_plan(
     solution_path: Optional[Path],
 ) -> tuple[List[int], Optional[str], Optional[Dict[str, Any]]]:
     if not solution_path or not solution_path.exists():
         return [], None, None
     try:
-        with open(solution_path, "r", encoding="utf-8") as f:
-            sol = json.load(f)
+        sol = json.loads(solution_path.read_text(encoding="utf-8"))
     except Exception as e:
         logger.warning(f"Could not load solver solution from {solution_path}: {e}")
         return [], None, None

@@ -22,10 +22,17 @@ from commands.export_dashboard import (
     SEASON_START_GW,
     build_dashboard_dataset,
     export_dashboard_data,
+    load_transfer_plan_document,
 )
 from commands.solve import CHIP_KEYS, execute_transfer_plan, transfer_plan_options_for_dashboard
 from features.builder import build_features
 from models import get_default_model_name, get_model
+from projections.exporter import (
+    export_projections,
+    pad_solver_csv_horizon,
+    solver_csv_covers_horizon,
+    write_solver_projection_csvs,
+)
 from solver.utils import DEFAULT_PLANNING_HORIZON
 import pandas as pd
 
@@ -49,6 +56,34 @@ def resolve_next_gw(processed_dir: Path, preseason: bool) -> int:
     return 1 if preseason else 38
 
 
+def ensure_solver_projection_csv(
+    model_name: str,
+    processed_dir: Path,
+    target_gw: int,
+    horizon: int,
+    output_dir: Path,
+) -> Path:
+    """Rebuild Champion ProjectionContract CSV when MILP weeks are missing."""
+    csv_path = output_dir / f"{model_name}.csv"
+    if solver_csv_covers_horizon(csv_path, target_gw, horizon):
+        return csv_path
+    logger.info(
+        f"{csv_path.name} missing {horizon}-GW columns from GW{target_gw}; regenerating for Transfer Plan"
+    )
+    df_feat = build_features(processed_dir, target_gw, horizon=horizon)
+    model = get_model(model_name)
+    perf_path = processed_dir / "player_performances.parquet"
+    if hasattr(model, "fit") and perf_path.exists():
+        df_perf = pd.read_parquet(perf_path)
+        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+    df_pred = model.predict(df_feat, horizon)
+    df_players = pd.read_parquet(processed_dir / "players.parquet")
+    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    export_projections(df_pred, df_players, df_clubs, csv_path)
+    pad_solver_csv_horizon(csv_path, target_gw, horizon)
+    return csv_path
+
+
 def run_dashboard_transfer_plan(payload: dict[str, object]) -> dict[str, object]:
     processed_dir = PROJECT_ROOT / "data" / "processed"
     booked: dict[str, list[int]] = {}
@@ -61,6 +96,13 @@ def run_dashboard_transfer_plan(payload: dict[str, object]) -> dict[str, object]
     preseason = bool(payload.get("preseason")) or not (processed_dir / "user_picks.parquet").exists()
     options["preseason"] = preseason
     target_gw = int(payload["target_gw"]) if payload.get("target_gw") else resolve_next_gw(processed_dir, preseason)
+    ensure_solver_projection_csv(
+        str(options["datasource"]),
+        processed_dir,
+        target_gw,
+        horizon,
+        PROJECT_ROOT / "data",
+    )
     return execute_transfer_plan(
         options,
         processed_dir=processed_dir,
@@ -93,14 +135,11 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path.split("?", 1)[0].rstrip("/") == "/api/transfer-plan":
-            if SOLUTION_PATH.exists():
-                try:
-                    plan = json.loads(SOLUTION_PATH.read_text(encoding="utf-8"))
-                    self._send_json(200, plan)
-                except Exception:
-                    self._send_json(400, {"error": "solution.json is not a Transfer Plan. Re-solve."})
-            else:
+            plan = load_transfer_plan_document(SOLUTION_PATH)
+            if plan is None:
                 self._send_json(404, {"error": "No Transfer Plan yet. Re-solve or run commands.solve."})
+            else:
+                self._send_json(200, plan)
             return
         super().do_GET()
 
@@ -183,6 +222,9 @@ def run_dashboard_export(
         sol_path,
         default_model_name=default_model,
     )
+    df_players = pd.read_parquet(processed_dir / "players.parquet")
+    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
 
     dashboard_dir = PROJECT_ROOT / "dashboard"
     dashboard_dir.mkdir(parents=True, exist_ok=True)

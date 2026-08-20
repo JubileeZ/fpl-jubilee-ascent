@@ -284,7 +284,7 @@
     ["chart-ownership", "chart-price"].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
-      if (!el._explorerMarkerBound) {
+      if (!el._explorerMarkerBound && typeof el.on === "function") {
         el.on("plotly_click", onPlotClick);
         el.addEventListener("click", onPlotBackgroundClick);
         el._explorerMarkerBound = true;
@@ -293,6 +293,7 @@
   }
 
   function renderCharts(visible) {
+    if (typeof Plotly === "undefined") return;
     const yTitle = yAxisTitle();
     const ownLayout = {
       ...PLOT_LAYOUT,

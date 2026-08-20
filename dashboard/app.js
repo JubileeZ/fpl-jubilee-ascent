@@ -179,20 +179,28 @@ document.addEventListener("DOMContentLoaded", () => {
       setupGwSelect();
       setupEventListeners();
 
-      if (window.initOwnershipExplorer) {
-        window.initOwnershipExplorer({
-          getPlayers: () => allPlayers,
-          getMeta: () => metaData,
-          getPrimaryModel: () => primaryModel,
-        });
+      try {
+        if (window.initOwnershipExplorer) {
+          window.initOwnershipExplorer({
+            getPlayers: () => allPlayers,
+            getMeta: () => metaData,
+            getPrimaryModel: () => primaryModel,
+          });
+        }
+      } catch (err) {
+        console.error(err);
       }
-      if (window.initTransferPlan) {
-        window.initTransferPlan({
-          getPlayers: () => allPlayers,
-          getMeta: () => metaData,
-          getPlan: () => data.transfer_plan,
-          setPlan: (plan) => { data.transfer_plan = plan; },
-        });
+      try {
+        if (window.initTransferPlan) {
+          window.initTransferPlan({
+            getPlayers: () => allPlayers,
+            getMeta: () => metaData,
+            getPlan: () => data.transfer_plan,
+            setPlan: (plan) => { data.transfer_plan = plan; },
+          });
+        }
+      } catch (err) {
+        console.error(err);
       }
       document.getElementById("tab-squad")?.addEventListener("click", () => setDashboardView("squad"));
       document.getElementById("tab-explorer")?.addEventListener("click", () => setDashboardView("explorer"));

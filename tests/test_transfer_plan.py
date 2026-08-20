@@ -5,8 +5,10 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from commands.dashboard import run_dashboard_transfer_plan
+from commands.dashboard import ensure_solver_projection_csv, run_dashboard_transfer_plan
+from commands.export_dashboard import load_transfer_plan, load_transfer_plan_document
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
+from projections.exporter import pad_solver_csv_horizon, solver_csv_covers_horizon, write_solver_projection_csvs
 from solver.transfer_plan import serialize_transfer_plan
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
@@ -121,7 +123,9 @@ def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:
         "use_fh": [],
         "use_tc": [],
     }
-    with patch("commands.solve.prep_data", return_value={}), patch(
+    with patch("commands.solve.pad_solver_csv_horizon"), patch(
+        "commands.solve.prep_data", return_value={}
+    ), patch(
         "commands.solve.solve_multi_period_fpl", return_value=[solution]
     ):
         plan = execute_transfer_plan(
@@ -165,10 +169,151 @@ def test_run_dashboard_transfer_plan_passes_booked_chips_and_preseason(tmp_path:
         captured["solution_path"] = solution_path
         return {"meta": {"champion": options["datasource"]}, "weeks": []}
 
-    with patch("commands.dashboard.execute_transfer_plan", side_effect=fake_execute):
+    with patch("commands.dashboard.ensure_solver_projection_csv", return_value=tmp_path / "data" / "participation_state_hybrid.csv"), patch(
+        "commands.dashboard.execute_transfer_plan", side_effect=fake_execute
+    ):
         plan = run_dashboard_transfer_plan({"use_wc": [4], "use_bb": [1], "target_gw": 2, "horizon": 6})
     assert captured["target_gw"] == 2
     assert captured["options"]["preseason"] is True
     assert captured["options"]["datasource"] == "participation_state_hybrid"
     assert captured["options"]["use_wc"] == [4]
     assert plan["meta"]["champion"] == "participation_state_hybrid"
+
+
+def _player_meta() -> tuple[pd.DataFrame, pd.DataFrame]:
+    players = pd.DataFrame([{
+        "id": 10, "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 140, "code": 123,
+    }])
+    clubs = pd.DataFrame([{"id": 1, "short_name": "MCI"}])
+    return players, clubs
+
+
+def test_solver_csv_covers_horizon_requires_every_milp_week(tmp_path: Path) -> None:
+    csv_path = tmp_path / "participation_state_hybrid.csv"
+    pd.DataFrame([{
+        "ID": 10, "Name": "Haaland", "Pos": "F", "Price": 14.0, "Team": "MCI",
+        "1_Pts": 8.0, "2_Pts": 7.0, "3_Pts": 6.0, "4_Pts": 5.0, "5_Pts": 4.0,
+    }]).to_csv(csv_path, index=False)
+    assert solver_csv_covers_horizon(csv_path, target_gw=1, horizon=5) is True
+    assert solver_csv_covers_horizon(csv_path, target_gw=1, horizon=6) is False
+    assert solver_csv_covers_horizon(tmp_path / "missing.csv", target_gw=1, horizon=6) is False
+
+
+def test_pad_solver_csv_horizon_adds_missing_week_columns(tmp_path: Path) -> None:
+    csv_path = tmp_path / "linear_baseline.csv"
+    pd.DataFrame([{
+        "ID": 10, "Name": "Haaland", "Pos": "F", "Price": 14.0, "Team": "MCI",
+        "1_Pts": 8.0, "2_Pts": 7.0, "3_Pts": 6.0, "4_Pts": 5.0, "5_Pts": 4.0,
+        "1_xMins": 90.0, "2_xMins": 90.0, "3_xMins": 90.0, "4_xMins": 90.0, "5_xMins": 90.0,
+    }]).to_csv(csv_path, index=False)
+    pad_solver_csv_horizon(csv_path, target_gw=1, horizon=6)
+    loaded = pd.read_csv(csv_path)
+    assert loaded.loc[0, "6_Pts"] == 0.0
+    assert loaded.loc[0, "6_xMins"] == 0.0
+    assert loaded.loc[0, "5_Pts"] == 4.0
+    assert solver_csv_covers_horizon(csv_path, target_gw=1, horizon=6) is True
+
+
+def test_write_solver_projection_csvs_includes_planning_horizon_weeks(tmp_path: Path) -> None:
+    players, clubs = _player_meta()
+    predictions = pd.DataFrame([
+        {"player_id": 10, "gameweek_id": gw, "projected_points": 8.0, "projected_minutes": 90.0}
+        for gw in range(1, 7)
+    ])
+    write_solver_projection_csvs(
+        {"participation_state_hybrid": predictions},
+        players,
+        clubs,
+        tmp_path,
+    )
+    csv_path = tmp_path / "participation_state_hybrid.csv"
+    assert solver_csv_covers_horizon(csv_path, target_gw=1, horizon=6) is True
+    cols = set(pd.read_csv(csv_path, nrows=0).columns)
+    assert "6_Pts" in cols
+    assert "6_xMins" in cols
+
+
+def test_ensure_solver_projection_csv_rebuilds_when_sixth_week_missing(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    players, clubs = _player_meta()
+    players.to_parquet(processed / "players.parquet")
+    clubs.to_parquet(processed / "clubs.parquet")
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    pd.DataFrame([{
+        "ID": 10, "Name": "Haaland", "Pos": "F", "Price": 14.0, "Team": "MCI",
+        "1_Pts": 8.0, "2_Pts": 7.0, "3_Pts": 6.0, "4_Pts": 5.0, "5_Pts": 4.0,
+    }]).to_csv(data_dir / "participation_state_hybrid.csv", index=False)
+
+    class FakeModel:
+        def predict(self, _features: pd.DataFrame, horizon: int) -> pd.DataFrame:
+            return pd.DataFrame([
+                {"player_id": 10, "gameweek_id": gw, "projected_points": 8.0, "projected_minutes": 90.0}
+                for gw in range(1, horizon + 1)
+            ])
+
+    with patch("commands.dashboard.build_features", return_value=pd.DataFrame()), patch(
+        "commands.dashboard.get_model", return_value=FakeModel()
+    ):
+        path = ensure_solver_projection_csv(
+            "participation_state_hybrid", processed, target_gw=1, horizon=6, output_dir=data_dir
+        )
+    assert path == data_dir / "participation_state_hybrid.csv"
+    assert solver_csv_covers_horizon(path, target_gw=1, horizon=6) is True
+
+
+def test_run_dashboard_transfer_plan_ensures_csv_before_solve(tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.setattr("commands.dashboard.PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr("commands.dashboard.SOLUTION_PATH", tmp_path / "data" / "solution.json")
+    captured: dict[str, Any] = {}
+
+    def fake_ensure(
+        model_name: str,
+        processed_dir: Path,
+        target_gw: int,
+        horizon: int,
+        output_dir: Path,
+    ) -> Path:
+        captured["ensure"] = {
+            "model_name": model_name,
+            "processed_dir": processed_dir,
+            "target_gw": target_gw,
+            "horizon": horizon,
+            "output_dir": output_dir,
+        }
+        return output_dir / f"{model_name}.csv"
+
+    with patch("commands.dashboard.ensure_solver_projection_csv", side_effect=fake_ensure), patch(
+        "commands.dashboard.execute_transfer_plan",
+        return_value={"meta": {"champion": "participation_state_hybrid"}, "weeks": []},
+    ):
+        run_dashboard_transfer_plan({"horizon": 6, "target_gw": 1})
+    assert captured["ensure"]["model_name"] == "participation_state_hybrid"
+    assert captured["ensure"]["horizon"] == 6
+    assert captured["ensure"]["target_gw"] == 1
+    assert captured["ensure"]["output_dir"] == tmp_path / "data"
+
+
+def test_load_transfer_plan_document_rejects_truncated_and_legacy(tmp_path: Path) -> None:
+    truncated = tmp_path / "truncated.json"
+    truncated.write_text(
+        '{\n  "summary": "Mock recommended transfers and lineups",\n  "statistics": {},\n  "picks":  \n',
+        encoding="utf-8",
+    )
+    assert load_transfer_plan_document(truncated) is None
+    squad_ids, model_name, plan = load_transfer_plan(truncated)
+    assert squad_ids == []
+    assert model_name is None
+    assert plan is None
+
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(
+        json.dumps({"picks": [{"element": 10}], "model_name": "linear_baseline"}),
+        encoding="utf-8",
+    )
+    assert load_transfer_plan_document(legacy) is None
+    squad_ids, model_name, plan = load_transfer_plan(legacy)
+    assert squad_ids == [10]
+    assert model_name == "linear_baseline"
+    assert plan is None
