@@ -189,7 +189,7 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 The local dashboard is Interactive Squad Builder plus Ownership Explorer. It is
 not the research HTML at
-`data/research/ownership-value-explorer/ownership_value_explorer.html`.
+`docs/archive/ownership-value-explorer/ownership_value_explorer.html`.
 
 **Open it**
 

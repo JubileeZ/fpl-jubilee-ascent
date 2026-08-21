@@ -9,5 +9,5 @@ Follow `docs/agents/progress.md` (not always-on — load when recording progress
 
 - Update the correct layer: task → ROADMAP → current-state.
 - Compaction in place: Active-Phase Compaction; current-state = current truth; CONTEXT = glossary only.
-- Archive under `docs/archive/<kebab-slug>/` (or single `.md`) per when-to-archive; leave live pointer.
+- Archive under `docs/archive/<kebab-slug>/` (or single `.md`) per when-to-archive; leave live pointer. Research topic: move whole `docs/research/<slug>/` (companions included). `data/archive/` is season ingest only.
 - Never archive live `CONTEXT.md` / `CONTEXT-MAP.md`; never relocate ADRs from `docs/adr/`.

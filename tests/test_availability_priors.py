@@ -7,7 +7,7 @@ from pathlib import Path
 
 _SPEC = importlib.util.spec_from_file_location(
     "availability_priors",
-    Path("docs/research/gw1-6-preseason-pipeline/availability_priors.py"),
+    Path("docs/archive/gw1-6-preseason-pipeline/availability_priors.py"),
 )
 _MOD = importlib.util.module_from_spec(_SPEC)
 assert _SPEC.loader is not None

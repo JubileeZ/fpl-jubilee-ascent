@@ -17,11 +17,11 @@ def _load(name: str, path: str):
 
 SEED = _load(
     "dv_seed_test",
-    "docs/research/gw1-19-first-half-chip-path/build_dual_vector_seed.py",
+    "docs/archive/gw1-19-first-half-chip-path/build_dual_vector_seed.py",
 )
 CHIPS = _load(
     "dv_chips_test",
-    "docs/research/gw1-19-first-half-chip-path/run_chip_path.py",
+    "docs/archive/gw1-19-first-half-chip-path/run_chip_path.py",
 )
 
 

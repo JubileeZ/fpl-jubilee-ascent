@@ -13,7 +13,7 @@ import pytest
 def _load_mod() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "ownership_value_explorer",
-        Path("docs/research/ownership-value-explorer/plot_ownership_value_explorer.py"),
+        Path("docs/archive/ownership-value-explorer/plot_ownership_value_explorer.py"),
     )
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -150,7 +150,7 @@ def test_html_includes_player_table_and_search(explorer_mod: ModuleType, tmp_pat
 
 def test_role_csv_bruno_g_is_arsenal_not_united() -> None:
     roles = pd.read_csv(
-        "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
+        "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
     )
     bruno_g = roles.loc[roles["web_name"] == "Bruno G."].iloc[0]
     assert bruno_g["club_short"] == "ARS"
@@ -162,7 +162,7 @@ def test_role_csv_bruno_g_is_arsenal_not_united() -> None:
 
 
 def test_explorer_metrics_identity() -> None:
-    metrics = pd.read_csv("data/research/ownership-value-explorer/ownership_value_metrics.csv")
+    metrics = pd.read_csv("docs/archive/ownership-value-explorer/ownership_value_metrics.csv")
     bruno_g = metrics.loc[metrics["web_name"] == "Bruno G."].iloc[0]
     assert bruno_g["club_short"] == "ARS"
     bfer = metrics.loc[metrics["web_name"] == "B.Fernandes"].iloc[0]

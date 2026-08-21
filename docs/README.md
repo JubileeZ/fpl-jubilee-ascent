@@ -15,6 +15,11 @@ Start here to find durable project documentation.
 - [FPL scoring rules](fpl_scoring_rules_2025-26.md)
 - [Architecture decisions](adr/)
 
+## Research
+
+- [Research index and layout](research/INDEX.md)
+- [Archived research catalog](archive/index.md)
+
 ## Agent Operations
 
 - [Agent instructions](../AGENTS.md)

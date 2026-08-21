@@ -1,0 +1,15 @@
+---
+description: Research companions colocate with notes; data/ is ingest, season snapshots, and reports
+globs: data/**,docs/research/**,docs/archive/**
+alwaysApply: false
+---
+
+# Research layout
+
+Live topic folder: `docs/research/<topic-slug>/` holds the note, runners, and companion CSV/HTML.
+
+Archive: move the whole folder to `docs/archive/<topic-slug>/`. Companions travel with it.
+
+`data/archive/` is season ingest (`YYYY-YY`) only. `data/reports/` is solver/tool output.
+
+Index and conventions: `docs/research/INDEX.md`. Layout test: `tests/test_research_layout.py`.

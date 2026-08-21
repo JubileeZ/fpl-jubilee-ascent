@@ -7,8 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-CANON = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_select_11.csv")
-DUAL = Path("data/research/gw1-19-first-half-chip-path/first_half_select_11.csv")
+CANON = Path("docs/archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_select_11.csv")
+DUAL = Path("docs/archive/gw1-19-first-half-chip-path/first_half_select_11.csv")
 
 
 def test_canonical_select_11_counts_and_xp() -> None:

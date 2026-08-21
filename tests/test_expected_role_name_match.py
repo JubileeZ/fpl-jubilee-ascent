@@ -13,7 +13,7 @@ import pytest
 def _load_mod() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "refresh_expected_role",
-        Path("docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"),
+        Path("docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"),
     )
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None

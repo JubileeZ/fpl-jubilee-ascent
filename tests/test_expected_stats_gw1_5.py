@@ -14,14 +14,14 @@ def _import_from_path(module_name: str, file_path: str):
 
 build_mod = _import_from_path(
     "build_expected_stats",
-    "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py",
+    "docs/archive/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py",
 )
 project_mod = _import_from_path(
     "project_expected_points",
-    "docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py",
+    "docs/archive/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/project_expected_points.py",
 )
 
-ROLE_CSV = "data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
+ROLE_CSV = "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
 DRAFT_ROLES = ("Nailed Starter", "Regular Starter")
 
 
@@ -72,7 +72,7 @@ def test_watch_reduces_mac_allister_vs_eligible_clone():
 
     prior_spec = importlib.util.spec_from_file_location(
         "availability_priors",
-        Path("docs/research/gw1-6-preseason-pipeline/availability_priors.py"),
+        Path("docs/archive/gw1-6-preseason-pipeline/availability_priors.py"),
     )
     prior = importlib.util.module_from_spec(prior_spec)
     assert prior_spec.loader is not None

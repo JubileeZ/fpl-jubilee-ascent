@@ -11,7 +11,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ARCHIVE_DIR = PROJECT_ROOT / "data" / "archive" / "2025-26" / "processed"
-OUT_DIR = PROJECT_ROOT / "data" / "archive" / "gkp-fixture-rotation"
+OUT_DIR = PROJECT_ROOT / "docs" / "archive" / "gkp-fixture-rotation"
 
 
 def run_historical_backtest():

@@ -33,3 +33,6 @@ dashboard/*.json
 
 # But do NOT ignore archived seasons
 !data/archive/
+
+# Research companions live under docs/research/<topic>/ or docs/archive/<topic>/
+data/research/

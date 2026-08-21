@@ -1,76 +1,52 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-20T17:17:28+07:00
-**Status**: Active research directory authority  
+**Updated**: 2026-08-21T14:30:00+07:00
+**Status**: Live index. No active topics. 2026/27 preseason archived 2026-08-21.
 
 ---
 
 ## Active Research Index
 
-- **Operational First-Half Plan (user playbook, GW1–19)**:
-  - [**Operational First-Half Plan**](gw1-19-operational-plan/gw1-19-operational-plan.md) · [Exporter](gw1-19-operational-plan/export_operational_plan.py)
-  - [Summary](../../data/research/gw1-19-operational-plan/operational_summary.csv) · [Weeks](../../data/research/gw1-19-operational-plan/operational_weeks.csv) · [Select 11](../../data/research/gw1-19-operational-plan/operational_select_11.csv) · [Squads](../../data/research/gw1-19-operational-plan/operational_squads.csv) · [FT hurdles](../../data/research/gw1-19-operational-plan/operational_ft_hurdles.csv)
-  - Consumes Canonical pre-WC 15 + First-Half WC4 rebuild. Bank-state FT hurdles. Does not replace Canonical `total_6gw_xp` or First-Half `total_19gw_xp`. Identity: `operational_summary.csv` `frozen_19gw_xi_xp`.
+None. Season 2026/27 underway. New work: copy `template/research-note.md` into `docs/research/<topic-slug>/`. Companions (CSV/HTML) stay in that folder.
 
-- **First-Half Chip Path (GW1–19, Dual-Vector)**:
-  - [**First-Half Chip Path**](gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.md) · [Runner](gw1-19-first-half-chip-path/run_all.py)
-  - [Summary](../../data/research/gw1-19-first-half-chip-path/first_half_summary.csv) · [Weeks](../../data/research/gw1-19-first-half-chip-path/first_half_weeks.csv) · [Squads](../../data/research/gw1-19-first-half-chip-path/first_half_squads.csv) · [Transfers](../../data/research/gw1-19-first-half-chip-path/first_half_transfers.csv) · [Select 11](../../data/research/gw1-19-first-half-chip-path/first_half_select_11.csv)
-  - Sibling calendar of Canonical (same Prior-Season Dual-Vector Seed). Does not replace GW1–6 BB1+WC4. Production `_fixture_maps` unchanged.
+---
 
-- **GW1–6 Preseason Research & Optimization Pipeline (Consolidated Master Suite)**:
-  - [**GW1–6 Preseason Pipeline Master README**](gw1-6-preseason-pipeline/README.md) · [Pipeline Runner](gw1-6-preseason-pipeline/run_pipeline.py) · [Downstream refresh](gw1-6-preseason-pipeline/refresh_downstream.py)
-  - [Stage 1: Expected Role (GW1–5)](gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv)
-  - [Stage 2: Expected Stats & Points Projections](gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md) · [CSV Companion](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.csv) · [GW1–5 Projections](../../data/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/gw1-5_projections.csv)
-  - [Stage 3: Canonical Preseason Chip Path (GW1 BB + WC4)](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) · [Simulation](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv) · [Select 11](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_select_11.csv) · [User comparison](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_user_squad_comparison.csv) · [GW1–6 Projections](../../data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_projections.csv)
+## Archived (2026/27 preseason)
 
-- **Ownership & Differential Screening**:
-  - [Ownership Value Explorer (GW1–38 research HTML)](ownership-value-explorer/ownership-value-explorer.md) · [Season projections](../../data/research/ownership-value-explorer/season_projections.csv) · [Metrics](../../data/research/ownership-value-explorer/ownership_value_metrics.csv) · [Interactive HTML](../../data/research/ownership-value-explorer/ownership_value_explorer.html)
-  - Product view: dashboard Ownership Explorer (`commands.dashboard`) — Season Windows GW1–19 / GW20–38 / GW1–38, production Champion + Official Fixture Difficulty fallback.
+Moved 2026-08-21. Notes + companions colocated under `docs/archive/<topic-slug>/`. Frozen identities below.
 
-- **FPL 2026/27 Pre-Season Source Directory**:
-  - [Pre-Season Source Directory](fpl-preseason-guide/fpl-preseason-guide.md)
-  - [Budget Goalkeepers (£4.0m–£4.5m)](fpl-preseason-guide/fpl-budget-goalkeepers.md)
-  - [£5.0m+ Goalkeepers](fpl-preseason-guide/fpl-5-0m-goalkeepers.md)
-  - [£4.0m Defenders](fpl-preseason-guide/fpl-4-0m-defenders.md)
-  - [£4.0m Defenders (GW1 Post-Preseason Ranked)](fpl-preseason-guide/fpl-4-0m-defenders-ranked.md)
-  - [£4.5m Defenders](fpl-preseason-guide/fpl-4-5m-defenders.md)
-  - [£5.0m Defenders](fpl-preseason-guide/fpl-5-0m-defenders.md)
-  - [£5.5m+ Defenders](fpl-preseason-guide/fpl-5-5m-defenders.md)
-  - [£4.5m Midfielders](fpl-preseason-guide/fpl-4-5m-midfielders.md)
-  - [£5.0m Midfielders](fpl-preseason-guide/fpl-5-0m-midfielders.md)
-  - [£6.0m Midfielders](fpl-preseason-guide/fpl-6-0m-midfielders.md)
-  - [£6.5m–£7.0m Midfielders](fpl-preseason-guide/fpl-6-5m-7-0m-midfielders.md)
-  - [£7.5m+ Midfielders](fpl-preseason-guide/fpl-7-5m-midfielders.md)
-  - [£4.5m–£5.5m Forwards](fpl-preseason-guide/fpl-4-5m-5-5m-forwards.md)
-  - [£6.0m–£6.5m Forwards](fpl-preseason-guide/fpl-6-0m-6-5m-forwards.md)
-  - [£7.0m+ Forwards](fpl-preseason-guide/fpl-7-0m-forwards.md)
-  - [Confirmed Summer Transfers](fpl-preseason-guide/fpl-summer-transfers.md)
-
-- **Role & Chip Strategy Models**:
-  - [**Defensive Architecture, Strategy & Fixture Rotation (Unified GKP & DEF)**](defensive-fixture-rotation/defensive-fixture-rotation.md) · [GKP Strategy](../../data/research/defensive-fixture-rotation/gkp_strategy_comparison.csv) · [GKP Rotation](../../data/research/defensive-fixture-rotation/gkp_rotation_matrix.csv) · [5-DEF Partitions](../../data/research/defensive-fixture-rotation/def_club_partitions_matrix.csv) · [5-DEF Tier Rotations](../../data/research/defensive-fixture-rotation/def_tier_player_rotations.csv) · [BB1 Backlines](../../data/research/defensive-fixture-rotation/backline_bb1_wc4_lineups.csv) · [WC4 Backlines](../../data/research/defensive-fixture-rotation/backline_gw4_19_lineups.csv) · [GW1–19 Backlines](../../data/research/defensive-fixture-rotation/backline_gw1_19_lineups.csv)
-  - Stage 3 15-man keepers (MILP) are not the DCS goalkeeper pair. DCS ranks a Defensive Rotation Set; Canonical Preseason Chip Path picks a 15-man squad.
-  - [FPL First-Half Chip Strategy](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Stage 3 Canonical Path](gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [First-Half Chip Path (sibling calendar)](gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.md) · [Operational First-Half Plan](gw1-19-operational-plan/gw1-19-operational-plan.md)
-  - Archived (not live): `docs/archive/gkp-fixture-rotation/`, `docs/archive/def-fixture-rotation/`; historical CSVs in `data/archive/gkp-fixture-rotation/`, `data/archive/def-fixture-rotation/`.
-
-- **Tactical & Dead-Ball Analytics**:
-  - [FPL Set-Piece Stats, Expected Takers, and Dead-Ball Projections (2026/27)](fpl-set-piece-analysis/fpl-set-piece-analysis.md) · [Corner Takers](../../data/research/fpl-set-piece-analysis/corner_takers_2026_27.csv) · [Team Net Swings](../../data/research/fpl-set-piece-analysis/team_set_piece_swing_2025_26.csv) · [Player Leaders](../../data/research/fpl-set-piece-analysis/player_set_piece_leaders_2025_26.csv)
+- **Operational First-Half Plan**: [Note](../archive/gw1-19-operational-plan/gw1-19-operational-plan.md) · [Summary](../archive/gw1-19-operational-plan/operational_summary.csv) `frozen_19gw_xi_xp`
+- **First-Half Chip Path**: [Note](../archive/gw1-19-first-half-chip-path/gw1-19-first-half-chip-path.md) · [Summary](../archive/gw1-19-first-half-chip-path/first_half_summary.csv) · [Select 11](../archive/gw1-19-first-half-chip-path/first_half_select_11.csv)
+- **GW1–6 Preseason Pipeline**:
+  - [Master README](../archive/gw1-6-preseason-pipeline/README.md)
+  - [Stage 1 Expected Role](../archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.md) · [CSV](../archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv) (production Expected Role Prior ingest)
+  - [Stage 2 Expected Stats](../archive/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md)
+  - [Stage 3 Canonical Chip Path](../archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Summary](../archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv) `total_6gw_xp` **383.76**
+- **Ownership Value Explorer (research HTML)**: [Note](../archive/ownership-value-explorer/ownership-value-explorer.md) · [HTML](../archive/ownership-value-explorer/ownership_value_explorer.html). Product view = dashboard Ownership Explorer.
+- **Pre-Season Source Directory**: [Index](../archive/fpl-preseason-guide/fpl-preseason-guide.md)
+- **Defensive Architecture (DCS)**: [Note](../archive/defensive-fixture-rotation/defensive-fixture-rotation.md) · [GKP Strategy](../archive/defensive-fixture-rotation/gkp_strategy_comparison.csv)
+- **First-Half Chip Strategy (source synthesis)**: [Note](../archive/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)
+- **Set-Piece Analysis**: [Note](../archive/fpl-set-piece-analysis/fpl-set-piece-analysis.md)
+- Earlier GKP/DEF RQI notes: [gkp-fixture-rotation](../archive/gkp-fixture-rotation/gkp-fixture-rotation.md) · [def-fixture-rotation](../archive/def-fixture-rotation/def-fixture-rotation.md)
+- Catalog: [docs/archive/index.md](../archive/index.md)
 
 ---
 
 ## Research Conventions & Standards
 
-- **Mandatory Subfolders**: All research documentation and data files MUST be organized in topic subfolders under `docs/research/<topic-slug>/` and `data/research/<topic-slug>/`. No loose standalone files are permitted directly in the root of `docs/research/` (except `INDEX.md`) or `data/research/`.
-- **Non-Full-Season Model Subfolders**: Research models created for specific gameweek horizons or temporary draft evaluations (which are not canonical full-season model candidates in `models/`) are stored in `docs/research/<topic-slug>/` containing `<topic-slug>.md`, `README.md`, `build_*.py`, and `project_*.py`, with output CSVs stored in `data/research/<topic-slug>/`.
-- **Filename Convention**: Use stable topic slugs (`fpl-budget-goalkeepers.md`); no date prefixes. Copy `docs/research/template/research-note.md` to start a new note.
-- **Required Sections**: Every research note MUST include: `Updated`, `Data stamp`, `Season`, `Purpose`, `Sources`, `Agent Prompt`, `Method`, `Findings`, `Decision`, and `Risks and unknowns`.
-- **Data Timestamps**:
-  - `Updated` = ISO 8601 timestamp with timezone of last note revision.
-  - `Data stamp` = freshness or evidence cutoff of underlying source data.
-  - Do not add duplicate `Last update` fields.
-- **Machine-Readable Companions**: Store row-level data under `data/research/<topic-slug>/<file>.csv`; link companion in note header under `Artifact`.
-- **Evidence Separation**: Keep `Source synthesis` strictly separate from `Project interpretation`. Label unvalidated source claims.
-- **Metric Definitions & Direction Standard**: Every research note employing quantitative metrics must include a `### Metric Definitions & Direction` table specifying Definition/Formula, Target Direction (Higher $\uparrow$ / Lower $\downarrow$), Ideal Benchmark, and Domain Description.
-- **Reproducible Agent Prompt**: Identify inputs, refresh/recheck steps, stable output path, and scratch cleanup in `Agent Prompt`.
+- **Colocate**: note, runners, and companion CSV/HTML live in `docs/research/<topic-slug>/`. No `data/research/`. No research companions under `data/archive/`.
+- **Live root**: `docs/research/` holds `INDEX.md`, `template/`, and active topic folders only. No loose notes beside INDEX.
+- **Archive**: move the whole topic folder to `docs/archive/<topic-slug>/`. Companions travel with it. Leave a pointer here.
+- **Season ingest**: `data/archive/YYYY-YY/` only (raw/processed FPL snapshots). Not research CSVs.
+- **Reports**: `data/reports/` for solver/tool execution outputs.
+- **Filename**: stable topic slugs; no date prefixes. Start from `docs/research/template/research-note.md`.
+- **Required sections**: `Updated`, `Data stamp`, `Season`, `Purpose`, `Sources`, `Agent Prompt`, `Method`, `Findings`, `Decision`, `Risks and unknowns`.
+- **Timestamps**: `Updated` = note revision (ISO 8601 + timezone). `Data stamp` = evidence cutoff. No duplicate `Last update`.
+- **Artifact**: link companions in the note header; same-folder relative path.
+- **Evidence**: keep `Source synthesis` separate from `Project interpretation`. Label unvalidated claims.
+- **Metrics**: every quantitative note includes `### Metric Definitions & Direction` (Definition/Formula, Direction, Ideal Benchmark, Description).
+- **Agent Prompt**: inputs, refresh steps, stable output path in the topic folder, scratch cleanup.
+- **Figures**: caches of named companion CSV cells. Prompt names path + column (e.g. `gw1-6_wc4_summary.csv` `total_6gw_xp`), not a numeric snapshot.
 
 ---
 

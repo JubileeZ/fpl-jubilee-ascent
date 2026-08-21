@@ -61,7 +61,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def _run_expected_role_rebuild(season: str) -> None:
     script = (
         PROJECT_ROOT
-        / "docs/research/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"
+        / "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"
     )
     spec = importlib.util.spec_from_file_location("refresh_expected_role", script)
     if spec is None or spec.loader is None:

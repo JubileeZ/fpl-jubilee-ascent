@@ -85,6 +85,7 @@ Historical detail off the live path, still in git.
 - Multi-file: `docs/archive/<kebab-slug>/` (optional `index.md`)
 - Single file: `docs/archive/<kebab-slug>.md`
 - Optional date: `docs/archive/<YYYY-MM-DD>-<kebab-slug>.md` or dated folder
+- Research topic: move whole `docs/research/<topic-slug>/` (note + companions + runners) to `docs/archive/<topic-slug>/`. Companions travel with the folder.
 
 Create `docs/archive/` lazily on first dump. After moving detail, leave pointer in live file.
 
@@ -93,11 +94,13 @@ Create `docs/archive/` lazily on first dump. After moving detail, leave pointer 
 - Completed phase checklist too long for one-line ROADMAP summary, detail still useful
 - Superseded design / research dumps no longer current truth
 - Long narrative removed from `current-state` so file stays a snapshot
+- Season start / topic closed: whole research topic folder off the live index
 
 **Never archive**
 
 - Live `CONTEXT.md` / `CONTEXT-MAP.md` — trim in place at root
 - ADRs — keep under `docs/adr/`; mark superseded / accepted
+- Season ingest — stay in `data/archive/YYYY-YY/` (not research companions)
 
 Archive is not always-on. Open only when task needs historical detail.
 

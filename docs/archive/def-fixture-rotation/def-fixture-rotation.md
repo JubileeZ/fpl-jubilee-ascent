@@ -1,23 +1,23 @@
 # 5-Defender Fixture Diversification & Multi-Club Partition Study (GW1–19, up to £26.0m)
 
 > [!NOTE]
-> **Consolidated & Superseded**: Archived 2026-08-18. Live authority: [**Defensive Architecture, Strategy & Fixture Rotation**](../../research/defensive-fixture-rotation/defensive-fixture-rotation.md). S13 340.14 / OC-RQI / BB2 tables below are historical. FDR-min #1 `AVL-CHE-LIV-MCI-NFO` still matches live CSV.
+> **Consolidated & Superseded**: Archived 2026-08-18. Unified note: [**Defensive Architecture, Strategy & Fixture Rotation**](../defensive-fixture-rotation/defensive-fixture-rotation.md). S13 340.14 / OC-RQI / BB2 tables below are historical. FDR-min #1 `AVL-CHE-LIV-MCI-NFO` still matches DCS CSV.
 
 **Updated**: 2026-08-18T01:15:00+07:00  
-**Data stamp**: Superseded. Live numbers in `docs/research/defensive-fixture-rotation/`. FPL API 2026-08-18.  
+**Data stamp**: Superseded. Live numbers in `docs/archive/defensive-fixture-rotation/`. FPL API 2026-08-18.  
 **Season**: 2026/27  
 **Status**: Consolidated (See unified defensive authority)  
 **Purpose**: Determine optimal club and player combinations for 5-defender (5 DEF) units across **2, 3, 4, and 5 unique clubs** (at most £26.0m total budget). Focuses primarily on **team-level defensive strength, FDR schedules, and clean-sheet probability**, evaluating early sprint options (GW2 BB2 Max EV and GW1 BB1 Safe Start), post-Wildcard (GW4–19), and full first-half (GW1–19).  
-**Related**: [Unified Defensive Rotation](../../research/defensive-fixture-rotation/defensive-fixture-rotation.md) · [First-Half Chip Strategy](../../research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Expected Stats (Stage 2)](../../research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md)  
-**Artifacts**: `[def_club_5way_rotation_matrix.csv](../../../data/archive/def-fixture-rotation/def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](../../../data/archive/def-fixture-rotation/def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](../../../data/archive/def-fixture-rotation/def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](../../../data/archive/def-fixture-rotation/def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](../../../data/archive/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](../../../data/archive/def-fixture-rotation/def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](../../../data/archive/def-fixture-rotation/def_performance_baseline.csv)`, `[def_club_cs_priors.csv](../../../data/archive/def-fixture-rotation/def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv)`, `[def_gw1_3_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv)`, `[def_bb2_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv)`, `[def_gw4_19_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv)`  
+**Related**: [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md) · [Expected Stats (Stage 2)](../gw1-6-preseason-pipeline/02-expected-stats-gw1-5/expected-stats-gw1-5.md)  
+**Artifacts**: `[def_club_5way_rotation_matrix.csv](def_club_5way_rotation_matrix.csv)`, `[def_tier_player_rotations.csv](def_tier_player_rotations.csv)`, `[def_bb1_wc4_club_matrix.csv](def_bb1_wc4_club_matrix.csv)`, `[def_bb1_wc4_tier_lineups.csv](def_bb1_wc4_tier_lineups.csv)`, `[def_bb2_wc4_club_matrix.csv](def_bb2_wc4_club_matrix.csv)`, `[def_bb2_wc4_tier_lineups.csv](def_bb2_wc4_tier_lineups.csv)`, `[def_performance_baseline.csv](def_performance_baseline.csv)`, `[def_club_cs_priors.csv](def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](def_gw1_19_zero_diff_cs_picks.csv)`, `[def_gw1_3_zero_diff_cs_picks.csv](def_gw1_3_zero_diff_cs_picks.csv)`, `[def_bb2_zero_diff_cs_picks.csv](def_bb2_zero_diff_cs_picks.csv)`, `[def_gw4_19_zero_diff_cs_picks.csv](def_gw4_19_zero_diff_cs_picks.csv)`  
 **Script**: `[run_def_rotation_analysis.py](run_def_rotation_analysis.py)` · `[build_zero_diff_cs_picks.py](build_zero_diff_cs_picks.py)`  
-**Downstream**: `uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py` (full parent + both WC4 bridges)
+**Downstream**: `uv run python docs/archive/gw1-6-preseason-pipeline/refresh_downstream.py` (full parent + both WC4 bridges)
 
 ## Agent Prompt
 
 ```text
 After Stage 2 rate / new-player change:
-  uv run python docs/research/gw1-6-preseason-pipeline/refresh_downstream.py
+  uv run python docs/archive/gw1-6-preseason-pipeline/refresh_downstream.py
 This topic only (slow full combinatorics):
   uv run python docs/archive/def-fixture-rotation/run_def_rotation_analysis.py
 Bridges only: --bridges-only / --sun-bridge-only / --overall-bridge-only
@@ -279,7 +279,7 @@ Pre-WC sprint setups migrate seamlessly to long-term foundations at the GW4 Wild
 
 ### 1.9 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (GW1–3, 3-start, 5 unique clubs)
 
-Unordered club sets. Filter `horizon = gw1_3`, `no_diff_gws = 3`. Standard rotation: start 3 / bench 2 each GW. Sort all-easy desc, then `avg_fdr_corr` asc. Same CS gate as §3.4. Does not replace §1.3 BB2 or §1.6 BB1 FDR-min tables. Companion: `[def_gw1_3_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw1_3_zero_diff_cs_picks.csv)`. Rebuild: `uv run python docs/archive/def-fixture-rotation/build_zero_diff_cs_picks.py`.
+Unordered club sets. Filter `horizon = gw1_3`, `no_diff_gws = 3`. Standard rotation: start 3 / bench 2 each GW. Sort all-easy desc, then `avg_fdr_corr` asc. Same CS gate as §3.4. Does not replace §1.3 BB2 or §1.6 BB1 FDR-min tables. Companion: `[def_gw1_3_zero_diff_cs_picks.csv](def_gw1_3_zero_diff_cs_picks.csv)`. Rebuild: `uv run python docs/archive/def-fixture-rotation/build_zero_diff_cs_picks.py`.
 
 | Universe | Count |
 | --- | ---: |
@@ -352,7 +352,7 @@ Start-here: `ARS-HUL-MCI-MUN-SUN` (highest xCS, dual elite) / `ARS-HUL-LIV-MUN-S
 
 ### 1.10 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (BB2 11-start, 5 unique clubs)
 
-BB2 sprint: GW1 top-3, GW2 all-5, GW3 top-3. All-easy / zero-diff use **worst started** FDR: GW2 = max of 5; GW1/GW3 = 3rd-easiest of 5. Population = 5 unique clubs in `[def_bb2_wc4_club_matrix.csv](../../../data/archive/def-fixture-rotation/def_bb2_wc4_club_matrix.csv)` (already GW2 max FDR ≤ 3, no GW2 clashes) plus FDR rebuilt from `fixtures.parquet`. `rot_avg_fdr` in the companion is **11-start effective FDR**. Does not replace §1.3 FDR-min #1 `HUL-MUN-MUN-TOT-SUN` (4-club). Companion: `[def_bb2_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_bb2_zero_diff_cs_picks.csv)`.
+BB2 sprint: GW1 top-3, GW2 all-5, GW3 top-3. All-easy / zero-diff use **worst started** FDR: GW2 = max of 5; GW1/GW3 = 3rd-easiest of 5. Population = 5 unique clubs in `[def_bb2_wc4_club_matrix.csv](def_bb2_wc4_club_matrix.csv)` (already GW2 max FDR ≤ 3, no GW2 clashes) plus FDR rebuilt from `fixtures.parquet`. `rot_avg_fdr` in the companion is **11-start effective FDR**. Does not replace §1.3 FDR-min #1 `HUL-MUN-MUN-TOT-SUN` (4-club). Companion: `[def_bb2_zero_diff_cs_picks.csv](def_bb2_zero_diff_cs_picks.csv)`.
 
 | Universe | Count |
 | --- | ---: |
@@ -507,7 +507,7 @@ For managers activating their Wildcard in GW4, this 16-gameweek block establishe
 
 ### 2.4 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (GW4–19, 5 unique clubs)
 
-Unordered club sets. Filter `horizon = gw4_19`, `no_diff_gws = 16`. Same sort + CS gate as §3.4. Does not replace §2.2 dest FDR-min #1 `AVL-BOU-CHE-LIV-NFO` (only 3/16 all-easy — not in this head). Companion: `[def_gw4_19_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw4_19_zero_diff_cs_picks.csv)`.
+Unordered club sets. Filter `horizon = gw4_19`, `no_diff_gws = 16`. Same sort + CS gate as §3.4. Does not replace §2.2 dest FDR-min #1 `AVL-BOU-CHE-LIV-NFO` (only 3/16 all-easy — not in this head). Companion: `[def_gw4_19_zero_diff_cs_picks.csv](def_gw4_19_zero_diff_cs_picks.csv)`.
 
 | Universe | Count |
 | --- | ---: |
@@ -637,7 +637,7 @@ For managers executing a set-and-forget defensive strategy across the entire fir
 
 ### 3.4 Zero-Diff All-Easy Ranking + Clean-Sheet Gate (GW1–19, 5 unique clubs)
 
-Unordered club sets (`A-B-C-D-E` = `E-B-A-C-D`). Filter `no_diff_gws = 19`. Sort all-easy desc, then `avg_fdr_corr` asc. CS overlay: Stage 2 starting-GKP $\lambda$, $xCS = e^{-\lambda}$; DEF drafted median $\lambda$ as second source. Gate to enter pick list: $\ge 2$ CS-core clubs (elite ARS/MCI + strong LIV/BHA/MUN/AVL) and $\le 1$ promoted (COV/HUL/IPS). Walk fixture rank; fill remaining slots from 4-easy bucket. Companions: `[def_club_cs_priors.csv](../../../data/archive/def-fixture-rotation/def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](../../../data/archive/def-fixture-rotation/def_gw1_19_zero_diff_cs_picks.csv)`.
+Unordered club sets (`A-B-C-D-E` = `E-B-A-C-D`). Filter `no_diff_gws = 19`. Sort all-easy desc, then `avg_fdr_corr` asc. CS overlay: Stage 2 starting-GKP $\lambda$, $xCS = e^{-\lambda}$; DEF drafted median $\lambda$ as second source. Gate to enter pick list: $\ge 2$ CS-core clubs (elite ARS/MCI + strong LIV/BHA/MUN/AVL) and $\le 1$ promoted (COV/HUL/IPS). Walk fixture rank; fill remaining slots from 4-easy bucket. Companions: `[def_club_cs_priors.csv](def_club_cs_priors.csv)`, `[def_gw1_19_zero_diff_cs_picks.csv](def_gw1_19_zero_diff_cs_picks.csv)`.
 
 Does not replace §3.2 FDR-min #1 `AVL-CHE-LIV-MCI-NFO`. That lens stays canonical for rotated FDR.
 

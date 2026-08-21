@@ -24,8 +24,10 @@ commands/      # CLI command entry points
 dashboard/     # Squad Builder, Transfer Plan, Ownership Explorer (served by commands.dashboard)
 config/        # Model Champion selection
 tests/         # pytest suite
-data/          # Raw API cache, season archives, solver reports, research artifacts
-data/research/ # Machine-readable companions to durable research notes
+data/          # Raw API cache, season snapshots, solver reports
+data/archive/  # Season ingest only (`YYYY-YY`)
+docs/research/ # Live research: INDEX, template, topic folders (notes + companions)
+docs/archive/  # Archived research topics (notes + companions colocated)
 docs/          # Durable project documentation and decision records
 .agents/       # Session handoff and agent skills
 ```
@@ -58,13 +60,12 @@ docs/          # Durable project documentation and decision records
 ## Docs & Research
 
 - **MUST** read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) before performing backtesting or historical data exploration.
-- **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and conventions.
-- Keep durable project documentation in `docs/` (`docs/adr/`, `docs/agents/`, `docs/research/`, or named topic dirs `docs/research/<topic-slug>/`).
-- Store machine-readable research companions and mock/research model CSVs in topic subfolders under `data/research/<topic-slug>/`.
-- Reserve `data/reports/` exclusively for automated tool/solver execution outputs.
-- Store session-only plans, handoffs, investigations, and scratch artifacts in `.tmp/agent/`. Delete scratch files at task completion.
-- Metric documentation: define every custom or domain metric in research notes with explicit table specifying Definition/Formula, Direction (Higher $\uparrow$ / Lower $\downarrow$), and Ideal Benchmark.
-- Research figures are caches of named companion CSV cells. Topic runner writes the CSV then regenerates note / INDEX / `current-state` caches (`docs/research/sync_live_research_figures.py`). Agent Prompts name artifact path + column (e.g. `gw1-6_wc4_summary.csv` `total_6gw_xp`), not a numeric snapshot.
+- **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and layout conventions.
+- Live research topic = `docs/research/<topic-slug>/` (note, runners, and companion CSV/HTML in that folder).
+- Archive a topic by moving the whole folder to `docs/archive/<topic-slug>/`. Companions travel with it.
+- `data/archive/` = season ingest (`YYYY-YY`) only. `data/reports/` = solver/tool outputs. Session scratch = `.tmp/agent/` (delete before finish).
+- Metric documentation: every custom or domain metric in the note with Definition/Formula, Direction (Higher $\uparrow$ / Lower $\downarrow$), Ideal Benchmark.
+- Research figures are caches of named companion CSV cells. Topic runner writes the companion in the topic folder, then regenerates note caches. Agent Prompts name artifact path + column (e.g. `gw1-6_wc4_summary.csv` `total_6gw_xp`), not a numeric snapshot.
 
 ---
 

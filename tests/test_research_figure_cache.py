@@ -7,8 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-SUMMARY = Path("data/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv")
-STAGE3 = Path("docs/research/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md")
+SUMMARY = Path("docs/archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv")
+STAGE3 = Path("docs/archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md")
 INDEX = Path("docs/research/INDEX.md")
 AGENTS = Path("AGENTS.md")
 

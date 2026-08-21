@@ -35,8 +35,8 @@ from features.builder import _fixture_maps
 from models.participation_state_hybrid import ParticipationStateHybridModel
 
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
-RESEARCH_DIR = PROJECT_ROOT / "data" / "research"
-OUT_DIR = PROJECT_ROOT / "data" / "archive" / "def-fixture-rotation"
+RESEARCH_DIR = PROJECT_ROOT / "docs" / "archive"
+OUT_DIR = PROJECT_ROOT / "docs" / "archive" / "def-fixture-rotation"
 STATS_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "02-expected-stats-gw1-5" / "expected-stats-gw1-5.csv"
 ROLE_CSV = RESEARCH_DIR / "gw1-6-preseason-pipeline" / "01-expected-role-gw1-5" / "expected-role-gw1-5.csv"
 

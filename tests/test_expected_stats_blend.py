@@ -9,7 +9,7 @@ import pandas as pd
 
 _SPEC = importlib.util.spec_from_file_location(
     "build_expected_stats",
-    Path("docs/research/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py"),
+    Path("docs/archive/gw1-6-preseason-pipeline/02-expected-stats-gw1-5/build_expected_stats.py"),
 )
 _MOD = importlib.util.module_from_spec(_SPEC)
 assert _SPEC.loader is not None

@@ -15,7 +15,7 @@ import pytest
 def _load_mod() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "defensive_rotation",
-        "docs/research/defensive-fixture-rotation/run_defensive_rotation_analysis.py",
+        "docs/archive/defensive-fixture-rotation/run_defensive_rotation_analysis.py",
     )
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -129,7 +129,7 @@ def test_valid_def_multisets_cap_two_per_club(dcs_mod: ModuleType) -> None:
 
 
 def test_live_gkp_strategy_csv_dcs_columns() -> None:
-    path = Path("data/research/defensive-fixture-rotation/gkp_strategy_comparison.csv")
+    path = Path("docs/archive/defensive-fixture-rotation/gkp_strategy_comparison.csv")
     df = pd.read_csv(path)
     assert {"dcs", "oc_score", "tot_rot_xp", "horizon"}.issubset(df.columns)
     assert "rqi" not in df.columns
@@ -141,7 +141,7 @@ def test_live_gkp_strategy_csv_dcs_columns() -> None:
 
 
 def test_live_club_fdr_min_csv() -> None:
-    path = Path("data/research/defensive-fixture-rotation/def_club_partitions_matrix.csv")
+    path = Path("docs/archive/defensive-fixture-rotation/def_club_partitions_matrix.csv")
     if not path.exists():
         pytest.skip("partitions CSV not on disk")
     part = pd.read_csv(path)
@@ -152,7 +152,7 @@ def test_live_club_fdr_min_csv() -> None:
 
 
 def test_live_backline_and_tier_artifacts_exist() -> None:
-    base = Path("data/research/defensive-fixture-rotation")
+    base = Path("docs/archive/defensive-fixture-rotation")
     for name in (
         "gkp_strategy_comparison.csv",
         "gkp_rotation_matrix.csv",

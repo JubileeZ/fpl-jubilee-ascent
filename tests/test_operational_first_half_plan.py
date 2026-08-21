@@ -7,8 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-OUT = Path("data/research/gw1-19-operational-plan")
-FH_SQUADS = Path("data/research/gw1-19-first-half-chip-path/first_half_squads.csv")
+OUT = Path("docs/archive/gw1-19-operational-plan")
+FH_SQUADS = Path("docs/archive/gw1-19-first-half-chip-path/first_half_squads.csv")
 SUMMARY = OUT / "operational_summary.csv"
 SELECT = OUT / "operational_select_11.csv"
 SQUADS = OUT / "operational_squads.csv"

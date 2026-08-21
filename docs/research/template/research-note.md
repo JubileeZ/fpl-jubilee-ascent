@@ -7,6 +7,7 @@
 **Purpose**: [Decision or question this note addresses]  
 **Scope**: [Included and excluded analysis]  
 **Related**: [Links to sibling notes, issues, or decisions]
+**Artifact**: [companion.csv](companion.csv) — same topic folder as this note
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
 
@@ -21,7 +22,7 @@
 ## Agent Prompt
 
 ```text
-Full redo docs/research/[topic-slug].md
+Full redo docs/research/[topic-slug]/[topic-slug].md
 
 1. Re-read all primary sources and inspect current repository conventions.
 2. Refresh or re-check every input listed under Sources and Method.
@@ -29,7 +30,8 @@ Full redo docs/research/[topic-slug].md
 4. Recompute evidence and decision rules; do not silently change Method.
 5. Update Updated, Data stamp, Season, Sources, Findings, Decision, and Risks.
 6. Keep filename stable; update cross-links when sibling notes change.
-7. Store scratch under .tmp/agent/ only; delete scratch before finishing.
+7. Write companions into this topic folder (CSV/HTML beside the note).
+8. Store scratch under .tmp/agent/ only; delete scratch before finishing.
 ```
 
 ## Method
