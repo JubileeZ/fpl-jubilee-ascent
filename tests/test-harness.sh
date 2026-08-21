@@ -40,9 +40,9 @@ echo "Running Alpha-Zero-G Project Harness Self-Check..."
 check_file "AGENTS.md"
 check_file "ROADMAP.md"
 
-# task.md is transient; it is required if any active session files exist
-if [ -f "implementation_plan.md" ] || [ -f "walkthrough.md" ] || [ -f "task.md" ]; then
-    check_file "task.md"
+# task.md is retired; packets are optional
+if [ -f "implementation_plan.md" ] || [ -f "walkthrough.md" ]; then
+    fail "transient implementation_plan.md / walkthrough.md must not remain"
 fi
 
 # 2. Check agent guides
@@ -56,13 +56,14 @@ check_file "docs/agents/domain.md"
 check_file ".agents/hooks.json"
 check_file ".agents/hooks/block-destructive-ops.sh"
 check_executable ".agents/hooks/block-destructive-ops.sh"
+check_file ".agents/hooks/commit-scan.sh"
+check_executable ".agents/hooks/commit-scan.sh"
+check_file ".cursor/hooks/block-destructive-ops.sh"
+check_executable ".cursor/hooks/block-destructive-ops.sh"
 
 # 4. Check hook scripts (check if present, then check if executable)
 if [ -f ".agents/hooks/commit-gate.sh" ]; then
     check_executable ".agents/hooks/commit-gate.sh"
-fi
-if [ -f ".agents/hooks/checkpoint.sh" ]; then
-    check_executable ".agents/hooks/checkpoint.sh"
 fi
 
 # 5. Shellcheck verification (if installed)

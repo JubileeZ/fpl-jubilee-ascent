@@ -2,7 +2,7 @@
 @echo off
 REM Polyglot Cursor hook launcher (Windows cmd + Unix bash).
 REM hooks.json must NOT contain ".sh" — Windows may ShellExecute path tokens with .sh.
-REM Usage: run-hook.cmd <basename>   e.g. run-hook.cmd stop-checkpoint
+REM Usage: run-hook.cmd <basename>   e.g. run-hook.cmd commit-verify
 
 if "%~1"=="" (
   echo {}

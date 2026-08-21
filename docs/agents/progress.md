@@ -8,7 +8,7 @@ How agents record progress so next agent/device continues without chat history.
 
 | Layer | File | Update when | Purpose |
 |-------|------|-------------|---------|
-| **1 — Task** | GitHub Issue / `task.md` | Start / finish focused chunk | Scope, blockers, commit links |
+| **1 — Task** | GitHub Issue / `.agents/work-packets/<packet-id>.md` | Start / finish focused chunk | Scope, blockers, commit links |
 | **2 — Phase checklist** | `ROADMAP.md` | Roadmapped bullet **done** | `- [ ]` → `- [x]` on matching line |
 | **3 — Reality snapshot** | `docs/agents/current-state.md` | Moved planned → exists | Shows what exists on disk |
 
@@ -28,15 +28,21 @@ flowchart LR
 ```
 
 ### 1. Start
-Follow lean always-on ritual in `AGENTS.md` (`task.md` if present; ROADMAP active / first unchecked only; `current-state` when unfamiliar or existence may have changed). Then pick or create task/issue.
+Follow Session start in `AGENTS.md` (once per session). Then pick or create task/issue.
 
 ### 2. During work
 - Comment on task/issue if blocked or scope changes.
 - Do not check ROADMAP boxes for partial work.
 
+### 2b. Device Handoff (user-triggered)
+- Handoff write: only when user asks (handoff / device switch / leave-for-other-agent).
+- Canonical: bound Work Packet + `.agents/handoff-pointer` (Packet ID only). Commit with work.
+- Day-to-day same device: bound packet + `current-state.md`.
+- Do not write `.agents/session-handoff.md` (retired duplicate SFDBN).
+
 ### 3. Before finishing (pre-commit gate)
 - Run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh`.
-- Move no session artifacts into project documentation. Delete `.tmp/agent/` contents and legacy root-level `task.md`, `implementation_plan.md`, and `walkthrough.md` once milestone/task complete.
+- Move no session artifacts into project documentation. Delete `.tmp/agent/` contents and `implementation_plan.md` / `walkthrough.md` when done. Finished Work Packet: **delete** the file (do not empty).
 
 ### 4. On completion — update docs
 | If you… | Then update… |

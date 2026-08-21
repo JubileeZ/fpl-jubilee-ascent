@@ -1,5 +1,5 @@
 ---
-description: Record progress via task.md/ROADMAP/current-state; compact or archive tracking docs. Use when finishing work, advancing phases, trimming bloated ROADMAP/current-state/CONTEXT, or deciding docs/archive/ moves.
+description: Record progress via Work Packets / ROADMAP / current-state; compact or archive tracking docs. Use when finishing work, advancing phases, trimming bloated ROADMAP/current-state/CONTEXT, or deciding docs/archive/ moves.
 alwaysApply: false
 ---
 

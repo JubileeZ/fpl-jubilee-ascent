@@ -54,8 +54,7 @@ check_file ".agents/hooks.json"
 for hook in \
   block-destructive-ops.sh \
   commit-gate.sh \
-  checkpoint.sh \
-  pre-compact.sh
+  commit-scan.sh
 do
   check_file ".agents/hooks/${hook}"
   check_executable ".agents/hooks/${hook}"
@@ -76,8 +75,11 @@ else
   pass "No tmp_azg* leaks at project root"
 fi
 
-# --- Work Packet (required when task.md present) ---
-if [ -f "task.md" ]; then
+# --- Work Packet (required when any packet file present) ---
+shopt -s nullglob
+_azg_packets=(.agents/work-packets/*.md)
+shopt -u nullglob
+for _pkt in "${_azg_packets[@]}"; do
   for marker in \
     "**Objective:**" \
     "**Acceptance:**" \
@@ -88,13 +90,13 @@ if [ -f "task.md" ]; then
     "**Blocked:**" \
     "**Next:**"
   do
-    if grep -qF "${marker}" task.md; then
-      pass "Work Packet has ${marker}"
+    if grep -qF "${marker}" "${_pkt}"; then
+      pass "Work Packet ${_pkt} has ${marker}"
     else
-      fail "Work Packet missing ${marker}"
+      fail "Work Packet ${_pkt} missing ${marker}"
     fi
   done
-fi
+done
 
 # --- Project validation (optional until configured) ---
 project_test_cmd=""

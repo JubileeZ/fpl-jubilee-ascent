@@ -8,10 +8,36 @@ cmd=$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // empty' 2>/dev/
 # Only intercept git commit commands
 if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
   if echo "$cmd" | grep -qE '^git[[:space:]]+commit'; then
-    # Verify no transient file leftovers if the task is complete
-    if [ -f "task.md" ] && ! grep -q -E '\- \[[[:space:]]*\]' task.md; then
-      if [ -f "implementation_plan.md" ] || [ -f "walkthrough.md" ] || [ -s "task.md" ]; then
-        reason="Task is complete (no unchecked items in task.md). Please delete task.md, implementation_plan.md, and walkthrough.md (or clear task.md) to avoid leaving transient files in the repository."
+    _hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=commit-scan.sh
+    source "${_hook_dir}/commit-scan.sh"
+    # Finished Work Packet still on disk → delete it (do not leave stubs)
+    shopt -s nullglob
+    for pkt in .agents/work-packets/*.md; do
+      if azg_packet_is_finished "$pkt"; then
+        reason="Finished Work Packet still present: ${pkt}. Delete it in this Checkpoint (do not leave empty stubs)."
+        jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
+        shopt -u nullglob
+        exit 0
+      fi
+    done
+    shopt -u nullglob
+    if azg_packet_is_finished "task.md"; then
+      reason="Legacy task.md is complete. Delete task.md (azg apply migrates it to .agents/work-packets/) plus implementation_plan.md / walkthrough.md if present."
+      jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
+      exit 0
+    fi
+    if [ -f "implementation_plan.md" ] || [ -f "walkthrough.md" ]; then
+      open_pkt=false
+      shopt -s nullglob
+      for pkt in .agents/work-packets/*.md; do
+        if grep -q -E '\- \[[[:space:]]*\]' "$pkt"; then
+          open_pkt=true
+        fi
+      done
+      shopt -u nullglob
+      if [ "$open_pkt" = false ]; then
+        reason="Delete implementation_plan.md and walkthrough.md when no open Work Packet remains."
         jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
         exit 0
       fi
@@ -32,32 +58,19 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
       exit 0
     fi
 
-    # Checkpoint freshness: code commits must include Work Packet (task.md)
+    # Checkpoint: code commits must stage a Work Packet path
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      has_code=false
-      has_packet=false
       file_list=""
       if echo "$cmd" | grep -qE '(^|[[:space:]])(-a|--all)([[:space:]]|$)'; then
         file_list=$(git status --porcelain 2>/dev/null | cut -c 4- | sed 's/^"//;s/"$//')
       else
         file_list=$(git diff --cached --name-only 2>/dev/null)
       fi
-      while IFS= read -r f; do
-        [ -z "$f" ] && continue
-        case "$f" in
-          task.md)
-            has_packet=true
-            ;;
-          ROADMAP.md|docs/agents/*|.agents/session-handoff.md)
-            ;;
-          *)
-            has_code=true
-            ;;
-        esac
-      done <<< "${file_list}"
-
-      if [ "$has_code" = true ] && [ "$has_packet" = false ]; then
-        reason="Checkpoint requires Work Packet: stage an updated task.md with the code changes (objective/acceptance/SFDBN), then commit."
+      azg_commit_classify_paths <<EOF
+${file_list}
+EOF
+      if [ "${AZG_COMMIT_HAS_CODE}" = true ] && [ "${AZG_COMMIT_HAS_PACKET}" = false ]; then
+        reason="Checkpoint requires Work Packet: stage a file under .agents/work-packets/ (update or delete) with the code changes, then commit."
         jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
         exit 0
       fi

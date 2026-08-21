@@ -95,19 +95,20 @@ docs/          # Durable project documentation and decision records
 Once per session (not every turn). Continuity from listed files (chat ≠ continuity):
 
 1. `current-state.md` (reality).
-2. `task.md` if present (Work Packet). Absent = no active packet (OK).
-3. `ROADMAP.md` active phase / first unchecked only.
-4. `git status` + `git log -5 --oneline` before edit.
-5. Other docs JIT via pointers.
+2. `ROADMAP.md` active phase / first unchecked only.
+3. `git status` + `git log -5 --oneline` before edit.
+4. Other docs JIT via pointers.
 
-If handoff present or user says continue: read `.agents/session-handoff.md`.
+Do not read Work Packet bodies at start. **Independent Request** (no change asked): no packet I/O.
 
-Session start done when: `current-state` + (`task.md` if present) + ROADMAP slice read; git status/log before first edit.
+**Bind** only when the user says continue / handoff / a Packet ID, or asks to continue and `.agents/handoff-pointer` names one. Change asked with no bind: attended — ask new vs which open slug (≤3); unattended — create `.agents/work-packets/<slug>.md` from `.agents/work-packet.md.tmpl`. Never auto-bind the last leftover packet.
+
+Session start done when: `current-state` + ROADMAP slice + git status/log. Bound packet read only after Bind.
 
 Missing required continuity doc: restore from git if history exists; else ask user.
 
 During work / before Checkpoint: update tracking docs when state changes
-(see `docs/agents/progress.md`). Before Checkpoint: refresh Work Packet SFDBN in `task.md`.
+(see `docs/agents/progress.md`). Before Checkpoint: refresh bound packet SFDBN, or delete the packet if finished.
 
 JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`, archived ROADMAP, research notes.
 
@@ -129,8 +130,7 @@ JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`
 ## Work State & Checkpoints
 
 - Tracker: `docs/agents/issue-tracker.md`. Updates/compaction/archive/cleanup: `docs/agents/progress.md`.
-- Code commits: stage updated `task.md` (Work Packet) with code — `commit-gate` enforces. Trivial: minimal packet OK; clear/delete when done same commit if appropriate.
-- Handoff / device switch / leave-for-other-agent → follow `docs/agents/progress.md` §Device Handoff (canonical `.agents/session-handoff.md`). Day-to-day same device: `task.md` + `current-state.md`.
-- Before Checkpoint / stop with code: refresh `task.md` and/or `current-state.md` and/or handoff as appropriate (hooks accept those).
-- Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; delete or empty `task.md` (finished packet — do not re-seed old content). Next task: create a new Work Packet with required SFDBN markers; durable state stays in ROADMAP / current-state / git.
+- Code commits: stage a Work Packet under `.agents/work-packets/` with code — `commit-gate` enforces. Finished packet: delete the file in the same Checkpoint. Trivial: minimal packet OK.
+- Handoff / device switch / leave-for-other-agent: write Packet ID to `.agents/handoff-pointer` and commit the packet. Other device: pull, then Bind that Packet ID.
+- Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; **delete** the packet file (do not empty). Next task: new packet from `.agents/work-packet.md.tmpl`. Durable state stays in ROADMAP / current-state / git.
 <!-- AZG:MANAGED:END -->

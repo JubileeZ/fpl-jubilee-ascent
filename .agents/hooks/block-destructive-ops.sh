@@ -8,7 +8,7 @@ target_file=""
 
 if command -v jq >/dev/null 2>&1; then
   tool_name=$(printf '%s' "$input" | jq -r '.toolCall.name // empty' 2>/dev/null)
-  cmd=$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // empty' 2>/dev/null)
+  cmd=$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // .command // empty' 2>/dev/null)
   target_file=$(printf '%s' "$input" | jq -r '.toolCall.args.TargetFile // .toolCall.args.path // .toolCall.args.file // empty' 2>/dev/null)
 fi
 
