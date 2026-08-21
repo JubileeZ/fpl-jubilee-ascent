@@ -2,6 +2,8 @@
 
 Historical bullets removed from docs/agents/current-state.md. Not live truth. Live snapshot: that file. Live defensive note: docs/research/defensive-fixture-rotation/.
 
+- **FFS pre-season guide refresh (21 Aug):** Playwright re-read. Guide `modified_time` 2026-08-21T01:51:50Z. Heading now **BEST PLAYERS BY POSITION AND PRICE**. Same 15 price-bracket URLs; no new BEST PLAYERS article. Transfers modified 2026-08-20T09:09:23Z; register through 19 Aug (10 new IN: Elvedi, Ruggeri, Cherif, Suzuki, Promise David, Gozo, Dedic, Awoniyi, Enciso, Abdoul Ouattara). August IN count 43. GW1 Scout Picks / Scout Squad / Watchlist out of scope.
+
 - **Research corpus audit (18 Aug):** Live chip path = Canonical Preseason Chip Path S1 **364.21 xP** (CSV one row). INDEX / first-half note no longer treat S13 340.14 as current. Ranking metric = **DCS** (`CONTEXT.md`); RQI archived. Unified GKP/DEF tables rewritten from CSVs (Rushworth+Donnarumma **127.13 xP / DCS 89.33**; FDR-min #1 still `AVL-CHE-LIV-MCI-NFO` **2.4386**). Role Decision 357/227 → **575 / 234**. Ownership 564 → **575**. Legacy notes moved to `docs/archive/gkp-fixture-rotation/` and `docs/archive/def-fixture-rotation/` after copying 2025/26 GKP backtest + CS-gate start-here. FFS Playwright recheck: guide modified 2026-08-18T02:21:39Z; 15 child `modified_time` unchanged.
   - Score matrix OK (CS 4 / GK goal 10 / Defcon). Trafford dest GC LEE=1.474; Rushworth COV=1.375.
   - Role bugs: Meerkat `Nunes` matched Vitor Reis (middle name); Bruno G. stuck Out of Contention after ARS move.

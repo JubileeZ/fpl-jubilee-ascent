@@ -1,7 +1,7 @@
 # FPL 2026/27: Best £6.5m–£7.0m Midfielders
 
-**Updated**: 2026-08-18T15:05:00+07:00
-**Data stamp**: Fantasy Football Scout article modified 2026-08-06 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-18: article:modified_time unchanged.
+**Updated**: 2026-08-21T13:27:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-08-06 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-21: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Assess £6.5m–£7.0m mid-premium midfielders for FPL 2026/27 starting XI selection, set-piece involvement, talismanic roles, and transfer impacts  

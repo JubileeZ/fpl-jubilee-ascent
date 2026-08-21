@@ -1,7 +1,7 @@
 # FPL 2026/27 £5.0m Defenders — Fantasy Football Scout Synthesis
 
-**Updated**: 2026-08-18T15:05:00+07:00
-**Data stamp**: Fantasy Football Scout article modified 2026-07-30 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-18: article:modified_time unchanged.
+**Updated**: 2026-08-21T13:27:00+07:00
+**Data stamp**: Fantasy Football Scout article modified 2026-07-30 (unchanged on 2026-08-13 recheck); accessed 2026-08-13; Playwright recheck 2026-08-21: article:modified_time unchanged.
 **Season**: 2026/27  
 **Status**: Source synthesis · image stats extracted · cross-checked  
 **Purpose**: Capture source-led £5.0m defender shortlist, team defensive metrics, player attacking stats, and minutes/rotation evidence  

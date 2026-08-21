@@ -1,7 +1,7 @@
 # FPL 2026/27: £4.0m Defenders Ranked for Gameweek 1 After Pre-Season
 
-**Updated**: 2026-08-18T15:05:00+07:00
-**Data stamp**: Fantasy Football Scout article published 2026-08-17 (modified 2026-08-17T14:44:39Z); Playwright recheck 2026-08-18 unmodified; cross-checked against `expected-role-gw1-5.md` (575 contention rows) and `fpl-summer-transfers.md`  
+**Updated**: 2026-08-21T13:27:00+07:00
+**Data stamp**: Fantasy Football Scout article published 2026-08-17 (modified 2026-08-17T14:44:39Z); Playwright recheck 2026-08-21 unmodified; cross-checked against `expected-role-gw1-5.md` (575 contention rows) and `fpl-summer-transfers.md`  
 **Season**: 2026/27  
 **Status**: Active · Source synthesis · Playwright full-page extracted  
 **Purpose**: Capture definitive post-preseason ranking of £4.0m defenders for Gameweek 1 Bench Boost and starting XI appeal  
