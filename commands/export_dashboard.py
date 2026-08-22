@@ -166,6 +166,29 @@ def load_transfer_plan(
     return [], None, None
 
 
+def load_owned_squad(processed_dir: Path) -> tuple[List[int], Optional[int], Optional[int]]:
+    """Return User Squad player IDs in Lineup Index order, plus captain and vice IDs."""
+    path = processed_dir / "user_picks.parquet"
+    if not path.exists():
+        return [], None, None
+    df = pd.read_parquet(path)
+    if df.empty or "player_id" not in df.columns:
+        return [], None, None
+    ordered = df.sort_values("lineup_index") if "lineup_index" in df.columns else df
+    ids = [int(pid) for pid in ordered["player_id"].tolist()]
+    captain_id: Optional[int] = None
+    vice_id: Optional[int] = None
+    if "is_captain" in ordered.columns:
+        caps = ordered.loc[ordered["is_captain"].fillna(False).astype(bool)]
+        if not caps.empty:
+            captain_id = int(caps.iloc[0]["player_id"])
+    if "is_vice_captain" in ordered.columns:
+        vices = ordered.loc[ordered["is_vice_captain"].fillna(False).astype(bool)]
+        if not vices.empty:
+            vice_id = int(vices.iloc[0]["player_id"])
+    return ids, captain_id, vice_id
+
+
 def build_dashboard_dataset(
     processed_dir: Path,
     predictions_df: pd.DataFrame | Dict[str, pd.DataFrame],
@@ -191,6 +214,7 @@ def build_dashboard_dataset(
     primary_model_name = default_model_name if default_model_name in model_preds_map else model_names[0]
 
     prefilled_squad_ids, solution_model_name, transfer_plan = load_transfer_plan(solution_path)
+    owned_squad_ids, owned_captain_id, owned_vice_captain_id = load_owned_squad(processed_dir)
 
     planning_gw_ids = _planning_gw_ids(target_gw, horizon)
     planning_gw_set = set(planning_gw_ids)
@@ -367,6 +391,9 @@ def build_dashboard_dataset(
             "default_model": primary_model_name,
             "solution_model_name": solution_model_name,
             "prefilled_squad_ids": prefilled_squad_ids,
+            "owned_squad_ids": owned_squad_ids,
+            "owned_captain_id": owned_captain_id,
+            "owned_vice_captain_id": owned_vice_captain_id,
         },
         "players": players_data,
         "transfer_plan": transfer_plan,

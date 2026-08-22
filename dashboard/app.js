@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tableBody = document.getElementById("tableBody");
   const posTabs = document.querySelectorAll(".pos-tab");
   const btnLoadMilp = document.getElementById("btnLoadMilp");
+  const btnLoadOwned = document.getElementById("btnLoadOwned");
   const btnClearSquad = document.getElementById("btnClearSquad");
 
   // Summary Elements
@@ -206,8 +207,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("tab-explorer")?.addEventListener("click", () => setDashboardView("explorer"));
       document.getElementById("tab-plan")?.addEventListener("click", () => setDashboardView("plan"));
 
-      // Pre-fill squad if MILP IDs available
-      if (metaData.prefilled_squad_ids && metaData.prefilled_squad_ids.length > 0) {
+      // Pre-fill: User Squad, else MILP, else greedy xP 15
+      if (metaData.owned_squad_ids && metaData.owned_squad_ids.length > 0) {
+        fillOwnedSquad();
+      } else if (metaData.prefilled_squad_ids && metaData.prefilled_squad_ids.length > 0) {
         fillSquadFromIds(metaData.prefilled_squad_ids);
       } else {
         autoSelectTopSquad();
@@ -333,6 +336,13 @@ document.addEventListener("DOMContentLoaded", () => {
         posFilter = tab.dataset.pos;
         renderTable();
       });
+    });
+
+    btnLoadOwned?.addEventListener("click", () => {
+      if (metaData.owned_squad_ids && metaData.owned_squad_ids.length > 0) {
+        fillOwnedSquad();
+      }
+      renderAll();
     });
 
     btnLoadMilp.addEventListener("click", () => {
@@ -506,6 +516,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     autoAssignCaptaincy();
+  }
+
+  function fillOwnedSquad() {
+    const ids = metaData.owned_squad_ids || [];
+    squad = Array(15).fill(null);
+    ids.slice(0, 15).forEach((id, i) => { squad[i] = id; });
+    const capId = metaData.owned_captain_id;
+    const viceId = metaData.owned_vice_captain_id;
+    captainId = (capId && squad.includes(capId)) ? capId : null;
+    viceCaptainId = (viceId && squad.includes(viceId) && viceId !== captainId) ? viceId : null;
+    if (!captainId) autoAssignCaptaincy();
   }
 
   function autoAssignCaptaincy() {

@@ -223,14 +223,16 @@ view.
 #### Squad Builder
 
 Pitch on the left (starting XI + 4-man bench), player table on the right.
-On load the pitch is filled from `data/solution.json` when a MILP squad exists;
-otherwise a budget-aware greedy xP 15 is selected.
+On load the pitch is filled from `user_picks.parquet` (the User Squad) when
+present; else `data/solution.json` when a MILP squad exists; otherwise a
+budget-aware greedy xP 15 is selected.
 
 | Control | What it does |
 |---------|----------------|
 | Primary Model | Which projection drives xP on the pitch, table, and explorer |
 | Compare Models | Extra xP and Diff columns for other exported models |
 | View Horizon | Planning Horizon total, or a single gameweek in that horizon |
+| Load My Squad | Reload the authenticated User Squad (`user_picks.parquet`) |
 | Load MILP Squad | Reload `data/solution.json`, or greedy xP 15 if no solution |
 | Clear | Empty all 15 slots |
 

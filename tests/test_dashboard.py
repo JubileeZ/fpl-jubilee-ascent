@@ -319,3 +319,56 @@ def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
     assert dataset["transfer_plan"]["weeks"][0]["chip"] == "BB"
     assert dataset["meta"]["solution_model_name"] == "participation_state_hybrid"
 
+
+def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([
+        {
+            "id": 10, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+            "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+            "status": "a", "chance_of_playing_next_round": 100, "news": "",
+            "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+            "influence": "0", "creativity": "0", "threat": "0",
+            "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 0,
+        },
+        {
+            "id": 20, "code": 202, "first_name": "Bryan", "second_name": "Mbeumo",
+            "web_name": "Mbeumo", "club_id": 1, "position_id": 3, "now_cost": 80,
+            "status": "a", "chance_of_playing_next_round": 100, "news": "",
+            "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+            "influence": "0", "creativity": "0", "threat": "0",
+            "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 0,
+        },
+    ]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([{"id": 1, "name": "Manchester City", "short_name": "MCI"}]).to_parquet(
+        processed_dir / "clubs.parquet"
+    )
+    pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}]).to_parquet(
+        processed_dir / "gameweeks.parquet"
+    )
+    pd.DataFrame([
+        {"entry_id": 1, "gameweek_id": 1, "player_id": 20, "lineup_index": 7,
+         "multiplier": 2, "is_captain": True, "is_vice_captain": False},
+        {"entry_id": 1, "gameweek_id": 1, "player_id": 10, "lineup_index": 1,
+         "multiplier": 1, "is_captain": False, "is_vice_captain": True},
+    ]).to_parquet(processed_dir / "user_picks.parquet")
+    sol_path = tmp_path / "solution.json"
+    sol_path.write_text(json.dumps({
+        "meta": {"champion": "participation_state_hybrid"},
+        "weeks": [{"gw": 1, "chip": None, "squad_ids": [99], "lineup_ids": [99], "bench_ids": [], "buy": [], "sell": []}],
+    }), encoding="utf-8")
+    predictions = pd.DataFrame([
+        {"player_id": 10, "gameweek_id": 1, "projected_points": 8.0, "projected_minutes": 90.0,
+         "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0},
+        {"player_id": 20, "gameweek_id": 1, "projected_points": 6.0, "projected_minutes": 90.0,
+         "xp_goals": 0.5, "xp_assists": 0.4, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0},
+    ])
+    dataset = build_dashboard_dataset(
+        processed_dir, predictions, target_gw=1, horizon=6, solution_path=sol_path
+    )
+    assert dataset["meta"]["owned_squad_ids"] == [10, 20]
+    assert dataset["meta"]["owned_captain_id"] == 20
+    assert dataset["meta"]["owned_vice_captain_id"] == 10
+    assert dataset["meta"]["prefilled_squad_ids"] == [99]
+
