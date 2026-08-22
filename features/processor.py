@@ -4,6 +4,8 @@ import pandas as pd
 from pathlib import Path
 from typing import Optional
 
+from solver.planning import chip_set_from_row, normalize_chip_key
+
 logger = logging.getLogger(__name__)
 
 def load_json(path: Path) -> Optional[dict]:
@@ -190,3 +192,22 @@ def process_directory(input_dir: Path, output_dir: Path):
         df_state = pd.DataFrame([user_state_data])
         df_state.to_parquet(output_dir / "user_state.parquet", index=False)
         logger.info("Processed user state -> user_state.parquet")
+
+        chip_rows: list[dict] = []
+        for raw_chip in chips:
+            key = normalize_chip_key(str(raw_chip.get("name") or raw_chip.get("chip") or ""))
+            if key is None:
+                continue
+            row = {
+                "chip": key,
+                "name": str(raw_chip.get("name") or key),
+                "status": str(raw_chip.get("status") or "available"),
+                "start_event": raw_chip.get("start_event"),
+                "stop_event": raw_chip.get("stop_event"),
+                "number": raw_chip.get("number"),
+            }
+            row["chip_set"] = chip_set_from_row(row)
+            chip_rows.append(row)
+        chip_cols = ["chip", "name", "status", "start_event", "stop_event", "number", "chip_set"]
+        pd.DataFrame(chip_rows, columns=chip_cols).to_parquet(output_dir / "user_chips.parquet", index=False)
+        logger.info(f"Processed {len(chip_rows)} user chips -> user_chips.parquet")

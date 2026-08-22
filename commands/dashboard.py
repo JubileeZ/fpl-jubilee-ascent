@@ -23,8 +23,10 @@ from commands.export_dashboard import (
     build_dashboard_dataset,
     export_dashboard_data,
     load_transfer_plan_document,
+    load_user_chips,
 )
 from commands.solve import CHIP_KEYS, execute_transfer_plan, transfer_plan_options_for_dashboard
+from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
 from features.builder import build_features
 from models import get_default_model_name, get_model
 from projections.exporter import (
@@ -91,11 +93,25 @@ def run_dashboard_transfer_plan(payload: dict[str, object]) -> dict[str, object]
         raw = payload.get(key, [])
         values = raw if isinstance(raw, list) else []
         booked[key] = [int(g) for g in values]
-    horizon = int(payload.get("horizon") or DEFAULT_PLANNING_HORIZON)
-    options = transfer_plan_options_for_dashboard(booked, horizon)
     preseason = bool(payload.get("preseason")) or not (processed_dir / "user_picks.parquet").exists()
-    options["preseason"] = preseason
     target_gw = int(payload["target_gw"]) if payload.get("target_gw") else resolve_next_gw(processed_dir, preseason)
+    horizon = clamp_planning_horizon(int(payload.get("horizon") or DEFAULT_PLANNING_HORIZON))
+    gws = planning_gameweeks(target_gw, horizon)
+    user_chips = [] if preseason else load_user_chips(processed_dir)
+    available = available_chips(gws, user_chips)
+    enabled = [item for item in (payload.get("enabled_chips") or []) if isinstance(item, dict)]
+    force_keep = [item for item in (payload.get("force_keep") or []) if isinstance(item, dict)]
+    force_ban = [item for item in (payload.get("force_ban") or []) if isinstance(item, dict)]
+    options = transfer_plan_options_for_dashboard(
+        booked,
+        horizon,
+        enabled_chips=enabled,
+        force_keep=force_keep,
+        force_ban=force_ban,
+        available=available,
+        target_gw=target_gw,
+    )
+    options["preseason"] = preseason
     ensure_solver_projection_csv(
         str(options["datasource"]),
         processed_dir,
@@ -184,6 +200,7 @@ def run_dashboard_export(
 
     default_model = model_name or model_names[0]
 
+    horizon = clamp_planning_horizon(horizon)
     if target_gw is None:
         try:
             df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")

@@ -125,11 +125,11 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert gw1["total_xp"] == 7.5
     assert haaland["ownership_pct"] == 12.5
     assert dataset["meta"]["planning_gw_ids"] == [1]
-    first_half = haaland["explorer"]["first_half"]
-    assert first_half["realized_points"] is None
-    assert first_half["all_projection"]["n_gameweeks"] == 19
-    assert first_half["all_projection"]["total"] == 7.5
-    assert first_half["all_projection"]["xp_goals"] == 1.0
+    slice_h = haaland["explorer"]["planning_horizon"]
+    assert slice_h["n_gameweeks"] == 1
+    assert slice_h["total"] == 7.5
+    assert slice_h["xp_goals"] == 1.0
+    assert any(c["chip"] == "wc" and c["chip_set"] == 1 for c in dataset["meta"]["available_chips"])
 
 
 def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Path) -> None:
@@ -171,8 +171,16 @@ def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Pa
     haaland = dataset["players"][0]
     assert dataset["meta"]["planning_gw_ids"] == [1]
     assert haaland["total_xp_horizon"] == 7.5
-    assert haaland["explorer"]["full_season"]["all_projection"]["total"] == 10.5
-    assert haaland["explorer"]["full_season"]["all_projection"]["xp_minutes"] == 4.0
+    assert haaland["explorer"]["planning_horizon"]["total"] == 7.5
+    assert haaland["projections"]["gw2"]["total_xp"] == 3.0
+    clamped = build_dashboard_dataset(
+        processed_dir=processed_dir,
+        predictions_df=predictions,
+        target_gw=1,
+        horizon=6,
+    )
+    assert clamped["meta"]["horizon"] == 5
+    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5]
 
 
 def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:
@@ -208,13 +216,9 @@ def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:
         target_gw=2,
         horizon=1,
     )
-    realized = dataset["players"][0]["explorer"]["first_half"]["realized_points"]
-    assert realized is not None
-    assert realized["total"] == 8.0
-    assert realized["n_gameweeks"] == 1
-    assert realized["xp_goals"] == 4.0
-    remaining = dataset["players"][0]["explorer"]["first_half"]["remaining_projection"]
-    assert remaining["total"] == 6.0
+    slice_h = dataset["players"][0]["explorer"]["planning_horizon"]
+    assert slice_h["total"] == 6.0
+    assert slice_h["n_gameweeks"] == 1
     assert 1 not in dataset["meta"]["planning_gw_ids"]
     assert dataset["meta"]["planning_gw_ids"] == [2]
 
@@ -296,7 +300,7 @@ def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
     plan = {
         "meta": {
             "champion": "participation_state_hybrid",
-            "horizon": 6,
+            "horizon": 5,
             "next_gw": 1,
             "decay_base": 0.85,
             "solver_objective": 14.2,
@@ -313,7 +317,7 @@ def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
         "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
     }])
     dataset = build_dashboard_dataset(
-        processed_dir, predictions, target_gw=1, horizon=6, solution_path=sol_path
+        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path
     )
     assert dataset["meta"]["prefilled_squad_ids"] == [10]
     assert dataset["transfer_plan"]["weeks"][0]["chip"] == "BB"
@@ -365,7 +369,7 @@ def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Pa
          "xp_goals": 0.5, "xp_assists": 0.4, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0},
     ])
     dataset = build_dashboard_dataset(
-        processed_dir, predictions, target_gw=1, horizon=6, solution_path=sol_path
+        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path
     )
     assert dataset["meta"]["owned_squad_ids"] == [10, 20]
     assert dataset["meta"]["owned_captain_id"] == 20

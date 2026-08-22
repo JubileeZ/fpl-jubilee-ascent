@@ -12,6 +12,8 @@ Implement a standalone zero-dependency web interface in `dashboard/` (`index.htm
 2. Serves the web interface via Python standard library `http.server` on `http://localhost:8000`.
 3. Frontend provides a searchable, sortable player table, metric filters, horizon selector, and an interactive 15-player pitch/bench squad builder with drag-and-drop support, FPL rule validation (budget, club caps, formation), and MILP optimal squad import.
 
+**Status:** Superseded by ADR 0018. Historical: dashboard shell and Squad Builder pitch.
+
 ## Consequences
 
 - No external web framework dependencies (Streamlit/Dash) added to python project.

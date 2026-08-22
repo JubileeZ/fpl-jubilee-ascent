@@ -12,7 +12,7 @@ from models import get_default_model_name
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PLANNING_HORIZON = 6
+DEFAULT_PLANNING_HORIZON = 5
 
 CACHE_DIR = Path(__file__).parent / ".cache"
 CACHE_FILE = CACHE_DIR / "http_cache.json"

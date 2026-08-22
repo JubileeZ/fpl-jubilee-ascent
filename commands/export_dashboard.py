@@ -19,9 +19,9 @@ from models import get_default_model_name, get_model
 from projections.explorer_slice import (
     COMPONENT_KEYS,
     GameweekScore,
-    build_explorer_slices,
-    realized_gameweek_score,
+    planning_horizon_slice,
 )
+from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
 from solver.utils import DEFAULT_PLANNING_HORIZON
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -88,7 +88,7 @@ def _finished_gameweeks(processed_dir: Path) -> set[int]:
 
 
 def _planning_gw_ids(target_gw: int, horizon: int) -> list[int]:
-    return [gw for gw in range(target_gw, target_gw + horizon) if SEASON_START_GW <= gw <= SEASON_END_GW]
+    return planning_gameweeks(target_gw, horizon)
 
 
 def _groupby_predictions(df_pred: pd.DataFrame) -> pd.DataFrame:
@@ -112,23 +112,6 @@ def _score_from_pred_row(row: pd.Series) -> GameweekScore:
         xp_saves=_safe_float(row.get("xp_saves")),
         xp_bonus=_safe_float(row.get("xp_bonus")),
     )
-
-
-def _realized_by_player(processed_dir: Path, pos_by_player: dict[int, int]) -> dict[int, dict[int, GameweekScore]]:
-    path = processed_dir / "player_performances.parquet"
-    if not path.exists():
-        return {}
-    df_perf = pd.read_parquet(path)
-    if df_perf.empty or "player_id" not in df_perf.columns:
-        return {}
-    out: dict[int, dict[int, GameweekScore]] = {}
-    for (pid, gw), grp in df_perf.groupby(["player_id", "gameweek_id"], sort=False):
-        player_id = int(pid)
-        out.setdefault(player_id, {})[int(gw)] = realized_gameweek_score(
-            grp.to_dict("records"),
-            pos_by_player.get(player_id, 3),
-        )
-    return out
 
 
 def load_transfer_plan_document(solution_path: Optional[Path]) -> Optional[Dict[str, Any]]:
@@ -189,6 +172,16 @@ def load_owned_squad(processed_dir: Path) -> tuple[List[int], Optional[int], Opt
     return ids, captain_id, vice_id
 
 
+def load_user_chips(processed_dir: Path) -> list[dict[str, Any]]:
+    path = processed_dir / "user_chips.parquet"
+    if not path.exists():
+        return []
+    df = pd.read_parquet(path)
+    if df.empty:
+        return []
+    return df.to_dict(orient="records")
+
+
 def build_dashboard_dataset(
     processed_dir: Path,
     predictions_df: pd.DataFrame | Dict[str, pd.DataFrame],
@@ -198,6 +191,7 @@ def build_dashboard_dataset(
     default_model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
+    horizon = clamp_planning_horizon(horizon)
     players_df = pd.read_parquet(processed_dir / "players.parquet")
     clubs_df = pd.read_parquet(processed_dir / "clubs.parquet")
 
@@ -220,8 +214,6 @@ def build_dashboard_dataset(
     planning_gw_set = set(planning_gw_ids)
     finished_gws = _finished_gameweeks(processed_dir)
     expected_roles = _load_expected_roles()
-    pos_by_player = {int(row["id"]): int(row["position_id"]) for _, row in players_df.iterrows()}
-    realized_map = _realized_by_player(processed_dir, pos_by_player)
 
     grouped_models: Dict[str, pd.DataFrame] = {}
     all_gw_ids: set[int] = set(planning_gw_ids)
@@ -268,7 +260,6 @@ def build_dashboard_dataset(
         defcon_pts_factor = _DEFCON_POINTS.get(pos_id, 0.0)
 
         player_models_dict: Dict[str, Any] = {}
-        player_realized = realized_map.get(pid, {})
 
         for m_name, gw_grouped in grouped_models.items():
             p_preds = gw_grouped[gw_grouped["player_id"] == pid]
@@ -325,7 +316,7 @@ def build_dashboard_dataset(
                     total_xp_horizon += xp_pts
                     total_xmins_horizon += xmins
 
-            explorer = build_explorer_slices(projection_by_gw, player_realized, finished_gws)
+            explorer = {"planning_horizon": planning_horizon_slice(projection_by_gw, planning_gw_ids)}
             player_models_dict[m_name] = {
                 "projections": projections,
                 "total_xp_horizon": round(total_xp_horizon, 2),
@@ -378,6 +369,7 @@ def build_dashboard_dataset(
         }
         players_data.append(player_dict)
 
+    user_chips = load_user_chips(processed_dir)
     dataset = {
         "meta": {
             "target_gw": target_gw,
@@ -385,8 +377,7 @@ def build_dashboard_dataset(
             "gw_ids": gw_ids,
             "planning_gw_ids": planning_gw_ids,
             "finished_gameweeks": sorted(finished_gws),
-            "default_season_window": "first_half",
-            "default_score_mode": "all_projection",
+            "available_chips": available_chips(planning_gw_ids, user_chips),
             "models": model_names,
             "default_model": primary_model_name,
             "solution_model_name": solution_model_name,
@@ -457,6 +448,7 @@ def main() -> None:
         except Exception:
             target_gw = 1
 
+    args.horizon = clamp_planning_horizon(args.horizon)
     logger.info(f"Building Full-Season Window features GW{SEASON_START_GW}–{SEASON_END_GW}; pitch Planning Horizon {args.horizon} from GW{target_gw}")
     df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
 

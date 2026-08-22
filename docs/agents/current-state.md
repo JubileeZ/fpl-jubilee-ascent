@@ -10,7 +10,7 @@ Season 2026/27 underway. Preseason research archived under `docs/archive/` (note
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0017` (Transfer Plan tab). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` (two-tab Transfer Plan + Ownership Explorer; 0008/0017 superseded). Vocabulary in `CONTEXT.md`. Dated research diary: [`docs/archive/current-state-research-log.md`](../archive/current-state-research-log.md).
 
 ## Research truth (21 Aug)
 
@@ -36,7 +36,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Squad Builder, Transfer Plan, Ownership Explorer. Pitch prefills User Squad (`user_picks.parquet`) else MILP. Full-Season Window Champion export writes solver CSVs. Transfer Plan = Champion MILP, Planning Horizon default 6, chip calendar + Re-solve (rebuilds Champion CSV if `{week}_Pts` missing). Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Transfer Plan + Ownership Explorer. Transfer Plan opens first; 15 is User Squad else preseason draft. Planning Horizon 1–5 (default 5) from `is_next`. Force Keep/Ban, Booked/Enabled Chips per Chip Set, view-only Mix. Champion MILP + Official Fixture Difficulty. Full-Season Window export writes solver CSVs. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
@@ -72,7 +72,7 @@ uv run python -m commands.decision_regret --entry_id <public-entry-id>
 uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
 uv run python -m commands.report                       # Print report
 uv run python -m commands.price_report                # Print price changes
-uv run python -m commands.dashboard                   # Squad Builder + Transfer Plan + Ownership Explorer
+uv run python -m commands.dashboard                   # Transfer Plan + Ownership Explorer
 ```
 
 ---

@@ -218,3 +218,10 @@ def slice_metrics_to_dict(metrics: SliceMetrics) -> dict[str, float | int | None
         "xp_saves": metrics.xp_saves,
         "xp_bonus": metrics.xp_bonus,
     }
+
+
+def planning_horizon_slice(
+    projection_by_gw: Mapping[int, GameweekScore],
+    planning_gws: list[int],
+) -> dict[str, float | int | None]:
+    return slice_metrics_to_dict(aggregate_slice(projection_by_gw, tuple(planning_gws)))

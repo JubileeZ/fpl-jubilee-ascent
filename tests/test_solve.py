@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pathlib import Path
 from unittest.mock import patch
 from commands.solve import build_my_data_from_parquet, main, validate_booked_chips
 from solver.utils import load_settings
@@ -31,6 +32,7 @@ def test_build_my_data_from_parquet(tmp_path):
     assert my_data["picks"][0]["element"] == 101
     assert my_data["picks"][0]["selling_price"] == 98
     assert my_data["picks"][0]["element_type"] == 3
+    assert my_data["chips"] == []
 
 def test_build_my_data_with_unlimited_transfers(tmp_path):
     # 1. Create mock processed tables
@@ -53,6 +55,24 @@ def test_build_my_data_with_unlimited_transfers(tmp_path):
     my_data = build_my_data_from_parquet(tmp_path)
     
     assert my_data["transfers"]["limit"] is None
+
+
+def test_build_my_data_includes_active_user_chips(tmp_path: Path) -> None:
+    pd.DataFrame([{
+        "player_id": 101, "purchase_price": 95, "selling_price": 98,
+        "lineup_index": 1, "multiplier": 1, "is_captain": False, "is_vice_captain": False,
+    }]).to_parquet(tmp_path / "user_picks.parquet")
+    pd.DataFrame([{
+        "entry_id": 12345, "bank": 15, "free_transfers": 1, "value": 1000, "active_chip": "wildcard",
+    }]).to_parquet(tmp_path / "user_state.parquet")
+    pd.DataFrame([{"id": 101, "position_id": 3}]).to_parquet(tmp_path / "players.parquet")
+    pd.DataFrame([{
+        "chip": "wc", "name": "wildcard", "status": "active",
+        "start_event": 1, "stop_event": 19, "number": 1, "chip_set": 1,
+    }]).to_parquet(tmp_path / "user_chips.parquet")
+    my_data = build_my_data_from_parquet(tmp_path)
+    assert my_data["chips"][0]["name"] == "wildcard"
+    assert my_data["chips"][0]["status_for_entry"] == "active"
 
 
 def test_validate_booked_chips_accepts_one_chip_per_gameweek():

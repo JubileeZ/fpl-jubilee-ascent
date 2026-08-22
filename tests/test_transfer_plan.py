@@ -95,10 +95,10 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert "model" not in dumped
 
 
-def test_load_settings_defaults_planning_horizon_to_six(tmp_path: Path, monkeypatch: Any) -> None:
+def test_load_settings_defaults_planning_horizon_to_five(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
-    assert DEFAULT_PLANNING_HORIZON == 6
-    assert load_settings()["horizon"] == 6
+    assert DEFAULT_PLANNING_HORIZON == 5
+    assert load_settings()["horizon"] == 5
 
 
 def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:
@@ -144,12 +144,33 @@ def test_dashboard_transfer_plan_options_force_champion() -> None:
     ):
         options = transfer_plan_options_for_dashboard(
             {"use_wc": [4], "use_bb": [1], "use_fh": [], "use_tc": []},
-            horizon=6,
+            horizon=5,
         )
     assert options["datasource"] == "participation_state_hybrid"
-    assert options["horizon"] == 6
+    assert options["horizon"] == 5
     assert options["use_wc"] == [4]
     assert options["use_bb"] == [1]
+    assert options["enabled_chip_windows"] == []
+    assert options["force_keep_gws"] == []
+
+
+def test_dashboard_transfer_plan_options_include_keep_ban_and_enabled() -> None:
+    with patch(
+        "commands.solve.load_settings",
+        return_value={"datasource": "linear_baseline", "horizon": 5, "decay_base": 0.85, "keep": []},
+    ):
+        options = transfer_plan_options_for_dashboard(
+            {"use_wc": [], "use_bb": [], "use_fh": [], "use_tc": []},
+            horizon=5,
+            enabled_chips=[{"chip": "bb", "chip_set": 1}],
+            force_keep=[{"player_id": 10, "gw": 1}],
+            force_ban=[{"player_id": 20, "gw": 2}],
+            target_gw=1,
+        )
+    assert options["force_keep_gws"] == [[10, 1]]
+    assert options["force_ban_gws"] == [[20, 2]]
+    assert options["enabled_chip_windows"][0]["chip"] == "bb"
+    assert 10 in options["keep"]
 
 
 def test_run_dashboard_transfer_plan_passes_booked_chips_and_preseason(tmp_path: Path, monkeypatch: Any) -> None:
@@ -172,11 +193,24 @@ def test_run_dashboard_transfer_plan_passes_booked_chips_and_preseason(tmp_path:
     with patch("commands.dashboard.ensure_solver_projection_csv", return_value=tmp_path / "data" / "participation_state_hybrid.csv"), patch(
         "commands.dashboard.execute_transfer_plan", side_effect=fake_execute
     ):
-        plan = run_dashboard_transfer_plan({"use_wc": [4], "use_bb": [1], "target_gw": 2, "horizon": 6})
+        plan = run_dashboard_transfer_plan({
+            "use_wc": [4],
+            "use_bb": [3],
+            "target_gw": 2,
+            "horizon": 5,
+            "enabled_chips": [{"chip": "fh", "chip_set": 1}],
+            "force_keep": [{"player_id": 10, "gw": 2}],
+            "force_ban": [{"player_id": 20, "gw": 3}],
+        })
     assert captured["target_gw"] == 2
     assert captured["options"]["preseason"] is True
     assert captured["options"]["datasource"] == "participation_state_hybrid"
     assert captured["options"]["use_wc"] == [4]
+    assert captured["options"]["use_bb"] == [3]
+    assert captured["options"]["force_keep_gws"] == [[10, 2]]
+    assert captured["options"]["force_ban_gws"] == [[20, 3]]
+    assert captured["options"]["enabled_chip_windows"][0]["chip"] == "fh"
+    assert 10 in captured["options"]["keep"]
     assert plan["meta"]["champion"] == "participation_state_hybrid"
 
 
@@ -290,7 +324,7 @@ def test_run_dashboard_transfer_plan_ensures_csv_before_solve(tmp_path: Path, mo
     ):
         run_dashboard_transfer_plan({"horizon": 6, "target_gw": 1})
     assert captured["ensure"]["model_name"] == "participation_state_hybrid"
-    assert captured["ensure"]["horizon"] == 6
+    assert captured["ensure"]["horizon"] == 5
     assert captured["ensure"]["target_gw"] == 1
     assert captured["ensure"]["output_dir"] == tmp_path / "data"
 

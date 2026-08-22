@@ -2,11 +2,14 @@
   const CHIP_OPTIONS = ["", "WC", "BB", "FH", "TC"];
   const CHIP_TO_KEY = { WC: "use_wc", BB: "use_bb", FH: "use_fh", TC: "use_tc" };
   const KEY_TO_CHIP = { use_wc: "WC", use_bb: "BB", use_fh: "FH", use_tc: "TC" };
+  const CHIP_LABEL = { wc: "WC", bb: "BB", fh: "FH", tc: "TC" };
 
   let ctx = null;
   let selectedGw = null;
   let bound = false;
   let calendarDirty = false;
+  let forceKeep = [];
+  let forceBan = [];
 
   function playersMap() {
     const map = new Map();
@@ -23,20 +26,26 @@
   }
 
   function horizonGws() {
+    if (ctx && ctx.getViewGws) return ctx.getViewGws();
     const current = plan();
     if (current && current.weeks && current.weeks.length) {
       return current.weeks.map((w) => w.gw);
     }
-    const start = intOr(meta().target_gw, 1);
-    const horizon = intOr(meta().horizon, 6);
-    const out = [];
-    for (let gw = start; gw < start + horizon && gw <= 38; gw += 1) out.push(gw);
-    return out;
+    return meta().planning_gw_ids || [];
   }
 
   function intOr(value, fallback) {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
+  }
+
+  function chipSet(gw) {
+    return gw <= 19 ? 1 : 2;
+  }
+
+  function availableForGw(gw) {
+    const setId = chipSet(gw);
+    return (meta().available_chips || []).filter((c) => c.chip_set === setId);
   }
 
   function bindOnce() {
@@ -45,8 +54,11 @@
     document.getElementById("plan-gw-select")?.addEventListener("change", (event) => {
       selectedGw = Number(event.target.value);
       renderLedgerAndPitch();
+      renderOverrides();
     });
     document.getElementById("btn-re-solve")?.addEventListener("click", reSolve);
+    document.getElementById("btn-force-keep")?.addEventListener("click", () => addOverride("keep"));
+    document.getElementById("btn-force-ban")?.addEventListener("click", () => addOverride("ban"));
   }
 
   function bookedFromCalendar() {
@@ -57,6 +69,35 @@
       if (key) booked[key].push(gw);
     });
     return booked;
+  }
+
+  function enabledFromChecks() {
+    return Array.from(document.querySelectorAll("#plan-enabled-chips input:checked")).map((el) => ({
+      chip: el.dataset.chip,
+      chip_set: Number(el.dataset.chipSet),
+    }));
+  }
+
+  function renderEnabledChips() {
+    const root = document.getElementById("plan-enabled-chips");
+    if (!root) return;
+    if (root.dataset.built === "1") return;
+    const chips = meta().available_chips || [];
+    root.replaceChildren();
+    root.dataset.built = "1";
+    if (!chips.length) {
+      root.textContent = "No Available Chips in this Planning Horizon.";
+      return;
+    }
+    chips.forEach((chip) => {
+      const lab = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.chip = chip.chip;
+      input.dataset.chipSet = String(chip.chip_set);
+      lab.append(input, ` ${CHIP_LABEL[chip.chip] || chip.chip} (Set ${chip.chip_set})`);
+      root.appendChild(lab);
+    });
   }
 
   function renderCalendar(force) {
@@ -76,16 +117,76 @@
       const sel = document.createElement("select");
       sel.className = "select-input";
       sel.dataset.gw = String(gw);
+      const allowed = new Set(availableForGw(gw).map((c) => CHIP_LABEL[c.chip]));
       CHIP_OPTIONS.forEach((chip) => {
+        if (chip && !allowed.has(chip)) return;
         const opt = document.createElement("option");
         opt.value = chip;
         opt.textContent = chip || "None";
         sel.appendChild(opt);
       });
-      sel.value = byGw[gw] || "";
+      const current = byGw[gw] || "";
+      sel.value = allowed.has(current) || current === "" ? current : "";
       sel.addEventListener("change", () => { calendarDirty = true; });
       wrap.appendChild(sel);
       root.appendChild(wrap);
+    });
+  }
+
+  function playerByName(query) {
+    const needle = (query || "").trim().toLowerCase();
+    if (!needle) return null;
+    const players = ctx && ctx.getPlayers ? ctx.getPlayers() : [];
+    return players.find((p) => p.name.toLowerCase() === needle)
+      || players.find((p) => p.name.toLowerCase().includes(needle));
+  }
+
+  function addOverride(kind) {
+    const input = document.getElementById("override-search");
+    const player = playerByName(input && input.value);
+    const gw = selectedGw || horizonGws()[0];
+    if (!player || !gw) return;
+    const target = kind === "keep" ? forceKeep : forceBan;
+    const other = kind === "keep" ? forceBan : forceKeep;
+    if (target.some((row) => row.player_id === player.id && row.gw === gw)) return;
+    const idx = other.findIndex((row) => row.player_id === player.id && row.gw === gw);
+    if (idx >= 0) other.splice(idx, 1);
+    target.push({ player_id: player.id, gw, name: player.name });
+    if (input) input.value = "";
+    renderOverrides();
+  }
+
+  function renderOverrides() {
+    const list = document.getElementById("override-list");
+    const data = document.getElementById("override-players");
+    if (data) {
+      data.replaceChildren();
+      (ctx && ctx.getPlayers ? ctx.getPlayers() : []).forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.name;
+        data.appendChild(opt);
+      });
+    }
+    if (!list) return;
+    list.replaceChildren();
+    const rows = [
+      ...forceKeep.map((row) => ({ ...row, kind: "Keep" })),
+      ...forceBan.map((row) => ({ ...row, kind: "Ban" })),
+    ].sort((a, b) => a.gw - b.gw || a.name.localeCompare(b.name));
+    rows.forEach((row) => {
+      const li = document.createElement("li");
+      li.textContent = `${row.kind} ${row.name} · GW${row.gw} `;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-danger";
+      btn.textContent = "×";
+      btn.addEventListener("click", () => {
+        forceKeep = forceKeep.filter((item) => !(item.player_id === row.player_id && item.gw === row.gw && row.kind === "Keep"));
+        forceBan = forceBan.filter((item) => !(item.player_id === row.player_id && item.gw === row.gw && row.kind === "Ban"));
+        renderOverrides();
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
     });
   }
 
@@ -101,9 +202,11 @@
     const objEl = document.getElementById("plan-objective");
     const xpEl = document.getElementById("plan-xp");
     const m = current && current.meta;
+    const gws = horizonGws();
+    const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "";
     if (metaEl) {
       if (!m) {
-        metaEl.textContent = "No Transfer Plan yet. Book chips and Re-solve (Model Champion, Official Fixture Difficulty, Planning Horizon 6).";
+        metaEl.textContent = `No Transfer Plan yet. Book or Enable chips, Force Keep/Ban, then Re-solve (Model Champion, Official Fixture Difficulty, ${span}).`;
       } else {
         metaEl.textContent = `Champion ${m.champion} · Official Fixture Difficulty · Planning Horizon ${m.horizon} from GW${m.next_gw} · decay ${m.decay_base}`;
       }
@@ -143,6 +246,19 @@
     return ids.map((id) => (map.get(id) && map.get(id).name) || `#${id}`).join(", ");
   }
 
+  function fallbackSquadWeek() {
+    const m = meta();
+    const ids = m.owned_squad_ids || [];
+    if (!ids.length) return null;
+    return {
+      squad_ids: ids,
+      lineup_ids: ids.slice(0, 11),
+      bench_ids: ids.slice(11),
+      captain_id: m.owned_captain_id,
+      vice_id: m.owned_vice_captain_id,
+    };
+  }
+
   function renderLedgerAndPitch() {
     const week = weekFor(selectedGw);
     const ledger = document.getElementById("plan-ledger");
@@ -161,7 +277,7 @@
         `;
       }
     }
-    renderPitch(week);
+    renderPitch(week || fallbackSquadWeek());
   }
 
   function cardHtml(player, captainId, viceId) {
@@ -215,7 +331,10 @@
     try {
       const payload = {
         ...bookedFromCalendar(),
-        horizon: intOr(meta().horizon, 6),
+        enabled_chips: enabledFromChecks(),
+        force_keep: forceKeep.map((row) => ({ player_id: row.player_id, gw: row.gw })),
+        force_ban: forceBan.map((row) => ({ player_id: row.player_id, gw: row.gw })),
+        horizon: ctx && ctx.getViewHorizon ? ctx.getViewHorizon() : intOr(meta().horizon, 5),
         target_gw: intOr(meta().target_gw, 1),
       };
       const response = await fetch("/api/transfer-plan", {
@@ -239,9 +358,11 @@
   function render(forceCalendar) {
     bindOnce();
     renderHeader();
+    renderEnabledChips();
     renderCalendar(Boolean(forceCalendar));
     renderGwSelect();
     renderLedgerAndPitch();
+    renderOverrides();
   }
 
   window.initTransferPlan = async function (context) {

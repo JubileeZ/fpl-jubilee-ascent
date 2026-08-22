@@ -3,29 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FPL Jubilee Ascent - Projections & Squad Dashboard</title>
+  <title>FPL Jubilee Ascent - Transfer Plan &amp; Ownership Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
-  <div class="app-container" data-view="squad">
-    <!-- Top Header -->
+  <div class="app-container" data-view="plan">
     <header class="navbar">
       <div class="brand">
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle">Squad Builder, Transfer Plan &amp; Ownership Explorer</span>
+          <span class="subtitle">Transfer Plan &amp; Ownership Explorer</span>
         </div>
       </div>
 
       <div class="header-controls">
         <div class="view-tabs" role="tablist">
-          <button type="button" class="view-tab active" id="tab-squad" data-view="squad">Squad Builder</button>
-          <button type="button" class="view-tab" id="tab-plan" data-view="plan">Transfer Plan</button>
+          <button type="button" class="view-tab active" id="tab-plan" data-view="plan">Transfer Plan</button>
           <button type="button" class="view-tab" id="tab-explorer" data-view="explorer">Ownership Explorer</button>
+        </div>
+        <div class="control-group">
+          <label for="horizonSelect">Planning Horizon:</label>
+          <select id="horizonSelect" class="select-input"></select>
         </div>
         <div class="control-group not-plan">
           <label for="primaryModelSelect">Primary Model:</label>
@@ -33,162 +35,10 @@
             <option value="default">Champion Model</option>
           </select>
         </div>
-
-        <div class="control-group squad-only">
-          <label>Compare Models:</label>
-          <div id="compareModelsContainer" class="compare-checkbox-group"></div>
-        </div>
-
-        <div class="control-group squad-only">
-          <label for="gwSelect">View Horizon:</label>
-          <select id="gwSelect" class="select-input">
-            <option value="horizon">Full Horizon Total (5 GWs)</option>
-          </select>
-        </div>
-
-        <div class="button-group squad-only">
-          <button id="btnLoadOwned" class="btn btn-primary">
-            <span class="btn-icon">👤</span> Load My Squad
-          </button>
-
-          <button id="btnLoadMilp" class="btn btn-primary">
-            <span class="btn-icon">⚡</span> Load MILP Squad
-          </button>
-
-          <button id="btnClearSquad" class="btn btn-danger">
-            <span class="btn-icon">🗑️</span> Clear
-          </button>
-        </div>
       </div>
     </header>
 
-
-    <!-- Main Content Grid -->
-    <main class="main-grid" id="squad-root">
-      <!-- Left Column: Squad Builder & Pitch -->
-      <section class="squad-section">
-        <div class="card squad-summary-card">
-          <div class="summary-stat">
-            <span class="stat-label">Starting 11 xP</span>
-            <span id="statStartingXp" class="stat-value text-accent">0.0</span>
-          </div>
-          <div class="summary-divider"></div>
-          <div class="summary-stat">
-            <span class="stat-label">Bench xP</span>
-            <span id="statBenchXp" class="stat-value">0.0</span>
-          </div>
-          <div class="summary-divider"></div>
-          <div class="summary-stat">
-            <span class="stat-label">Total Cost</span>
-            <span id="statCost" class="stat-value">£0.0m / £100.0m</span>
-          </div>
-          <div class="summary-divider"></div>
-          <div class="summary-stat">
-            <span class="stat-label">Formation</span>
-            <span id="statFormation" class="stat-value text-muted">0-0-0</span>
-          </div>
-        </div>
-
-        <!-- Squad Status Alerts -->
-        <div id="squadValidationAlert" class="validation-banner valid">
-          <span id="validationText">Squad setup valid</span>
-        </div>
-
-        <!-- Pitch Visualization -->
-        <div class="pitch-container">
-          <div class="pitch-grass">
-            <div class="pitch-lines">
-              <div class="penalty-box top"></div>
-              <div class="center-circle"></div>
-              <div class="center-line"></div>
-              <div class="penalty-box bottom"></div>
-            </div>
-
-            <!-- Pitch Formations Rows -->
-            <div class="pitch-layout">
-              <!-- Goalkeeper Row -->
-              <div id="rowGk" class="pitch-row"></div>
-              <!-- Defender Row -->
-              <div id="rowDef" class="pitch-row"></div>
-              <!-- Midfielder Row -->
-              <div id="rowMid" class="pitch-row"></div>
-              <!-- Forward Row -->
-              <div id="rowFwd" class="pitch-row"></div>
-            </div>
-          </div>
-
-          <!-- Bench Tray -->
-          <div class="bench-tray">
-            <div class="bench-header">
-              <span class="bench-title">Bench (Substitutes)</span>
-              <span id="benchCountText" class="bench-sub">0/4 Players</span>
-            </div>
-            <div id="benchContainer" class="bench-slots">
-              <!-- Bench slots 12-15 -->
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Right Column: Player Metrics Table -->
-      <section class="table-section">
-        <div class="card table-card">
-          <div class="table-toolbar">
-            <div class="filter-controls">
-              <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" placeholder="Search player name or team..." class="search-input">
-              </div>
-
-              <div id="teamSelect" class="club-multi"></div>
-
-              <div class="price-slider-group">
-                <label for="priceSlider" class="price-slider-label">Max Price: <span id="priceSliderVal">£15.0m</span></label>
-                <input type="range" id="priceSlider" min="3.5" max="15.0" step="0.5" value="15.0" class="price-slider">
-              </div>
-            </div>
-
-            <div class="position-tabs">
-              <button class="pos-tab active" data-pos="ALL">ALL</button>
-              <button class="pos-tab pos-gk" data-pos="G">GK</button>
-              <button class="pos-tab pos-def" data-pos="D">DEF</button>
-              <button class="pos-tab pos-mid" data-pos="M">MID</button>
-              <button class="pos-tab pos-fwd" data-pos="F">FWD</button>
-            </div>
-          </div>
-
-          <!-- Table Container -->
-          <div class="table-responsive">
-            <table id="playersTable" class="data-table">
-              <thead>
-                <tr>
-                  <th class="action-col">Action</th>
-                  <th data-sort="name">Player ↕</th>
-                  <th data-sort="pos">Pos ↕</th>
-                  <th data-sort="team">Team ↕</th>
-                  <th data-sort="price" class="num">Price ↕</th>
-                  <th data-sort="selected_xp" class="num highlight-col">Total xP ↕</th>
-                  <th data-sort="selected_xmins" class="num">xMins ↕</th>
-                  <th data-sort="selected_xg_pts" class="num">xG Pts ↕</th>
-                  <th data-sort="selected_xa_pts" class="num">xA Pts ↕</th>
-                  <th data-sort="selected_xcs_pts" class="num">xCS Pts ↕</th>
-                  <th data-sort="selected_xdefcon_pts" class="num">xDef ↕</th>
-                  <th data-sort="selected_xb_pts" class="num">xB ↕</th>
-                  <th data-sort="pts_per_start" class="num">Pts/Start ↕</th>
-                  <th data-sort="pts_per_90" class="num">Pts/90 ↕</th>
-                  <th data-sort="ict_per_90" class="num">ICT/90 ↕</th>
-                </tr>
-              </thead>
-              <tbody id="tableBody">
-                <!-- Rows injected dynamically by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <section class="plan-root" id="plan-root" hidden>
+    <section class="plan-root" id="plan-root">
       <div class="card plan-toolbar">
         <p id="plan-meta" class="plan-meta"></p>
         <div class="plan-scores">
@@ -202,8 +52,23 @@
           </div>
         </div>
         <div>
+          <label class="title">Enabled Chips</label>
+          <div id="plan-enabled-chips" class="plan-enabled-chips"></div>
+        </div>
+        <div>
           <label class="title">Booked Chips</label>
           <div id="plan-chip-calendar" class="plan-chip-calendar"></div>
+        </div>
+        <div>
+          <label class="title">Force Keep / Force Ban</label>
+          <p class="plan-hint">Applies to the selected Gameweek in the ledger.</p>
+          <div class="plan-overrides">
+            <input type="search" id="override-search" class="select-input" placeholder="Player name" list="override-players" autocomplete="off">
+            <datalist id="override-players"></datalist>
+            <button type="button" id="btn-force-keep" class="btn btn-primary">Force Keep</button>
+            <button type="button" id="btn-force-ban" class="btn btn-danger">Force Ban</button>
+          </div>
+          <ul id="override-list" class="override-list"></ul>
         </div>
         <button type="button" id="btn-re-solve" class="btn btn-primary">Re-solve</button>
         <p id="plan-status" class="plan-status"></p>
@@ -242,22 +107,6 @@
     <section class="explorer-root" id="explorer-root" hidden>
       <div class="card explorer-toolbar">
         <div class="group">
-          <label class="title">Season Window</label>
-          <div class="checks">
-            <label><input type="radio" name="season-window" value="first_half" checked> First-Half Horizon (GW1–19)</label>
-            <label><input type="radio" name="season-window" value="second_half"> Second-Half Horizon (GW20–38)</label>
-            <label><input type="radio" name="season-window" value="full_season"> Full-Season Window (GW1–38)</label>
-          </div>
-        </div>
-        <div class="group">
-          <label class="title">Score Mode</label>
-          <div class="checks" id="score-mode-checks">
-            <label><input type="radio" name="score-mode" value="all_projection" checked> All Projection</label>
-            <label id="realized-mode-label" hidden><input type="radio" name="score-mode" value="realized_points"> Realized Points</label>
-            <label><input type="radio" name="score-mode" value="remaining_projection"> Remaining Projection</label>
-          </div>
-        </div>
-        <div class="group">
           <label class="title">Y-axis</label>
           <div class="checks">
             <label><input type="radio" name="y-metric" value="rate_per_90" checked> Projected Rate</label>
@@ -292,6 +141,20 @@
           <input type="search" id="explorer-search" placeholder="Player, club, role…" autocomplete="off" spellcheck="false">
         </div>
       </div>
+      <div class="card mix-panel">
+        <p class="title">Mix vs Mix (same size, view-only)</p>
+        <div class="mix-columns">
+          <div>
+            <strong>Mix A</strong>
+            <ul id="mix-a-list" class="mix-list"></ul>
+          </div>
+          <div>
+            <strong>Mix B</strong>
+            <ul id="mix-b-list" class="mix-list"></ul>
+          </div>
+        </div>
+        <p id="mix-compare" class="mix-compare"></p>
+      </div>
       <p id="explorer-meta" class="explorer-meta"></p>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
@@ -300,7 +163,7 @@
       <div id="explorer-table-wrap" class="explorer-table-wrap">
         <table class="data-table explorer-table">
           <thead>
-            <tr>
+            <tr id="explorer-thead-row">
               <th data-sort="rank">#</th>
               <th data-sort="name">Player</th>
               <th data-sort="club">Club</th>
@@ -310,15 +173,8 @@
               <th data-sort="total">Total</th>
               <th data-sort="rate_per_90">/90</th>
               <th data-sort="avg_minutes">Avg mins</th>
-              <th data-sort="xp_minutes">Mins</th>
-              <th data-sort="xp_goals">Goals</th>
-              <th data-sort="xp_assists">Assists</th>
-              <th data-sort="xp_clean_sheet">CS</th>
-              <th data-sort="xp_conceded">Conc</th>
-              <th data-sort="xp_defcon">Defcon</th>
-              <th data-sort="xp_saves">Saves</th>
-              <th data-sort="xp_bonus">Bonus</th>
               <th data-sort="role">Role</th>
+              <th>Mix</th>
             </tr>
           </thead>
           <tbody id="explorer-table"></tbody>
@@ -328,8 +184,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=10"></script>
-  <script src="explorer.js?v=4"></script>
-  <script src="plan.js?v=1"></script>
+  <script src="app.js?v=12"></script>
+  <script src="explorer.js?v=6"></script>
+  <script src="plan.js?v=3"></script>
 </body>
 </html>

@@ -124,7 +124,20 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 10. Price History (`price_history.parquet`)
+## 10. User Chips (`user_chips.parquet`)
+*   **Source:** `/my-team/{entry_id}/` (`chips` list).
+*   **Fields Retained:**
+    *   `chip` (`str`): Normalized key `wc` / `bb` / `fh` / `tc`.
+    *   `name` (`str`): FPL chip name (`wildcard`, `bboost`, `freehit`, `3xc`).
+    *   `status` (`str`): `available`, `active`, or `played`.
+    *   `start_event` (`int`, nullable), `stop_event` (`int`, nullable).
+    *   `number` (`int`, nullable): FPL chip instance (1 = Chip Set 1, 2 = Chip Set 2).
+    *   `chip_set` (`int`): 1 (GW1–19) or 2 (GW20–38).
+*   **Discarded:** chip UI copy, `chip_type`.
+
+---
+
+## 11. Price History (`price_history.parquet`)
 *   **Source:** Processed `players.parquet` after each `refresh_data` run.
 *   **Fields Retained:**
     *   `player_id` (`int`): Reference to Player.
@@ -136,7 +149,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 11. Availability Snapshot Package
+## 12. Availability Snapshot Package
 *   **Root:** `data/availability-snapshots/<season>/GW<gameweek>/<capture>-<hash>/`.
 *   **Capture rule:** Stores only changed, complete packages captured in the 48
     hours before the recorded Gameweek deadline.
@@ -151,7 +164,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 
 ---
 
-## 12. Projection Contract
+## 13. Projection Contract
 Model output is long format with:
 * `player_id`: Player identifier.
 * `fixture_id`: Fixture identifier; `-1` denotes a blank gameweek row.

@@ -15,6 +15,12 @@ configure_utf8_stdio()
 from models import get_default_model_name
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
+from solver.planning import (
+    available_chips,
+    clamp_planning_horizon,
+    planning_gameweeks,
+    solver_options_from_plan,
+)
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
 from solver.transfer_plan import serialize_transfer_plan
@@ -37,6 +43,9 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "export_debug",
     "force_ft_state_lb",
     "force_ft_state_ub",
+    "enabled_chip_windows",
+    "force_ban_gws",
+    "force_keep_gws",
     "forced_chip_gws",
     "ft_use_penalty",
     "ft_value",
@@ -168,12 +177,30 @@ def booked_chips_from_options(options: dict[str, object]) -> dict[str, list[int]
 def transfer_plan_options_for_dashboard(
     booked_chips: dict[str, list[int]],
     horizon: int,
+    *,
+    enabled_chips: list[dict[str, object]] | None = None,
+    force_keep: list[dict[str, object]] | None = None,
+    force_ban: list[dict[str, object]] | None = None,
+    available: list[dict[str, object]] | None = None,
+    target_gw: int = 1,
 ) -> dict[str, object]:
     options = load_settings()
-    options["horizon"] = int(horizon)
+    horizon = clamp_planning_horizon(horizon)
+    gws = planning_gameweeks(target_gw, horizon)
+    chips = solver_options_from_plan(
+        booked_chips=booked_chips,
+        enabled_chips=enabled_chips or [],
+        force_keep=force_keep or [],
+        force_ban=force_ban or [],
+        planning_gws=gws,
+        available=available if available is not None else available_chips(gws, []),
+        horizon=horizon,
+    )
+    options.update(chips)
+    keep_ids = {int(pid) for pid, _gw in chips.get("force_keep_gws") or []}
+    existing_keep = {int(pid) for pid in (options.get("keep") or [])}
+    options["keep"] = list(existing_keep | keep_ids)
     options["datasource"] = get_default_model_name()
-    for chip_key in CHIP_KEYS:
-        options[chip_key] = [int(g) for g in booked_chips.get(chip_key, [])]
     return options
 
 
@@ -268,6 +295,14 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
     df_picks = pd.read_parquet(picks_path)
     df_state = pd.read_parquet(state_path)
     df_players = pd.read_parquet(players_path)
+    chips_path = processed_dir / "user_chips.parquet"
+    chips: list[dict[str, object]] = []
+    if chips_path.exists():
+        df_chips = pd.read_parquet(chips_path)
+        for _, chip_row in df_chips.iterrows():
+            name = str(chip_row.get("name") or chip_row.get("chip") or "")
+            status = str(chip_row.get("status") or "")
+            chips.append({"name": name, "status": status, "status_for_entry": status})
     
     # Map player_id to position_id
     player_pos_map = df_players.set_index("id")["position_id"].to_dict()
@@ -288,7 +323,7 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
     limit = None if pd.isna(state_row["free_transfers"]) else int(state_row["free_transfers"])
     
     return {
-        "chips": [],
+        "chips": chips,
         "picks": picks_list,
         "team_id": int(state_row["entry_id"]),
         "transfers": {

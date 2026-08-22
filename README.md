@@ -32,7 +32,7 @@ and [uv.lock](uv.lock).
 - `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Ownership Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
-- `dashboard/` — Interactive Squad Builder and Ownership Explorer (`uv run python -m commands.dashboard`)
+- `dashboard/` — Transfer Plan and Ownership Explorer (`uv run python -m commands.dashboard`)
 - `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
@@ -187,8 +187,8 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Interactive Squad Builder plus Ownership Explorer. It is
-not the research HTML at
+The local dashboard is Transfer Plan plus Ownership Explorer. It is not the
+research HTML at
 `docs/archive/ownership-value-explorer/ownership_value_explorer.html`.
 
 **Open it**
@@ -213,80 +213,46 @@ not the research HTML at
 Optional flags: `--export-only` refreshes the JSON without serving;
 `--no-browser` skips auto-open; `--port` changes the port; `--model` /
 `--models` override Champion/Candidate export. `--horizon` is the Planning
-Horizon for Squad Builder and Transfer Plan (default 6 gameweeks from the next
-unfinished GW).
+Horizon (1–5, default 5, from the next gameweek whose deadline has not passed).
+Values above 5 are clamped to 5.
 
-The header has three tabs. **Squad Builder** opens first. **Transfer Plan** is
-the Champion MILP view. **Ownership Explorer** is the season-window ranking
-view.
-
-#### Squad Builder
-
-Pitch on the left (starting XI + 4-man bench), player table on the right.
-On load the pitch is filled from `user_picks.parquet` (the User Squad) when
-present; else `data/solution.json` when a MILP squad exists; otherwise a
-budget-aware greedy xP 15 is selected.
-
-| Control | What it does |
-|---------|----------------|
-| Primary Model | Which projection drives xP on the pitch, table, and explorer |
-| Compare Models | Extra xP and Diff columns for other exported models |
-| View Horizon | Planning Horizon total, or a single gameweek in that horizon |
-| Load My Squad | Reload the authenticated User Squad (`user_picks.parquet`) |
-| Load MILP Squad | Reload `data/solution.json`, or greedy xP 15 if no solution |
-| Clear | Empty all 15 slots |
-
-Pick players with **Add** on a table row. Search, multi-club, max price, and
-position tabs filter the table. Club filter: check any mix of clubs (label
-shows `ARS-BOU-BHA-MCI-NEW`); **All clubs** clears the set. Click column headers
-to sort. On a pitch card:
-**×** removes the player; **C** / **VC** set captain and vice (captain xP is
-doubled in Starting 11 xP); drag a card onto another slot to swap. The banner
-checks FPL rules: £100.0m, max 3 per club, 2-5-5-3 squad, legal XI formation.
+The header has two tabs. **Transfer Plan** opens first. **Ownership Explorer**
+is the ranking and Mix view. Both share the Planning Horizon clock.
 
 #### Transfer Plan
 
-Click **Transfer Plan**. Primary Model and Squad Builder controls hide. This tab
-always uses the **Model Champion** and **Official Fixture Difficulty**. It does
-not load research Dual-Vector chip-path CSVs.
+This tab is the only 15-player surface. It always uses the **Model Champion**
+and **Official Fixture Difficulty**. Starting 15 is the User Squad
+(`user_picks.parquet`) when present; otherwise Re-solve uses preseason (same as
+`commands.solve --preseason`). It does not load research Dual-Vector chip-path
+CSVs.
 
 On load it shows the last `data/solution.json` if that file is a Transfer Plan.
-Book chips per gameweek (none or one of WC / BB / FH / TC) and **Re-solve**.
-That POST can take minutes. Pick a gameweek: ledger (chip, FT, hits, buy/sell,
-undiscounted xP, this-week Solver Objective) plus a **read-only** pitch for
-that week’s 15. Header shows decayed **Solver Objective** and undiscounted
-horizon xP as separate numbers.
+Pick a gameweek in the ledger: chip, FT, hits, buy/sell, undiscounted xP, this-week
+Solver Objective, plus a **read-only** pitch for that week’s scoring 15. Header
+shows decayed **Solver Objective** and undiscounted horizon xP as separate
+numbers.
 
-Without a User Squad, Re-solve uses preseason (same as `commands.solve --preseason`).
+| Control | What it does |
+|---------|----------------|
+| Planning Horizon | Shorten the exported 1–5 window for this view and Re-solve |
+| Enabled Chips | Solver must place each checked Available Chip once in that Chip Set (default: none) |
+| Booked Chips | Pin at most one Available Chip to a specific gameweek |
+| Force Keep / Force Ban | Attach to the selected ledger gameweek’s scoring 15. Hits allowed; infeasible overrides fail the solve |
+| Re-solve | POST the calendar, Enabled Chips, and Keep/Ban. Can take minutes |
+
+Chip Set 1 is GW1–19; Chip Set 2 is GW20–38. A horizon that includes GW19 and
+GW20 can Enable **BB (Set 1)** and **BB (Set 2)** as two chips. Do not Enable a
+chip that is already Booked in the same Chip Set.
 
 #### Ownership Explorer
 
-Click **Ownership Explorer** in the header. Squad-only controls (compare models,
-View Horizon, Load MILP, Clear) hide. **Primary Model** still selects which
-projection drives the explorer (not the Transfer Plan).
+Click **Ownership Explorer**. **Primary Model** selects which projection drives
+ranking and Mix (not the Transfer Plan). Ranking is the Planning Horizon only —
+there is no Season Window or Score Mode in this view.
 
-Defaults: First-Half Horizon (GW1–19), All Projection, Projected Rate.
-
-**Season Window** sets the ranking band:
-
-| Window | Gameweeks |
-|--------|-----------|
-| First-Half Horizon | GW1–19 |
-| Second-Half Horizon | GW20–38 |
-| Full-Season Window | GW1–38 |
-
-**Score Mode** applies to rank, chart axes, minutes, and Event Component
-columns:
-
-| Mode | What it sums |
-|------|----------------|
-| All Projection (default) | Projected xP for every gameweek in the window, including finished weeks |
-| Remaining Projection | Projected xP for unfinished gameweeks only |
-| Realized Points | Official FPL `total_points` for finished gameweeks. Hidden until at least one gameweek in the selected window is finished |
-
-**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes in
-the slice) or **xP per Gameweek** (slice total divided by gameweeks in the
-slice).
+**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or
+**xP per Gameweek** (horizon total divided by gameweeks).
 
 Two linked scatter charts sit above the table:
 
@@ -294,8 +260,12 @@ Two linked scatter charts sit above the table:
 - Right: price (£m) vs the same Y-axis
 
 Marker colour is position (GKP / DEF / MID / FWD). Marker size is average
-minutes in the slice. Click a marker to label that player and highlight the
+minutes in the horizon. Click a marker to label that player and highlight the
 table row; click empty chart background or the same row again to clear.
+
+**Mix vs Mix** is view-only. Add 1–5 players to Mix A and the same number to
+Mix B (same size, not same position). The panel shows combined price, per-GW
+xP, and horizon total. Mix does not Force Keep, Force Ban, or Re-solve.
 
 **Filters**
 
@@ -307,9 +277,9 @@ table row; click empty chart background or the same row again to clear.
 | Avg minutes floor | Default 45. Hides low-minute players from **charts only**; the table still lists them |
 | Search | Player name, club, or expected role; applies to charts and table |
 
-The rank table is sorted by slice **Total** descending by default. Click any
-column header to sort. Rank `#` is the player's place by Total in the current
-Season Window and Score Mode, before table-only sort. The status line under the
+The rank table is sorted by horizon **Total** descending by default. Click any
+column header to sort. Per-GW xP columns follow the Planning Horizon. Rank `#`
+is the player's place by Total before table-only sort. The status line under the
 toolbar reports how many players are on the chart vs in the table vs in the
 full slice.
 

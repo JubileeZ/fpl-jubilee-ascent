@@ -57,48 +57,48 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-The configurable lookahead window (3-8 gameweeks) used by the MILP solver to optimize transfer strategy and team selection.
-_Avoid_: Optimization length, gameweek plan, First-Half Horizon
+Lookahead of 1–5 gameweeks (default 5) for Transfer Plan and Ownership Explorer, starting at the next gameweek whose deadline has not passed, clipped at GW38. A deadline-passed gameweek is excluded even if unfinished.
+_Avoid_: Optimization length, gameweek plan, First-Half Horizon, default 6, 3–8 window, locked gameweek, including the live unfinished GW after deadline
 
 **First-Half Horizon**:
-Research and Ownership Explorer window GW1–19 covering Set 1 chips. Not a Planning Horizon.
+Research window GW1–19 covering Set 1 chips. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
 _Avoid_: Planning Horizon, full-season, GW1–6 Canonical window
 
 **Second-Half Horizon**:
-Ownership Explorer window GW20–38 covering Set 2 chips. Not a Planning Horizon.
+Research window GW20–38 covering Set 2 chips. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
 _Avoid_: Planning Horizon, rest of season, second half (unbounded)
 
 **Full-Season Window**:
-Ownership Explorer window GW1–38. First-Half Horizon plus Second-Half Horizon. Not a Planning Horizon.
+Research window GW1–38. First-Half Horizon plus Second-Half Horizon. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
 _Avoid_: Planning Horizon, season horizon
 
 **Season Window**:
-Selected band for Ownership Explorer ranking and axes: First-Half Horizon, Second-Half Horizon, or Full-Season Window.
+Research ranking band: First-Half Horizon, Second-Half Horizon, or Full-Season Window. Not the product Ownership Explorer ranking band.
 _Avoid_: Planning Horizon, Horizon (ambiguous)
 
 **Score Mode**:
-Ownership Explorer slice: All Projection, Realized Points, or Remaining Projection. Rank, axes, minutes, and Event Component columns all use this slice.
-_Avoid_: xP mode, results toggle, horizon mode
+Research slice: All Projection, Realized Points, or Remaining Projection. Not a product Ownership Explorer control.
+_Avoid_: xP mode, results toggle, horizon mode, product Explorer toggle
 
 **All Projection**:
-Score Mode summing Gameweek Projection xP for every gameweek in the Season Window, including finished weeks. Default Score Mode.
-_Avoid_: Remaining Projection, Realized Points, hybrid total
+Score Mode summing Gameweek Projection xP for every gameweek in the Season Window, including finished weeks. Not the product Explorer total.
+_Avoid_: Remaining Projection, Realized Points, hybrid total, Planning Horizon total
 
 **Realized Points**:
-Score Mode summing official FPL total_points over finished gameweeks in the Season Window. Hidden until one gameweek in that window is finished. Not xP.
+Score Mode summing official FPL total_points over finished gameweeks in the Season Window. Not xP. Not a product Explorer mode.
 _Avoid_: Projection, Remaining Projection, xP
 
 **Remaining Projection**:
-Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Season Window.
+Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Season Window. Not the product Planning Horizon slice.
 _Avoid_: All Projection, rest-of-season (unbounded), Realized Points
 
 **Projected Rate**:
-Score Mode slice points divided by (Σ slice minutes / 90). Projection slices use xP and expected minutes; Realized Points uses official points and minutes. Cameo minutes do not reduce this number.
-_Avoid_: xP per game, Event Rate, Per-90 average
+Planning Horizon xP divided by (Σ expected minutes / 90). Cameo minutes do not reduce this number. Ownership Explorer Y-axis option.
+_Avoid_: xP per game, Event Rate, Per-90 average, Season Window rate
 
 **xP per Gameweek**:
-Score Mode slice points divided by gameweek count in that slice (all, finished, or unfinished). Named xP on Projection slices; Realized Points uses official points per finished gameweek.
-_Avoid_: xP per game, per-match xP, average points
+Planning Horizon xP divided by gameweek count in that horizon. Ownership Explorer Y-axis option.
+_Avoid_: xP per game, per-match xP, average points, Season Window average
 
 **Event Component**:
 A decomposed scoring input (minutes, goals, assists, clean sheets, goals_conceded, saves, bonus, cards, penalty events) used by a component model to reconstruct a Projection via the FPL scoring matrix, rather than predicting total points directly.
@@ -245,28 +245,52 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, and per-gameweek Event Component projections for the dashboard. Covers the Full-Season Window; Interactive Squad Builder displays a Planning Horizon slice. Not the Transfer Plan.
-_Avoid_: UI state, solver export, Transfer Plan
+Exported player metadata, historical rates, and per-gameweek Event Component projections for Transfer Plan and Ownership Explorer over the Planning Horizon. Not the Transfer Plan JSON.
+_Avoid_: UI state, solver export, Full-Season Window as the product slice
 
 **Interactive Squad Builder**:
-The frontend visual component providing pitch and bench layouts for selecting, dragging, and validating a 15-player FPL squad against budget, club limits (max 3), squad structure (2 GK, 5 DEF, 5 MID, 3 FWD), and valid formation rules.
-_Avoid_: Roster picker, drag list, Ownership Explorer, Transfer Plan
+Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Pitch on Transfer Plan shows the User Squad and plan weeks only.
+_Avoid_: Roster picker, drag list, live tab name, treating the pitch as a draft sandbox
 
 **Transfer Plan**:
-The MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, and Booked Chips. Always scored with the Model Champion on Official Fixture Difficulty. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Interactive Squad Builder, not Ownership Explorer, not Canonical Preseason Chip Path.
-_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP
+The sole 15-player product surface. MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Official Fixture Difficulty. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
+_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder
+
+**Force Keep**:
+User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.
+_Avoid_: lock, locked, deadline lock, preference pin, requiring Keep in the FH backing 15
+
+**Force Ban**:
+User override. A Player who must not be in that gameweek’s scoring 15. Owned: must leave that gameweek and may return later. Unowned: do not buy that gameweek. Hits are allowed; an infeasible Ban fails the solve.
+_Avoid_: lock, exclude, availability flag as a projection edit
+
+**Chip Set**:
+One of two identical chip inventories per season. Set 1 is GW1–19 and expires unused at the GW19 deadline. Set 2 is GW20–38 and is a fresh inventory; spending a Set 1 chip does not consume the Set 2 copy.
+_Avoid_: season chips, one BB per season, carrying unused Set 1 chips into GW20
+
+**Available Chip**:
+A chip still unspent in one Chip Set. Booked Chip and Enabled Chip are offered per Chip Set, not once per season. On a Planning Horizon that includes both GW19 and GW20, Set 1 and Set 2 copies of the same chip are two Available Chips if unspent. Preseason / no User Squad: all Set 1 chips are available.
+_Avoid_: enabling a spent chip, treating Set 1 spend as blocking Set 2, one BB toggle across a GW19/GW20 straddle
 
 **Booked Chip**:
-A chip (Wildcard, Free Hit, Bench Boost, or Triple Captain) forced on one gameweek in the Planning Horizon before solve. At most one chip per gameweek. An unbooked chip is not played in that Transfer Plan.
-_Avoid_: Canonical chip path, optimizer-chosen chip week, playing two chips in one gameweek
+A chip forced on one specific gameweek in the Planning Horizon, chosen from Available Chips. That gameweek must belong to the Chip Set of that Available Chip. At most one chip per gameweek. Distinct from Enabled Chip.
+_Avoid_: Enabled Chip, Canonical chip path, playing two chips in one gameweek
+
+**Enabled Chip**:
+A chip the user intends to play once in this Planning Horizon without pinning the week, chosen from Available Chips. The solver must place it on a gameweek in that Chip Set that has no Booked Chip. Default is none enabled; the solver does not invent chips. Enabling Set 1 BB and Set 2 BB is two Enabled Chips.
+_Avoid_: Booked Chip, optional chip, enabling all four by default, Canonical chip path, one BB for a straddle horizon
 
 **Solver Objective**:
 The decayed quantity the MILP maximises over the Planning Horizon. Distinct from undiscounted Gameweek Projection xP shown per week on the Transfer Plan.
 _Avoid_: xP, score, total_xp, research total_6gw_xp
 
+**Mix**:
+Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. View-only: a Mix does not Force Keep, Force Ban, or Re-solve. Not a Transfer Plan, not a legal 15.
+_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix
+
 **Ownership Explorer**:
-Dashboard view ranking every Feature Contract Player by Season Window score (default First-Half Horizon, Score Mode All Projection) with linked Ownership and Price charts toggling Projected Rate vs xP per Gameweek. Same production Feature Contract, Model Champion, and Official Fixture Difficulty fallback as the solver; not Interactive Squad Builder; not Transfer Plan.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, horizon chart, draft-only First-Half CSV as the explorer pool, Dual-Vector explorer xP
+Dashboard view ranking Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Model Champion, and Official Fixture Difficulty as the solver. Not Transfer Plan. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
@@ -281,12 +305,12 @@ A Projection Model evaluated against the Model Champion. At most two Candidates 
 _Avoid_: Experimental model, challenger
 
 **Primary Projection Model**:
-The active model selected in the interactive dashboard to drive Interactive Squad Builder pitch xP, bench totals, and Ownership Explorer ranking. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
+The active model selected in the dashboard to drive Ownership Explorer ranking and Mix scores. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
 _Avoid_: Active UI model, pitch model, MILP model
 
 **Secondary Comparison Model**:
-A model selected alongside the Primary Projection Model in the interactive dashboard to render overlay side-by-side comparison columns and xP delta metrics.
-_Avoid_: Compare model, overlay model
+Retired with Interactive Squad Builder. Overlay xP/Diff columns are not a product control. Ownership Explorer uses the Primary Projection Model only. Transfer Plan is always the Model Champion.
+_Avoid_: Compare model, overlay model, Compare Models checkbox
 
 **Decision-First Evaluation**:
 Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MAE when Decision Regret is unavailable, and treats xMins MAE, bias, and rank correlation as guardrails.

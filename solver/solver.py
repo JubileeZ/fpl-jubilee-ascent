@@ -570,6 +570,16 @@ def solve_multi_period_fpl(data, options):
         model.add_constraint(so.expr_sum(use_tc_gw[w] for w in forced_chip_gws["tc"]) == 1, name="force_tc_gw")
         chip_limits["tc"] = 1
 
+    use_by_chip = {"wc": use_wc, "bb": use_bb, "fh": use_fh, "tc": use_tc_gw}
+    for i, window in enumerate(options.get("enabled_chip_windows") or []):
+        chip = str(window.get("chip") or "")
+        var = use_by_chip.get(chip)
+        weeks = [w for w in window.get("gws", []) if w in gws]
+        if var is None or not weeks:
+            raise ValueError(f"Enabled Chip {chip} has no placeable gameweek")
+        model.add_constraint(so.expr_sum(var[w] for w in weeks) == 1, name=f"enabled_{chip}_{i}")
+        chip_limits[chip] = chip_limits.get(chip, 0) + 1
+
     model.add_constraint(so.expr_sum(use_wc[w] for w in gws) <= chip_limits.get("wc", 0), name="use_wc_limit")
     model.add_constraint(so.expr_sum(use_bb[w] for w in gws) <= chip_limits.get("bb", 0), name="use_bb_limit")
     model.add_constraint(so.expr_sum(use_fh[w] for w in gws) <= chip_limits.get("fh", 0), name="use_fh_limit")
@@ -624,6 +634,18 @@ def solve_multi_period_fpl(data, options):
         print("OC - Locked Next GW")
         locked_in_gw = [(x, gws[0]) if isinstance(x, int) else tuple(x) for x in options["locked_next_gw"]]
         model.add_constraints((squad[p0, p1] == 1 for (p0, p1) in locked_in_gw), name="lock_player_specified_gw")
+
+    for player_id, gw in options.get("force_keep_gws") or []:
+        if player_id not in players or gw not in gws:
+            raise ValueError(f"Force Keep player {player_id} GW{gw} is not in the solver pool")
+        model.add_constraint(squad[player_id, gw] >= 1 - use_fh[gw], name=f"force_keep_squad_{player_id}_{gw}")
+        model.add_constraint(squad_fh[player_id, gw] >= use_fh[gw], name=f"force_keep_fh_{player_id}_{gw}")
+
+    for player_id, gw in options.get("force_ban_gws") or []:
+        if player_id not in players or gw not in gws:
+            raise ValueError(f"Force Ban player {player_id} GW{gw} is not in the solver pool")
+        model.add_constraint(squad[player_id, gw] <= use_fh[gw], name=f"force_ban_squad_{player_id}_{gw}")
+        model.add_constraint(squad_fh[player_id, gw] <= 1 - use_fh[gw], name=f"force_ban_fh_{player_id}_{gw}")
 
     if options.get("no_future_transfer", None):
         print("OC - No Future Tr")

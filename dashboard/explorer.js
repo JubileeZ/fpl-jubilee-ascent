@@ -2,12 +2,6 @@
   const POS_ORDER = ["G", "D", "M", "F"];
   const POS_LABEL = { G: "GKP", D: "DEF", M: "MID", F: "FWD" };
   const POS_COLORS = { G: "#eab308", D: "#3b82f6", M: "#10b981", F: "#ef4444" };
-  const WINDOW_GWS = {
-    first_half: rangeGws(1, 19),
-    second_half: rangeGws(20, 38),
-    full_season: rangeGws(1, 38),
-  };
-  const SCORE_MODES = ["all_projection", "realized_points", "remaining_projection"];
   const PLOT_LAYOUT = {
     margin: { t: 36, r: 16, b: 48, l: 52 },
     paper_bgcolor: "#111827",
@@ -16,22 +10,17 @@
     legend: { orientation: "h", y: 1.12, font: { size: 11 } },
     hovermode: "closest",
   };
+  const MAX_MIX = 5;
 
   let ctx = null;
-  let seasonWindow = "first_half";
-  let scoreMode = "all_projection";
   let yMetric = "rate_per_90";
   let xminsFloor = 45;
   let selectedPlayerId = null;
   let tableSortKey = "total";
   let tableSortAsc = false;
   let bound = false;
-
-  function rangeGws(start, end) {
-    const out = [];
-    for (let gw = start; gw <= end; gw += 1) out.push(gw);
-    return out;
-  }
+  let mixA = [];
+  let mixB = [];
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -41,17 +30,54 @@
     return (ctx && ctx.getMeta && ctx.getMeta()) || {};
   }
 
-  function sliceOf(player) {
-    const modelName = ctx && ctx.getPrimaryModel ? ctx.getPrimaryModel() : "";
-    const modelData = (player.models && player.models[modelName]) || player;
-    const explorer = (modelData && modelData.explorer) || player.explorer || {};
-    const windowSlices = explorer[seasonWindow] || {};
-    return windowSlices[scoreMode] || null;
+  function viewGws() {
+    if (ctx && ctx.getViewGws) return ctx.getViewGws();
+    return meta().planning_gw_ids || [];
   }
 
-  function realizedAvailable() {
-    const finished = new Set(meta().finished_gameweeks || []);
-    return WINDOW_GWS[seasonWindow].some((gw) => finished.has(gw));
+  function playerProj(player) {
+    const modelName = ctx && ctx.getPrimaryModel ? ctx.getPrimaryModel() : "";
+    const modelData = (player.models && player.models[modelName]) || player;
+    return (modelData && modelData.projections) || player.projections || {};
+  }
+
+  function sliceOf(player) {
+    const gws = viewGws();
+    const projections = playerProj(player);
+    let total = 0;
+    let minutes = 0;
+    const components = {
+      xp_minutes: 0, xp_goals: 0, xp_assists: 0, xp_clean_sheet: 0,
+      xp_conceded: 0, xp_defcon: 0, xp_saves: 0, xp_bonus: 0,
+    };
+    const perGw = {};
+    gws.forEach((gw) => {
+      const row = projections[`gw${gw}`] || {};
+      const xp = Number(row.total_xp || 0);
+      const mins = Number(row.xmins || 0);
+      total += xp;
+      minutes += mins;
+      perGw[gw] = xp;
+      Object.keys(components).forEach((key) => {
+        components[key] += Number(row[key] || 0);
+      });
+    });
+    const n = gws.length;
+    return {
+      total: round(total, 2),
+      minutes: round(minutes, 1),
+      avg_minutes: n ? round(minutes / n, 1) : 0,
+      rate_per_90: minutes > 0 ? round(total / (minutes / 90), 4) : null,
+      per_gameweek: n ? round(total / n, 4) : 0,
+      n_gameweeks: n,
+      perGw,
+      ...Object.fromEntries(Object.entries(components).map(([k, v]) => [k, round(v, 2)])),
+    };
+  }
+
+  function round(value, digits) {
+    const f = 10 ** digits;
+    return Math.round(value * f) / f;
   }
 
   function yValue(slice) {
@@ -75,24 +101,6 @@
       document.getElementById("explorer-xmins-floor"),
       document.getElementById("explorer-search"),
     ].forEach((el) => el && el.addEventListener("input", render));
-    document.querySelectorAll("input[name=season-window]").forEach((el) => {
-      el.addEventListener("change", () => {
-        seasonWindow = el.value;
-        if (scoreMode === "realized_points" && !realizedAvailable()) {
-          scoreMode = "all_projection";
-          const all = document.querySelector('input[name=score-mode][value="all_projection"]');
-          if (all) all.checked = true;
-        }
-        render();
-      });
-    });
-    document.querySelectorAll("input[name=score-mode]").forEach((el) => {
-      el.addEventListener("change", () => {
-        if (!SCORE_MODES.includes(el.value)) return;
-        scoreMode = el.value;
-        render();
-      });
-    });
     document.querySelectorAll("input[name=y-metric]").forEach((el) => {
       el.addEventListener("change", () => {
         yMetric = el.value;
@@ -104,25 +112,32 @@
       document.getElementById("explorer-xmins-floor-val").textContent = String(xminsFloor);
     });
     document.getElementById("explorer-pos-checks").addEventListener("change", render);
+    document.getElementById("explorer-table-wrap")?.addEventListener("click", (e) => {
+      const th = e.target.closest("th[data-sort]");
+      if (!th) return;
+      const key = th.dataset.sort;
+      if (tableSortKey === key) {
+        tableSortAsc = !tableSortAsc;
+      } else {
+        tableSortKey = key;
+        tableSortAsc = ["name", "club", "pos", "role"].includes(key);
+      }
+      render();
+    });
     document.getElementById("explorer-table").addEventListener("click", (e) => {
+      const mixBtn = e.target.closest("button[data-mix]");
+      if (mixBtn) {
+        toggleMix(Number(mixBtn.dataset.playerId), mixBtn.dataset.mix);
+        e.stopPropagation();
+        render();
+        return;
+      }
       const row = e.target.closest("tr[data-player-id]");
       if (!row) return;
       const pid = Number(row.dataset.playerId);
       selectedPlayerId = selectedPlayerId === pid ? null : pid;
       render();
       row.scrollIntoView({ block: "nearest" });
-    });
-    document.querySelectorAll(".explorer-table thead th[data-sort]").forEach((th) => {
-      th.addEventListener("click", () => {
-        const key = th.dataset.sort;
-        if (tableSortKey === key) {
-          tableSortAsc = !tableSortAsc;
-        } else {
-          tableSortKey = key;
-          tableSortAsc = ["name", "club", "pos", "role"].includes(key);
-        }
-        render();
-      });
     });
   }
 
@@ -139,8 +154,8 @@
     const maxP = prices.length ? Math.ceil(Math.max(...prices) * 2) / 2 : 15;
     const minEl = document.getElementById("explorer-price-min");
     const maxEl = document.getElementById("explorer-price-max");
-    if (!minEl.value) minEl.value = minP.toFixed(1);
-    if (!maxEl.value) maxEl.value = maxP.toFixed(1);
+    if (minEl && !minEl.value) minEl.value = minP.toFixed(1);
+    if (maxEl && !maxEl.value) maxEl.value = maxP.toFixed(1);
   }
 
   function hideReason(player, slice, needle, applyChartOnly) {
@@ -180,33 +195,21 @@
     const tableRows = rows.filter(
       (row) => !hideReason(row.player, row.slice, needle, false)
     );
-    return { rows, visible, tableRows, needle };
+    return { rows, visible, tableRows };
   }
 
   function sortValue(row, key) {
     const player = row.player;
     const slice = row.slice;
-    const values = {
-      rank: row.rank,
-      name: player.name,
-      club: player.team,
-      pos: player.pos,
-      price: player.price,
-      own: player.ownership_pct || 0,
-      total: slice.total,
-      rate_per_90: slice.rate_per_90,
-      avg_minutes: slice.avg_minutes,
-      xp_minutes: slice.xp_minutes,
-      xp_goals: slice.xp_goals,
-      xp_assists: slice.xp_assists,
-      xp_clean_sheet: slice.xp_clean_sheet,
-      xp_conceded: slice.xp_conceded,
-      xp_defcon: slice.xp_defcon,
-      xp_saves: slice.xp_saves,
-      xp_bonus: slice.xp_bonus,
-      role: player.expected_role || "",
-    };
-    return values[key];
+    if (key === "rank") return row.rank;
+    if (key === "name") return player.name;
+    if (key === "club") return player.team;
+    if (key === "pos") return player.pos;
+    if (key === "price") return player.price;
+    if (key === "own") return player.ownership_pct;
+    if (key === "role") return player.expected_role || "";
+    if (key && key.startsWith("gw")) return slice.perGw[Number(key.slice(2))] || 0;
+    return slice[key];
   }
 
   function markerSize(slice, selected) {
@@ -251,10 +254,7 @@
   }
 
   function yAxisTitle() {
-    if (yMetric === "per_gameweek") {
-      return scoreMode === "realized_points" ? "Pts per Gameweek" : "xP per Gameweek";
-    }
-    return "Projected Rate";
+    return yMetric === "per_gameweek" ? "xP per Gameweek" : "Projected Rate";
   }
 
   let markerClicked = false;
@@ -316,8 +316,88 @@
     bindChartClicks();
   }
 
+  function toggleMix(playerId, side) {
+    const target = side === "a" ? mixA : mixB;
+    const idx = target.indexOf(playerId);
+    if (idx >= 0) {
+      target.splice(idx, 1);
+      return;
+    }
+    if (target.length >= MAX_MIX) return;
+    target.push(playerId);
+  }
+
+  function mixBundle(ids) {
+    const gws = viewGws();
+    const selected = ids.map((id) => players().find((p) => p.id === id)).filter(Boolean);
+    if (!selected.length) return null;
+    const price = selected.reduce((sum, p) => sum + Number(p.price || 0), 0);
+    const perGw = gws.map((gw) => selected.reduce((sum, p) => {
+      const row = playerProj(p)[`gw${gw}`] || {};
+      return sum + Number(row.total_xp || 0);
+    }, 0));
+    return {
+      names: selected.map((p) => p.name),
+      price: round(price, 1),
+      perGw: perGw.map((v) => round(v, 2)),
+      total: round(perGw.reduce((a, b) => a + b, 0), 2),
+    };
+  }
+
+  function renderMix() {
+    const fill = (id, ids) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.replaceChildren();
+      ids.forEach((pid) => {
+        const p = players().find((row) => row.id === pid);
+        const li = document.createElement("li");
+        li.textContent = p ? `${p.name} £${Number(p.price).toFixed(1)}m` : `#${pid}`;
+        el.appendChild(li);
+      });
+    };
+    fill("mix-a-list", mixA);
+    fill("mix-b-list", mixB);
+    const compare = document.getElementById("mix-compare");
+    if (!compare) return;
+    if (!mixA.length && !mixB.length) {
+      compare.textContent = "Add the same number of players to Mix A and Mix B (1–5).";
+      return;
+    }
+    if (mixA.length !== mixB.length || mixA.length < 1) {
+      compare.textContent = `Mix vs Mix needs the same size (currently ${mixA.length} vs ${mixB.length}).`;
+      return;
+    }
+    const a = mixBundle(mixA);
+    const b = mixBundle(mixB);
+    const gws = viewGws();
+    const gwLine = gws.map((gw, i) => `GW${gw} ${a.perGw[i].toFixed(2)} vs ${b.perGw[i].toFixed(2)}`).join(" · ");
+    compare.textContent = `A ${a.names.join(" + ")} £${a.price.toFixed(1)}m total ${a.total.toFixed(2)}  vs  B ${b.names.join(" + ")} £${b.price.toFixed(1)}m total ${b.total.toFixed(2)}. ${gwLine}`;
+  }
+
+  function renderHead() {
+    const row = document.getElementById("explorer-thead-row");
+    if (!row) return;
+    const gws = viewGws();
+    row.innerHTML = [
+      '<th data-sort="rank">#</th>',
+      '<th data-sort="name">Player</th>',
+      '<th data-sort="club">Club</th>',
+      '<th data-sort="pos">Pos</th>',
+      '<th data-sort="price">Price</th>',
+      '<th data-sort="own">Own%</th>',
+      '<th data-sort="total">Total</th>',
+      ...gws.map((gw) => `<th data-sort="gw${gw}">GW${gw}</th>`),
+      '<th data-sort="rate_per_90">/90</th>',
+      '<th data-sort="avg_minutes">Avg mins</th>',
+      '<th data-sort="role">Role</th>',
+      "<th>Mix</th>",
+    ].join("");
+  }
+
   function renderTable(tableRows) {
     const body = document.getElementById("explorer-table");
+    const gws = viewGws();
     const sorted = tableRows.slice().sort((a, b) => {
       const va = sortValue(a, tableSortKey);
       const vb = sortValue(b, tableSortKey);
@@ -335,6 +415,7 @@
         const p = row.player;
         const s = row.slice;
         const selected = p.id === selectedPlayerId ? " selected" : "";
+        const gwCells = gws.map((gw) => `<td>${Number(s.perGw[gw] || 0).toFixed(2)}</td>`).join("");
         return `<tr class="${selected}" data-player-id="${p.id}">
           <td>${row.rank}</td>
           <td>${p.name}</td>
@@ -343,17 +424,14 @@
           <td>${Number(p.price).toFixed(1)}</td>
           <td>${Number(p.ownership_pct || 0).toFixed(1)}</td>
           <td>${Number(s.total).toFixed(2)}</td>
+          ${gwCells}
           <td>${s.rate_per_90 == null ? "—" : Number(s.rate_per_90).toFixed(2)}</td>
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
-          <td>${Number(s.xp_minutes).toFixed(2)}</td>
-          <td>${Number(s.xp_goals).toFixed(2)}</td>
-          <td>${Number(s.xp_assists).toFixed(2)}</td>
-          <td>${Number(s.xp_clean_sheet).toFixed(2)}</td>
-          <td>${Number(s.xp_conceded).toFixed(2)}</td>
-          <td>${Number(s.xp_defcon).toFixed(2)}</td>
-          <td>${Number(s.xp_saves).toFixed(2)}</td>
-          <td>${Number(s.xp_bonus).toFixed(2)}</td>
           <td>${p.expected_role || "—"}</td>
+          <td>
+            <button type="button" data-mix="a" data-player-id="${p.id}">A</button>
+            <button type="button" data-mix="b" data-player-id="${p.id}">B</button>
+          </td>
         </tr>`;
       })
       .join("");
@@ -363,30 +441,19 @@
     if (!ctx) return;
     bindControls();
     setupClubAndPrice();
-    const realizedLabel = document.getElementById("realized-mode-label");
-    if (realizedAvailable()) {
-      realizedLabel.hidden = false;
-    } else {
-      realizedLabel.hidden = true;
-      if (scoreMode === "realized_points") {
-        scoreMode = "all_projection";
-        const all = document.querySelector('input[name=score-mode][value="all_projection"]');
-        if (all) all.checked = true;
-      }
-    }
+    renderHead();
     const { rows, visible, tableRows } = rankedRows();
+    const gws = viewGws();
+    const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "—";
     document.getElementById("explorer-meta").textContent =
-      `Window ${seasonWindow.replaceAll("_", " ")} · ${scoreMode.replaceAll("_", " ")} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
+      `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
+    renderMix();
   }
 
   window.initOwnershipExplorer = function (context) {
     ctx = context;
-    seasonWindow = (context.getMeta && context.getMeta().default_season_window) || "first_half";
-    scoreMode = (context.getMeta && context.getMeta().default_score_mode) || "all_projection";
-    const win = document.querySelector(`input[name=season-window][value="${seasonWindow}"]`);
-    if (win) win.checked = true;
     render();
   };
 

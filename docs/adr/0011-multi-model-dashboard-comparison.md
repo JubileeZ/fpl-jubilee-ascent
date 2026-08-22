@@ -19,3 +19,5 @@ Extend the dashboard data contract and web UI to support multi-model projection 
 - Dashboard JSON data contract schema updated to group projection metrics per model under `player.models[model_name]`.
 - User can toggle between clean single-model view and multi-model side-by-side comparison matrix.
 - MILP optimization remains strictly single-model per run while enabling visual comparison against candidate model projections.
+
+**Status:** Accepted. Compare Models overlay retired with Interactive Squad Builder (ADR 0018). Primary Model still selects Ownership Explorer ranking and Mix scores. Transfer Plan is always the Model Champion.
