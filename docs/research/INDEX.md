@@ -1,13 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-21T14:30:00+07:00
-**Status**: Live index. No active topics. 2026/27 preseason archived 2026-08-21.
+**Updated**: 2026-08-22T17:59:00+07:00
+**Status**: Live index. Active topics tracked below.
 
 ---
 
 ## Active Research Index
 
-None. Season 2026/27 underway. New work: copy `template/research-note.md` into `docs/research/<topic-slug>/`. Companions (CSV/HTML) stay in that folder.
+- **First-Half GKP Rotation Pairs (GW1–19)**: [Note](gkp-fdr-rotation-gw1-19/gkp-fdr-rotation-gw1-19.md) · [Summary](gkp-fdr-rotation-gw1-19/gkp_rotation_pairs_summary.csv) `total_mod_fdr` · [Starting GKPs](gkp-fdr-rotation-gw1-19/starting_gkps_gw1_19.csv) · [Schedule Picks](gkp-fdr-rotation-gw1-19/gw1_19_rotation_schedule_picks.csv)
 
 ---
 

@@ -1,0 +1,21 @@
+club_name,club_short,player_name,cost,home_matches,away_matches,total_base_fdr,total_mod_fdr,avg_mod_fdr
+Liverpool,LIV,A.Becker,5.5,10,9,55,54.75,2.882
+Aston Villa,AVL,Suzuki,5.0,10,9,56,55.75,2.934
+Man City,MCI,Donnarumma,5.5,10,9,56,55.75,2.934
+Chelsea,CHE,Sánchez,5.0,10,9,57,56.75,2.987
+Spurs,TOT,Kinsky,4.5,10,9,57,56.75,2.987
+Nott'm Forest,NFO,Sels,5.0,9,10,57,57.25,3.013
+Bournemouth,BOU,Petrović,4.5,10,9,58,57.75,3.039
+Brentford,BRE,Kelleher,5.0,10,9,58,57.75,3.039
+Coventry City,COV,Rushworth,4.5,10,9,58,57.75,3.039
+Newcastle,NEW,Horníček,5.0,10,9,58,57.75,3.039
+Arsenal,ARS,Raya,6.0,9,10,58,58.25,3.066
+Man Utd,MUN,Lammens,5.0,9,10,58,58.25,3.066
+Sunderland,SUN,Roefs,5.0,9,10,58,58.25,3.066
+Brighton,BHA,Verbruggen,4.5,9,10,58,58.25,3.066
+Ipswich Town,IPS,Scherpen,4.5,9,10,59,59.25,3.118
+Everton,EVE,Pickford,5.5,9,10,59,59.25,3.118
+Crystal Palace,CRY,Henderson,5.0,9,10,59,59.25,3.118
+Fulham,FUL,Leno,4.5,9,10,59,59.25,3.118
+Hull City,HUL,Tzolakis,4.5,10,9,60,59.75,3.145
+Leeds,LEE,Trafford,5.0,9,10,60,60.25,3.171
