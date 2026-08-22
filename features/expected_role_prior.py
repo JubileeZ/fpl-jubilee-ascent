@@ -24,12 +24,8 @@ BLEND_FULL_APPEARANCES = 5
 LIVE_SEASON = "2026-27"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_EXPECTED_ROLE_TABLE = PROJECT_ROOT / (
-    "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
-)
-DEFAULT_LINEUP_SIGNALS = PROJECT_ROOT / (
-    "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/lineup-signals.json"
-)
+DEFAULT_EXPECTED_ROLE_TABLE = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
+DEFAULT_LINEUP_SIGNALS = PROJECT_ROOT / "features/lineup-signals.json"
 
 
 def appearance_blend_weight(

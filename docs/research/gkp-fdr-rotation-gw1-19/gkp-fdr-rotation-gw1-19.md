@@ -6,7 +6,7 @@
 **Status**: Active  
 **Purpose**: Rank and evaluate all starting goalkeeper rotation pairs across the first half of the season (GW1–19) using home/away-adjusted Fixture Difficulty Ratings (FDR) across all available combined price brackets.  
 **Scope**: GW 1–19 fixtures (190 matches); 20 starting goalkeepers from fpl.page predicted lineups; modified FDR calculation ($\pm 0.25$ home/away shift); rankings across all viable combined price points (£9.0m to £11.5m).  
-**Related**: [Defensive Architecture (DCS)](../../archive/defensive-fixture-rotation/defensive-fixture-rotation.md) · [GKP Strategy Archive](../../archive/gkp-fixture-rotation/gkp-fixture-rotation.md)  
+**Related**: [`INDEX.md`](../INDEX.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)  
 **Artifact**: [gkp_rotation_pairs_summary.csv](gkp_rotation_pairs_summary.csv) · [starting_gkps_gw1_19.csv](starting_gkps_gw1_19.csv) · [gw1_19_rotation_schedule_picks.csv](gw1_19_rotation_schedule_picks.csv)
 
 ---

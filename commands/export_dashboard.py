@@ -28,9 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ROLE_CSV = PROJECT_ROOT / (
-    "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/expected-role-gw1-5.csv"
-)
+ROLE_CSV = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
 SEASON_START_GW = 1
 SEASON_END_GW = 38
 

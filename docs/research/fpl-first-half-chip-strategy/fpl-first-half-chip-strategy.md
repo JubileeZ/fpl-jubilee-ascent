@@ -1,17 +1,12 @@
 # FPL 2026/27 — First-Half Chip Strategy & Multi-Source Comprehensive Evaluation
 
-**Updated**: 2026-08-19T13:45:00+07:00  
-**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27; live Canonical = `gw1-6_wc4_summary.csv` `total_6gw_xp`; historical 16-scenario matrix frozen 2026-08-15  
+**Updated**: 2026-08-22T18:15:00+07:00  
+**Data stamp**: FPL Focal 2026-07-30; FFS/Hub consensus 2026-08-13; Official FPL Rules 2026/27  
 **Season**: 2026/27 · first-half horizon GW1–19  
-**Status**: Archived (2026/27 preseason). Source synthesis + project interpretation. Live xP = Canonical Preseason Chip Path (`gw1-6_wc4_summary.csv`).  
-**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the repo's live Stage 3 path: **GW1 Bench Boost + GW4 Wildcard** (`total_6gw_xp` in the Stage 3 summary CSV).
-
-Live Canonical totals are `gw1-6_wc4_summary.csv` `total_6gw_xp`. Numeric tables below that still show 356.61 are the FDR-era synthesis snapshot, not the live Seed path.  
-**Scope**: Wildcard, Free Hit, Triple Captain, and Bench Boost before the GW19 deadline. Expert branches stay qualitative unless Stage 3 currently publishes them.  
-**Related**: [`INDEX.md`](../INDEX.md) · [GW1–6 Preseason Pipeline Master README](../gw1-6-preseason-pipeline/README.md) · [GW1–6 Canonical Chip Path](../gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6-chip-wc4-squads.md) · [Unified Defensive Rotation](../defensive-fixture-rotation/defensive-fixture-rotation.md) · [Ownership Value Explorer](../ownership-value-explorer/ownership-value-explorer.md)  
-**Artifacts**:
-- [Stage 3 Canonical Summary CSV](../../../docs/archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_summary.csv)
-- [Stage 3 Simulation CSV](../../../docs/archive/gw1-6-preseason-pipeline/03-gw1-6-chip-wc4-squads/gw1-6_wc4_simulation.csv)
+**Status**: Active. Source synthesis + project interpretation.  
+**Purpose**: Synthesize expert first-half chip branches (FPL Focal, FFS/Hub, Official Rules) and map them onto the first-half horizon.  
+**Scope**: Wildcard, Free Hit, Triple Captain, and Bench Boost before the GW19 deadline.  
+**Related**: [`INDEX.md`](../INDEX.md) · [First-Half GKP Rotation Pairs](../gkp-fdr-rotation-gw1-19/gkp-fdr-rotation-gw1-19.md)  
 
 ---
 
@@ -23,18 +18,15 @@ Live Canonical totals are `gw1-6_wc4_summary.csv` `total_6gw_xp`. Numeric tables
    - *Rules*: Two sets of chips per season (Set 1: GW1–19; Set 2: GW20–38). Unused first-half chips expire at GW19 deadline (use-it-or-lose-it). Maximum 1 chip per Gameweek. Up to 5 Free Transfers can be banked; banked FTs are preserved through Wildcard and Free Hit.
 3. **Fantasy Football Scout & Fantasy Football Hub Consensus**: [Pre-Season Strategy & Fixture Swings](https://www.fantasyfootballscout.co.uk) & [Fantasy Football Hub](https://www.fantasyfootballhub.co.uk); accessed 2026-08-13.
    - *Coverage*: Information-led Wildcard timing at GW5/6 international break vs early fixture swing WC4; Early Bench Boost vs post-Wildcard Bench Boost; Double Gameweek value vs single GW high-ceiling premium matchups; Free Hit as fixture/injury bailout vs planned DGW/BGW attack.
-4. **FPL-Jubilee-Ascent Optimization Engine**:
-   - *Stage 3 Canonical Path* (`run_wc4_simulation.py`): single published scenario S1 — GW1 BB, locked GW1–3, WC4, roll GW5, **356.61 xP**. CSV has one row.
-   - *Unified defensive DCS runner* (`run_defensive_rotation_analysis.py`).
-   - *Historical 16-scenario matrix* (frozen 2026-08-15): BB1/BB2 × FH3/TC3 × bans. **Not live.** S13 340.14 xP is that experiment, not a reprint of 356.61.
-   - *Fixtures & Projections Data*: `data/processed/fixtures.parquet`, `gw1-6_projections.csv`.
+4. **FPL-Jubilee-Ascent Engine**:
+   - *Fixtures & Projections Data*: `data/processed/fixtures.parquet`, `data/processed/players.parquet`.
 
 ---
 
 ## Agent Prompt & Reproducibility Instructions
 
 ```text
-Refresh and evaluate all first-half chip strategies in docs/archive/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md:
+Refresh and evaluate all first-half chip strategies in docs/research/fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md:
 
 1. Maintain full fidelity to all proposed source strategies:
    - Triple Captain: GW1 Bruno, GW3 Haaland, GW4, GW7 Haaland, GW15, GW16 Haaland, GW19 Saka

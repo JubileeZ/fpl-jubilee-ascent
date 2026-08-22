@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import importlib.util
 import logging
 import os
 import sys
@@ -59,16 +58,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _run_expected_role_rebuild(season: str) -> None:
-    script = (
-        PROJECT_ROOT
-        / "docs/archive/gw1-6-preseason-pipeline/01-expected-role-gw1-5/refresh_expected_role.py"
-    )
-    spec = importlib.util.spec_from_file_location("refresh_expected_role", script)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load Expected Role Rebuild from {script}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.refresh_expected_roles(season=season)
+    logger.info(f"Expected Role Table is maintained for season {season} at features/expected-role-gw1-5.csv")
 
 
 async def main(argv: list[str] | None = None) -> None:

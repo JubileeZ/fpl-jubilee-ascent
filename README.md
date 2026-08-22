@@ -187,9 +187,7 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Transfer Plan plus Ownership Explorer. It is not the
-research HTML at
-`docs/archive/ownership-value-explorer/ownership_value_explorer.html`.
+The local dashboard serves the Transfer Plan plus Ownership Explorer.
 
 **Open it**
 

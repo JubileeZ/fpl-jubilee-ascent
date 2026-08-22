@@ -18,7 +18,6 @@ Start here to find durable project documentation.
 ## Research
 
 - [Research index and layout](research/INDEX.md)
-- [Archived research catalog](archive/index.md)
 
 ## Agent Operations
 

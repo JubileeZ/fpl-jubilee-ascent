@@ -1,5 +1,0 @@
-path,gw1_3_xp,gw4_6_xp,total_6gw_xp,peer_milp_total,lag_vs_peer,pre_wc_opp_loss,banked_fts_gw6,user_spend
-User + BB1 + FH3 + WC4 Opt1,101.0,155.92,256.92,335.44,-78.52,-78.52,4,76.1
-User + BB1 + TC3 + WC4 Opt1,76.33,155.92,232.25,343.37,-111.12,-111.12,4,76.1
-User + BB2 + FH3 + WC4 Opt1,102.31,155.92,258.23,335.43,-77.2,-77.2,4,76.1
-User + BB2 + TC3 + WC4 Opt1,77.64,155.92,233.56,343.2,-109.64,-109.64,4,76.1
