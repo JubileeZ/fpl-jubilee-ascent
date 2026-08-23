@@ -1,0 +1,21 @@
+club_id,club_name,club_short,player_name,cost,expected_role,home_matches,away_matches,total_base_fdr,total_mod_fdr,avg_mod_fdr
+14,Liverpool,LIV,Jacquet,5.0,Nailed Starter,10,9,55,54.75,2.882
+2,Aston Villa,AVL,Cash,4.5,Nailed Starter,10,9,56,55.75,2.934
+15,Man City,MCI,Rúben,5.5,Regular Starter,10,9,56,55.75,2.934
+6,Chelsea,CHE,Colwill,5.0,Nailed Starter,10,9,57,56.75,2.987
+19,Spurs,TOT,Robertson,4.5,Regular Starter,10,9,57,56.75,2.987
+18,Nott'm Forest,NFO,Aina,4.5,Regular Starter,9,10,57,57.25,3.013
+3,Bournemouth,BOU,Smith,4.5,Regular Starter,10,9,58,57.75,3.039
+4,Brentford,BRE,Ajer,4.5,Regular Starter,10,9,58,57.75,3.039
+7,Coventry City,COV,Thomas,4.0,Regular Starter,10,9,58,57.75,3.039
+17,Newcastle,NEW,Thiaw,5.0,Nailed Starter,10,9,58,57.75,3.039
+1,Arsenal,ARS,Konsa,4.5,Regular Starter,9,10,58,58.25,3.066
+16,Man Utd,MUN,Heaven,4.5,Regular Starter,9,10,58,58.25,3.066
+20,Sunderland,SUN,O'Nien,4.0,Regular Starter,9,10,58,58.25,3.066
+5,Brighton,BHA,F.Kadıoğlu,4.5,Regular Starter,9,10,58,58.25,3.066
+12,Ipswich Town,IPS,Diop,4.0,Regular Starter,9,10,59,59.25,3.118
+9,Everton,EVE,Mykolenko,4.5,Regular Starter,9,10,59,59.25,3.118
+8,Crystal Palace,CRY,Mitchell,4.5,Nailed Starter,9,10,59,59.25,3.118
+10,Fulham,FUL,Robinson,4.5,Nailed Starter,9,10,59,59.25,3.118
+11,Hull City,HUL,Ajayi,4.0,Regular Starter,10,9,60,59.75,3.145
+13,Leeds,LEE,Rodon,4.5,Nailed Starter,9,10,60,60.25,3.171

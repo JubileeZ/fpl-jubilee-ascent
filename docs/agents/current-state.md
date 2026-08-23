@@ -6,15 +6,15 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. Active research under `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
 Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` (two-tab Transfer Plan + Ownership Explorer; 0008/0017 superseded). Vocabulary in `CONTEXT.md`.
 
-## Research truth (22 Aug)
+## Research truth (23 Aug)
 
-- Active research: `docs/research/` (`gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`.
+- Active research: `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`.
 - Production Expected Role Prior ingest: `features/expected-role-gw1-5.csv`.
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
