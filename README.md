@@ -261,9 +261,11 @@ Marker colour is position (GKP / DEF / MID / FWD). Marker size is average
 minutes in the horizon. Click a marker to label that player and highlight the
 table row; click empty chart background or the same row again to clear.
 
-**Mix vs Mix** is view-only. Add 1–5 players to Mix A and the same number to
-Mix B (same size, not same position). The panel shows combined price, per-GW
-xP, and horizon total. Mix does not Force Keep, Force Ban, or Re-solve.
+**Mix vs Mix** is view-only. Add 1–5 players to Mix A and Mix B (same size, not
+same position). A player occupies at most one Mix. Table **A** / **B** add,
+move, or remove; Mix-list **×** removes; drag a name between Mix A and Mix B to
+move. The panel sits under the charts and shows combined price, per-GW xP, and
+horizon total. Mix does not Force Keep, Force Ban, or Re-solve.
 
 **Filters**
 

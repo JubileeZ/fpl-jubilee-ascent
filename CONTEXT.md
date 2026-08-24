@@ -285,8 +285,12 @@ The decayed quantity the MILP maximises over the Planning Horizon. Distinct from
 _Avoid_: xP, score, total_xp, research total_6gw_xp
 
 **Mix**:
-Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. View-only: a Mix does not Force Keep, Force Ban, or Re-solve. Not a Transfer Plan, not a legal 15.
-_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix
+Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep, Force Ban, or Re-solve. Not a Transfer Plan, not a legal 15.
+_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order
+
+**Mix Member**:
+A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer.
+_Avoid_: selected player, overlapping Mix occupancy
 
 **Ownership Explorer**:
 Dashboard view ranking Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Model Champion, and Official Fixture Difficulty as the solver. Not Transfer Plan. Not a Season Window ranking.

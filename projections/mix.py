@@ -30,3 +30,46 @@ def mix_bundle(players: list[dict[str, Any]], planning_gws: list[int]) -> dict[s
         "per_gw": per_gw,
         "total": round(sum(per_gw), 2),
     }
+
+
+def apply_mix_letter(
+    mix_a: list[int],
+    mix_b: list[int],
+    player_id: int,
+    side: str,
+) -> tuple[list[int], list[int], str | None]:
+    current = "a" if player_id in mix_a else "b" if player_id in mix_b else None
+    next_a = [pid for pid in mix_a if pid != player_id]
+    next_b = [pid for pid in mix_b if pid != player_id]
+    if current == side:
+        return next_a, next_b, None
+    dest = next_a if side == "a" else next_b
+    if len(dest) >= MAX_MIX_SIZE:
+        label = "A" if side == "a" else "B"
+        return list(mix_a), list(mix_b), f"Mix {label} is full (5)."
+    dest.append(player_id)
+    if side == "a":
+        return dest, next_b, None
+    return next_a, dest, None
+
+
+def remove_mix_member(
+    mix_a: list[int],
+    mix_b: list[int],
+    player_id: int,
+) -> tuple[list[int], list[int], str | None]:
+    next_a = [pid for pid in mix_a if pid != player_id]
+    next_b = [pid for pid in mix_b if pid != player_id]
+    return next_a, next_b, None
+
+
+def move_mix_member(
+    mix_a: list[int],
+    mix_b: list[int],
+    player_id: int,
+    dest: str,
+) -> tuple[list[int], list[int], str | None]:
+    current = "a" if player_id in mix_a else "b" if player_id in mix_b else None
+    if current is None or current == dest:
+        return list(mix_a), list(mix_b), None
+    return apply_mix_letter(mix_a, mix_b, player_id, dest)

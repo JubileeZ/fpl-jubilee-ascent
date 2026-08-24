@@ -33,6 +33,27 @@ def test_explorer_script_uses_planning_horizon_and_mix() -> None:
     assert "first_half" not in js
 
 
+def test_mix_panel_sits_after_charts_before_table() -> None:
+    html = Path("dashboard/index.html").read_text(encoding="utf-8")
+    assert html.index('class="explorer-charts"') < html.index('class="card mix-panel"')
+    assert html.index('class="card mix-panel"') < html.index('id="explorer-table-wrap"')
+
+
+def test_mix_panel_has_drop_columns_remove_and_full_reason() -> None:
+    html = Path("dashboard/index.html").read_text(encoding="utf-8")
+    js = Path("dashboard/explorer.js").read_text(encoding="utf-8")
+    assert 'data-mix-side="a"' in html
+    assert 'data-mix-side="b"' in html
+    assert 'id="mix-reason"' in html
+    assert "applyMixLetter" in js
+    assert "removeMixMember" in js
+    assert "moveMixMember" in js
+    assert "mix-item-name" in js
+    assert "data-mix-remove" in js
+    assert "Mix A is full (5)." in js
+    assert "mix-on" in js
+
+
 def test_plan_controls_include_keep_ban_and_enabled_chips() -> None:
     html = Path("dashboard/index.html").read_text(encoding="utf-8")
     plan = Path("dashboard/plan.js").read_text(encoding="utf-8")

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
   <div class="app-container" data-view="plan">
@@ -141,24 +141,25 @@
           <input type="search" id="explorer-search" placeholder="Player, club, role…" autocomplete="off" spellcheck="false">
         </div>
       </div>
-      <div class="card mix-panel">
-        <p class="title">Mix vs Mix (same size, view-only)</p>
-        <div class="mix-columns">
-          <div>
-            <strong>Mix A</strong>
-            <ul id="mix-a-list" class="mix-list"></ul>
-          </div>
-          <div>
-            <strong>Mix B</strong>
-            <ul id="mix-b-list" class="mix-list"></ul>
-          </div>
-        </div>
-        <p id="mix-compare" class="mix-compare"></p>
-      </div>
       <p id="explorer-meta" class="explorer-meta"></p>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
+      </div>
+      <div class="card mix-panel">
+        <p class="title">Mix vs Mix (same size, view-only)</p>
+        <div class="mix-columns">
+          <div class="mix-column" data-mix-side="a">
+            <strong>Mix A</strong>
+            <ul id="mix-a-list" class="mix-list"></ul>
+          </div>
+          <div class="mix-column" data-mix-side="b">
+            <strong>Mix B</strong>
+            <ul id="mix-b-list" class="mix-list"></ul>
+          </div>
+        </div>
+        <p id="mix-reason" class="mix-reason"></p>
+        <p id="mix-compare" class="mix-compare"></p>
       </div>
       <div id="explorer-table-wrap" class="explorer-table-wrap">
         <table class="data-table explorer-table">
@@ -185,7 +186,7 @@
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="app.js?v=12"></script>
-  <script src="explorer.js?v=6"></script>
+  <script src="explorer.js?v=7"></script>
   <script src="plan.js?v=3"></script>
 </body>
 </html>

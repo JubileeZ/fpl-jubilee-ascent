@@ -1017,6 +1017,47 @@ body {
   font-size: 0.85rem;
 }
 
+.mix-list {
+  min-height: 2.5rem;
+}
+
+.mix-column {
+  min-height: 5rem;
+}
+
+.mix-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+}
+
+.mix-item-name {
+  cursor: grab;
+}
+
+.mix-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.35rem;
+}
+
+.mix-remove:hover {
+  color: var(--danger);
+}
+
+.mix-reason {
+  margin-top: 0.5rem;
+  color: var(--warning);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
 .mix-panel {
   padding: 1rem 1.25rem;
 }
@@ -1041,5 +1082,10 @@ body {
 
 .explorer-table button[data-mix] {
   margin-right: 0.25rem;
+}
+
+.explorer-table button[data-mix].mix-on {
+  background: var(--accent);
+  color: #042f2e;
 }
 

@@ -21,6 +21,7 @@
   let bound = false;
   let mixA = [];
   let mixB = [];
+  let mixReason = "";
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -127,7 +128,7 @@
     document.getElementById("explorer-table").addEventListener("click", (e) => {
       const mixBtn = e.target.closest("button[data-mix]");
       if (mixBtn) {
-        toggleMix(Number(mixBtn.dataset.playerId), mixBtn.dataset.mix);
+        applyMixLetter(Number(mixBtn.dataset.playerId), mixBtn.dataset.mix);
         e.stopPropagation();
         render();
         return;
@@ -139,6 +140,13 @@
       render();
       row.scrollIntoView({ block: "nearest" });
     });
+    const mixCols = document.querySelector(".mix-columns");
+    if (mixCols) {
+      mixCols.addEventListener("click", onMixClick);
+      mixCols.addEventListener("dragstart", onMixDragStart);
+      mixCols.addEventListener("dragover", onMixDragOver);
+      mixCols.addEventListener("drop", onMixDrop);
+    }
   }
 
   function setupClubAndPrice() {
@@ -316,15 +324,93 @@
     bindChartClicks();
   }
 
-  function toggleMix(playerId, side) {
-    const target = side === "a" ? mixA : mixB;
-    const idx = target.indexOf(playerId);
-    if (idx >= 0) {
-      target.splice(idx, 1);
+  function occupyingSide(playerId) {
+    if (mixA.includes(playerId)) return "a";
+    if (mixB.includes(playerId)) return "b";
+    return null;
+  }
+
+  function mixFullReason(side) {
+    return side === "a" ? "Mix A is full (5)." : "Mix B is full (5).";
+  }
+
+  function applyMixLetter(playerId, side) {
+    const current = occupyingSide(playerId);
+    const nextA = mixA.filter((id) => id !== playerId);
+    const nextB = mixB.filter((id) => id !== playerId);
+    if (current === side) {
+      mixA = nextA;
+      mixB = nextB;
+      mixReason = "";
       return;
     }
-    if (target.length >= MAX_MIX) return;
-    target.push(playerId);
+    const dest = side === "a" ? nextA : nextB;
+    if (dest.length >= MAX_MIX) {
+      mixReason = mixFullReason(side);
+      return;
+    }
+    dest.push(playerId);
+    mixA = side === "a" ? dest : nextA;
+    mixB = side === "b" ? dest : nextB;
+    mixReason = "";
+  }
+
+  function removeMixMember(playerId) {
+    mixA = mixA.filter((id) => id !== playerId);
+    mixB = mixB.filter((id) => id !== playerId);
+    mixReason = "";
+  }
+
+  function moveMixMember(playerId, dest) {
+    const current = occupyingSide(playerId);
+    if (current == null || current === dest) return;
+    applyMixLetter(playerId, dest);
+  }
+
+  function onMixClick(e) {
+    const removeBtn = e.target.closest("[data-mix-remove]");
+    if (removeBtn) {
+      removeMixMember(Number(removeBtn.dataset.playerId));
+      render();
+      return;
+    }
+    const name = e.target.closest(".mix-item-name");
+    if (!name) return;
+    const item = name.closest("[data-player-id]");
+    if (!item) return;
+    const pid = Number(item.dataset.playerId);
+    selectedPlayerId = selectedPlayerId === pid ? null : pid;
+    render();
+    if (selectedPlayerId == null) return;
+    document.querySelector(`#explorer-table tr[data-player-id="${pid}"]`)?.scrollIntoView({
+      block: "nearest",
+    });
+  }
+
+  function onMixDragStart(e) {
+    const name = e.target.closest(".mix-item-name");
+    if (!name) {
+      e.preventDefault();
+      return;
+    }
+    const item = name.closest("[data-player-id]");
+    if (!item) return;
+    e.dataTransfer.setData("text/plain", item.dataset.playerId);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function onMixDragOver(e) {
+    if (!e.target.closest(".mix-column")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  function onMixDrop(e) {
+    const col = e.target.closest(".mix-column");
+    if (!col) return;
+    e.preventDefault();
+    moveMixMember(Number(e.dataTransfer.getData("text/plain")), col.dataset.mixSide);
+    render();
   }
 
   function mixBundle(ids) {
@@ -352,12 +438,27 @@
       ids.forEach((pid) => {
         const p = players().find((row) => row.id === pid);
         const li = document.createElement("li");
-        li.textContent = p ? `${p.name} £${Number(p.price).toFixed(1)}m` : `#${pid}`;
+        li.className = "mix-item";
+        li.dataset.playerId = String(pid);
+        const name = document.createElement("span");
+        name.className = "mix-item-name";
+        name.draggable = true;
+        name.textContent = p ? `${p.name} £${Number(p.price).toFixed(1)}m` : `#${pid}`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "mix-remove";
+        remove.setAttribute("data-mix-remove", "");
+        remove.dataset.playerId = String(pid);
+        remove.setAttribute("aria-label", "Remove Mix Member");
+        remove.textContent = "×";
+        li.append(name, remove);
         el.appendChild(li);
       });
     };
     fill("mix-a-list", mixA);
     fill("mix-b-list", mixB);
+    const reasonEl = document.getElementById("mix-reason");
+    if (reasonEl) reasonEl.textContent = mixReason;
     const compare = document.getElementById("mix-compare");
     if (!compare) return;
     if (!mixA.length && !mixB.length) {
@@ -416,6 +517,8 @@
         const s = row.slice;
         const selected = p.id === selectedPlayerId ? " selected" : "";
         const gwCells = gws.map((gw) => `<td>${Number(s.perGw[gw] || 0).toFixed(2)}</td>`).join("");
+        const inA = mixA.includes(p.id);
+        const inB = mixB.includes(p.id);
         return `<tr class="${selected}" data-player-id="${p.id}">
           <td>${row.rank}</td>
           <td>${p.name}</td>
@@ -429,8 +532,8 @@
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
           <td>${p.expected_role || "—"}</td>
           <td>
-            <button type="button" data-mix="a" data-player-id="${p.id}">A</button>
-            <button type="button" data-mix="b" data-player-id="${p.id}">B</button>
+            <button type="button" data-mix="a" data-player-id="${p.id}" class="${inA ? "mix-on" : ""}" aria-pressed="${inA}">A</button>
+            <button type="button" data-mix="b" data-player-id="${p.id}" class="${inB ? "mix-on" : ""}" aria-pressed="${inB}">B</button>
           </td>
         </tr>`;
       })
