@@ -420,6 +420,10 @@ _Avoid_: RQI, OC-RQI, Rotation Quality Index
 A goalkeeper pair, five-defender set, or seven-asset backline ranked by DCS. Distinct from the Canonical Preseason Chip Path 15-man squad (including its keepers).
 _Avoid_: GKP pick (ambiguous vs squad keepers), the defensive squad, RQI pair
 
+**Club Occupancy**:
+Five Club slots filling a five-defender Defensive Rotation Set. A multiset: one Club may occupy 1–3 slots, so distinct Club count is 2–5. Fixture difficulty of the occupancy is a Club-fixture property; swapping Players of the same Club does not change it.
+_Avoid_: team combination, team combo, club set (distinct Clubs only), player 5-tuple
+
 **Opportunity-Cost Adjusted Score (OC-Score)**:
 Weekly rotated expected points minus the outfield shadow price $\gamma$ times spend above the position floor (GKP £8.5m, DEF £20.0m, backline £28.5m). Points factor inside DCS, not a separate ranking metric.
 _Avoid_: OC-RQI, net value, RQI points term

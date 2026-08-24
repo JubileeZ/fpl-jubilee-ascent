@@ -3,11 +3,22 @@ Unit tests for 5-DEF fixture rotation analysis (GW1-19).
 Verifies combinatorial coverage, structural archetypes, metric invariants, and companion CSV integrity.
 """
 
+from __future__ import annotations
+
+import sys
 from pathlib import Path
+
 import pandas as pd
 import pytest
 
 RESEARCH_DIR = Path("docs/research/def-fdr-rotation-gw1-19")
+sys.path.insert(0, str(RESEARCH_DIR.resolve()))
+
+from club_occupancy import OCCUPANCY_COLUMNS, build_club_occupancy_table
+
+OCCUPANCY_CSV = RESEARCH_DIR / "def_rotation_club_occupancy.csv"
+ALLOWED_SHAPES = {"3-2", "3-1-1", "2-2-1", "2-1-1-1", "1-1-1-1-1"}
+DISTINCT_CLUB_COUNTS = {2: 380, 3: 6840, 4: 19380, 5: 15504}
 
 
 @pytest.fixture(scope="module")
@@ -99,3 +110,55 @@ def test_schedule_picks_integrity(def_schedule_df):
         assert sorted(subset["gameweek"].tolist()) == list(range(1, 20))
         assert (subset["lineup_mod_fdr_sum"] >= 5.0).all()
         assert (subset["lineup_mod_fdr_sum"] <= 15.0).all()
+
+
+def test_club_occupancy_table_ranks_fdr_ties_by_occupancy_key() -> None:
+    """Ordinal rank is (total_mod_fdr, occupancy_key); file order is occupancy_key."""
+    table = build_club_occupancy_table(
+        club_shorts_per_set=(
+            ("BOU", "AVL", "AVL", "CHE", "CHE"),
+            ("AVL", "AVL", "AVL", "BOU", "CHE"),
+            ("CHE", "AVL", "BOU", "BOU", "CHE"),
+        ),
+        total_mod_fdr=(10.0, 9.0, 10.0),
+        total_base_fdr=(11.0, 10.0, 11.0),
+    )
+    assert list(table["occupancy_key"]) == [
+        "AVL-AVL-AVL-BOU-CHE",
+        "AVL-AVL-BOU-CHE-CHE",
+        "AVL-BOU-BOU-CHE-CHE",
+    ]
+    assert list(table["club_1"]) == ["AVL", "AVL", "AVL"]
+    assert list(table["club_5"]) == ["CHE", "CHE", "CHE"]
+    assert list(table["occupancy_shape"]) == ["3-1-1", "2-2-1", "2-2-1"]
+    assert list(table["distinct_clubs"]) == [3, 3, 3]
+    rank_by_key = dict(zip(table["occupancy_key"], table["rank_mod_fdr"], strict=True))
+    assert rank_by_key["AVL-AVL-AVL-BOU-CHE"] == 1
+    assert rank_by_key["AVL-AVL-BOU-CHE-CHE"] == 2
+    assert rank_by_key["AVL-BOU-BOU-CHE-CHE"] == 3
+    assert table["avg_def_mod_fdr"].iloc[0] == pytest.approx(9.0 / 57.0, abs=1e-3)
+
+
+def test_club_occupancy_csv_is_unique_alpha_source_of_truth() -> None:
+    """Companion is one row per Club Occupancy, sorted by occupancy_key, with club_1–club_5."""
+    assert OCCUPANCY_CSV.exists(), f"Missing companion artifact: {OCCUPANCY_CSV}"
+    occupancy = pd.read_csv(OCCUPANCY_CSV)
+    assert list(occupancy.columns) == list(OCCUPANCY_COLUMNS)
+    assert len(occupancy) == 42104
+    assert occupancy["occupancy_key"].is_unique
+    assert occupancy["occupancy_key"].is_monotonic_increasing
+    assert occupancy["rank_mod_fdr"].is_unique
+    assert set(occupancy["rank_mod_fdr"]) == set(range(1, 42105))
+    assert set(occupancy["occupancy_shape"]).issubset(ALLOWED_SHAPES)
+    assert set(occupancy["distinct_clubs"]) == {2, 3, 4, 5}
+    rebuilt_key = occupancy[["club_1", "club_2", "club_3", "club_4", "club_5"]].agg(
+        "-".join, axis=1
+    )
+    assert (rebuilt_key == occupancy["occupancy_key"]).all()
+    for distinct, expected_n in DISTINCT_CLUB_COUNTS.items():
+        assert int((occupancy["distinct_clubs"] == distinct).sum()) == expected_n
+    rank1 = occupancy.loc[occupancy["rank_mod_fdr"] == 1].iloc[0]
+    assert rank1["occupancy_key"] == "AVL-CHE-COV-LIV-MCI"
+    assert rank1["total_mod_fdr"] == pytest.approx(135.75, abs=0.01)
+    assert rank1["distinct_clubs"] == 5
+    assert rank1["occupancy_shape"] == "1-1-1-1-1"

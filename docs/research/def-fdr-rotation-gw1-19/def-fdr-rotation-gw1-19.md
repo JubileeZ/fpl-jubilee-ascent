@@ -1,13 +1,13 @@
 # First-Half 5-DEF Rotation Strategy (GW1–19)
 
-**Updated**: 2026-08-23T18:10:00+07:00  
+**Updated**: 2026-08-24T18:10:00+07:00  
 **Data stamp**: 2026-08-23 (FPL API Live Rosters + Committed Expected Role Prior)  
 **Season**: 2026/27  
 **Status**: Active  
 **Purpose**: Evaluate, rank, and schedule all 5-defender rotation structures across the first half of the season (GW1–19) by fielding the optimal 3 starting defenders each gameweek under home/away-adjusted Fixture Difficulty Ratings (FDR) across all structural budget tiers.  
-**Scope**: GW1–19 fixtures (190 matches); 20 Premier League clubs; all 42,104 valid 5-defender multisets (up to 3 per club); starting defender mapping and pricing from `features/expected-role-gw1-5.csv` and `players.parquet` (authoritative club registration); structural budget tiers (Pure Budget £20.0m–£22.0m, 1-Premium Anchor £22.5m–£24.5m, 2-Premium Anchor £25.0m–£27.0m, and Global Unconstrained).  
+**Scope**: GW1–19 fixtures (190 matches); 20 Premier League clubs; all 42,104 valid Club Occupancies (5 slots, ≤3 per Club, distinct Clubs 2–5); starting defender mapping and pricing from `features/expected-role-gw1-5.csv` and `players.parquet` (authoritative club registration); structural budget tiers (Pure Budget £20.0m–£22.0m, 1-Premium Anchor £22.5m–£24.5m, 2-Premium Anchor £25.0m–£27.0m, and Global Unconstrained).  
 **Related**: [`INDEX.md`](../INDEX.md) · [First-Half GKP Rotation Pairs](../gkp-fdr-rotation-gw1-19/gkp-fdr-rotation-gw1-19.md) · [First-Half Chip Strategy](../fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)  
-**Artifact**: [def_rotation_5sets_summary.csv](def_rotation_5sets_summary.csv) · [starting_defs_gw1_19.csv](starting_defs_gw1_19.csv) · [gw1_19_def_rotation_schedule_picks.csv](gw1_19_def_rotation_schedule_picks.csv)
+**Artifact**: [def_rotation_club_occupancy.csv](def_rotation_club_occupancy.csv) `occupancy_key` / `rank_mod_fdr` · [def_rotation_5sets_summary.csv](def_rotation_5sets_summary.csv) · [starting_defs_gw1_19.csv](starting_defs_gw1_19.csv) · [gw1_19_def_rotation_schedule_picks.csv](gw1_19_def_rotation_schedule_picks.csv)
 
 ---
 
@@ -27,9 +27,9 @@ Full redo docs/research/def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md
 
 1. Verify authoritative club registrations in data/processed/players.parquet and roles in features/expected-role-gw1-5.csv.
 2. Run runner: `uv run python docs/research/def-fdr-rotation-gw1-19/runner.py`.
-3. Verify companion CSVs (starting_defs_gw1_19.csv, def_rotation_5sets_summary.csv, gw1_19_def_rotation_schedule_picks.csv).
+3. Verify companion CSVs (starting_defs_gw1_19.csv, def_rotation_5sets_summary.csv, def_rotation_club_occupancy.csv, gw1_19_def_rotation_schedule_picks.csv). Occupancy SoT = def_rotation_club_occupancy.csv occupancy_key / rank_mod_fdr / total_mod_fdr.
 4. Run tests: `uv run pytest tests/test_def_fixture_rotation.py`.
-5. Refresh tables, total_mod_fdr sums, and structural tier rankings in this note.
+5. Refresh tables, total_mod_fdr sums, structural tier rankings, and Club Occupancy Top 10 / best-per-distinct in this note.
 6. Keep companion artifacts colocated inside docs/research/def-fdr-rotation-gw1-19/.
 ```
 
@@ -47,7 +47,7 @@ Full redo docs/research/def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md
 1. Map each club to its designated regular/nailed starting defenders and purchase costs using authoritative API club registration.
 2. Calculate the gameweek FDR for club $c$ in gameweek $g$:
    $$\text{Mod FDR}_c(g) = \begin{cases} \text{Base FDR} - 0.25 & \text{if Home} \\ \text{Base FDR} + 0.25 & \text{if Away} \end{cases}$$
-3. Generate all $\binom{20+5-1}{5} - \text{invalid cases} = 42,104$ valid 5-defender combinations with replacement (subject to the FPL maximum constraint of $\le 3$ players per club).
+3. Generate all $\binom{20+5-1}{5} - \text{invalid cases} = 42,104$ valid Club Occupancies (5 slots, $\le 3$ per Club). Distinct Club count is 2–5. Write unique occupancies to `def_rotation_club_occupancy.csv` (no Player identity). Rows sorted by `occupancy_key`; `rank_mod_fdr` is ordinal after $(\text{total\_mod\_fdr}, \text{occupancy\_key})$.
 4. For each 5-defender set $S = \{d_1, d_2, d_3, d_4, d_5\}$ in each gameweek $g \in [1, 19]$:
    - Extract the 5 modified FDR values and sort ascending: $f_{(1)}(g) \le f_{(2)}(g) \le f_{(3)}(g) \le f_{(4)}(g) \le f_{(5)}(g)$.
    - Field the top 3 starters (minimum legal defensive lineup to maximize attacking funds) and sum their difficulties:
@@ -66,6 +66,7 @@ Full redo docs/research/def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md
 | Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
 |---|---|---|---|---|---|
 | **Total Lineup Modified FDR** | `total_mod_fdr` | $\sum_{g=1}^{19} \sum_{k=1}^3 \text{Mod FDR}_{(k)}(g)$ | Lower is better $\downarrow$ | **$\le 138.00$** | Cumulative difficulty across 57 started defender slots (19 GWs $\times$ 3 starters). |
+| **Occupancy rank** | `rank_mod_fdr` | Ordinal after $(\text{total\_mod\_fdr}, \text{occupancy\_key})$ ascending | Lower is better $\downarrow$ | **1** | Unique rank of a Club Occupancy. CSV rows stay sorted by `occupancy_key`, not by this rank. |
 | **Average DEF Modified FDR** | `avg_def_mod_fdr` | $\frac{\text{total\_mod\_fdr}}{57}$ | Lower is better $\downarrow$ | **$\le 2.40$ / DEF** | Mean fixture difficulty rating per started defender. Unrotated 3-DEF baseline is $\approx 3.03$. |
 | **Total Lineup Base FDR** | `total_base_fdr` | $\sum_{g=1}^{19} \sum_{k=1}^3 \text{Base FDR}_{(k)}(g)$ | Lower is better $\downarrow$ | **$\le 144.00$** | Unmodified official FPL FDR sum for the 57 started defender slots. |
 | **Combined Cost** | `combined_cost` | $\sum_{i=1}^5 \text{Cost}_i$ | Context-dependent | **£21.5m – £23.5m** | Combined squad budget allocation across all 5 defenders. |
@@ -251,6 +252,36 @@ From [`gw1_19_def_rotation_schedule_picks.csv`](gw1_19_def_rotation_schedule_pic
 
 ---
 
+### 4. Club Occupancy rankings
+Source of truth: [`def_rotation_club_occupancy.csv`](def_rotation_club_occupancy.csv) (`occupancy_key`, `club_1`–`club_5`, `rank_mod_fdr`, `total_mod_fdr`). One row per unique 5-slot Club Occupancy (42,104). File sorted A–Z on `occupancy_key`. Rank 1–10 below use ordinal rank after `(total_mod_fdr, occupancy_key)`. Six occupancies share 135.75; alpha order fills ranks 1–6.
+
+#### Global Top 10
+
+| Rank | Occupancy | Distinct | Shape | Total Mod FDR | Total Base FDR | Avg DEF FDR |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|
+| **1** | **AVL-CHE-COV-LIV-MCI** | 5 | 1-1-1-1-1 | **135.75** | 140.0 | 2.382 |
+| **2** | **AVL-COV-LEE-LIV-MCI** | 5 | 1-1-1-1-1 | **135.75** | 141.0 | 2.382 |
+| **3** | **AVL-COV-LIV-MCI-MUN** | 5 | 1-1-1-1-1 | **135.75** | 141.0 | 2.382 |
+| **4** | **BHA-COV-LIV-MCI-SUN** | 5 | 1-1-1-1-1 | **135.75** | 140.0 | 2.382 |
+| **5** | **CHE-COV-MCI-MCI-MUN** | 4 | 2-1-1-1 | **135.75** | 143.0 | 2.382 |
+| **6** | **COV-LIV-MCI-MCI-MUN** | 4 | 2-1-1-1 | **135.75** | 143.0 | 2.382 |
+| **7** | **AVL-CHE-COV-MCI-NFO** | 5 | 1-1-1-1-1 | **136.25** | 140.0 | 2.390 |
+| **8** | **AVL-CHE-LIV-MCI-SUN** | 5 | 1-1-1-1-1 | **136.25** | 140.0 | 2.390 |
+| **9** | **AVL-COV-LEE-MCI-SUN** | 5 | 1-1-1-1-1 | **136.25** | 142.0 | 2.390 |
+| **10** | **AVL-COV-LIV-MCI-NFO** | 5 | 1-1-1-1-1 | **136.25** | 140.0 | 2.390 |
+
+#### Best per distinct Club count
+Same metric and tie-break. 2-Club (`3-2`) never enters the global Top 10 (floor **142.25** vs **135.75**).
+
+| Distinct | Occupancy | Shape | Rank | Total Mod FDR | Total Base FDR | Avg DEF FDR |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|
+| **2** | **COV-COV-MCI-MCI-MCI** | 3-2 | 8353 | **142.25** | 148.0 | 2.496 |
+| **3** | **COV-COV-MCI-MCI-SUN** | 2-2-1 | 53 | **136.75** | 143.0 | 2.399 |
+| **4** | **CHE-COV-MCI-MCI-MUN** | 2-1-1-1 | 5 | **135.75** | 143.0 | 2.382 |
+| **5** | **AVL-CHE-COV-LIV-MCI** | 1-1-1-1-1 | 1 | **135.75** | 140.0 | 2.382 |
+
+---
+
 ## Decision
 
 **Verdict**: The premier defensive squad structure for the first half of the season (GW1–19) is a **1-Premium Anchor set** led by **Rúben (MCI, £5.5m) + Cash (AVL, £4.5m) + Rodon (LEE, £4.5m) + Thomas (COV, £4.0m) + O'Nien (SUN, £4.0m)** at **£22.5m combined** (Total Mod FDR **136.25**, **2.390 / DEF**). For managers demanding the absolute cheapest £21.5m budget ceiling, **Smith (BOU) + Aina (NFO) + Robertson (TOT) + Thomas (COV) + O'Nien (SUN)** achieves **137.25** (**2.408 / DEF**), providing unbroken low-fixture defense across all 19 gameweeks.
@@ -267,6 +298,7 @@ From [`gw1_19_def_rotation_schedule_picks.csv`](gw1_19_def_rotation_schedule_pic
 1. **Preseason Lineup & Transfer Volatility**: Starter designations are based on the committed GW1–5 Expected Role Prior joined with authoritative API club registration. Late transfer window additions may necessitate substitution with adjacent club starters.
 2. **Rotation Depth & Substitution Risk**: If a £4.0m starter loses his place, rotation flexibility drops from 5-way to 4-way, increasing effective lineup FDR from 2.39 to ~2.55.
 3. **Rescheduled Fixtures**: Postponements or blank/double gameweeks beyond GW19 will require schedule recalculation.
+4. **Club Occupancy ignores Price**: Occupancy rankings drop Player identity. A top occupancy may require two premiums from the stacked Club (e.g. double MCI) and fall outside the budget-tier tables.
 
 ---
 

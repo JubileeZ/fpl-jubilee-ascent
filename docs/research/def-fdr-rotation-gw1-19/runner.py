@@ -6,8 +6,11 @@ Generates companion CSV artifacts for docs/research/def-fdr-rotation-gw1-19/
 
 import itertools
 import os
+
 import numpy as np
 import pandas as pd
+
+from club_occupancy import build_club_occupancy_table
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -148,6 +151,17 @@ total_mod_fdr = np.sum(lineup_mod_gw, axis=1)
 total_base_fdr = np.sum(lineup_base_gw, axis=1)
 avg_def_mod_fdr = total_mod_fdr / (19.0 * 3.0)
 avg_def_base_fdr = total_base_fdr / (19.0 * 3.0)
+
+club_shorts_per_set = [
+    tuple(c_names[club_ids[ci]] for ci in c_indices) for c_indices in combos
+]
+df_occupancy = build_club_occupancy_table(
+    club_shorts_per_set, total_mod_fdr, total_base_fdr
+)
+df_occupancy.to_csv(
+    os.path.join(OUTPUT_DIR, "def_rotation_club_occupancy.csv"), index=False
+)
+print(f"Saved def_rotation_club_occupancy.csv ({len(df_occupancy)} rows)")
 
 # Build summary records
 summary_rows = []
