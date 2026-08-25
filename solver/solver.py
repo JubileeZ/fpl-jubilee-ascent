@@ -12,7 +12,7 @@ import pandas as pd
 import sasoptpy as so
 
 from solver.data_parser import read_data
-from solver.utils import cached_request, get_random_id
+from solver.utils import cached_request, get_random_id, load_solver_static
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="sasoptpy")
 
@@ -107,7 +107,7 @@ def calculate_fts(transfers, first_gw, next_gw, fh_gws, wc_gws):
 
 
 def prep_data(my_data, options):
-    fpl_data = cached_request("https://fantasy.premierleague.com/api/bootstrap-static/")
+    fpl_data, fixture_data = load_solver_static(options)
     valid_ids = [x["id"] for x in fpl_data["elements"]]
 
     for pid, change in options.get("price_changes", []):
@@ -236,9 +236,7 @@ def prep_data(my_data, options):
                 options["chip_limits"]["wc"] = 1
             break
 
-    # Fixture info
     team_code_dict = team_data.set_index("id")["name"].to_dict()
-    fixture_data = cached_request("https://fantasy.premierleague.com/api/fixtures/")
     fixtures = [{"gw": f["event"], "home": team_code_dict[f["team_h"]], "away": team_code_dict[f["team_a"]]} for f in fixture_data]
 
     return {

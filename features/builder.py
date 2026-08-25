@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 import pandas as pd
 
@@ -56,6 +56,33 @@ def _empty_state_stats() -> StateStats:
         "counts": dict.fromkeys(PARTICIPATION_STATES, 0.0),
         "minutes_sum": dict.fromkeys(PARTICIPATION_STATES, 0.0),
         "sixty_count": dict.fromkeys(PARTICIPATION_STATES, 0.0),
+    }
+
+
+def _minutes_prior_from_state(stats: StateStats) -> dict[str, object]:
+    counts = stats["counts"]
+    total = sum(counts.values())
+    if total <= 0:
+        return {
+            "p_start": 1.0 / 3.0,
+            "p_sub_in": 1.0 / 3.0,
+            "p_dnp": 1.0 / 3.0,
+            "xmins_if_start": 80.0,
+            "xmins_if_sub_in": 20.0,
+            "draft_availability": "eligible",
+            "availability_override": "",
+        }
+    start_n = counts["start"]
+    sub_n = counts["sub_in"]
+    minutes_sum = stats["minutes_sum"]
+    return {
+        "p_start": start_n / total,
+        "p_sub_in": sub_n / total,
+        "p_dnp": counts["dnp"] / total,
+        "xmins_if_start": minutes_sum["start"] / start_n if start_n else 80.0,
+        "xmins_if_sub_in": minutes_sum["sub_in"] / sub_n if sub_n else 20.0,
+        "draft_availability": "eligible",
+        "availability_override": "",
     }
 
 
@@ -465,6 +492,7 @@ def build_features(
     season: str | None = None,
     expected_role_season: str | None = None,
     expected_role_table: Path | None = None,
+    minutes_prior_source: Literal["expected_role", "seed_state"] = "expected_role",
     target_deadline: datetime | str | None = None,
     state_recency_decay: float = STATE_RECENCY_DECAY,
     state_prior_strength: float = STATE_PRIOR_STRENGTH,
@@ -486,11 +514,15 @@ def build_features(
     if state_prior_strength < 0:
         raise ValueError("state_prior_strength must be non-negative")
 
-    role_season = expected_role_season or LIVE_SEASON
-    role_table_path = (
-        Path(expected_role_table) if expected_role_table is not None else DEFAULT_EXPECTED_ROLE_TABLE
-    )
-    role_table = load_expected_role_table(role_table_path, role_season)
+    if minutes_prior_source not in {"expected_role", "seed_state"}:
+        raise ValueError("minutes_prior_source must be expected_role or seed_state")
+    role_table = None
+    if minutes_prior_source == "expected_role":
+        role_season = expected_role_season or LIVE_SEASON
+        role_table_path = (
+            Path(expected_role_table) if expected_role_table is not None else DEFAULT_EXPECTED_ROLE_TABLE
+        )
+        role_table = load_expected_role_table(role_table_path, role_season)
 
     # 1. Load Parquet tables, preferring a complete immutable snapshot package.
     snapshot = (
@@ -691,34 +723,40 @@ def build_features(
             blend_full_appearances,
         )
         prior_weight = 1.0 - current_weight
-        role = fit_role_prior(role_table, pid)
+        if minutes_prior_source == "seed_state":
+            src = prior_state if prior_state_total > 0 else state_prior
+            minutes_prior = _minutes_prior_from_state(src)
+        else:
+            if role_table is None:
+                raise ValueError("Expected Role Table is required when minutes_prior_source is expected_role")
+            minutes_prior = fit_role_prior(role_table, pid)
         current_state_total = sum(current_state["counts"].values())
         if current_state_total > 0:
             current_p_start = current_state["counts"]["start"] / current_state_total
             current_p_sub = current_state["counts"]["sub_in"] / current_state_total
             current_p_dnp = current_state["counts"]["dnp"] / current_state_total
         else:
-            current_p_start = role["p_start"]
-            current_p_sub = role["p_sub_in"]
-            current_p_dnp = role["p_dnp"]
+            current_p_start = minutes_prior["p_start"]
+            current_p_sub = minutes_prior["p_sub_in"]
+            current_p_dnp = minutes_prior["p_dnp"]
         current_xmins_start = (
             current_state["minutes_sum"]["start"] / current_state["counts"]["start"]
             if current_state["counts"]["start"] > 0
-            else role["xmins_if_start"]
+            else minutes_prior["xmins_if_start"]
         )
         current_xmins_sub = (
             current_state["minutes_sum"]["sub_in"] / current_state["counts"]["sub_in"]
             if current_state["counts"]["sub_in"] > 0
-            else role["xmins_if_sub_in"]
+            else minutes_prior["xmins_if_sub_in"]
         )
-        p_start = prior_weight * role["p_start"] + current_weight * current_p_start
-        p_sub_in = prior_weight * role["p_sub_in"] + current_weight * current_p_sub
-        p_dnp = prior_weight * role["p_dnp"] + current_weight * current_p_dnp
-        xmins_if_start = prior_weight * role["xmins_if_start"] + current_weight * current_xmins_start
-        xmins_if_sub_in = prior_weight * role["xmins_if_sub_in"] + current_weight * current_xmins_sub
+        p_start = prior_weight * minutes_prior["p_start"] + current_weight * current_p_start
+        p_sub_in = prior_weight * minutes_prior["p_sub_in"] + current_weight * current_p_sub
+        p_dnp = prior_weight * minutes_prior["p_dnp"] + current_weight * current_p_dnp
+        xmins_if_start = prior_weight * minutes_prior["xmins_if_start"] + current_weight * current_xmins_start
+        xmins_if_sub_in = prior_weight * minutes_prior["xmins_if_sub_in"] + current_weight * current_xmins_sub
         p_60_if_start = min(1.0, max(0.0, (xmins_if_start - 45.0) / 30.0))
         p_60_if_sub_in = min(1.0, max(0.0, (xmins_if_sub_in - 45.0) / 30.0))
-        role_appearance_probability = 1.0 - role["p_dnp"]
+        role_appearance_probability = 1.0 - minutes_prior["p_dnp"]
         blended_appearance_probability = (
             prior_weight * role_appearance_probability + current_weight * current_appearance_probability
         )
@@ -742,13 +780,13 @@ def build_features(
             "xmins_if_sub_in": xmins_if_sub_in,
             "p_60_if_start": p_60_if_start,
             "p_60_if_sub_in": p_60_if_sub_in,
-            "draft_availability": role["draft_availability"],
-            "availability_override": role["availability_override"],
+            "draft_availability": minutes_prior["draft_availability"],
+            "availability_override": minutes_prior["availability_override"],
         }
         row.update({key: state_summary[key] for key in state_summary if key.startswith("state_") or key.endswith("_observation_weight")})
-        row["p_dnp_prior"] = role["p_dnp"]
-        row["p_start_prior"] = role["p_start"]
-        row["p_sub_in_prior"] = role["p_sub_in"]
+        row["p_dnp_prior"] = minutes_prior["p_dnp"]
+        row["p_start_prior"] = minutes_prior["p_start"]
+        row["p_sub_in_prior"] = minutes_prior["p_sub_in"]
         for rate_col in RATE_COLS:
             row[rate_col] = prior_weight * float(base_rates.get(rate_col, 0.0)) + current_weight * float(current_rates.get(rate_col, 0.0))
         seed_rows.append(row)

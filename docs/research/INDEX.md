@@ -1,12 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-24T18:10:00+07:00
+**Updated**: 2026-08-26T02:45:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Transfer Plan Walk-Forward (2025-26 GW1–19)**: [Note](tp-walkforward-gw1-19-2025-26/tp-walkforward-gw1-19-2025-26.md) · [Summary](tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv) `realized_points` · [Club Occupancy](tp-walkforward-gw1-19-2025-26/def_rotation_club_occupancy.csv) `rank_mod_fdr`
 - **First-Half 5-DEF Rotation Strategy (GW1–19)**: [Note](def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md) · [Club Occupancy](def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv) `rank_mod_fdr` / `total_mod_fdr` · [Summary](def-fdr-rotation-gw1-19/def_rotation_5sets_summary.csv) `total_mod_fdr` · [Starting DEFs](def-fdr-rotation-gw1-19/starting_defs_gw1_19.csv) · [Schedule Picks](def-fdr-rotation-gw1-19/gw1_19_def_rotation_schedule_picks.csv)
 - **First-Half GKP Rotation Pairs (GW1–19)**: [Note](gkp-fdr-rotation-gw1-19/gkp-fdr-rotation-gw1-19.md) · [Summary](gkp-fdr-rotation-gw1-19/gkp_rotation_pairs_summary.csv) `total_mod_fdr` · [Starting GKPs](gkp-fdr-rotation-gw1-19/starting_gkps_gw1_19.csv) · [Schedule Picks](gkp-fdr-rotation-gw1-19/gw1_19_rotation_schedule_picks.csv)
 - **First-Half Chip Strategy (source synthesis)**: [Note](fpl-first-half-chip-strategy/fpl-first-half-chip-strategy.md)
@@ -44,6 +45,7 @@
 | **Rotation** | **Zero-Difficult Gameweeks** | `Zero-Diff %` | % of GWs where all started assets face FDR $\le 3$ | Higher is better $\uparrow$ | **$100.0\%$** | Completely avoids fielding starters against FDR $\ge 4$ elite attacks. |
 | **Rotation** | **Rotated / Effective FDR** | `Rot FDR` | Average weekly fixture difficulty rating across started slots | Lower is better $\downarrow$ | **$\le 2.40$** | Benchmark baseline for unrotated schedule is $3.00$; rotation targets $\le 2.40$. |
 | **Rotation** | **Rotated Expected Points** | `Rotated xP` | $\sum_{t=1}^N \max_{i \in \text{squad}} xP_{i,t}$ | Higher is better $\uparrow$ | Maximized | Sum of weekly projected points under optimal starting selection. |
+| **Walk-Forward** | **First-Half Realized Points** | `realized_points` | Scoring-15 Realized Points GW1–19 after autosubs; Hits forbidden | Higher is better $\uparrow$ | Unconstrained baseline | Transfer Plan Walk-Forward ranking object (ADR 0019). |
 | **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across target window under Chip Path | Higher is better $\uparrow$ | Maximized | MILP-optimized points under chip constraints. |
 | **Chip Strategy** | **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Net points gained by deploying specific chip combinations early vs holding. |
 | **Ownership** | **Projected Rate** | `xP/90` | Expected points per 90 minutes normalized by role and fixture | Higher is better $\uparrow$ | **$\ge 5.0$** (Enabler) / **$\ge 7.0$** (Premium) | Normalized per-minute scoring potential. |

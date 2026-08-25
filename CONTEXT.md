@@ -20,6 +20,14 @@ _Avoid_: position (used as lineup index)
 The squad slot/lineup position within the User Squad (integer 1 to 15, e.g. starting GK is 1, bench GK is 12). Maps to `position` in the FPL `/my-team/` endpoint picks.
 _Avoid_: position_id, player position
 
+**Starting Shape**:
+DEF–MID–FWD counts in one Gameweek's starting XI (always 1 GKP). Legal bounds: 3–5 DEF, 2–5 MID, 1–3 FWD. A per-Gameweek lineup property. Distinct from the 15, which is always 2 GKP / 5 DEF / 5 MID / 3 FWD.
+_Avoid_: formation (season-long), squad structure, 15 shape
+
+**Locked Starting Shape**:
+Research constraint: every Gameweek in a Season Window must use one Starting Shape. Ablation against unconstrained legal XI in Transfer Plan Walk-Forward.
+_Avoid_: formation, squad shape
+
 **Player**:
 A Premier League footballer available for selection. Maps to `element` in the FPL API.
 _Avoid_: Element, asset
@@ -284,6 +292,38 @@ _Avoid_: Booked Chip, optional chip, enabling all four by default, Canonical chi
 The decayed quantity the MILP maximises over the Planning Horizon. Distinct from undiscounted Gameweek Projection xP shown per week on the Transfer Plan.
 _Avoid_: xP, score, total_xp, research total_6gw_xp
 
+**Hit**:
+A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Distinct from spending banked Free Transfers.
+_Avoid_: minus, treating any transfer as a Hit, one transfer per week
+
+**Free Transfer Bank**:
+Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
+_Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent
+
+**Transfer Target Policy**:
+Research constraint on which Positions a Free Transfer may change in Transfer Plan Walk-Forward. Distinct from Starting Shape and from Expected Role Rotation.
+_Avoid_: rotation, fix DEF (ambiguous), lock
+
+**Attack-Targeted FTs**:
+Transfer Target Policy: Free Transfers may not change DEF or GKP unless the owned Player meets the Did-Not-Play Exception for that deadline Gameweek.
+_Avoid_: rotate MID/FWD, fix defence
+
+**Defence-Targeted FTs**:
+Transfer Target Policy: Free Transfers may not change MID or FWD unless the owned Player meets the Did-Not-Play Exception for that deadline Gameweek.
+_Avoid_: rotate DEF, spend transfers on DEF
+
+**Did-Not-Play Exception**:
+Transfer Target Policy override: an owned Player may be transferred even if that Position is targeted-fixed when Model Champion `p_dnp ≥ 0.5` on the deadline Gameweek only. Not a later week in the Planning Horizon. Not terminal `chance_of_playing`.
+_Avoid_: horizon-wide injury flag, archive chance_of_playing, requiring p_dnp = 1
+
+**Defcon-Floor Tilt**:
+Research solver score for DEF and MID: Gameweek Projection xP plus `xp_defcon` (Defcon counted twice). GKP and FWD stay on vanilla xP. Frozen before Realized Points are inspected.
+_Avoid_: Defcon-only ranking, consistency, hard pool filter
+
+**Attack-Ceiling Tilt**:
+Research solver score for DEF and MID: Gameweek Projection xP minus `xp_defcon` (Defcon stripped). Goals, assists, and clean sheets unchanged. GKP and FWD stay on vanilla xP. Frozen before Realized Points are inspected.
+_Avoid_: high ceiling, ignoring clean sheets, FWD Defcon strip
+
 **Mix**:
 Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep, Force Ban, or Re-solve. Not a Transfer Plan, not a legal 15.
 _Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order
@@ -299,6 +339,10 @@ _Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizo
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
 _Avoid_: Squad Gap (ambiguous), optimizer gap
+
+**Transfer Plan Walk-Forward**:
+Research evaluation of a Transfer Plan policy. At each historical Gameweek deadline in a Season Window, solve from Projections built only on history before that deadline, then score that Gameweek's scoring 15 on Realized Points. Distinct from model MAE backtest and from one-Gameweek Decision Regret. Exploratory on archive data without Availability Snapshots. Not a product Transfer Plan.
+_Avoid_: backtest (ambiguous with model MAE), hindsight oracle, Transfer-plan regret (deferred product metric)
 
 **Model Champion**:
 The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation.

@@ -1,0 +1,11 @@
+arm_id,family,locked_starting_shape,transfer_target,tilt,realized_points,status,detail
+baseline,baseline,,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+shape_3-4-3,shape,3-4-3,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+shape_3-5-2,shape,3-5-2,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+shape_4-3-3,shape,4-3-3,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+shape_4-4-2,shape,4-4-2,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+shape_4-5-1,shape,4-5-1,unconstrained,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+ft_attack,ft,,attack,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+ft_defence,ft,,defence,vanilla,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+tilt_defcon_floor,tilt,,unconstrained,defcon_floor,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+tilt_attack_ceiling,tilt,,unconstrained,attack_ceiling,,blocked_missing_prior_season_seed,Prior-Season Seed missing. Ingest 2024-25 via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>

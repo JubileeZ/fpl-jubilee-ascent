@@ -123,3 +123,14 @@ def cached_request(url: str) -> dict:
         pass
         
     return data
+
+
+def load_solver_static(options: dict) -> tuple[dict, list]:
+    """Return bootstrap-static and fixtures. Injected options skip live HTTP."""
+    bootstrap = options.get("fpl_bootstrap")
+    fixtures = options.get("fpl_fixtures")
+    if bootstrap is None:
+        bootstrap = cached_request("https://fantasy.premierleague.com/api/bootstrap-static/")
+    if fixtures is None:
+        fixtures = cached_request("https://fantasy.premierleague.com/api/fixtures/")
+    return bootstrap, fixtures

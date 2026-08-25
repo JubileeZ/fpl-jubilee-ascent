@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. Active research under `docs/research/` (`tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
@@ -14,7 +14,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 
 ## Research truth (23 Aug)
 
-- Active research: `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`.
+- Active research: `docs/research/` (`tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. 2025-26 First-Half walk-forward ranking blocked until `data/archive/2024-25/processed`.
 - Production Expected Role Prior ingest: `features/expected-role-gw1-5.csv`.
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
@@ -37,7 +37,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Transfer Plan + Ownership Explorer. Transfer Plan opens first; 15 is User Squad else preseason draft. Planning Horizon 1–5 (default 5) from `is_next`. Force Keep/Ban, Booked/Enabled Chips per Chip Set, view-only Mix (exclusive occupancy, Mix-list ×/drag, panel after charts). Champion MILP + Official Fixture Difficulty. Full-Season Window export writes solver CSVs. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
-| Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
+| Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0019) |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
 | Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Production Expected Role Prior from archived Stage 1 CSV. Research HTML is not the dashboard product view. `data/archive/` = season snapshots only |
 
@@ -48,7 +48,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 - Historical Availability Snapshot collection not on `origin` (`availability-snapshots` branch missing). Writer now JSON-canonicalizes nested FPL list columns (`price_change_projections`, `scout_risks`, fixture `stats`); hourly Capture Action was failing inside 48h window. Keep `.github/workflows/capture_availability_snapshot.yml` + `evaluate_model_promotion.yml`. Archive-backed promotion remains provisional until two Live Validation Windows complete.
 - Committed Comparison Slate lives in `config/model_selection.json`; `commands.compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
 - Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
-- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate.
+- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0019) is blocked until `data/archive/2024-25/processed` exists.
 - Dual-Source Lineup Signals JSON is written on Expected Role Rebuild; no committed `lineup-signals.json` until next `--rebuild-roles`.
 
 ---
@@ -72,6 +72,8 @@ uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason tra
 uv run python -m commands.report                       # Print report
 uv run python -m commands.price_report                # Print price changes
 uv run python -m commands.dashboard                   # Transfer Plan + Ownership Explorer
+uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+uv run python -m commands.transfer_plan_walkforward  # Writes blocked summary without 2024-25 seed
 ```
 
 ---

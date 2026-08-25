@@ -42,6 +42,8 @@ docs/          # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.dashboard` | Export Full-Season Window JSON; serve Transfer Plan + Ownership Explorer |
+| `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local raw JSON into `data/archive/<season>/processed` |
+| `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; writes blocked summary without 2024-25 seed |
 
 **Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 
