@@ -206,9 +206,9 @@
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "";
     if (metaEl) {
       if (!m) {
-        metaEl.textContent = `No Transfer Plan yet. Book or Enable chips, Force Keep/Ban, then Re-solve (Model Champion, Official Fixture Difficulty, ${span}).`;
+        metaEl.textContent = `No Transfer Plan yet. Book or Enable chips, Force Keep/Ban, then Re-solve (Model Champion, Modified FDR, ${span}).`;
       } else {
-        metaEl.textContent = `Champion ${m.champion} · Official Fixture Difficulty · Planning Horizon ${m.horizon} from GW${m.next_gw} · decay ${m.decay_base}`;
+        metaEl.textContent = `Champion ${m.champion} · Modified FDR · Planning Horizon ${m.horizon} from GW${m.next_gw} · decay ${m.decay_base}`;
       }
     }
     if (objEl) objEl.textContent = m && m.solver_objective != null ? Number(m.solver_objective).toFixed(2) : "—";

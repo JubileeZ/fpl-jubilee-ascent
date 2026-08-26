@@ -17,6 +17,7 @@ from features.expected_role_prior import (
     load_expected_role_table,
     minutes_if_appearance,
 )
+from features.fdr import modified_fdr, official_fdr
 
 EVENT_RATE_MAP = [
     ("goals_scored", "per90_goals"),
@@ -131,8 +132,8 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
         away_id = int(fixture["away_club_id"])
         home = club_rows.loc[home_id] if home_id in club_rows.index else pd.Series(dtype=float)
         away = club_rows.loc[away_id] if away_id in club_rows.index else pd.Series(dtype=float)
-        difficulty_home = _safe_number(fixture.get("team_h_difficulty"), 3.0)
-        difficulty_away = _safe_number(fixture.get("team_a_difficulty"), 3.0)
+        difficulty_home = modified_fdr(official_fdr(fixture.get("team_h_difficulty")), True)
+        difficulty_away = modified_fdr(official_fdr(fixture.get("team_a_difficulty")), False)
         home_attack = _club_strength(home, "strength_attack_home", "strength")
         home_defence = _club_strength(home, "strength_defence_home", "strength")
         away_attack = _club_strength(away, "strength_attack_away", "strength")

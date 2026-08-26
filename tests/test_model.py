@@ -40,7 +40,7 @@ def test_modeling_pipeline(tmp_path):
     assert len(df_feat) == 1
     assert df_feat.loc[0, "avg_points_3gw"] == 8.0
     assert df_feat.loc[0, "avg_mins_3gw"] == 90.0
-    assert df_feat.loc[0, "difficulty"] == 2  # home perspective difficulty for Arsenal is 2
+    assert df_feat.loc[0, "difficulty"] == 1.75  # home official 2 → Modified FDR
     
     # 3. Run model
     model = LinearBaseline()

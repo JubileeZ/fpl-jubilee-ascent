@@ -17,7 +17,7 @@ We introduce `metrics_component_hybrid` (`models/metrics_component_hybrid.py`) w
    - Clean Sheet: $P(\text{Clean Sheet}) = e^{-\lambda}$ multiplied by a calibrated probability of reaching 60 minutes.
    - Goals Conceded Deduction and Saves: expected values over Poisson count distributions, not `floor(expected count)`. Saves $\lambda$ scales by `defence_multiplier` (opponent attack / own defence).
    - Defcon: negative-binomial threshold probability for DEF (threshold 10) and MID/FWD (threshold 12), mapped to two expected FPL points. Defcon $\lambda$ scales by the same `defence_multiplier`.
-   - Strength missing or zero: Official FDR fallback already in `_fixture_maps` (`difficulty / 3` for defence, `(6 - difficulty) / 3` for attack, clipped 0.4–1.8). Model uses the same FDR ratios when multiplier columns are absent.
+   - Strength missing or zero: Modified FDR fallback already in `_fixture_maps` (`difficulty / 3` for defence, `(6 - difficulty) / 3` for attack, clipped 0.4–1.8; ADR 0019). Model uses the same FDR ratios when multiplier columns are absent.
 5. **Competitor-Aware Bonus Proxy**: fixture competitors receive a softmax allocation of three expected bonus points. This is an auditable proxy for the official match-level BPS tie system, not a fitted multinomial BPS model.
 
 ## Consequences

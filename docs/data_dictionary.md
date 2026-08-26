@@ -11,7 +11,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `name` (`str`): e.g. "Arsenal".
     *   `short_name` (`str`): e.g. "ARS".
     *   `strength` (`int`): FPL overall rating (1-5).
-    *   `strength_overall_home`, `strength_overall_away`, `strength_attack_home`, `strength_attack_away`, `strength_defence_home`, `strength_defence_away` (`int`): Team quality vectors.
+    *   `strength_overall_home`, `strength_overall_away`, `strength_attack_home`, `strength_attack_away`, `strength_defence_home`, `strength_defence_away` (`int`): Club Strength Vector. Live 2026/27 overall = Official Fixture Difficulty at the *focal* venue (`_home`/`_away` = your home/away, not the opponent's ground). Attack/defence often 0.
 *   **Discarded:** `code`, `draw`, `loss`, `win`, `played`, `points`, `position` (current standing), `team_division`, `link_url`, `pulse_id`, `unavailable`, `form`.
 
 ---
@@ -67,7 +67,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `away_club_id` (`int`): Reference to away Club (maps to `team_a`).
     *   `finished` (`bool`), `started` (`bool`).
     *   `team_h_score` (`int`, nullable), `team_a_score` (`int`, nullable).
-    *   `team_h_difficulty` (`int`), `team_a_difficulty` (`int`).
+    *   `team_h_difficulty` (`int`), `team_a_difficulty` (`int`): Official Fixture Difficulty for the home/away club. Production models and FDR report derive Modified FDR (−0.25 home / +0.25 away); these columns stay the API ticks.
     *   `raw_stats` (`json`): Raw `'stats'` array containing goals/assists/bps details.
 *   **Discarded:** `code`, `finished_provisional`, `provisional_start_time`, `minutes`, `pulse_id`.
 

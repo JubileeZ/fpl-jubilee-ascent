@@ -253,8 +253,8 @@ Retired product surface. Not a dashboard tab. A sandbox 15 is not a product obje
 _Avoid_: Roster picker, drag list, live tab name, treating the pitch as a draft sandbox
 
 **Transfer Plan**:
-The sole 15-player product surface. MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Official Fixture Difficulty. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
-_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder
+The sole 15-player product surface. MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
+_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score
 
 **Force Keep**:
 User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.
@@ -293,8 +293,8 @@ A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Play
 _Avoid_: selected player, overlapping Mix occupancy
 
 **Ownership Explorer**:
-Dashboard view ranking Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Model Champion, and Official Fixture Difficulty as the solver. Not Transfer Plan. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP
+Dashboard view ranking Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Model Champion, and Modified FDR as the solver. Not Transfer Plan. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
@@ -389,16 +389,20 @@ Research Note mapping related source pages to child notes, freshness, scope, and
 _Avoid_: Merged research report, complete source transcription
 
 **Calibrated Component Architecture**:
-Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → Official FDR fallback in `_fixture_maps`.
+Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → Modified FDR fallback in `_fixture_maps`.
 _Avoid_: Top-down power rating, single composite score xP prediction
 
 **Official Fixture Difficulty**:
-Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. In 2026/27 it equals the opponent Club Strength Vector overall at the focal venue (home FDR = opponent `strength_overall_home`; away FDR = opponent `strength_overall_away`). Not a blend of attack and defence.
-_Avoid_: Dual-Vector Strength, Club Strength Vector, treating API strength as a finer FDR
+Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. Focal-team difficulty. 2026/27: home FDR = opponent `strength_overall_home`; away FDR = opponent `strength_overall_away`. Those `_home`/`_away` fields are your venue, not the opponent's own ground. Not attack/defence blend. Not production xP input.
+_Avoid_: Dual-Vector Strength, Club Strength Vector, treating API strength as finer FDR, ARS `strength_overall_away` as Arsenal stronger on the road, Modified FDR
+
+**Modified FDR**:
+Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Production difficulty for Feature Contract, Champion xP, Transfer Plan, Ownership Explorer, FDR report.
+_Avoid_: Official Fixture Difficulty, Dual-Vector Strength, DCS effective FDR (`defence_multiplier × 3`)
 
 **Club Strength Vector**:
-Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Live 2026/27: `strength` null, attack/defence all 0, overall already the 2–5 Official Fixture Difficulty ticks.
-_Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only)
+Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Live 2026/27: `strength` null, attack/defence 0, overall = Official Fixture Difficulty ticks at focal venue.
+_Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only), opponent's own home/away form
 
 **Dual-Vector Strength**:
 Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Not implemented in production Python; not the API Club Strength Vector.

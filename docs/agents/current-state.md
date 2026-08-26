@@ -6,17 +6,17 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. Active research under `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected-role-gw1-5.csv`. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` (two-tab Transfer Plan + Ownership Explorer; 0008/0017 superseded). Vocabulary in `CONTEXT.md`.
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` (two-tab Transfer Plan + Ownership Explorer; 0008/0017 superseded), `0019` (Modified FDR production score). Vocabulary in `CONTEXT.md`.
 
 ## Research truth (23 Aug)
 
 - Active research: `docs/research/` (`def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`.
 - Production Expected Role Prior ingest: `features/expected-role-gw1-5.csv`.
-- **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
+- **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
 
 
@@ -35,7 +35,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Transfer Plan + Ownership Explorer. Transfer Plan opens first; 15 is User Squad else preseason draft. Planning Horizon 1–5 (default 5) from `is_next`. Force Keep/Ban, Booked/Enabled Chips per Chip Set, view-only Mix (exclusive occupancy, Mix-list ×/drag, panel after charts). Champion MILP + Official Fixture Difficulty. Full-Season Window export writes solver CSVs. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Transfer Plan + Ownership Explorer. Transfer Plan opens first; 15 is User Squad else preseason draft. Planning Horizon 1–5 (default 5) from `is_next`. Force Keep/Ban, Booked/Enabled Chips per Chip Set, view-only Mix (exclusive occupancy, Mix-list ×/drag, panel after charts). Champion MILP + Modified FDR. Full-Season Window export writes solver CSVs. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `commands/backtest.py`, `backtesting/` | Walk-forward evaluation and decision-aware metrics |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
