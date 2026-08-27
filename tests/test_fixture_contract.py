@@ -92,7 +92,9 @@ def test_feature_contract_retains_fixture_rows_and_horizon(tmp_path):
 
     target = features[features["player_id"] == 1]
     assert list(target[target["gameweek_id"] == 2]["fixture_id"]) == [10, 11]
+    assert list(target[target["gameweek_id"] == 2]["difficulty"]) == [1.75, 2.75]
     assert len(target[target["gameweek_id"] == 3]) == 1
+    assert target[target["gameweek_id"] == 3]["difficulty"].eq(3.0).all()
     assert target["chance_of_playing"].eq(100.0).all()
     assert {"attack_multiplier", "defence_multiplier"}.issubset(features.columns)
 

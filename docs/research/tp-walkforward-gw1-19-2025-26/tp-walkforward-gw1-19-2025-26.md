@@ -6,12 +6,12 @@
 **Status**: Blocked pending 2024-25 ingest  
 **Purpose**: Rank Starting Shape, Transfer Target Policy, and Defcon-Floor vs Attack-Ceiling tilts on 2025-26 First-Half as 2026/27 playbook evidence  
 **Scope**: GW1–19. No chips. No Hits. Free Transfer Bank cap 5. Unconstrained baseline plus OAT arms. Club Occupancy is diagnostic only. Not model MAE. Not hindsight oracle. Not GW20–38.  
-**Related**: [ADR 0019](../../adr/0019-transfer-plan-walk-forward-first-half.md) · [INDEX](../INDEX.md) · [First-Half 5-DEF Rotation](../def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md)  
+**Related**: [ADR 0020](../../adr/0020-transfer-plan-walk-forward-first-half.md) · [INDEX](../INDEX.md) · [First-Half 5-DEF Rotation](../def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md)  
 **Artifact**: [tp_walkforward_summary.csv](tp_walkforward_summary.csv) `realized_points` · [def_rotation_club_occupancy.csv](def_rotation_club_occupancy.csv) `rank_mod_fdr`
 
 ## Sources
 
-- **Primary**: Confirmed grill protocol 2026-08-26 (ADR 0019)
+- **Primary**: Confirmed grill protocol 2026-08-26 (ADR 0020)
 - **Repository data**: `data/archive/2025-26/processed` — occupancy FDR; Transfer Plan Walk-Forward blocked without `data/archive/2024-25/processed`
 
 **Source boundary**: Occupancy companion uses archive Official Fixture Difficulty. Walk-forward ranking not computed until Prior-Season Seed exists. Exploratory: no Availability Snapshots.

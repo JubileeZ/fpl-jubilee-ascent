@@ -1,4 +1,4 @@
-"""Refresh 2025-26 First-Half Transfer Plan Walk-Forward companions (ADR 0019)."""
+"""Refresh 2025-26 First-Half Transfer Plan Walk-Forward companions (ADR 0020)."""
 
 from __future__ import annotations
 

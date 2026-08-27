@@ -1,4 +1,4 @@
-"""CLI for 2025-26 First-Half Transfer Plan Walk-Forward (ADR 0019)."""
+"""CLI for 2025-26 First-Half Transfer Plan Walk-Forward (ADR 0020)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ DEFAULT_OUTPUT = PROJECT_ROOT / "docs" / "research" / "tp-walkforward-gw1-19-202
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="First-Half Transfer Plan Walk-Forward (ADR 0019)")
+    parser = argparse.ArgumentParser(description="First-Half Transfer Plan Walk-Forward (ADR 0020)")
     parser.add_argument("--data_dir", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--seed_dir", type=Path, default=DEFAULT_SEED)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)

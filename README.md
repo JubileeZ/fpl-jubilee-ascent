@@ -220,7 +220,7 @@ is the ranking and Mix view. Both share the Planning Horizon clock.
 #### Transfer Plan
 
 This tab is the only 15-player surface. It always uses the **Model Champion**
-and **Official Fixture Difficulty**. Starting 15 is the User Squad
+and **Modified FDR**. Starting 15 is the User Squad
 (`user_picks.parquet`) when present; otherwise Re-solve uses preseason (same as
 `commands.solve --preseason`). It does not load research Dual-Vector chip-path
 CSVs.

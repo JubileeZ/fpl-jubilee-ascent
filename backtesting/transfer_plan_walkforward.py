@@ -1,4 +1,4 @@
-"""Transfer Plan Walk-Forward runner (ADR 0019)."""
+"""Transfer Plan Walk-Forward runner (ADR 0020)."""
 
 from __future__ import annotations
 

@@ -8,6 +8,7 @@ import pandas as pd
 from tabulate import tabulate
 
 from clients.env_loader import configure_utf8_stdio, load_env
+from features.fdr import modified_fdr, official_fdr
 
 load_env()
 configure_utf8_stdio()
@@ -19,11 +20,6 @@ REQUIRED_FIXTURE_COLUMNS = {
     "home_club_id",
     "away_club_id",
 }
-
-
-def _number(value: object, default: float = 3.0) -> float:
-    number = pd.to_numeric(value, errors="coerce")
-    return default if pd.isna(number) else float(number)
 
 
 def _club_names(clubs: pd.DataFrame | None) -> dict[int, str]:
@@ -79,10 +75,11 @@ def build_fdr_report(
     horizon: int,
     sort_by: str = "average",
 ) -> pd.DataFrame:
-    """Build a club-by-gameweek FPL fixture difficulty report.
+    """Build a club-by-gameweek Modified FDR report.
 
     Each gameweek cell contains one entry per fixture, preserving double
-    gameweeks and marking home/away explicitly. Lower FDR is easier.
+    gameweeks and marking home/away explicitly. Lower Modified FDR is easier.
+    Official ticks stay on fixtures.parquet; this report derives ±0.25.
     """
     if horizon < 1:
         raise ValueError("horizon must be at least 1")
@@ -114,8 +111,8 @@ def build_fdr_report(
         gameweek = int(fixture["_gameweek"])
         home_id = int(fixture["home_club_id"])
         away_id = int(fixture["away_club_id"])
-        home_difficulty = _number(fixture.get("team_h_difficulty"))
-        away_difficulty = _number(fixture.get("team_a_difficulty"))
+        home_difficulty = modified_fdr(official_fdr(fixture.get("team_h_difficulty")), True)
+        away_difficulty = modified_fdr(official_fdr(fixture.get("team_a_difficulty")), False)
 
         for club_id, opponent_id, venue, difficulty in (
             (home_id, away_id, "H", home_difficulty),
@@ -166,7 +163,7 @@ def _default_start_gw(data_dir: Path, fixtures: pd.DataFrame) -> int:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Print fixture difficulty by club and gameweek.")
+    parser = argparse.ArgumentParser(description="Print Modified FDR by club and gameweek.")
     parser.add_argument(
         "--data_dir",
         "--data-dir",
@@ -213,7 +210,7 @@ def main() -> None:
     if report.empty:
         raise SystemExit(f"No fixtures found for GW{start_gw}-GW{start_gw + args.horizon - 1}.")
 
-    print(f"FDR REPORT: GW{start_gw}-GW{start_gw + args.horizon - 1} (lower is easier)")
+    print(f"MODIFIED FDR REPORT: GW{start_gw}-GW{start_gw + args.horizon - 1} (lower is easier)")
     print(tabulate(report.drop(columns=["club_id"]), headers="keys", tablefmt="grid", showindex=False))
 
     output = args.output or PROJECT_ROOT / "data" / "reports" / "fdr_report.csv"

@@ -1,4 +1,4 @@
-"""First-Half Transfer Plan Walk-Forward policy (ADR 0019)."""
+"""First-Half Transfer Plan Walk-Forward policy (ADR 0020)."""
 
 from __future__ import annotations
 

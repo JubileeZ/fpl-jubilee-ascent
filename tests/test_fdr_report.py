@@ -47,9 +47,9 @@ def test_fdr_report_preserves_home_away_double_gameweeks_and_average():
 
     assert list(report["club"]) == ["Club C", "Club B", "Club A"]
     club_a = report[report["club"] == "Club A"].iloc[0]
-    assert club_a["GW2"] == "H:2 vs Club B | A:5 @ Club C"
-    assert club_a["GW3"] == "A:3 @ Club B"
-    assert club_a["Average FDR"] == 10 / 3
+    assert club_a["GW2"] == "H:1.75 vs Club B | A:5.25 @ Club C"
+    assert club_a["GW3"] == "A:3.25 @ Club B"
+    assert club_a["Average FDR"] == 10.25 / 3
     assert club_a["Fixtures"] == 3
 
 
@@ -82,9 +82,9 @@ def test_fdr_report_cli_reads_processed_parquet_and_sorts_by_club(tmp_path, monk
     main()
 
     captured = capsys.readouterr().out
-    assert "FDR REPORT: GW2-GW3" in captured
+    assert "MODIFIED FDR REPORT: GW2-GW3" in captured
     assert "Club A" in captured
-    assert "A:5 @ Club C" in captured
+    assert "A:5.25 @ Club C" in captured
     assert output.exists()
     saved = pd.read_csv(output)
     assert list(saved["club"]) == ["Club A", "Club B", "Club C"]
