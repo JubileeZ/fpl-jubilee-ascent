@@ -14,7 +14,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 
 ## Research truth (23 Aug)
 
-- Active research: `docs/research/` (`tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. 2025-26 First-Half walk-forward ranking blocked until `data/archive/2024-25/processed`.
+- Active research: `docs/research/` (`tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
 - Production Expected Role Prior ingest: `features/expected-role-gw1-5.csv`.
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
@@ -48,7 +48,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 - Historical Availability Snapshot collection not on `origin` (`availability-snapshots` branch missing). Writer now JSON-canonicalizes nested FPL list columns (`price_change_projections`, `scout_risks`, fixture `stats`); hourly Capture Action was failing inside 48h window. Keep `.github/workflows/capture_availability_snapshot.yml` + `evaluate_model_promotion.yml`. Archive-backed promotion remains provisional until two Live Validation Windows complete.
 - Committed Comparison Slate lives in `config/model_selection.json`; `commands.compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
 - Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
-- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0020) is blocked until `data/archive/2024-25/processed` exists.
+- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0020) filled: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points`.
 - Dual-Source Lineup Signals JSON is written on Expected Role Rebuild; no committed `lineup-signals.json` until next `--rebuild-roles`.
 
 ---
@@ -72,8 +72,9 @@ uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason tra
 uv run python -m commands.report                       # Print report
 uv run python -m commands.price_report                # Print price changes
 uv run python -m commands.dashboard                   # Transfer Plan + Ownership Explorer
+uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir data/archive/2024-25/vaastav
 uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
-uv run python -m commands.transfer_plan_walkforward  # Writes blocked summary without 2024-25 seed
+uv run python -m commands.transfer_plan_walkforward  # Ranking when 2024-25 seed exists; else blocked summary
 ```
 
 ---

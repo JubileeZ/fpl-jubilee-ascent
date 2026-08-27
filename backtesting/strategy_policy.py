@@ -114,7 +114,8 @@ def next_free_transfer_bank(current: int, spent: int) -> int:
 
 _SEED_ARCHIVE_MISSING = (
     "2024-25 processed archive missing (Prior-Season Seed Event Rates and seed-state minutes). "
-    "Ingest via: uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>"
+    "Ingest via: uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <vaastav-csv-dir> "
+    "or --from-raw-dir <raw>"
 )
 
 

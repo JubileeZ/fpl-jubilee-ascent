@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Mapping
 
 import pandas as pd
 
@@ -62,3 +63,19 @@ def fixtures_from_processed(processed_dir: Path) -> list[dict[str, object]]:
             "team_a": int(row["away_club_id"]),
         })
     return rows
+
+
+def apply_deadline_prices(
+    bootstrap: dict[str, object],
+    prices: Mapping[int, int],
+) -> dict[str, object]:
+    updated = dict(bootstrap)
+    elements = []
+    for element in bootstrap.get("elements", []):
+        row = dict(element)
+        player_id = int(row["id"])
+        if player_id in prices:
+            row["now_cost"] = int(prices[player_id])
+        elements.append(row)
+    updated["elements"] = elements
+    return updated

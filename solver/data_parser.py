@@ -4,6 +4,9 @@ import pandas as pd
 from solver.paths import DATA_DIR
 
 def read_data(options, source=None):
+    projections_path = options.get("projections_path")
+    if projections_path:
+        return pd.read_csv(projections_path, encoding="utf-8")
     source = options.get("datasource")
     list_of_files = [x for x in os.listdir(DATA_DIR) if x.endswith(".csv")]
 

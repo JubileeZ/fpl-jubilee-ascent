@@ -25,6 +25,7 @@ from clients.fpl_api import (
     fetch_gameweek_fixtures,
 )
 from features.processor import process_directory
+from features.vaastav_archive import process_vaastav_directory
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -111,12 +112,26 @@ def main(argv: list[str] | None = None) -> int:
         help="Process local FPL raw JSON into data/archive/<season>/processed (no HTTP)",
     )
     parser.add_argument(
+        "--from-vaastav-dir",
+        type=Path,
+        help="Process vaastav FPL CSVs (players_raw, teams, fixtures, gws/merged_gw) into processed",
+    )
+    parser.add_argument(
         "--archive-root",
         type=Path,
         default=None,
         help="Override data/archive root (tests)",
     )
     args = parser.parse_args(argv)
+    if args.from_raw_dir is not None and args.from_vaastav_dir is not None:
+        raise ValueError("pass only one of --from-raw-dir or --from-vaastav-dir")
+    if args.from_vaastav_dir is not None:
+        if not args.from_vaastav_dir.exists():
+            raise FileNotFoundError(f"vaastav directory not found: {args.from_vaastav_dir}")
+        processed = archive_processed_dir(args.season, archive_root=args.archive_root)
+        process_vaastav_directory(args.from_vaastav_dir, processed)
+        logger.info("Processed vaastav %s -> %s", args.from_vaastav_dir, processed)
+        return 0
     if args.from_raw_dir is not None:
         if not args.from_raw_dir.exists():
             raise FileNotFoundError(f"Raw directory not found: {args.from_raw_dir}")
