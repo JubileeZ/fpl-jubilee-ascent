@@ -124,7 +124,7 @@ def test_solve_cli_prints_summary(capsys):
 
 
 
-def test_load_settings_uses_participation_state_as_default(tmp_path, monkeypatch):
+def test_load_settings_uses_champion_as_default(tmp_path, monkeypatch):
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
 
-    assert load_settings()["datasource"] == "participation_state_hybrid"
+    assert load_settings()["datasource"] == "dual_vector_state_hybrid"

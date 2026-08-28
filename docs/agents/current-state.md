@@ -61,8 +61,8 @@ uv run ruff check .                                    # Lint code
 uv run python -m commands.refresh_data                 # Ingest current gameweek data
 uv run python -m commands.refresh_data --rebuild-roles # Ingest + Expected Role Rebuild
 uv run python -m commands.run_model linear_baseline    # Generate projections
-uv run python -m commands.run_model component_baseline # Generate component projections
-uv run python -m commands.run_model participation_state_hybrid # Operational default
+uv run python -m commands.run_model dual_vector_state_hybrid # Operational default
+uv run python -m commands.run_model participation_state_hybrid # Comparison slate
 uv run python -m commands.run_model metrics_component_hybrid    # Comparison baseline
 uv run python -m commands.capture_availability_snapshot --season 2026-27
 uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed

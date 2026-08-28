@@ -145,7 +145,7 @@ def test_dashboard_transfer_plan_options_force_champion() -> None:
             {"use_wc": [4], "use_bb": [1], "use_fh": [], "use_tc": []},
             horizon=5,
         )
-    assert options["datasource"] == "participation_state_hybrid"
+    assert options["datasource"] == "dual_vector_state_hybrid"
     assert options["horizon"] == 5
     assert options["use_wc"] == [4]
     assert options["use_bb"] == [1]
