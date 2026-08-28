@@ -142,11 +142,24 @@ def process_directory(input_dir: Path, output_dir: Path):
         logger.info(f"Processed {len(df_perf)} individual player performances -> player_performances.parquet")
 
     # --- User Picks & State ---
-    # Find any my_team_*.json file
-    team_files = list(input_dir.glob("my_team_*.json"))
-    if team_files:
-        team_data = load_json(team_files[0])
-        entry_id = int(team_files[0].stem.split("_")[-1])
+    # Find active my_team_*.json file (match me.json entry or latest modified)
+    me_data = load_json(input_dir / "me.json")
+    me_entry = me_data.get("player", {}).get("entry") if isinstance(me_data, dict) else None
+    team_files = sorted(
+        input_dir.glob("my_team_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if me_entry and (input_dir / f"my_team_{me_entry}.json").exists():
+        selected_team_file = input_dir / f"my_team_{me_entry}.json"
+    elif team_files:
+        selected_team_file = team_files[0]
+    else:
+        selected_team_file = None
+
+    if selected_team_file:
+        team_data = load_json(selected_team_file)
+        entry_id = int(selected_team_file.stem.split("_")[-1])
         
         # User Picks
         picks = team_data.get("picks", [])
