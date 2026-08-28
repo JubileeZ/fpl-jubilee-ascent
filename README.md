@@ -32,7 +32,7 @@ and [uv.lock](uv.lock).
 - `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Ownership Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
-- `dashboard/` — Transfer Plan and Ownership Explorer (`uv run python -m commands.dashboard`)
+- `dashboard/` — Ownership Explorer (`uv run python -m commands.dashboard`)
 - `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
@@ -187,70 +187,29 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard serves the Transfer Plan plus Ownership Explorer.
+The local dashboard is Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a tab.
 
 **Open it**
 
-1. Refresh processed data if `data/processed/` is empty:
+```bash
+uv run python -m commands.dashboard
+```
 
-   ```bash
-   uv run python -m commands.refresh_data
-   ```
+The command starts `http://127.0.0.1:8000` immediately. It does not ingest or project on process start. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-2. Export Full-Season Window projections and start the server:
+Click **Refresh** in the header to pull live FPL data, run Champion and Comparison Slate projections, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. Refresh does not run Expected Role Rebuild. If the Expected Role Table is missing or the wrong season, ingest still runs and projection refuses until a this-season table exists.
 
-   ```bash
-   uv run python -m commands.dashboard
-   ```
-3. The command writes `dashboard/dashboard_data.json` (and a copy under
-   `data/`), then tries to open `http://127.0.0.1:8000` in your browser. If
-   the window does not appear, visit that URL yourself (prefer `127.0.0.1` over
-   `localhost` on Windows). The first load needs
-   network access for the Plotly CDN. Stop the server with Ctrl+C.
+Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` / `--models` override Champion/Candidate export. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
 
-Optional flags: `--export-only` refreshes the JSON without serving;
-`--no-browser` skips auto-open; `--port` changes the port; `--model` /
-`--models` override Champion/Candidate export. `--horizon` is the Planning
-Horizon (1–5, default 5, from the next gameweek whose deadline has not passed).
-Values above 5 are clamped to 5.
+**Planning Horizon**
 
-The header has two tabs. **Transfer Plan** opens first. **Ownership Explorer**
-is the ranking and Mix view. Both share the Planning Horizon clock.
+Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most five weeks after Start (length 1–6), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates Mix, totals, and charts immediately. It does not re-run the model.
 
-#### Transfer Plan
+**Ownership Explorer**
 
-This tab is the only 15-player surface. It always uses the **Model Champion**
-and **Modified FDR**. Starting 15 is the User Squad
-(`user_picks.parquet`) when present; otherwise Re-solve uses preseason (same as
-`commands.solve --preseason`). It does not load research Dual-Vector chip-path
-CSVs.
+**Primary Model** selects which projection drives ranking and Mix. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view.
 
-On load it shows the last `data/solution.json` if that file is a Transfer Plan.
-Pick a gameweek in the ledger: chip, FT, hits, buy/sell, undiscounted xP, this-week
-Solver Objective, plus a **read-only** pitch for that week’s scoring 15. Header
-shows decayed **Solver Objective** and undiscounted horizon xP as separate
-numbers.
-
-| Control | What it does |
-|---------|----------------|
-| Planning Horizon | Shorten the exported 1–5 window for this view and Re-solve |
-| Enabled Chips | Solver must place each checked Available Chip once in that Chip Set (default: none) |
-| Booked Chips | Pin at most one Available Chip to a specific gameweek |
-| Force Keep / Force Ban | Attach to the selected ledger gameweek’s scoring 15. Hits allowed; infeasible overrides fail the solve |
-| Re-solve | POST the calendar, Enabled Chips, and Keep/Ban. Can take minutes |
-
-Chip Set 1 is GW1–19; Chip Set 2 is GW20–38. A horizon that includes GW19 and
-GW20 can Enable **BB (Set 1)** and **BB (Set 2)** as two chips. Do not Enable a
-chip that is already Booked in the same Chip Set.
-
-#### Ownership Explorer
-
-Click **Ownership Explorer**. **Primary Model** selects which projection drives
-ranking and Mix (not the Transfer Plan). Ranking is the Planning Horizon only —
-there is no Season Window or Score Mode in this view.
-
-**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or
-**xP per Gameweek** (horizon total divided by gameweeks).
+**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or **xP per Gameweek** (horizon total divided by gameweeks).
 
 Two linked scatter charts sit above the table:
 
@@ -265,7 +224,7 @@ table row; click empty chart background or the same row again to clear.
 same position). A player occupies at most one Mix. Table **A** / **B** add,
 move, or remove; Mix-list **×** removes; drag a name between Mix A and Mix B to
 move. The panel sits under the charts and shows combined price, per-GW xP, and
-horizon total. Mix does not Force Keep, Force Ban, or Re-solve.
+horizon total. Mix does not Force Keep or Force Ban.
 
 **Filters**
 

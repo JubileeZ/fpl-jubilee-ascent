@@ -65,8 +65,16 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-Lookahead of 1–5 gameweeks (default 5) for Transfer Plan and Ownership Explorer, starting at the next gameweek whose deadline has not passed, clipped at GW38. A deadline-passed gameweek is excluded even if unfinished.
-_Avoid_: Optimization length, gameweek plan, First-Half Horizon, default 6, 3–8 window, locked gameweek, including the live unfinished GW after deadline
+Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking and Mix scores. Length 1–6 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–6. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
+_Avoid_: Optimization length, 1–5 from is_next, default 5, excluding the live unfinished GW after deadline, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
+
+**Horizon Start**:
+First Gameweek of the Planning Horizon. Any unfinished Gameweek from the earliest unfinished through 38. Finished weeks are not selectable. Default = earliest unfinished.
+_Avoid_: is_next as the product start, target_gw as the UI name, picking a finished GW, locking Start to only the earliest unfinished, Horizon Begins as a second clock
+
+**Horizon End**:
+Last Gameweek of the Planning Horizon, inclusive. Must satisfy Start ≤ End ≤ min(Start+5, 38). Default = min(Start+5, 38).
+_Avoid_: length-only dropdown as the product control, End=38 as Full-Season, End=19 as First-Half, Horizon To as a second clock
 
 **First-Half Horizon**:
 Research window GW1–19 covering Set 1 chips. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
@@ -253,16 +261,20 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, and per-gameweek Event Component projections for Transfer Plan and Ownership Explorer over the Planning Horizon. Not the Transfer Plan JSON.
-_Avoid_: UI state, solver export, Full-Season Window as the product slice
+Exported player metadata, historical rates, and per-gameweek Event Component projections for Ownership Explorer. Export grain is the Full-Season Window; the product ranking band is the Planning Horizon slice. Not Transfer Plan JSON.
+_Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed
+
+**Dashboard Refresh**:
+In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` starts HTTP immediately and paints last JSON or empty; it does not ingest or project on process start. Does not run Expected Role Rebuild. Missing or other-season Expected Role Table: ingest still runs (`--keep-roles`); Project refuses until a this-season table exists. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard.
+_Avoid_: Re-solve, export-only restart as the update path, silent lineup scrape, blocking process start on ingest or Project, API-only Role fallback, Meerkat scrape on Refresh
 
 **Interactive Squad Builder**:
-Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Pitch on Transfer Plan shows the User Squad and plan weeks only.
-_Avoid_: Roster picker, drag list, live tab name, treating the pitch as a draft sandbox
+Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object.
+_Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox
 
 **Transfer Plan**:
-The sole 15-player product surface. MILP result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
-_Avoid_: team plan, MILP squad, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score
+CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
+_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface
 
 **Force Keep**:
 User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.
@@ -289,8 +301,8 @@ A chip the user intends to play once in this Planning Horizon without pinning th
 _Avoid_: Booked Chip, optional chip, enabling all four by default, Canonical chip path, one BB for a straddle horizon
 
 **Solver Objective**:
-The decayed quantity the MILP maximises over the Planning Horizon. Distinct from undiscounted Gameweek Projection xP shown per week on the Transfer Plan.
-_Avoid_: xP, score, total_xp, research total_6gw_xp
+The decayed quantity the MILP maximises over the Planning Horizon. Distinct from undiscounted Gameweek Projection xP in the solver report.
+_Avoid_: xP, score, total_xp, research total_6gw_xp, Explorer Total column
 
 **Hit**:
 A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Distinct from spending banked Free Transfers.
@@ -325,16 +337,16 @@ Research solver score for DEF and MID: Gameweek Projection xP minus `xp_defcon` 
 _Avoid_: high ceiling, ignoring clean sheets, FWD Defcon strip
 
 **Mix**:
-Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep, Force Ban, or Re-solve. Not a Transfer Plan, not a legal 15.
-_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order
+Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15.
+_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix
 
 **Mix Member**:
 A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer.
 _Avoid_: selected player, overlapping Mix occupancy
 
 **Ownership Explorer**:
-Dashboard view ranking Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Model Champion, and Modified FDR as the solver. Not Transfer Plan. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Not Transfer Plan. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.

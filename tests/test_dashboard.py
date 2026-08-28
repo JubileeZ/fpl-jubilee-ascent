@@ -2,7 +2,11 @@ import json
 from pathlib import Path
 import pandas as pd
 
-from commands.export_dashboard import build_dashboard_dataset, export_dashboard_data
+from commands.export_dashboard import (
+    build_dashboard_dataset,
+    export_dashboard_data,
+    resolve_horizon_start,
+)
 
 
 def test_build_dashboard_dataset(tmp_path: Path):
@@ -177,10 +181,13 @@ def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Pa
         processed_dir=processed_dir,
         predictions_df=predictions,
         target_gw=1,
-        horizon=6,
+        horizon=7,
     )
-    assert clamped["meta"]["horizon"] == 5
-    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5]
+    assert clamped["meta"]["horizon"] == 6
+    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5, 6]
+    assert clamped["meta"]["horizon_start"] == 1
+    assert clamped["meta"]["horizon_end"] == 6
+    assert clamped["meta"]["unfinished_gameweeks"][:6] == [1, 2, 3, 4, 5, 6]
 
 
 def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:
@@ -221,6 +228,8 @@ def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:
     assert slice_h["n_gameweeks"] == 1
     assert 1 not in dataset["meta"]["planning_gw_ids"]
     assert dataset["meta"]["planning_gw_ids"] == [2]
+    assert dataset["meta"]["horizon_start"] == 2
+    assert 1 not in dataset["meta"]["unfinished_gameweeks"]
 
 
 def test_build_dashboard_dataset_multi_model(tmp_path: Path):
@@ -269,6 +278,48 @@ def test_build_dashboard_dataset_multi_model(tmp_path: Path):
     assert haaland["models"]["model_b"]["total_xp_horizon"] == 5.0
 
 
+def test_horizon_start_is_earliest_unfinished_not_is_next(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([{
+        "id": 1, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+        "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+        "status": "a", "chance_of_playing_next_round": 100, "news": "",
+        "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+        "influence": "0", "creativity": "0", "threat": "0",
+        "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 40.0,
+    }]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([{"id": 1, "name": "Manchester City", "short_name": "MCI"}]).to_parquet(
+        processed_dir / "clubs.parquet"
+    )
+    pd.DataFrame([
+        {"id": 1, "name": "Gameweek 1", "is_next": False, "finished": True},
+        {"id": 2, "name": "Gameweek 2", "is_next": False, "finished": False},
+        {"id": 3, "name": "Gameweek 3", "is_next": True, "finished": False},
+    ]).to_parquet(processed_dir / "gameweeks.parquet")
+    predictions = pd.DataFrame([
+        {
+            "player_id": 1, "gameweek_id": 2, "projected_points": 6.0, "projected_minutes": 90.0,
+            "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
+        },
+        {
+            "player_id": 1, "gameweek_id": 3, "projected_points": 5.0, "projected_minutes": 90.0,
+            "xp_goals": 0.8, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
+        },
+    ])
+    assert resolve_horizon_start(processed_dir) == 2
+    dataset = build_dashboard_dataset(
+        processed_dir, predictions, target_gw=resolve_horizon_start(processed_dir), horizon=6
+    )
+    assert dataset["meta"]["horizon_start"] == 2
+    assert dataset["meta"]["planning_gw_ids"] == [2, 3, 4, 5, 6, 7]
+    assert dataset["meta"]["horizon_end"] == 7
+    snapped = build_dashboard_dataset(processed_dir, predictions, target_gw=1, horizon=6)
+    assert snapped["meta"]["horizon_start"] == 2
+    kept = build_dashboard_dataset(processed_dir, predictions, target_gw=3, horizon=6)
+    assert kept["meta"]["horizon_start"] == 3
+
+
 def test_export_dashboard_data_writes_json(tmp_path: Path):
     output_path = tmp_path / "dashboard_data.json"
     dummy_data = {"meta": {"target_gw": 1}, "players": []}
@@ -280,7 +331,7 @@ def test_export_dashboard_data_writes_json(tmp_path: Path):
     assert loaded["meta"]["target_gw"] == 1
 
 
-def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
+def test_build_dashboard_dataset_omits_transfer_plan(tmp_path: Path) -> None:
     processed_dir = tmp_path / "data" / "processed"
     processed_dir.mkdir(parents=True)
     pd.DataFrame([{
@@ -298,15 +349,7 @@ def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
         processed_dir / "gameweeks.parquet"
     )
     plan = {
-        "meta": {
-            "champion": "participation_state_hybrid",
-            "horizon": 5,
-            "next_gw": 1,
-            "decay_base": 0.85,
-            "solver_objective": 14.2,
-            "total_xp": 15.0,
-            "booked_chips": {"use_wc": [], "use_bb": [1], "use_fh": [], "use_tc": []},
-        },
+        "meta": {"champion": "participation_state_hybrid", "horizon": 6, "next_gw": 1},
         "weeks": [{"gw": 1, "chip": "BB", "squad_ids": [10], "lineup_ids": [10], "bench_ids": [], "buy": [], "sell": []}],
         "summary": "",
     }
@@ -317,11 +360,11 @@ def test_build_dashboard_dataset_embeds_transfer_plan(tmp_path: Path) -> None:
         "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
     }])
     dataset = build_dashboard_dataset(
-        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path
+        processed_dir, predictions, target_gw=1, horizon=6, solution_path=sol_path
     )
-    assert dataset["meta"]["prefilled_squad_ids"] == [10]
-    assert dataset["transfer_plan"]["weeks"][0]["chip"] == "BB"
-    assert dataset["meta"]["solution_model_name"] == "participation_state_hybrid"
+    assert "transfer_plan" not in dataset
+    assert "solution_model_name" not in dataset["meta"]
+    assert "prefilled_squad_ids" not in dataset["meta"]
 
 
 def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Path) -> None:
@@ -374,5 +417,54 @@ def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Pa
     assert dataset["meta"]["owned_squad_ids"] == [10, 20]
     assert dataset["meta"]["owned_captain_id"] == 20
     assert dataset["meta"]["owned_vice_captain_id"] == 10
-    assert dataset["meta"]["prefilled_squad_ids"] == [99]
+    assert "prefilled_squad_ids" not in dataset["meta"]
+
+
+def test_ingest_live_data_passes_keep_roles_when_table_missing(monkeypatch) -> None:
+    captured: list[list[str]] = []
+
+    async def fake_main(argv=None) -> None:
+        captured.append(list(argv or []))
+
+    monkeypatch.setattr("commands.dashboard.table_season_status", lambda *_args, **_kwargs: "missing")
+    monkeypatch.setattr("commands.refresh_data.main", fake_main)
+    from commands.dashboard import ingest_live_data
+    ingest_live_data("2026-27")
+    assert captured[0][:2] == ["--season", "2026-27"]
+    assert "--keep-roles" in captured[0]
+    assert "--rebuild-roles" not in captured[0]
+
+
+def test_ingest_live_data_skips_keep_roles_when_table_ok(monkeypatch) -> None:
+    captured: list[list[str]] = []
+
+    async def fake_main(argv=None) -> None:
+        captured.append(list(argv or []))
+
+    monkeypatch.setattr("commands.dashboard.table_season_status", lambda *_args, **_kwargs: "ok")
+    monkeypatch.setattr("commands.refresh_data.main", fake_main)
+    from commands.dashboard import ingest_live_data
+    ingest_live_data("2026-27")
+    assert "--keep-roles" not in captured[0]
+    assert "--rebuild-roles" not in captured[0]
+
+
+def test_run_refresh_job_ok_and_project_refuse(monkeypatch) -> None:
+    from commands.dashboard import refresh_status, reset_refresh_state, run_refresh_job
+
+    reset_refresh_state()
+    monkeypatch.setattr("commands.dashboard.ingest_live_data", lambda: None)
+    monkeypatch.setattr("commands.dashboard.run_dashboard_export", lambda **_kwargs: None)
+    run_refresh_job()
+    assert refresh_status()["status"] == "ok"
+
+    reset_refresh_state()
+
+    def boom(**_kwargs):
+        raise ValueError("Expected Role Table missing")
+
+    monkeypatch.setattr("commands.dashboard.run_dashboard_export", boom)
+    run_refresh_job()
+    assert refresh_status()["status"] == "error"
+    assert "Expected Role Table" in str(refresh_status()["error"])
 

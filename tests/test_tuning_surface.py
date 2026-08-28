@@ -54,6 +54,7 @@ def test_solve_exposes_decay_and_hit_cost(tmp_path: Path) -> None:
     with patch("commands.solve.PROJECT_ROOT", tmp_path), \
         patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
         patch("commands.solve.prep_data", mock_prep_data), \
+        patch("commands.solve.pad_solver_csv_horizon"), \
         patch("commands.solve.solve_multi_period_fpl", return_value=[]), \
         patch(
             "sys.argv",
@@ -71,7 +72,7 @@ def test_solve_exposes_decay_and_hit_cost(tmp_path: Path) -> None:
         solve_main()
 
     options = mock_prep_data.call_args.args[1]
-    assert options["horizon"] == 7
+    assert options["horizon"] == 6
     assert options["decay_base"] == 0.8
     assert options["hit_cost"] == 5.0
 

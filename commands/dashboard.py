@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import http.server
 import json
 import logging
@@ -22,113 +23,156 @@ from commands.export_dashboard import (
     SEASON_START_GW,
     build_dashboard_dataset,
     export_dashboard_data,
-    load_transfer_plan_document,
-    load_user_chips,
+    resolve_horizon_start,
 )
-from commands.solve import CHIP_KEYS, execute_transfer_plan, transfer_plan_options_for_dashboard
-from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
+from commands import refresh_data
 from features.builder import build_features
-from models import get_default_model_name, get_model
-from projections.exporter import (
-    export_projections,
-    pad_solver_csv_horizon,
-    solver_csv_covers_horizon,
-    write_solver_projection_csvs,
+from features.expected_role_prior import (
+    DEFAULT_EXPECTED_ROLE_TABLE,
+    LIVE_SEASON,
+    table_season_status,
 )
+from models import get_default_model_name, get_model
+from projections.exporter import write_solver_projection_csvs
+from solver.planning import clamp_planning_horizon
 from solver.utils import DEFAULT_PLANNING_HORIZON
 import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-SOLUTION_PATH = PROJECT_ROOT / "data" / "solution.json"
+_refresh_lock = threading.Lock()
+_refresh_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
 
 
-def resolve_next_gw(processed_dir: Path, preseason: bool) -> int:
+def refresh_status() -> dict[str, object]:
+    with _refresh_lock:
+        return dict(_refresh_state)
+
+
+def _set_refresh_state(*, status: str, error: str | None = None, detail: str | None = None) -> None:
+    with _refresh_lock:
+        _refresh_state["status"] = status
+        _refresh_state["error"] = error
+        _refresh_state["detail"] = detail
+
+
+def reset_refresh_state() -> None:
+    _set_refresh_state(status="idle", error=None, detail=None)
+
+
+def ingest_live_data(season: str = LIVE_SEASON) -> None:
+    """FPL ingest without Expected Role Rebuild. Defer Role when the table is missing."""
+    argv = ["--season", season]
+    if table_season_status(DEFAULT_EXPECTED_ROLE_TABLE, season) != "ok":
+        argv.append("--keep-roles")
+    asyncio.run(refresh_data.main(argv))
+
+
+def comparison_slate_models(model_name: str | None, model_names: list[str] | None) -> list[str]:
+    if model_names:
+        return list(model_names)
+    if model_name:
+        return [model_name]
     try:
-        df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-        next_gw = df_gw[df_gw["is_next"]]
-        if not next_gw.empty:
-            return int(next_gw.iloc[0]["id"])
-        unfinished = df_gw[~df_gw["finished"]]
-        if not unfinished.empty:
-            return int(unfinished.iloc[0]["id"])
+        from models.selection import load_model_selection
+        sel = load_model_selection()
+        return list(dict.fromkeys([sel.champion, *sel.candidates]))
     except Exception:
-        pass
-    return 1 if preseason else 38
+        return [get_default_model_name()]
 
 
-def ensure_solver_projection_csv(
-    model_name: str,
-    processed_dir: Path,
-    target_gw: int,
-    horizon: int,
-    output_dir: Path,
+def run_dashboard_export(
+    model_name: str | None = None,
+    horizon: int = DEFAULT_PLANNING_HORIZON,
+    target_gw: int | None = None,
+    model_names: list[str] | None = None,
 ) -> Path:
-    """Rebuild Champion ProjectionContract CSV when MILP weeks are missing."""
-    csv_path = output_dir / f"{model_name}.csv"
-    if solver_csv_covers_horizon(csv_path, target_gw, horizon):
-        return csv_path
-    logger.info(
-        f"{csv_path.name} missing {horizon}-GW columns from GW{target_gw}; regenerating for Transfer Plan"
-    )
-    df_feat = build_features(processed_dir, target_gw, horizon=horizon)
-    model = get_model(model_name)
-    perf_path = processed_dir / "player_performances.parquet"
-    if hasattr(model, "fit") and perf_path.exists():
-        df_perf = pd.read_parquet(perf_path)
-        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-    df_pred = model.predict(df_feat, horizon)
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
-    export_projections(df_pred, df_players, df_clubs, csv_path)
-    pad_solver_csv_horizon(csv_path, target_gw, horizon)
-    return csv_path
-
-
-def run_dashboard_transfer_plan(payload: dict[str, object]) -> dict[str, object]:
     processed_dir = PROJECT_ROOT / "data" / "processed"
-    booked: dict[str, list[int]] = {}
-    for key in CHIP_KEYS:
-        raw = payload.get(key, [])
-        values = raw if isinstance(raw, list) else []
-        booked[key] = [int(g) for g in values]
-    preseason = bool(payload.get("preseason")) or not (processed_dir / "user_picks.parquet").exists()
-    target_gw = int(payload["target_gw"]) if payload.get("target_gw") else resolve_next_gw(processed_dir, preseason)
-    horizon = clamp_planning_horizon(int(payload.get("horizon") or DEFAULT_PLANNING_HORIZON))
-    gws = planning_gameweeks(target_gw, horizon)
-    user_chips = [] if preseason else load_user_chips(processed_dir)
-    available = available_chips(gws, user_chips)
-    enabled = [item for item in (payload.get("enabled_chips") or []) if isinstance(item, dict)]
-    force_keep = [item for item in (payload.get("force_keep") or []) if isinstance(item, dict)]
-    force_ban = [item for item in (payload.get("force_ban") or []) if isinstance(item, dict)]
-    options = transfer_plan_options_for_dashboard(
-        booked,
-        horizon,
-        enabled_chips=enabled,
-        force_keep=force_keep,
-        force_ban=force_ban,
-        available=available,
-        target_gw=target_gw,
+    if not processed_dir.exists():
+        raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
+
+    names = comparison_slate_models(model_name, model_names)
+    default_model = model_name or names[0]
+    horizon = clamp_planning_horizon(horizon)
+    if target_gw is None:
+        target_gw = resolve_horizon_start(processed_dir)
+
+    logger.info(
+        f"Generating Full-Season Window projections GW{SEASON_START_GW}–{SEASON_END_GW}; "
+        f"Planning Horizon {horizon} from GW{target_gw}"
     )
-    options["preseason"] = preseason
-    ensure_solver_projection_csv(
-        str(options["datasource"]),
+    df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
+
+    model_preds: dict[str, pd.DataFrame] = {}
+    perf_path = processed_dir / "player_performances.parquet"
+    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
+
+    for m_name in names:
+        logger.info(f"Loading model '{m_name}'...")
+        model = get_model(m_name)
+        if hasattr(model, "fit") and df_perf is not None:
+            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
+
+    dataset = build_dashboard_dataset(
         processed_dir,
+        model_preds,
         target_gw,
         horizon,
-        PROJECT_ROOT / "data",
+        default_model_name=default_model,
     )
-    return execute_transfer_plan(
-        options,
-        processed_dir=processed_dir,
-        target_gw=target_gw,
-        solution_path=SOLUTION_PATH,
-    )
+    df_players = pd.read_parquet(processed_dir / "players.parquet")
+    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
+
+    dashboard_dir = PROJECT_ROOT / "dashboard"
+    dashboard_dir.mkdir(parents=True, exist_ok=True)
+    json_path = dashboard_dir / "dashboard_data.json"
+    export_dashboard_data(dataset, json_path)
+    data_json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
+    data_json_path.parent.mkdir(parents=True, exist_ok=True)
+    export_dashboard_data(dataset, data_json_path)
+    return json_path
+
+
+def run_refresh_job(
+    model_name: str | None = None,
+    horizon: int = DEFAULT_PLANNING_HORIZON,
+    model_names: list[str] | None = None,
+) -> None:
+    try:
+        _set_refresh_state(status="running", error=None, detail="Ingesting FPL data…")
+        ingest_live_data()
+        _set_refresh_state(status="running", error=None, detail="Projecting models…")
+        run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
+        _set_refresh_state(status="ok", error=None, detail="Charts updated.")
+    except Exception as exc:
+        logger.exception("Dashboard Refresh failed")
+        _set_refresh_state(status="error", error=str(exc), detail="Refresh failed.")
+
+
+def start_refresh(
+    model_name: str | None = None,
+    horizon: int = DEFAULT_PLANNING_HORIZON,
+    model_names: list[str] | None = None,
+) -> dict[str, object]:
+    with _refresh_lock:
+        if _refresh_state["status"] == "running":
+            return dict(_refresh_state)
+        _refresh_state["status"] = "running"
+        _refresh_state["error"] = None
+        _refresh_state["detail"] = "Starting…"
+    threading.Thread(
+        target=run_refresh_job,
+        kwargs={"model_name": model_name, "horizon": horizon, "model_names": model_names},
+        daemon=True,
+    ).start()
+    return refresh_status()
 
 
 class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """Serves dashboard/ without caching; Transfer Plan Re-solve on /api/transfer-plan."""
+    """Serves dashboard/ without caching; Dashboard Refresh on /api/refresh."""
 
     def __init__(self, *args, directory=None, **kwargs):
         if directory is None:
@@ -149,112 +193,21 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _api_path(self) -> str:
+        return self.path.split("?", 1)[0].rstrip("/")
+
     def do_GET(self) -> None:
-        if self.path.split("?", 1)[0].rstrip("/") == "/api/transfer-plan":
-            plan = load_transfer_plan_document(SOLUTION_PATH)
-            if plan is None:
-                self._send_json(404, {"error": "No Transfer Plan yet. Re-solve or run commands.solve."})
-            else:
-                self._send_json(200, plan)
+        if self._api_path() == "/api/refresh":
+            self._send_json(200, refresh_status())
             return
         super().do_GET()
 
     def do_POST(self) -> None:
-        if self.path.split("?", 1)[0].rstrip("/") != "/api/transfer-plan":
+        if self._api_path() != "/api/refresh":
             self.send_error(404, "Not found")
             return
-        length = int(self.headers.get("Content-Length") or 0)
-        raw = self.rfile.read(length) if length else b"{}"
-        try:
-            payload = json.loads(raw.decode("utf-8") or "{}")
-            plan = run_dashboard_transfer_plan(payload if isinstance(payload, dict) else {})
-            self._send_json(200, plan)
-        except ValueError as exc:
-            self._send_json(400, {"error": str(exc)})
-        except Exception as exc:
-            logger.exception("Transfer Plan Re-solve failed")
-            self._send_json(500, {"error": str(exc)})
-
-
-def run_dashboard_export(
-    model_name: str | None = None,
-    horizon: int = DEFAULT_PLANNING_HORIZON,
-    target_gw: int | None = None,
-    model_names: list[str] | None = None,
-) -> Path:
-    processed_dir = PROJECT_ROOT / "data" / "processed"
-    if not processed_dir.exists():
-        logger.error("No processed data found. Run 'python -m commands.refresh_data' first.")
-        sys.exit(1)
-
-    if model_names is None:
-        if model_name:
-            model_names = [model_name]
-        else:
-            try:
-                from models.selection import load_model_selection
-                sel = load_model_selection()
-                model_names = list(dict.fromkeys([sel.champion, *sel.candidates]))
-            except Exception:
-                model_names = [get_default_model_name()]
-
-    default_model = model_name or model_names[0]
-
-    horizon = clamp_planning_horizon(horizon)
-    if target_gw is None:
-        try:
-            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-            next_gw = df_gw[df_gw["is_next"]]
-            if not next_gw.empty:
-                target_gw = int(next_gw.iloc[0]["id"])
-            else:
-                unfinished = df_gw[~df_gw["finished"]]
-                target_gw = int(unfinished.iloc[0]["id"]) if not unfinished.empty else 1
-        except Exception:
-            target_gw = 1
-
-    logger.info(
-        f"Generating Full-Season Window projections GW{SEASON_START_GW}–{SEASON_END_GW}; "
-        f"pitch Planning Horizon {horizon} from GW{target_gw}"
-    )
-    df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
-
-    model_preds: dict[str, pd.DataFrame] = {}
-    perf_path = processed_dir / "player_performances.parquet"
-    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
-
-    for m_name in model_names:
-        logger.info(f"Loading model '{m_name}'...")
-        model = get_model(m_name)
-        if hasattr(model, "fit") and df_perf is not None:
-            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
-
-    sol_path = SOLUTION_PATH
-    dataset = build_dashboard_dataset(
-        processed_dir,
-        model_preds,
-        target_gw,
-        horizon,
-        sol_path,
-        default_model_name=default_model,
-    )
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
-    write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
-
-    dashboard_dir = PROJECT_ROOT / "dashboard"
-    dashboard_dir.mkdir(parents=True, exist_ok=True)
-
-    json_path = dashboard_dir / "dashboard_data.json"
-    export_dashboard_data(dataset, json_path)
-
-    # Also keep a copy in data/
-    data_json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
-    data_json_path.parent.mkdir(parents=True, exist_ok=True)
-    export_dashboard_data(dataset, data_json_path)
-
-    return json_path
+        state = start_refresh()
+        self._send_json(202, state)
 
 
 def start_server(port: int = 8000, open_browser: bool = True) -> None:
@@ -275,10 +228,8 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
             url = f"http://127.0.0.1:{port}"
             logger.info(f"Dashboard web server running at {url}")
             logger.info("Press Ctrl+C to stop the server.")
-
             if open_browser:
                 threading.Thread(target=lambda: (time.sleep(0.5), webbrowser.open(url)), daemon=True).start()
-
             httpd.serve_forever()
     except KeyboardInterrupt:
         logger.info("\nServer stopped.")
@@ -286,30 +237,31 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
         logger.error(f"Failed to start server on port {port}: {e}")
 
 
-
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export dashboard data and launch interactive web dashboard.")
+    parser = argparse.ArgumentParser(description="Serve Ownership Explorer. Refresh in the page pulls FPL data and projects.")
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
-    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning horizon")
-    parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
+    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning Horizon length")
+    parser.add_argument("--target_gw", type=int, help="Horizon Start override for --export-only")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")
-    parser.add_argument("--export-only", action="store_true", help="Only refresh export data without launching server")
+    parser.add_argument("--export-only", action="store_true", help="Project and write JSON without serving")
     parser.add_argument("--no-browser", action="store_true", help="Do not automatically open web browser")
-
     args = parser.parse_args()
 
-    run_dashboard_export(
-        model_name=args.model,
-        horizon=args.horizon,
-        target_gw=args.target_gw,
-        model_names=args.models,
-    )
+    if args.export_only:
+        try:
+            run_dashboard_export(
+                model_name=args.model,
+                horizon=args.horizon,
+                target_gw=args.target_gw,
+                model_names=args.models,
+            )
+        except FileNotFoundError as exc:
+            logger.error(str(exc))
+            sys.exit(1)
+        return
 
-    if not args.export_only:
-        start_server(args.port, open_browser=not args.no_browser)
-
-
+    start_server(args.port, open_browser=not args.no_browser)
 
 
 if __name__ == "__main__":

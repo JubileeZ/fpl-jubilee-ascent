@@ -5,6 +5,7 @@ from pathlib import Path
 
 def test_dashboard_html_has_explorer_view() -> None:
     html = Path("dashboard/index.html").read_text(encoding="utf-8")
+    js = Path("dashboard/app.js").read_text(encoding="utf-8")
     assert 'id="explorer-root"' in html
     assert 'id="chart-ownership"' in html
     assert 'id="chart-price"' in html
@@ -14,8 +15,16 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "xP per Gameweek" in html
     assert 'class="title">Price' in html
     assert 'id="mix-a-list"' in html
-    assert 'id="tab-plan"' in html
+    assert 'id="horizonStart"' in html
+    assert 'id="horizonEnd"' in html
+    assert "Horizon begins" in html
+    assert "Horizon to" in html
+    assert 'id="btn-refresh"' in html
+    assert "/api/refresh" in js
+    assert 'id="tab-plan"' not in html
+    assert "plan.js" not in html
     assert "Squad Builder" not in html
+    assert "Transfer Plan" not in html
     assert "First-Half Horizon" not in html
     assert 'value="first_half"' not in html
     assert 'value="all_projection"' not in html
@@ -52,14 +61,3 @@ def test_mix_panel_has_drop_columns_remove_and_full_reason() -> None:
     assert "data-mix-remove" in js
     assert "Mix A is full (5)." in js
     assert "mix-on" in js
-
-
-def test_plan_controls_include_keep_ban_and_enabled_chips() -> None:
-    html = Path("dashboard/index.html").read_text(encoding="utf-8")
-    plan = Path("dashboard/plan.js").read_text(encoding="utf-8")
-    assert 'id="plan-enabled-chips"' in html
-    assert 'id="btn-force-keep"' in html
-    assert "force_keep" in plan
-    assert "enabled_chips" in plan
-    assert "Force Keep" in html
-    assert "owned_squad_ids" in plan

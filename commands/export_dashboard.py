@@ -21,7 +21,13 @@ from projections.explorer_slice import (
     GameweekScore,
     planning_horizon_slice,
 )
-from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
+from solver.planning import (
+    MAX_PLANNING_HORIZON,
+    SEASON_END_GW,
+    available_chips,
+    clamp_planning_horizon,
+    planning_window,
+)
 from solver.utils import DEFAULT_PLANNING_HORIZON
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -30,7 +36,6 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ROLE_CSV = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
 SEASON_START_GW = 1
-SEASON_END_GW = 38
 
 import math
 
@@ -85,8 +90,15 @@ def _finished_gameweeks(processed_dir: Path) -> set[int]:
     return {int(gid) for gid in df_gw.loc[df_gw["finished"], "id"]}
 
 
-def _planning_gw_ids(target_gw: int, horizon: int) -> list[int]:
-    return planning_gameweeks(target_gw, horizon)
+def unfinished_gameweeks(processed_dir: Path) -> list[int]:
+    finished = _finished_gameweeks(processed_dir)
+    return [gw for gw in range(1, SEASON_END_GW + 1) if gw not in finished]
+
+
+def resolve_horizon_start(processed_dir: Path) -> int:
+    """Earliest unfinished Gameweek. Live deadline-passed week is allowed."""
+    gws = unfinished_gameweeks(processed_dir)
+    return gws[0] if gws else 1
 
 
 def _groupby_predictions(df_pred: pd.DataFrame) -> pd.DataFrame:
@@ -205,10 +217,14 @@ def build_dashboard_dataset(
     model_names = list(model_preds_map.keys())
     primary_model_name = default_model_name if default_model_name in model_preds_map else model_names[0]
 
-    prefilled_squad_ids, solution_model_name, transfer_plan = load_transfer_plan(solution_path)
     owned_squad_ids, owned_captain_id, owned_vice_captain_id = load_owned_squad(processed_dir)
 
-    planning_gw_ids = _planning_gw_ids(target_gw, horizon)
+    unfinished_gws = unfinished_gameweeks(processed_dir)
+    horizon_start = int(target_gw)
+    if unfinished_gws and horizon_start not in unfinished_gws:
+        horizon_start = unfinished_gws[0]
+    horizon_end = min(horizon_start + horizon - 1, SEASON_END_GW)
+    planning_gw_ids = planning_window(horizon_start, horizon_end)
     planning_gw_set = set(planning_gw_ids)
     finished_gws = _finished_gameweeks(processed_dir)
     expected_roles = _load_expected_roles()
@@ -368,24 +384,26 @@ def build_dashboard_dataset(
         players_data.append(player_dict)
 
     user_chips = load_user_chips(processed_dir)
+    _ = solution_path
     dataset = {
         "meta": {
-            "target_gw": target_gw,
+            "target_gw": horizon_start,
             "horizon": horizon,
+            "horizon_start": horizon_start,
+            "horizon_end": horizon_end,
+            "max_horizon": MAX_PLANNING_HORIZON,
             "gw_ids": gw_ids,
             "planning_gw_ids": planning_gw_ids,
+            "unfinished_gameweeks": unfinished_gws,
             "finished_gameweeks": sorted(finished_gws),
             "available_chips": available_chips(planning_gw_ids, user_chips),
             "models": model_names,
             "default_model": primary_model_name,
-            "solution_model_name": solution_model_name,
-            "prefilled_squad_ids": prefilled_squad_ids,
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
             "owned_vice_captain_id": owned_vice_captain_id,
         },
         "players": players_data,
-        "transfer_plan": transfer_plan,
     }
     return dataset
 
@@ -435,19 +453,13 @@ def main() -> None:
     if args.target_gw is not None:
         target_gw = args.target_gw
     else:
-        try:
-            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-            next_gw = df_gw[df_gw["is_next"]]
-            if not next_gw.empty:
-                target_gw = int(next_gw.iloc[0]["id"])
-            else:
-                unfinished = df_gw[~df_gw["finished"]]
-                target_gw = int(unfinished.iloc[0]["id"]) if not unfinished.empty else 1
-        except Exception:
-            target_gw = 1
+        target_gw = resolve_horizon_start(processed_dir)
 
     args.horizon = clamp_planning_horizon(args.horizon)
-    logger.info(f"Building Full-Season Window features GW{SEASON_START_GW}–{SEASON_END_GW}; pitch Planning Horizon {args.horizon} from GW{target_gw}")
+    logger.info(
+        f"Building Full-Season Window features GW{SEASON_START_GW}–{SEASON_END_GW}; "
+        f"Planning Horizon {args.horizon} from GW{target_gw}"
+    )
     df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
 
     model_preds: Dict[str, pd.DataFrame] = {}
@@ -461,13 +473,11 @@ def main() -> None:
             model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
         model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
 
-    sol_path = PROJECT_ROOT / "data" / "solution.json"
     dataset = build_dashboard_dataset(
         processed_dir,
         model_preds,
         target_gw,
         args.horizon,
-        sol_path,
         default_model_name=default_model,
     )
 

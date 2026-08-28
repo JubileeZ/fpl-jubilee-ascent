@@ -10,7 +10,7 @@ Season 2026/27 underway. Active research under `docs/research/` (`tp-walkforward
 
 ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` (two-tab Transfer Plan + Ownership Explorer; 0008/0017 superseded), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half). Vocabulary in `CONTEXT.md`.
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half), `0021` (Ownership Explorer dashboard; Planning Horizon Start–End max 6). Vocabulary in `CONTEXT.md`.
 
 ## Research truth (23 Aug)
 
@@ -35,7 +35,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Transfer Plan + Ownership Explorer. Transfer Plan opens first; 15 is User Squad else preseason draft. Planning Horizon 1–5 (default 5) from `is_next`. Force Keep/Ban, Booked/Enabled Chips per Chip Set, view-only Mix (exclusive occupancy, Mix-list ×/drag, panel after charts). Champion MILP + Modified FDR. Full-Season Window export writes solver CSVs. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer only. Planning Horizon Start–End, length 1–6, Start any unfinished GW (live week allowed). Dashboard Refresh ingest+project in page; process start does not ingest/project. View-only Mix. ADR 0021. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
@@ -71,7 +71,7 @@ uv run python -m commands.decision_regret --entry_id <public-entry-id>
 uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
 uv run python -m commands.report                       # Print report
 uv run python -m commands.price_report                # Print price changes
-uv run python -m commands.dashboard                   # Transfer Plan + Ownership Explorer
+uv run python -m commands.dashboard                   # Ownership Explorer; Refresh in page
 uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir data/archive/2024-25/vaastav
 uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
 uv run python -m commands.transfer_plan_walkforward  # Ranking when 2024-25 seed exists; else blocked summary

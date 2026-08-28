@@ -212,7 +212,8 @@ def execute_transfer_plan(
     solution_path: Path,
 ) -> dict:
     """Run MILP and write a JSON-safe Transfer Plan."""
-    horizon = int(options.get("horizon", DEFAULT_PLANNING_HORIZON))
+    horizon = clamp_planning_horizon(int(options.get("horizon", DEFAULT_PLANNING_HORIZON)))
+    options["horizon"] = horizon
     validate_booked_chips(options, target_gw, horizon)
     options["override_next_gw"] = target_gw
 
@@ -347,7 +348,7 @@ def main() -> None:
     options = load_settings()
     
     # Apply CLI overrides
-    options["horizon"] = args.horizon
+    options["horizon"] = clamp_planning_horizon(args.horizon)
     if args.model:
         options["datasource"] = args.model
     if args.decay_base is not None:
@@ -370,15 +371,11 @@ def main() -> None:
     else:
         try:
             df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-            next_gw_row = df_gw[df_gw["is_next"]]
-            if not next_gw_row.empty:
-                target_gw = int(next_gw_row.iloc[0]["id"])
+            unfinished = df_gw[~df_gw["finished"]].sort_values("id")
+            if not unfinished.empty:
+                target_gw = int(unfinished.iloc[0]["id"])
             else:
-                unfinished = df_gw[~df_gw["finished"]]
-                if not unfinished.empty:
-                    target_gw = int(unfinished.iloc[0]["id"])
-                else:
-                    target_gw = 1 if options.get("preseason", False) else 38
+                target_gw = 1 if options.get("preseason", False) else 38
         except Exception:
             target_gw = 1 if options.get("preseason", False) else 38
         

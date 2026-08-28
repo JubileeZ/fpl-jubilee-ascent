@@ -112,6 +112,7 @@ def test_solve_cli_prints_summary(capsys):
     
     with patch("commands.solve.load_settings", return_value=mock_settings), \
          patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon"), \
          patch("commands.solve.solve_multi_period_fpl", return_value=mock_solutions), \
          patch("sys.argv", ["commands.solve", "--preseason"]):
          

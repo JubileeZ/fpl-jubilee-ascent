@@ -85,61 +85,100 @@ function mountClubMultiSelect(root, { emptyLabel = "All clubs", onChange } = {})
 window.mountClubMultiSelect = mountClubMultiSelect;
 
 document.addEventListener("DOMContentLoaded", () => {
+  const SEASON_END_GW = 38;
+  const MAX_HORIZON = 6;
   let allPlayers = [];
   let metaData = {};
   let primaryModel = "";
-  let dashboardData = null;
+  let horizonBound = false;
+  let modelBound = false;
+  let refreshBound = false;
 
-  function viewHorizon() {
-    const sel = document.getElementById("horizonSelect");
-    const n = Number(sel && sel.value);
-    return Number.isFinite(n) && n >= 1 ? n : (metaData.horizon || 5);
+  function unfinishedGws() {
+    const listed = metaData.unfinished_gameweeks;
+    if (Array.isArray(listed) && listed.length) {
+      return listed.map(Number).filter((gw) => gw >= 1 && gw <= SEASON_END_GW).sort((a, b) => a - b);
+    }
+    const finished = new Set((metaData.finished_gameweeks || []).map(Number));
+    const ids = (metaData.gw_ids || []).map(Number);
+    const fromIds = ids.filter((gw) => !finished.has(gw));
+    return fromIds.length ? fromIds : [1];
+  }
+
+  function maxEndFor(start) {
+    return Math.min(start + MAX_HORIZON - 1, SEASON_END_GW);
   }
 
   function viewGws() {
-    const gws = metaData.planning_gw_ids || [];
-    return gws.slice(0, viewHorizon());
+    const startSel = document.getElementById("horizonStart");
+    const endSel = document.getElementById("horizonEnd");
+    const start = Number(startSel && startSel.value);
+    const end = Number(endSel && endSel.value);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return [];
+    const gws = [];
+    for (let gw = start; gw <= end; gw += 1) gws.push(gw);
+    return gws;
   }
 
-  function setDashboardView(view) {
-    const explorer = document.getElementById("explorer-root");
-    const plan = document.getElementById("plan-root");
-    const app = document.querySelector(".app-container");
-    if (app) app.setAttribute("data-view", view);
-    if (explorer) explorer.hidden = view !== "explorer";
-    if (plan) plan.hidden = view !== "plan";
-    document.getElementById("tab-explorer")?.classList.toggle("active", view === "explorer");
-    document.getElementById("tab-plan")?.classList.toggle("active", view === "plan");
-    if (view === "explorer" && window.renderOwnershipExplorer) {
-      window.renderOwnershipExplorer();
-      if (window.Plotly) {
-        ["chart-ownership", "chart-price"].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el) window.Plotly.Plots.resize(el);
-        });
-      }
-    }
-    if (view === "plan" && window.renderTransferPlan) window.renderTransferPlan();
-  }
-
-  function setupHorizonSelect() {
-    const sel = document.getElementById("horizonSelect");
-    if (!sel) return;
-    const maxH = Math.min(5, (metaData.planning_gw_ids || []).length || 5);
-    const current = Math.min(metaData.horizon || 5, maxH);
-    sel.replaceChildren();
-    for (let n = 1; n <= maxH; n += 1) {
+  function fillStartOptions(preferred) {
+    const startSel = document.getElementById("horizonStart");
+    if (!startSel) return 1;
+    const starts = unfinishedGws();
+    const want = Number(preferred);
+    const chosen = starts.includes(want) ? want : starts[0];
+    startSel.replaceChildren();
+    starts.forEach((gw) => {
       const opt = document.createElement("option");
-      opt.value = String(n);
-      const gws = (metaData.planning_gw_ids || []).slice(0, n);
-      opt.textContent = gws.length ? `${n} · GW${gws[0]}–GW${gws[gws.length - 1]}` : String(n);
-      sel.appendChild(opt);
-    }
-    sel.value = String(current);
-    sel.addEventListener("change", () => {
-      if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
-      if (window.renderTransferPlan) window.renderTransferPlan(true);
+      opt.value = String(gw);
+      opt.textContent = `GW${gw}`;
+      startSel.appendChild(opt);
     });
+    startSel.value = String(chosen);
+    return chosen;
+  }
+
+  function fillEndOptions(start, preferred) {
+    const endSel = document.getElementById("horizonEnd");
+    if (!endSel) return start;
+    const maxE = maxEndFor(start);
+    const want = Number(preferred);
+    const chosen = Number.isFinite(want) && want >= start && want <= maxE ? want : Math.min(start + MAX_HORIZON - 1, maxE);
+    endSel.replaceChildren();
+    for (let gw = start; gw <= maxE; gw += 1) {
+      const opt = document.createElement("option");
+      opt.value = String(gw);
+      opt.textContent = `GW${gw}`;
+      endSel.appendChild(opt);
+    }
+    endSel.value = String(chosen);
+    return chosen;
+  }
+
+  function rerenderExplorer() {
+    if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
+    if (window.Plotly) {
+      ["chart-ownership", "chart-price"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) window.Plotly.Plots.resize(el);
+      });
+    }
+  }
+
+  function setupHorizonSelects() {
+    const startSel = document.getElementById("horizonStart");
+    const endSel = document.getElementById("horizonEnd");
+    if (!startSel || !endSel) return;
+    const prevStart = Number(startSel.value);
+    const prevEnd = Number(endSel.value);
+    const start = fillStartOptions(prevStart || metaData.horizon_start || unfinishedGws()[0]);
+    fillEndOptions(start, prevEnd || metaData.horizon_end || start + MAX_HORIZON - 1);
+    if (horizonBound) return;
+    horizonBound = true;
+    startSel.addEventListener("change", () => {
+      fillEndOptions(Number(startSel.value), Number(endSel.value));
+      rerenderExplorer();
+    });
+    endSel.addEventListener("change", rerenderExplorer);
   }
 
   function setupModelSelect() {
@@ -155,46 +194,107 @@ document.addEventListener("DOMContentLoaded", () => {
       if (name === primaryModel) opt.selected = true;
       select.appendChild(opt);
     });
+    if (modelBound) return;
+    modelBound = true;
     select.addEventListener("change", () => {
       primaryModel = select.value;
-      if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
+      rerenderExplorer();
     });
   }
 
-  async function init() {
+  function applyDataset(data) {
+    metaData = (data && data.meta) || {};
+    allPlayers = (data && data.players) || [];
+    setupHorizonSelects();
+    setupModelSelect();
+    if (window.initOwnershipExplorer) {
+      window.initOwnershipExplorer({
+        getPlayers: () => allPlayers,
+        getMeta: () => metaData,
+        getPrimaryModel: () => primaryModel,
+        getViewGws: viewGws,
+      });
+    }
+  }
+
+  function setRefreshStatus(text) {
+    const el = document.getElementById("refresh-status");
+    if (el) el.textContent = text;
+  }
+
+  async function loadDashboardJson() {
+    const response = await fetch(`dashboard_data.json?t=${Date.now()}`);
+    if (!response.ok) throw new Error("No dashboard_data.json yet. Click Refresh.");
+    return response.json();
+  }
+
+  async function pollRefresh() {
+    const response = await fetch("/api/refresh");
+    if (!response.ok) throw new Error("Refresh status failed");
+    return response.json();
+  }
+
+  async function waitForRefresh() {
+    let idleTicks = 0;
+    for (;;) {
+      const state = await pollRefresh();
+      if (state.detail) setRefreshStatus(state.detail);
+      if (state.status === "running") {
+        idleTicks = 0;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      if (state.status === "ok") return state;
+      if (state.status === "idle") {
+        idleTicks += 1;
+        if (idleTicks > 5) throw new Error("Refresh did not start");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      const err = state.error || "Refresh failed";
+      throw new Error(err);
+    }
+  }
+
+  async function refreshDashboard() {
+    const btn = document.getElementById("btn-refresh");
+    if (btn) btn.disabled = true;
+    setRefreshStatus("Starting Refresh…");
     try {
-      const response = await fetch("dashboard_data.json");
-      if (!response.ok) throw new Error("Failed to load dashboard_data.json");
-      dashboardData = await response.json();
-      metaData = dashboardData.meta || {};
-      allPlayers = dashboardData.players || [];
-      setupHorizonSelect();
-      setupModelSelect();
-      if (window.initOwnershipExplorer) {
-        window.initOwnershipExplorer({
-          getPlayers: () => allPlayers,
-          getMeta: () => metaData,
-          getPrimaryModel: () => primaryModel,
-          getViewGws: viewGws,
-        });
+      const post = await fetch("/api/refresh", { method: "POST" });
+      const body = await post.json();
+      if (post.status >= 400 && body.status !== "running") {
+        throw new Error(body.error || "Refresh failed to start");
       }
-      if (window.initTransferPlan) {
-        window.initTransferPlan({
-          getPlayers: () => allPlayers,
-          getMeta: () => metaData,
-          getPlan: () => dashboardData.transfer_plan,
-          setPlan: (plan) => { dashboardData.transfer_plan = plan; },
-          getViewHorizon: viewHorizon,
-          getViewGws: viewGws,
-        });
-      }
-      document.getElementById("tab-explorer")?.addEventListener("click", () => setDashboardView("explorer"));
-      document.getElementById("tab-plan")?.addEventListener("click", () => setDashboardView("plan"));
-      setDashboardView("plan");
+      await waitForRefresh();
+      const data = await loadDashboardJson();
+      applyDataset(data);
+      setRefreshStatus("Charts updated.");
     } catch (err) {
       console.error(err);
-      const metaEl = document.getElementById("plan-meta");
-      if (metaEl) metaEl.textContent = `Error loading dashboard data: ${err.message}`;
+      setRefreshStatus(err.message || String(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function setupRefresh() {
+    const btn = document.getElementById("btn-refresh");
+    if (!btn || refreshBound) return;
+    refreshBound = true;
+    btn.addEventListener("click", refreshDashboard);
+  }
+
+  async function init() {
+    setupRefresh();
+    try {
+      const data = await loadDashboardJson();
+      applyDataset(data);
+      setRefreshStatus("");
+    } catch (err) {
+      console.error(err);
+      applyDataset({ meta: {}, players: [] });
+      setRefreshStatus(err.message || "Click Refresh to pull FPL data and project.");
     }
   }
 

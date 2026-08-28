@@ -3,108 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FPL Jubilee Ascent - Transfer Plan &amp; Ownership Explorer</title>
+  <title>FPL Jubilee Ascent - Ownership Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
-  <div class="app-container" data-view="plan">
+  <div class="app-container" data-view="explorer">
     <header class="navbar">
       <div class="brand">
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle">Transfer Plan &amp; Ownership Explorer</span>
+          <span class="subtitle">Ownership Explorer</span>
         </div>
       </div>
 
       <div class="header-controls">
-        <div class="view-tabs" role="tablist">
-          <button type="button" class="view-tab active" id="tab-plan" data-view="plan">Transfer Plan</button>
-          <button type="button" class="view-tab" id="tab-explorer" data-view="explorer">Ownership Explorer</button>
+        <div class="control-group">
+          <label for="horizonStart">Horizon begins</label>
+          <select id="horizonStart" class="select-input"></select>
         </div>
         <div class="control-group">
-          <label for="horizonSelect">Planning Horizon:</label>
-          <select id="horizonSelect" class="select-input"></select>
+          <label for="horizonEnd">Horizon to</label>
+          <select id="horizonEnd" class="select-input"></select>
         </div>
-        <div class="control-group not-plan">
+        <div class="control-group">
           <label for="primaryModelSelect">Primary Model:</label>
           <select id="primaryModelSelect" class="select-input">
             <option value="default">Champion Model</option>
           </select>
         </div>
+        <div class="control-group">
+          <button type="button" id="btn-refresh" class="btn btn-primary">Refresh</button>
+        </div>
       </div>
     </header>
+    <p id="refresh-status" class="explorer-meta"></p>
 
-    <section class="plan-root" id="plan-root">
-      <div class="card plan-toolbar">
-        <p id="plan-meta" class="plan-meta"></p>
-        <div class="plan-scores">
-          <div class="summary-stat">
-            <span class="stat-label">Solver Objective (decayed)</span>
-            <span id="plan-objective" class="stat-value text-accent">—</span>
-          </div>
-          <div class="summary-stat">
-            <span class="stat-label">Horizon xP (undiscounted)</span>
-            <span id="plan-xp" class="stat-value">—</span>
-          </div>
-        </div>
-        <div>
-          <label class="title">Enabled Chips</label>
-          <div id="plan-enabled-chips" class="plan-enabled-chips"></div>
-        </div>
-        <div>
-          <label class="title">Booked Chips</label>
-          <div id="plan-chip-calendar" class="plan-chip-calendar"></div>
-        </div>
-        <div>
-          <label class="title">Force Keep / Force Ban</label>
-          <p class="plan-hint">Applies to the selected Gameweek in the ledger.</p>
-          <div class="plan-overrides">
-            <input type="search" id="override-search" class="select-input" placeholder="Player name" list="override-players" autocomplete="off">
-            <datalist id="override-players"></datalist>
-            <button type="button" id="btn-force-keep" class="btn btn-primary">Force Keep</button>
-            <button type="button" id="btn-force-ban" class="btn btn-danger">Force Ban</button>
-          </div>
-          <ul id="override-list" class="override-list"></ul>
-        </div>
-        <button type="button" id="btn-re-solve" class="btn btn-primary">Re-solve</button>
-        <p id="plan-status" class="plan-status"></p>
-      </div>
-      <div class="plan-body">
-        <aside class="card plan-ledger-card">
-          <label for="plan-gw-select">Gameweek</label>
-          <select id="plan-gw-select" class="select-input"></select>
-          <div id="plan-ledger" class="plan-ledger"></div>
-        </aside>
-        <div class="pitch-container plan-pitch">
-          <div class="pitch-grass">
-            <div class="pitch-lines">
-              <div class="penalty-box top"></div>
-              <div class="center-circle"></div>
-              <div class="center-line"></div>
-              <div class="penalty-box bottom"></div>
-            </div>
-            <div class="pitch-layout">
-              <div id="planRowGk" class="pitch-row"></div>
-              <div id="planRowDef" class="pitch-row"></div>
-              <div id="planRowMid" class="pitch-row"></div>
-              <div id="planRowFwd" class="pitch-row"></div>
-            </div>
-          </div>
-          <div class="bench-tray">
-            <div class="bench-header">
-              <span class="bench-title">Bench</span>
-            </div>
-            <div id="planBench" class="bench-slots"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="explorer-root" id="explorer-root" hidden>
+    <section class="explorer-root" id="explorer-root">
       <div class="card explorer-toolbar">
         <div class="group">
           <label class="title">Y-axis</label>
@@ -185,8 +123,7 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=12"></script>
-  <script src="explorer.js?v=7"></script>
-  <script src="plan.js?v=3"></script>
+  <script src="app.js?v=13"></script>
+  <script src="explorer.js?v=8"></script>
 </body>
 </html>

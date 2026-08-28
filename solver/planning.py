@@ -20,7 +20,7 @@ FPL_CHIP_TO_KEY: dict[str, str] = {
     "triplecaptain": "tc",
 }
 MIN_PLANNING_HORIZON = 1
-MAX_PLANNING_HORIZON = 5
+MAX_PLANNING_HORIZON = 6
 CHIP_SET_1_END = 19
 SEASON_END_GW = 38
 
@@ -33,6 +33,16 @@ def planning_gameweeks(target_gw: int, horizon: int) -> list[int]:
     start = int(target_gw)
     length = clamp_planning_horizon(horizon)
     return [gw for gw in range(start, start + length) if 1 <= gw <= SEASON_END_GW]
+
+
+def planning_window(start: int, end: int) -> list[int]:
+    """Inclusive [Horizon Start, Horizon End] clipped to max length 6 and GW38."""
+    begin = max(1, min(int(start), SEASON_END_GW))
+    stop = int(end)
+    if stop < begin:
+        stop = begin
+    stop = min(stop, begin + MAX_PLANNING_HORIZON - 1, SEASON_END_GW)
+    return list(range(begin, stop + 1))
 
 
 def chip_set_for_gw(gameweek: int) -> int:

@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from commands.dashboard import ensure_solver_projection_csv, run_dashboard_transfer_plan
 from commands.export_dashboard import load_transfer_plan, load_transfer_plan_document
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
 from projections.exporter import pad_solver_csv_horizon, solver_csv_covers_horizon, write_solver_projection_csvs
@@ -95,10 +94,10 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert "model" not in dumped
 
 
-def test_load_settings_defaults_planning_horizon_to_five(tmp_path: Path, monkeypatch: Any) -> None:
+def test_load_settings_defaults_planning_horizon_to_six(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
-    assert DEFAULT_PLANNING_HORIZON == 5
-    assert load_settings()["horizon"] == 5
+    assert DEFAULT_PLANNING_HORIZON == 6
+    assert load_settings()["horizon"] == 6
 
 
 def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:
@@ -173,47 +172,6 @@ def test_dashboard_transfer_plan_options_include_keep_ban_and_enabled() -> None:
     assert 10 in options["keep"]
 
 
-def test_run_dashboard_transfer_plan_passes_booked_chips_and_preseason(tmp_path: Path, monkeypatch: Any) -> None:
-    monkeypatch.setattr("commands.dashboard.PROJECT_ROOT", tmp_path)
-    monkeypatch.setattr("commands.dashboard.SOLUTION_PATH", tmp_path / "data" / "solution.json")
-    captured: dict[str, Any] = {}
-
-    def fake_execute(
-        options: dict[str, object],
-        *,
-        processed_dir: Path,
-        target_gw: int,
-        solution_path: Path,
-    ) -> dict[str, Any]:
-        captured["options"] = options
-        captured["target_gw"] = target_gw
-        captured["solution_path"] = solution_path
-        return {"meta": {"champion": options["datasource"]}, "weeks": []}
-
-    with patch("commands.dashboard.ensure_solver_projection_csv", return_value=tmp_path / "data" / "participation_state_hybrid.csv"), patch(
-        "commands.dashboard.execute_transfer_plan", side_effect=fake_execute
-    ):
-        plan = run_dashboard_transfer_plan({
-            "use_wc": [4],
-            "use_bb": [3],
-            "target_gw": 2,
-            "horizon": 5,
-            "enabled_chips": [{"chip": "fh", "chip_set": 1}],
-            "force_keep": [{"player_id": 10, "gw": 2}],
-            "force_ban": [{"player_id": 20, "gw": 3}],
-        })
-    assert captured["target_gw"] == 2
-    assert captured["options"]["preseason"] is True
-    assert captured["options"]["datasource"] == "participation_state_hybrid"
-    assert captured["options"]["use_wc"] == [4]
-    assert captured["options"]["use_bb"] == [3]
-    assert captured["options"]["force_keep_gws"] == [[10, 2]]
-    assert captured["options"]["force_ban_gws"] == [[20, 3]]
-    assert captured["options"]["enabled_chip_windows"][0]["chip"] == "fh"
-    assert 10 in captured["options"]["keep"]
-    assert plan["meta"]["champion"] == "participation_state_hybrid"
-
-
 def _player_meta() -> tuple[pd.DataFrame, pd.DataFrame]:
     players = pd.DataFrame([{
         "id": 10, "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 140, "code": 123,
@@ -265,68 +223,6 @@ def test_write_solver_projection_csvs_includes_planning_horizon_weeks(tmp_path: 
     cols = set(pd.read_csv(csv_path, nrows=0).columns)
     assert "6_Pts" in cols
     assert "6_xMins" in cols
-
-
-def test_ensure_solver_projection_csv_rebuilds_when_sixth_week_missing(tmp_path: Path) -> None:
-    processed = tmp_path / "processed"
-    processed.mkdir()
-    players, clubs = _player_meta()
-    players.to_parquet(processed / "players.parquet")
-    clubs.to_parquet(processed / "clubs.parquet")
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    pd.DataFrame([{
-        "ID": 10, "Name": "Haaland", "Pos": "F", "Price": 14.0, "Team": "MCI",
-        "1_Pts": 8.0, "2_Pts": 7.0, "3_Pts": 6.0, "4_Pts": 5.0, "5_Pts": 4.0,
-    }]).to_csv(data_dir / "participation_state_hybrid.csv", index=False)
-
-    class FakeModel:
-        def predict(self, _features: pd.DataFrame, horizon: int) -> pd.DataFrame:
-            return pd.DataFrame([
-                {"player_id": 10, "gameweek_id": gw, "projected_points": 8.0, "projected_minutes": 90.0}
-                for gw in range(1, horizon + 1)
-            ])
-
-    with patch("commands.dashboard.build_features", return_value=pd.DataFrame()), patch(
-        "commands.dashboard.get_model", return_value=FakeModel()
-    ):
-        path = ensure_solver_projection_csv(
-            "participation_state_hybrid", processed, target_gw=1, horizon=6, output_dir=data_dir
-        )
-    assert path == data_dir / "participation_state_hybrid.csv"
-    assert solver_csv_covers_horizon(path, target_gw=1, horizon=6) is True
-
-
-def test_run_dashboard_transfer_plan_ensures_csv_before_solve(tmp_path: Path, monkeypatch: Any) -> None:
-    monkeypatch.setattr("commands.dashboard.PROJECT_ROOT", tmp_path)
-    monkeypatch.setattr("commands.dashboard.SOLUTION_PATH", tmp_path / "data" / "solution.json")
-    captured: dict[str, Any] = {}
-
-    def fake_ensure(
-        model_name: str,
-        processed_dir: Path,
-        target_gw: int,
-        horizon: int,
-        output_dir: Path,
-    ) -> Path:
-        captured["ensure"] = {
-            "model_name": model_name,
-            "processed_dir": processed_dir,
-            "target_gw": target_gw,
-            "horizon": horizon,
-            "output_dir": output_dir,
-        }
-        return output_dir / f"{model_name}.csv"
-
-    with patch("commands.dashboard.ensure_solver_projection_csv", side_effect=fake_ensure), patch(
-        "commands.dashboard.execute_transfer_plan",
-        return_value={"meta": {"champion": "participation_state_hybrid"}, "weeks": []},
-    ):
-        run_dashboard_transfer_plan({"horizon": 6, "target_gw": 1})
-    assert captured["ensure"]["model_name"] == "participation_state_hybrid"
-    assert captured["ensure"]["horizon"] == 5
-    assert captured["ensure"]["target_gw"] == 1
-    assert captured["ensure"]["output_dir"] == tmp_path / "data"
 
 
 def test_load_transfer_plan_document_rejects_truncated_and_legacy(tmp_path: Path) -> None:
