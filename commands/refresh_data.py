@@ -31,6 +31,7 @@ from features.expected_role_prior import (
     ensure_expected_role_rebuild_choice,
     table_season_status,
 )
+from features.rebuild_expected_role import rebuild_expected_roles
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,16 +39,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Refresh FPL API data into processed Parquet tables.")
-    parser.add_argument(
-        "--season",
-        default=os.getenv("FPL_SEASON", LIVE_SEASON),
-        help="FPL season identity for Expected Role Table (default: FPL_SEASON or 2026-27)",
-    )
+    parser = argparse.ArgumentParser(description="Refresh raw FPL data and update processed tables.")
+    parser.add_argument("--season", type=str, default=LIVE_SEASON, help=f"FPL season (default: {LIVE_SEASON})")
     parser.add_argument(
         "--rebuild-roles",
         action="store_true",
-        help="Run Expected Role Rebuild after ingest when the table is missing or other-season",
+        help="Run Expected Role Rebuild after ingest to reconcile all players and lineup signals",
     )
     parser.add_argument(
         "--keep-roles",
@@ -58,7 +55,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _run_expected_role_rebuild(season: str) -> None:
-    logger.info(f"Expected Role Table is maintained for season {season} at features/expected-role-gw1-5.csv")
+    logger.info(f"Rebuilding and reconciling Expected Role Table for season {season}...")
+    rebuild_expected_roles(
+        processed_dir=PROJECT_ROOT / "data" / "processed",
+        output_path=DEFAULT_EXPECTED_ROLE_TABLE,
+        season=season,
+    )
 
 
 async def main(argv: list[str] | None = None) -> None:

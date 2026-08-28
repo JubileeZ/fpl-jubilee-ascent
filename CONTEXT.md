@@ -181,12 +181,12 @@ Two inputs to Expected Role conflict rules: a predicted XI per Club, and a naile
 _Avoid_: FFS scrape, Meerkat URL, HTML snapshot as the method
 
 **Expected Role Table**:
-Machine-readable companion to the Expected Role Research Note. One row per XI Contention Set Player with Expected Role, Expected Role Prior fields (or overrides), confidence, Role Evidence, API availability fields, registration status, and Draft Availability. Carries the FPL season it belongs to. Feature Contract reads this table at Cold-Start; never scrapes. Refuses to build if the table is missing or its season is not the current season. Players absent from the table take the Out of Contention Expected Role Prior. Does not replace live Availability Override. Updates only via Expected Role Rebuild, then commit.
-_Avoid_: Research Note prose alone, solver projection CSV, live scrape at projection time, implicit refresh inside data ingest, previous-season table as this season's prior
+Committed registry (`features/expected_roles.csv`) providing baseline Participation State and conditional minutes priors. One row per FPL Player with Expected Role, Expected Role Prior fields, confidence, Role Evidence, API availability fields, registration status, and Draft Availability. Carries the FPL season it belongs to. Feature Contract reads this table at Cold-Start and for newly transferred players; never scrapes at projection time. Refuses to build if the table is missing or its season is not the current season. Newly added transfers/signings without prior match minutes take their reconciled role or the Out of Contention Expected Role Prior. Updates via Expected Role Rebuild (`features/rebuild_expected_role.py`), then commit.
+_Avoid_: Research Note prose alone, solver projection CSV, live scrape at projection time, reusing last season's table
 
 **Expected Role Rebuild**:
-Explicit Stage 1 run that writes a new Expected Role Table and Dual-Source Lineup Signals extract from current adapters. Never runs at projection time. When data refresh runs and the table is missing or belongs to another season: ask rebuild vs defer. Rebuild writes this season's table. Defer still refreshes FPL API data; Feature Contract / Champion / solver / dashboard refuse until a this-season table exists. In-season refresh with a current-season table does not ask.
-_Avoid_: Silent scrape on `refresh_data`, dashboard export scrape, reusing last season's table, nagging every Cold-Start refresh of the same season
+Engine (`features.rebuild_expected_role`) that synchronizes all current players from `data/processed/players.parquet` into the Expected Role Table and writes Dual-Source Lineup Signals. Resolves transfers, summer/winter window arrivals, and lineup shifts. Runs during data refresh via `--rebuild-roles` or when initializing a new season. In-season refresh with an active table auto-reconciles new signings using price/position priors and live lineup signals.
+_Avoid_: Silent scrape failure on `refresh_data`, dashboard export scrape, reusing last season's table
 
 **Minutes if Appearance**:
 The expected minutes for a Player conditional on making an appearance, distinct from their Appearance Probability. Cold-Start value comes from Expected Role Prior; current-season value from realized minutes.

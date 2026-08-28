@@ -14,6 +14,7 @@ from clients.env_loader import configure_utf8_stdio, load_env
 load_env()
 configure_utf8_stdio()
 
+from features.expected_role_prior import DEFAULT_EXPECTED_ROLE_TABLE, LEGACY_EXPECTED_ROLE_TABLE
 from features.builder import build_features
 from models import get_default_model_name, get_model
 from projections.explorer_slice import (
@@ -34,7 +35,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ROLE_CSV = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
+ROLE_CSV = DEFAULT_EXPECTED_ROLE_TABLE
 SEASON_START_GW = 1
 
 import math
@@ -72,9 +73,10 @@ def _clean_json_obj(obj: Any) -> Any:
 
 
 def _load_expected_roles() -> dict[int, str]:
-    if not ROLE_CSV.exists():
+    path = DEFAULT_EXPECTED_ROLE_TABLE if DEFAULT_EXPECTED_ROLE_TABLE.exists() else LEGACY_EXPECTED_ROLE_TABLE
+    if not path.exists():
         return {}
-    roles = pd.read_csv(ROLE_CSV)
+    roles = pd.read_csv(path)
     if "player_id" not in roles.columns or "expected_role" not in roles.columns:
         return {}
     return dict(zip(roles["player_id"].astype(int), roles["expected_role"].astype(str)))

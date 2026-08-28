@@ -24,7 +24,8 @@ BLEND_FULL_APPEARANCES = 5
 LIVE_SEASON = "2026-27"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_EXPECTED_ROLE_TABLE = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
+DEFAULT_EXPECTED_ROLE_TABLE = PROJECT_ROOT / "features/expected_roles.csv"
+LEGACY_EXPECTED_ROLE_TABLE = PROJECT_ROOT / "features/expected-role-gw1-5.csv"
 DEFAULT_LINEUP_SIGNALS = PROJECT_ROOT / "features/lineup-signals.json"
 
 
@@ -74,12 +75,16 @@ def minutes_if_appearance(p_start: float, p_sub: float, mins_start: float, mins_
 
 def load_expected_role_table(path: Path, season: str) -> pd.DataFrame:
     """Load the Expected Role Table and refuse missing or other-season files."""
-    if path is None or not Path(path).exists():
+    target_path = Path(path) if path is not None else DEFAULT_EXPECTED_ROLE_TABLE
+    if not target_path.exists() and target_path == DEFAULT_EXPECTED_ROLE_TABLE and LEGACY_EXPECTED_ROLE_TABLE.exists():
+        target_path = LEGACY_EXPECTED_ROLE_TABLE
+
+    if not target_path.exists():
         raise ValueError(
             f"Expected Role Table missing at {path}. "
             "Run Expected Role Rebuild (--rebuild-roles) for this season."
         )
-    table = pd.read_csv(path)
+    table = pd.read_csv(target_path)
     if "season" not in table.columns or table.empty:
         raise ValueError(
             f"Expected Role Table at {path} has no season identity. "

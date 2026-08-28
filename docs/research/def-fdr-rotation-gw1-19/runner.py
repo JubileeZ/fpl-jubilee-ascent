@@ -6,6 +6,7 @@ Generates companion CSV artifacts for docs/research/def-fdr-rotation-gw1-19/
 
 import itertools
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,8 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 fixtures = pd.read_parquet("data/processed/fixtures.parquet")
 clubs = pd.read_parquet("data/processed/clubs.parquet")
 players = pd.read_parquet("data/processed/players.parquet")
-roles = pd.read_csv("features/expected-role-gw1-5.csv")
+roles_path = Path("features/expected_roles.csv") if Path("features/expected_roles.csv").exists() else Path("features/expected-role-gw1-5.csv")
+roles = pd.read_csv(roles_path)
 
 gw1_19 = fixtures[(fixtures["gameweek_id"] >= 1) & (fixtures["gameweek_id"] <= 19)]
 
