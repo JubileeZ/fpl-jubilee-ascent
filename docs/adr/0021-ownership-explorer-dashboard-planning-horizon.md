@@ -6,4 +6,4 @@ Product UI is Ownership Explorer only. Transfer Plan stays CLI MILP (`commands.s
 
 **Considered:** Repair the Transfer Plan tab; End through GW38; lock Start to `is_next` or only the earliest unfinished GW; block process start on Project; Start/End re-project or full Refresh; in-play trim of the live GW. Rejected: tab is not the live product; 38 is Full-Season Window; `is_next` drops the live week; locking Start prevents the two dropdowns; blocking start contradicts open-then-Refresh; picker must be instant; no in-play remaining-fixtures grain.
 
-**Consequences:** `dashboard/plan.js` and `/api/transfer-plan` are not product UI. `MAX_PLANNING_HORIZON` is 6. Feature Contract does not refuse without an Expected Role Table (ADR 0022).
+**Consequences:** `dashboard/plan.js` and `/api/transfer-plan` are not product UI. `MAX_PLANNING_HORIZON` is 6. Feature Contract does not refuse without an Expected Role Table (ADR 0022). Assume 90 is a view-only Explorer toolbar toggle for all Players (not Feature Contract).

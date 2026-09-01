@@ -109,11 +109,11 @@ Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Seaso
 _Avoid_: All Projection, rest-of-season (unbounded), Realized Points
 
 **Projected Rate**:
-Planning Horizon xP divided by (Σ expected minutes / 90). Cameo minutes do not reduce this number. Ownership Explorer Y-axis option.
+Planning Horizon xP divided by (Σ expected minutes / 90). Cameo minutes do not reduce this number. Equals xP per Gameweek when every horizon Gameweek is 90 minutes (Assume 90; no Double Gameweek, no blank). Ownership Explorer Y-axis option.
 _Avoid_: xP per game, Event Rate, Per-90 average, Season Window rate
 
 **xP per Gameweek**:
-Planning Horizon xP divided by gameweek count in that horizon. Ownership Explorer Y-axis option.
+Planning Horizon xP divided by gameweek count in that horizon. Equals Projected Rate when minutes are 90 every Gameweek. Ownership Explorer Y-axis option.
 _Avoid_: xP per game, per-match xP, average points, Season Window average
 
 **Event Component**:
@@ -344,8 +344,12 @@ _Avoid_: combo, package, alternative 15, differential, solver squad, Plan this M
 A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer.
 _Avoid_: selected player, overlapping Mix occupancy
 
+**Assume 90**:
+Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override.
+_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points
+
 **Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Mix vs Mix, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Not Transfer Plan. Not a Season Window ranking.
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Mix vs Mix, Assume 90, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Not Transfer Plan. Not a Season Window ranking.
 _Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab
 
 **Decision Regret**:

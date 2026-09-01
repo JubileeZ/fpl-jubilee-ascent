@@ -22,6 +22,7 @@
   let mixA = [];
   let mixB = [];
   let mixReason = "";
+  let assume90 = false;
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -42,9 +43,39 @@
     return (modelData && modelData.projections) || player.projections || {};
   }
 
+  function assumeNinetyRow(row) {
+    const xmins = Number(row.xmins || 0);
+    if (xmins <= 0) return row;
+    const total = Number(row.total_xp || 0);
+    const xpMinIn = Number(row.xp_minutes || 0);
+    const n = Math.max(1, Math.ceil(xmins / 90));
+    const target = 90 * n;
+    const inferred = xpMinIn > 0 ? xpMinIn : (xmins >= 60 ? 2 * n : 1);
+    const scale = target / xmins;
+    const newXpMin = 2 * n;
+    const scaled = (key) => round(Number(row[key] || 0) * scale, 2);
+    return {
+      ...row,
+      xmins: target,
+      xp_minutes: newXpMin,
+      total_xp: round((total - inferred) * scale + newXpMin, 2),
+      xg_pts: scaled("xg_pts"),
+      xa_pts: scaled("xa_pts"),
+      xcs_pts: scaled("xcs_pts"),
+      xdefcon_pts: scaled("xdefcon_pts"),
+      xb_pts: scaled("xb_pts"),
+      xp_conceded: scaled("xp_conceded"),
+      xp_saves: scaled("xp_saves"),
+    };
+  }
+
+  function gwProjection(player, gw) {
+    const row = playerProj(player)[`gw${gw}`] || {};
+    return assume90 ? assumeNinetyRow(row) : row;
+  }
+
   function sliceOf(player) {
     const gws = viewGws();
-    const projections = playerProj(player);
     let total = 0;
     let minutes = 0;
     const components = {
@@ -53,7 +84,7 @@
     };
     const perGw = {};
     gws.forEach((gw) => {
-      const row = projections[`gw${gw}`] || {};
+      const row = gwProjection(player, gw);
       const xp = Number(row.total_xp || 0);
       const mins = Number(row.xmins || 0);
       total += xp;
@@ -107,6 +138,10 @@
         yMetric = el.value;
         render();
       });
+    });
+    document.getElementById("explorer-assume-90")?.addEventListener("change", (e) => {
+      assume90 = e.target.checked;
+      render();
     });
     document.getElementById("explorer-xmins-floor").addEventListener("input", (e) => {
       xminsFloor = parseFloat(e.target.value);
@@ -419,7 +454,7 @@
     if (!selected.length) return null;
     const price = selected.reduce((sum, p) => sum + Number(p.price || 0), 0);
     const perGw = gws.map((gw) => selected.reduce((sum, p) => {
-      const row = playerProj(p)[`gw${gw}`] || {};
+      const row = gwProjection(p, gw);
       return sum + Number(row.total_xp || 0);
     }, 0));
     return {
@@ -549,7 +584,7 @@
     const gws = viewGws();
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "—";
     document.getElementById("explorer-meta").textContent =
-      `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
+      `Planning Horizon ${span}${assume90 ? " · Assume 90" : ""} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
     renderMix();

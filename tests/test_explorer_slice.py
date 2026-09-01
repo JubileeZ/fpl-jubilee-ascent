@@ -3,6 +3,7 @@
 from projections.explorer_slice import (
     GameweekScore,
     aggregate_slice,
+    assume_ninety_gameweek,
     build_explorer_slices,
     realized_gameweek_score,
     select_slice_gameweeks,
@@ -126,3 +127,53 @@ def test_explorer_slices_hide_realized_and_keep_all_projection() -> None:
     assert first["all_projection"]["total"] == 12.0
     assert first["remaining_projection"]["n_gameweeks"] == 19
     assert slices["second_half"]["all_projection"]["total"] == 0.0
+
+
+def test_assume_ninety_leaves_blank_gameweek() -> None:
+    score = GameweekScore(points=0.0, minutes=0.0, xp_minutes=0.0, xp_goals=0.0)
+    assert assume_ninety_gameweek(score) == score
+
+
+def test_assume_ninety_scales_cameo_events_and_sets_full_minutes_points() -> None:
+    score = GameweekScore(points=4.0, minutes=20.0, xp_minutes=1.0, xp_goals=3.0)
+    out = assume_ninety_gameweek(score)
+    assert out.minutes == 90.0
+    assert out.xp_minutes == 2.0
+    assert out.xp_goals == 13.5
+    assert out.points == 15.5
+
+
+def test_assume_ninety_scales_sixty_to_ninety() -> None:
+    score = GameweekScore(points=5.0, minutes=60.0, xp_minutes=2.0, xp_goals=3.0)
+    out = assume_ninety_gameweek(score)
+    assert out.minutes == 90.0
+    assert out.xp_minutes == 2.0
+    assert out.xp_goals == 4.5
+    assert out.points == 6.5
+
+
+def test_assume_ninety_double_gameweek_targets_one_eighty() -> None:
+    score = GameweekScore(points=10.0, minutes=150.0, xp_minutes=3.0, xp_goals=7.0)
+    out = assume_ninety_gameweek(score)
+    assert out.minutes == 180.0
+    assert out.xp_minutes == 4.0
+    assert out.xp_goals == 8.4
+    assert out.points == 12.4
+
+
+def test_assume_ninety_infers_minutes_points_when_missing() -> None:
+    score = GameweekScore(points=6.0, minutes=90.0)
+    out = assume_ninety_gameweek(score)
+    assert out.minutes == 90.0
+    assert out.xp_minutes == 2.0
+    assert out.points == 6.0
+
+
+def test_assume_ninety_makes_rate_equal_per_gameweek_on_single_fixtures() -> None:
+    per_gw = {
+        1: assume_ninety_gameweek(GameweekScore(points=5.0, minutes=60.0, xp_minutes=2.0, xp_goals=3.0)),
+        2: assume_ninety_gameweek(GameweekScore(points=5.0, minutes=75.0, xp_minutes=2.0, xp_goals=3.0)),
+    }
+    metrics = aggregate_slice(per_gw, (1, 2))
+    assert metrics.avg_minutes == 90.0
+    assert metrics.rate_per_90 == metrics.per_gameweek

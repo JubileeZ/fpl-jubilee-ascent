@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal
 
 from models.scoring_matrix import Position, event_points
@@ -120,6 +121,38 @@ def aggregate_slice(
         xp_defcon=round(components["xp_defcon"], 2),
         xp_saves=round(components["xp_saves"], 2),
         xp_bonus=round(components["xp_bonus"], 2),
+    )
+
+
+_MINUTES_POINTS_PER_FULL_MATCH = 2.0
+
+
+def assume_ninety_gameweek(score: GameweekScore) -> GameweekScore:
+    """View-only: full 90 per match on Gameweeks that already have projected minutes."""
+    if score.minutes <= 0:
+        return score
+    n_matches = max(1, math.ceil(score.minutes / 90.0))
+    target = 90.0 * n_matches
+    scale = target / score.minutes
+    xp_minutes_in = (
+        score.xp_minutes
+        if score.xp_minutes > 0
+        else (_MINUTES_POINTS_PER_FULL_MATCH * n_matches if score.minutes >= 60.0 else 1.0)
+    )
+    xp_minutes = _MINUTES_POINTS_PER_FULL_MATCH * n_matches
+    points = (score.points - xp_minutes_in) * scale + xp_minutes
+    return replace(
+        score,
+        points=round(points, 2),
+        minutes=round(target, 1),
+        xp_minutes=xp_minutes,
+        xp_goals=round(score.xp_goals * scale, 2),
+        xp_assists=round(score.xp_assists * scale, 2),
+        xp_clean_sheet=round(score.xp_clean_sheet * scale, 2),
+        xp_conceded=round(score.xp_conceded * scale, 2),
+        xp_defcon=round(score.xp_defcon * scale, 2),
+        xp_saves=round(score.xp_saves * scale, 2),
+        xp_bonus=round(score.xp_bonus * scale, 2),
     )
 
 

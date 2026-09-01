@@ -6,4 +6,4 @@ In-season xMins and Event Rates were still Appearance-Blended toward Expected Ro
 
 **Considered:** Keep Expected Role as empty-tenure exception; mix role prior with actuals until 5 appearances; Event Rates on a separate appearance-count clock; count this-season previous-club rows; scale xMins by chance/100; keep Watch/Exclude and `xmins_cap`. Rejected: role is not data; padded DNP for joiners is wrong; one clock for minutes and rates; old-club minutes are the old job; chance across the horizon contradicts 0010; overlays are judgment.
 
-**Consequences:** Champion, solver, report, and Ownership Explorer share Club Fixture xMins. `metrics_component_hybrid` leftover 78-minute mixture is not Champion. Project runs with no table. Role rebuild remains an optional label path.
+**Consequences:** Champion, solver, report, and Ownership Explorer share Club Fixture xMins. Ownership Explorer Assume 90 is view-only; it does not write Feature Contract minutes. `metrics_component_hybrid` leftover 78-minute mixture is not Champion. Project runs with no table. Role rebuild remains an optional label path.

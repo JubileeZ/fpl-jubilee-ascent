@@ -226,6 +226,12 @@ move, or remove; Mix-list **×** removes; drag a name between Mix A and Mix B to
 move. The panel sits under the charts and shows combined price, per-GW xP, and
 horizon total. Mix does not Force Keep or Force Ban.
 
+**Assume 90** (toolbar, next to Projected Rate / xP per Gameweek) treats every
+player as a full 90-minute match on Gameweeks that already have projected
+minutes. That is why those two Y-axis metrics then match when there is no
+double and no blank Gameweek. Off = Club Fixture xMins. Does not change
+Feature Contract minutes.
+
 **Filters**
 
 | Control | Effect |
@@ -234,6 +240,7 @@ horizon total. Mix does not Force Keep or Force Ban.
 | Club | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
 | Price | Min–max £m band; applies to charts and table |
 | Avg minutes floor | Default 45. Hides low-minute players from **charts only**; the table still lists them |
+| Assume 90 | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only) |
 | Search | Player name, club, or expected role; applies to charts and table |
 
 The rank table is sorted by horizon **Total** descending by default. Click any

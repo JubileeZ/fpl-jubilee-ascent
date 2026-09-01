@@ -13,6 +13,8 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "plotly" in html.lower()
     assert "explorer.js" in html
     assert "xP per Gameweek" in html
+    assert 'id="explorer-assume-90"' in html
+    assert html.index('value="per_gameweek"') < html.index('id="explorer-assume-90"')
     assert 'class="title">Price' in html
     assert 'id="mix-a-list"' in html
     assert 'id="horizonStart"' in html
@@ -40,6 +42,10 @@ def test_explorer_script_uses_planning_horizon_and_mix() -> None:
     assert "xP per Gameweek" in js
     assert "realized_points" not in js
     assert "first_half" not in js
+    assert "assumeNinetyRow" in js
+    assert "explorer-assume-90" in js
+    assert "data-mins90" not in js
+    assert "toggleAssume90" not in js
 
 
 def test_mix_panel_sits_after_charts_before_table() -> None:
@@ -61,3 +67,4 @@ def test_mix_panel_has_drop_columns_remove_and_full_reason() -> None:
     assert "data-mix-remove" in js
     assert "Mix A is full (5)." in js
     assert "mix-on" in js
+    assert 'id="explorer-assume-90"' in html
