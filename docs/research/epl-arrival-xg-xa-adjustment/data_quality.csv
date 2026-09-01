@@ -1,0 +1,11 @@
+check,value,handling
+raw_rows,46258,header/sample inspected before aggregates
+columns,38,npxG_Expected / xAG_Expected / Min_Playing / Url / Comp
+comps,"Bundesliga,La Liga,Ligue 1,Premier League,Serie A",Big 5 only; Championship/Eredivisie/Primeira absent
+dup_url_season_squad,0,expect 0
+dup_url_season_comp,1234,same-league mid-season club change; sum minutes/xG/xAG
+null_minutes,1,drop
+npxg_null_xg_era,31,drop player-comp-season if npxG or xAG null
+xag_null_xg_era,31,same
+season_2026_median_minutes,171.0,incomplete 2025-26 in dump; exclude as arrival and as prior
+gk_exact_pos,3486,exclude Pos==GK from arrival cohort

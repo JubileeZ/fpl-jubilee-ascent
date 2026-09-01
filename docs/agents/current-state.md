@@ -6,15 +6,15 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. Active research under `docs/research/` (`epl-arrival-xg-xa-adjustment`, `set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
 ADR 0022 Feature Contract: Recency-Weighted Prior Shrinkage on current-club Club Fixtures for Participation State and Event Rates (decay 0.95, strength 4, Prior-Season Seed else Position-Price). Missing rows not DNP. Expected Role Table optional Role label; does not gate Project. No Watch/Exclude, no `xmins_cap`. `refresh_data --rebuild-roles` / `--keep-roles` still Role registry ingest. Dual-Source extract on rebuild (`lineup-signals.json`).
 
 Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded for Feature Contract minutes by `0022`, `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half), `0021` (Ownership Explorer dashboard; Planning Horizon Start–End max 6), `0022` (Club Fixture minutes and Event Rates). Vocabulary in `CONTEXT.md`.
 
-## Research truth (23 Aug)
+## Research truth (2 Sep)
 
-- Active research: `docs/research/` (`set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. Set-piece vs Defcon SoT = `docs/research/set-piece-taker-vs-defcon/def_breakeven.csv` `net_sp_vs_high_defcon`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
+- Active research: `docs/research/` (`epl-arrival-xg-xa-adjustment`, `set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. Arrival xG/xA SoT = `docs/research/epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv` `npxg_median_ratio` / `xag_median_ratio`. Set-piece vs Defcon SoT = `docs/research/set-piece-taker-vs-defcon/def_breakeven.csv` `net_sp_vs_high_defcon`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
 - Production Expected Role Table = optional Explorer Role label (`features/expected_roles.csv`). Feature Contract minutes/rates = Club Fixture shrinkage (ADR 0022).
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.

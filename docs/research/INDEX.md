@@ -1,12 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-01T15:30:00+07:00
+**Updated**: 2026-09-02T00:20:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Premier League arrival xG/xA translation**: [Note](epl-arrival-xg-xa-adjustment/epl-arrival-xg-xa-adjustment.md) · [Summary](epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv) `npxg_median_ratio` / `xag_median_ratio` · [Before/after](epl-arrival-xg-xa-adjustment/arrival_xg_xa_before_after.csv) `ratio_npxg` · [Literature](epl-arrival-xg-xa-adjustment/literature-sources.md)
 - **Set-piece taker vs Defcon**: [Note](set-piece-taker-vs-defcon/set-piece-taker-vs-defcon.md) · [DEF break-even](set-piece-taker-vs-defcon/def_breakeven.csv) `net_sp_vs_high_defcon` / `mean_pts_per_start` · [MID break-even](set-piece-taker-vs-defcon/mid_breakeven.csv) `mean_pts_per_start`
 - **Transfer Plan Walk-Forward (2025-26 GW1–19)**: [Note](tp-walkforward-gw1-19-2025-26/tp-walkforward-gw1-19-2025-26.md) · [Summary](tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv) `realized_points` (ranked; attack FT / 3-4-3 / Defcon-Floor) · [Club Occupancy](tp-walkforward-gw1-19-2025-26/def_rotation_club_occupancy.csv) `rank_mod_fdr`
 - **First-Half 5-DEF Rotation Strategy (GW1–19)**: [Note](def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md) · [Club Occupancy](def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv) `rank_mod_fdr` / `total_mod_fdr` · [Summary](def-fdr-rotation-gw1-19/def_rotation_5sets_summary.csv) `total_mod_fdr` · [Starting DEFs](def-fdr-rotation-gw1-19/starting_defs_gw1_19.csv) · [Schedule Picks](def-fdr-rotation-gw1-19/gw1_19_def_rotation_schedule_picks.csv)
@@ -55,3 +56,5 @@
 | **Set-Piece** | **Attack xP per start** | `xp_attack_per_start` | $(\text{goals} \times \text{goal pts} + \text{assists} \times 3) / n_{\ge60}$ | Higher $\uparrow$ | DEF $\ge 1.0$ / MID $\ge 1.5$ | Reconstructed attacking FPL points per 60+ minute appearance. |
 | **Set-Piece** | **Defcon hit rate** | `defcon_hit_rate` | Starts reaching CBIT/CBIRT threshold / starts | Higher $\uparrow$ | DEF $\ge 0.45$ | Share of starts that bank the 2 Defcon pts. |
 | **Set-Piece** | **Break-even hit-rate gap** | `breakeven_hit_rate_gap` | $\Delta$ attack xP per start / 2 | Context | DEF $\approx 0.34$ (2025-26) | Extra Defcon hits needed to offset a taker's extra attack xP. |
+| **Arrival translation** | **npxG retain ratio** | `ratio_npxg` | PL npxG/90 ÷ source-league npxG/90 | Context (1 = unchanged) | `arrival_xg_xa_summary.csv` `pooled_summer_900` `npxg_median_ratio` | First Premier League season vs prior Big 5 season. Use median; mean is skewed. |
+| **Arrival translation** | **xAG retain ratio** | `ratio_xag` | PL xAG/90 ÷ source-league xAG/90 | Context (1 = unchanged) | `arrival_xg_xa_summary.csv` `pooled_summer_900` `xag_median_ratio` | Separate from npxG. Not Opta xA; Understat check is `ratio_xa`. |
