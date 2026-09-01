@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from pathlib import Path
 
 from features.builder import build_features
@@ -46,9 +47,9 @@ def test_build_features_emits_per90_rates_and_seed_flag(tmp_path):
     df = build_features(proc, target_gw=3, **role_kwargs(table))
 
     p1 = df[df["player_id"] == 1].iloc[0]
-    # 1 goal + 0 assists over 180 min -> 0.5 goals/90, 0.5 assists/90.
-    assert p1["per90_goals"] == 0.5
-    assert p1["per90_assists"] == 0.5
+    # Recency 0.95 on GW1 + shrink strength 4 toward unweighted 0.5/90 seed.
+    assert p1["per90_goals"] == pytest.approx(0.4958, rel=1e-4)
+    assert p1["per90_assists"] == pytest.approx(0.5042, rel=1e-4)
     assert bool(p1["has_prior_seed"]) is False
     assert bool(p1["has_seed"]) is True
 

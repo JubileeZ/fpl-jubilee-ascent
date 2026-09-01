@@ -1,4 +1,4 @@
-"""Expected Role Prior as Feature Contract Cold-Start minutes (ADR 0016)."""
+"""Expected Role Table registry and Feature Contract Club Fixture minutes (ADR 0022)."""
 
 from __future__ import annotations
 
@@ -129,20 +129,7 @@ def test_load_expected_role_table_refuses_missing_and_other_season(tmp_path: Pat
         load_expected_role_table(other, "2026-27")
 
 
-def test_build_features_refuses_other_season_expected_role_table(tmp_path: Path) -> None:
-    processed = _write_processed(tmp_path)
-    table = _write_role_csv(tmp_path / "roles.csv", [NAILED], season="2025-26")
-    with pytest.raises(ValueError, match="Expected Role Table"):
-        build_features(
-            processed,
-            target_gw=2,
-            use_archive_seed=False,
-            expected_role_table=table,
-            expected_role_season="2026-27",
-        )
-
-
-def test_snapshot_season_is_not_expected_role_table_identity(tmp_path: Path) -> None:
+def test_snapshot_season_does_not_gate_feature_contract_minutes(tmp_path: Path) -> None:
     processed = _write_processed(tmp_path)
     table = _write_role_csv(tmp_path / "roles.csv", [NAILED])
     for snapshot_season in ("test_backtest_cli_run0", "2025-26"):
@@ -154,10 +141,10 @@ def test_snapshot_season_is_not_expected_role_table_identity(tmp_path: Path) -> 
             season=snapshot_season,
         )
         row = df[df["player_id"] == 1].iloc[0]
-        assert row["p_start"] == pytest.approx(0.90)
+        assert row["p_start"] == pytest.approx(1.0 / 3.0)
 
 
-def test_cold_start_minutes_come_from_expected_role_prior(tmp_path: Path) -> None:
+def test_empty_tenure_does_not_use_expected_role_or_out_of_contention(tmp_path: Path) -> None:
     processed = _write_processed(tmp_path, appearances=0)
     table = _write_role_csv(tmp_path / "roles.csv", [NAILED])
     df = build_features(
@@ -167,31 +154,15 @@ def test_cold_start_minutes_come_from_expected_role_prior(tmp_path: Path) -> Non
         expected_role_table=table,
         season="2026-27",
     )
-    row = df[df["player_id"] == 1].iloc[0]
-    assert row["p_start"] == pytest.approx(0.90)
-    assert row["xmins_if_start"] == pytest.approx(85.0)
-    assert row["xmins_if_sub_in"] == pytest.approx(20.0)
-    assert row["appearance_probability"] == pytest.approx(0.95)
-    assert row["avg_mins_3gw"] == pytest.approx((0.90 * 85.0 + 0.05 * 20.0) / 0.95)
+    nailed = df[df["player_id"] == 1].iloc[0]
+    missing = df[df["player_id"] == 2].iloc[0]
+    assert nailed["p_start"] == pytest.approx(1.0 / 3.0)
+    assert nailed["xmins_if_start"] == pytest.approx(78.0)
+    assert missing["p_dnp"] == pytest.approx(1.0 / 3.0)
+    assert missing["xmins_if_start"] == pytest.approx(78.0)
 
 
-def test_player_absent_from_table_takes_out_of_contention_prior(tmp_path: Path) -> None:
-    processed = _write_processed(tmp_path, appearances=0)
-    table = _write_role_csv(tmp_path / "roles.csv", [NAILED])
-    df = build_features(
-        processed,
-        target_gw=2,
-        use_archive_seed=False,
-        expected_role_table=table,
-        season="2026-27",
-    )
-    row = df[df["player_id"] == 2].iloc[0]
-    assert row["p_dnp"] == pytest.approx(0.95)
-    assert row["xmins_if_start"] == pytest.approx(45.0)
-    assert row["xmins_if_sub_in"] == pytest.approx(10.0)
-
-
-def test_draft_availability_exclude_zeros_gw1_to_5_not_gw6(tmp_path: Path) -> None:
+def test_draft_availability_does_not_overlay_feature_contract_minutes(tmp_path: Path) -> None:
     processed = _write_processed(tmp_path, appearances=0)
     excluded = dict(NAILED)
     excluded["draft_availability"] = "exclude_gw1-5"
@@ -207,9 +178,8 @@ def test_draft_availability_exclude_zeros_gw1_to_5_not_gw6(tmp_path: Path) -> No
     player = df[df["player_id"] == 1]
     gw5 = player[player["gameweek_id"] == 5].iloc[0]
     gw6 = player[player["gameweek_id"] == 6].iloc[0]
-    assert gw5["p_dnp"] == pytest.approx(1.0)
-    assert gw5["p_start"] == pytest.approx(0.0)
-    assert gw6["p_start"] == pytest.approx(0.90)
+    assert gw5["p_start"] == pytest.approx(1.0 / 3.0)
+    assert gw6["p_start"] == pytest.approx(gw5["p_start"])
 
 
 def test_five_appearances_use_full_current_season_minutes(tmp_path: Path) -> None:

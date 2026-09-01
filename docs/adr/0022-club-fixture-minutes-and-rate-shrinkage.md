@@ -1,0 +1,9 @@
+# Feature Contract minutes and Event Rates from Club Fixture shrinkage, not Expected Role
+
+In-season xMins and Event Rates were still Appearance-Blended toward Expected Role Prior, and Feature Contract refused without a this-season Expected Role Table. That kept role judgment in the live path and treated empty tenures like Out of Contention. Feature Contract now uses Recency-Weighted Prior Shrinkage on current-club Club Fixtures for Participation State and Event Rates: recency decay 0.95, shrink toward Prior-Season Seed else Position-Price Prior (strength 4). Missing history is not DNP. Empty tenure uses the shrink target only. Same mixture across the Planning Horizon. Official chance is still next-GW 0% hard DNP only. Expected Role Table is optional Explorer Role label; it does not supply minutes, apply Draft Availability, or gate Project. Availability Override caps stay off.
+
+**Status:** Accepted. Supersedes ADR 0016 Feature Contract minutes/state and Appearance Blend 1→5. Reopens ADR 0021’s refuse-without-table clause. ADR 0010 still governs snapshots, Champion mixture, next-GW chance only, and no third-party xP/xMins feed. ADR 0014 newcomer Event Rate rules unchanged except production rates now share this Club Fixture clock.
+
+**Considered:** Keep Expected Role as empty-tenure exception; mix role prior with actuals until 5 appearances; Event Rates on a separate appearance-count clock; count this-season previous-club rows; scale xMins by chance/100; keep Watch/Exclude and `xmins_cap`. Rejected: role is not data; padded DNP for joiners is wrong; one clock for minutes and rates; old-club minutes are the old job; chance across the horizon contradicts 0010; overlays are judgment.
+
+**Consequences:** Champion, solver, report, and Ownership Explorer share Club Fixture xMins. `metrics_component_hybrid` leftover 78-minute mixture is not Champion. Project runs with no table. Role rebuild remains an optional label path.

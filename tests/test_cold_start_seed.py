@@ -43,6 +43,7 @@ def _write_archive_seed(root):
                 "player_id": player_id,
                 "gameweek_id": gameweek_id,
                 "minutes": 100,
+                "starts": 1,
                 "goals_scored": goals_scored,
                 "assists": 0,
                 "clean_sheets": 0,
@@ -82,12 +83,12 @@ def test_cold_start_uses_per_player_seed_and_prior_appearance_probability(tmp_pa
     df = build_features(processed, target_gw=2, **role_kwargs(table))
     player_one = df[df["player_id"] == 1].iloc[0]
     assert bool(player_one["has_prior_seed"]) is True
-    assert player_one["per90_goals"] == 1.8
-    assert player_one["avg_mins_3gw"] == pytest.approx((0.90 * 85.0 + 0.05 * 20.0) / 0.95)
-    assert player_one["chance_of_playing"] == pytest.approx(95.0)
+    assert player_one["per90_goals"] == pytest.approx(1.8)
+    assert player_one["avg_mins_3gw"] == pytest.approx(100.0)
+    assert player_one["chance_of_playing"] == pytest.approx(100.0)
 
 
-def test_availability_override_caps_seeded_minutes(tmp_path):
+def test_availability_override_does_not_cap_seeded_minutes(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
     table = write_role_table(tmp_path / "roles.csv", [1])
@@ -100,10 +101,10 @@ def test_availability_override_caps_seeded_minutes(tmp_path):
 
     df = build_features(processed, target_gw=2, availability_overrides=overrides, **role_kwargs(table))
 
-    assert df.loc[df["player_id"] == 1, "xmins_cap"].iloc[0] == 60.0
+    assert pd.isna(df.loc[df["player_id"] == 1, "xmins_cap"].iloc[0])
 
 
-def test_expired_availability_override_rejects_projection(tmp_path):
+def test_expired_availability_override_does_not_reject_projection(tmp_path):
     processed = _write_current_processed(tmp_path)
     _write_archive_seed(tmp_path)
     table = write_role_table(tmp_path / "roles.csv", [1])
@@ -114,5 +115,5 @@ def test_expired_availability_override_rejects_projection(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="expired before GW2"):
-        build_features(processed, target_gw=2, availability_overrides=overrides, **role_kwargs(table))
+    df = build_features(processed, target_gw=2, availability_overrides=overrides, **role_kwargs(table))
+    assert pd.isna(df.loc[df["player_id"] == 1, "xmins_cap"].iloc[0])

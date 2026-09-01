@@ -8,13 +8,6 @@ from features.availability_snapshots import resolve_latest_snapshot
 from features.expected_role_prior import (
     BLEND_FULL_APPEARANCES,
     BLEND_START_APPEARANCES,
-    DEFAULT_EXPECTED_ROLE_TABLE,
-    LIVE_SEASON,
-    OUT_OF_CONTENTION,
-    appearance_blend_weight,
-    apply_availability_priors,
-    fit_role_prior,
-    load_expected_role_table,
     minutes_if_appearance,
 )
 from features.fdr import modified_fdr, official_fdr
@@ -40,7 +33,6 @@ EVENT_RATE_MAP = [
 RATE_COLS = [rate_col for _, rate_col in EVENT_RATE_MAP]
 MIN_PRIOR_MINUTES = 450
 MIN_PRIOR_APPEARANCES = 8
-AVAILABILITY_OVERRIDE_COLUMNS = frozenset({"player_code", "xmins_cap", "source", "expires_after_gw"})
 PARTICIPATION_STATES = ("dnp", "start", "sub_in")
 STATE_RECENCY_DECAY = 0.95
 STATE_PRIOR_STRENGTH = 4.0
@@ -213,42 +205,6 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
     return pd.DataFrame(fixture_maps, columns=columns)
 
 
-def _load_availability_overrides(
-    availability_overrides: Path | None,
-    target_gw: int,
-    player_codes: set[int],
-) -> pd.DataFrame:
-    if availability_overrides is None or not availability_overrides.exists():
-        return pd.DataFrame(columns=["player_code", "xmins_cap", "expires_after_gw"])
-
-    overrides = pd.read_csv(availability_overrides)
-    missing = AVAILABILITY_OVERRIDE_COLUMNS.difference(overrides.columns)
-    if missing:
-        raise ValueError(f"Availability Overrides missing columns: {sorted(missing)}")
-
-    overrides = overrides[list(AVAILABILITY_OVERRIDE_COLUMNS)].copy()
-    for column in ("player_code", "xmins_cap", "expires_after_gw"):
-        overrides[column] = pd.to_numeric(overrides[column], errors="coerce")
-    if overrides[["player_code", "xmins_cap", "expires_after_gw"]].isna().any().any():
-        raise ValueError("Availability Overrides require numeric player_code, xmins_cap, and expires_after_gw")
-    if (overrides["player_code"] % 1 != 0).any() or (overrides["expires_after_gw"] % 1 != 0).any():
-        raise ValueError("Availability Override player_code and expires_after_gw must be integers")
-    overrides[["player_code", "expires_after_gw"]] = overrides[
-        ["player_code", "expires_after_gw"]
-    ].astype(int)
-    if (~overrides["xmins_cap"].between(0.0, 90.0)).any():
-        raise ValueError("Availability Override xmins_cap must be between 0 and 90")
-    if overrides["source"].isna().any() or overrides["source"].astype(str).str.strip().eq("").any():
-        raise ValueError("Availability Overrides require a non-empty source")
-    if overrides["player_code"].duplicated().any():
-        raise ValueError("Availability Overrides must not contain duplicate player_code values")
-    if expired := overrides.loc[overrides["expires_after_gw"] < target_gw, "player_code"].tolist():
-        raise ValueError(f"Availability Overrides expired before GW{target_gw}: {expired}")
-    if unknown := sorted(set(overrides["player_code"]).difference(player_codes)):
-        raise ValueError(f"Availability Overrides contain unknown player_code values: {unknown}")
-    return overrides[["player_code", "xmins_cap", "expires_after_gw"]]
-
-
 def _compute_player_rates(df_perf: pd.DataFrame, player_id: int) -> tuple[dict[str, float], float, float, int]:
     player_hist = df_perf[df_perf["player_id"] == player_id]
     if player_hist.empty:
@@ -312,18 +268,70 @@ def _summarize_state_rows(rows: pd.DataFrame, recency_decay: float) -> StateStat
     return stats
 
 
+def _player_club_rows(
+    df_perf: pd.DataFrame,
+    player_id: int,
+    club_id: int | None,
+) -> pd.DataFrame:
+    rows = df_perf[df_perf["player_id"] == player_id]
+    if club_id is not None and "club_id_at_fixture" in rows.columns:
+        known_clubs = rows["club_id_at_fixture"].notna()
+        if known_clubs.any():
+            rows = rows[rows["club_id_at_fixture"] == club_id]
+    return rows
+
+
 def _state_stats_for_player(
     df_perf: pd.DataFrame,
     player_id: int,
     club_id: int | None,
     recency_decay: float,
 ) -> StateStats:
-    rows = df_perf[df_perf["player_id"] == player_id]
-    if club_id is not None and "club_id_at_fixture" in rows.columns:
-        known_clubs = rows["club_id_at_fixture"].notna()
-        if known_clubs.any():
-            rows = rows[rows["club_id_at_fixture"] == club_id]
-    return _summarize_state_rows(rows, recency_decay)
+    return _summarize_state_rows(_player_club_rows(df_perf, player_id, club_id), recency_decay)
+
+
+def _weighted_event_totals(
+    rows: pd.DataFrame,
+    recency_decay: float,
+) -> tuple[float, dict[str, float]]:
+    events = {rate_col: 0.0 for _, rate_col in EVENT_RATE_MAP}
+    if rows.empty or "minutes" not in rows.columns:
+        return 0.0, events
+    minutes = pd.to_numeric(rows["minutes"], errors="coerce").fillna(0.0)
+    gameweeks_source = (
+        rows["gameweek_id"] if "gameweek_id" in rows.columns else pd.Series(0.0, index=rows.index)
+    )
+    gameweeks = pd.to_numeric(gameweeks_source, errors="coerce").fillna(0.0)
+    latest_gameweek = float(gameweeks.max())
+    weights = recency_decay ** (latest_gameweek - gameweeks)
+    played = minutes > 0
+    weighted_minutes = float((minutes[played] * weights[played]).sum())
+    for raw_col, rate_col in EVENT_RATE_MAP:
+        if raw_col not in rows.columns:
+            continue
+        values = pd.to_numeric(rows[raw_col], errors="coerce").fillna(0.0)
+        events[rate_col] = float((values[played] * weights[played]).sum())
+    return weighted_minutes, events
+
+
+def _shrink_rates(
+    prior_rates: dict[str, float],
+    weighted_minutes: float,
+    weighted_events: dict[str, float],
+    prior_strength: float,
+) -> dict[str, float]:
+    pseudo_minutes = prior_strength * 90.0
+    denominator = weighted_minutes + pseudo_minutes
+    shrunk: dict[str, float] = {}
+    for rate_col in RATE_COLS:
+        prior = float(prior_rates.get(rate_col, 1.45 if rate_col == "per90_goals_conceded" else 0.0))
+        if denominator <= 0:
+            shrunk[rate_col] = prior
+            continue
+        shrunk[rate_col] = (
+            (weighted_events.get(rate_col, 0.0) + prior / 90.0 * pseudo_minutes) / denominator * 90.0
+        )
+    return shrunk
 
 
 def _aggregate_state_priors(
@@ -493,7 +501,7 @@ def build_features(
     season: str | None = None,
     expected_role_season: str | None = None,
     expected_role_table: Path | None = None,
-    minutes_prior_source: Literal["expected_role", "seed_state"] = "expected_role",
+    minutes_prior_source: Literal["expected_role", "seed_state"] = "seed_state",
     target_deadline: datetime | str | None = None,
     state_recency_decay: float = STATE_RECENCY_DECAY,
     state_prior_strength: float = STATE_PRIOR_STRENGTH,
@@ -517,13 +525,6 @@ def build_features(
 
     if minutes_prior_source not in {"expected_role", "seed_state"}:
         raise ValueError("minutes_prior_source must be expected_role or seed_state")
-    role_table = None
-    if minutes_prior_source == "expected_role":
-        role_season = expected_role_season or LIVE_SEASON
-        role_table_path = (
-            Path(expected_role_table) if expected_role_table is not None else DEFAULT_EXPECTED_ROLE_TABLE
-        )
-        role_table = load_expected_role_table(role_table_path, role_season)
 
     # 1. Load Parquet tables, preferring a complete immutable snapshot package.
     snapshot = (
@@ -685,7 +686,7 @@ def build_features(
             base_rates = {col: 0.0 for col in RATE_COLS}
             seed_source = "none"
 
-        current_rates, current_minutes_if_appearance, current_appearance_probability, current_appearances = _compute_player_rates(
+        _, _, _, current_appearances = _compute_player_rates(
             df_hist,
             pid,
         )
@@ -695,20 +696,26 @@ def build_features(
             int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
             state_recency_decay,
         )
+        prior_club_id = int(seed_club_by_id[seed_pid]) if seed_pid in seed_club_by_id else None
         prior_state = (
             _state_stats_for_player(
                 df_seed_perf_context,
                 seed_pid,
-                int(seed_club_by_id[seed_pid]) if seed_pid in seed_club_by_id else None,
+                prior_club_id,
                 state_recency_decay,
             )
             if seed_pid is not None
             else _empty_state_stats()
         )
         prior_state_total = sum(prior_state["counts"].values())
+        prior_fixture_n = (
+            0
+            if seed_pid is None
+            else len(_player_club_rows(df_seed_perf_context, seed_pid, prior_club_id))
+        )
         state_prior = (
             prior_state
-            if prior_state_total >= MIN_PRIOR_APPEARANCES
+            if prior_fixture_n >= MIN_PRIOR_APPEARANCES
             else state_priors_by_band.get((position_id, band))
             or state_priors_by_position.get(position_id)
             or _empty_state_stats()
@@ -718,52 +725,21 @@ def build_features(
             state_prior,
             state_prior_strength,
         )
-        current_weight = appearance_blend_weight(
-            current_appearances,
-            blend_start_appearances,
-            blend_full_appearances,
+        minutes_prior = _minutes_prior_from_state(
+            prior_state if prior_state_total > 0 else state_prior
         )
-        prior_weight = 1.0 - current_weight
-        if minutes_prior_source == "seed_state":
-            src = prior_state if prior_state_total > 0 else state_prior
-            minutes_prior = _minutes_prior_from_state(src)
-        else:
-            if role_table is None:
-                raise ValueError("Expected Role Table is required when minutes_prior_source is expected_role")
-            minutes_prior = fit_role_prior(role_table, pid)
-        current_state_total = sum(current_state["counts"].values())
-        if current_state_total > 0:
-            current_p_start = current_state["counts"]["start"] / current_state_total
-            current_p_sub = current_state["counts"]["sub_in"] / current_state_total
-            current_p_dnp = current_state["counts"]["dnp"] / current_state_total
-        else:
-            current_p_start = minutes_prior["p_start"]
-            current_p_sub = minutes_prior["p_sub_in"]
-            current_p_dnp = minutes_prior["p_dnp"]
-        current_xmins_start = (
-            current_state["minutes_sum"]["start"] / current_state["counts"]["start"]
-            if current_state["counts"]["start"] > 0
-            else minutes_prior["xmins_if_start"]
+        p_start = state_summary["p_start"]
+        p_sub_in = state_summary["p_sub_in"]
+        p_dnp = state_summary["p_dnp"]
+        xmins_if_start = state_summary["xmins_if_start"]
+        xmins_if_sub_in = state_summary["xmins_if_sub_in"]
+        club_rows = _player_club_rows(
+            df_hist_context,
+            pid,
+            int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
         )
-        current_xmins_sub = (
-            current_state["minutes_sum"]["sub_in"] / current_state["counts"]["sub_in"]
-            if current_state["counts"]["sub_in"] > 0
-            else minutes_prior["xmins_if_sub_in"]
-        )
-        p_start = prior_weight * minutes_prior["p_start"] + current_weight * current_p_start
-        p_sub_in = prior_weight * minutes_prior["p_sub_in"] + current_weight * current_p_sub
-        p_dnp = prior_weight * minutes_prior["p_dnp"] + current_weight * current_p_dnp
-        xmins_if_start = prior_weight * minutes_prior["xmins_if_start"] + current_weight * current_xmins_start
-        xmins_if_sub_in = prior_weight * minutes_prior["xmins_if_sub_in"] + current_weight * current_xmins_sub
-        p_60_if_start = min(1.0, max(0.0, (xmins_if_start - 45.0) / 30.0))
-        p_60_if_sub_in = min(1.0, max(0.0, (xmins_if_sub_in - 45.0) / 30.0))
-        role_appearance_probability = 1.0 - minutes_prior["p_dnp"]
-        blended_appearance_probability = (
-            prior_weight * role_appearance_probability + current_weight * current_appearance_probability
-        )
-        blended_minutes_if_appearance = minutes_if_appearance(
-            p_start, p_sub_in, xmins_if_start, xmins_if_sub_in
-        )
+        weighted_minutes, weighted_events = _weighted_event_totals(club_rows, state_recency_decay)
+        shrunk_rates = _shrink_rates(base_rates, weighted_minutes, weighted_events, state_prior_strength)
 
         row = {
             "player_id": pid,
@@ -772,24 +748,32 @@ def build_features(
             "has_seed": seed_source != "none",
             "seed_source": seed_source,
             "n_starts_historical": float(prior_appearances + current_appearances),
-            "minutes_if_appearance": blended_minutes_if_appearance,
-            "appearance_probability": blended_appearance_probability,
+            "minutes_if_appearance": minutes_if_appearance(
+                p_start, p_sub_in, xmins_if_start, xmins_if_sub_in
+            ),
+            "appearance_probability": 1.0 - p_dnp,
             "p_dnp": p_dnp,
             "p_start": p_start,
             "p_sub_in": p_sub_in,
             "xmins_if_start": xmins_if_start,
             "xmins_if_sub_in": xmins_if_sub_in,
-            "p_60_if_start": p_60_if_start,
-            "p_60_if_sub_in": p_60_if_sub_in,
-            "draft_availability": minutes_prior["draft_availability"],
-            "availability_override": minutes_prior["availability_override"],
+            "p_60_if_start": state_summary["p_60_if_start"],
+            "p_60_if_sub_in": state_summary["p_60_if_sub_in"],
+            "draft_availability": "eligible",
+            "availability_override": "",
         }
-        row.update({key: state_summary[key] for key in state_summary if key.startswith("state_") or key.endswith("_observation_weight")})
+        row.update(
+            {
+                key: state_summary[key]
+                for key in state_summary
+                if key.startswith("state_") or key.endswith("_observation_weight")
+            }
+        )
         row["p_dnp_prior"] = minutes_prior["p_dnp"]
         row["p_start_prior"] = minutes_prior["p_start"]
         row["p_sub_in_prior"] = minutes_prior["p_sub_in"]
         for rate_col in RATE_COLS:
-            row[rate_col] = prior_weight * float(base_rates.get(rate_col, 0.0)) + current_weight * float(current_rates.get(rate_col, 0.0))
+            row[rate_col] = shrunk_rates[rate_col]
         seed_rows.append(row)
     df_seed = pd.DataFrame(seed_rows)
 
@@ -808,8 +792,8 @@ def build_features(
             df_rolling[f"p_{state}"]
         )
     for column, default in (
-        ("xmins_if_start", OUT_OF_CONTENTION[3]),
-        ("xmins_if_sub_in", OUT_OF_CONTENTION[4]),
+        ("xmins_if_start", 78.0),
+        ("xmins_if_sub_in", 18.0),
         ("p_60_if_start", 1.0),
         ("p_60_if_sub_in", 0.0),
         ("state_observation_weight", 0.0),
@@ -840,23 +824,6 @@ def build_features(
     df_feat["difficulty"] = df_feat["difficulty"].fillna(3.0)
     df_feat["opponent_id"] = df_feat["opponent_id"].fillna(0).astype(int)
 
-    overlays = [
-        apply_availability_priors(
-            float(row.p_start),
-            float(row.p_sub_in),
-            float(row.p_dnp),
-            str(row.draft_availability) if pd.notna(row.draft_availability) else "eligible",
-            str(row.availability_override) if pd.notna(row.availability_override) else "",
-            int(row.gameweek_id),
-        )
-        for row in df_feat.itertuples()
-    ]
-    if overlays:
-        df_feat["p_start"] = [item[0] for item in overlays]
-        df_feat["p_sub_in"] = [item[1] for item in overlays]
-        df_feat["p_dnp"] = [item[2] for item in overlays]
-        df_feat["appearance_probability"] = 1.0 - df_feat["p_dnp"]
-
     # Define chance of playing
     chance_col = "chance_of_playing_next_round"
     if as_of_gw is not None and not has_point_in_time_snapshot:
@@ -883,20 +850,5 @@ def build_features(
     df_feat["is_immediate_next_gw"] = df_feat["gameweek_id"].eq(target_gw)
     df_feat["has_availability_snapshot"] = has_point_in_time_snapshot
     df_feat["availability_snapshot_id"] = snapshot_id
-
-    player_codes = (
-        set(pd.to_numeric(df_players["code"], errors="coerce").dropna().astype(int))
-        if "code" in df_players.columns
-        else set()
-    )
-    overrides = _load_availability_overrides(availability_overrides, target_gw, player_codes)
-    if not overrides.empty:
-        df_feat = df_feat.merge(overrides, left_on="code", right_on="player_code", how="left")
-        df_feat["xmins_cap"] = df_feat["xmins_cap"].where(
-            df_feat["gameweek_id"] <= df_feat["expires_after_gw"],
-        )
-        df_feat = df_feat.drop(columns=["player_code", "expires_after_gw"])
-    else:
-        df_feat["xmins_cap"] = float("nan")
-    
+    df_feat["xmins_cap"] = float("nan")
     return df_feat

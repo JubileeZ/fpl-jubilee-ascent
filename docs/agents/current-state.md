@@ -6,16 +6,16 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Production Expected Role Prior = `features/expected_roles.csv`. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. Active research under `docs/research/` (`set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
-ADR 0016 ingest live: Cold-Start minutes/state = Expected Role Prior from committed table; Event Rates stay Prior-Season Seed; Appearance Blend 1→5. `refresh_data --rebuild-roles` / `--keep-roles`. Snapshot season is not table identity. Dual-Source extract written on rebuild (`lineup-signals.json`).
+ADR 0022 Feature Contract: Recency-Weighted Prior Shrinkage on current-club Club Fixtures for Participation State and Event Rates (decay 0.95, strength 4, Prior-Season Seed else Position-Price). Missing rows not DNP. Expected Role Table optional Role label; does not gate Project. No Watch/Exclude, no `xmins_cap`. `refresh_data --rebuild-roles` / `--keep-roles` still Role registry ingest. Dual-Source extract on rebuild (`lineup-signals.json`).
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` (Expected Role Prior Cold-Start minutes), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half), `0021` (Ownership Explorer dashboard; Planning Horizon Start–End max 6). Vocabulary in `CONTEXT.md`.
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded for Feature Contract minutes by `0022`, `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half), `0021` (Ownership Explorer dashboard; Planning Horizon Start–End max 6), `0022` (Club Fixture minutes and Event Rates). Vocabulary in `CONTEXT.md`.
 
 ## Research truth (23 Aug)
 
 - Active research: `docs/research/` (`set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. Set-piece vs Defcon SoT = `docs/research/set-piece-taker-vs-defcon/def_breakeven.csv` `net_sp_vs_high_defcon`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
-- Production Expected Role Prior ingest: `features/expected_roles.csv`.
+- Production Expected Role Table = optional Explorer Role label (`features/expected_roles.csv`). Feature Contract minutes/rates = Club Fixture shrinkage (ADR 0022).
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
 
@@ -34,7 +34,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
-| Features & Projections | `features/`, `projections/` | Feature Contract (Expected Role Prior Cold-Start minutes + Prior-Season Seed rates), solver exporters, Ownership Explorer slice. Automated transfer reconciliation via `features/rebuild_expected_role.py`. |
+| Features & Projections | `features/`, `projections/` | Feature Contract (Club Fixture Recency-Weighted Prior Shrinkage for minutes and Event Rates; ADR 0022). Solver exporters, Ownership Explorer slice. Expected Role Rebuild optional Role registry. |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer only. Planning Horizon Start–End, length 1–6, Start any unfinished GW (live week allowed). Dashboard Refresh ingest+project in page; process start does not ingest/project. View-only Mix. ADR 0021. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
