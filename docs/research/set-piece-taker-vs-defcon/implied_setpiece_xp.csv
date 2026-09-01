@@ -1,0 +1,10 @@
+source,position,assumption,xg_or_xa_per90,xp_per90,defcon_hits_equivalent_per90
+engine_penalty_isolation,DEF,penalties_order==1 and expected_goals_per90>0.15; 0.15 xG/90 unscaled by attack_multiplier,0.15,0.9,0.45
+league_penalty_taker,DEF,0.125 pens/team/match * Opta 0.79 xG; exclusive taker plays 90,0.099,0.593,0.296
+corner_taker_assist_credit,DEF,0.35 corner-goals/match both teams (2024-25 Opta); 60% credit taker; 3pt assist,0.105,0.315,0.158
+engine_penalty_isolation,MID,penalties_order==1 and expected_goals_per90>0.15; 0.15 xG/90 unscaled by attack_multiplier,0.15,0.75,0.375
+league_penalty_taker,MID,0.125 pens/team/match * Opta 0.79 xG; exclusive taker plays 90,0.099,0.494,0.247
+corner_taker_assist_credit,MID,0.35 corner-goals/match both teams (2024-25 Opta); 60% credit taker; 3pt assist,0.105,0.315,0.158
+engine_penalty_isolation,FWD,penalties_order==1 and expected_goals_per90>0.15; 0.15 xG/90 unscaled by attack_multiplier,0.15,0.6,0.3
+league_penalty_taker,FWD,0.125 pens/team/match * Opta 0.79 xG; exclusive taker plays 90,0.099,0.395,0.198
+corner_taker_assist_credit,FWD,0.35 corner-goals/match both teams (2024-25 Opta); 60% credit taker; 3pt assist,0.105,0.315,0.158

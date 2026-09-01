@@ -1,12 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-08-27T15:22:00+07:00
+**Updated**: 2026-09-01T15:30:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Set-piece taker vs Defcon**: [Note](set-piece-taker-vs-defcon/set-piece-taker-vs-defcon.md) · [DEF break-even](set-piece-taker-vs-defcon/def_breakeven.csv) `net_sp_vs_high_defcon` / `mean_pts_per_start` · [MID break-even](set-piece-taker-vs-defcon/mid_breakeven.csv) `mean_pts_per_start`
 - **Transfer Plan Walk-Forward (2025-26 GW1–19)**: [Note](tp-walkforward-gw1-19-2025-26/tp-walkforward-gw1-19-2025-26.md) · [Summary](tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv) `realized_points` (ranked; attack FT / 3-4-3 / Defcon-Floor) · [Club Occupancy](tp-walkforward-gw1-19-2025-26/def_rotation_club_occupancy.csv) `rank_mod_fdr`
 - **First-Half 5-DEF Rotation Strategy (GW1–19)**: [Note](def-fdr-rotation-gw1-19/def-fdr-rotation-gw1-19.md) · [Club Occupancy](def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv) `rank_mod_fdr` / `total_mod_fdr` · [Summary](def-fdr-rotation-gw1-19/def_rotation_5sets_summary.csv) `total_mod_fdr` · [Starting DEFs](def-fdr-rotation-gw1-19/starting_defs_gw1_19.csv) · [Schedule Picks](def-fdr-rotation-gw1-19/gw1_19_def_rotation_schedule_picks.csv)
 - **First-Half GKP Rotation Pairs (GW1–19)**: [Note](gkp-fdr-rotation-gw1-19/gkp-fdr-rotation-gw1-19.md) · [Summary](gkp-fdr-rotation-gw1-19/gkp_rotation_pairs_summary.csv) `total_mod_fdr` · [Starting GKPs](gkp-fdr-rotation-gw1-19/starting_gkps_gw1_19.csv) · [Schedule Picks](gkp-fdr-rotation-gw1-19/gw1_19_rotation_schedule_picks.csv)
@@ -51,3 +52,6 @@
 | **Ownership** | **Projected Rate** | `xP/90` | Expected points per 90 minutes normalized by role and fixture | Higher is better $\uparrow$ | **$\ge 5.0$** (Enabler) / **$\ge 7.0$** (Premium) | Normalized per-minute scoring potential. |
 | **Ownership** | **Ownership Popularity** | `Ownership %` | Game-wide `selected_by_percent` from FPL API | Context-dependent | **$< 5.0\%$** (Diff) / **$> 30.0\%$** (Template) | Raw ownership proportion across all fantasy managers. |
 | **Set-Piece** | **Team Set-Piece Net Swing** | `Net Swing` | $\Delta \text{xG}_{\text{set-piece}} - \Delta \text{xGA}_{\text{set-piece}}$ | Higher is better $\uparrow$ | **$> +0.20\text{ xG/game}$** | Net goal expectancy added via set-piece offense minus set-piece defense conceded. |
+| **Set-Piece** | **Attack xP per start** | `xp_attack_per_start` | $(\text{goals} \times \text{goal pts} + \text{assists} \times 3) / n_{\ge60}$ | Higher $\uparrow$ | DEF $\ge 1.0$ / MID $\ge 1.5$ | Reconstructed attacking FPL points per 60+ minute appearance. |
+| **Set-Piece** | **Defcon hit rate** | `defcon_hit_rate` | Starts reaching CBIT/CBIRT threshold / starts | Higher $\uparrow$ | DEF $\ge 0.45$ | Share of starts that bank the 2 Defcon pts. |
+| **Set-Piece** | **Break-even hit-rate gap** | `breakeven_hit_rate_gap` | $\Delta$ attack xP per start / 2 | Context | DEF $\approx 0.34$ (2025-26) | Extra Defcon hits needed to offset a taker's extra attack xP. |

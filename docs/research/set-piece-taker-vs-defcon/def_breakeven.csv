@@ -1,0 +1,5 @@
+cohort,n_players,mean_defcon_hit_rate,mean_xp_defcon_per_start,mean_xp_attack_per_start,mean_xp_cs_per_start,mean_attack_plus_defcon_per_start,mean_pts_per_start,attack_gap_sp_minus_high_defcon,defcon_gap_high_minus_sp,net_sp_vs_high_defcon,breakeven_hit_rate_gap
+DEF_no_sp_all_regular,106,0.279,0.559,0.461,1.065,1.02,3.886,0.68,0.866,-0.186,0.34
+DEF_no_sp_high_defcon_p75,28,0.548,1.097,0.422,0.945,1.518,4.13,0.68,0.866,-0.186,0.34
+DEF_corner_primary,2,0.115,0.23,1.102,1.175,1.332,4.755,0.68,0.866,-0.186,0.34
+DEF_any_setpiece_order,17,0.165,0.33,0.72,1.208,1.05,4.319,0.68,0.866,-0.186,0.34
