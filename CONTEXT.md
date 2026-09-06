@@ -61,8 +61,8 @@ A per-player per-fixture expected points and minutes estimate. Canonical model o
 _Avoid_: fixture score
 
 **Club Fixture**:
-A Fixture while a Player is registered with the participating Club. Training denominator for Participation State and Event Rates. Excludes fixtures before a transfer-in or after a transfer-out. Missing history is not a Club Fixture and is not Did Not Play.
-_Avoid_: Eligible game, season fixture, padded DNP, this-season fixture at a previous Club
+A finished Fixture while a Player is registered with the participating Club. Training denominator for Participation State and Event Rates. Excludes fixtures before a transfer-in or after a transfer-out. Missing history and Incomplete History Rows are not Club Fixtures and are not Did Not Play.
+_Avoid_: Eligible game, season fixture, padded DNP, this-season fixture at a previous Club, live or future 0-minute history as DNP
 
 **Gameweek Projection**:
 A per-player per-gameweek aggregation of one or more Fixture Projections used by the solver and headline evaluation.
@@ -141,12 +141,20 @@ $1 - p_{\text{dnp}}$ from the Participation State posterior. Distinct from offic
 _Avoid_: Injury chance, playing chance, API chance as horizon appearance
 
 **Participation State**:
-One mutually exclusive fixture outcome for a Player: Did Not Play, Start, or Sub-in. Estimated from actual Club Fixture playing time. State probabilities sum to one and determine conditional minutes and Event Component projections. Product reports xMins from this posterior, not an Expected Role label.
-_Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role, Role column as minutes
+One mutually exclusive finished Club Fixture outcome for a Player: Did Not Play, Start, or Sub-in. Estimated from actual Club Fixture playing time. State probabilities sum to one and determine conditional minutes and Event Component projections. Product reports xMins from this posterior, not an Expected Role label.
+_Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role, Role column as minutes, Incomplete History Row as a state
+
+**Incomplete History Row**:
+An `element_summary` history row for a Fixture that is not finished. Not a Club Fixture. Not Did Not Play.
+_Avoid_: Recorded DNP, Sunday not-yet-played as DNP, future 0-minute pad
+
+**Recorded DNP**:
+A finished Club Fixture with zero minutes. Did Not Play in Participation State.
+_Avoid_: Incomplete History Row, missing history, padded DNP
 
 **This-Season Evidence**:
-At least one this-season `player_performances` history row in the Operational Dataset (`element_summary` history: minutes, starts, or recorded DNP). Global: one row anywhere ends Cold-Start for every Player.
-_Avoid_: GW1 deadline as the clock, per-player first appearance, fixture listed with no history row, Expected Role, bootstrap season totals alone
+At least one this-season finished `player_performances` history row in the Operational Dataset (`element_summary` history on a finished Fixture: minutes, starts, or Recorded DNP). Global: one finished row anywhere ends Cold-Start for every Player.
+_Avoid_: GW1 deadline as the clock, per-player first appearance, fixture listed with no history row, Incomplete History Row as evidence, Expected Role, bootstrap season totals alone
 
 **Expected Role**:
 Retired product label. Not shown. Not a Feature Contract input. Dual-Source scrapes are gone. Surfaces report xMins from Participation State.
@@ -225,8 +233,8 @@ Retired production mix. Was a linear appearance-count mix (weight 0 through 1 ap
 _Avoid_: GW5 flip, live Feature Contract mix, dashboard-only minutes, blend_start 3 / blend_full 8
 
 **Prior-Season Seed**:
-Per-Player Event Rates and Participation State from the latest Season Archive. Used only during Cold-Start. Not the in-season shrink target. Summer club change does not discard a usable Cold-Start seed.
-_Avoid_: Carryover, in-season last-year player minutes, three-season FPL blend, Expected Role Prior
+Per-Player Event Rates and Participation State from the latest completed Season Archive. Used only during Cold-Start. Not the in-season shrink target. Never the live season pin. Summer club change does not discard a usable Cold-Start seed.
+_Avoid_: Carryover, in-season last-year player minutes, three-season FPL blend, Expected Role Prior, live Season Archive as seed
 
 **Career Individual Rate**:
 Per-90 xG, xA, Defcon, and GK saves from a Player's last completed senior league season. Used only when no usable Prior-Season Seed exists (foreign arrivals, promoted-Club Players, rookies).
@@ -489,8 +497,8 @@ Cold-Start Dual-Vector Strength from the latest archive season: club attack = su
 _Avoid_: Dual-Vector Strength (live rolling npxG), Club Strength Vector, Official Fixture Difficulty, FDR-xP Canonical
 
 **Recency-Weighted Prior Shrinkage**:
-Feature Contract estimator for Participation State and Event Rates. Recency-weighted current-club Club Fixture observations. Cold-Start: shrink toward Prior-Season Seed else last-season Position-Price. After This-Season Evidence: this-season observations only, shrink toward this-season Position-Price; empty tenure is that pool, not last year's player. Per-90 Event Rates use minutes played; Did Not Play updates state probabilities only. Data-only: FPL history, Season Archive seed during Cold-Start, next-GW 0% chance.
-_Avoid_: Simple unweighted current-season average, static role rates, Expected Role Prior, Appearance Blend, in-season per-player last season, Watch/Exclude as minutes, padded DNP
+Feature Contract estimator for Participation State and Event Rates. Recency-weighted current-club Club Fixture observations. Cold-Start: shrink toward Prior-Season Seed else last-season Position-Price. After This-Season Evidence: this-season observations only, shrink toward this-season Position-Price; empty tenure is that pool, not last year's player. Per-90 Event Rates use minutes played; Recorded DNP updates state probabilities only. Data-only: finished FPL history, Season Archive seed during Cold-Start, next-GW 0% chance.
+_Avoid_: Simple unweighted current-season average, static role rates, Expected Role Prior, Appearance Blend, in-season per-player last season, Watch/Exclude as minutes, padded DNP, Incomplete History Row as DNP
 
 **Defensive Composite Score (DCS)**:
 A 0–100 ranking of a Defensive Rotation Set: 60% opportunity-cost-adjusted rotated expected points plus 40% fixture-risk (zero-difficult weeks, rotated FDR, schedule correlation). Live research ranking uses Prior-Season Dual-Vector Seed effective FDR (`defence_multiplier × 3`).

@@ -43,6 +43,7 @@ def test_run_model_exposes_blend_thresholds(tmp_path: Path) -> None:
         processed,
         8,
         horizon=7,
+        history_before_gw=39,
         blend_start_appearances=2,
         blend_full_appearances=6,
         availability_overrides=tmp_path / "data" / "availability_overrides.csv",

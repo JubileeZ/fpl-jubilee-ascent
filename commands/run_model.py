@@ -14,6 +14,7 @@ configure_utf8_stdio()
 from models import get_model
 from features.builder import build_features
 from projections.exporter import export_projections
+from solver.planning import SEASON_END_GW
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ def main():
     parser.add_argument(
         "--state_prior_strength",
         type=float,
-        help="Participation-state prior pseudo-observations (default: 4)",
+        help="Participation-state prior pseudo-observations (default: 1)",
     )
     parser.add_argument(
         "--availability_overrides",
@@ -100,7 +101,13 @@ def main():
         }.items()
         if value is not None
     }
-    df_feat = build_features(processed_dir, target_gw, horizon=args.horizon, **feature_kwargs)
+    df_feat = build_features(
+        processed_dir,
+        target_gw,
+        horizon=args.horizon,
+        history_before_gw=SEASON_END_GW + 1,
+        **feature_kwargs,
+    )
     
     # 2. Instantiate and run model
     logger.info(f"Loading model '{args.model}'...")

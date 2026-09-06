@@ -95,7 +95,12 @@ def run_dashboard_export(
         f"Generating Full-Season Window projections GW{SEASON_START_GW}–{SEASON_END_GW}; "
         f"Planning Horizon {horizon} from GW{target_gw}"
     )
-    df_feat = build_features(processed_dir, SEASON_START_GW, horizon=SEASON_END_GW)
+    df_feat = build_features(
+        processed_dir,
+        SEASON_START_GW,
+        horizon=SEASON_END_GW,
+        history_before_gw=SEASON_END_GW + 1,
+    )
 
     model_preds: dict[str, pd.DataFrame] = {}
     perf_path = processed_dir / "player_performances.parquet"

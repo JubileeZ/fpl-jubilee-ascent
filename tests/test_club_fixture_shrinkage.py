@@ -397,3 +397,396 @@ def test_eight_seed_fixtures_use_player_seed_not_position_price(tmp_path: Path) 
     ).iloc[0]
     assert row["p_start"] == pytest.approx(1.0)
     assert row["xmins_if_start"] == pytest.approx(90.0)
+
+
+def _write_finished_minutes_tables(
+    processed: Path,
+    *,
+    fixtures: list[dict[str, object]],
+    performances: list[dict[str, object]],
+) -> None:
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "club_id": 1,
+                "position_id": 4,
+                "now_cost": 77,
+                "chance_of_playing_next_round": 100.0,
+            }
+        ]
+    ).to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame([{"id": 1, "name": "A", "short_name": "A", "strength": 3}]).to_parquet(
+        processed / "clubs.parquet", index=False
+    )
+    pd.DataFrame(fixtures).to_parquet(processed / "fixtures.parquet", index=False)
+    pd.DataFrame(performances).to_parquet(processed / "player_performances.parquet", index=False)
+
+
+def test_unfinished_zero_minutes_are_not_recorded_dnp(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    _write_finished_minutes_tables(
+        processed,
+        fixtures=[
+            {
+                "id": 101,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 102,
+                "gameweek_id": 2,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 103,
+                "gameweek_id": 3,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": False,
+            },
+        ],
+        performances=[
+            {
+                "player_id": 1,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+            {
+                "player_id": 1,
+                "fixture_id": 102,
+                "gameweek_id": 2,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+            {
+                "player_id": 1,
+                "fixture_id": 103,
+                "gameweek_id": 3,
+                "was_home": True,
+                "minutes": 0,
+                "starts": 0,
+                "total_points": 0,
+            },
+        ],
+    )
+    row = build_features(processed, target_gw=4, use_archive_seed=False).iloc[0]
+    assert row["dnp_observation_weight"] == pytest.approx(0.0)
+    assert row["start_observation_weight"] == pytest.approx(1.95)
+    assert row["p_start"] == pytest.approx(1.0)
+
+
+def test_unfinished_only_history_is_not_this_season_evidence(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    _write_finished_minutes_tables(
+        processed,
+        fixtures=[
+            {
+                "id": 101,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": False,
+            }
+        ],
+        performances=[
+            {
+                "player_id": 1,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 0,
+                "starts": 0,
+                "total_points": 0,
+            }
+        ],
+    )
+    row = build_features(processed, target_gw=2, use_archive_seed=False).iloc[0]
+    assert row["state_observation_weight"] == pytest.approx(0.0)
+    assert row["p_start"] == pytest.approx(1.0 / 3.0)
+    assert row["p_dnp"] == pytest.approx(1.0 / 3.0)
+
+
+def test_full_season_window_uses_finished_starts_before_gw1_target(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    _write_finished_minutes_tables(
+        processed,
+        fixtures=[
+            {
+                "id": 101,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 102,
+                "gameweek_id": 2,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+        ],
+        performances=[
+            {
+                "player_id": 1,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+            {
+                "player_id": 1,
+                "fixture_id": 102,
+                "gameweek_id": 2,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+        ],
+    )
+    row = build_features(
+        processed,
+        target_gw=1,
+        horizon=38,
+        use_archive_seed=False,
+        history_before_gw=39,
+    ).iloc[0]
+    assert row["start_observation_weight"] == pytest.approx(1.95)
+    assert row["p_start"] == pytest.approx(1.0)
+
+
+def _write_seed_season(root: Path, season: str, minutes: int, starts: int) -> None:
+    seed = root / "archive" / season / "processed"
+    seed.mkdir(parents=True)
+    pd.DataFrame(
+        [{"id": 1, "code": 101, "position_id": 4, "now_cost": 77, "club_id": 1, "first_name": "A", "second_name": "One"}]
+    ).to_parquet(seed / "players.parquet", index=False)
+    starter = {
+        "minutes": minutes,
+        "starts": starts,
+        "total_points": 2,
+        "goals_scored": 0,
+        "assists": 0,
+        "clean_sheets": 0,
+        "goals_conceded": 0,
+        "own_goals": 0,
+        "penalties_saved": 0,
+        "penalties_missed": 0,
+        "yellow_cards": 0,
+        "red_cards": 0,
+        "saves": 0,
+        "bonus": 0,
+    }
+    pd.DataFrame(
+        [{"player_id": 1, "fixture_id": gw, "gameweek_id": gw, **starter} for gw in range(1, 9)]
+    ).to_parquet(seed / "player_performances.parquet", index=False)
+
+
+def test_prior_season_seed_skips_live_season_archive(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "code": 101,
+                "club_id": 1,
+                "position_id": 4,
+                "now_cost": 77,
+                "first_name": "A",
+                "second_name": "One",
+                "chance_of_playing_next_round": None,
+            }
+        ]
+    ).to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame([{"id": 1, "name": "A", "short_name": "A", "strength": 3}]).to_parquet(
+        processed / "clubs.parquet", index=False
+    )
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+            }
+        ]
+    ).to_parquet(processed / "fixtures.parquet", index=False)
+    pd.DataFrame(columns=["player_id", "gameweek_id", "minutes", "total_points"]).to_parquet(
+        processed / "player_performances.parquet", index=False
+    )
+    _write_seed_season(tmp_path, "2025-26", minutes=90, starts=1)
+    _write_seed_season(tmp_path, "2026-27", minutes=0, starts=0)
+    row = build_features(processed, target_gw=1).iloc[0]
+    assert row["p_start"] == pytest.approx(1.0)
+    assert row["seed_source"] == "player_prior"
+
+
+def test_prior_season_seed_from_archive_season_processed_dir(tmp_path: Path) -> None:
+    processed = tmp_path / "archive" / "2026-27" / "processed"
+    processed.mkdir(parents=True)
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "code": 101,
+                "club_id": 1,
+                "position_id": 4,
+                "now_cost": 77,
+                "first_name": "A",
+                "second_name": "One",
+                "chance_of_playing_next_round": None,
+            }
+        ]
+    ).to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame([{"id": 1, "name": "A", "short_name": "A", "strength": 3}]).to_parquet(
+        processed / "clubs.parquet", index=False
+    )
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+            }
+        ]
+    ).to_parquet(processed / "fixtures.parquet", index=False)
+    pd.DataFrame(columns=["player_id", "gameweek_id", "minutes", "total_points"]).to_parquet(
+        processed / "player_performances.parquet", index=False
+    )
+    _write_seed_season(tmp_path, "2025-26", minutes=90, starts=1)
+    row = build_features(processed, target_gw=1).iloc[0]
+    assert row["p_start"] == pytest.approx(1.0)
+    assert row["seed_source"] == "player_prior"
+
+
+def test_two_finished_starts_use_strength_one_state_prior(tmp_path: Path) -> None:
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "club_id": 1,
+                "position_id": 4,
+                "now_cost": 77,
+                "chance_of_playing_next_round": 100.0,
+            },
+            {
+                "id": 2,
+                "club_id": 1,
+                "position_id": 4,
+                "now_cost": 77,
+                "chance_of_playing_next_round": 100.0,
+            },
+        ]
+    ).to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame([{"id": 1, "name": "A", "short_name": "A", "strength": 3}]).to_parquet(
+        processed / "clubs.parquet", index=False
+    )
+    pd.DataFrame(
+        [
+            {
+                "id": 101,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 102,
+                "gameweek_id": 2,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 103,
+                "gameweek_id": 3,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": False,
+            },
+        ]
+    ).to_parquet(processed / "fixtures.parquet", index=False)
+    pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "fixture_id": fid,
+                "gameweek_id": gw,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            }
+            for gw, fid in ((1, 101), (2, 102))
+        ]
+        + [
+            {
+                "player_id": 2,
+                "fixture_id": fid,
+                "gameweek_id": gw,
+                "was_home": True,
+                "minutes": 0,
+                "starts": 0,
+                "total_points": 0,
+            }
+            for gw, fid in ((1, 101), (2, 102))
+        ]
+        + [
+            {
+                "player_id": 1,
+                "fixture_id": 103,
+                "gameweek_id": 3,
+                "was_home": True,
+                "minutes": 0,
+                "starts": 0,
+                "total_points": 0,
+            }
+        ]
+    ).to_parquet(processed / "player_performances.parquet", index=False)
+    row = build_features(processed, target_gw=4, use_archive_seed=False)
+    starter = row[row["player_id"] == 1].iloc[0]
+    assert starter["dnp_observation_weight"] == pytest.approx(0.0)
+    assert starter["p_start"] == pytest.approx(0.8305, abs=0.001)

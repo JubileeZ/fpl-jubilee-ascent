@@ -6,9 +6,9 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. ADR 0023–0025 in code: Official FPL Operational Dataset; This-Season Evidence shrinkage; Expected Role retired; Explorer xMins. `refresh_data` pins `data/archive/<season>/`. `--from-vaastav-dir` is 2024-25 reconstruct only. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. ADR 0023–0026 in code: Official FPL Operational Dataset; This-Season Evidence shrinkage; Expected Role retired; Explorer xMins from finished Club Fixtures (Incomplete History Row not DNP; Prior-Season Seed skips live pin; state shrink 1). `refresh_data` pins `data/archive/<season>/`. `--from-vaastav-dir` is 2024-25 reconstruct only. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023`–`0025`. Vocabulary in `CONTEXT.md`.
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023`–`0026`. Vocabulary in `CONTEXT.md`.
 
 ## Research truth (4 Sep)
 
@@ -32,7 +32,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
-| Features & Projections | `features/`, `projections/` | Feature Contract (Club Fixture Recency-Weighted Prior Shrinkage; ADR 0024 This-Season Evidence). Solver exporters, Ownership Explorer slice. Expected Role retired. |
+| Features & Projections | `features/`, `projections/` | Feature Contract (finished Club Fixture shrinkage; ADR 0024/0026). Solver exporters, Ownership Explorer slice. Expected Role retired. |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer only. Planning Horizon Start–End, length 1–6, Start any unfinished GW (live week allowed). Dashboard Refresh ingest+project in page; process start does not ingest/project. View-only Mix. Assume 90. xMins column. No Role. ADR 0021 / 0025. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |

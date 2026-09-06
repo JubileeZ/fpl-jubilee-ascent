@@ -8,6 +8,7 @@ from features.availability_snapshots import resolve_latest_snapshot
 from features.expected_role_prior import (
     BLEND_FULL_APPEARANCES,
     BLEND_START_APPEARANCES,
+    LIVE_SEASON,
     minutes_if_appearance,
 )
 from features.fdr import modified_fdr, official_fdr
@@ -35,7 +36,8 @@ MIN_PRIOR_MINUTES = 450
 MIN_PRIOR_APPEARANCES = 8
 PARTICIPATION_STATES = ("dnp", "start", "sub_in")
 STATE_RECENCY_DECAY = 0.95
-STATE_PRIOR_STRENGTH = 4.0
+STATE_PRIOR_STRENGTH = 1.0
+RATE_PRIOR_STRENGTH = 4.0
 
 
 class StateStats(TypedDict):
@@ -87,9 +89,26 @@ def _price_band(now_cost: float) -> int:
     return int(float(now_cost) // 10)
 
 
+def _evaluation_season_name(processed_dir: Path) -> str | None:
+    if processed_dir.name != "processed":
+        return None
+    parent = processed_dir.parent.name
+    return parent if len(parent) == 7 and parent[4:5] == "-" else None
+
+
+def _archive_root(processed_dir: Path) -> Path | None:
+    sibling = processed_dir.parent / "archive"
+    if sibling.exists():
+        return sibling
+    if _evaluation_season_name(processed_dir) is not None:
+        nested = processed_dir.parent.parent
+        return nested if nested.exists() else None
+    return None
+
+
 def _archive_processed_dir(processed_dir: Path, seed_season: str | None) -> Path | None:
-    archive_root = processed_dir.parent / "archive"
-    if not archive_root.exists():
+    archive_root = _archive_root(processed_dir)
+    if archive_root is None:
         return None
 
     if seed_season:
@@ -101,10 +120,15 @@ def _archive_processed_dir(processed_dir: Path, seed_season: str | None) -> Path
             else None
         )
 
+    excluded = {LIVE_SEASON}
+    evaluation_season = _evaluation_season_name(processed_dir)
+    if evaluation_season:
+        excluded.add(evaluation_season)
     candidates = [
         season_dir / "processed"
         for season_dir in archive_root.iterdir()
-        if (season_dir / "processed" / "player_performances.parquet").exists()
+        if season_dir.name not in excluded
+        and (season_dir / "processed" / "player_performances.parquet").exists()
         and (season_dir / "processed" / "players.parquet").exists()
     ]
     return sorted(candidates)[-1] if candidates else None
@@ -113,6 +137,20 @@ def _archive_processed_dir(processed_dir: Path, seed_season: str | None) -> Path
 def _load_players(processed_dir: Path) -> pd.DataFrame:
     """Load terminal metadata for non-point-in-time exploratory projections."""
     return pd.read_parquet(processed_dir / "players.parquet")
+
+
+def _completed_performance_rows(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame) -> pd.DataFrame:
+    """Drop rows whose Fixture is known unfinished. Unknown fixture ids stay."""
+    if (
+        df_perf.empty
+        or "fixture_id" not in df_perf.columns
+        or "id" not in df_fixtures.columns
+        or "finished" not in df_fixtures.columns
+    ):
+        return df_perf
+    finished_by_id = df_fixtures.drop_duplicates("id").set_index("id")["finished"]
+    known_finished = df_perf["fixture_id"].map(finished_by_id)
+    return df_perf[known_finished.ne(False)]
 
 
 def history_before_target(
@@ -503,6 +541,7 @@ def build_features(
     expected_role_table: Path | None = None,
     minutes_prior_source: Literal["expected_role", "seed_state"] = "seed_state",
     target_deadline: datetime | str | None = None,
+    history_before_gw: int | None = None,
     state_recency_decay: float = STATE_RECENCY_DECAY,
     state_prior_strength: float = STATE_PRIOR_STRENGTH,
     require_availability_snapshot: bool = False,
@@ -520,9 +559,10 @@ def build_features(
         raise ValueError("blend_full_appearances must be greater than blend_start_appearances")
     if not 0 < state_recency_decay <= 1:
         raise ValueError("state_recency_decay must be greater than 0 and at most 1")
+    if history_before_gw is not None and history_before_gw < 1:
+        raise ValueError("history_before_gw must be at least 1")
     if state_prior_strength < 0:
         raise ValueError("state_prior_strength must be non-negative")
-
     if minutes_prior_source not in {"expected_role", "seed_state"}:
         raise ValueError("minutes_prior_source must be expected_role or seed_state")
 
@@ -565,12 +605,14 @@ def build_features(
     gameweeks = list(range(target_gw, target_gw + horizon))
     
     # 2. Compute current-season historical features (pre-target_gw)
+    history_cutoff = target_gw if history_before_gw is None else history_before_gw
     df_hist = history_before_target(
         df_perf,
-        target_gw,
+        history_cutoff,
         target_deadline,
         require_availability_snapshot,
     )
+    df_hist = _completed_performance_rows(df_hist, df_fixtures)
 
     # Simple rolling GW averages
     rolling_stats = []
@@ -616,7 +658,7 @@ def build_features(
         df_seed_perf = df_hist.copy()
         df_seed_players = df_players.rename(columns={"player_id": "id"}).copy()
         df_seed_fixtures = df_fixtures
-
+    df_seed_perf = _completed_performance_rows(df_seed_perf, df_seed_fixtures)
     df_seed_perf_context = _attach_fixture_clubs(df_seed_perf, df_seed_fixtures)
     this_season_evidence = not df_hist.empty
     current_players_for_priors = df_players.rename(columns={"player_id": "id"})
@@ -753,7 +795,7 @@ def build_features(
             int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
         )
         weighted_minutes, weighted_events = _weighted_event_totals(club_rows, state_recency_decay)
-        shrunk_rates = _shrink_rates(base_rates, weighted_minutes, weighted_events, state_prior_strength)
+        shrunk_rates = _shrink_rates(base_rates, weighted_minutes, weighted_events, RATE_PRIOR_STRENGTH)
 
         row = {
             "player_id": pid,
