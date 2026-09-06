@@ -2,7 +2,7 @@
 
 2025-26 First-Half playbook evidence is a Transfer Plan Walk-Forward scored on scoring-15 Realized Points, not model MAE and not a hindsight oracle. No chips after GW1, no Hits, Free Transfer Bank to 5. Unconstrained baseline plus Locked Starting Shape, Transfer Target Policy, and Defcon-Floor / Attack-Ceiling tilts, one factor at a time, then one winner cross. Prior-Season Seed from `data/archive/2024-25/processed`. Exploratory: no Availability Snapshots.
 
-**Status:** Accepted.
+**Status:** Accepted. Seed-through-in-season assumption reopened by ADR 0024: walk-forward must replay This-Season Evidence (Prior-Season Seed only while that season's history is empty).
 
 **Considered:** Hindsight 15 from Realized Points; `commands.backtest` MAE; chips on; Hits allowed; full factorial; Expected Role Table for 2025-26 minutes; FPL-Core Opta dump; GW1–5 of 2025-26 as fake prior. Rejected: oracle leaks the future; MAE does not rank squad policy; chips and Hits confound shape and FT policy; factorial is 45 arms; 2026/27 Expected Role Table is the wrong season; FPL-Core lacks FPL minutes/starts; same-season GW1–5 is current-season history not Prior-Season Seed.
 

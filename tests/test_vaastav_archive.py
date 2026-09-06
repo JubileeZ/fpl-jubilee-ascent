@@ -133,3 +133,16 @@ def test_cli_from_vaastav_dir(tmp_path: Path) -> None:
         ["--season", "2024-25", "--from-vaastav-dir", str(src), "--archive-root", str(archive_root)]
     ) == 0
     assert (archive_root / "2024-25" / "processed" / "player_performances.parquet").exists()
+
+
+def test_cli_from_vaastav_dir_rejects_other_seasons(tmp_path: Path) -> None:
+    src = _write_vaastav_dir(tmp_path / "vaastav")
+    archive_root = tmp_path / "archive"
+    try:
+        main(
+            ["--season", "2025-26", "--from-vaastav-dir", str(src), "--archive-root", str(archive_root)]
+        )
+    except ValueError as exc:
+        assert "2024-25" in str(exc)
+    else:
+        raise AssertionError("expected vaastav reconstruct-only rejection")

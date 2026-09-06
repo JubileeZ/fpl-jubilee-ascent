@@ -197,7 +197,7 @@ uv run python -m commands.dashboard
 
 The command starts `http://127.0.0.1:8000` immediately. It does not ingest or project on process start. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-Click **Refresh** in the header to pull live FPL data, run Champion and Comparison Slate projections, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. Refresh does not run Expected Role Rebuild. If the Expected Role Table is missing or the wrong season, ingest still runs and projection refuses until a this-season table exists.
+Click **Refresh** in the header to pull live FPL data, run Champion and Comparison Slate projections, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. Refresh pins the current season into `data/archive/<season>/`. Project does not require an Expected Role Table.
 
 Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` / `--models` override Champion/Candidate export. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
 

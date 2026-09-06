@@ -156,7 +156,7 @@
         tableSortAsc = !tableSortAsc;
       } else {
         tableSortKey = key;
-        tableSortAsc = ["name", "club", "pos", "role"].includes(key);
+        tableSortAsc = ["name", "club", "pos"].includes(key);
       }
       render();
     });
@@ -220,7 +220,7 @@
 
   function nameHit(player, needle) {
     if (!needle) return false;
-    return `${player.name} ${player.team} ${player.expected_role || ""}`.toLowerCase().includes(needle);
+    return `${player.name} ${player.team}`.toLowerCase().includes(needle);
   }
 
   function rankedRows() {
@@ -250,7 +250,6 @@
     if (key === "pos") return player.pos;
     if (key === "price") return player.price;
     if (key === "own") return player.ownership_pct;
-    if (key === "role") return player.expected_role || "";
     if (key && key.startsWith("gw")) return slice.perGw[Number(key.slice(2))] || 0;
     return slice[key];
   }
@@ -525,8 +524,7 @@
       '<th data-sort="total">Total</th>',
       ...gws.map((gw) => `<th data-sort="gw${gw}">GW${gw}</th>`),
       '<th data-sort="rate_per_90">/90</th>',
-      '<th data-sort="avg_minutes">Avg mins</th>',
-      '<th data-sort="role">Role</th>',
+      '<th data-sort="avg_minutes">xMins</th>',
       "<th>Mix</th>",
     ].join("");
   }
@@ -565,7 +563,6 @@
           ${gwCells}
           <td>${s.rate_per_90 == null ? "—" : Number(s.rate_per_90).toFixed(2)}</td>
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
-          <td>${p.expected_role || "—"}</td>
           <td>
             <button type="button" data-mix="a" data-player-id="${p.id}" class="${inA ? "mix-on" : ""}" aria-pressed="${inA}">A</button>
             <button type="button" data-mix="b" data-player-id="${p.id}" class="${inB ? "mix-on" : ""}" aria-pressed="${inB}">B</button>

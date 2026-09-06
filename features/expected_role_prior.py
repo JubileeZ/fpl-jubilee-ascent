@@ -118,16 +118,7 @@ def ensure_expected_role_rebuild_choice(
 ) -> None:
     if rebuild_roles and keep_roles:
         raise ValueError("Use only one of --rebuild-roles or --keep-roles")
-    status = table_season_status(table_path, season)
-    if status == "ok":
-        return
-    if rebuild_roles or keep_roles:
-        return
-    raise ValueError(
-        "Expected Role Table missing or other season. "
-        "Pass --rebuild-roles to run Expected Role Rebuild, or --keep-roles to defer "
-        "(API refresh only; projections refuse until a this-season table exists)."
-    )
+    _ = (season, table_path)
 
 
 def fit_role_prior(table: pd.DataFrame, player_id: int) -> dict[str, Any]:

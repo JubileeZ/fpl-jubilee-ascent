@@ -27,11 +27,7 @@ from commands.export_dashboard import (
 )
 from commands import refresh_data
 from features.builder import build_features
-from features.expected_role_prior import (
-    DEFAULT_EXPECTED_ROLE_TABLE,
-    LIVE_SEASON,
-    table_season_status,
-)
+from features.expected_role_prior import LIVE_SEASON
 from models import get_default_model_name, get_model
 from projections.exporter import write_solver_projection_csvs
 from solver.planning import clamp_planning_horizon
@@ -62,11 +58,8 @@ def reset_refresh_state() -> None:
 
 
 def ingest_live_data(season: str = LIVE_SEASON) -> None:
-    """FPL ingest without Expected Role Rebuild. Defer Role when the table is missing."""
-    argv = ["--season", season]
-    if table_season_status(DEFAULT_EXPECTED_ROLE_TABLE, season) != "ok":
-        argv.append("--keep-roles")
-    asyncio.run(refresh_data.main(argv))
+    """FPL ingest plus Season Archive pin. Does not scrape lineups."""
+    asyncio.run(refresh_data.main(["--season", season]))
 
 
 def comparison_slate_models(model_name: str | None, model_names: list[str] | None) -> list[str]:

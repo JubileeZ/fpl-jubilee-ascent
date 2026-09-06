@@ -1,7 +1,7 @@
 # 0010: Participation State, Snapshots, and Evaluation
 
 ## Status
-Accepted
+Accepted. In-season shrink target superseded by ADR 0024 (this-season Position-Price after This-Season Evidence; Prior-Season Seed only during Cold-Start). Snapshots, Champion mixture, next-GW chance only, Availability Overrides, and no third-party xP/xMins still stand.
 
 ## Decision
 Model each Fixture Projection through mutually exclusive Participation States: Did Not Play, Start, and Sub-in. Estimate state probabilities from recency-weighted Club Fixtures, shrink toward Prior-Season or Position-Price priors, and estimate conditional minutes separately for starts and sub-ins. Event Component projections remain conditional on each state; `xP = P(Start) × xP|Start + P(Sub-in) × xP|Sub-in`. Official FPL chance is calibrated next-gameweek evidence only; official club information may create reviewed, source-attributed, expiring Availability Overrides.

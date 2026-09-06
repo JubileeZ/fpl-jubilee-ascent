@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from commands.snapshot_season import main, process_season_archive
+from commands.snapshot_season import main, pin_season_archive, process_season_archive
 
 
 def test_from_raw_dir_writes_processed_archive(tmp_path: Path) -> None:
@@ -51,3 +51,22 @@ def test_cli_rejects_live_fetch_for_other_seasons() -> None:
         assert "from-raw-dir" in str(exc)
     else:
         raise AssertionError("expected live-fetch rejection")
+
+
+def test_pin_season_archive_copies_raw_and_processed(tmp_path: Path) -> None:
+    raw = tmp_path / "data" / "raw"
+    processed = tmp_path / "data" / "processed"
+    raw.mkdir(parents=True)
+    processed.mkdir(parents=True)
+    (raw / "bootstrap_static.json").write_text("{}", encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"parquet-bytes")
+    archive_root = tmp_path / "data" / "archive"
+    dest = pin_season_archive(
+        "2026-27",
+        raw,
+        processed,
+        archive_root=archive_root,
+    )
+    assert dest == archive_root / "2026-27" / "processed"
+    assert (archive_root / "2026-27" / "raw" / "bootstrap_static.json").read_text(encoding="utf-8") == "{}"
+    assert (archive_root / "2026-27" / "processed" / "players.parquet").read_bytes() == b"parquet-bytes"

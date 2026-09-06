@@ -14,7 +14,6 @@ from clients.env_loader import configure_utf8_stdio, load_env
 load_env()
 configure_utf8_stdio()
 
-from features.expected_role_prior import DEFAULT_EXPECTED_ROLE_TABLE, LEGACY_EXPECTED_ROLE_TABLE
 from features.builder import build_features
 from models import get_default_model_name, get_model
 from projections.explorer_slice import (
@@ -35,7 +34,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ROLE_CSV = DEFAULT_EXPECTED_ROLE_TABLE
 SEASON_START_GW = 1
 
 import math
@@ -70,16 +68,6 @@ def _clean_json_obj(obj: Any) -> Any:
     elif isinstance(obj, list):
         return [_clean_json_obj(v) for v in obj]
     return obj
-
-
-def _load_expected_roles() -> dict[int, str]:
-    path = DEFAULT_EXPECTED_ROLE_TABLE if DEFAULT_EXPECTED_ROLE_TABLE.exists() else LEGACY_EXPECTED_ROLE_TABLE
-    if not path.exists():
-        return {}
-    roles = pd.read_csv(path)
-    if "player_id" not in roles.columns or "expected_role" not in roles.columns:
-        return {}
-    return dict(zip(roles["player_id"].astype(int), roles["expected_role"].astype(str)))
 
 
 def _finished_gameweeks(processed_dir: Path) -> set[int]:
@@ -229,7 +217,6 @@ def build_dashboard_dataset(
     planning_gw_ids = planning_window(horizon_start, horizon_end)
     planning_gw_set = set(planning_gw_ids)
     finished_gws = _finished_gameweeks(processed_dir)
-    expected_roles = _load_expected_roles()
 
     grouped_models: Dict[str, pd.DataFrame] = {}
     all_gw_ids: set[int] = set(planning_gw_ids)
@@ -365,7 +352,6 @@ def build_dashboard_dataset(
             "chance": chance_val,
             "news": str(p.get("news", "") or ""),
             "ownership_pct": round(_safe_float(p.get("selected_by_percent")), 1),
-            "expected_role": expected_roles.get(pid, ""),
             "pts_per_start": pts_per_start,
             "pts_per_90": pts_per_90,
             "ict_per_90": ict_per_90,

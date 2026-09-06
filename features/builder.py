@@ -618,10 +618,24 @@ def build_features(
         df_seed_fixtures = df_fixtures
 
     df_seed_perf_context = _attach_fixture_clubs(df_seed_perf, df_seed_fixtures)
-    priors_by_band, priors_by_position = _compute_position_price_priors(df_seed_perf, df_seed_players)
+    this_season_evidence = not df_hist.empty
+    current_players_for_priors = df_players.rename(columns={"player_id": "id"})
+    if this_season_evidence:
+        rate_prior_perf = df_hist
+        rate_prior_players = current_players_for_priors
+        state_prior_perf = df_hist_context
+        state_prior_players = current_players_for_priors
+    else:
+        rate_prior_perf = df_seed_perf
+        rate_prior_players = df_seed_players
+        state_prior_perf = df_seed_perf_context
+        state_prior_players = df_seed_players
+    priors_by_band, priors_by_position = _compute_position_price_priors(
+        rate_prior_perf, rate_prior_players
+    )
     state_priors_by_band, state_priors_by_position = _aggregate_state_priors(
-        df_seed_perf_context,
-        df_seed_players,
+        state_prior_perf,
+        state_prior_players,
         state_recency_decay,
     )
     # Build mapping from player code / name to seed player id
@@ -676,7 +690,7 @@ def build_features(
         pos_prior = priors_by_position.get(position_id)
         fallback_prior = band_prior or pos_prior
 
-        if has_player_prior:
+        if (not this_season_evidence) and has_player_prior:
             base_rates = prior_rates
             seed_source = "player_prior"
         elif fallback_prior is not None:
@@ -715,7 +729,7 @@ def build_features(
         )
         state_prior = (
             prior_state
-            if prior_fixture_n >= MIN_PRIOR_APPEARANCES
+            if (not this_season_evidence) and prior_fixture_n >= MIN_PRIOR_APPEARANCES
             else state_priors_by_band.get((position_id, band))
             or state_priors_by_position.get(position_id)
             or _empty_state_stats()
@@ -726,7 +740,7 @@ def build_features(
             state_prior_strength,
         )
         minutes_prior = _minutes_prior_from_state(
-            prior_state if prior_state_total > 0 else state_prior
+            prior_state if (not this_season_evidence) and prior_state_total > 0 else state_prior
         )
         p_start = state_summary["p_start"]
         p_sub_in = state_summary["p_sub_in"]

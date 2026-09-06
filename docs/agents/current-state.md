@@ -6,16 +6,14 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 ## Next work — start here
 
-Season 2026/27 underway. Active research under `docs/research/` (`epl-arrival-xg-xa-adjustment`, `set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
+Season 2026/27 underway. ADR 0023–0025 in code: Official FPL Operational Dataset; This-Season Evidence shrinkage; Expected Role retired; Explorer xMins. `refresh_data` pins `data/archive/<season>/`. `--from-vaastav-dir` is 2024-25 reconstruct only. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
-ADR 0022 Feature Contract: Recency-Weighted Prior Shrinkage on current-club Club Fixtures for Participation State and Event Rates (decay 0.95, strength 4, Prior-Season Seed else Position-Price). Missing rows not DNP. Expected Role Table optional Role label; does not gate Project. No Watch/Exclude, no `xmins_cap`. `refresh_data --rebuild-roles` / `--keep-roles` still Role registry ingest. Dual-Source extract on rebuild (`lineup-signals.json`).
-
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded for Feature Contract minutes by `0022`, `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR production score), `0020` (Transfer Plan Walk-Forward First-Half), `0021` (Ownership Explorer dashboard; Planning Horizon Start–End max 6), `0022` (Club Fixture minutes and Event Rates). Vocabulary in `CONTEXT.md`.
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023`–`0025`. Vocabulary in `CONTEXT.md`.
 
 ## Research truth (4 Sep)
 
 - Active research: `docs/research/` (`epl-arrival-xg-xa-adjustment`, `set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. Arrival xG/xA SoT = `docs/research/epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv` `npxg_median_ratio` / `xag_median_ratio`. Set-piece vs Defcon SoT = `docs/research/set-piece-taker-vs-defcon/def_breakeven.csv` `net_sp_vs_high_defcon`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. GKP rotation SoT = `docs/research/gkp-fdr-rotation-gw1-19/raya_rotation_partners.csv` `total_mod_fdr` / `gkp_rotation_pairs_summary.csv` `pct_gw_mod_le_2_25` (CHE starter Martínez; FDR ticks unchanged vs 22 Aug parquet). Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
-- Production Expected Role Table = optional Explorer Role label (`features/expected_roles.csv`). Feature Contract minutes/rates = Club Fixture shrinkage (ADR 0022).
+- Production Feature Contract minutes/rates = Club Fixture shrinkage; Cold-Start Prior-Season Seed; after This-Season Evidence this-season Position-Price (ADR 0024). Expected Role retired (ADR 0025).
 - **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
 - Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
 
@@ -34,12 +32,12 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
-| Features & Projections | `features/`, `projections/` | Feature Contract (Club Fixture Recency-Weighted Prior Shrinkage for minutes and Event Rates; ADR 0022). Solver exporters, Ownership Explorer slice. Expected Role Rebuild optional Role registry. |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer only. Planning Horizon Start–End, length 1–6, Start any unfinished GW (live week allowed). Dashboard Refresh ingest+project in page; process start does not ingest/project. View-only Mix. Assume 90 toolbar toggle (all Players). ADR 0021. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
+| Features & Projections | `features/`, `projections/` | Feature Contract (Club Fixture Recency-Weighted Prior Shrinkage; ADR 0024 This-Season Evidence). Solver exporters, Ownership Explorer slice. Expected Role retired. |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer only. Planning Horizon Start–End, length 1–6, Start any unfinished GW (live week allowed). Dashboard Refresh ingest+project in page; process start does not ingest/project. View-only Mix. Assume 90. xMins column. No Role. ADR 0021 / 0025. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
-| Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Production Expected Role Prior from `features/expected_roles.csv`. Research HTML is not the dashboard product view. `data/archive/` = season snapshots only |
+| Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Research HTML is not the dashboard product view. `data/archive/` = Season Archive pins |
 
 ---
 
@@ -48,8 +46,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 - Historical Availability Snapshot collection not on `origin` (`availability-snapshots` branch missing). Writer now JSON-canonicalizes nested FPL list columns (`price_change_projections`, `scout_risks`, fixture `stats`); hourly Capture Action was failing inside 48h window. Keep `.github/workflows/capture_availability_snapshot.yml` + `evaluate_model_promotion.yml`. Archive-backed promotion remains provisional until two Live Validation Windows complete.
 - Committed Comparison Slate lives in `config/model_selection.json`; `commands.compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
 - Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
-- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0020) filled: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points`.
-- Dual-Source Lineup Signals extract is pinned at `features/lineup-signals.json` and updated via `commands.refresh_data --rebuild-roles`.
+- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0020) filled: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points`. Existing walk-forward companions used ADR 0022 in-season seed, not ADR 0024.
 
 ---
 
@@ -58,8 +55,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 ```bash
 uv run pytest                                          # Run pytest
 uv run ruff check .                                    # Lint code
-uv run python -m commands.refresh_data                 # Ingest current gameweek data
-uv run python -m commands.refresh_data --rebuild-roles # Ingest + Expected Role Rebuild
+uv run python -m commands.refresh_data                 # Ingest current gameweek data; pin Season Archive
 uv run python -m commands.run_model linear_baseline    # Generate projections
 uv run python -m commands.run_model dual_vector_state_hybrid # Operational default
 uv run python -m commands.run_model participation_state_hybrid # Comparison slate

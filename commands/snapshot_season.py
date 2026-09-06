@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import logging
+import shutil
 import sys
 from pathlib import Path
 
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LIVE_SNAPSHOT_SEASON = "2025-26"
+VAASTAV_RECONSTRUCT_SEASON = "2024-25"
 
 
 def archive_raw_dir(season: str, *, archive_root: Path | None = None) -> Path:
@@ -42,6 +44,32 @@ def archive_raw_dir(season: str, *, archive_root: Path | None = None) -> Path:
 def archive_processed_dir(season: str, *, archive_root: Path | None = None) -> Path:
     root = archive_root or (PROJECT_ROOT / "data" / "archive")
     return root / season / "processed"
+
+
+def pin_season_archive(
+    season: str,
+    raw_dir: Path,
+    processed_dir: Path,
+    *,
+    archive_root: Path | None = None,
+) -> Path:
+    """Copy live Official FPL raw + processed into data/archive/<season>/.
+
+    Overwrites the current-season pin on each refresh. Git commit of that folder is the Gameweek deadline backup.
+    """
+    dest_raw = archive_raw_dir(season, archive_root=archive_root)
+    dest_processed = archive_processed_dir(season, archive_root=archive_root)
+    dest_raw.mkdir(parents=True, exist_ok=True)
+    dest_processed.mkdir(parents=True, exist_ok=True)
+    if raw_dir.exists() and raw_dir.resolve() != dest_raw.resolve():
+        for path in raw_dir.iterdir():
+            if path.is_file():
+                shutil.copy2(path, dest_raw / path.name)
+    if processed_dir.exists() and processed_dir.resolve() != dest_processed.resolve():
+        for path in processed_dir.iterdir():
+            if path.is_file():
+                shutil.copy2(path, dest_processed / path.name)
+    return dest_processed
 
 
 def process_season_archive(
@@ -114,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--from-vaastav-dir",
         type=Path,
-        help="Process vaastav FPL CSVs (players_raw, teams, fixtures, gws/merged_gw) into processed",
+        help="Frozen reconstruct of 2024-25 vaastav FPL CSVs into processed (not a live source)",
     )
     parser.add_argument(
         "--archive-root",
@@ -126,6 +154,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.from_raw_dir is not None and args.from_vaastav_dir is not None:
         raise ValueError("pass only one of --from-raw-dir or --from-vaastav-dir")
     if args.from_vaastav_dir is not None:
+        if args.season != VAASTAV_RECONSTRUCT_SEASON:
+            raise ValueError(
+                f"--from-vaastav-dir is a frozen reconstruct of {VAASTAV_RECONSTRUCT_SEASON} only; "
+                "use --from-raw-dir for later seasons"
+            )
         if not args.from_vaastav_dir.exists():
             raise FileNotFoundError(f"vaastav directory not found: {args.from_vaastav_dir}")
         processed = archive_processed_dir(args.season, archive_root=args.archive_root)

@@ -128,6 +128,7 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert gw1["xa_pts"] == 1.5  # 0.5 * 3
     assert gw1["total_xp"] == 7.5
     assert haaland["ownership_pct"] == 12.5
+    assert "expected_role" not in haaland
     assert dataset["meta"]["planning_gw_ids"] == [1]
     slice_h = haaland["explorer"]["planning_horizon"]
     assert slice_h["n_gameweeks"] == 1
@@ -420,31 +421,16 @@ def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Pa
     assert "prefilled_squad_ids" not in dataset["meta"]
 
 
-def test_ingest_live_data_passes_keep_roles_when_table_missing(monkeypatch) -> None:
+def test_ingest_live_data_does_not_pass_role_flags(monkeypatch) -> None:
     captured: list[list[str]] = []
 
     async def fake_main(argv=None) -> None:
         captured.append(list(argv or []))
 
-    monkeypatch.setattr("commands.dashboard.table_season_status", lambda *_args, **_kwargs: "missing")
     monkeypatch.setattr("commands.refresh_data.main", fake_main)
     from commands.dashboard import ingest_live_data
     ingest_live_data("2026-27")
     assert captured[0][:2] == ["--season", "2026-27"]
-    assert "--keep-roles" in captured[0]
-    assert "--rebuild-roles" not in captured[0]
-
-
-def test_ingest_live_data_skips_keep_roles_when_table_ok(monkeypatch) -> None:
-    captured: list[list[str]] = []
-
-    async def fake_main(argv=None) -> None:
-        captured.append(list(argv or []))
-
-    monkeypatch.setattr("commands.dashboard.table_season_status", lambda *_args, **_kwargs: "ok")
-    monkeypatch.setattr("commands.refresh_data.main", fake_main)
-    from commands.dashboard import ingest_live_data
-    ingest_live_data("2026-27")
     assert "--keep-roles" not in captured[0]
     assert "--rebuild-roles" not in captured[0]
 
@@ -461,10 +447,20 @@ def test_run_refresh_job_ok_and_project_refuse(monkeypatch) -> None:
     reset_refresh_state()
 
     def boom(**_kwargs):
-        raise ValueError("Expected Role Table missing")
+        raise ValueError("projection failed")
 
     monkeypatch.setattr("commands.dashboard.run_dashboard_export", boom)
     run_refresh_job()
     assert refresh_status()["status"] == "error"
-    assert "Expected Role Table" in str(refresh_status()["error"])
+    assert "projection failed" in str(refresh_status()["error"])
+
+
+def test_explorer_reports_xmins_not_role() -> None:
+    root = Path(__file__).resolve().parents[1]
+    html = (root / "dashboard" / "index.html").read_text(encoding="utf-8")
+    js = (root / "dashboard" / "explorer.js").read_text(encoding="utf-8")
+    assert 'data-sort="role"' not in html
+    assert ">xMins<" in html
+    assert 'data-sort="role"' not in js
+    assert "expected_role" not in js
 

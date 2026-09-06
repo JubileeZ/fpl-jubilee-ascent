@@ -16,7 +16,7 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 ```
 clients/       # FPL API and auth clients
 models/        # Custom scoring models (convention-based auto-discovery)
-features/      # FeatureContract builder + Expected Role Prior ingest
+features/      # FeatureContract builder + Season Archive helpers
 projections/   # ProjectionContract exporter + Ownership Explorer slice metrics
 solver/        # Vendored open-fpl-solver source
 backtesting/   # Backtest evaluation engine and metrics
@@ -42,7 +42,7 @@ docs/          # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.dashboard` | Serve Ownership Explorer; Refresh in page ingest+project |
-| `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Map vaastav FPL CSVs into `data/archive/2024-25/processed` |
+| `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |
 

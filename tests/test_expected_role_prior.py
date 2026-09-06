@@ -197,10 +197,9 @@ def test_five_appearances_use_full_current_season_minutes(tmp_path: Path) -> Non
     assert row["avg_mins_3gw"] == pytest.approx(90.0)
 
 
-def test_refresh_requires_rebuild_or_keep_when_table_is_other_season(tmp_path: Path) -> None:
+def test_refresh_does_not_require_role_rebuild_flags(tmp_path: Path) -> None:
     table = _write_role_csv(tmp_path / "roles.csv", [NAILED], season="2025-26")
-    with pytest.raises(ValueError, match="--rebuild-roles"):
-        ensure_expected_role_rebuild_choice("2026-27", False, False, table)
+    ensure_expected_role_rebuild_choice("2026-27", False, False, table)
     ensure_expected_role_rebuild_choice("2026-27", True, False, table)
     ensure_expected_role_rebuild_choice("2026-27", False, True, table)
 
