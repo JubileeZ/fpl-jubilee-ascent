@@ -1,0 +1,20 @@
+{
+  "player": {
+    "date_of_birth": "1994-03-09",
+    "default_event": 3,
+    "dirty": false,
+    "first_name": "Phoonsap",
+    "gender": "M",
+    "id": 90616607,
+    "last_name": "Jenphithakpong",
+    "region": 212,
+    "email": "z.jubilee.z@gmail.com",
+    "entry": 822158,
+    "entry_email": false,
+    "entry_language": null,
+    "sso_id": "9272a9f4-95b5-4e76-9b90-dc7f0b024780"
+  },
+  "watched": [
+    441164
+  ]
+}
