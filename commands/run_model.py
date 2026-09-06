@@ -12,7 +12,7 @@ load_env()
 configure_utf8_stdio()
 
 from models import get_model
-from features.builder import build_features
+from features.builder import build_features, resolve_operational_processed_dir
 from projections.exporter import export_projections
 from solver.planning import SEASON_END_GW
 
@@ -58,8 +58,8 @@ def main():
     )
     args = parser.parse_args()
     
-    processed_dir = PROJECT_ROOT / "data" / "processed"
-    if not processed_dir.exists():
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    if not (processed_dir / "players.parquet").exists():
         logger.error("No processed data found. Please run 'python -m commands.refresh_data' first.")
         sys.exit(1)
         

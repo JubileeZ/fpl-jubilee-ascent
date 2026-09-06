@@ -48,6 +48,8 @@ def test_process_directory(tmp_path):
     assert len(df_players) == 1
     assert df_players.loc[0, "club_id"] == 1
     assert df_players.loc[0, "position_id"] == 3
+    df_fix = pd.read_parquet(output_dir / "fixtures.parquet")
+    assert bool(df_fix.loc[0, "finished"]) is True
 
 
 def test_process_directory_writes_user_chips(tmp_path: Path) -> None:

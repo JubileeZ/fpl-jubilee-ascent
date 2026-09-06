@@ -26,7 +26,7 @@ from commands.export_dashboard import (
     resolve_horizon_start,
 )
 from commands import refresh_data
-from features.builder import build_features
+from features.builder import build_features, resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_default_model_name, get_model
 from projections.exporter import write_solver_projection_csvs
@@ -81,8 +81,8 @@ def run_dashboard_export(
     target_gw: int | None = None,
     model_names: list[str] | None = None,
 ) -> Path:
-    processed_dir = PROJECT_ROOT / "data" / "processed"
-    if not processed_dir.exists():
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    if not (processed_dir / "players.parquet").exists():
         raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
 
     names = comparison_slate_models(model_name, model_names)

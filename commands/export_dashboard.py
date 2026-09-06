@@ -14,7 +14,7 @@ from clients.env_loader import configure_utf8_stdio, load_env
 load_env()
 configure_utf8_stdio()
 
-from features.builder import build_features
+from features.builder import build_features, resolve_operational_processed_dir
 from models import get_default_model_name, get_model
 from projections.explorer_slice import (
     COMPONENT_KEYS,
@@ -478,8 +478,8 @@ def main() -> None:
 
     default_model = args.model or model_names[0]
 
-    processed_dir = PROJECT_ROOT / "data" / "processed"
-    if not processed_dir.exists():
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    if not (processed_dir / "players.parquet").exists():
         logger.error("No processed data found. Please run 'python -m commands.refresh_data' first.")
         sys.exit(1)
 

@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from features.builder import build_features
+from features.builder import build_features, resolve_operational_processed_dir
+from features.expected_role_prior import LIVE_SEASON
 from tests.test_expected_role_prior import NAILED, _write_processed, _write_role_csv
 
 
@@ -584,6 +585,64 @@ def test_full_season_window_uses_finished_starts_before_gw1_target(tmp_path: Pat
     assert row["p_start"] == pytest.approx(1.0)
 
 
+def test_full_season_gw1_keeps_finished_starts_without_history_before_gw(tmp_path: Path) -> None:
+    """Live Full-Season rows start at GW1; finished Club Fixtures must still train xMins."""
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    _write_finished_minutes_tables(
+        processed,
+        fixtures=[
+            {
+                "id": 101,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+            {
+                "id": 102,
+                "gameweek_id": 2,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 3,
+                "finished": True,
+            },
+        ],
+        performances=[
+            {
+                "player_id": 1,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+            {
+                "player_id": 1,
+                "fixture_id": 102,
+                "gameweek_id": 2,
+                "was_home": True,
+                "minutes": 90,
+                "starts": 1,
+                "total_points": 2,
+            },
+        ],
+    )
+    row = build_features(
+        processed,
+        target_gw=1,
+        horizon=38,
+        use_archive_seed=False,
+    ).iloc[0]
+    assert row["start_observation_weight"] == pytest.approx(1.95)
+    assert row["p_start"] == pytest.approx(1.0)
+    assert row["p_dnp"] == pytest.approx(0.0)
+
+
 def _write_seed_season(root: Path, season: str, minutes: int, starts: int) -> None:
     seed = root / "archive" / season / "processed"
     seed.mkdir(parents=True)
@@ -790,3 +849,16 @@ def test_two_finished_starts_use_strength_one_state_prior(tmp_path: Path) -> Non
     starter = row[row["player_id"] == 1].iloc[0]
     assert starter["dnp_observation_weight"] == pytest.approx(0.0)
     assert starter["p_start"] == pytest.approx(0.8305, abs=0.001)
+
+
+def test_operational_processed_dir_prefers_live_then_archive_pin(tmp_path: Path) -> None:
+    archive = tmp_path / "data" / "archive" / LIVE_SEASON / "processed"
+    archive.mkdir(parents=True)
+    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
+        pd.DataFrame([{"id": 1}]).to_parquet(archive / name, index=False)
+    assert resolve_operational_processed_dir(tmp_path) == archive
+    processed = tmp_path / "data" / "processed"
+    processed.mkdir(parents=True)
+    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
+        pd.DataFrame([{"id": 2}]).to_parquet(processed / name, index=False)
+    assert resolve_operational_processed_dir(tmp_path) == processed

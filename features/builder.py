@@ -174,6 +174,47 @@ def history_before_target(
     return history[kickoff_times.lt(deadline)]
 
 
+def _finished_fixture_gameweeks(df_fixtures: pd.DataFrame) -> list[int]:
+    if df_fixtures.empty or "finished" not in df_fixtures.columns or "gameweek_id" not in df_fixtures.columns:
+        return []
+    finished = df_fixtures["finished"]
+    if finished.dtype == object:
+        mask = finished.map(lambda value: value is True or value == 1 or value == "True")
+    else:
+        mask = finished.fillna(False).astype(bool)
+    gameweeks = pd.to_numeric(df_fixtures.loc[mask, "gameweek_id"], errors="coerce").dropna()
+    return [int(gw) for gw in gameweeks.unique()]
+
+
+def resolve_history_cutoff_gw(
+    target_gw: int,
+    history_before_gw: int | None,
+    df_fixtures: pd.DataFrame,
+    target_deadline: datetime | str | None,
+) -> int:
+    """Live Full-Season from GW1 still keeps finished Club Fixtures. Point-in-time stays target_gw."""
+    if history_before_gw is not None:
+        return history_before_gw
+    if target_deadline is not None:
+        return target_gw
+    finished = _finished_fixture_gameweeks(df_fixtures)
+    if not finished:
+        return target_gw
+    return max(target_gw, max(finished) + 1)
+
+
+def resolve_operational_processed_dir(project_root: Path) -> Path:
+    """Prefer live `data/processed`; else the live Season Archive pin (processed is gitignored)."""
+    required = ("players.parquet", "player_performances.parquet", "fixtures.parquet")
+    processed = project_root / "data" / "processed"
+    if all((processed / name).exists() for name in required):
+        return processed
+    archive = project_root / "data" / "archive" / LIVE_SEASON / "processed"
+    if all((archive / name).exists() for name in required):
+        return archive
+    return processed
+
+
 def _club_strength(club_row: pd.Series, preferred: str, fallback: str) -> float:
     value = club_row.get(preferred)
     if value is None or pd.isna(value):
@@ -604,8 +645,10 @@ def build_features(
     df_players = df_players.rename(columns={"id": "player_id"})
     gameweeks = list(range(target_gw, target_gw + horizon))
     
-    # 2. Compute current-season historical features (pre-target_gw)
-    history_cutoff = target_gw if history_before_gw is None else history_before_gw
+    # 2. Current-season Club Fixtures known now (not "before GW1" when Full-Season starts at 1).
+    history_cutoff = resolve_history_cutoff_gw(
+        target_gw, history_before_gw, df_fixtures, target_deadline
+    )
     df_hist = history_before_target(
         df_perf,
         history_cutoff,
