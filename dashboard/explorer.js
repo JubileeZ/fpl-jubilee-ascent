@@ -10,7 +10,6 @@
     legend: { orientation: "h", y: 1.12, font: { size: 11 } },
     hovermode: "closest",
   };
-  const MAX_MIX = 5;
 
   let ctx = null;
   let yMetric = "rate_per_90";
@@ -19,9 +18,6 @@
   let tableSortKey = "total";
   let tableSortAsc = false;
   let bound = false;
-  let mixA = [];
-  let mixB = [];
-  let mixReason = "";
   let assume90 = false;
 
   function players() {
@@ -64,8 +60,13 @@
       xcs_pts: scaled("xcs_pts"),
       xdefcon_pts: scaled("xdefcon_pts"),
       xb_pts: scaled("xb_pts"),
+      xp_goals: scaled("xp_goals"),
+      xp_assists: scaled("xp_assists"),
+      xp_clean_sheet: scaled("xp_clean_sheet"),
       xp_conceded: scaled("xp_conceded"),
       xp_saves: scaled("xp_saves"),
+      xp_defcon: scaled("xp_defcon"),
+      xp_bonus: scaled("xp_bonus"),
     };
   }
 
@@ -161,13 +162,6 @@
       render();
     });
     document.getElementById("explorer-table").addEventListener("click", (e) => {
-      const mixBtn = e.target.closest("button[data-mix]");
-      if (mixBtn) {
-        applyMixLetter(Number(mixBtn.dataset.playerId), mixBtn.dataset.mix);
-        e.stopPropagation();
-        render();
-        return;
-      }
       const row = e.target.closest("tr[data-player-id]");
       if (!row) return;
       const pid = Number(row.dataset.playerId);
@@ -175,13 +169,6 @@
       render();
       row.scrollIntoView({ block: "nearest" });
     });
-    const mixCols = document.querySelector(".mix-columns");
-    if (mixCols) {
-      mixCols.addEventListener("click", onMixClick);
-      mixCols.addEventListener("dragstart", onMixDragStart);
-      mixCols.addEventListener("dragover", onMixDragOver);
-      mixCols.addEventListener("drop", onMixDrop);
-    }
   }
 
   function setupClubAndPrice() {
@@ -358,158 +345,6 @@
     bindChartClicks();
   }
 
-  function occupyingSide(playerId) {
-    if (mixA.includes(playerId)) return "a";
-    if (mixB.includes(playerId)) return "b";
-    return null;
-  }
-
-  function mixFullReason(side) {
-    return side === "a" ? "Mix A is full (5)." : "Mix B is full (5).";
-  }
-
-  function applyMixLetter(playerId, side) {
-    const current = occupyingSide(playerId);
-    const nextA = mixA.filter((id) => id !== playerId);
-    const nextB = mixB.filter((id) => id !== playerId);
-    if (current === side) {
-      mixA = nextA;
-      mixB = nextB;
-      mixReason = "";
-      return;
-    }
-    const dest = side === "a" ? nextA : nextB;
-    if (dest.length >= MAX_MIX) {
-      mixReason = mixFullReason(side);
-      return;
-    }
-    dest.push(playerId);
-    mixA = side === "a" ? dest : nextA;
-    mixB = side === "b" ? dest : nextB;
-    mixReason = "";
-  }
-
-  function removeMixMember(playerId) {
-    mixA = mixA.filter((id) => id !== playerId);
-    mixB = mixB.filter((id) => id !== playerId);
-    mixReason = "";
-  }
-
-  function moveMixMember(playerId, dest) {
-    const current = occupyingSide(playerId);
-    if (current == null || current === dest) return;
-    applyMixLetter(playerId, dest);
-  }
-
-  function onMixClick(e) {
-    const removeBtn = e.target.closest("[data-mix-remove]");
-    if (removeBtn) {
-      removeMixMember(Number(removeBtn.dataset.playerId));
-      render();
-      return;
-    }
-    const name = e.target.closest(".mix-item-name");
-    if (!name) return;
-    const item = name.closest("[data-player-id]");
-    if (!item) return;
-    const pid = Number(item.dataset.playerId);
-    selectedPlayerId = selectedPlayerId === pid ? null : pid;
-    render();
-    if (selectedPlayerId == null) return;
-    document.querySelector(`#explorer-table tr[data-player-id="${pid}"]`)?.scrollIntoView({
-      block: "nearest",
-    });
-  }
-
-  function onMixDragStart(e) {
-    const name = e.target.closest(".mix-item-name");
-    if (!name) {
-      e.preventDefault();
-      return;
-    }
-    const item = name.closest("[data-player-id]");
-    if (!item) return;
-    e.dataTransfer.setData("text/plain", item.dataset.playerId);
-    e.dataTransfer.effectAllowed = "move";
-  }
-
-  function onMixDragOver(e) {
-    if (!e.target.closest(".mix-column")) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }
-
-  function onMixDrop(e) {
-    const col = e.target.closest(".mix-column");
-    if (!col) return;
-    e.preventDefault();
-    moveMixMember(Number(e.dataTransfer.getData("text/plain")), col.dataset.mixSide);
-    render();
-  }
-
-  function mixBundle(ids) {
-    const gws = viewGws();
-    const selected = ids.map((id) => players().find((p) => p.id === id)).filter(Boolean);
-    if (!selected.length) return null;
-    const price = selected.reduce((sum, p) => sum + Number(p.price || 0), 0);
-    const perGw = gws.map((gw) => selected.reduce((sum, p) => {
-      const row = gwProjection(p, gw);
-      return sum + Number(row.total_xp || 0);
-    }, 0));
-    return {
-      names: selected.map((p) => p.name),
-      price: round(price, 1),
-      perGw: perGw.map((v) => round(v, 2)),
-      total: round(perGw.reduce((a, b) => a + b, 0), 2),
-    };
-  }
-
-  function renderMix() {
-    const fill = (id, ids) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.replaceChildren();
-      ids.forEach((pid) => {
-        const p = players().find((row) => row.id === pid);
-        const li = document.createElement("li");
-        li.className = "mix-item";
-        li.dataset.playerId = String(pid);
-        const name = document.createElement("span");
-        name.className = "mix-item-name";
-        name.draggable = true;
-        name.textContent = p ? `${p.name} £${Number(p.price).toFixed(1)}m` : `#${pid}`;
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "mix-remove";
-        remove.setAttribute("data-mix-remove", "");
-        remove.dataset.playerId = String(pid);
-        remove.setAttribute("aria-label", "Remove Mix Member");
-        remove.textContent = "×";
-        li.append(name, remove);
-        el.appendChild(li);
-      });
-    };
-    fill("mix-a-list", mixA);
-    fill("mix-b-list", mixB);
-    const reasonEl = document.getElementById("mix-reason");
-    if (reasonEl) reasonEl.textContent = mixReason;
-    const compare = document.getElementById("mix-compare");
-    if (!compare) return;
-    if (!mixA.length && !mixB.length) {
-      compare.textContent = "Add the same number of players to Mix A and Mix B (1–5).";
-      return;
-    }
-    if (mixA.length !== mixB.length || mixA.length < 1) {
-      compare.textContent = `Mix vs Mix needs the same size (currently ${mixA.length} vs ${mixB.length}).`;
-      return;
-    }
-    const a = mixBundle(mixA);
-    const b = mixBundle(mixB);
-    const gws = viewGws();
-    const gwLine = gws.map((gw, i) => `GW${gw} ${a.perGw[i].toFixed(2)} vs ${b.perGw[i].toFixed(2)}`).join(" · ");
-    compare.textContent = `A ${a.names.join(" + ")} £${a.price.toFixed(1)}m total ${a.total.toFixed(2)}  vs  B ${b.names.join(" + ")} £${b.price.toFixed(1)}m total ${b.total.toFixed(2)}. ${gwLine}`;
-  }
-
   function renderHead() {
     const row = document.getElementById("explorer-thead-row");
     if (!row) return;
@@ -525,7 +360,6 @@
       ...gws.map((gw) => `<th data-sort="gw${gw}">GW${gw}</th>`),
       '<th data-sort="rate_per_90">/90</th>',
       '<th data-sort="avg_minutes">xMins</th>',
-      "<th>Mix</th>",
     ].join("");
   }
 
@@ -549,12 +383,11 @@
         const p = row.player;
         const s = row.slice;
         const selected = p.id === selectedPlayerId ? " selected" : "";
+        const owned = p.owned ? " owned" : "";
         const gwCells = gws.map((gw) => `<td>${Number(s.perGw[gw] || 0).toFixed(2)}</td>`).join("");
-        const inA = mixA.includes(p.id);
-        const inB = mixB.includes(p.id);
-        return `<tr class="${selected}" data-player-id="${p.id}">
+        return `<tr class="${selected}${owned}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true">
           <td>${row.rank}</td>
-          <td>${p.name}</td>
+          <td>${p.name}${p.owned ? ' <span class="owned-badge">Owned</span>' : ""}</td>
           <td>${p.team}</td>
           <td>${POS_LABEL[p.pos] || p.pos}</td>
           <td>${Number(p.price).toFixed(1)}</td>
@@ -563,10 +396,6 @@
           ${gwCells}
           <td>${s.rate_per_90 == null ? "—" : Number(s.rate_per_90).toFixed(2)}</td>
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
-          <td>
-            <button type="button" data-mix="a" data-player-id="${p.id}" class="${inA ? "mix-on" : ""}" aria-pressed="${inA}">A</button>
-            <button type="button" data-mix="b" data-player-id="${p.id}" class="${inB ? "mix-on" : ""}" aria-pressed="${inB}">B</button>
-          </td>
         </tr>`;
       })
       .join("");
@@ -584,7 +413,6 @@
       `Planning Horizon ${span}${assume90 ? " · Assume 90" : ""} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
-    renderMix();
   }
 
   window.initOwnershipExplorer = function (context) {

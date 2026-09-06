@@ -155,6 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function rerenderExplorer() {
+    if (window.renderSquadBoard) window.renderSquadBoard();
     if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
     if (window.Plotly) {
       ["chart-ownership", "chart-price"].forEach((id) => {
@@ -207,6 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
     allPlayers = (data && data.players) || [];
     setupHorizonSelects();
     setupModelSelect();
+    if (window.initSquadBoard) {
+      window.initSquadBoard({
+        getPlayers: () => allPlayers,
+        getMeta: () => metaData,
+        getPrimaryModel: () => primaryModel,
+        getViewGws: viewGws,
+      });
+    }
     if (window.initOwnershipExplorer) {
       window.initOwnershipExplorer({
         getPlayers: () => allPlayers,
@@ -227,6 +236,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!response.ok) throw new Error("No dashboard_data.json yet. Click Refresh.");
     return response.json();
   }
+
+  window.reloadDashboardJson = async function () {
+    const data = await loadDashboardJson();
+    applyDataset(data);
+  };
 
   async function pollRefresh() {
     const response = await fetch("/api/refresh");

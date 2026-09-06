@@ -203,11 +203,15 @@ Optional flags: `--export-only` writes JSON without serving (needs `data/process
 
 **Planning Horizon**
 
-Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most five weeks after Start (length 1–6), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates Mix, totals, and charts immediately. It does not re-run the model.
+Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most five weeks after Start (length 1–6), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates totals and charts immediately. It does not re-run the model.
 
 **Ownership Explorer**
 
-**Primary Model** selects which projection drives ranking and Mix. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view.
+**Primary Model** selects which projection drives ranking, Squad Board, and Component Profile. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view.
+
+**Squad Board** draws the User Squad (pitch + Squad xP strip). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
+
+**Component Profile** under the board is the eight Explorer Event Component keys, per Gameweek, as `xMins | Assume 90`.
 
 **Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or **xP per Gameweek** (horizon total divided by gameweeks).
 
@@ -219,12 +223,6 @@ Two linked scatter charts sit above the table:
 Marker colour is position (GKP / DEF / MID / FWD). Marker size is average
 minutes in the horizon. Click a marker to label that player and highlight the
 table row; click empty chart background or the same row again to clear.
-
-**Mix vs Mix** is view-only. Add 1–5 players to Mix A and Mix B (same size, not
-same position). A player occupies at most one Mix. Table **A** / **B** add,
-move, or remove; Mix-list **×** removes; drag a name between Mix A and Mix B to
-move. The panel sits under the charts and shows combined price, per-GW xP, and
-horizon total. Mix does not Force Keep or Force Ban.
 
 **Assume 90** (toolbar, next to Projected Rate / xP per Gameweek) treats every
 player as a full 90-minute match on Gameweeks that already have projected

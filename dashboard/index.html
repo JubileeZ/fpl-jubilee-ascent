@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
   <div class="app-container" data-view="explorer">
@@ -41,6 +41,74 @@
       </div>
     </header>
     <p id="refresh-status" class="explorer-meta"></p>
+
+    <section class="squad-section" id="squad-board">
+      <div id="squad-board-empty" class="card squad-empty" hidden>
+        No User Squad.
+        <button type="button" class="btn btn-primary" id="squad-empty-refresh">Refresh</button>
+      </div>
+      <div id="squad-board-live" hidden>
+        <div class="card squad-summary-card">
+          <div class="summary-stat">
+            <span class="stat-label">ITB</span>
+            <span class="stat-value text-accent" id="squad-itb">—</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <span class="stat-label">Free Transfer Bank</span>
+            <span class="stat-value" id="squad-ft">—</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <span class="stat-label">Hit warning</span>
+            <span class="stat-value" id="squad-hits">0</span>
+          </div>
+          <button type="button" class="btn" id="squad-reset">Reset</button>
+          <button type="button" class="btn" id="squad-reload">Reload</button>
+        </div>
+        <p id="rule-breach-banner" class="validation-banner invalid" hidden></p>
+        <p id="squad-drop-reason" class="explorer-meta"></p>
+        <p id="official-c-hint" class="explorer-meta"></p>
+        <div class="squad-board-layout">
+          <div class="pitch-container">
+            <div class="pitch-grass">
+              <div class="pitch-lines" aria-hidden="true">
+                <div class="penalty-box top"></div>
+                <div class="center-line"></div>
+                <div class="center-circle"></div>
+                <div class="penalty-box bottom"></div>
+              </div>
+              <div class="pitch-layout" id="squad-pitch"></div>
+            </div>
+            <div class="bench-tray">
+              <div class="bench-header">
+                <span class="bench-title">Bench</span>
+                <span class="bench-sub">Drag to the pitch to sub</span>
+              </div>
+              <div class="bench-slots" id="squad-bench"></div>
+            </div>
+          </div>
+          <div class="card squad-strip-card">
+            <p class="title">Squad xP</p>
+            <div class="explorer-table-wrap">
+              <table class="data-table" id="squad-xp-strip">
+                <thead id="squad-xp-head"></thead>
+                <tbody id="squad-xp-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="component-profile-card">
+          <p class="title">Component Profile (xMins | Assume 90)</p>
+          <div class="explorer-table-wrap">
+            <table class="data-table" id="component-profile">
+              <thead id="component-profile-head"></thead>
+              <tbody id="component-profile-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section class="explorer-root" id="explorer-root">
       <div class="card explorer-toolbar">
@@ -85,21 +153,6 @@
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
       </div>
-      <div class="card mix-panel">
-        <p class="title">Mix vs Mix (same size, view-only)</p>
-        <div class="mix-columns">
-          <div class="mix-column" data-mix-side="a">
-            <strong>Mix A</strong>
-            <ul id="mix-a-list" class="mix-list"></ul>
-          </div>
-          <div class="mix-column" data-mix-side="b">
-            <strong>Mix B</strong>
-            <ul id="mix-b-list" class="mix-list"></ul>
-          </div>
-        </div>
-        <p id="mix-reason" class="mix-reason"></p>
-        <p id="mix-compare" class="mix-compare"></p>
-      </div>
       <div id="explorer-table-wrap" class="explorer-table-wrap">
         <table class="data-table explorer-table">
           <thead>
@@ -113,7 +166,6 @@
               <th data-sort="total">Total</th>
               <th data-sort="rate_per_90">/90</th>
               <th data-sort="avg_minutes">xMins</th>
-              <th>Mix</th>
             </tr>
           </thead>
           <tbody id="explorer-table"></tbody>
@@ -123,7 +175,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=13"></script>
-  <script src="explorer.js?v=10"></script>
+  <script src="app.js?v=14"></script>
+  <script src="squad.js?v=1"></script>
+  <script src="explorer.js?v=11"></script>
 </body>
 </html>

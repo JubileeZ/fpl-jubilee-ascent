@@ -34,7 +34,11 @@ _Avoid_: Element, asset
 
 **Price**:
 A Player's current FPL purchase value in £m.
-_Avoid_: cost, now_cost, value
+_Avoid_: cost, now_cost, value, Selling Price, ITB
+
+**Selling Price**:
+FPL sell-back value of an owned Player. Distinct from Price.
+_Avoid_: Price, cost, now_cost, value, purchase price
 
 **Raw Cache**:
 Raw JSON responses from the FPL API stored in `data/raw/`. Live working copy; not git-tracked.
@@ -77,7 +81,7 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking and Mix scores. Length 1–6 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–6. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
+Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–6 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–6. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
 _Avoid_: Optimization length, 1–5 from is_next, default 5, excluding the live unfinished GW after deadline, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
 
 **Horizon Start**:
@@ -285,7 +289,7 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, and per-gameweek Event Component projections for Ownership Explorer. Export grain is the Full-Season Window; the product ranking band is the Planning Horizon slice. Not Transfer Plan JSON.
+Exported player metadata, historical rates, and per-gameweek Event Component projections for Ownership Explorer. Includes User Squad identity, ITB, Selling Price, and Free Transfer Bank so the Squad Board can compute Squad xP for a Squad What-If. Export grain is the Full-Season Window; the product ranking band is the Planning Horizon slice. Not Transfer Plan JSON.
 _Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed
 
 **Dashboard Refresh**:
@@ -293,12 +297,40 @@ In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the 
 _Avoid_: Re-solve, export-only restart as the update path, `--rebuild-roles`, blocking process start on ingest or Project, table-gated Project
 
 **Interactive Squad Builder**:
-Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object.
-_Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox
+Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Squad Board is the User Squad plus Squad What-If, not this.
+_Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox, Squad Board, Squad What-If
+
+**Squad Board**:
+Ownership Explorer panel that draws the User Squad as pitch plus number strip. Header shows ITB, Free Transfer Bank, and Hit warning. Number strip shows per-Gameweek Squad xP as what-if (Δ vs User Squad). Shirt C/VC are Auto Captain and Auto Vice-Captain. When Official Captain differs from Auto Captain, a hint names the Official Captain. No User Squad: empty board and a Refresh CTA; Explorer table still works. Same Planning Horizon and Primary Projection Model as Explorer. Not a Transfer Plan. Not Interactive Squad Builder.
+_Avoid_: Squad Builder, sandbox 15, Transfer Plan tab, pitch planner as a second product, inventing a 15 when User Squad is missing
+
+**Squad What-If**:
+Browser-only overlay on the Squad Board. One 15 and one Starting Shape for the whole Planning Horizon. Pool-onto-slot is a same-Position transfer; a wrong-Position drop does not land. Drag on the pitch is an XI↔bench sub. Reload and Reset restore the User Squad. Does not Force Keep, Force Ban, Re-solve, or change FPL. A Hit is a warning, not applied. May carry a Rule Breach.
+_Avoid_: Interactive Squad Builder, sandbox 15, Re-solve, applying Hits, persisting a second 15, per-Gameweek transfers, Transfer Plan
+
+**Rule Breach**:
+Squad What-If state that violates club cap, ITB ≥ 0, or Starting Shape. Banner is noticeable; Squad xP and ITB still compute. Wrong-Position drop is refused, not a Rule Breach.
+_Avoid_: illegal (unqualified), hard validation, treating a Rule Breach as a refused drop, 2–5–5–3 as a flag
+
+**Auto Captain**:
+XI Player with the highest xMins-weighted Gameweek Projection in that Gameweek. Shirt shows Horizon Start’s Auto Captain. Not Official Captain. Not manual. Not Assume 90. Not a bench Player.
+_Avoid_: official C, Official Captain, manual C, Assume 90 C, horizon-total C, captaining the bench
+
+**Official Captain**:
+Captain set on the User Squad in FPL. Distinct from Auto Captain. Squad Board hint when it differs from Auto Captain. Not used in Squad xP or Δ.
+_Avoid_: Auto Captain, shirt C as the FPL pick
+
+**Auto Vice-Captain**:
+Second-highest xMins-weighted Gameweek Projection in the XI that Gameweek. Mark only. No appearance chain into the extra 1×.
+_Avoid_: VC expected points, C/VC minutes chain, official VC
+
+**Squad xP**:
+One Gameweek: sum of Gameweek Projection xP over the Squad Board 15, plus one extra 1× Auto Captain. Bench is included; no auto-sub. Δ vs User Squad uses Auto Captain on both sides. Component Profile is the same 15 without the extra 1×.
+_Avoid_: official FPL GW score, scoring 15, Transfer Plan week score, Component Profile as captained
 
 **Transfer Plan**:
-CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15.
-_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface
+CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If.
+_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan
 
 **Force Keep**:
 User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.
@@ -334,7 +366,11 @@ _Avoid_: minus, treating any transfer as a Hit, one transfer per week
 
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
-_Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent
+_Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
+
+**ITB**:
+Unused cash of the User Squad in £m (official "in the bank"). Squad What-If ITB = current ITB + Selling Prices of Players out − Prices of Players in. Distinct from Free Transfer Bank.
+_Avoid_: Free Transfer Bank, Price sum, remaining budget, bank (ambiguous)
 
 **Transfer Target Policy**:
 Research constraint on which Positions a Free Transfer may change in Transfer Plan Walk-Forward. Distinct from Starting Shape and from Expected Role Rotation.
@@ -361,20 +397,24 @@ Research solver score for DEF and MID: Gameweek Projection xP minus `xp_defcon` 
 _Avoid_: high ceiling, ignoring clean sheets, FWD Defcon strip
 
 **Mix**:
-Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15.
-_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix
+Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15. Not drawn in Ownership Explorer (ADR 0027).
+_Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Mix Member**:
 A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer.
 _Avoid_: selected player, overlapping Mix occupancy
 
 **Assume 90**:
-Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override.
-_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points
+Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override. Component Profile always shows Assume 90 beside xMins-weighted; the toggle still replaces table and chart numbers.
+_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points, Component Profile as a toggle
+
+**Component Profile**:
+View-only Event Component xP of the Squad Board 15 (Squad What-If 15 when active), per Gameweek in the Planning Horizon and as a horizon total. Table under the Squad Board: eight Explorer keys as rows, Gameweeks as columns; each cell is xMins-weighted | Assume 90. Not Mix. Not a solver tilt.
+_Avoid_: Mix, wall (UI nickname), grouped Attack/CS/Defcon bars, full 13-component matrix, diversification constraint, Mix vs Mix panel
 
 **Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Mix vs Mix, Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. No Role column. Not Transfer Plan. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab, Expected Role as a rank field
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. No Role column. Mix vs Mix is not drawn. Not Transfer Plan. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
@@ -393,7 +433,7 @@ A Projection Model evaluated against the Model Champion. At most two Candidates 
 _Avoid_: Experimental model, challenger
 
 **Primary Projection Model**:
-The active model selected in the dashboard to drive Ownership Explorer ranking and Mix scores. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
+The active model selected in the dashboard to drive Ownership Explorer ranking, Squad Board, and Component Profile. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
 _Avoid_: Active UI model, pitch model, MILP model
 
 **Secondary Comparison Model**:

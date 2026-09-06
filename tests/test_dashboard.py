@@ -421,6 +421,73 @@ def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Pa
     assert "prefilled_squad_ids" not in dataset["meta"]
 
 
+def test_dashboard_contract_includes_itb_selling_price_and_event_components(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([
+        {
+            "id": 10, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+            "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+            "status": "a", "chance_of_playing_next_round": 100, "news": "",
+            "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+            "influence": "0", "creativity": "0", "threat": "0",
+            "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 0,
+        },
+        {
+            "id": 20, "code": 202, "first_name": "Bryan", "second_name": "Mbeumo",
+            "web_name": "Mbeumo", "club_id": 2, "position_id": 3, "now_cost": 80,
+            "status": "a", "chance_of_playing_next_round": 100, "news": "",
+            "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+            "influence": "0", "creativity": "0", "threat": "0",
+            "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 0,
+        },
+    ]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([
+        {"id": 1, "name": "Manchester City", "short_name": "MCI"},
+        {"id": 2, "name": "Brentford", "short_name": "BRE"},
+    ]).to_parquet(processed_dir / "clubs.parquet")
+    pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}]).to_parquet(
+        processed_dir / "gameweeks.parquet"
+    )
+    pd.DataFrame([
+        {"entry_id": 1, "gameweek_id": 1, "player_id": 10, "lineup_index": 11,
+         "multiplier": 1, "is_captain": False, "is_vice_captain": True,
+         "purchase_price": 145, "selling_price": 146},
+        {"entry_id": 1, "gameweek_id": 1, "player_id": 20, "lineup_index": 7,
+         "multiplier": 2, "is_captain": True, "is_vice_captain": False,
+         "purchase_price": 80, "selling_price": 80},
+    ]).to_parquet(processed_dir / "user_picks.parquet")
+    pd.DataFrame([
+        {"entry_id": 1, "bank": 5, "value": 1000, "free_transfers": 2, "active_chip": None},
+    ]).to_parquet(processed_dir / "user_state.parquet")
+    predictions = pd.DataFrame([
+        {"player_id": 10, "gameweek_id": 1, "projected_points": 8.0, "projected_minutes": 90.0,
+         "xp_minutes": 2.0, "xp_goals": 1.2, "xp_assists": 0.3, "xp_clean_sheet": 0.0,
+         "xp_conceded": 0.0, "xp_defcon": 0.4, "xp_saves": 0.0, "xp_bonus": 0.5},
+        {"player_id": 20, "gameweek_id": 1, "projected_points": 6.0, "projected_minutes": 90.0,
+         "xp_minutes": 2.0, "xp_goals": 0.5, "xp_assists": 0.4, "xp_clean_sheet": 0.1,
+         "xp_conceded": 0.0, "xp_defcon": 0.2, "xp_saves": 0.0, "xp_bonus": 0.3},
+    ])
+    dataset = build_dashboard_dataset(processed_dir, predictions, target_gw=1, horizon=1)
+    assert dataset["meta"]["itb"] == 0.5
+    assert dataset["meta"]["free_transfers"] == 2
+    haaland = next(p for p in dataset["players"] if p["id"] == 10)
+    mbeumo = next(p for p in dataset["players"] if p["id"] == 20)
+    assert haaland["owned"] is True
+    assert haaland["lineup_index"] == 11
+    assert haaland["selling_price"] == 14.6
+    assert haaland["official_captain"] is False
+    assert mbeumo["official_captain"] is True
+    gw1 = haaland["projections"]["gw1"]
+    assert gw1["xp_goals"] == 1.2
+    assert gw1["xp_assists"] == 0.3
+    assert gw1["xp_clean_sheet"] == 0.0
+    assert gw1["xp_defcon"] == 0.4
+    assert gw1["xp_bonus"] == 0.5
+    assert gw1["xp_minutes"] == 2.0
+    assert "xp_goals" in gw1
+
+
 def test_ingest_live_data_does_not_pass_role_flags(monkeypatch) -> None:
     captured: list[list[str]] = []
 

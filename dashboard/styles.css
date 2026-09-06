@@ -1009,69 +1009,11 @@ body {
   align-items: center;
 }
 
-.override-list,
-.mix-list {
+.override-list {
   list-style: none;
   margin: 0.4rem 0 0;
   padding: 0;
   font-size: 0.85rem;
-}
-
-.mix-list {
-  min-height: 2.5rem;
-}
-
-.mix-column {
-  min-height: 5rem;
-}
-
-.mix-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.2rem 0;
-}
-
-.mix-item-name {
-  cursor: grab;
-}
-
-.mix-remove {
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0.1rem 0.35rem;
-}
-
-.mix-remove:hover {
-  color: var(--danger);
-}
-
-.mix-reason {
-  margin-top: 0.5rem;
-  color: var(--warning);
-  font-size: 0.85rem;
-  min-height: 1.2em;
-}
-
-.mix-panel {
-  padding: 1rem 1.25rem;
-}
-
-.mix-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.mix-compare {
-  margin-top: 0.75rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
 }
 
 .plan-hint {
@@ -1080,12 +1022,62 @@ body {
   font-size: 0.8rem;
 }
 
-.explorer-table button[data-mix] {
-  margin-right: 0.25rem;
+.squad-board-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(220px, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
 }
 
-.explorer-table button[data-mix].mix-on {
-  background: var(--accent);
-  color: #042f2e;
+.squad-empty {
+  font-weight: 600;
+  color: var(--warning);
 }
+
+.squad-strip-card .title,
+#component-profile-card .title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+#rule-breach-banner:not([hidden]) {
+  display: block;
+  padding: 0.85rem 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-width: 2px;
+}
+
+.delta.pos { color: #34d399; }
+.delta.neg { color: #fca5a5; }
+.text-danger { color: var(--danger); }
+
+.owned-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #042f2e;
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+
+.explorer-table tr.owned td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.explorer-table tr[draggable="true"] {
+  cursor: grab;
+}
+
+@media (max-width: 960px) {
+  .squad-board-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 

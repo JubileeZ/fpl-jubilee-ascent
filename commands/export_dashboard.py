@@ -149,14 +149,30 @@ def load_transfer_plan(
     return [], None, None
 
 
-def load_owned_squad(processed_dir: Path) -> tuple[List[int], Optional[int], Optional[int]]:
-    """Return User Squad player IDs in Lineup Index order, plus captain and vice IDs."""
+def load_user_state(processed_dir: Path) -> tuple[float, int]:
+    """Return ITB in £m and Free Transfer Bank size."""
+    path = processed_dir / "user_state.parquet"
+    if not path.exists():
+        return 0.0, 0
+    df = pd.read_parquet(path)
+    if df.empty:
+        return 0.0, 0
+    row = df.iloc[0]
+    itb = round(_safe_float(row.get("bank")) / 10.0, 1)
+    free_transfers = int(_safe_float(row.get("free_transfers")))
+    return itb, free_transfers
+
+
+def load_owned_picks(
+    processed_dir: Path,
+) -> tuple[List[int], Optional[int], Optional[int], Dict[int, Dict[str, Any]]]:
+    """User Squad IDs in Lineup Index order, Official Captain / VC, and per-player pick meta."""
     path = processed_dir / "user_picks.parquet"
     if not path.exists():
-        return [], None, None
+        return [], None, None, {}
     df = pd.read_parquet(path)
     if df.empty or "player_id" not in df.columns:
-        return [], None, None
+        return [], None, None, {}
     ordered = df.sort_values("lineup_index") if "lineup_index" in df.columns else df
     ids = [int(pid) for pid in ordered["player_id"].tolist()]
     captain_id: Optional[int] = None
@@ -169,7 +185,17 @@ def load_owned_squad(processed_dir: Path) -> tuple[List[int], Optional[int], Opt
         vices = ordered.loc[ordered["is_vice_captain"].fillna(False).astype(bool)]
         if not vices.empty:
             vice_id = int(vices.iloc[0]["player_id"])
-    return ids, captain_id, vice_id
+    pick_meta: Dict[int, Dict[str, Any]] = {}
+    for _, row in ordered.iterrows():
+        pid = int(row["player_id"])
+        selling = None
+        if "selling_price" in ordered.columns and pd.notna(row.get("selling_price")):
+            selling = round(_safe_float(row.get("selling_price")) / 10.0, 1)
+        pick_meta[pid] = {
+            "lineup_index": int(row["lineup_index"]) if "lineup_index" in ordered.columns else None,
+            "selling_price": selling,
+        }
+    return ids, captain_id, vice_id, pick_meta
 
 
 def load_user_chips(processed_dir: Path) -> list[dict[str, Any]]:
@@ -207,7 +233,10 @@ def build_dashboard_dataset(
     model_names = list(model_preds_map.keys())
     primary_model_name = default_model_name if default_model_name in model_preds_map else model_names[0]
 
-    owned_squad_ids, owned_captain_id, owned_vice_captain_id = load_owned_squad(processed_dir)
+    owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = load_owned_picks(
+        processed_dir
+    )
+    itb, free_transfers = load_user_state(processed_dir)
 
     unfinished_gws = unfinished_gameweeks(processed_dir)
     horizon_start = int(target_gw)
@@ -300,8 +329,13 @@ def build_dashboard_dataset(
                     xdefcon_pts = 0.0
                     xb_pts = 0.0
                     xp_min = 0.0
+                    xp_g = 0.0
+                    xp_a = 0.0
+                    xp_cs = 0.0
                     xp_conc = 0.0
+                    xp_def = 0.0
                     xp_saves = 0.0
+                    xp_b = 0.0
 
                 projections[f"gw{gw}"] = {
                     "total_xp": xp_pts,
@@ -311,9 +345,14 @@ def build_dashboard_dataset(
                     "xcs_pts": xcs_pts,
                     "xdefcon_pts": xdefcon_pts,
                     "xb_pts": xb_pts,
-                    "xp_minutes": xp_min,
-                    "xp_conceded": xp_conc,
-                    "xp_saves": xp_saves,
+                    "xp_minutes": round(xp_min, 2),
+                    "xp_goals": round(xp_g, 2),
+                    "xp_assists": round(xp_a, 2),
+                    "xp_clean_sheet": round(xp_cs, 2),
+                    "xp_conceded": round(xp_conc, 2),
+                    "xp_defcon": round(xp_def, 2),
+                    "xp_saves": round(xp_saves, 2),
+                    "xp_bonus": round(xp_b, 2),
                 }
                 if gw in planning_gw_set:
                     total_xp_horizon += xp_pts
@@ -363,6 +402,10 @@ def build_dashboard_dataset(
             "total_points": int(total_pts),
             "minutes": int(mins),
             "starts": int(starts),
+            "owned": pid in owned_pick_meta,
+            "lineup_index": (owned_pick_meta.get(pid) or {}).get("lineup_index"),
+            "selling_price": (owned_pick_meta.get(pid) or {}).get("selling_price"),
+            "official_captain": pid == owned_captain_id,
             "models": player_models_dict,
             "projections": primary_model_data["projections"],
             "total_xp_horizon": primary_model_data["total_xp_horizon"],
@@ -390,6 +433,8 @@ def build_dashboard_dataset(
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
             "owned_vice_captain_id": owned_vice_captain_id,
+            "itb": itb,
+            "free_transfers": free_transfers,
         },
         "players": players_data,
     }
