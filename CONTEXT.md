@@ -289,24 +289,28 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, and per-gameweek Event Component projections for Ownership Explorer. Includes User Squad identity, ITB, Selling Price, and Free Transfer Bank so the Squad Board can compute Squad xP for a Squad What-If. Export grain is the Full-Season Window; the product ranking band is the Planning Horizon slice. Not Transfer Plan JSON.
-_Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed
+Exported player metadata, historical rates, and per-gameweek Event Component projections for Ownership Explorer. Includes User Squad identity, ITB, Selling Price, and Free Transfer Bank so the Squad Board can compute Squad xP for a Squad What-If. Export grain is the Full-Season Window; the product ranking band is the Planning Horizon slice. Not Transfer Plan JSON. Not Dream Team IDs.
+_Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed, prefilled_squad_ids, Dream Team persist
 
 **Dashboard Refresh**:
-In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects from disk then serves. Else paints last JSON. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard.
-_Avoid_: Re-solve, `--rebuild-roles`, blocking process start on ingest, table-gated Project
+In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects from disk then serves. Else paints last JSON. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard. Does not Solve a Dream Team.
+_Avoid_: Re-solve, `--rebuild-roles`, blocking process start on ingest, table-gated Project, auto-MILP on open, Dream Team Solve as Refresh
 
 **Interactive Squad Builder**:
-Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Squad Board is the User Squad plus Squad What-If, not this.
-_Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox, Squad Board, Squad What-If
+Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Squad Board is the User Squad plus Squad What-If, not this. Dream Team is an Explorer overlay, not this.
+_Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox, Squad Board, Squad What-If, Dream Team as a pitch 15
 
 **Squad Board**:
-Ownership Explorer panel that draws the User Squad as pitch plus number strip. Header shows ITB, Free Transfer Bank, and Hit warning. Number strip shows per-Gameweek Squad xP as what-if (Δ vs User Squad). Shirt C/VC are Auto Captain and Auto Vice-Captain. When Official Captain differs from Auto Captain, a hint names the Official Captain. No User Squad: empty board and a Refresh CTA; Explorer table still works. Same Planning Horizon and Primary Projection Model as Explorer. Not a Transfer Plan. Not Interactive Squad Builder.
-_Avoid_: Squad Builder, sandbox 15, Transfer Plan tab, pitch planner as a second product, inventing a 15 when User Squad is missing
+Ownership Explorer panel that draws the User Squad as pitch plus number strip. Header shows ITB, Free Transfer Bank, and Hit warning. Number strip shows per-Gameweek Squad xP as what-if (Δ vs User Squad). Shirt C/VC are Auto Captain and Auto Vice-Captain. When Official Captain differs from Auto Captain, a hint names the Official Captain. No User Squad: empty board and a Refresh CTA; Explorer table still works. Same Planning Horizon and Primary Projection Model as Explorer. Not a Transfer Plan. Not Interactive Squad Builder. Not Dream Team.
+_Avoid_: Squad Builder, sandbox 15, Transfer Plan tab, pitch planner as a second product, inventing a 15 when User Squad is missing, Load MILP Squad, Dream Team on the pitch
 
 **Squad What-If**:
-Browser-only overlay on the Squad Board. One 15 and one Starting Shape for the whole Planning Horizon. Pool-onto-slot is a same-Position transfer; a wrong-Position drop does not land. Drag on the pitch is an XI↔bench sub. Reload and Reset restore the User Squad. Does not Force Keep, Force Ban, Re-solve, or change FPL. A Hit is a warning, not applied. May carry a Rule Breach.
-_Avoid_: Interactive Squad Builder, sandbox 15, Re-solve, applying Hits, persisting a second 15, per-Gameweek transfers, Transfer Plan
+Browser-only overlay on the Squad Board. One 15 and one Starting Shape for the whole Planning Horizon. Pool-onto-slot is a same-Position transfer; a wrong-Position drop does not land. Drag on the pitch is an XI↔bench sub. Reload and Reset restore the User Squad. Does not Force Keep, Force Ban, Re-solve, or change FPL. A Hit is a warning, not applied. May carry a Rule Breach. Does not load a Dream Team.
+_Avoid_: Interactive Squad Builder, sandbox 15, Re-solve, applying Hits, persisting a second 15, per-Gameweek transfers, Transfer Plan, Dream Team as What-If
+
+**Dream Team**:
+Projected legal 15 for this Planning Horizon under current budget (ITB + Selling Prices of the User Squad; £100.0m if no User Squad). Ownership Explorer overlay only (badge Dream); frozen 15, no later transfers; Primary Projection Model; session-only. Not a played chip.
+_Avoid_: FPL in_dreamteam, dreamteam_count, realized GW XI, Wildcard 15, WC badge, Transfer Plan, sandbox 15, Guide 15, Best 15, Load MILP Squad, Available Chip gate, --preseason £100.0m when a User Squad exists, Assume 90 in the MILP, xmin_lb 100, embedding IDs in the Dashboard Data Contract
 
 **Rule Breach**:
 Squad What-If state that violates club cap, ITB ≥ 0, or Starting Shape. Banner is noticeable; Squad xP and ITB still compute. Wrong-Position drop is refused, not a Rule Breach.
@@ -329,8 +333,8 @@ One Gameweek: sum of Gameweek Projection xP over the Squad Board 15, plus one ex
 _Avoid_: official FPL GW score, scoring 15, Transfer Plan week score, Component Profile as captained
 
 **Transfer Plan**:
-CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If.
-_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan
+CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
+_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan, Dream Team as the plan
 
 **Force Keep**:
 User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.
@@ -401,12 +405,12 @@ Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Pr
 _Avoid_: combo, package, alternative 15, differential, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Mix Member**:
-A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer.
-_Avoid_: selected player, overlapping Mix occupancy
+A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer and from a Dream Team badge.
+_Avoid_: selected player, overlapping Mix occupancy, Dream Team
 
 **Assume 90**:
-Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override. Component Profile always shows Assume 90 beside xMins-weighted; the toggle still replaces table and chart numbers.
-_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points, Component Profile as a toggle
+Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override. Does not enter Dream Team MILP. Component Profile always shows Assume 90 beside xMins-weighted; the toggle still replaces table and chart numbers.
+_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points, Component Profile as a toggle, Dream Team Assume 90
 
 **Component Profile**:
 Squad Board table of the What-If 15: clock xMins row plus Event Component xP per Gameweek and horizon total. Each cell is xMins-weighted | Assume 90. Appearance xP is minutes points, not clock minutes. Not Mix. Not the selected-player card.
@@ -417,8 +421,8 @@ Ownership Explorer card for the selected pool Player. Planning Horizon clock xMi
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. No Role column. Mix vs Mix is not drawn. Not Transfer Plan. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Not Transfer Plan. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Transfer Plan tab, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
@@ -437,8 +441,8 @@ A Projection Model evaluated against the Model Champion. At most two Candidates 
 _Avoid_: Experimental model, challenger
 
 **Primary Projection Model**:
-The active model selected in the dashboard to drive Ownership Explorer ranking, Squad Board, and Component Profile. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
-_Avoid_: Active UI model, pitch model, MILP model
+The active model selected in the dashboard to drive Ownership Explorer ranking, Squad Board, Component Profile, and Dream Team. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
+_Avoid_: Active UI model, pitch model, MILP model, Dream Team as Champion-only when Primary differs
 
 **Secondary Comparison Model**:
 Retired with Interactive Squad Builder. Overlay xP/Diff columns are not a product control. Ownership Explorer uses the Primary Projection Model only. Transfer Plan is always the Model Champion.

@@ -22,7 +22,9 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "Horizon begins" in html
     assert "Horizon to" in html
     assert 'id="btn-refresh"' in html
+    assert 'id="btn-dream-team"' in html
     assert "/api/refresh" in js
+    assert "/api/dream-team" in js
     assert 'id="tab-plan"' not in html
     assert "plan.js" not in html
     assert "Squad Builder" not in html
@@ -87,6 +89,7 @@ def test_player_component_card_and_xmin_profile_labels() -> None:
     html = Path("dashboard/index.html").read_text(encoding="utf-8")
     explorer = Path("dashboard/explorer.js").read_text(encoding="utf-8")
     squad = Path("dashboard/squad.js").read_text(encoding="utf-8")
+    app = Path("dashboard/app.js").read_text(encoding="utf-8")
     assert 'id="player-component-card"' in html
     assert 'id="player-component-head"' in html
     assert 'id="player-component-body"' in html
@@ -98,6 +101,11 @@ def test_player_component_card_and_xmin_profile_labels() -> None:
     assert "PLAYER_COMPONENT_ROWS" in explorer
     assert "setExplorerSelectedPlayer" in explorer
     assert "setExplorerSelectedPlayer" in squad
+    assert "setDreamTeamIds" in explorer
+    assert "clearDreamTeam" in explorer
+    assert "clearDreamTeam" in app
+    assert 'dream-badge">Dream' in explorer or "Dream</span>" in explorer
+    assert "dreamTeamIds" in explorer
     assert '["xmins", "xMins"]' in squad
     assert '["xp_minutes", "Appearance xP"]' in squad
     assert '["xp_minutes", "Minutes"]' not in squad

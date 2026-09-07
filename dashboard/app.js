@@ -93,6 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let horizonBound = false;
   let modelBound = false;
   let refreshBound = false;
+  let dreamBound = false;
 
   function unfinishedGws() {
     const listed = metaData.unfinished_gameweeks;
@@ -155,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function rerenderExplorer() {
+    if (window.clearDreamTeam) window.clearDreamTeam();
     if (window.renderSquadBoard) window.renderSquadBoard();
     if (window.renderOwnershipExplorer) window.renderOwnershipExplorer();
     if (window.Plotly) {
@@ -177,9 +179,13 @@ document.addEventListener("DOMContentLoaded", () => {
     horizonBound = true;
     startSel.addEventListener("change", () => {
       fillEndOptions(Number(startSel.value), Number(endSel.value));
+      setRefreshStatus("");
       rerenderExplorer();
     });
-    endSel.addEventListener("change", rerenderExplorer);
+    endSel.addEventListener("change", () => {
+      setRefreshStatus("");
+      rerenderExplorer();
+    });
   }
 
   function setupModelSelect() {
@@ -199,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modelBound = true;
     select.addEventListener("change", () => {
       primaryModel = select.value;
+      setRefreshStatus("");
       rerenderExplorer();
     });
   }
@@ -273,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function refreshDashboard() {
     const btn = document.getElementById("btn-refresh");
     if (btn) btn.disabled = true;
+    if (window.clearDreamTeam) window.clearDreamTeam();
     setRefreshStatus("Starting Refresh…");
     try {
       const post = await fetch("/api/refresh", { method: "POST" });
@@ -299,8 +307,77 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", refreshDashboard);
   }
 
+  async function pollDreamTeam() {
+    const response = await fetch("/api/dream-team");
+    if (!response.ok) throw new Error("Dream Team status failed");
+    return response.json();
+  }
+
+  async function waitForDreamTeam() {
+    let idleTicks = 0;
+    for (;;) {
+      const state = await pollDreamTeam();
+      if (state.detail) setRefreshStatus(state.detail);
+      if (state.status === "running") {
+        idleTicks = 0;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      if (state.status === "ok") return state;
+      if (state.status === "idle") {
+        idleTicks += 1;
+        if (idleTicks > 5) throw new Error("Dream Team Solve did not start");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      throw new Error(state.error || "Dream Team Solve failed");
+    }
+  }
+
+  async function solveDreamTeam() {
+    const btn = document.getElementById("btn-dream-team");
+    if (btn) btn.disabled = true;
+    setRefreshStatus("Solving Dream Team…");
+    try {
+      const startSel = document.getElementById("horizonStart");
+      const endSel = document.getElementById("horizonEnd");
+      const post = await fetch("/api/dream-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: primaryModel,
+          horizon_start: Number(startSel && startSel.value),
+          horizon_end: Number(endSel && endSel.value),
+        }),
+      });
+      const body = await post.json();
+      if (post.status >= 400 && body.status !== "running") {
+        throw new Error(body.error || "Dream Team Solve failed to start");
+      }
+      const state = await waitForDreamTeam();
+      const ids = state.player_ids || [];
+      if (window.setDreamTeamIds) window.setDreamTeamIds(ids);
+      const leftover = state.leftover != null ? ` · leftover £${Number(state.leftover).toFixed(1)}m` : "";
+      const budget = state.budget != null ? `£${Number(state.budget).toFixed(1)}m` : "";
+      setRefreshStatus(`Dream Team ${ids.length} players · budget ${budget}${leftover}`);
+    } catch (err) {
+      console.error(err);
+      setRefreshStatus(err.message || String(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function setupDreamTeam() {
+    const btn = document.getElementById("btn-dream-team");
+    if (!btn || dreamBound) return;
+    dreamBound = true;
+    btn.addEventListener("click", solveDreamTeam);
+  }
+
   async function init() {
     setupRefresh();
+    setupDreamTeam();
     try {
       const data = await loadDashboardJson();
       applyDataset(data);

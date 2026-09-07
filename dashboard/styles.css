@@ -1054,6 +1054,27 @@ body {
 .delta.neg { color: #fca5a5; }
 .text-danger { color: var(--danger); }
 
+.dream-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1c1917;
+  background: #fbbf24;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+
+.explorer-table tr.dream td:first-child {
+  box-shadow: inset 3px 0 0 #fbbf24;
+}
+
+.explorer-table tr.owned.dream td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent), inset 7px 0 0 #fbbf24;
+}
+
 .owned-badge {
   display: inline-block;
   margin-left: 0.35rem;

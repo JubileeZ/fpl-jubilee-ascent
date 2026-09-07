@@ -7449,7 +7449,7 @@
   {
     "code": 2645221,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 21,
     "kickoff_time": "2026-09-04T19:00:00Z",
@@ -7791,7 +7791,7 @@
   {
     "code": 2645223,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 27,
     "kickoff_time": "2026-09-05T11:30:00Z",
@@ -8168,7 +8168,7 @@
   {
     "code": 2645216,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 22,
     "kickoff_time": "2026-09-05T14:00:00Z",
@@ -8529,7 +8529,7 @@
   {
     "code": 2645217,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 23,
     "kickoff_time": "2026-09-05T14:00:00Z",
@@ -8874,7 +8874,7 @@
   {
     "code": 2645219,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 24,
     "kickoff_time": "2026-09-05T14:00:00Z",
@@ -9240,7 +9240,7 @@
   {
     "code": 2645222,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 26,
     "kickoff_time": "2026-09-05T14:00:00Z",
@@ -9594,7 +9594,7 @@
   {
     "code": 2645224,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 28,
     "kickoff_time": "2026-09-05T14:00:00Z",
@@ -9930,7 +9930,7 @@
   {
     "code": 2645220,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 25,
     "kickoff_time": "2026-09-05T16:30:00Z",
@@ -10278,7 +10278,7 @@
   {
     "code": 2645218,
     "event": 3,
-    "finished": false,
+    "finished": true,
     "finished_provisional": true,
     "id": 30,
     "kickoff_time": "2026-09-06T13:00:00Z",
@@ -10523,7 +10523,7 @@
             "element": 233
           },
           {
-            "value": 7,
+            "value": 8,
             "element": 238
           },
           {
@@ -10572,16 +10572,16 @@
             "element": 43
           },
           {
-            "value": 5,
-            "element": 429
-          },
-          {
             "value": 4,
             "element": 162
           },
           {
             "value": 4,
             "element": 417
+          },
+          {
+            "value": 4,
+            "element": 429
           },
           {
             "value": 3,
@@ -10663,17 +10663,17 @@
   {
     "code": 2645215,
     "event": 3,
-    "finished": false,
-    "finished_provisional": false,
+    "finished": true,
+    "finished_provisional": true,
     "id": 29,
     "kickoff_time": "2026-09-06T15:30:00Z",
-    "minutes": 43,
+    "minutes": 90,
     "provisional_start_time": false,
     "started": true,
     "team_a": 6,
     "team_a_score": 1,
     "team_h": 1,
-    "team_h_score": 1,
+    "team_h_score": 2,
     "stats": [
       {
         "identifier": "goals_scored",
@@ -10684,6 +10684,10 @@
           }
         ],
         "h": [
+          {
+            "value": 1,
+            "element": 15
+          },
           {
             "value": 1,
             "element": 26
@@ -10702,6 +10706,10 @@
           {
             "value": 1,
             "element": 13
+          },
+          {
+            "value": 1,
+            "element": 557
           }
         ]
       },
@@ -10725,10 +10733,31 @@
         "a": [
           {
             "value": 1,
+            "element": 40
+          },
+          {
+            "value": 1,
+            "element": 154
+          },
+          {
+            "value": 1,
             "element": 165
+          },
+          {
+            "value": 1,
+            "element": 200
           }
         ],
-        "h": []
+        "h": [
+          {
+            "value": 1,
+            "element": 17
+          },
+          {
+            "value": 1,
+            "element": 557
+          }
+        ]
       },
       {
         "identifier": "red_cards",
@@ -10739,37 +10768,32 @@
         "identifier": "saves",
         "a": [
           {
-            "value": 5,
+            "value": 8,
             "element": 28
           }
         ],
         "h": [
           {
-            "value": 2,
+            "value": 4,
             "element": 1
           }
         ]
       },
       {
         "identifier": "bonus",
-        "a": [
-          {
-            "value": 2,
-            "element": 40
-          },
-          {
-            "value": 1,
-            "element": 28
-          }
-        ],
+        "a": [],
         "h": [
           {
             "value": 3,
+            "element": 15
+          },
+          {
+            "value": 2,
             "element": 26
           },
           {
             "value": 1,
-            "element": 13
+            "element": 557
           }
         ]
       },
@@ -10777,90 +10801,122 @@
         "identifier": "bps",
         "a": [
           {
+            "value": 26,
+            "element": 28
+          },
+          {
             "value": 22,
             "element": 40
           },
           {
-            "value": 18,
-            "element": 28
+            "value": 16,
+            "element": 145
+          },
+          {
+            "value": 11,
+            "element": 154
+          },
+          {
+            "value": 10,
+            "element": 156
+          },
+          {
+            "value": 9,
+            "element": 142
           },
           {
             "value": 8,
-            "element": 148
+            "element": 165
           },
           {
-            "value": 6,
+            "value": 7,
             "element": 161
           },
           {
             "value": 5,
-            "element": 154
+            "element": 148
           },
           {
             "value": 5,
-            "element": 156
+            "element": 157
+          },
+          {
+            "value": 4,
+            "element": 144
           },
           {
             "value": 3,
-            "element": 142
+            "element": 136
           },
           {
-            "value": 1,
-            "element": 145
-          },
-          {
-            "value": -1,
-            "element": 151
-          },
-          {
-            "value": -1,
+            "value": 3,
             "element": 200
+          },
+          {
+            "value": 2,
+            "element": 583
+          },
+          {
+            "value": -3,
+            "element": 151
           }
         ],
         "h": [
           {
-            "value": 33,
-            "element": 26
-          },
-          {
-            "value": 18,
-            "element": 13
-          },
-          {
-            "value": 14,
+            "value": 47,
             "element": 15
           },
           {
-            "value": 7,
+            "value": 38,
+            "element": 26
+          },
+          {
+            "value": 31,
             "element": 557
           },
           {
-            "value": 6,
-            "element": 12
+            "value": 22,
+            "element": 13
           },
           {
-            "value": 4,
+            "value": 15,
             "element": 1
           },
           {
-            "value": 4,
-            "element": 10
-          },
-          {
-            "value": 2,
+            "value": 15,
             "element": 31
           },
           {
-            "value": 1,
-            "element": 7
+            "value": 13,
+            "element": 12
           },
           {
-            "value": -2,
+            "value": 11,
+            "element": 10
+          },
+          {
+            "value": 10,
             "element": 4
           },
           {
-            "value": -3,
-            "element": 8
+            "value": 5,
+            "element": 7
+          },
+          {
+            "value": 3,
+            "element": 9
+          },
+          {
+            "value": 3,
+            "element": 16
+          },
+          {
+            "value": 2,
+            "element": 25
+          },
+          {
+            "value": 1,
+            "element": 19
           }
         ]
       },
@@ -10868,32 +10924,44 @@
         "identifier": "defensive_contribution",
         "a": [
           {
-            "value": 9,
+            "value": 17,
             "element": 145
           },
           {
-            "value": 5,
-            "element": 161
-          },
-          {
-            "value": 4,
-            "element": 40
-          },
-          {
-            "value": 4,
-            "element": 156
-          },
-          {
-            "value": 3,
-            "element": 148
-          },
-          {
-            "value": 2,
+            "value": 11,
             "element": 200
           },
           {
-            "value": 1,
+            "value": 7,
+            "element": 156
+          },
+          {
+            "value": 6,
+            "element": 148
+          },
+          {
+            "value": 6,
+            "element": 161
+          },
+          {
+            "value": 5,
+            "element": 40
+          },
+          {
+            "value": 3,
             "element": 142
+          },
+          {
+            "value": 3,
+            "element": 154
+          },
+          {
+            "value": 2,
+            "element": 144
+          },
+          {
+            "value": 2,
+            "element": 583
           },
           {
             "value": 1,
@@ -10901,41 +10969,61 @@
           },
           {
             "value": 1,
-            "element": 154
+            "element": 165
           }
         ],
         "h": [
           {
-            "value": 4,
+            "value": 10,
             "element": 31
           },
           {
-            "value": 4,
+            "value": 8,
             "element": 557
           },
           {
-            "value": 3,
+            "value": 7,
             "element": 4
           },
           {
-            "value": 3,
+            "value": 6,
             "element": 10
+          },
+          {
+            "value": 6,
+            "element": 13
+          },
+          {
+            "value": 4,
+            "element": 12
+          },
+          {
+            "value": 4,
+            "element": 19
+          },
+          {
+            "value": 3,
+            "element": 9
+          },
+          {
+            "value": 3,
+            "element": 15
           },
           {
             "value": 2,
             "element": 7
           },
           {
-            "value": 2,
-            "element": 12
-          },
-          {
-            "value": 2,
-            "element": 13
+            "value": 1,
+            "element": 8
           },
           {
             "value": 1,
-            "element": 8
+            "element": 16
+          },
+          {
+            "value": 1,
+            "element": 25
           },
           {
             "value": 1,

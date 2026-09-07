@@ -368,6 +368,8 @@ def test_build_dashboard_dataset_omits_transfer_plan(tmp_path: Path) -> None:
     assert "transfer_plan" not in dataset
     assert "solution_model_name" not in dataset["meta"]
     assert "prefilled_squad_ids" not in dataset["meta"]
+    assert "dream_team_ids" not in dataset["meta"]
+    assert "dream_team" not in dataset
 
 
 def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Path) -> None:
@@ -505,13 +507,24 @@ def test_ingest_live_data_does_not_pass_role_flags(monkeypatch) -> None:
 
 
 def test_run_refresh_job_ok_and_project_refuse(monkeypatch) -> None:
-    from commands.dashboard import refresh_status, reset_refresh_state, run_refresh_job
+    from commands.dashboard import (
+        dream_team_status,
+        refresh_status,
+        reset_dream_team_state,
+        reset_refresh_state,
+        run_refresh_job,
+        _set_dream_state,
+    )
 
     reset_refresh_state()
+    reset_dream_team_state()
+    _set_dream_state(status="ok", player_ids=[1, 2], detail="old")
     monkeypatch.setattr("commands.dashboard.ingest_live_data", lambda: None)
     monkeypatch.setattr("commands.dashboard.run_dashboard_export", lambda **_kwargs: None)
     run_refresh_job()
     assert refresh_status()["status"] == "ok"
+    assert dream_team_status()["status"] == "idle"
+    assert dream_team_status()["player_ids"] is None
 
     reset_refresh_state()
 

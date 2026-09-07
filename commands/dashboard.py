@@ -25,12 +25,13 @@ from commands.export_dashboard import (
     export_dashboard_data,
     resolve_horizon_start,
 )
+from commands.dream_team import execute_dream_team
 from commands import refresh_data
 from features.builder import build_features, resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_default_model_name, get_model
 from projections.exporter import write_solver_projection_csvs
-from solver.planning import clamp_planning_horizon
+from solver.planning import clamp_planning_horizon, planning_window
 from solver.utils import DEFAULT_PLANNING_HORIZON
 import pandas as pd
 
@@ -39,6 +40,16 @@ logger = logging.getLogger(__name__)
 
 _refresh_lock = threading.Lock()
 _refresh_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
+_dream_lock = threading.Lock()
+_dream_state: dict[str, object] = {
+    "status": "idle",
+    "error": None,
+    "detail": None,
+    "player_ids": None,
+    "budget": None,
+    "leftover": None,
+    "model": None,
+}
 
 
 def should_project_on_open(processed_dir: Path, json_path: Path) -> bool:
@@ -70,6 +81,28 @@ def _set_refresh_state(*, status: str, error: str | None = None, detail: str | N
 
 def reset_refresh_state() -> None:
     _set_refresh_state(status="idle", error=None, detail=None)
+
+
+def dream_team_status() -> dict[str, object]:
+    with _dream_lock:
+        return dict(_dream_state)
+
+
+def _set_dream_state(**kwargs: object) -> None:
+    with _dream_lock:
+        _dream_state.update(kwargs)
+
+
+def reset_dream_team_state() -> None:
+    _set_dream_state(
+        status="idle",
+        error=None,
+        detail=None,
+        player_ids=None,
+        budget=None,
+        leftover=None,
+        model=None,
+    )
 
 
 def ingest_live_data(season: str = LIVE_SEASON) -> None:
@@ -156,6 +189,7 @@ def run_refresh_job(
 ) -> None:
     try:
         _set_refresh_state(status="running", error=None, detail="Ingesting FPL data…")
+        reset_dream_team_state()
         ingest_live_data()
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
@@ -184,6 +218,82 @@ def start_refresh(
     return refresh_status()
 
 
+def run_dream_team_job(*, model_name: str, target_gw: int, horizon: int) -> None:
+    try:
+        _set_dream_state(status="running", error=None, detail="Solving Dream Team…", player_ids=None)
+        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+        result = execute_dream_team(
+            processed_dir,
+            model_name=model_name,
+            target_gw=target_gw,
+            horizon=horizon,
+        )
+        _set_dream_state(
+            status="ok",
+            error=None,
+            detail="Dream Team ready.",
+            player_ids=result["player_ids"],
+            budget=result["budget"],
+            leftover=result["leftover"],
+            model=result["model"],
+        )
+    except Exception as exc:
+        logger.exception("Dream Team Solve failed")
+        _set_dream_state(status="error", error=str(exc), detail="Solve failed.", player_ids=None)
+
+
+def start_dream_team(*, model_name: str, target_gw: int, horizon: int) -> dict[str, object]:
+    with _dream_lock:
+        if _dream_state["status"] == "running":
+            return dict(_dream_state)
+        _dream_state["status"] = "running"
+        _dream_state["error"] = None
+        _dream_state["detail"] = "Starting…"
+        _dream_state["player_ids"] = None
+        _dream_state["budget"] = None
+        _dream_state["leftover"] = None
+        _dream_state["model"] = None
+    threading.Thread(
+        target=run_dream_team_job,
+        kwargs={"model_name": model_name, "target_gw": target_gw, "horizon": horizon},
+        daemon=True,
+    ).start()
+    return dream_team_status()
+
+
+def _dream_team_args(body: dict[str, object] | None) -> tuple[str, int, int]:
+    payload = body or {}
+    model_name = str(payload.get("model") or get_default_model_name())
+    start = int(payload.get("horizon_start") or 1)
+    end = int(payload.get("horizon_end") or start)
+    gws = planning_window(start, end)
+    if not gws:
+        gws = [max(1, start)]
+    horizon = clamp_planning_horizon(len(gws))
+    return model_name, int(gws[0]), horizon
+
+
+def handle_dashboard_api(
+    method: str,
+    path: str,
+    body: dict[str, object] | None = None,
+) -> tuple[int, dict[str, object]]:
+    if path == "/api/refresh":
+        if method == "GET":
+            return 200, refresh_status()
+        if method == "POST":
+            return 202, start_refresh()
+    if path == "/api/dream-team":
+        if method == "GET":
+            return 200, dream_team_status()
+        if method == "POST":
+            model_name, target_gw, horizon = _dream_team_args(body)
+            return 202, start_dream_team(
+                model_name=model_name, target_gw=target_gw, horizon=horizon
+            )
+    return 404, {"error": "Not found"}
+
+
 class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     """Serves dashboard/ without caching; Dashboard Refresh on /api/refresh."""
 
@@ -209,18 +319,39 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def _api_path(self) -> str:
         return self.path.split("?", 1)[0].rstrip("/")
 
+    def _read_json_body(self) -> dict[str, object]:
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            parsed = json.loads(raw.decode("utf-8") or "{}")
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+
     def do_GET(self) -> None:
-        if self._api_path() == "/api/refresh":
-            self._send_json(200, refresh_status())
+        api_path = self._api_path()
+        if api_path.startswith("/api/"):
+            status, payload = handle_dashboard_api("GET", api_path, None)
+            if status == 404:
+                self.send_error(404, "Not found")
+                return
+            self._send_json(status, payload)
             return
         super().do_GET()
 
     def do_POST(self) -> None:
-        if self._api_path() != "/api/refresh":
+        api_path = self._api_path()
+        if not api_path.startswith("/api/"):
             self.send_error(404, "Not found")
             return
-        state = start_refresh()
-        self._send_json(202, state)
+        body = self._read_json_body()
+        status, payload = handle_dashboard_api("POST", api_path, body)
+        if status == 404:
+            self.send_error(404, "Not found")
+            return
+        self._send_json(status, payload)
 
 
 def start_server(port: int = 8000, open_browser: bool = True) -> None:
@@ -252,7 +383,7 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Serve Ownership Explorer. Open projects from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects."
+        description="Serve Ownership Explorer. Open projects from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects. Solve Dream Team paints an Explorer overlay."
     )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")

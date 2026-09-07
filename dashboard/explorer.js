@@ -19,6 +19,7 @@
   let tableSortAsc = false;
   let bound = false;
   let assume90 = false;
+  let dreamTeamIds = new Set();
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -246,6 +247,18 @@
     return Math.max(7 + bonus, Math.min(28, 6 + bonus + (slice.avg_minutes || 0) / 4.5));
   }
 
+  function markerLineWidth(playerId) {
+    if (dreamTeamIds.has(playerId)) return playerId === selectedPlayerId ? 3 : 2.2;
+    if (playerId === selectedPlayerId) return 2.5;
+    return 0.5;
+  }
+
+  function markerLineColor(playerId) {
+    if (dreamTeamIds.has(playerId)) return "#fbbf24";
+    if (playerId === selectedPlayerId) return "#fff";
+    return "#334155";
+  }
+
   function traces(visible, axisX) {
     return POS_ORDER.map((pos) => {
       const subset = visible.filter((row) => row.player.pos === pos);
@@ -270,8 +283,8 @@
           color: POS_COLORS[pos],
           opacity: subset.map((row) => (selectedPlayerId && row.player.id !== selectedPlayerId ? 0.35 : 0.88)),
           line: {
-            width: subset.map((row) => (row.player.id === selectedPlayerId ? 2.5 : 0.5)),
-            color: subset.map((row) => (row.player.id === selectedPlayerId ? "#fff" : "#334155")),
+            width: subset.map((row) => markerLineWidth(row.player.id)),
+            color: subset.map((row) => markerLineColor(row.player.id)),
           },
         },
         hovertemplate:
@@ -383,10 +396,12 @@
         const s = row.slice;
         const selected = p.id === selectedPlayerId ? " selected" : "";
         const owned = p.owned ? " owned" : "";
+        const dream = dreamTeamIds.has(p.id) ? " dream" : "";
+        const badges = `${p.owned ? ' <span class="owned-badge">Owned</span>' : ""}${dreamTeamIds.has(p.id) ? ' <span class="dream-badge">Dream</span>' : ""}`;
         const gwCells = gws.map((gw) => `<td>${Number(s.perGw[gw] || 0).toFixed(2)}</td>`).join("");
-        return `<tr class="${selected}${owned}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true">
+        return `<tr class="${selected}${owned}${dream}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true">
           <td>${row.rank}</td>
-          <td>${p.name}${p.owned ? ' <span class="owned-badge">Owned</span>' : ""}</td>
+          <td>${p.name}${badges}</td>
           <td>${p.team}</td>
           <td>${POS_LABEL[p.pos] || p.pos}</td>
           <td>${Number(p.price).toFixed(1)}</td>
@@ -479,4 +494,13 @@
 
   window.renderOwnershipExplorer = render;
   window.setExplorerSelectedPlayer = setExplorerSelectedPlayer;
+  window.setDreamTeamIds = function (ids) {
+    dreamTeamIds = new Set((ids || []).map(Number).filter((id) => Number.isFinite(id)));
+    render();
+  };
+  window.clearDreamTeam = function () {
+    if (dreamTeamIds.size === 0) return;
+    dreamTeamIds = new Set();
+    render();
+  };
 })();

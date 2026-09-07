@@ -1,7 +1,7 @@
 {
   "player": {
     "date_of_birth": "1994-03-09",
-    "default_event": 3,
+    "default_event": 4,
     "dirty": false,
     "first_name": "Phoonsap",
     "gender": "M",
