@@ -5,14 +5,15 @@
   const CLUB_CAP = 3;
   const SHAPE = { G: [1, 1], D: [3, 5], M: [2, 5], F: [1, 3] };
   const PROFILE_KEYS = [
-    ["xp_minutes", "Minutes"],
-    ["xp_goals", "Goals"],
-    ["xp_assists", "Assists"],
-    ["xp_clean_sheet", "Clean sheets"],
-    ["xp_conceded", "Conceded"],
-    ["xp_defcon", "Defcon"],
-    ["xp_saves", "Saves"],
-    ["xp_bonus", "Bonus"],
+    ["xmins", "xMins"],
+    ["xp_minutes", "Appearance xP"],
+    ["xp_goals", "Goals xP"],
+    ["xp_assists", "Assists xP"],
+    ["xp_clean_sheet", "Clean sheets xP"],
+    ["xp_conceded", "Conceded xP"],
+    ["xp_defcon", "Defcon xP"],
+    ["xp_saves", "Saves xP"],
+    ["xp_bonus", "Bonus xP"],
   ];
   const BREACH_LABEL = {
     club_cap: "Club cap (max 3)",

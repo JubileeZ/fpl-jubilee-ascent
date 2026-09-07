@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await loadDashboardJson();
       applyDataset(data);
-      setRefreshStatus("");
+      setRefreshStatus("Projected from processed tables. Click Refresh to ingest live FPL.");
     } catch (err) {
       console.error(err);
       applyDataset({ meta: {}, players: [] });

@@ -41,7 +41,7 @@ docs/          # Durable project documentation and decision records
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
-| `uv run python -m commands.dashboard` | Serve Ownership Explorer; Refresh in page ingest+project |
+| `uv run python -m commands.dashboard` | Serve Ownership Explorer; open projects from processed if JSON stale; Refresh in page ingest+project |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |

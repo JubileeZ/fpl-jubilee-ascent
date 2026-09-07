@@ -13,7 +13,7 @@
 
   let ctx = null;
   let yMetric = "rate_per_90";
-  let xminsFloor = 45;
+  let xminsFloor = 0;
   let selectedPlayerId = null;
   let tableSortKey = "total";
   let tableSortAsc = false;
@@ -401,6 +401,40 @@
       .join("");
   }
 
+  function renderPlayerComponents() {
+    const nameEl = document.getElementById("player-component-name");
+    const body = document.getElementById("player-component-body");
+    if (!nameEl || !body) return;
+    const player = players().find((p) => p.id === selectedPlayerId);
+    if (!player) {
+      nameEl.textContent = "Select a player in the table.";
+      body.innerHTML = "";
+      return;
+    }
+    const slice = sliceOf(player);
+    const n = Math.max(1, slice.n_gameweeks || 0);
+    const gws = viewGws();
+    const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "horizon";
+    const pos = POS_LABEL[player.pos] || player.pos;
+    nameEl.textContent = `${player.name} · ${pos} · ${player.team} · £${Number(player.price).toFixed(1)}m · ${span}${assume90 ? " · Assume 90" : ""}`;
+    const rows = [
+      ["xMins", slice.minutes, slice.avg_minutes, 1],
+      ["Appearance xP", slice.xp_minutes, slice.xp_minutes / n, 2],
+      ["Goals xP", slice.xp_goals, slice.xp_goals / n, 2],
+      ["Assists xP", slice.xp_assists, slice.xp_assists / n, 2],
+      ["Clean sheets xP", slice.xp_clean_sheet, slice.xp_clean_sheet / n, 2],
+      ["Conceded xP", slice.xp_conceded, slice.xp_conceded / n, 2],
+      ["Defcon xP", slice.xp_defcon, slice.xp_defcon / n, 2],
+      ["Saves xP", slice.xp_saves, slice.xp_saves / n, 2],
+      ["Bonus xP", slice.xp_bonus, slice.xp_bonus / n, 2],
+    ];
+    body.innerHTML = rows
+      .map(([label, total, avg, digits]) => (
+        `<tr><th>${label}</th><td>${Number(total).toFixed(digits)}</td><td>${Number(avg).toFixed(digits)}</td></tr>`
+      ))
+      .join("");
+  }
+
   function render() {
     if (!ctx) return;
     bindControls();
@@ -413,6 +447,7 @@
       `Planning Horizon ${span}${assume90 ? " · Assume 90" : ""} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
+    renderPlayerComponents();
   }
 
   window.initOwnershipExplorer = function (context) {

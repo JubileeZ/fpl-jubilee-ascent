@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
   <div class="app-container" data-view="explorer">
@@ -99,7 +99,7 @@
           </div>
         </div>
         <div class="card" id="component-profile-card">
-          <p class="title">Component Profile (xMins | Assume 90)</p>
+          <p class="title">Squad components (xMins | Assume 90)</p>
           <div class="explorer-table-wrap">
             <table class="data-table" id="component-profile">
               <thead id="component-profile-head"></thead>
@@ -139,8 +139,8 @@
         <div class="group">
           <label class="title">Avg minutes floor</label>
           <div class="range-row">
-            <input type="range" id="explorer-xmins-floor" min="0" max="90" step="1" value="45">
-            <span id="explorer-xmins-floor-val">45</span>
+            <input type="range" id="explorer-xmins-floor" min="0" max="90" step="1" value="0">
+            <span id="explorer-xmins-floor-val">0</span>
           </div>
         </div>
         <div class="group">
@@ -149,6 +149,22 @@
         </div>
       </div>
       <p id="explorer-meta" class="explorer-meta"></p>
+      <div class="card" id="player-component-card">
+        <p class="title">Player components (selected horizon)</p>
+        <p id="player-component-name" class="explorer-meta">Select a player in the table.</p>
+        <div class="explorer-table-wrap">
+          <table class="data-table" id="player-component">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Horizon total</th>
+                <th>Avg / GW</th>
+              </tr>
+            </thead>
+            <tbody id="player-component-body"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
@@ -175,8 +191,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=14"></script>
-  <script src="squad.js?v=1"></script>
-  <script src="explorer.js?v=11"></script>
+  <script src="app.js?v=15"></script>
+  <script src="squad.js?v=2"></script>
+  <script src="explorer.js?v=12"></script>
 </body>
 </html>

@@ -1,6 +1,8 @@
 import json
+import os
 from pathlib import Path
 import pandas as pd
+import pytest
 
 from commands.export_dashboard import (
     build_dashboard_dataset,
@@ -530,4 +532,40 @@ def test_explorer_reports_xmins_not_role() -> None:
     assert ">xMins<" in html
     assert 'data-sort="role"' not in js
     assert "expected_role" not in js
+
+
+def test_should_project_on_open_when_processed_newer_than_json(tmp_path: Path) -> None:
+    from commands.dashboard import should_project_on_open
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    json_path = tmp_path / "dashboard_data.json"
+    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
+        (processed / name).write_bytes(b"p")
+    assert should_project_on_open(processed, json_path) is True
+    json_path.write_text("{}", encoding="utf-8")
+    later = json_path.stat().st_mtime + 10
+    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
+        os.utime(processed / name, (later, later))
+    assert should_project_on_open(processed, json_path) is True
+    even_later = later + 10
+    os.utime(json_path, (even_later, even_later))
+    assert should_project_on_open(processed, json_path) is False
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert should_project_on_open(empty, json_path) is False
+
+
+def test_dashboard_main_projects_then_serves_without_ingest(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+    from commands import dashboard as dash
+
+    calls: list[str] = []
+    monkeypatch.setattr(dash, "should_project_on_open", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(dash, "run_dashboard_export", lambda **_kwargs: calls.append("export"))
+    monkeypatch.setattr(dash, "ingest_live_data", lambda *_args, **_kwargs: calls.append("ingest"))
+    monkeypatch.setattr(dash, "start_server", lambda *_args, **_kwargs: calls.append("serve"))
+    monkeypatch.setattr(sys, "argv", ["dashboard", "--no-browser"])
+    dash.main()
+    assert calls == ["export", "serve"]
 

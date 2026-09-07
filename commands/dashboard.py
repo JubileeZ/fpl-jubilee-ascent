@@ -41,6 +41,21 @@ _refresh_lock = threading.Lock()
 _refresh_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
 
 
+def should_project_on_open(processed_dir: Path, json_path: Path) -> bool:
+    """True when processed tables exist and are newer than dashboard JSON (or JSON is missing)."""
+    players = processed_dir / "players.parquet"
+    if not players.exists():
+        return False
+    if not json_path.exists():
+        return True
+    json_mtime = json_path.stat().st_mtime
+    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
+        path = processed_dir / name
+        if path.exists() and path.stat().st_mtime > json_mtime:
+            return True
+    return False
+
+
 def refresh_status() -> dict[str, object]:
     with _refresh_lock:
         return dict(_refresh_state)
@@ -236,7 +251,9 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Serve Ownership Explorer. Refresh in the page pulls FPL data and projects.")
+    parser = argparse.ArgumentParser(
+        description="Serve Ownership Explorer. Open projects from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects."
+    )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
     parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning Horizon length")
@@ -258,6 +275,20 @@ def main() -> None:
             logger.error(str(exc))
             sys.exit(1)
         return
+
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    json_path = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
+    if should_project_on_open(processed_dir, json_path):
+        try:
+            logger.info("Processed tables newer than dashboard JSON; projecting without ingest.")
+            run_dashboard_export(
+                model_name=args.model,
+                horizon=args.horizon,
+                target_gw=args.target_gw,
+                model_names=args.models,
+            )
+        except FileNotFoundError as exc:
+            logger.warning("%s Click Refresh in the page to ingest.", exc)
 
     start_server(args.port, open_browser=not args.no_browser)
 

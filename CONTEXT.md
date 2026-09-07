@@ -293,8 +293,8 @@ Exported player metadata, historical rates, and per-gameweek Event Component pro
 _Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed
 
 **Dashboard Refresh**:
-In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` starts HTTP immediately and paints last JSON or empty; it does not ingest or project on process start. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard.
-_Avoid_: Re-solve, export-only restart as the update path, `--rebuild-roles`, blocking process start on ingest or Project, table-gated Project
+In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects from disk then serves. Else paints last JSON. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard.
+_Avoid_: Re-solve, `--rebuild-roles`, blocking process start on ingest, table-gated Project
 
 **Interactive Squad Builder**:
 Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Squad Board is the User Squad plus Squad What-If, not this.
@@ -409,8 +409,12 @@ Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Game
 _Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points, Component Profile as a toggle
 
 **Component Profile**:
-View-only Event Component xP of the Squad Board 15 (Squad What-If 15 when active), per Gameweek in the Planning Horizon and as a horizon total. Table under the Squad Board: eight Explorer keys as rows, Gameweeks as columns; each cell is xMins-weighted | Assume 90. Not Mix. Not a solver tilt.
-_Avoid_: Mix, wall (UI nickname), grouped Attack/CS/Defcon bars, full 13-component matrix, diversification constraint, Mix vs Mix panel
+Squad Board table of the What-If 15: clock xMins row plus Event Component xP per Gameweek and horizon total. Each cell is xMins-weighted | Assume 90. Appearance xP is minutes points, not clock minutes. Not Mix. Not the selected-player card.
+_Avoid_: Mix, treating Appearance xP as xMins, player-row as this table
+
+**Player components**:
+Ownership Explorer card for the selected pool Player. Planning Horizon clock xMins and Event Component xP as horizon total and average per Gameweek. Not Component Profile. Not Mix.
+_Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Ownership Explorer**:
 Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. No Role column. Mix vs Mix is not drawn. Not Transfer Plan. Not a Season Window ranking.

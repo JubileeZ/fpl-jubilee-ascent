@@ -81,3 +81,17 @@ def test_reload_rereads_dashboard_json_without_refresh() -> None:
     app = Path("dashboard/app.js").read_text(encoding="utf-8")
     assert "reloadDashboardJson" in app
     assert "loadDashboardJson" in app
+
+
+def test_player_component_card_and_xmin_profile_labels() -> None:
+    html = Path("dashboard/index.html").read_text(encoding="utf-8")
+    explorer = Path("dashboard/explorer.js").read_text(encoding="utf-8")
+    squad = Path("dashboard/squad.js").read_text(encoding="utf-8")
+    assert 'id="player-component-card"' in html
+    assert 'id="player-component-body"' in html
+    assert 'id="explorer-xmins-floor"' in html
+    assert 'id="explorer-xmins-floor-val">0</span>' in html
+    assert "renderPlayerComponents" in explorer
+    assert '["xmins", "xMins"]' in squad
+    assert '["xp_minutes", "Appearance xP"]' in squad
+    assert '["xp_minutes", "Minutes"]' not in squad

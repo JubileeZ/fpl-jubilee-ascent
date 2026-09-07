@@ -195,9 +195,9 @@ The local dashboard is Ownership Explorer. Transfer Plan is CLI (`commands.solve
 uv run python -m commands.dashboard
 ```
 
-The command starts `http://127.0.0.1:8000` immediately. It does not ingest or project on process start. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
+The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects Champion and Comparison Slate from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-Click **Refresh** in the header to pull live FPL data, run Champion and Comparison Slate projections, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. Refresh pins the current season into `data/archive/<season>/`. Project does not require an Expected Role Table.
+Click **Refresh** in the header to ingest live FPL data, re-project, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins the current season into `data/archive/<season>/`.
 
 Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` / `--models` override Champion/Candidate export. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
 
@@ -211,7 +211,7 @@ Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed;
 
 **Squad Board** draws the User Squad (pitch + Squad xP strip). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
 
-**Component Profile** under the board is the eight Explorer Event Component keys, per Gameweek, as `xMins | Assume 90`.
+**Squad components** under the board are xMins plus Event Component xP per Gameweek, as `xMins | Assume 90`. Select a player in the Explorer table for **Player components**: horizon total and average per Gameweek on the selected Planning Horizon.
 
 **Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or **xP per Gameweek** (horizon total divided by gameweeks).
 
@@ -237,7 +237,7 @@ Feature Contract minutes.
 | Position | GKP / DEF / MID / FWD checkboxes; applies to charts and table |
 | Club | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
 | Price | Min–max £m band; applies to charts and table |
-| Avg minutes floor | Default 45. Hides low-minute players from **charts only**; the table still lists them |
+| Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them |
 | Assume 90 | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only) |
 | Search | Player name, club, or expected role; applies to charts and table |
 

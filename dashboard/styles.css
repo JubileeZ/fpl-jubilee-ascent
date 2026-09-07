@@ -1035,7 +1035,8 @@ body {
 }
 
 .squad-strip-card .title,
-#component-profile-card .title {
+#component-profile-card .title,
+#player-component-card .title {
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
