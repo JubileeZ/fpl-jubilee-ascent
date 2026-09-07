@@ -167,7 +167,7 @@
       const pid = Number(row.dataset.playerId);
       selectedPlayerId = selectedPlayerId === pid ? null : pid;
       render();
-      row.scrollIntoView({ block: "nearest" });
+      revealPlayerComponents();
     });
   }
 
@@ -293,8 +293,7 @@
     markerClicked = true;
     selectedPlayerId = Number(ev.points[0].customdata[0]);
     render();
-    const row = document.querySelector(`#explorer-table tr[data-player-id="${selectedPlayerId}"]`);
-    if (row) row.scrollIntoView({ block: "nearest" });
+    revealPlayerComponents();
   }
 
   function onPlotBackgroundClick() {
@@ -401,38 +400,61 @@
       .join("");
   }
 
+  const PLAYER_COMPONENT_ROWS = [
+    ["xmins", "xMins", 1],
+    ["xp_minutes", "Appearance xP", 2],
+    ["xp_goals", "Goals xP", 2],
+    ["xp_assists", "Assists xP", 2],
+    ["xp_clean_sheet", "Clean sheets xP", 2],
+    ["xp_conceded", "Conceded xP", 2],
+    ["xp_defcon", "Defcon xP", 2],
+    ["xp_saves", "Saves xP", 2],
+    ["xp_bonus", "Bonus xP", 2],
+  ];
+
+  function revealPlayerComponents() {
+    const card = document.getElementById("player-component-card");
+    if (card) card.scrollIntoView({ block: "nearest" });
+    const row = document.querySelector(`#explorer-table tr[data-player-id="${selectedPlayerId}"]`);
+    if (row) row.scrollIntoView({ block: "nearest" });
+  }
+
+  function setExplorerSelectedPlayer(id) {
+    const pid = Number(id);
+    selectedPlayerId = Number.isFinite(pid) ? pid : null;
+    render();
+    if (selectedPlayerId != null) revealPlayerComponents();
+  }
+
   function renderPlayerComponents() {
     const nameEl = document.getElementById("player-component-name");
+    const head = document.getElementById("player-component-head");
     const body = document.getElementById("player-component-body");
-    if (!nameEl || !body) return;
+    if (!nameEl || !head || !body) return;
     const player = players().find((p) => p.id === selectedPlayerId);
+    const gws = viewGws();
     if (!player) {
-      nameEl.textContent = "Select a player in the table.";
+      nameEl.textContent = "Select a player in the table, on a chart, or on the pitch.";
+      head.innerHTML = "";
       body.innerHTML = "";
       return;
     }
     const slice = sliceOf(player);
     const n = Math.max(1, slice.n_gameweeks || 0);
-    const gws = viewGws();
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "horizon";
     const pos = POS_LABEL[player.pos] || player.pos;
     nameEl.textContent = `${player.name} · ${pos} · ${player.team} · £${Number(player.price).toFixed(1)}m · ${span}${assume90 ? " · Assume 90" : ""}`;
-    const rows = [
-      ["xMins", slice.minutes, slice.avg_minutes, 1],
-      ["Appearance xP", slice.xp_minutes, slice.xp_minutes / n, 2],
-      ["Goals xP", slice.xp_goals, slice.xp_goals / n, 2],
-      ["Assists xP", slice.xp_assists, slice.xp_assists / n, 2],
-      ["Clean sheets xP", slice.xp_clean_sheet, slice.xp_clean_sheet / n, 2],
-      ["Conceded xP", slice.xp_conceded, slice.xp_conceded / n, 2],
-      ["Defcon xP", slice.xp_defcon, slice.xp_defcon / n, 2],
-      ["Saves xP", slice.xp_saves, slice.xp_saves / n, 2],
-      ["Bonus xP", slice.xp_bonus, slice.xp_bonus / n, 2],
-    ];
-    body.innerHTML = rows
-      .map(([label, total, avg, digits]) => (
-        `<tr><th>${label}</th><td>${Number(total).toFixed(digits)}</td><td>${Number(avg).toFixed(digits)}</td></tr>`
-      ))
-      .join("");
+    head.innerHTML = `<tr><th>Component</th>${gws.map((gw) => `<th>GW${gw}</th>`).join("")}<th>Total</th><th>Avg / GW</th></tr>`;
+    body.innerHTML = PLAYER_COMPONENT_ROWS.map(([key, label, digits]) => {
+      const cells = gws.map((gw) => {
+        const row = gwProjection(player, gw);
+        const value = Number(row[key] || 0);
+        return `<td>${value.toFixed(digits)}</td>`;
+      }).join("");
+      const total = key === "xmins" ? slice.minutes : slice[key];
+      const avg = key === "xmins" ? slice.avg_minutes : Number(slice[key] || 0) / n;
+      return `<tr><th>${label}</th>${cells}<td>${Number(total || 0).toFixed(digits)}</td><td>${Number(avg || 0).toFixed(digits)}</td></tr>`;
+    }).join("");
   }
 
   function render() {
@@ -456,4 +478,5 @@
   };
 
   window.renderOwnershipExplorer = render;
+  window.setExplorerSelectedPlayer = setExplorerSelectedPlayer;
 })();

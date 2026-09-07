@@ -149,25 +149,19 @@
         </div>
       </div>
       <p id="explorer-meta" class="explorer-meta"></p>
-      <div class="card" id="player-component-card">
-        <p class="title">Player components (selected horizon)</p>
-        <p id="player-component-name" class="explorer-meta">Select a player in the table.</p>
-        <div class="explorer-table-wrap">
-          <table class="data-table" id="player-component">
-            <thead>
-              <tr>
-                <th>Component</th>
-                <th>Horizon total</th>
-                <th>Avg / GW</th>
-              </tr>
-            </thead>
-            <tbody id="player-component-body"></tbody>
-          </table>
-        </div>
-      </div>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
+      </div>
+      <div class="card" id="player-component-card">
+        <p class="title">Player components (selected horizon)</p>
+        <p id="player-component-name" class="explorer-meta">Select a player in the table, on a chart, or on the pitch.</p>
+        <div class="explorer-table-wrap">
+          <table class="data-table" id="player-component">
+            <thead id="player-component-head"></thead>
+            <tbody id="player-component-body"></tbody>
+          </table>
+        </div>
       </div>
       <div id="explorer-table-wrap" class="explorer-table-wrap">
         <table class="data-table explorer-table">
@@ -191,8 +185,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=15"></script>
-  <script src="squad.js?v=2"></script>
-  <script src="explorer.js?v=12"></script>
+  <script src="app.js?v=16"></script>
+  <script src="squad.js?v=3"></script>
+  <script src="explorer.js?v=13"></script>
 </body>
 </html>

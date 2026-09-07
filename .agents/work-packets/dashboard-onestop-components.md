@@ -9,15 +9,16 @@
 
 - **Status:** Implementing
 - **Files:** `commands/dashboard.py`, `dashboard/index.html`, `dashboard/explorer.js`, `dashboard/squad.js`, `dashboard/app.js`, tests
-- **Decisions:** Start projects from processed only when parquet newer than JSON (no HTTP). Refresh button still ingest+project. Minutes row = `xmins`; appearance points stay `xp_minutes`.
+- **Decisions:** Start projects from processed only when parquet newer than JSON (no HTTP). Refresh still ingest+project. Minutes row = `xmins`. Player card: per-GW + Total + Avg; select from table, chart, or pitch.
 - **Blocked:** None
-- **Next:** Restart long-running dashboard process so project-on-open is in the Python server
+- **Next:** Restart dashboard process so project-on-open is in the running server
 
 ## Todo
 - [x] Project on open when processed newer than JSON
 - [x] Component Profile xMins vs Appearance xP
 - [x] Selected-player component averages
 - [x] Browser check Egan xMins after project
+- [x] Player components per-GW next to Explorer table
 - [ ] Restart dashboard process so open-time project-on-open is live
 
 ## Blockers / Notes

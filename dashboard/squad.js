@@ -418,6 +418,13 @@
     document.getElementById("squad-empty-refresh")?.addEventListener("click", () => {
       document.getElementById("btn-refresh")?.click();
     });
+    document.getElementById("squad-board")?.addEventListener("click", (e) => {
+      const card = e.target.closest(".player-card[data-player-id]");
+      if (!card) return;
+      if (typeof window.setExplorerSelectedPlayer === "function") {
+        window.setExplorerSelectedPlayer(Number(card.dataset.playerId));
+      }
+    });
     document.getElementById("explorer-table")?.addEventListener("dragstart", (e) => {
       const tr = e.target.closest("tr[data-player-id]");
       if (!tr) return;

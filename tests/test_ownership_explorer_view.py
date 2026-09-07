@@ -88,10 +88,16 @@ def test_player_component_card_and_xmin_profile_labels() -> None:
     explorer = Path("dashboard/explorer.js").read_text(encoding="utf-8")
     squad = Path("dashboard/squad.js").read_text(encoding="utf-8")
     assert 'id="player-component-card"' in html
+    assert 'id="player-component-head"' in html
     assert 'id="player-component-body"' in html
+    assert html.index('class="explorer-charts"') < html.index('id="player-component-card"')
+    assert html.index('id="player-component-card"') < html.index('id="explorer-table-wrap"')
     assert 'id="explorer-xmins-floor"' in html
     assert 'id="explorer-xmins-floor-val">0</span>' in html
     assert "renderPlayerComponents" in explorer
+    assert "PLAYER_COMPONENT_ROWS" in explorer
+    assert "setExplorerSelectedPlayer" in explorer
+    assert "setExplorerSelectedPlayer" in squad
     assert '["xmins", "xMins"]' in squad
     assert '["xp_minutes", "Appearance xP"]' in squad
     assert '["xp_minutes", "Minutes"]' not in squad
