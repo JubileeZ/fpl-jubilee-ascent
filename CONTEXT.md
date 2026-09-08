@@ -293,8 +293,8 @@ Exported player metadata, historical rates, and per-gameweek Event Component pro
 _Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed, prefilled_squad_ids, Dream Team persist
 
 **Dashboard Refresh**:
-In-page FPL ingest plus Champion and Comparison Slate projection rewrite of the Dashboard Data Contract. Charts reload without restarting the server. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects from disk then serves. Else paints last JSON. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard. Does not Solve a Dream Team.
-_Avoid_: Re-solve, `--rebuild-roles`, blocking process start on ingest, table-gated Project, auto-MILP on open, Dream Team Solve as Refresh
+In-page FPL ingest plus Primary Projection Model rewrite of the Dashboard Data Contract (Champion if none selected). Charts reload without restarting the server. Exclusive with Dream Team Solve. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects Primary from disk then serves. Else paints last JSON. `--models` still exports Comparison Slate. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard. Does not Solve a Dream Team.
+_Avoid_: Re-solve, `--rebuild-roles`, blocking process start on ingest, table-gated Project, auto-MILP on open, Dream Team Solve as Refresh, projecting Comparison Slate on Refresh
 
 **Interactive Squad Builder**:
 Retired product surface. Not a dashboard tab. A sandbox 15 is not a product object. Squad Board is the User Squad plus Squad What-If, not this. Dream Team is an Explorer overlay, not this.
@@ -309,8 +309,8 @@ Browser-only overlay on the Squad Board. One 15 and one Starting Shape for the w
 _Avoid_: Interactive Squad Builder, sandbox 15, Re-solve, applying Hits, persisting a second 15, per-Gameweek transfers, Transfer Plan, Dream Team as What-If
 
 **Dream Team**:
-Projected legal 15 for this Planning Horizon under current budget (ITB + Selling Prices of the User Squad; £100.0m if no User Squad). Ownership Explorer overlay only (badge Dream); frozen 15, no later transfers; Primary Projection Model; session-only. Not a played chip.
-_Avoid_: FPL in_dreamteam, dreamteam_count, realized GW XI, Wildcard 15, WC badge, Transfer Plan, sandbox 15, Guide 15, Best 15, Load MILP Squad, Available Chip gate, --preseason £100.0m when a User Squad exists, Assume 90 in the MILP, xmin_lb 100, embedding IDs in the Dashboard Data Contract
+Projected legal 15 for this Planning Horizon under current budget (ITB + Selling Prices of the User Squad; £100.0m if no User Squad). Ownership Explorer overlay only (badge Dream); frozen 15, no later transfers; Primary Projection Model; session-only. Exclusive with Dashboard Refresh. Serial HiGHS (parallel off, one thread). Not a played chip.
+_Avoid_: FPL in_dreamteam, dreamteam_count, realized GW XI, Wildcard 15, WC badge, Transfer Plan, sandbox 15, Guide 15, Best 15, Load MILP Squad, Available Chip gate, --preseason £100.0m when a User Squad exists, Assume 90 in the MILP, xmin_lb 100, embedding IDs in the Dashboard Data Contract, concurrent Refresh
 
 **Rule Breach**:
 Squad What-If state that violates club cap, ITB ≥ 0, or Starting Shape. Banner is noticeable; Squad xP and ITB still compute. Wrong-Position drop is refused, not a Rule Breach.

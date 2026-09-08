@@ -16,6 +16,7 @@ configure_utf8_stdio()
 
 from features.builder import build_features, resolve_operational_processed_dir
 from models import get_default_model_name, get_model
+from models.selection import projection_model_names
 from projections.explorer_slice import (
     COMPONENT_KEYS,
     GameweekScore,
@@ -452,7 +453,7 @@ def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export player projections and stats for dashboard.")
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
-    parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
+    parser.add_argument("--models", type=str, nargs="+", default=None, help="Comparison Slate override (export all named models)")
     parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning horizon")
     parser.add_argument("--target_gw", type=int, help="Target starting gameweek")
     parser.add_argument(
@@ -463,19 +464,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Determine model list to export
-    if args.models:
-        model_names = args.models
-    elif args.model:
-        model_names = [args.model]
-    else:
-        try:
-            from models.selection import load_model_selection
-            sel = load_model_selection()
-            model_names = list(dict.fromkeys([sel.champion, *sel.candidates]))
-        except Exception:
-            model_names = [get_default_model_name()]
-
+    model_names = projection_model_names(args.model, args.models)
     default_model = args.model or model_names[0]
 
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)

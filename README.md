@@ -195,13 +195,15 @@ The local dashboard is Ownership Explorer. Transfer Plan is CLI (`commands.solve
 uv run python -m commands.dashboard
 ```
 
-The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects Champion and Comparison Slate from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
+The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects the Primary Model (Champion by default) from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-Click **Refresh** in the header to ingest live FPL data, re-project, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins the current season into `data/archive/<season>/`.
+Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins the current season into `data/archive/<season>/`. Refresh and Solve cannot run at the same time; both buttons disable until the running job finishes.
 
-Click **Solve Dream Team** to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board.
+Click **Solve Dream Team** to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
 
-Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` / `--models` override Champion/Candidate export. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
+Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. After pull, open the dashboard (or Refresh) on each machine from the same processed tables. Leftover `data/processed` on one machine vs the Season Archive pin on another will disagree. Live Refresh at different times can also disagree because FPL data moved.
+
+Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` sets Primary; `--models` still exports a Comparison Slate. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
 
 **Planning Horizon**
 

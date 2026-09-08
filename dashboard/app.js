@@ -94,6 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let modelBound = false;
   let refreshBound = false;
   let dreamBound = false;
+  let activeJobs = 0;
 
   function unfinishedGws() {
     const listed = metaData.unfinished_gameweeks;
@@ -191,9 +192,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function setupModelSelect() {
     const select = document.getElementById("primaryModelSelect");
     if (!select) return;
-    const models = metaData.models || [metaData.default_model || "default"];
-    primaryModel = metaData.default_model || models[0];
+    const models = (metaData.models && metaData.models.length)
+      ? metaData.models
+      : [metaData.default_model].filter(Boolean);
+    primaryModel = metaData.default_model || models[0] || "";
     select.innerHTML = "";
+    if (!models.length) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Champion Model";
+      select.appendChild(opt);
+    }
     models.forEach((name) => {
       const opt = document.createElement("option");
       opt.value = name;
@@ -238,6 +247,25 @@ document.addEventListener("DOMContentLoaded", () => {
     if (el) el.textContent = text;
   }
 
+  function setJobsBusy(busy) {
+    const refreshBtn = document.getElementById("btn-refresh");
+    const dreamBtn = document.getElementById("btn-dream-team");
+    const modelSelect = document.getElementById("primaryModelSelect");
+    if (refreshBtn) refreshBtn.disabled = busy;
+    if (dreamBtn) dreamBtn.disabled = busy;
+    if (modelSelect) modelSelect.disabled = busy;
+  }
+
+  function beginJob() {
+    activeJobs += 1;
+    setJobsBusy(true);
+  }
+
+  function endJob() {
+    activeJobs = Math.max(0, activeJobs - 1);
+    if (activeJobs === 0) setJobsBusy(false);
+  }
+
   async function loadDashboardJson() {
     const response = await fetch(`dashboard_data.json?t=${Date.now()}`);
     if (!response.ok) throw new Error("No dashboard_data.json yet. Click Refresh.");
@@ -279,11 +307,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function refreshDashboard() {
     const btn = document.getElementById("btn-refresh");
-    if (btn) btn.disabled = true;
+    if (btn && btn.disabled) return;
+    beginJob();
     if (window.clearDreamTeam) window.clearDreamTeam();
     setRefreshStatus("Starting Refresh…");
     try {
-      const post = await fetch("/api/refresh", { method: "POST" });
+      const post = await fetch("/api/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: primaryModel }),
+      });
       const body = await post.json();
       if (post.status >= 400 && body.status !== "running") {
         throw new Error(body.error || "Refresh failed to start");
@@ -296,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(err);
       setRefreshStatus(err.message || String(err));
     } finally {
-      if (btn) btn.disabled = false;
+      endJob();
     }
   }
 
@@ -336,7 +369,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function solveDreamTeam() {
     const btn = document.getElementById("btn-dream-team");
-    if (btn) btn.disabled = true;
+    if (btn && btn.disabled) return;
+    beginJob();
     setRefreshStatus("Solving Dream Team…");
     try {
       const startSel = document.getElementById("horizonStart");
@@ -364,7 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(err);
       setRefreshStatus(err.message || String(err));
     } finally {
-      if (btn) btn.disabled = false;
+      endJob();
     }
   }
 

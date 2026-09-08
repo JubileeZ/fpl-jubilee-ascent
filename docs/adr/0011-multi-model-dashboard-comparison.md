@@ -8,7 +8,7 @@ The engine supports multiple projection models (Champion model `participation_st
 
 Extend the dashboard data contract and web UI to support multi-model projection exports and side-by-side table comparisons.
 
-1. **Export Engine Scope**: `commands.dashboard` / `commands.export_dashboard` bundle projections for Champion and Candidate models defined in `config/model_selection.json` (overridable via `--models` CLI flag) into `dashboard_data.json`.
+1. **Export Engine Scope**: In-page Refresh, Open project-on-stale, and Dream Team Solve project the Primary Projection Model (Champion default). `--models` still exports Champion and Candidates from `config/model_selection.json` into `dashboard_data.json`.
 2. **Primary Model & Comparison Selection**: Frontend controls allow setting a **Primary Model** (defaulting to Champion) and toggling optional **Compare Models**.
    - Primary Model drives pitch xP summaries, bench metrics, squad rule validation, and default MILP squad loading.
    - Secondary Compare Models append side-by-side table columns (`xP [Candidate]`, `Diff xP`).
@@ -20,4 +20,4 @@ Extend the dashboard data contract and web UI to support multi-model projection 
 - User can toggle between clean single-model view and multi-model side-by-side comparison matrix.
 - MILP optimization remains strictly single-model per run while enabling visual comparison against candidate model projections.
 
-**Status:** Accepted. Compare Models overlay retired with Interactive Squad Builder (ADR 0018). Primary Model still selects Ownership Explorer ranking and Mix scores. Transfer Plan is always the Model Champion.
+**Status:** Accepted. Compare Models overlay retired with Interactive Squad Builder (ADR 0018). Primary Model still selects Ownership Explorer ranking and Mix scores. Transfer Plan is always the Model Champion. In-page Refresh, Open project-on-stale, and Dream Team Solve project the Primary Projection Model (Champion default). `--models` still exports the Comparison Slate.

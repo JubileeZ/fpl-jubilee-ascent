@@ -537,6 +537,43 @@ def test_run_refresh_job_ok_and_project_refuse(monkeypatch) -> None:
     assert "projection failed" in str(refresh_status()["error"])
 
 
+def test_projection_model_names_defaults_to_champion_not_slate() -> None:
+    from commands.dashboard import posted_primary_model
+    from models.selection import default_model_name, projection_model_names
+
+    assert projection_model_names(None, None) == [default_model_name()]
+    assert projection_model_names("linear_baseline", None) == ["linear_baseline"]
+    assert projection_model_names(None, ["a", "b"]) == ["a", "b"]
+    assert posted_primary_model({"model": "metrics_component_hybrid"}) == "metrics_component_hybrid"
+    assert posted_primary_model({"model": "default"}) == default_model_name()
+    assert posted_primary_model({"model": ""}) == default_model_name()
+    assert posted_primary_model({}) == default_model_name()
+
+
+def test_handle_dashboard_api_refresh_posts_primary_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    captured: dict[str, object] = {}
+
+    def fake_start(**kwargs: object) -> tuple[int, dict[str, object]]:
+        captured.update(kwargs)
+        return 202, {"status": "running", "error": None, "detail": "Starting…"}
+
+    monkeypatch.setattr(dash, "start_refresh", fake_start)
+    status, payload = dash.handle_dashboard_api(
+        "POST", "/api/refresh", {"model": "metrics_component_hybrid"}
+    )
+    assert status == 202
+    assert payload["status"] == "running"
+    assert captured["model_name"] == "metrics_component_hybrid"
+
+    captured.clear()
+    status, payload = dash.handle_dashboard_api("POST", "/api/refresh", {"model": "default"})
+    assert status == 202
+    from models.selection import default_model_name
+    assert captured["model_name"] == default_model_name()
+
+
 def test_explorer_reports_xmins_not_role() -> None:
     root = Path(__file__).resolve().parents[1]
     html = (root / "dashboard" / "index.html").read_text(encoding="utf-8")

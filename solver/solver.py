@@ -953,10 +953,14 @@ def solve_multi_period_fpl(data, options):
             gap = options.get("gap", 0)
             random_seed = options.get("random_seed", 0)
             verbose = options.get("verbose", False)
+            parallel = options.get("parallel", "on")
+            threads = options.get("threads")
 
             solver_instance = highspy.Highs()
             solver_instance.readModel(str(mps_file_name))
-            solver_instance.setOptionValue("parallel", "on")
+            solver_instance.setOptionValue("parallel", parallel)
+            if threads is not None:
+                solver_instance.setOptionValue("threads", int(threads))
             solver_instance.setOptionValue("random_seed", random_seed)
             solver_instance.setOptionValue("presolve", presolve)
             solver_instance.setOptionValue("time_limit", secs)

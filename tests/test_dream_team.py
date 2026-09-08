@@ -86,6 +86,9 @@ def test_dream_team_options_are_frozen_unconstrained_rebuild() -> None:
     assert options["enabled_chip_windows"] == []
     assert options["chip_limits"]["wc"] == 1
     assert options["secs"] == 90
+    assert options["parallel"] == "off"
+    assert options["threads"] == 1
+    assert options["random_seed"] == 0
 
 
 def test_dream_team_my_data_is_empty_picks_with_current_bank(tmp_path: Path) -> None:
@@ -187,9 +190,9 @@ def test_handle_dashboard_api_dream_team_post_and_get(monkeypatch: pytest.Monkey
     dash.reset_dream_team_state()
     captured: dict[str, object] = {}
 
-    def fake_start(**kwargs: object) -> dict[str, object]:
+    def fake_start(**kwargs: object) -> tuple[int, dict[str, object]]:
         captured.update(kwargs)
-        return {"status": "running", "error": None, "detail": "Starting…"}
+        return 202, {"status": "running", "error": None, "detail": "Starting…"}
 
     monkeypatch.setattr(dash, "start_dream_team", fake_start)
     status, payload = dash.handle_dashboard_api(
@@ -211,4 +214,38 @@ def test_handle_dashboard_api_dream_team_post_and_get(monkeypatch: pytest.Monkey
     get_status, get_payload = dash.handle_dashboard_api("GET", "/api/dream-team", None)
     assert get_status == 200
     assert get_payload["player_ids"] == [9]
+
+
+def test_refresh_conflicts_with_running_dream_team() -> None:
+    from commands import dashboard as dash
+
+    dash.reset_refresh_state()
+    dash.reset_dream_team_state()
+    dash._set_dream_state(status="running", detail="Solving…")
+    status, payload = dash.handle_dashboard_api("POST", "/api/refresh", {"model": "linear_baseline"})
+    assert status == 409
+    assert "Dream Team" in str(payload["error"])
+    dash.reset_dream_team_state()
+
+
+def test_dream_team_conflicts_with_running_refresh() -> None:
+    from commands import dashboard as dash
+
+    dash.reset_refresh_state()
+    dash.reset_dream_team_state()
+    dash._set_refresh_state(status="running", detail="Ingesting…")
+    status, payload = dash.handle_dashboard_api(
+        "POST",
+        "/api/dream-team",
+        {"model": "linear_baseline", "horizon_start": 1, "horizon_end": 5},
+    )
+    assert status == 409
+    assert "Refresh" in str(payload["error"])
+    dash.reset_refresh_state()
+
+
+def test_highs_honours_parallel_and_threads_options() -> None:
+    src = Path("solver/solver.py").read_text(encoding="utf-8")
+    assert 'options.get("parallel", "on")' in src
+    assert 'setOptionValue("threads"' in src
 

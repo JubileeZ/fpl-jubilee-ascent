@@ -33,7 +33,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
 | Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
 | Features & Projections | `features/`, `projections/` | Feature Contract (finished Club Fixture shrinkage; ADR 0024/0026). Solver exporters, Ownership Explorer slice. Expected Role retired. |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board. Open projects from processed when JSON stale (no ingest). Refresh in page ingest+project. Solve Dream Team overlay (ADR 0028): gold ring + `Dream` badge; session-only; ITB+Selling or £100.0m; not on Squad Board. Player components card (horizon total + avg/GW). Squad components: xMins vs Appearance xP. Full-Season Feature Contract from GW1 keeps finished Club Fixtures. Operational dir: `data/processed` else live Season Archive pin. Squad What-If. Assume 90. xMins column. Default avg-minutes floor 0. No Mix vs Mix. No Role. ADR 0021 / 0025 / 0027 / 0028. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board. Open projects Primary Model from processed when JSON stale (no ingest). Refresh in page ingest+project selected Primary. Solve Dream Team overlay (ADR 0028): gold ring + `Dream` badge; session-only; ITB+Selling or £100.0m; not on Squad Board. Refresh and Solve exclusive. Serial HiGHS for Dream Team. Player components card (horizon total + avg/GW). Squad components: xMins vs Appearance xP. Full-Season Feature Contract from GW1 keeps finished Club Fixtures. Operational dir: `data/processed` else live Season Archive pin. Squad What-If. Assume 90. xMins column. Default avg-minutes floor 0. No Mix vs Mix. No Role. ADR 0021 / 0025 / 0027 / 0028. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
 | README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
@@ -67,7 +67,7 @@ uv run python -m commands.decision_regret --entry_id <public-entry-id>
 uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
 uv run python -m commands.report                       # Print report
 uv run python -m commands.price_report                # Print price changes
-uv run python -m commands.dashboard                   # Ownership Explorer; open projects if JSON stale; Refresh ingest+project; Solve Dream Team
+uv run python -m commands.dashboard                   # Ownership Explorer; open projects Primary if JSON stale; Refresh ingest+Primary; Solve Dream Team; exclusive jobs
 uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir data/archive/2024-25/vaastav
 uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
 uv run python -m commands.transfer_plan_walkforward  # Ranking when 2024-25 seed exists; else blocked summary

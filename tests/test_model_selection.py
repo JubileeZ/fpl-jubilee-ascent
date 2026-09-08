@@ -7,6 +7,7 @@ from models.selection import (
     ModelSelection,
     default_model_name,
     load_model_selection,
+    projection_model_names,
     save_model_selection,
 )
 
@@ -79,3 +80,28 @@ def test_default_model_name_returns_champion(tmp_path: Path) -> None:
     )
 
     assert default_model_name(config_path) == "participation_state_hybrid"
+
+
+def test_projection_model_names_defaults_to_champion_not_slate(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "champion": "dual_vector_state_hybrid",
+                "candidates": ["participation_state_hybrid", "metrics_component_hybrid"],
+                "promotion_status": "provisional",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert projection_model_names(config_path=config_path) == ["dual_vector_state_hybrid"]
+    assert projection_model_names("metrics_component_hybrid", config_path=config_path) == [
+        "metrics_component_hybrid"
+    ]
+    assert projection_model_names(
+        "dual_vector_state_hybrid",
+        ["a", "b", "a"],
+        config_path=config_path,
+    ) == ["a", "b"]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,3 +49,20 @@ def save_model_selection(selection: ModelSelection, path: Path | None = None) ->
 
 def default_model_name(path: Path | None = None) -> str:
     return load_model_selection(path).champion
+
+
+def projection_model_names(
+    model_name: str | None = None,
+    model_names: Sequence[str] | None = None,
+    *,
+    config_path: Path | None = None,
+) -> list[str]:
+    """Models to project for Explorer. Default Champion only. `--models` keeps the slate."""
+    if model_names:
+        return list(dict.fromkeys(model_names))
+    if model_name:
+        return [model_name]
+    try:
+        return [default_model_name(config_path)]
+    except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
+        return ["participation_state_hybrid"]

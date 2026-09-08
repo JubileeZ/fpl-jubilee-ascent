@@ -186,13 +186,18 @@ body {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 
 .btn-primary {
   background: var(--accent);
   color: #042f2e;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--accent-hover);
   }
 }

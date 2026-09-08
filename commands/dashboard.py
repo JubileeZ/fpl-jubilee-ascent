@@ -30,6 +30,7 @@ from commands import refresh_data
 from features.builder import build_features, resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_default_model_name, get_model
+from models.selection import projection_model_names
 from projections.exporter import write_solver_projection_csvs
 from solver.planning import clamp_planning_horizon, planning_window
 from solver.utils import DEFAULT_PLANNING_HORIZON
@@ -38,6 +39,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+_job_lock = threading.Lock()
 _refresh_lock = threading.Lock()
 _refresh_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
 _dream_lock = threading.Lock()
@@ -110,17 +112,12 @@ def ingest_live_data(season: str = LIVE_SEASON) -> None:
     asyncio.run(refresh_data.main(["--season", season]))
 
 
-def comparison_slate_models(model_name: str | None, model_names: list[str] | None) -> list[str]:
-    if model_names:
-        return list(model_names)
-    if model_name:
-        return [model_name]
-    try:
-        from models.selection import load_model_selection
-        sel = load_model_selection()
-        return list(dict.fromkeys([sel.champion, *sel.candidates]))
-    except Exception:
-        return [get_default_model_name()]
+def posted_primary_model(body: dict[str, object] | None) -> str:
+    """Posted Primary Model, or Champion when missing/placeholder `default`."""
+    raw = str((body or {}).get("model") or "").strip()
+    if not raw or raw.lower() == "default":
+        return get_default_model_name()
+    return raw
 
 
 def run_dashboard_export(
@@ -133,7 +130,7 @@ def run_dashboard_export(
     if not (processed_dir / "players.parquet").exists():
         raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
 
-    names = comparison_slate_models(model_name, model_names)
+    names = projection_model_names(model_name, model_names)
     default_model = model_name or names[0]
     horizon = clamp_planning_horizon(horizon)
     if target_gw is None:
@@ -203,19 +200,26 @@ def start_refresh(
     model_name: str | None = None,
     horizon: int = DEFAULT_PLANNING_HORIZON,
     model_names: list[str] | None = None,
-) -> dict[str, object]:
-    with _refresh_lock:
-        if _refresh_state["status"] == "running":
-            return dict(_refresh_state)
-        _refresh_state["status"] = "running"
-        _refresh_state["error"] = None
-        _refresh_state["detail"] = "Starting…"
+) -> tuple[int, dict[str, object]]:
+    with _job_lock:
+        if dream_team_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Dream Team Solve is running. Wait for it to finish.",
+                "detail": "Dream Team Solve is running. Wait for it to finish.",
+            }
+        with _refresh_lock:
+            if _refresh_state["status"] == "running":
+                return 202, dict(_refresh_state)
+            _refresh_state["status"] = "running"
+            _refresh_state["error"] = None
+            _refresh_state["detail"] = "Starting…"
     threading.Thread(
         target=run_refresh_job,
         kwargs={"model_name": model_name, "horizon": horizon, "model_names": model_names},
         daemon=True,
     ).start()
-    return refresh_status()
+    return 202, refresh_status()
 
 
 def run_dream_team_job(*, model_name: str, target_gw: int, horizon: int) -> None:
@@ -242,28 +246,35 @@ def run_dream_team_job(*, model_name: str, target_gw: int, horizon: int) -> None
         _set_dream_state(status="error", error=str(exc), detail="Solve failed.", player_ids=None)
 
 
-def start_dream_team(*, model_name: str, target_gw: int, horizon: int) -> dict[str, object]:
-    with _dream_lock:
-        if _dream_state["status"] == "running":
-            return dict(_dream_state)
-        _dream_state["status"] = "running"
-        _dream_state["error"] = None
-        _dream_state["detail"] = "Starting…"
-        _dream_state["player_ids"] = None
-        _dream_state["budget"] = None
-        _dream_state["leftover"] = None
-        _dream_state["model"] = None
+def start_dream_team(*, model_name: str, target_gw: int, horizon: int) -> tuple[int, dict[str, object]]:
+    with _job_lock:
+        if refresh_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Refresh is running. Wait for it to finish.",
+                "detail": "Refresh is running. Wait for it to finish.",
+            }
+        with _dream_lock:
+            if _dream_state["status"] == "running":
+                return 202, dict(_dream_state)
+            _dream_state["status"] = "running"
+            _dream_state["error"] = None
+            _dream_state["detail"] = "Starting…"
+            _dream_state["player_ids"] = None
+            _dream_state["budget"] = None
+            _dream_state["leftover"] = None
+            _dream_state["model"] = None
     threading.Thread(
         target=run_dream_team_job,
         kwargs={"model_name": model_name, "target_gw": target_gw, "horizon": horizon},
         daemon=True,
     ).start()
-    return dream_team_status()
+    return 202, dream_team_status()
 
 
 def _dream_team_args(body: dict[str, object] | None) -> tuple[str, int, int]:
     payload = body or {}
-    model_name = str(payload.get("model") or get_default_model_name())
+    model_name = posted_primary_model(payload)
     start = int(payload.get("horizon_start") or 1)
     end = int(payload.get("horizon_end") or start)
     gws = planning_window(start, end)
@@ -282,13 +293,14 @@ def handle_dashboard_api(
         if method == "GET":
             return 200, refresh_status()
         if method == "POST":
-            return 202, start_refresh()
+            model_name = posted_primary_model(body)
+            return start_refresh(model_name=model_name)
     if path == "/api/dream-team":
         if method == "GET":
             return 200, dream_team_status()
         if method == "POST":
             model_name, target_gw, horizon = _dream_team_args(body)
-            return 202, start_dream_team(
+            return start_dream_team(
                 model_name=model_name, target_gw=target_gw, horizon=horizon
             )
     return 404, {"error": "Not found"}
@@ -383,10 +395,10 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Serve Ownership Explorer. Open projects from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects. Solve Dream Team paints an Explorer overlay."
+        description="Serve Ownership Explorer. Open projects the Primary Model from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects the selected Primary Model. Solve Dream Team paints an Explorer overlay. Refresh and Solve cannot run together."
     )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
-    parser.add_argument("--models", type=str, nargs="+", default=None, help="List of model names to export")
+    parser.add_argument("--models", type=str, nargs="+", default=None, help="Comparison Slate override (export all named models)")
     parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning Horizon length")
     parser.add_argument("--target_gw", type=int, help="Horizon Start override for --export-only")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")

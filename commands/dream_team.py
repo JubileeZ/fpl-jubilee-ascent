@@ -72,6 +72,9 @@ def dream_team_options(model_name: str, target_gw: int, horizon: int) -> dict[st
     options["forced_chip_gws"] = {}
     options["chip_limits"] = {"wc": 1, "bb": 0, "fh": 0, "tc": 0}
     options["secs"] = 90
+    options["parallel"] = "off"
+    options["threads"] = 1
+    options["random_seed"] = 0
     return options
 
 

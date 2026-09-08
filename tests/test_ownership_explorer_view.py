@@ -21,10 +21,18 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert 'id="horizonEnd"' in html
     assert "Horizon begins" in html
     assert "Horizon to" in html
+    assert 'id="primaryModelSelect"' in html
+    assert 'value="default"' not in html
+    assert 'value="">Champion Model' in html
     assert 'id="btn-refresh"' in html
     assert 'id="btn-dream-team"' in html
     assert "/api/refresh" in js
     assert "/api/dream-team" in js
+    assert "setJobsBusy" in js
+    assert "beginJob" in js
+    assert js.count("model: primaryModel") >= 2
+    assert "default_model || \"default\"" not in js
+    assert "filter(Boolean)" in js
     assert 'id="tab-plan"' not in html
     assert "plan.js" not in html
     assert "Squad Builder" not in html
