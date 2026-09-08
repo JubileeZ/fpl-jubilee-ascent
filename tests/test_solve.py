@@ -123,6 +123,15 @@ def test_solve_cli_prints_summary(capsys):
         assert "Mock recommended transfers and lineups" in captured.out
 
 
+def test_solve_cli_uses_champion_not_stale_settings_datasource() -> None:
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
+         patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
+         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
+         patch("sys.argv", ["commands.solve", "--preseason"]):
+        main()
+    assert pad_mock.call_args.args[0].name == "dual_vector_state_hybrid.csv"
+
 
 def test_load_settings_uses_champion_as_default(tmp_path, monkeypatch):
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)

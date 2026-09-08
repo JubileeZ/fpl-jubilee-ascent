@@ -349,8 +349,7 @@ def main() -> None:
     
     # Apply CLI overrides
     options["horizon"] = clamp_planning_horizon(args.horizon)
-    if args.model:
-        options["datasource"] = args.model
+    options["datasource"] = args.model or get_default_model_name()
     if args.decay_base is not None:
         options["decay_base"] = args.decay_base
     if args.hit_cost is not None:

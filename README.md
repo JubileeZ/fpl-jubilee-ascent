@@ -137,6 +137,8 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.solve --horizon 6
 ```
 
+The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV.
+
 *Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
 (for example `--horizon 6 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
 Unsupported solver options fail before solving.

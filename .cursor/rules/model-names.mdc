@@ -10,7 +10,7 @@ When writing or running `run_model`, `backtest`, `report --model`, `dashboard --
 
 - Use the exact `BaseModel.name` string from [docs/model_name.md](docs/model_name.md).
 - Champion is `config/model_selection.json` `champion`, not a hardcoded default.
-- `commands.solve` always uses Champion; do not invent a `--model` flag for it.
+- `commands.solve` defaults to Champion and ignores stale `data/user_settings.json` `datasource`. `--model` is an explicit CSV override.
 - Filename is not the identifier: `models/dual_vector_state_hybrid.py` → `dual_vector_state_hybrid`.
 - New model: unique `name` property + a catalog row in `docs/model_name.md`.
 

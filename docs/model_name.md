@@ -25,7 +25,7 @@ Fallback if `model_selection.json` is missing: `participation_state_hybrid` (`mo
 | `uv run python -m commands.report --model NAME` | `--model` | solver `datasource` / Champion CSV |
 | `uv run python -m commands.dashboard --model NAME` | `--model` | Champion; `--models` exports a Comparison Slate |
 | `uv run python -m commands.decision_regret --model NAME` | `--model` | `participation_state_hybrid` if omitted |
-| `uv run python -m commands.solve` | none | Champion only |
+| `uv run python -m commands.solve` | `--model` optional | Champion (`config/model_selection.json`); stale `data/user_settings.json` `datasource` is ignored |
 
 Outputs: `data/<name>.csv` projections; `data/reports/top_picks_<name>.csv` from `commands.report`.
 
