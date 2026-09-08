@@ -5,6 +5,7 @@ Start here to find durable project documentation.
 ## Project
 
 - [Project overview and CLI usage](../README.md)
+- [Projection model names](model_name.md)
 - [Current implementation state](agents/current-state.md)
 - [Roadmap](../ROADMAP.md)
 - [Domain vocabulary](../CONTEXT.md)

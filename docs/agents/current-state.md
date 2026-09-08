@@ -31,10 +31,11 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | API Clients | `clients/fpl_api.py`, `clients/fpl_auth.py` | Inbound request handlers and JWT Playwright/tiered login (`.env` credentials → `data/session_token.json` → `user_picks.parquet`) |
 | Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
 | CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
-| Custom Models | `models/` | Linear, component, hybrid, and participation-state models |
+| Custom Models | `models/`, `docs/model_name.md` | Linear, component, hybrid, participation-state, Dual-Vector. CLI names in catalog. Champion = `config/model_selection.json`. |
 | Features & Projections | `features/`, `projections/` | Feature Contract (finished Club Fixture shrinkage; ADR 0024/0026). Solver exporters, Ownership Explorer slice. Expected Role retired. |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board. Open projects Primary Model from processed when JSON stale (no ingest). Refresh in page ingest+project selected Primary. Solve Dream Team overlay (ADR 0028): gold ring + `Dream` badge; session-only; ITB+Selling or £100.0m; not on Squad Board. Refresh and Solve exclusive. Serial HiGHS for Dream Team. Player components card (horizon total + avg/GW). Squad components: xMins vs Appearance xP. Full-Season Feature Contract from GW1 keeps finished Club Fixtures. Operational dir: `data/processed` else live Season Archive pin. Squad What-If. Assume 90. xMins column. Default avg-minutes floor 0. No Mix vs Mix. No Role. ADR 0021 / 0025 / 0027 / 0028. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
-| README preview | `README.md` | CLI fences not nested in unordered-list items (§3 / Development). Preview must show §3 after availability-overrides paragraph. |
+| README preview | `README.md` | How to use + CLI. Fences not nested in unordered-list items (CLI §3 / Development). Preview must show CLI §3 after availability-overrides paragraph. Model names → `docs/model_name.md`. |
+| Model names | `docs/model_name.md`, `.cursor/rules/model-names.mdc` | CLI `BaseModel.name` catalog. Champion = `config/model_selection.json`. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
 | Vendored Solver | `solver/` | Port of open-fpl-solver modules |
 | Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Research HTML is not the dashboard product view. `data/archive/` = Season Archive pins |
@@ -89,6 +90,7 @@ uv run python -m commands.transfer_plan_walkforward  # Ranking when 2024-25 seed
 | Question | Read |
 |----------|------|
 | Documentation map | `docs/README.md` |
+| Projection model names | `docs/model_name.md` |
 | Glossary | `CONTEXT.md` |
 | Phases & checklist | `ROADMAP.md` |
 | Agent rules | `AGENTS.md` |

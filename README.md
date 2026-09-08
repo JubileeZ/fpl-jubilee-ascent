@@ -26,6 +26,39 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 The complete locked dependency set is defined in [pyproject.toml](pyproject.toml)
 and [uv.lock](uv.lock).
 
+## How to use
+
+Weekly path: ingest Official FPL data, then open Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a dashboard tab. Projection model names (CLI identifiers) are listed in [docs/model_name.md](docs/model_name.md).
+
+### Weekly loop
+
+```bash
+uv run python -m commands.refresh_data
+uv run python -m commands.dashboard
+```
+
+Server: `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`). Click **Refresh** in the page to ingest live data and re-project the selected Primary Model without restarting. You can skip `commands.refresh_data` if you will click Refresh after opening. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
+
+Playwright Chromium plus `.env` (`FPL_EMAIL`, `FPL_PASSWORD`) are required for authenticated User Squad ingest. See [Installation](#installation).
+
+### CLI projections and Transfer Plan
+
+The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). `commands.solve` always uses the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+
+```bash
+uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.solve --horizon 6
+uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
+```
+
+Preseason draft (no User Squad):
+
+```bash
+uv run python -m commands.solve --preseason --xmin_lb 0
+```
+
+Full CLI recipes follow.
+
 ## Repository Layout
 
 - `clients/` — FPL API and authentication clients
@@ -37,7 +70,7 @@ and [uv.lock](uv.lock).
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
 - `data/` — ignored live caches and reports; tracked historical archives in `data/archive/`
-- `docs/` — project documentation; start with the [documentation map](docs/README.md)
+- `docs/` — project documentation; start with the [documentation map](docs/README.md) and [model names](docs/model_name.md)
 
 ## CLI Usage Flow
 
@@ -55,19 +88,19 @@ uv run python -m commands.refresh_data
 
 ### 2. Run Projections
 
-Generate per-player per-gameweek expected points (xP) and minutes projections using chosen model. Saves projection table to `data/<model_name>.csv`.
+Generate per-player per-gameweek expected points (xP) and minutes projections using a catalog name from [docs/model_name.md](docs/model_name.md). Saves `data/<model_name>.csv`.
 
 ```bash
 uv run python -m commands.run_model MODEL_NAME --horizon GWS
 ```
-*Example (default 5 gameweeks horizon):*
+*Example (Champion, default 5 gameweeks horizon):*
 ```bash
-uv run python -m commands.run_model participation_state_hybrid --horizon 5
+uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
 ```
 
-`participation_state_hybrid` is the operational default. `metrics_component_hybrid`
-remains available as the comparison baseline while snapshot-backed promotion
-validation continues.
+Champion is `config/model_selection.json` `champion`. Comparison Slate Candidates
+(`participation_state_hybrid`, `metrics_component_hybrid`) stay available while
+snapshot-backed promotion validation continues.
 
 The component seed/current-season blend can be tuned without editing code:
 
@@ -115,7 +148,7 @@ next gameweek, and save the full CSV report (including `Captain` and
 `Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`.
 
 ```bash
-uv run python -m commands.report --model participation_state_hybrid --horizon 5
+uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
 ```
 
 Record player prices after each refresh and report risers/fallers:
@@ -157,6 +190,8 @@ reports include MAE, RMSE, signed bias, rank validity, position strata, and
 shortlist overlap/regret. If active processed data has no
 `player_performances.parquet`, the command automatically uses the latest
 processed season archive.
+
+Read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) first. Pass a catalog name from [docs/model_name.md](docs/model_name.md).
 
 ```bash
 uv run python -m commands.backtest metrics_component_hybrid --gw_range 20-30 --seed_season 2025-26
@@ -243,7 +278,7 @@ Feature Contract minutes.
 | Price | Min–max £m band; applies to charts and table |
 | Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them |
 | Assume 90 | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only) |
-| Search | Player name, club, or expected role; applies to charts and table |
+| Search | Player name or club; applies to charts and table |
 
 The rank table is sorted by horizon **Total** descending by default. Click any
 column header to sort. Per-GW xP columns follow the Planning Horizon. Rank `#`
@@ -253,20 +288,38 @@ full slice.
 
 ### 9. Season Archiving
 
-Snapshot and process raw/processed data for historical season analysis.
+Snapshot and process raw/processed data for historical season analysis. `--from-vaastav-dir` is a frozen reconstruct of 2024-25 only. `--from-raw-dir` processes local Official FPL raw JSON (no HTTP).
 
 ```bash
-uv run python -m commands.snapshot_season
+uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir data/archive/2024-25/vaastav
+uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
+```
+
+Live `refresh_data` pins the current season into `data/archive/<season>/`.
+
+### 10. Compare and promote models
+
+Read-only Comparison Slate scorecard, then optional Champion write:
+
+```bash
+uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed
+uv run python -m commands.evaluate_model_promotion --apply --gw_range 1-38 --data_dir data/archive/2025-26/processed
+```
+
+First-Half Transfer Plan Walk-Forward ranking (needs 2024-25 seed; otherwise prints a blocked summary):
+
+```bash
+uv run python -m commands.transfer_plan_walkforward
 ```
 
 ## Adding Custom Models
 
-Create custom prediction model inside the [models/](models/) directory.
+Create a custom prediction model inside [models/](models/). CLI names and the Champion/Candidate split are documented in [docs/model_name.md](docs/model_name.md).
 
 1. Create Python file, e.g. `models/my_custom_model.py`.
 2. Inherit from `BaseModel` in [models/base.py](models/base.py).
-3. Implement `name` property and `predict` method.
-4. Model auto-discovered dynamically matching defined `name` value.
+3. Implement `name` property (the CLI identifier) and `predict` method.
+4. Model auto-discovered by matching that `name` value. Add a row to `docs/model_name.md`.
 
 Example:
 ```python

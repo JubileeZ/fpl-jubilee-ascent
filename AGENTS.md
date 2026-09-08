@@ -62,6 +62,7 @@ docs/          # Durable project documentation and decision records
 
 ## Docs & Research
 
+- CLI projection model names: [docs/model_name.md](docs/model_name.md). Champion = `config/model_selection.json`.
 - **MUST** read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) before performing backtesting or historical data exploration.
 - **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index and layout conventions.
 - Live research topic = `docs/research/<topic-slug>/` (note, runners, and companion CSV/HTML in that folder).

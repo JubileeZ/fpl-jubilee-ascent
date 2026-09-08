@@ -1,0 +1,24 @@
+---
+description: Use exact CLI projection model names from docs/model_name.md
+globs: models/**,commands/**,config/model_selection.json,README.md,docs/model_name.md,docs/testing/**
+alwaysApply: false
+---
+
+# Projection model names
+
+When writing or running `run_model`, `backtest`, `report --model`, `dashboard --model`, or `decision_regret --model`:
+
+- Use the exact `BaseModel.name` string from [docs/model_name.md](docs/model_name.md).
+- Champion is `config/model_selection.json` `champion`, not a hardcoded default.
+- `commands.solve` always uses Champion; do not invent a `--model` flag for it.
+- Filename is not the identifier: `models/dual_vector_state_hybrid.py` → `dual_vector_state_hybrid`.
+- New model: unique `name` property + a catalog row in `docs/model_name.md`.
+
+```bash
+# ✅ GOOD
+uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
+
+# ❌ BAD — alias, Champion label, or filename stem that is not `name`
+uv run python -m commands.run_model dual-vector
+uv run python -m commands.run_model champion
+```

@@ -8,6 +8,7 @@
 ## Historical Archive Testing Rules
 
 - `data/archive/<season>/processed/` contains historical season data for exploratory backtests, regression testing, and model comparison.
+- CLI model names: [docs/model_name.md](../model_name.md).
 - **Immutability Rule**: Treat `data/archive/` Parquet files as immutable. Regenerate historical data through archive/snapshot tooling; never edit or delete archive files directly.
 - **Exploratory Scope**: Archive backtests are exploratory only: terminal player, club, fixture, and availability metadata may not represent the pre-deadline information set.
 
