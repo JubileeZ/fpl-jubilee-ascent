@@ -47,7 +47,7 @@ The Model Champion is `config/model_selection.json` `champion` (currently `dual_
 
 ```bash
 uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
-uv run python -m commands.solve --horizon 6
+uv run python -m commands.solve --horizon 5
 uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
 ```
 
