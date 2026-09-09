@@ -16,6 +16,7 @@ from models import get_default_model_name
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
 from solver.planning import (
+    MAX_PLANNING_HORIZON,
     available_chips,
     clamp_planning_horizon,
     planning_gameweeks,
@@ -336,7 +337,12 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the FPL MILP optimization solver.")
-    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Number of gameweeks to optimize")
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=DEFAULT_PLANNING_HORIZON,
+        help="Planning Horizon length (1-10, default 6)",
+    )
     parser.add_argument("--model", type=str, help="Projections model name to use as datasource")
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
@@ -348,7 +354,15 @@ def main() -> None:
     options = load_settings()
     
     # Apply CLI overrides
-    options["horizon"] = clamp_planning_horizon(args.horizon)
+    clamped_horizon = clamp_planning_horizon(args.horizon)
+    if clamped_horizon != args.horizon:
+        logger.warning(
+            "--horizon %s exceeds max %s; using %s",
+            args.horizon,
+            MAX_PLANNING_HORIZON,
+            clamped_horizon,
+        )
+    options["horizon"] = clamped_horizon
     options["datasource"] = args.model or get_default_model_name()
     if args.decay_base is not None:
         options["decay_base"] = args.decay_base

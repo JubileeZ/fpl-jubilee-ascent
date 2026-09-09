@@ -136,7 +136,7 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 **Regular season solver** (optimizes active manager squad):
 
 ```bash
-uv run python -m commands.solve --horizon 6
+uv run python -m commands.solve --horizon 10
 ```
 
 The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV.
@@ -242,11 +242,11 @@ Click **Solve Dream Team** to run MILP for a Dream Team overlay on the current P
 
 Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. After pull, open the dashboard (or Refresh) on each machine from the same processed tables. Leftover `data/processed` on one machine vs the Season Archive pin on another will disagree. Live Refresh at different times can also disagree because FPL data moved.
 
-Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` sets Primary; `--models` still exports a Comparison Slate. `--horizon` is Planning Horizon length (1–6, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
+Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` sets Primary; `--models` still exports a Comparison Slate. `--horizon` is Planning Horizon length (1–10, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
 
 **Planning Horizon**
 
-Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most five weeks after Start (length 1–6), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates totals and charts immediately. It does not re-run the model.
+Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most nine weeks after Start (length 1–10), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates totals and charts immediately. It does not re-run the model.
 
 **Ownership Explorer**
 

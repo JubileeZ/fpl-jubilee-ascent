@@ -81,7 +81,7 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–6 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–6. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
+Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–10 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–10. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
 _Avoid_: Optimization length, 1–5 from is_next, default 5, excluding the live unfinished GW after deadline, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
 
 **Horizon Start**:
@@ -89,7 +89,7 @@ First Gameweek of the Planning Horizon. Any unfinished Gameweek from the earlies
 _Avoid_: is_next as the product start, target_gw as the UI name, picking a finished GW, locking Start to only the earliest unfinished, Horizon Begins as a second clock
 
 **Horizon End**:
-Last Gameweek of the Planning Horizon, inclusive. Must satisfy Start ≤ End ≤ min(Start+5, 38). Default = min(Start+5, 38).
+Last Gameweek of the Planning Horizon, inclusive. Must satisfy Start ≤ End ≤ min(Start+9, 38). Default = min(Start+5, 38).
 _Avoid_: length-only dropdown as the product control, End=38 as Full-Season, End=19 as First-Half, Horizon To as a second clock
 
 **First-Half Horizon**:

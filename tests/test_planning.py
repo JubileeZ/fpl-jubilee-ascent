@@ -12,25 +12,28 @@ from solver.planning import (
 )
 
 
-def test_clamp_planning_horizon_is_one_to_six() -> None:
+def test_clamp_planning_horizon_is_one_to_ten() -> None:
     assert MIN_PLANNING_HORIZON == 1
-    assert MAX_PLANNING_HORIZON == 6
+    assert MAX_PLANNING_HORIZON == 10
     assert clamp_planning_horizon(0) == 1
     assert clamp_planning_horizon(3) == 3
     assert clamp_planning_horizon(6) == 6
-    assert clamp_planning_horizon(7) == 6
-    assert clamp_planning_horizon(99) == 6
+    assert clamp_planning_horizon(10) == 10
+    assert clamp_planning_horizon(11) == 10
+    assert clamp_planning_horizon(99) == 10
 
 
 def test_planning_gameweeks_start_at_target_and_clip_at_38() -> None:
     assert planning_gameweeks(2, 6) == [2, 3, 4, 5, 6, 7]
-    assert planning_gameweeks(36, 6) == [36, 37, 38]
+    assert planning_gameweeks(2, 10) == [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    assert planning_gameweeks(36, 10) == [36, 37, 38]
     assert CHIP_SET_1_END == 19
 
 
-def test_planning_window_inclusive_start_end_max_six() -> None:
+def test_planning_window_inclusive_start_end_max_ten() -> None:
     assert planning_window(1, 6) == [1, 2, 3, 4, 5, 6]
-    assert planning_window(1, 8) == [1, 2, 3, 4, 5, 6]
+    assert planning_window(1, 10) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert planning_window(1, 12) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     assert planning_window(36, 38) == [36, 37, 38]
     assert planning_window(5, 3) == [5]
 

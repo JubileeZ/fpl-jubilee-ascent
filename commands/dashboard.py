@@ -399,7 +399,12 @@ def main() -> None:
     )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="Comparison Slate override (export all named models)")
-    parser.add_argument("--horizon", type=int, default=DEFAULT_PLANNING_HORIZON, help="Planning Horizon length")
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=DEFAULT_PLANNING_HORIZON,
+        help="Planning Horizon length (1-10, default 6)",
+    )
     parser.add_argument("--target_gw", type=int, help="Horizon Start override for --export-only")
     parser.add_argument("--port", type=int, default=8000, help="Local HTTP server port")
     parser.add_argument("--export-only", action="store_true", help="Project and write JSON without serving")

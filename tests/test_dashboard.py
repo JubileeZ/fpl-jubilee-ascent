@@ -184,13 +184,22 @@ def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Pa
         processed_dir=processed_dir,
         predictions_df=predictions,
         target_gw=1,
-        horizon=7,
+        horizon=11,
     )
-    assert clamped["meta"]["horizon"] == 6
-    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5, 6]
+    assert clamped["meta"]["horizon"] == 10
+    assert clamped["meta"]["max_horizon"] == 10
+    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     assert clamped["meta"]["horizon_start"] == 1
-    assert clamped["meta"]["horizon_end"] == 6
-    assert clamped["meta"]["unfinished_gameweeks"][:6] == [1, 2, 3, 4, 5, 6]
+    assert clamped["meta"]["horizon_end"] == 10
+    assert clamped["meta"]["unfinished_gameweeks"][:10] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ten = build_dashboard_dataset(
+        processed_dir=processed_dir,
+        predictions_df=predictions,
+        target_gw=1,
+        horizon=10,
+    )
+    assert ten["meta"]["horizon"] == 10
+    assert ten["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
 def test_realized_slice_appears_after_finished_gameweek(tmp_path: Path) -> None:

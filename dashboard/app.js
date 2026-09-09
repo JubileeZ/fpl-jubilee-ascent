@@ -86,7 +86,8 @@ window.mountClubMultiSelect = mountClubMultiSelect;
 
 document.addEventListener("DOMContentLoaded", () => {
   const SEASON_END_GW = 38;
-  const MAX_HORIZON = 6;
+  const DEFAULT_HORIZON = 6;
+  const MAX_HORIZON = 10;
   let allPlayers = [];
   let metaData = {};
   let primaryModel = "";
@@ -109,6 +110,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function maxEndFor(start) {
     return Math.min(start + MAX_HORIZON - 1, SEASON_END_GW);
+  }
+
+  function defaultEndFor(start) {
+    return Math.min(start + DEFAULT_HORIZON - 1, maxEndFor(start));
   }
 
   function viewGws() {
@@ -144,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!endSel) return start;
     const maxE = maxEndFor(start);
     const want = Number(preferred);
-    const chosen = Number.isFinite(want) && want >= start && want <= maxE ? want : Math.min(start + MAX_HORIZON - 1, maxE);
+    const chosen = Number.isFinite(want) && want >= start && want <= maxE ? want : defaultEndFor(start);
     endSel.replaceChildren();
     for (let gw = start; gw <= maxE; gw += 1) {
       const opt = document.createElement("option");
@@ -175,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const prevStart = Number(startSel.value);
     const prevEnd = Number(endSel.value);
     const start = fillStartOptions(prevStart || metaData.horizon_start || unfinishedGws()[0]);
-    fillEndOptions(start, prevEnd || metaData.horizon_end || start + MAX_HORIZON - 1);
+    fillEndOptions(start, prevEnd || metaData.horizon_end || defaultEndFor(start));
     if (horizonBound) return;
     horizonBound = true;
     startSel.addEventListener("change", () => {
