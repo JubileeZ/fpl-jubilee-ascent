@@ -46,9 +46,9 @@ Playwright Chromium plus `.env` (`FPL_EMAIL`, `FPL_PASSWORD`) are required for a
 The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). `commands.solve` always uses the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
-uv run python -m commands.run_model dual_vector_state_hybrid --horizon 10
-uv run python -m commands.solve --horizon 10
-uv run python -m commands.report --model dual_vector_state_hybrid --horizon 10
+uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.solve --horizon 5
+uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
 ```
 
 Preseason draft (no User Squad):
@@ -72,11 +72,15 @@ Full CLI recipes follow.
 - `data/` — ignored live caches and reports; tracked historical archives in `data/archive/`
 - `docs/` — project documentation; start with the [documentation map](docs/README.md) and [model names](docs/model_name.md)
 
+
+
 ## CLI Usage Flow
 
 All commands use `uv run python -m ...`.
 
 > **Fallback:** If `uv` is not installed globally, use `PYTHONPATH=. .venv/bin/python -m ...` instead (on Windows the interpreter is `.venv/Scripts/python.exe`).
+
+
 
 ### 1. Ingest Data
 
@@ -85,6 +89,8 @@ Fetch public FPL data, player statistics, fixtures, and manager-specific team/sq
 ```bash
 uv run python -m commands.refresh_data
 ```
+
+
 
 ### 2. Run Projections
 
@@ -173,6 +179,8 @@ default.
 uv run python -m commands.fdr_report --horizon 5 --sort_by average
 ```
 
+
+
 ### 5. Capture Availability Snapshots
 
 Capture immutable, changed-only availability packages during the 48 hours before
@@ -211,6 +219,8 @@ uv run python -m commands.backtest participation_state_hybrid \
   --gw_range 20-30 --snapshot_root data/availability-snapshots \
   --season 2026-27 --require_snapshots
 ```
+
+
 
 ### 7. Evaluate Decision Regret
 
@@ -318,6 +328,8 @@ First-Half Transfer Plan Walk-Forward ranking (needs 2024-25 seed; otherwise pri
 uv run python -m commands.transfer_plan_walkforward
 ```
 
+
+
 ## Adding Custom Models
 
 Create a custom prediction model inside [models/](models/). CLI names and the Champion/Candidate split are documented in [docs/model_name.md](docs/model_name.md).
@@ -344,6 +356,8 @@ class MyCustomModel(BaseModel):
         # projected_points, projected_minutes.
         ...
 ```
+
+
 
 ## Development and Verification
 
