@@ -12,16 +12,16 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 
 1. Install [uv](https://docs.astral.sh/uv/).
 2. Install dependencies:
-   ```bash
+  ```bash
    uv sync
-   ```
+  ```
 3. Install Playwright Chromium binary (required for data refresh/auth):
-   ```bash
+  ```bash
    uv run playwright install chromium
-   ```
+  ```
 4. Setup environment variables. Copy `.env.example` to `.env` and fill:
-   - `FPL_EMAIL`: FPL account email (required for authenticated manager squad data)
-   - `FPL_PASSWORD`: FPL account password (required for authenticated manager squad data)
+  - `FPL_EMAIL`: FPL account email (required for authenticated manager squad data)
+  - `FPL_PASSWORD`: FPL account password (required for authenticated manager squad data)
 
 The complete locked dependency set is defined in [pyproject.toml](pyproject.toml)
 and [uv.lock](uv.lock).
@@ -46,9 +46,9 @@ Playwright Chromium plus `.env` (`FPL_EMAIL`, `FPL_PASSWORD`) are required for a
 The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). `commands.solve` always uses the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
-uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
-uv run python -m commands.solve --horizon 5
-uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.run_model dual_vector_state_hybrid --horizon 10
+uv run python -m commands.solve --horizon 10
+uv run python -m commands.report --model dual_vector_state_hybrid --horizon 10
 ```
 
 Preseason draft (no User Squad):
@@ -93,7 +93,9 @@ Generate per-player per-gameweek expected points (xP) and minutes projections us
 ```bash
 uv run python -m commands.run_model MODEL_NAME --horizon GWS
 ```
+
 *Example (Champion, default 5 gameweeks horizon):*
+
 ```bash
 uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
 ```
@@ -273,14 +275,16 @@ Feature Contract minutes.
 
 **Filters**
 
-| Control | Effect |
-|---------|--------|
-| Position | GKP / DEF / MID / FWD checkboxes; applies to charts and table |
-| Club | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
-| Price | Min–max £m band; applies to charts and table |
-| Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them |
-| Assume 90 | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only) |
-| Search | Player name or club; applies to charts and table |
+
+| Control           | Effect                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Position          | GKP / DEF / MID / FWD checkboxes; applies to charts and table                                                           |
+| Club              | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
+| Price             | Min–max £m band; applies to charts and table                                                                            |
+| Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them                                    |
+| Assume 90         | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only)                                              |
+| Search            | Player name or club; applies to charts and table                                                                        |
+
 
 The rank table is sorted by horizon **Total** descending by default. Click any
 column header to sort. Per-GW xP columns follow the Planning Horizon. Rank `#`
@@ -324,6 +328,7 @@ Create a custom prediction model inside [models/](models/). CLI names and the Ch
 4. Model auto-discovered by matching that `name` value. Add a row to `docs/model_name.md`.
 
 Example:
+
 ```python
 from models.base import BaseModel
 import pandas as pd
@@ -361,5 +366,4 @@ uv run pytest
 ```bash
 bash tests/verify.sh
 ```
-
 
