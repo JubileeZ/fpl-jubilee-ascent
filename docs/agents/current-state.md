@@ -8,7 +8,7 @@ Read if no prior context. `ROADMAP.md` shows target; this file shows what exists
 
 Season 2026/27 underway. ADR 0023–0026 in code: Official FPL Operational Dataset; This-Season Evidence shrinkage; Expected Role retired; Explorer xMins from finished Club Fixtures (Incomplete History Row not DNP; Prior-Season Seed skips live pin; state shrink 1). `refresh_data` pins `data/archive/<season>/`. `--from-vaastav-dir` is 2024-25 reconstruct only. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
 
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021; Mix UI superseded by 0027), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025; Explorer-only 15 surface superseded by 0027; max length superseded by 0029), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023`–`0029`. Vocabulary in `CONTEXT.md`. Dream Team overlay in Ownership Explorer (ADR 0028). Planning Horizon cap 10, default 6 (ADR 0029).
+Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021; Mix UI superseded by 0027), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025; Explorer-only 15 surface superseded by 0027; max length superseded by 0029), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023`–`0030`. Vocabulary in `CONTEXT.md`. Dream Team overlay in Ownership Explorer (ADR 0028). Planning Horizon cap 10, default 6 (ADR 0029). Solver vendor = open-fpl-solver `2ff829f` highspy (ADR 0030).
 
 ## Research truth (4 Sep)
 
@@ -37,7 +37,7 @@ Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `001
 | README preview | `README.md` | How to use + CLI. Fences not nested in unordered-list items (CLI §3 / Development). Preview must show CLI §3 after availability-overrides paragraph. Model names → `docs/model_name.md`. |
 | Model names | `docs/model_name.md`, `.cursor/rules/model-names.mdc` | CLI `BaseModel.name` catalog. Champion = `config/model_selection.json`. |
 | Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
-| Vendored Solver | `solver/` | Port of open-fpl-solver modules |
+| Vendored Solver | `solver/` | open-fpl-solver `2ff829f` highspy MILP; `planning.py` + `transfer_plan.py` our layer (ADR 0030) |
 | Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Research HTML is not the dashboard product view. `data/archive/` = Season Archive pins |
 
 ---

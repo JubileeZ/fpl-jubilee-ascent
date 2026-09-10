@@ -5,7 +5,7 @@
 
 FPL score projection and optimization engine. Ingests FPL API data, evaluates models using backtesting, and generates transfer plans via MILP. Consumed via CLI commands.
 
-**Stack:** Python 3.14 · uv · pandas · pyarrow · sasoptpy · highspy · pytest · playwright
+**Stack:** Python 3.14 · uv · pandas · pyarrow · highspy · pytest · playwright
 
 **Monorepo:** no
 

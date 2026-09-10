@@ -10,7 +10,6 @@ dependencies = [
     "matplotlib>=3.10.0",
     "pandas>=3.0.4",
     "pyarrow>=24.0.0",
-    "sasoptpy>=1.0.5",
     "scipy>=1.15.0",
     "tabulate>=0.10.0",
     "tenacity>=9.1.4",
