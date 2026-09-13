@@ -17,7 +17,7 @@
       "is_captain": false,
       "is_vice_captain": false,
       "element_type": 2,
-      "selling_price": 56,
+      "selling_price": 57,
       "purchase_price": 56
     },
     {
@@ -87,7 +87,7 @@
       "is_captain": false,
       "is_vice_captain": true,
       "element_type": 3,
-      "selling_price": 75,
+      "selling_price": 76,
       "purchase_price": 75
     },
     {
@@ -121,14 +121,14 @@
       "purchase_price": 45
     },
     {
-      "element": 277,
+      "element": 464,
       "position": 13,
       "multiplier": 0,
       "is_captain": false,
       "is_vice_captain": false,
-      "element_type": 2,
-      "selling_price": 40,
-      "purchase_price": 40
+      "element_type": 4,
+      "selling_price": 61,
+      "purchase_price": 61
     },
     {
       "element": 173,
@@ -141,17 +141,17 @@
       "purchase_price": 40
     },
     {
-      "element": 464,
+      "element": 277,
       "position": 15,
       "multiplier": 0,
       "is_captain": false,
       "is_vice_captain": false,
-      "element_type": 4,
-      "selling_price": 61,
-      "purchase_price": 61
+      "element_type": 2,
+      "selling_price": 40,
+      "purchase_price": 40
     }
   ],
-  "picks_last_updated": "2026-09-08T14:22:21.833967Z",
+  "picks_last_updated": "2026-09-12T11:38:36.467559Z",
   "chips": [
     {
       "id": 4,
@@ -205,9 +205,9 @@
   "transfers": {
     "cost": 4,
     "status": "cost",
-    "limit": 2,
-    "made": 2,
+    "limit": 1,
+    "made": 0,
     "bank": 4,
-    "value": 1002
+    "value": 1008
   }
 }
