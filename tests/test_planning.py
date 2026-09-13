@@ -1,3 +1,7 @@
+from pathlib import Path
+
+import pandas as pd
+
 from solver.planning import (
     CHIP_SET_1_END,
     MAX_PLANNING_HORIZON,
@@ -7,6 +11,7 @@ from solver.planning import (
     clamp_planning_horizon,
     planning_gameweeks,
     planning_window,
+    resolve_default_target_gw,
     solver_options_from_plan,
     validate_enabled_chips,
 )
@@ -161,3 +166,31 @@ def test_validate_rejects_enabling_chip_already_booked() -> None:
         raise AssertionError("expected ValueError")
     except ValueError as exc:
         assert "already a Booked Chip" in str(exc)
+
+
+def test_resolve_default_target_gw_prefers_is_next(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([
+        {"id": 3, "finished": True, "is_current": False, "is_next": False},
+        {"id": 4, "finished": False, "is_current": True, "is_next": False},
+        {"id": 5, "finished": False, "is_current": False, "is_next": True},
+    ]).to_parquet(processed_dir / "gameweeks.parquet")
+
+    assert resolve_default_target_gw(processed_dir) == 5
+
+
+def test_resolve_default_target_gw_falls_back_to_first_unfinished(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([
+        {"id": 1, "finished": True, "is_current": False, "is_next": False},
+        {"id": 2, "finished": False, "is_current": False, "is_next": False},
+        {"id": 3, "finished": False, "is_current": False, "is_next": False},
+    ]).to_parquet(processed_dir / "gameweeks.parquet")
+
+    assert resolve_default_target_gw(processed_dir) == 2
+
+
+def test_resolve_default_target_gw_missing_file_defaults_to_one(tmp_path: Path) -> None:
+    assert resolve_default_target_gw(tmp_path / "nonexistent") == 1

@@ -14,7 +14,7 @@ configure_utf8_stdio()
 from models import get_model
 from features.builder import build_features, resolve_operational_processed_dir
 from projections.exporter import export_projections
-from solver.planning import SEASON_END_GW
+from solver.planning import SEASON_END_GW, resolve_default_target_gw
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -63,25 +63,12 @@ def main():
         logger.error("No processed data found. Please run 'python -m commands.refresh_data' first.")
         sys.exit(1)
         
-    # Load gameweeks to determine next GW
-    if args.target_gw is not None:
-        target_gw = args.target_gw
-    else:
-        try:
-            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-            # Find next gameweek (is_next=True or first unfinished)
-            next_gw_row = df_gw[df_gw["is_next"]]
-            if not next_gw_row.empty:
-                target_gw = int(next_gw_row.iloc[0]["id"])
-            else:
-                unfinished = df_gw[~df_gw["finished"]]
-                if not unfinished.empty:
-                    target_gw = int(unfinished.iloc[0]["id"])
-                else:
-                    target_gw = 1 # preseason fallback
-        except Exception as e:
-            logger.warning(f"Failed to load gameweeks, falling back to GW 1: {e}")
-            target_gw = 1
+    # Load target gameweek from processed parquet
+    target_gw = (
+        args.target_gw
+        if args.target_gw is not None
+        else resolve_default_target_gw(processed_dir)
+    )
         
     logger.info(f"Generating projections starting from target Gameweek {target_gw}...")
     

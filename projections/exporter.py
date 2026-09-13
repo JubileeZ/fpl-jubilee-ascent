@@ -1,6 +1,9 @@
+import logging
 from pathlib import Path
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 MAX_SOLVER_GAMEWEEK = 38
 
@@ -78,16 +81,26 @@ def pad_solver_csv_horizon(csv_path: Path, target_gw: int, horizon: int) -> Path
     df = pd.read_csv(csv_path)
     last_gw = min(MAX_SOLVER_GAMEWEEK, target_gw + horizon - 1)
     changed = False
+    padded_weeks: list[int] = []
     for week in range(target_gw, last_gw + 1):
         pts_col = f"{week}_Pts"
         mins_col = f"{week}_xMins"
         if pts_col not in df.columns:
             df[pts_col] = 0.0
             changed = True
+            if week not in padded_weeks:
+                padded_weeks.append(week)
         if mins_col not in df.columns:
             df[mins_col] = 0.0
             changed = True
+            if week not in padded_weeks:
+                padded_weeks.append(week)
     if changed:
+        logger.warning(
+            "Padded %s with 0.0 for missing gameweeks %s; run 'python -m commands.run_model' to generate projections for this horizon.",
+            csv_path.name,
+            padded_weeks,
+        )
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(csv_path, index=False)
     return csv_path

@@ -12,6 +12,7 @@ from clients.env_loader import load_env, configure_utf8_stdio
 load_env()
 configure_utf8_stdio()
 
+from solver.planning import resolve_default_target_gw
 from solver.utils import load_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -40,6 +41,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate top-picks rankings report.")
     parser.add_argument("--model", type=str, help="Projections model name to rank (e.g. linear_baseline)")
     parser.add_argument("--horizon", type=int, help="Number of gameweeks to rank over")
+    parser.add_argument("--target_gw", type=int, help="Target Gameweek to start ranking from")
     args = parser.parse_args()
     
     options = load_settings()
@@ -53,14 +55,26 @@ def main() -> None:
         
     df_proj = pd.read_csv(proj_csv)
     
-    # Identify GW points columns
-    pts_cols = [c for c in df_proj.columns if c.endswith("_Pts")]
-    if not pts_cols:
-        logger.error("No gameweek points columns found in projections CSV.")
+    processed_dir = PROJECT_ROOT / "data" / "processed"
+    if args.target_gw is not None:
+        target_gw = args.target_gw
+    elif (processed_dir / "gameweeks.parquet").exists():
+        target_gw = resolve_default_target_gw(processed_dir)
+    else:
+        pts_cols_all = [c for c in df_proj.columns if c.endswith("_Pts")]
+        gws_in_csv = sorted(int(c.split("_")[0]) for c in pts_cols_all if c.split("_")[0].isdigit())
+        target_gw = gws_in_csv[0] if gws_in_csv else 1
+
+    expected_pts_cols = [f"{gw}_Pts" for gw in range(target_gw, min(39, target_gw + horizon))]
+    missing_cols = [c for c in expected_pts_cols if c not in df_proj.columns]
+    if missing_cols:
+        logger.error(
+            f"Projections file {proj_csv.name} is missing expected columns {missing_cols}. "
+            f"Please run 'python -m commands.run_model {model_name} --horizon {horizon}' first."
+        )
         sys.exit(1)
         
-    # Sort and pick the first N gameweeks based on horizon
-    pts_cols = sorted(pts_cols, key=lambda x: int(x.split("_")[0]))[:horizon]
+    pts_cols = expected_pts_cols
     actual_horizon = len(pts_cols)
     next_gw_points = pts_cols[0]
     

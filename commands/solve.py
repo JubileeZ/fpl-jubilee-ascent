@@ -20,6 +20,7 @@ from solver.planning import (
     available_chips,
     clamp_planning_horizon,
     planning_gameweeks,
+    resolve_default_target_gw,
     solver_options_from_plan,
 )
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
@@ -381,16 +382,10 @@ def main() -> None:
     # Load target gameweek from processed parquet
     if args.target_gw is not None:
         target_gw = args.target_gw
+    elif options.get("preseason", False):
+        target_gw = 1
     else:
-        try:
-            df_gw = pd.read_parquet(processed_dir / "gameweeks.parquet")
-            unfinished = df_gw[~df_gw["finished"]].sort_values("id")
-            if not unfinished.empty:
-                target_gw = int(unfinished.iloc[0]["id"])
-            else:
-                target_gw = 1 if options.get("preseason", False) else 38
-        except Exception:
-            target_gw = 1 if options.get("preseason", False) else 38
+        target_gw = resolve_default_target_gw(processed_dir)
         
     options["override_next_gw"] = target_gw
 

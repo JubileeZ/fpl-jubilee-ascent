@@ -62,3 +62,43 @@ def test_report_prints_and_exports_captaincy_recommendations(tmp_path: Path, cap
     assert {"Captain", "Vice_Captain"}.issubset(report.columns)
     assert bool(report.loc[report["ID"] == 1, "Captain"].iloc[0])
     assert bool(report.loc[report["ID"] == 2, "Vice_Captain"].iloc[0])
+
+
+def test_report_respects_target_gw_and_ignores_prior_columns(tmp_path: Path, capsys) -> None:
+    projections = pd.DataFrame([
+        {
+            "ID": 1,
+            "Name": "PlayerA",
+            "Pos": "M",
+            "Price": 10.0,
+            "Team": "AAA",
+            "4_Pts": 0.0,
+            "4_xMins": 0.0,
+            "5_Pts": 10.0,
+            "5_xMins": 90.0,
+        },
+        {
+            "ID": 2,
+            "Name": "PlayerB",
+            "Pos": "F",
+            "Price": 9.0,
+            "Team": "BBB",
+            "4_Pts": 0.0,
+            "4_xMins": 0.0,
+            "5_Pts": 6.0,
+            "5_xMins": 90.0,
+        },
+    ])
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    projections.to_csv(data_dir / "test_model.csv", index=False)
+
+    with patch("commands.report.PROJECT_ROOT", tmp_path), \
+        patch("commands.report.load_settings", return_value={"datasource": "test_model", "horizon": 1}), \
+        patch("sys.argv", ["commands.report", "--model", "test_model", "--horizon", "1", "--target_gw", "5"]):
+        main()
+
+    output = capsys.readouterr().out
+    assert "Captain      : PlayerA" in output
+    assert "5_Pts" in output
+    assert "4_Pts" not in output

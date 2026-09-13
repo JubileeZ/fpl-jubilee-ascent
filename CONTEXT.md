@@ -81,11 +81,11 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–10 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Horizon Start; `--horizon` is length; clamp 1–10. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
-_Avoid_: Optimization length, 1–5 from is_next, default 5, excluding the live unfinished GW after deadline, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
+Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–10 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Transfer Plan Start (defaults to upcoming open deadline `is_next`); `--horizon` is length; clamp 1–10. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
+_Avoid_: Optimization length, 1–5 from is_next as product Explorer start, default 5, excluding the live unfinished GW after deadline from Explorer, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
 
 **Horizon Start**:
-First Gameweek of the Planning Horizon. Any unfinished Gameweek from the earliest unfinished through 38. Finished weeks are not selectable. Default = earliest unfinished.
+First Gameweek of the Planning Horizon. Any unfinished Gameweek from the earliest unfinished through 38. Finished weeks are not selectable. Default = earliest unfinished. Distinct from Transfer Plan Start.
 _Avoid_: is_next as the product start, target_gw as the UI name, picking a finished GW, locking Start to only the earliest unfinished, Horizon Begins as a second clock
 
 **Horizon End**:
@@ -333,8 +333,16 @@ One Gameweek: sum of Gameweek Projection xP over the Squad Board 15, plus one ex
 _Avoid_: official FPL GW score, scoring 15, Transfer Plan week score, Component Profile as captained
 
 **Transfer Plan**:
-CLI MILP 15-player result over a Planning Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
-_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan, Dream Team as the plan
+CLI MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Not a dashboard view. Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
+_Avoid_: team plan, dashboard tab, Re-solve as product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan, Dream Team as the plan, solving transfers for a deadline-passed gameweek
+
+**Transfer Plan Start**:
+First Gameweek of the Transfer Plan Horizon. Must be a Gameweek whose transfer deadline has not passed (defaults to `is_next`, or earliest unfinished if `is_next` unset; preseason fallback GW1). Transfers cannot be made for an active or locked Gameweek. Distinct from Ownership Explorer Horizon Start.
+_Avoid_: solving for a live in-play gameweek, setting Transfer Plan Start to a passed deadline, confusing with Explorer Horizon Start
+
+**Transfer Plan Horizon**:
+The Gameweek window [Transfer Plan Start, Transfer Plan Start + horizon - 1] over which the MILP solver optimizes squad transfers.
+_Avoid_: including passed deadline weeks, optimizing transfers during in-play gameweek
 
 **Force Keep**:
 User override. A Player who must be in that gameweek’s scoring 15 (Free Hit 15, Wildcard 15, or the owned 15). Specified per gameweek in the Planning Horizon. Owned or unowned (unowned is a forced buy). Hits are allowed; an infeasible Keep fails the solve. Not FPL deadline freeze of a passed gameweek. Not the rolled 15 under a Free Hit.

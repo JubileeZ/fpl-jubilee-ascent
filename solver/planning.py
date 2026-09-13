@@ -1,8 +1,9 @@
 """Planning Horizon, Chip Set, Force Keep/Ban, and dashboard-to-solver mapping."""
 
-from __future__ import annotations
-
+from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 CHIP_KEYS: tuple[str, ...] = ("wc", "bb", "fh", "tc")
 CHIP_TO_OPTION: dict[str, str] = {
@@ -43,6 +44,29 @@ def planning_window(start: int, end: int) -> list[int]:
         stop = begin
     stop = min(stop, begin + MAX_PLANNING_HORIZON - 1, SEASON_END_GW)
     return list(range(begin, stop + 1))
+
+
+def resolve_default_target_gw(processed_dir: Path) -> int:
+    """Next open transfer deadline Gameweek.
+
+    Prefers is_next from gameweeks.parquet (the upcoming transfer window when a
+    Gameweek is in play). Falls back to earliest unfinished, then 1 (preseason) or 38.
+    """
+    gameweeks_path = processed_dir / "gameweeks.parquet"
+    if gameweeks_path.exists():
+        try:
+            df_gw = pd.read_parquet(gameweeks_path)
+            if "is_next" in df_gw.columns:
+                next_gw = df_gw[df_gw["is_next"].fillna(False)]
+                if not next_gw.empty:
+                    return int(next_gw.iloc[0]["id"])
+            if "finished" in df_gw.columns:
+                unfinished = df_gw[~df_gw["finished"].fillna(False)].sort_values("id")
+                if not unfinished.empty:
+                    return int(unfinished.iloc[0]["id"])
+        except Exception:
+            pass
+    return 1
 
 
 def chip_set_for_gw(gameweek: int) -> int:
