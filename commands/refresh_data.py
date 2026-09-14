@@ -25,7 +25,7 @@ from clients.fpl_auth import get_jwt_token
 from features.processor import process_directory
 from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
-from commands.snapshot_season import pin_season_archive
+from features.season_archive import pin_season_archive
 from features.expected_role_prior import LIVE_SEASON
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -130,8 +130,19 @@ async def main(argv: list[str] | None = None) -> None:
         except (FileNotFoundError, ValueError) as e:
             logger.warning(f"Price history snapshot skipped: {e}")
 
-        archive_path = pin_season_archive(args.season, raw_dir, processed_dir)
-        logger.info("Season Archive pinned -> %s", archive_path)
+        pin = pin_season_archive(args.season, raw_dir, processed_dir)
+        if pin.changed:
+            logger.info(
+                "Live Season Pin Official FPL hash changed (%s). Git commit the pin if you want machine sync. -> %s",
+                pin.content_hash,
+                pin.processed_dir,
+            )
+        else:
+            logger.info(
+                "Live Season Pin Official FPL hash unchanged (%s). Skip git commit. -> %s",
+                pin.content_hash,
+                pin.processed_dir,
+            )
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,0 +1,9 @@
+# Live Season Pin is Official FPL only; git commit is hash-gated
+
+Live Raw Cache and `data/processed/` stay gitignored. The live season-year under `data/archive/<YYYY-YY>/` is a mutating **Live Season Pin**: Official FPL raw JSON plus core processed parquet, including unfinished Gameweeks, for machine sync. Disk pin on every refresh. Git commit only when a canonical Official FPL content hash moves. `refresh_data` never git commits. User Squad, `me.json`, `my_team_*`, and `user_*` are not in the pin; squad comes from `.env` authenticated refresh. Completed Season Archives stay frozen. No Git LFS/DVC/lakeFS for this corpus. History that already contains user files is not rewritten.
+
+**Status:** Accepted. Supersedes ADR 0023 pin cadence (“at each Gameweek deadline”) and the implicit pin-everything copy. ADR 0023 Official-FPL-only Operational Dataset, gitignored live cache, and vaastav-2024-25 reconstruct still stand. Availability Snapshots (ADR 0010) remain deadline replay; deferred until Capture Action is reliable. Temporary deadline replay = git tags on the pin.
+
+**Considered:** Deadline-only git pins; commit every refresh; parquet-only; raw-only rebuild after pull; include User Squad for sync; auto-commit from ingest; per-GW duplicate raw trees; history rewrite / force-push of leaked `me.json`. Rejected: deadline-only drops midweek unfinished-GW sync; every-refresh commits are no-op noise; parquet-only cannot restore discarded API fields; raw-only breaks pull-and-run; User Squad in git publishes identity; auto-commit from ingest; duplicate trees explode size; rewrite needs an explicit later order.
+
+**Consequences:** Pin module `features/season_archive.py`. Next archive commit drops user paths from HEAD only. Typed Feature Contract / Operational Dataset contracts and Champion signed-bias measurement are later workstreams, not this ADR.

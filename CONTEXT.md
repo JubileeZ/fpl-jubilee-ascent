@@ -5,8 +5,8 @@ FPL analytics and optimization engine for a single user. Ingests live FPL API da
 ## Language
 
 **User Squad**:
-The user's specific 15-player Fantasy Premier League squad. Keyed by `entry_id`.
-_Avoid_: Manager team, FPL team, team, manager_id
+The user's specific 15-player Fantasy Premier League squad. Keyed by `entry_id`. Not a Season Archive or Live Season Pin object.
+_Avoid_: Manager team, FPL team, team, manager_id, committing picks or `me.json` to git
 
 **Club**:
 A real-world Premier League club (e.g. Arsenal, Liverpool). Keyed by `team_id` or `club_id`. Maps to `team` in the FPL API.
@@ -45,8 +45,12 @@ Raw JSON responses from the FPL API stored in `data/raw/`. Live working copy; no
 _Avoid_: Cache, historical data, Season Archive
 
 **Season Archive**:
-Git-tracked Official FPL capture for one season-year under `data/archive/<YYYY-YY>/` (raw JSON plus processed parquet). Deadline or on-demand pin. Durable backup and historical replay material. Not live Raw Cache. Not Research Note companions.
-_Avoid_: gitignoring archive, committing live Raw Cache on every refresh, treating vaastav live pull as the archive method
+Git-tracked Official FPL capture for one season-year under `data/archive/<YYYY-YY>/` (raw JSON plus core processed parquet: clubs, players, fixtures, gameweeks, player_performances, price_history). Completed seasons frozen. Live season is the Live Season Pin. Official FPL tables only.
+_Avoid_: gitignoring archive, committing live Raw Cache, User Squad / `me.json` / `my_team_*` / `user_*` in archive, parquet-only pin, treating vaastav live pull as the archive method
+
+**Live Season Pin**:
+The live season-year Season Archive folder. Mutating Official FPL capture, including unfinished Gameweeks. Disk pin on every refresh. Git commit only when canonical Official FPL content hash moves. Refresh does not git commit.
+_Avoid_: deadline-only git cadence, auto-commit from ingest, per-Gameweek duplicate raw trees, Git LFS/DVC for this corpus, machine-sync of User Squad via git
 
 **Operational Dataset**:
 Production Player, Club, Fixture, and performance tables. Official FPL API responses plus Season Archives of those responses only.
@@ -225,8 +229,8 @@ An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
 **Availability Snapshot**:
-A time-stamped record of Player availability captured before a Gameweek deadline. Used to evaluate Availability and xMins without future-information leakage.
-_Avoid_: Current status, injury history
+A time-stamped record of Player availability captured before a Gameweek deadline. Used to evaluate Availability and xMins without future-information leakage. Deadline replay after Live Season Pin git work; not the mutating pin.
+_Avoid_: Current status, injury history, Live Season Pin as the deadline snapshot
 
 **Cold-Start**:
 This-Season Evidence absent. Feature Contract uses Prior-Season Seed else last-season Position-Price. Ends globally when This-Season Evidence appears.
@@ -373,8 +377,8 @@ The decayed quantity the MILP maximises over the Planning Horizon. Distinct from
 _Avoid_: xP, score, total_xp, research total_6gw_xp, Explorer Total column
 
 **Hit**:
-A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Distinct from spending banked Free Transfers.
-_Avoid_: minus, treating any transfer as a Hit, one transfer per week
+A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Live Transfer Plan allows Hits (`weekly_hit_limit` 1). Distinct from spending banked Free Transfers.
+_Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion signed bias vs Realized Points
 
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.

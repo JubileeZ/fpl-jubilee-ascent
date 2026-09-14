@@ -246,7 +246,7 @@ uv run python -m commands.dashboard
 
 The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects the Primary Model (Champion by default) from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins the current season into `data/archive/<season>/`. Refresh and Solve cannot run at the same time; both buttons disable until the running job finishes.
+Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh and Solve cannot run at the same time; both buttons disable until the running job finishes.
 
 Click **Solve Dream Team** to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
 
@@ -311,7 +311,7 @@ uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir da
 uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
 ```
 
-Live `refresh_data` pins the current season into `data/archive/<season>/`.
+Live `refresh_data` pins Official FPL into `data/archive/<season>/` (Live Season Pin). It does not pin User Squad files and does not git commit. Commit the pin yourself when the printed Official hash changed.
 
 ### 10. Compare and promote models
 

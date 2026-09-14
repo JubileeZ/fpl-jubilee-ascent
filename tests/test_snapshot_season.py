@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
-from commands.snapshot_season import main, pin_season_archive, process_season_archive
+from commands.snapshot_season import main, process_season_archive
+from features.expected_role_prior import LIVE_SEASON
+from features.season_archive import pin_season_archive
 
 
 def test_from_raw_dir_writes_processed_archive(tmp_path: Path) -> None:
@@ -61,12 +63,117 @@ def test_pin_season_archive_copies_raw_and_processed(tmp_path: Path) -> None:
     (raw / "bootstrap_static.json").write_text("{}", encoding="utf-8")
     (processed / "players.parquet").write_bytes(b"parquet-bytes")
     archive_root = tmp_path / "data" / "archive"
-    dest = pin_season_archive(
-        "2026-27",
+    pin = pin_season_archive(
+        LIVE_SEASON,
         raw,
         processed,
         archive_root=archive_root,
     )
-    assert dest == archive_root / "2026-27" / "processed"
-    assert (archive_root / "2026-27" / "raw" / "bootstrap_static.json").read_text(encoding="utf-8") == "{}"
-    assert (archive_root / "2026-27" / "processed" / "players.parquet").read_bytes() == b"parquet-bytes"
+    assert pin.processed_dir == archive_root / LIVE_SEASON / "processed"
+    assert (archive_root / LIVE_SEASON / "raw" / "bootstrap_static.json").read_text(encoding="utf-8") == "{}"
+    assert (archive_root / LIVE_SEASON / "processed" / "players.parquet").read_bytes() == b"parquet-bytes"
+    assert pin.changed is True
+
+
+def test_pin_season_archive_excludes_user_squad_files(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    raw.mkdir()
+    processed.mkdir()
+    (raw / "bootstrap_static.json").write_text('{"teams": []}', encoding="utf-8")
+    (raw / "fixtures_all.json").write_text("[]", encoding="utf-8")
+    (raw / "element_summary_1.json").write_text('{"history": []}', encoding="utf-8")
+    (raw / "me.json").write_text('{"email": "secret"}', encoding="utf-8")
+    (raw / "my_team_822158.json").write_text('{"picks": []}', encoding="utf-8")
+    (raw / "entry_822158.json").write_text("{}", encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"players")
+    (processed / "price_history.parquet").write_bytes(b"prices")
+    (processed / "user_picks.parquet").write_bytes(b"picks")
+    (processed / "user_state.parquet").write_bytes(b"state")
+    (processed / "user_chips.parquet").write_bytes(b"chips")
+    dest_raw = tmp_path / "archive" / LIVE_SEASON / "raw"
+    dest_processed = tmp_path / "archive" / LIVE_SEASON / "processed"
+    dest_raw.mkdir(parents=True)
+    dest_processed.mkdir(parents=True)
+    (dest_raw / "me.json").write_text('{"stale": true}', encoding="utf-8")
+    (dest_raw / "my_team_6025459.json").write_text("{}", encoding="utf-8")
+    (dest_processed / "user_picks.parquet").write_bytes(b"stale")
+    pin = pin_season_archive(LIVE_SEASON, raw, processed, archive_root=tmp_path / "archive")
+    assert (pin.processed_dir / "players.parquet").read_bytes() == b"players"
+    assert (pin.processed_dir / "price_history.parquet").read_bytes() == b"prices"
+    assert (pin.processed_dir.parent / "raw" / "bootstrap_static.json").exists()
+    assert (pin.processed_dir.parent / "raw" / "element_summary_1.json").exists()
+    assert not (pin.processed_dir.parent / "raw" / "me.json").exists()
+    assert not (pin.processed_dir.parent / "raw" / "my_team_822158.json").exists()
+    assert not (pin.processed_dir.parent / "raw" / "my_team_6025459.json").exists()
+    assert not (pin.processed_dir.parent / "raw" / "entry_822158.json").exists()
+    assert not (pin.processed_dir / "user_picks.parquet").exists()
+    assert not (pin.processed_dir / "user_state.parquet").exists()
+    assert not (pin.processed_dir / "user_chips.parquet").exists()
+
+
+def test_official_content_hash_ignores_json_key_order_and_user_files(tmp_path: Path) -> None:
+    raw_a = tmp_path / "raw_a"
+    raw_b = tmp_path / "raw_b"
+    processed = tmp_path / "processed"
+    for raw in (raw_a, raw_b):
+        raw.mkdir()
+    processed.mkdir()
+    (processed / "players.parquet").write_bytes(b"players")
+    (raw_a / "bootstrap_static.json").write_text('{"b": 1, "a": 2}', encoding="utf-8")
+    (raw_a / "me.json").write_text('{"email": "a"}', encoding="utf-8")
+    (raw_b / "bootstrap_static.json").write_text('{"a": 2, "b": 1}', encoding="utf-8")
+    (raw_b / "me.json").write_text('{"email": "b"}', encoding="utf-8")
+    first = pin_season_archive(LIVE_SEASON, raw_a, processed, archive_root=tmp_path / "arch_a")
+    second = pin_season_archive(LIVE_SEASON, raw_b, processed, archive_root=tmp_path / "arch_b")
+    assert first.content_hash == second.content_hash
+    assert len(first.content_hash) == 64
+
+
+def test_second_pin_of_same_official_raw_is_unchanged(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    raw.mkdir()
+    processed.mkdir()
+    (raw / "bootstrap_static.json").write_text('{"teams": [1]}', encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"players")
+    archive_root = tmp_path / "archive"
+    first = pin_season_archive(LIVE_SEASON, raw, processed, archive_root=archive_root)
+    (processed / "players.parquet").write_bytes(b"rewritten-parquet")
+    second = pin_season_archive(LIVE_SEASON, raw, processed, archive_root=archive_root)
+    assert first.changed is True
+    assert second.changed is False
+    assert first.content_hash == second.content_hash
+
+
+def test_pin_reports_changed_when_official_raw_moves(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    raw.mkdir()
+    processed.mkdir()
+    (raw / "bootstrap_static.json").write_text('{"teams": []}', encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"players")
+    archive_root = tmp_path / "archive"
+    first = pin_season_archive(LIVE_SEASON, raw, processed, archive_root=archive_root)
+    (raw / "bootstrap_static.json").write_text('{"teams": [{"id": 1}]}', encoding="utf-8")
+    second = pin_season_archive(LIVE_SEASON, raw, processed, archive_root=archive_root)
+    assert first.changed is True
+    assert second.changed is True
+    assert first.content_hash != second.content_hash
+
+
+def test_pin_refuses_frozen_completed_season(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    raw.mkdir()
+    processed.mkdir()
+    (raw / "bootstrap_static.json").write_text("{}", encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"players")
+    frozen = "2024-25" if LIVE_SEASON != "2024-25" else "2023-24"
+    try:
+        pin_season_archive(frozen, raw, processed, archive_root=tmp_path / "archive")
+    except ValueError as exc:
+        assert "frozen" in str(exc)
+        assert frozen in str(exc)
+    else:
+        raise AssertionError("expected frozen Season Archive refusal")

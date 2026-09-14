@@ -108,7 +108,7 @@ def reset_dream_team_state() -> None:
 
 
 def ingest_live_data(season: str = LIVE_SEASON) -> None:
-    """FPL ingest plus Season Archive pin. Does not scrape lineups."""
+    """FPL ingest plus Official-only Live Season Pin. Does not scrape lineups. Does not git commit."""
     asyncio.run(refresh_data.main(["--season", season]))
 
 

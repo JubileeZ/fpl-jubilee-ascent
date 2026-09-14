@@ -41,6 +41,7 @@ docs/          # Durable project documentation and decision records
 | `uv run ruff check .` | Lint codebase |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
+| `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
 | `uv run python -m commands.dashboard` | Serve Ownership Explorer; open projects Primary if JSON stale; Refresh ingest+Primary project; Solve Dream Team overlay; Refresh/Solve exclusive |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
@@ -81,7 +82,7 @@ docs/          # Durable project documentation and decision records
 - Doc edits telegraphic: no articles, no filler, concise fragments.
 - ponytail: Python 3.14 and uv pre-approved stack requirements.
 - ponytail: Prefer single line expressions when possible; avoid unnecessary abstractions.
-- Authenticated squad ingestion: Never ask user for manager ID or manual squad list in chat. Read `.env` credentials (`FPL_EMAIL` and `FPL_PASSWORD`) via `uv run python -m commands.refresh_data` to execute Playwright login via password Enter key, cache `data/session_token.json`, and populate `data/processed/user_picks.parquet`. If auth fails, report missing `.env` credentials.
+- Authenticated squad ingestion: Never ask user for manager ID or manual squad list in chat. Read `.env` credentials (`FPL_EMAIL` and `FPL_PASSWORD`) via `uv run python -m commands.refresh_data` to execute Playwright login via password Enter key, cache `data/session_token.json`, and populate `data/processed/user_picks.parquet`. If auth fails, report missing `.env` credentials. User Squad is not written to Season Archive / Live Season Pin.
 
 ---
 
