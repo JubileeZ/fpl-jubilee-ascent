@@ -1,22 +1,6 @@
 {
   "fixtures": [
     {
-      "id": 39,
-      "code": 2645232,
-      "team_h": 16,
-      "team_h_score": null,
-      "team_a": 15,
-      "team_a_score": null,
-      "event": 4,
-      "finished": false,
-      "minutes": 0,
-      "provisional_start_time": false,
-      "kickoff_time": "2026-09-13T15:30:00Z",
-      "event_name": "Gameweek 4",
-      "is_home": false,
-      "difficulty": 4
-    },
-    {
       "id": 45,
       "code": 2645241,
       "team_h": 15,
@@ -612,8 +596,8 @@
       "total_points": 0,
       "was_home": false,
       "kickoff_time": "2026-09-13T15:30:00Z",
-      "team_h_score": null,
-      "team_a_score": null,
+      "team_h_score": 0,
+      "team_a_score": 1,
       "round": 4,
       "modified": false,
       "minutes": 0,

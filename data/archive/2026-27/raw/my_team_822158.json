@@ -21,7 +21,7 @@
       "purchase_price": 56
     },
     {
-      "element": 277,
+      "element": 173,
       "position": 3,
       "multiplier": 1,
       "is_captain": false,
@@ -121,24 +121,24 @@
       "purchase_price": 45
     },
     {
-      "element": 173,
-      "position": 13,
-      "multiplier": 0,
-      "is_captain": false,
-      "is_vice_captain": false,
-      "element_type": 2,
-      "selling_price": 40,
-      "purchase_price": 40
-    },
-    {
       "element": 124,
-      "position": 14,
+      "position": 13,
       "multiplier": 0,
       "is_captain": false,
       "is_vice_captain": false,
       "element_type": 3,
       "selling_price": 55,
       "purchase_price": 55
+    },
+    {
+      "element": 277,
+      "position": 14,
+      "multiplier": 0,
+      "is_captain": false,
+      "is_vice_captain": false,
+      "element_type": 2,
+      "selling_price": 40,
+      "purchase_price": 40
     },
     {
       "element": 113,
@@ -151,7 +151,7 @@
       "purchase_price": 44
     }
   ],
-  "picks_last_updated": "2026-09-13T12:51:28.062321Z",
+  "picks_last_updated": "2026-09-14T06:38:25.361935Z",
   "chips": [
     {
       "id": 4,
