@@ -13,6 +13,7 @@ configure_utf8_stdio()
 
 from models import get_model
 from features.builder import build_features, resolve_operational_processed_dir
+from features.contracts import assert_projection_contract
 from projections.exporter import export_projections
 from solver.planning import SEASON_END_GW, resolve_default_target_gw
 
@@ -110,7 +111,7 @@ def main():
         model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
 
     logger.info("Generating predictions...")
-    df_proj = model.predict(df_feat, args.horizon)
+    df_proj = assert_projection_contract(model.predict(df_feat, args.horizon))
     
     # 3. Export to CSV
     output_csv = PROJECT_ROOT / "data" / f"{args.model}.csv"

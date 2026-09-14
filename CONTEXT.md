@@ -378,7 +378,11 @@ _Avoid_: xP, score, total_xp, research total_6gw_xp, Explorer Total column
 
 **Hit**:
 A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Live Transfer Plan allows Hits (`weekly_hit_limit` 1). Distinct from spending banked Free Transfers.
-_Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion signed bias vs Realized Points
+_Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion Signed Bias vs Realized Points
+
+**Champion Signed Bias**:
+Mean of `projected_points − actual_points` vs Realized Points for the Model Champion. Gate companion: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Positive = overprediction. Not FPL `ep_*`.
+_Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate
 
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.

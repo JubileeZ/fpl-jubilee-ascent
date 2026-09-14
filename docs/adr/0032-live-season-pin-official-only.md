@@ -6,4 +6,4 @@ Live Raw Cache and `data/processed/` stay gitignored. The live season-year under
 
 **Considered:** Deadline-only git pins; commit every refresh; parquet-only; raw-only rebuild after pull; include User Squad for sync; auto-commit from ingest; per-GW duplicate raw trees; history rewrite / force-push of leaked `me.json`. Rejected: deadline-only drops midweek unfinished-GW sync; every-refresh commits are no-op noise; parquet-only cannot restore discarded API fields; raw-only breaks pull-and-run; User Squad in git publishes identity; auto-commit from ingest; duplicate trees explode size; rewrite needs an explicit later order.
 
-**Consequences:** Pin module `features/season_archive.py`. Next archive commit drops user paths from HEAD only. Typed Feature Contract / Operational Dataset contracts and Champion signed-bias measurement are later workstreams, not this ADR.
+**Consequences:** Pin module `features/season_archive.py`. User paths dropped from HEAD only. Typed Operational/Feature/Projection contracts: `features/contracts.py`. Champion signed-bias: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`.

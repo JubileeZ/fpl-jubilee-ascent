@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import pandas as pd
+import pytest
 from features.processor import process_directory
 
 def test_process_directory(tmp_path):
@@ -14,10 +15,10 @@ def test_process_directory(tmp_path):
             {"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}
         ],
         "events": [
-            {"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True}
+            {"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True, "is_next": False}
         ],
         "elements": [
-            {"id": 1, "first_name": "Martin", "second_name": "Odegaard", "web_name": "Odegaard", "team": 1, "element_type": 3, "now_cost": 85, "status": "a"}
+            {"id": 1, "code": 99, "first_name": "Martin", "second_name": "Odegaard", "web_name": "Odegaard", "team": 1, "element_type": 3, "now_cost": 85, "status": "a"}
         ]
     }
     with open(input_dir / "bootstrap_static.json", "w") as f:
@@ -59,8 +60,8 @@ def test_process_directory_writes_user_chips(tmp_path: Path) -> None:
     with open(input_dir / "bootstrap_static.json", "w") as f:
         json.dump({
             "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
-            "events": [{"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True}],
-            "elements": [{"id": 1, "first_name": "Martin", "second_name": "Odegaard", "web_name": "Odegaard", "team": 1, "element_type": 3, "now_cost": 85, "status": "a"}],
+            "events": [{"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True, "is_next": False}],
+            "elements": [{"id": 1, "code": 99, "first_name": "Martin", "second_name": "Odegaard", "web_name": "Odegaard", "team": 1, "element_type": 3, "now_cost": 85, "status": "a"}],
         }, f)
     with open(input_dir / "fixtures_all.json", "w") as f:
         json.dump([{
@@ -83,3 +84,41 @@ def test_process_directory_writes_user_chips(tmp_path: Path) -> None:
     bb = chips.loc[chips["chip"] == "bb"].iloc[0]
     assert bb["status"] == "played"
     assert int(bb["chip_set"]) == 1
+
+
+def test_process_directory_rejects_players_without_code(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    output_dir = tmp_path / "processed"
+    input_dir.mkdir()
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+    }), encoding="utf-8")
+    (input_dir / "fixtures_all.json").write_text(json.dumps([{
+        "id": 1, "event": 1, "kickoff_time": "2026-08-11T19:00:00Z", "team_h": 1, "team_a": 2,
+        "finished": True, "started": True, "team_h_score": 2, "team_a_score": 1,
+        "team_h_difficulty": 3, "team_a_difficulty": 4,
+    }]), encoding="utf-8")
+    from features.contracts import ContractError
+    with pytest.raises(ContractError, match="players missing columns: code"):
+        process_directory(input_dir, output_dir)
+
+
+def test_process_directory_keeps_player_code(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    output_dir = tmp_path / "processed"
+    input_dir.mkdir()
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 424242, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+    }), encoding="utf-8")
+    (input_dir / "fixtures_all.json").write_text(json.dumps([{
+        "id": 1, "event": 1, "kickoff_time": "2026-08-11T19:00:00Z", "team_h": 1, "team_a": 2,
+        "finished": True, "started": True, "team_h_score": 2, "team_a_score": 1,
+        "team_h_difficulty": 3, "team_a_difficulty": 4,
+    }]), encoding="utf-8")
+    process_directory(input_dir, output_dir)
+    players = pd.read_parquet(output_dir / "players.parquet")
+    assert int(players.loc[0, "code"]) == 424242

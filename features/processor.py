@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Optional
 
+from features.contracts import assert_operational_processed_dir
 from solver.planning import chip_set_from_row, normalize_chip_key
 
 logger = logging.getLogger(__name__)
@@ -224,3 +225,5 @@ def process_directory(input_dir: Path, output_dir: Path):
         chip_cols = ["chip", "name", "status", "start_event", "stop_event", "number", "chip_set"]
         pd.DataFrame(chip_rows, columns=chip_cols).to_parquet(output_dir / "user_chips.parquet", index=False)
         logger.info(f"Processed {len(chip_rows)} user chips -> user_chips.parquet")
+
+    assert_operational_processed_dir(output_dir)

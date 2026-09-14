@@ -43,6 +43,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 *   **Source:** `/bootstrap-static/` (`elements` list)
 *   **Fields Retained:**
     *   `id` (`int`): Unique player ID.
+    *   `code` (`int`): Immutable FPL player code (Player Code Mapping; ADR 0004).
     *   `first_name` (`str`), `second_name` (`str`), `web_name` (`str`).
     *   `club_id` (`int`): Reference to Club ID (maps to `team` in raw API).
     *   `position_id` (`int`): 1=GKP, 2=DEF, 3=MID, 4=FWD (maps to `element_type` in raw API).
@@ -53,7 +54,7 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `selected_by_percent` (`float`): Ownership %.
     *   `corners_and_indirect_freekicks_order` (`int`, nullable), `direct_freekicks_order` (`int`, nullable), `penalties_order` (`int`, nullable).
     *   **Season Totals (Metrics for reference/baselines):** `total_points`, `minutes`, `goals_scored`, `assists`, `clean_sheets`, `goals_conceded`, `own_goals`, `penalties_saved`, `penalties_missed`, `yellow_cards`, `red_cards`, `saves`, `bonus`, `bps`, `influence`, `creativity`, `threat`, `ict_index`, `starts`, `expected_goals`, `expected_assists`, `expected_goal_involvements`, `expected_goals_conceded`.
-*   **Discarded:** `code`, `team_code`, `squad_number`, `photo`, `removed`, `birth_date`, `region`, `team_join_date`, `has_temporary_code`, `opta_code`, `can_transact`, `can_select`, `cost_change_event`, `cost_change_event_fall`, `cost_change_start`, `cost_change_start_fall`, `price_change_percent`, `dreamteam_count`, `in_dreamteam`, `ep_this`, `ep_next`, `form`, `value_form`, `value_season`, `points_per_game`, `scout_risks`, `scout_news_link`.
+*   **Discarded:** `team_code`, `squad_number`, `photo`, `removed`, `birth_date`, `region`, `team_join_date`, `has_temporary_code`, `opta_code`, `can_transact`, `can_select`, `cost_change_event`, `cost_change_event_fall`, `cost_change_start`, `cost_change_start_fall`, `price_change_percent`, `dreamteam_count`, `in_dreamteam`, `ep_this`, `ep_next`, `form`, `value_form`, `value_season`, `points_per_game`, `scout_risks`, `scout_news_link`.
 
 ---
 
@@ -179,3 +180,9 @@ Model output is long format with:
 
 Solver exports aggregate `projected_points` and `projected_minutes` by
 `player_id` and `gameweek_id`, preserving double-gameweek totals.
+
+Runtime contracts (`features/contracts.py`): Operational Dataset tables require
+the columns in `OPERATIONAL_REQUIRED` (players include `code`). Feature Contract
+requires `player_id`, `fixture_id`, `gameweek_id`. Projection requires
+`player_id`, `gameweek_id`, `projected_points`, `projected_minutes`.
+

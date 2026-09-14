@@ -46,6 +46,7 @@ docs/          # Durable project documentation and decision records
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |
+| `uv run python -m commands.measure_champion_bias` | Champion signed bias vs Realized Points; writes `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` |
 
 **Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 

@@ -220,6 +220,14 @@ uv run python -m commands.backtest participation_state_hybrid \
   --season 2026-27 --require_snapshots
 ```
 
+Champion signed bias (ADR 0033) writes a research companion, not `data/reports/`:
+
+```bash
+uv run python -m commands.measure_champion_bias
+```
+
+The companion is `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` column `signed_bias`.
+
 
 
 ### 7. Evaluate Decision Regret

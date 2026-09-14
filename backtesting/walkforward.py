@@ -11,6 +11,7 @@ import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
 from features.builder import build_features, history_before_target
+from features.contracts import assert_projection_contract
 from models import get_model
 
 LEDGER_COMPONENTS = (
@@ -165,6 +166,7 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
             )
 
         df_proj = model.predict(df_feat, horizon=1)
+        assert_projection_contract(df_proj)
         comp_cols = [column for column in LEDGER_COMPONENTS if column in df_proj.columns]
         proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
         df_proj_gw = (

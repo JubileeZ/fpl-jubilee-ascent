@@ -5,6 +5,7 @@ from typing import Literal, TypedDict
 import pandas as pd
 
 from features.availability_snapshots import resolve_latest_snapshot
+from features.contracts import assert_feature_contract
 from features.expected_role_prior import (
     BLEND_FULL_APPEARANCES,
     BLEND_START_APPEARANCES,
@@ -950,4 +951,4 @@ def build_features(
     df_feat["has_availability_snapshot"] = has_point_in_time_snapshot
     df_feat["availability_snapshot_id"] = snapshot_id
     df_feat["xmins_cap"] = float("nan")
-    return df_feat
+    return assert_feature_contract(df_feat)

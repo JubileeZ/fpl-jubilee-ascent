@@ -15,6 +15,7 @@ configure_utf8_stdio()
 from models import get_model
 from features.builder import build_features, history_before_target
 from backtesting.metrics import evaluate_predictions
+from features.contracts import assert_projection_contract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -268,6 +269,7 @@ def main() -> None:
 
         # 2. Predict target gameweek points (fixture grain)
         df_proj = model.predict(df_feat, horizon=1)
+        assert_projection_contract(df_proj)
         comp_cols = [c for c in LEDGER_COMPONENTS if c in df_proj.columns]
         proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
 
