@@ -1,12 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-15T00:20:00+07:00
+**Updated**: 2026-09-17T17:50:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Wayfinder Transfer Plan dashboard spec**: [Ownership/rank](wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md) · [Solve payload](wayfinder-transfer-plan-spec/solve-command-transfer-plan-payload.md) · [Explorer availability](wayfinder-transfer-plan-spec/explorer-availability-and-fixture-fields.md) · [Price intelligence](wayfinder-transfer-plan-spec/price-intelligence-observed-vs-forecast.md) · map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 - **Champion signed bias (2025-26 GW1–38)**: [Note](champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [Summary](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias`
 - **Premier League arrival xG/xA translation**: [Note](epl-arrival-xg-xa-adjustment/epl-arrival-xg-xa-adjustment.md) · [Summary](epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv) `npxg_median_ratio` / `xag_median_ratio` · [Before/after](epl-arrival-xg-xa-adjustment/arrival_xg_xa_before_after.csv) `ratio_npxg` · [Literature](epl-arrival-xg-xa-adjustment/literature-sources.md)
 - **Set-piece taker vs Defcon**: [Note](set-piece-taker-vs-defcon/set-piece-taker-vs-defcon.md) · [DEF break-even](set-piece-taker-vs-defcon/def_breakeven.csv) `net_sp_vs_high_defcon` / `mean_pts_per_start` · [MID break-even](set-piece-taker-vs-defcon/mid_breakeven.csv) `mean_pts_per_start`

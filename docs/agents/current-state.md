@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-Weekly path: Official ingest → Live Season Pin → Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a dashboard tab. Champion = `config/model_selection.json`. ADRs in `docs/adr/` (live pin/hash 0032; signed bias no calibration 0033; minutes 0024/0026; Explorer 0021/0027/0028; horizon cap 0029; solver vendor 0030). Glossary: `CONTEXT.md`.
+Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). Spec in progress; do not ship dashboard. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md`. Next HITL: [Expected GW Score definition](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/94). Takeable also: [Explorer metric legends](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/102), [Availability and fixture on Explorer](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/98), [Scenario arms and net score](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/95), [Chip workspace vs Booked and Enabled Chip](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/96), [Champion trust on the product](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/97). Research notes: `docs/research/wayfinder-transfer-plan-spec/`. Weekly path today: Official ingest → Live Season Pin → Ownership Explorer. Transfer Plan still CLI (`commands.solve` → `data/solution.json`); dashboard does not load it. Champion = `config/model_selection.json`. Glossary: `CONTEXT.md`.
 
 ## Research truth
 
