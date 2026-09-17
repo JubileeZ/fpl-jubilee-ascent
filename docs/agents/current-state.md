@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must complete.** Build order: finish Should grilling → implement Must+Should → Later third. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md` (`.agents/handoff-pointer`). Next Should: [Chip workspace vs Booked and Enabled Chip](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/96), then [Champion trust on the product](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/97), [Explorer metric legends](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/102), [Auto Captain alternatives on Transfer Plan](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/103). Later: [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104). Prototype `origin/prototype/transfer-plan-surface-sketch` @ acba347. Research: `docs/research/wayfinder-transfer-plan-spec/`. Surface not built yet. ADR 0034. Glossary: `CONTEXT.md`.
+Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must + Should grilling complete** (15/16). Next: **implement Must+Should** (ADR 0034 Transfer Plan Surface). Later third: [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md` (`.agents/handoff-pointer`). Prototype `origin/prototype/transfer-plan-surface-sketch` @ acba347. Research: `docs/research/wayfinder-transfer-plan-spec/`. Glossary: `CONTEXT.md` (Champion Trust, Transfer Plan Surface).
 
 ## Research truth
 

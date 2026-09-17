@@ -345,8 +345,12 @@ One ranked Must solve on the Transfer Plan surface. Arms: **Roll** (0 transfers 
 _Avoid_: Hit as the third-arm name, forced single-Hit arm, chip×transfer grid in Must, ranking by Solver Objective, Start-week Expected GW Score alone as the sort, hiding a losing arm
 
 **Transfer Plan Surface**:
-Peer dashboard view beside Ownership Explorer (product tabs). Shows ranked Transfer Plan Scenarios, Start buys/sells, Hits, Expected GW Score week strip, and a read-only plan XI (plan captain marked). Rank key = horizon sum of Expected GW Score; Solver Objective is secondary only. Does not load into Squad What-If. Squad What-If and Dream Team stay on Ownership Explorer only. Spec locked to prototype variant A (peer tabs); not the plan-dock or scenario-stack variants. ADR 0034.
-_Avoid_: loading Transfer Plan into Squad What-If, Dream Team as the plan, plan-dock-only as Must layout, scenario-stack without peer tab, treating read-only plan XI as What-If
+Peer dashboard view beside Ownership Explorer (product tabs). Shows ranked Transfer Plan Scenarios, Start buys/sells, Hits, Expected GW Score week strip, and a read-only plan XI (plan captain marked). Rank key = horizon sum of Expected GW Score; Solver Objective is secondary only. Should: chip calendar = UI over Booked Chip and Enabled Chip (Surface only; default none enabled); Auto Captain + Auto Vice-Captain + next-best 1–2 XI by xMins-weighted xP (no ownership/EO). Does not load into Squad What-If. Squad What-If and Dream Team stay on Ownership Explorer only. Spec locked to prototype variant A (peer tabs); not the plan-dock or scenario-stack variants. ADR 0034.
+_Avoid_: loading Transfer Plan into Squad What-If, Dream Team as the plan, plan-dock-only as Must layout, scenario-stack without peer tab, treating read-only plan XI as What-If, chip×transfer ranked arms as Must, inventing chips by default, manual C/VC, EO on next-best
+
+**Champion Trust**:
+On-product Model Champion evidence for a single User Squad: Champion name, Champion Signed Bias headline, provisional flag when present in `config/model_selection.json`, Decision Regret summary, and Transfer Plan Walk-Forward ranking summary. Shown in Ownership Explorer header (Primary/Champion area) and echoed on Transfer Plan Surface. Enough to act without opening `docs/research/`. Does not calibrate live xP from bias (ADR 0033).
+_Avoid_: research-CSV-only trust, separate Trust tab, calibrating projections from Signed Bias, treating walk-forward as a live Transfer Plan
 
 **Transfer Plan**:
 MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Emitted by `commands.solve` (`data/solution.json`); shown on the Transfer Plan Surface as ranked Transfer Plan Scenarios. Distinct from Transfer Plan Surface (object vs view). Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
@@ -449,16 +453,16 @@ Ownership Explorer card for the selected pool Player. Planning Horizon clock xMi
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Peer to Transfer Plan Surface; not the Transfer Plan. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP columns, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Peer to Transfer Plan Surface; not the Transfer Plan. Should: on-screen legends for Projected Rate, Assume 90, xMins as marker size, Total vs /90 (or xP per Gameweek) axes, Dream Team badge; Champion Trust in the Primary/Champion header. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends
 
 **Decision Regret**:
-Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain.
+Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain. Champion Trust may show a summary on-product.
 _Avoid_: Squad Gap (ambiguous), optimizer gap
 
 **Transfer Plan Walk-Forward**:
-Research evaluation of a Transfer Plan policy. At each historical Gameweek deadline in a Season Window, solve from Projections built only on history before that deadline, then score that Gameweek's scoring 15 on Realized Points. Same This-Season Evidence clock as production (ADR 0024). Distinct from model MAE backtest and from one-Gameweek Decision Regret. Exploratory on archive data without Availability Snapshots. Not a product Transfer Plan.
-_Avoid_: backtest (ambiguous with model MAE), hindsight oracle, Transfer-plan regret (deferred product metric), in-season Prior-Season Seed after This-Season Evidence
+Research evaluation of a Transfer Plan policy. At each historical Gameweek deadline in a Season Window, solve from Projections built only on history before that deadline, then score that Gameweek's scoring 15 on Realized Points. Same This-Season Evidence clock as production (ADR 0024). Distinct from model MAE backtest and from one-Gameweek Decision Regret. Exploratory on archive data without Availability Snapshots. Not a product Transfer Plan; Champion Trust may show a ranking summary on-product.
+_Avoid_: backtest (ambiguous with model MAE), hindsight oracle, treating walk-forward as the live Transfer Plan Surface, in-season Prior-Season Seed after This-Season Evidence
 
 **Model Champion**:
 The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation.
