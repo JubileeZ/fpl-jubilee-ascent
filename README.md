@@ -1,6 +1,6 @@
 # FPL-Jubilee-Ascent
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP.
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Ownership Explorer plus Transfer Plan Surface.
 
 ## Requirements
 
@@ -28,21 +28,27 @@ and [uv.lock](uv.lock).
 
 ## How to use
 
-Weekly path: open the dashboard, Refresh, then Solve scenarios on the Transfer Plan tab. Projection model names (CLI identifiers) are listed in [docs/model_name.md](docs/model_name.md).
+### Weekly loop (product path)
 
-### Weekly loop
+1. Python 3.14 + `uv sync` (+ Playwright Chromium for auth ingest — see [Installation](#installation)).
+2. `.env`: `FPL_EMAIL` and `FPL_PASSWORD` for User Squad (required for Transfer Plan Scenarios).
+3. Open the dashboard:
 
 ```bash
 uv run python -m commands.dashboard
 ```
 
-Server: `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`). Click **Refresh** in the page to ingest live data and re-project the selected Primary Model without restarting. Then open the **Transfer Plan** tab and click **Solve scenarios**. You can skip `commands.refresh_data` and `commands.solve` if you will click Refresh then Solve scenarios after opening. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
+4. Visit `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`).
+5. Click **Refresh** (ingest live FPL + project Primary / Champion).
+6. Open the **Transfer Plan** tab → **Solve scenarios** (ranks Roll / 1 FT / Optimal by horizon Σ Expected GW Score).
 
-Playwright Chromium plus `.env` (`FPL_EMAIL`, `FPL_PASSWORD`) are required for authenticated User Squad ingest. See [Installation](#installation).
+You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Ownership Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
 
-### CLI projections and Transfer Plan
+Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.md).
 
-The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). `commands.solve` always uses the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+### CLI projections and advanced Transfer Plan
+
+The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
 uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
@@ -50,9 +56,7 @@ uv run python -m commands.solve --horizon 5
 uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
 ```
 
-`commands.solve` writes `data/solution.json`. The live product view is Transfer Plan Surface (dashboard Solve scenarios). CLI flags stay here.
-
-Preseason draft (no User Squad):
+`commands.solve` writes `data/solution.json`. Product ranking lives on Transfer Plan Surface (`data/transfer_plan_scenarios.json`). Use CLI for preseason draft and advanced flags:
 
 ```bash
 uv run python -m commands.solve --preseason --xmin_lb 0
@@ -132,7 +136,9 @@ the projection run.
 
 ### 3. Generate Transfer Plan (Solve MILP)
 
-Compute optimal squad selection and transfer plans over planning horizon using MILP solver.
+**Weekly path:** use the dashboard Transfer Plan tab → **Solve scenarios** (writes `data/transfer_plan_scenarios.json`; top arm also mirrors to `data/solution.json`). See [How to use](#how-to-use).
+
+**CLI** for preseason draft or advanced flags:
 
 **Preseason solver** (new squad selection):
 
@@ -245,7 +251,7 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Ownership Explorer plus Transfer Plan Surface (peer tabs). Weekly path: Refresh, then **Solve scenarios** on the Transfer Plan tab. `commands.solve` remains the CLI Transfer Plan writer (`data/solution.json`).
+The local dashboard is Ownership Explorer plus Transfer Plan Surface (peer tabs). Happy path: **Refresh** → **Transfer Plan** → **Solve scenarios**. `commands.solve` remains the CLI writer for preseason / advanced flags (`data/solution.json`).
 
 **Open it**
 
@@ -257,9 +263,9 @@ The command starts `http://127.0.0.1:8000`. If processed tables are newer than `
 
 Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh, Dream Team Solve, and Transfer Plan Solve cannot run at the same time; those buttons disable until the running job finishes.
 
-Click **Solve Dream Team** (Ownership Explorer) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
+Click **Solve Dream Team** (Ownership Explorer only) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
 
-Open the **Transfer Plan** tab and click **Solve scenarios** to rank Roll / 1 FT / Optimal by horizon sum of Expected GW Score. That needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. The plan XI is read-only and does not load into Squad What-If.
+Open the **Transfer Plan** tab and click **Solve scenarios** to rank Roll / 1 FT / Optimal by horizon sum of Expected GW Score. Needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. Plan XI is read-only and does not load into Squad What-If. Payload: `data/transfer_plan_scenarios.json` (not embedded in `dashboard_data.json`).
 
 Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. After pull, open the dashboard (or Refresh) on each machine from the same processed tables. Leftover `data/processed` on one machine vs the Season Archive pin on another will disagree. Live Refresh at different times can also disagree because FPL data moved.
 
@@ -318,7 +324,7 @@ full slice.
 
 **Transfer Plan Surface**
 
-Peer tab. Plan Start is the upcoming open deadline (`is_next`). Horizon length is 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score. Solver Objective is secondary. Start buys/sells, Hits, week EGS strip, read-only plan XI (plan captain marked), Auto Captain / Auto Vice-Captain / next-best 1–2 XI. Booked Chip and Enabled Chip calendar on this tab only.
+Peer tab beside Ownership Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Shows Start buys/sells, Hits, week EGS strip, read-only plan XI (plan captain marked), Auto Captain / Auto Vice-Captain / next-best 1–2 XI. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
 
 ### 9. Season Archiving
 

@@ -11,7 +11,7 @@
 - **Files:** `dashboard/plan.js`, ADR 0034, `docs/agents/current-state.md`, this packet
 - **Decisions:** Full Must+Should spec on map 88. Champion Trust includes Regret + walk-forward summary.
 - **Blocked:** none.
-- **Next:** Later [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Other device: `git pull`, Bind this packet, open map 88.
+- **Next:** Later [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Other device: `git pull`, Bind this packet, open map 88. Docs: README/AGENTS weekly path = Refresh → Solve scenarios.
 
 ## Todo
 

@@ -48,7 +48,7 @@ uv run python -m commands.measure_champion_bias
 uv run python -m commands.transfer_plan_walkforward
 ```
 
-Catalog names and more recipes: `README.md`, `docs/model_name.md`.
+Catalog names and more recipes: `README.md` (weekly dashboard path first), `docs/model_name.md`.
 
 ## Agent pitfalls
 
@@ -56,7 +56,8 @@ Catalog names and more recipes: `README.md`, `docs/model_name.md`.
 - Windows console cp1252; commands call `configure_utf8_stdio()` before non-ASCII prints.
 - pytest `pythonpath = ["."]`; do not drop it.
 - Tests use `sys.executable`, not `.venv/bin/python`.
+- Transfer Plan Scenarios need User Squad; plan JSON is `data/transfer_plan_scenarios.json`, not `dashboard_data.json`.
 
 ## Doc map
 
-Index: `docs/README.md`.
+Index: `docs/README.md`. Weekly path / Key Commands: `README.md`, `AGENTS.md`.

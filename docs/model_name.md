@@ -2,7 +2,7 @@
 
 CLI identifier is `BaseModel.name`, not the Python filename. `models.get_model(name)` scans `models/*.py` and returns the class whose `name` property matches.
 
-Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan (`commands.solve` and dashboard Solve scenarios) always uses that Champion. Ownership Explorer Primary defaults to Champion; `--model` / the in-page Primary control may select any catalog name.
+Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan always uses that Champion: dashboard **Solve scenarios** and `commands.solve`. Ownership Explorer Primary defaults to Champion; `--model` / the in-page Primary control may select any catalog name.
 
 ## Catalog
 
@@ -23,7 +23,7 @@ Fallback if `model_selection.json` is missing: `participation_state_hybrid` (`mo
 | `uv run python -m commands.run_model NAME` | positional | required |
 | `uv run python -m commands.backtest NAME` | positional | required |
 | `uv run python -m commands.report --model NAME` | `--model` | solver `datasource` / Champion CSV |
-| `uv run python -m commands.dashboard --model NAME` | `--model` | Champion; `--models` exports a Comparison Slate |
+| `uv run python -m commands.dashboard --model NAME` | `--model` | Champion; Primary for Explorer / Dream Team; Transfer Plan Scenarios stay Champion; `--models` exports a Comparison Slate |
 | `uv run python -m commands.decision_regret --model NAME` | `--model` | `participation_state_hybrid` if omitted |
 | `uv run python -m commands.solve` | `--model` optional | Champion (`config/model_selection.json`); stale `data/user_settings.json` `datasource` is ignored |
 
