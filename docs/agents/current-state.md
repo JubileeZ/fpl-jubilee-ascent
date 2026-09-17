@@ -1,98 +1,62 @@
 # Current Implementation State
 
-Read if no prior context. `ROADMAP.md` shows target; this file shows what exists today. Current truth only — historical dumps → `docs/archive/` (see `docs/agents/progress.md`).
+Read if no prior context. `ROADMAP.md` = target. This file = what exists today. Historical dumps → `docs/archive/` (`docs/agents/progress.md`).
 
-**Current phase:** New-season readiness complete — see `ROADMAP.md` Phase 5. All tracked implementation issues are closed (`JubileeZ/FPL-Jubilee-Ascent`).
+**Current phase:** Phases 1–5 complete. Season 2026/27 operations + research. Tracked implementation issues closed (`JubileeZ/FPL-Jubilee-Ascent`).
 
 ## Next work — start here
 
-Season 2026/27 underway. ADR 0032 in code: Live Season Pin Official FPL only; hash-gated commit hint; refresh never git commits; User Squad stripped from `data/archive/2026-27/` HEAD (history kept). Typed Operational/Feature/Projection contracts: `features/contracts.py` (`ContractError`; players keep `code`). ADR 0033: keep live Hits; Champion signed bias measured — `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`; no calibration layer. ADR 0023–0026 in code: Official FPL Operational Dataset; This-Season Evidence shrinkage; Expected Role retired; Explorer xMins from finished Club Fixtures (Incomplete History Row not DNP; Prior-Season Seed skips live pin; state shrink 1). `refresh_data` pins Official-only Live Season Pin. `--from-vaastav-dir` is 2024-25 reconstruct only. Dashboard = live product view. Production `_fixture_maps` Modified FDR fallback when API attack/defence = 0.
-
-Design decisions: `docs/adr/0003`–`0006`, `0010`, `0013` (clauses 1–3), `0014`, `0015` (DCS), `0016` superseded (0022 minutes, 0025 Role), `0018` Mix vs Mix (two-tab / 1–5 / `is_next` superseded by 0021; Mix UI superseded by 0027), `0019` (Modified FDR), `0020` (walk-forward; seed clock reopened by 0024), `0021` (Ownership Explorer; Dual-Source clause superseded by 0025; Explorer-only 15 surface superseded by 0027; max length superseded by 0029), `0022` (Club Fixture minutes; in-season seed superseded by 0024), `0023` (cadence superseded by 0032), `0024`–`0033`. Vocabulary in `CONTEXT.md`. Dream Team overlay in Ownership Explorer (ADR 0028). Planning Horizon cap 10, default 6 (ADR 0029). Solver vendor = open-fpl-solver `2ff829f` highspy (ADR 0030).
+Weekly path: Official ingest → Live Season Pin → Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a dashboard tab. Champion = `config/model_selection.json`. ADRs in `docs/adr/` (live pin/hash 0032; signed bias no calibration 0033; minutes 0024/0026; Explorer 0021/0027/0028; horizon cap 0029; solver vendor 0030). Glossary: `CONTEXT.md`.
 
 ## Research truth
 
-- Active research: `docs/research/` (`champion-signed-bias-2025-26`, `epl-arrival-xg-xa-adjustment`, `set-piece-taker-vs-defcon`, `tp-walkforward-gw1-19-2025-26`, `def-fdr-rotation-gw1-19`, `gkp-fdr-rotation-gw1-19`, `fpl-first-half-chip-strategy`). Live index: `docs/research/INDEX.md`. Champion signed bias SoT = `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Arrival xG/xA SoT = `docs/research/epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv` `npxg_median_ratio` / `xag_median_ratio`. Set-piece vs Defcon SoT = `docs/research/set-piece-taker-vs-defcon/def_breakeven.csv` `net_sp_vs_high_defcon`. DEF Club Occupancy SoT = `docs/research/def-fdr-rotation-gw1-19/def_rotation_club_occupancy.csv` `rank_mod_fdr`. GKP rotation SoT = `docs/research/gkp-fdr-rotation-gw1-19/raya_rotation_partners.csv` `total_mod_fdr` / `gkp_rotation_pairs_summary.csv` `pct_gw_mod_le_2_25` (CHE starter Martínez; FDR ticks unchanged vs 22 Aug parquet). Walk-forward ranking: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points` (vaastav 2024-25 seed).
-- Production Feature Contract minutes/rates = Club Fixture shrinkage; Cold-Start Prior-Season Seed; after This-Season Evidence this-season Position-Price (ADR 0024). Expected Role retired (ADR 0025).
-- **Official Fixture Difficulty** = opponent Club Strength Vector overall at focal venue. Production xP / FDR report = **Modified FDR** (official −0.25 home / +0.25 away; ADR 0019). Live API attack/defence = 0. Dual-Vector Strength (rolling npxG) not in production Python.
-- Ranking metric = **DCS** (ADR 0015). RQI historical. Stage 3 keepers = MILP 15-man pick, not the DCS pair.
-
-
-
-
----
+Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage. Production difficulty = **Modified FDR**. Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
 | Area | Path | Notes |
 |------|------|-------|
-| Project Scaffold | `AGENTS.md`, `ROADMAP.md`, `CONTEXT.md` | Configuration, roadmap, vocabulary |
-| Dependencies | `pyproject.toml`, `.venv/` | Package configuration via uv |
-| API Clients | `clients/fpl_api.py`, `clients/fpl_auth.py` | Inbound request handlers and JWT Playwright/tiered login (`.env` credentials → `data/session_token.json` → `user_picks.parquet`) |
-| Data Dictionary | `docs/data_dictionary.md` | Mapping from raw API fields to flat files |
-| CLI Commands | `commands/` | Scripts for refreshing, snapshotting, modeling, backtesting, FDR reporting, solving |
-| Custom Models | `models/`, `docs/model_name.md` | Linear, component, hybrid, participation-state, Dual-Vector. CLI names in catalog. Champion = `config/model_selection.json`. |
-| Features & Projections | `features/`, `projections/` | Feature Contract (finished Club Fixture shrinkage; ADR 0024/0026). Solver exporters, Ownership Explorer slice. Expected Role retired. |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board. Open projects Primary Model from processed when JSON stale (no ingest). Refresh in page ingest+project selected Primary. Solve Dream Team overlay (ADR 0028): gold ring + `Dream` badge; session-only; ITB+Selling or £100.0m; not on Squad Board. Refresh and Solve exclusive. Serial HiGHS for Dream Team. Player components card (horizon total + avg/GW). Squad components: xMins vs Appearance xP. Full-Season Feature Contract from GW1 keeps finished Club Fixtures. Operational dir: `data/processed` else live Season Archive pin. Squad What-If. Assume 90. xMins column. Default avg-minutes floor 0. No Mix vs Mix. No Role. ADR 0021 / 0025 / 0027 / 0028. Open: README §8 (`uv run python -m commands.dashboard` → `http://127.0.0.1:8000`). IPv4-only bind; `localhost` may hit `::1`. |
-| README preview | `README.md` | How to use + CLI. Fences not nested in unordered-list items (CLI §3 / Development). Preview must show CLI §3 after availability-overrides paragraph. Model names → `docs/model_name.md`. |
-| Model names | `docs/model_name.md`, `.cursor/rules/model-names.mdc` | CLI `BaseModel.name` catalog. Champion = `config/model_selection.json`. |
-| Backtesting Engine | `backtesting/` | Walk-forward model eval, Decision Regret, Transfer Plan Walk-Forward policy (ADR 0020) |
-| Vendored Solver | `solver/` | open-fpl-solver `2ff829f` highspy MILP; `planning.py` + `transfer_plan.py` our layer (ADR 0030) |
-| Research | `docs/research/`, `docs/archive/` | Live: INDEX + template. 2026/27 preseason archived with colocated CSVs. Research HTML is not the dashboard product view. `data/archive/` = Season Archive pins |
-
----
+| Scaffold | `AGENTS.md`, `ROADMAP.md`, `CONTEXT.md` | Config, phases, glossary |
+| Deps | `pyproject.toml`, `.venv/` | uv |
+| Clients | `clients/` | FPL API + Playwright/JWT auth |
+| Data dictionary | `docs/data_dictionary.md` | API → parquet |
+| CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
+| Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
+| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board + Dream Team overlay. `http://127.0.0.1:8000`. IPv4 bind |
+| README | `README.md` | How to use + CLI |
+| Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
+| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; `planning.py` + `transfer_plan.py` ours |
+| Research | `docs/research/`, `docs/archive/` | Live INDEX + topics. `data/archive/` = Season Archive pins |
 
 ## What does NOT exist yet (do not assume)
 
-- Historical Availability Snapshot collection not on `origin` (`availability-snapshots` branch missing). Writer now JSON-canonicalizes nested FPL list columns (`price_change_projections`, `scout_risks`, fixture `stats`); hourly Capture Action was failing inside 48h window. Keep `.github/workflows/capture_availability_snapshot.yml` + `evaluate_model_promotion.yml`. Archive-backed promotion remains provisional until two Live Validation Windows complete.
-- Committed Comparison Slate lives in `config/model_selection.json`; `commands.compare_models` and `commands.evaluate_model_promotion` implement automatic historical promotion with Promotion Evidence Records.
-- Snapshot-backed nonzero-chance calibration is not implemented; the opt-in model only applies the immediate `0%` hard DNP rule.
-- Transfer-plan regret remains intentionally out of scope until one-Gameweek Decision Regret passes the holdout gate. First-Half Transfer Plan Walk-Forward ranking (ADR 0020) filled: `docs/research/tp-walkforward-gw1-19-2025-26/tp_walkforward_summary.csv` `realized_points`. Existing walk-forward companions used ADR 0022 in-season seed, not ADR 0024.
-
----
+- `availability-snapshots` branch missing on `origin`. Capture workflow kept. Promotion provisional until two Live Validation Windows.
+- Snapshot-backed nonzero-chance calibration not implemented; opt-in model applies next-GW `0%` hard DNP only.
+- Transfer-plan regret deferred until one-Gameweek Decision Regret passes holdout. First-Half Walk-Forward ranking exists as research companion.
 
 ## Safe commands today
 
 ```bash
-uv run pytest                                          # Run pytest
-uv run ruff check .                                    # Lint code
-uv run python -m commands.refresh_data                 # Ingest current gameweek data; pin Season Archive
-uv run python -m commands.run_model linear_baseline    # Generate projections
-uv run python -m commands.run_model dual_vector_state_hybrid # Operational default
-uv run python -m commands.run_model participation_state_hybrid # Comparison slate
-uv run python -m commands.run_model metrics_component_hybrid    # Comparison baseline
-uv run python -m commands.capture_availability_snapshot --season 2026-27
-uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed
-uv run python -m commands.evaluate_model_promotion --apply --gw_range 1-38 --data_dir data/archive/2025-26/processed
-uv run python -m commands.decision_regret --entry_id <public-entry-id>
-uv run python -m commands.solve --preseason --xmin_lb 0 # Optimize preseason transfers
-uv run python -m commands.report                       # Print report
-uv run python -m commands.price_report                # Print price changes
-uv run python -m commands.dashboard                   # Ownership Explorer; open projects Primary if JSON stale; Refresh ingest+Primary; Solve Dream Team; exclusive jobs
-uv run python -m commands.measure_champion_bias          # Champion signed bias companion (ADR 0033)
-uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir data/archive/2024-25/vaastav
-uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>
-uv run python -m commands.transfer_plan_walkforward  # Ranking when 2024-25 seed exists; else blocked summary
+uv run pytest
+uv run ruff check .
+uv run python -m commands.refresh_data
+uv run python -m commands.run_model dual_vector_state_hybrid
+uv run python -m commands.dashboard
+uv run python -m commands.solve --preseason --xmin_lb 0
+uv run python -m commands.measure_champion_bias
+uv run python -m commands.transfer_plan_walkforward
 ```
 
----
+Catalog names and more recipes: `README.md`, `docs/model_name.md`.
 
 ## Agent pitfalls
 
-- Playwright Chromium binary must be installed (`uv run playwright install chromium`) to run `refresh_data`/`snapshot_season` when `FPL_TOKEN` is unset.
-- Windows console is cp1252 by default; `commands.*` reconfigure stdio to UTF-8 via `clients.env_loader.configure_utf8_stdio()`. New commands that `print` non-ASCII (player names) must call it too.
-- Tests rely on `tool.pytest.ini_options.pythonpath = ["."]`; don't remove it or collection breaks with `ModuleNotFoundError: No module named 'clients'`.
-- Don't hardcode `.venv/bin/python` in tests — use `sys.executable` (cross-platform).
-
----
+- Playwright Chromium required for `refresh_data` / `snapshot_season` when `FPL_TOKEN` unset.
+- Windows console cp1252; commands call `configure_utf8_stdio()` before non-ASCII prints.
+- pytest `pythonpath = ["."]`; do not drop it.
+- Tests use `sys.executable`, not `.venv/bin/python`.
 
 ## Doc map
 
-| Question | Read |
-|----------|------|
-| Documentation map | `docs/README.md` |
-| Projection model names | `docs/model_name.md` |
-| Glossary | `CONTEXT.md` |
-| Phases & checklist | `ROADMAP.md` |
-| Agent rules | `AGENTS.md` |
-| How to update progress | `docs/agents/progress.md` |
+Index: `docs/README.md`.

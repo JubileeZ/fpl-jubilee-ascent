@@ -56,24 +56,7 @@ Vendored MILP solver, multi-period transfer optimization wrapper, and top-picks 
 
 ### ✅ Phase 5: New-Season Readiness (Completed)
 
-Motivation: at a new season's GW1, current-season history is empty so `linear_baseline` projects 0 for everyone → solver picks a meaningless squad. Goal: a component model seeded from prior-season archive that works at Cold-Start and stays sound as current-season data arrives.
-
-Start with the critical path; design in `docs/adr/0003-reconstruct-points-from-event-components.md`, vocabulary in `CONTEXT.md`.
-
-| Issue | Title | Blocked by | Notes |
-|-------|-------|-----------|-------|
-| #77 | FPL scoring matrix module | — | ✅ Done. All 13 Event Components; official rules source captured. |
-| #84 | Component model w/ Prior-Season Seed (mid-season) | #77 | ✅ Done. `models/component_baseline.py`; per-90 rates in `features/builder.py`. Backtest beats linear_baseline. |
-| #85 | Cold-Start fallback + current-season blend | #84 | ✅ Done. Prior-season seed + Position-Price Prior fallback + appearance blend + GW1-4 cold-start guard. |
-| #83 | Long-format Feature Contract (Planning Horizon) | #77 | ✅ Done. Fixture identity retained across horizon; solver/exporter aggregate double gameweeks. |
-| #86 | Per-component fixture difficulty | #83 | ✅ Done. Separate attack/defence inputs from club strength vectors with FDR fallback. |
-| #87 | Fixture difficulty (FDR) report | #83 | ✅ Done. `commands/fdr_report.py` prints and exports a sortable Club × horizon-GW FDR table. |
-| #78 | Auto team_id from /api/me | — | ✅ Done. |
-| #75 | Backtesting default directory path alignment | — | ✅ Done. Falls back to the latest processed archive when active performance history is absent. |
-| #79 | Captain & vice report | — | ✅ Done. `commands.report` prints and exports next-gameweek captain/vice recommendations. |
-| #80 | Chip booking feasibility validation | — | ✅ Done. Solver rejects duplicate, conflicting, and out-of-horizon booked chips before preparation. |
-| #81 | Price-change tracking | — | ✅ Done. Refresh appends price snapshots; `commands.price_report` reports refresh/season changes. |
-| #82 | Tuning surface (horizon/decay) | — | ✅ Done. Run-model blend thresholds and solver horizon/decay/hit-cost overrides are explicit and validated. |
+Prior-season seed component model, Cold-Start, long-format Feature Contract, Modified FDR, CLI reports, Champion/solver tuning. Issues #75–#87 closed. Design: `docs/adr/0003`. Vocabulary: `CONTEXT.md`.
 
 ---
 
