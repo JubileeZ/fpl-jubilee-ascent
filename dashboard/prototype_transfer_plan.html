@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    PROTOTYPE / THROWAY — Transfer Plan surface sketch (wayfinder #99)
+    Question: How should Transfer Plan look/behave vs Ownership Explorer, Squad What-If, Dream Team?
+    Three structural variants via ?variant=A|B|C — not production; do not fold into main UI as-is.
+    Run: uv run python -m commands.dashboard → http://127.0.0.1:8000/prototype_transfer_plan.html
+  -->
+  <title>PROTOTYPE · Transfer Plan surface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=proto1">
+  <style>
+    .proto-banner {
+      background: #7c2d12;
+      color: #ffedd5;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .proto-banner code { color: #fed7aa; }
+    .proto-switcher {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #f8fafc;
+      color: #0f172a;
+      border: 2px solid #0f172a;
+      border-radius: 999px;
+      padding: 0.5rem 0.85rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .proto-switcher button {
+      border: none;
+      background: #0f172a;
+      color: #f8fafc;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .proto-switcher .proto-label { min-width: 14rem; text-align: center; }
+    .proto-state {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: #0b1220;
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      white-space: pre-wrap;
+    }
+    .scenario-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+    .scenario-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      text-align: left;
+    }
+    .scenario-card[aria-selected="true"] {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .scenario-card .rank {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .scenario-card h3 { font-size: 1.1rem; margin: 0.25rem 0; }
+    .scenario-card .score { color: var(--accent); font-weight: 800; font-size: 1.35rem; }
+    .scenario-card .meta { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.35rem; }
+    .ledger { display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.95rem; }
+    .ledger .buy { color: var(--accent); }
+    .ledger .sell { color: var(--danger); }
+    .week-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+    }
+    .week-cell {
+      background: #0b1220;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem;
+      font-size: 0.8rem;
+    }
+    .week-cell strong { display: block; color: var(--accent-cyan); }
+    .mini-pitch {
+      background: var(--pitch-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      min-height: 220px;
+      display: grid;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    .mini-pitch .row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .shirt {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.75rem;
+      min-width: 4.5rem;
+      text-align: center;
+    }
+    .shirt.c { outline: 2px solid var(--warning); }
+    .readonly-banner {
+      background: #1e3a5f;
+      color: #bfdbfe;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+    .ghost-explorer {
+      opacity: 0.55;
+      pointer-events: none;
+      border: 1px dashed #475569;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .dock-layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    .stack-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 0.85rem;
+      cursor: pointer;
+    }
+    .stack-card[aria-selected="true"] { border-color: var(--accent-cyan); }
+    .stack-card .big-score { font-size: 2rem; font-weight: 800; color: var(--accent); }
+    .nav-tabs { display: flex; gap: 0.5rem; margin-left: 1rem; }
+    .nav-tabs button {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .nav-tabs button.active {
+      color: var(--text-main);
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.12);
+    }
+    .variant-root[hidden] { display: none !important; }
+    @media (max-width: 900px) {
+      .scenario-row, .dock-layout, .week-strip { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <p class="proto-banner">
+      PROTOTYPE THROWAY · Transfer Plan surface (#99) · stub data ·
+      open <code>?variant=A|B|C</code> · arrows / ← → cycle · not production
+    </p>
+
+    <!-- ========== VARIANT A: Peer tabs ========== -->
+    <div id="variant-A" class="variant-root" hidden>
+      <header class="navbar">
+        <div class="brand">
+          <span class="logo-icon">⚽</span>
+          <div class="brand-text">
+            <h1>FPL Jubilee Ascent</h1>
+            <span class="subtitle">Transfer Plan · peer surface</span>
+          </div>
+          <div class="nav-tabs" aria-label="Product surfaces">
+            <button type="button" class="active">Transfer Plan</button>
+            <button type="button" disabled title="Stub: would show Ownership Explorer">Ownership Explorer</button>
+          </div>
+        </div>
+        <div class="header-controls">
+          <div class="control-group"><label>Plan Start</label><span class="stat-value">GW5</span></div>
+          <div class="control-group"><label>Horizon</label><span class="stat-value">5 GW</span></div>
+          <button type="button" class="btn btn-primary" disabled>Solve scenarios</button>
+        </div>
+      </header>
+      <p class="explorer-meta">Dream Team and Squad What-If live on the Explorer tab only — not here.</p>
+      <section id="a-scenarios" class="scenario-row"></section>
+      <section class="card" style="padding:1rem;margin-top:0.5rem">
+        <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
+        <div id="a-ledger" class="ledger"></div>
+        <h3 style="margin:1rem 0 0.5rem;font-size:0.95rem;color:var(--text-muted)">Expected GW Score by week (rank = sum)</h3>
+        <div id="a-weeks" class="week-strip"></div>
+        <h3 style="margin:1rem 0 0.5rem;font-size:0.95rem;color:var(--text-muted)">Plan XI · Start week (C = plan captain)</h3>
+        <div id="a-pitch" class="mini-pitch"></div>
+        <p class="explorer-meta" style="margin-top:0.75rem">Solver Objective shown secondary: <span id="a-obj">—</span></p>
+      </section>
+    </div>
+
+    <!-- ========== VARIANT B: Docked companion ========== -->
+    <div id="variant-B" class="variant-root" hidden>
+      <header class="navbar">
+        <div class="brand">
+          <span class="logo-icon">⚽</span>
+          <div class="brand-text">
+            <h1>FPL Jubilee Ascent</h1>
+            <span class="subtitle">Ownership Explorer · plan dock</span>
+          </div>
+        </div>
+        <div class="header-controls">
+          <button type="button" class="btn" disabled>Refresh</button>
+          <button type="button" class="btn" disabled>Solve Dream Team</button>
+        </div>
+      </header>
+      <div class="dock-layout">
+        <div>
+          <div class="ghost-explorer">
+            <strong>Explorer stays</strong> — scatter / table / Squad Board + What-If remain the live sandbox.
+            Dream Team overlay unchanged. Selecting a Transfer Plan Scenario does <em>not</em> rewrite What-If.
+          </div>
+          <div class="card" style="padding:1rem;margin-top:0.75rem">
+            <div class="readonly-banner">Plan strip (locked) · not Squad What-If</div>
+            <div id="b-ledger" class="ledger"></div>
+            <div id="b-pitch" class="mini-pitch" style="margin-top:0.75rem;min-height:160px"></div>
+          </div>
+        </div>
+        <aside class="card" style="padding:1rem">
+          <h2 style="font-size:1rem;margin-bottom:0.75rem">Transfer Plan Scenarios</h2>
+          <p class="explorer-meta" style="margin-bottom:0.75rem">Ranked by horizon Σ Expected GW Score</p>
+          <div id="b-scenarios" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+          <div id="b-weeks" class="week-strip" style="margin-top:0.75rem;grid-template-columns:1fr"></div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ========== VARIANT C: Scenario-first document ========== -->
+    <div id="variant-C" class="variant-root" hidden>
+      <header class="navbar">
+        <div class="brand">
+          <span class="logo-icon">⚽</span>
+          <div class="brand-text">
+            <h1>FPL Jubilee Ascent</h1>
+            <span class="subtitle">Transfer Plan · scenario stack</span>
+          </div>
+        </div>
+        <div class="header-controls">
+          <a class="btn" href="index.html" style="text-decoration:none">← Ownership Explorer</a>
+        </div>
+      </header>
+      <p class="explorer-meta">No pitch on this surface. Plan is a ranked document. What-If / Dream Team stay on Explorer.</p>
+      <div id="c-scenarios"></div>
+    </div>
+
+    <pre id="proto-state" class="proto-state"></pre>
+  </div>
+
+  <div class="proto-switcher" role="toolbar" aria-label="Prototype variant switcher">
+    <button type="button" id="proto-prev" aria-label="Previous variant">←</button>
+    <span class="proto-label" id="proto-label">A</span>
+    <button type="button" id="proto-next" aria-label="Next variant">→</button>
+  </div>
+
+  <script>
+    /** Stub Transfer Plan Scenarios — glossary: Roll / 1 FT / Optimal */
+    const SCENARIOS = [
+      {
+        id: "optimal",
+        name: "Optimal",
+        rank: 1,
+        horizonEgs: 312.4,
+        startHits: 1,
+        startBuys: ["Saka"],
+        startSells: ["Rogers"],
+        objective: 298.1,
+        weeks: [
+          { gw: 5, egs: 62.1, hits: 1, chip: null },
+          { gw: 6, egs: 64.0, hits: 0, chip: null },
+          { gw: 7, egs: 61.2, hits: 0, chip: null },
+          { gw: 8, egs: 63.5, hits: 0, chip: null },
+          { gw: 9, egs: 61.6, hits: 0, chip: null },
+        ],
+        xi: [
+          ["Raya"],
+          ["Saliba", "Gabriel", "Kerkez"],
+          ["Saka (C)", "M.Salah", "Palmer", "Mbeumo"],
+          ["Haaland", "Isak", "Wirtz"],
+        ],
+        bench: ["Sels", "Andersen", "Gakpo", "Evanilson"],
+      },
+      {
+        id: "one_ft",
+        name: "1 FT",
+        rank: 2,
+        horizonEgs: 308.9,
+        startHits: 0,
+        startBuys: ["Saka"],
+        startSells: ["Rogers"],
+        objective: 301.0,
+        weeks: [
+          { gw: 5, egs: 58.8, hits: 0, chip: null },
+          { gw: 6, egs: 63.2, hits: 0, chip: null },
+          { gw: 7, egs: 61.0, hits: 0, chip: null },
+          { gw: 8, egs: 63.1, hits: 0, chip: null },
+          { gw: 9, egs: 62.8, hits: 0, chip: null },
+        ],
+        xi: [
+          ["Raya"],
+          ["Saliba", "Gabriel", "Kerkez"],
+          ["Saka (C)", "M.Salah", "Palmer", "Mbeumo"],
+          ["Haaland", "Isak", "Wirtz"],
+        ],
+        bench: ["Sels", "Andersen", "Gakpo", "Evanilson"],
+      },
+      {
+        id: "roll",
+        name: "Roll",
+        rank: 3,
+        horizonEgs: 301.2,
+        startHits: 0,
+        startBuys: [],
+        startSells: [],
+        objective: 295.4,
+        weeks: [
+          { gw: 5, egs: 55.0, hits: 0, chip: null },
+          { gw: 6, egs: 62.1, hits: 0, chip: null },
+          { gw: 7, egs: 60.4, hits: 0, chip: null },
+          { gw: 8, egs: 62.0, hits: 0, chip: null },
+          { gw: 9, egs: 61.7, hits: 0, chip: null },
+        ],
+        xi: [
+          ["Raya"],
+          ["Saliba", "Gabriel", "Kerkez"],
+          ["Rogers", "M.Salah (C)", "Palmer", "Mbeumo"],
+          ["Haaland", "Isak", "Wirtz"],
+        ],
+        bench: ["Sels", "Andersen", "Gakpo", "Evanilson"],
+      },
+    ];
+
+    const VARIANT_META = {
+      A: "A (Peer tabs)",
+      B: "B (Plan dock)",
+      C: "C (Scenario stack)",
+    };
+    const ORDER = ["A", "B", "C"];
+
+    const state = {
+      variant: "A",
+      selectedId: "optimal",
+    };
+
+    function selected() {
+      return SCENARIOS.find((s) => s.id === state.selectedId) || SCENARIOS[0];
+    }
+
+    function ledgerHtml(s) {
+      const buys = s.startBuys.length ? s.startBuys.map((n) => `<span class="buy">+ ${n}</span>`).join(" ") : "<span class=\"buy\">(none)</span>";
+      const sells = s.startSells.length ? s.startSells.map((n) => `<span class=\"sell\">− ${n}</span>`).join(" ") : "<span class=\"sell\">(none)</span>";
+      return `<div><strong>Start buys</strong><br>${buys}</div><div><strong>Start sells</strong><br>${sells}</div><div><strong>Start Hits</strong><br>${s.startHits}</div><div><strong>Σ Expected GW Score</strong><br>${s.horizonEgs.toFixed(1)}</div>`;
+    }
+
+    function weeksHtml(s, stacked) {
+      return s.weeks
+        .map(
+          (w) =>
+            `<div class="week-cell"><strong>GW${w.gw}</strong>EGS ${w.egs.toFixed(1)}<br>Hits ${w.hits}${w.chip ? " · " + w.chip : ""}</div>`
+        )
+        .join("");
+    }
+
+    function pitchHtml(s) {
+      const rows = s.xi
+        .map(
+          (row) =>
+            `<div class="row">${row
+              .map((n) => `<div class="shirt${n.includes("(C)") ? " c" : ""}">${n}</div>`)
+              .join("")}</div>`
+        )
+        .join("");
+      return `${rows}<div class="row" style="opacity:0.7;margin-top:0.35rem">${s.bench
+        .map((n) => `<div class="shirt">${n}</div>`)
+        .join("")}</div>`;
+    }
+
+    function renderScenariosA() {
+      const root = document.getElementById("a-scenarios");
+      root.innerHTML = SCENARIOS.map(
+        (s) => `
+        <button type="button" class="scenario-card" data-id="${s.id}" aria-selected="${s.id === state.selectedId}">
+          <div class="rank">Rank ${s.rank}</div>
+          <h3>${s.name}</h3>
+          <div class="score">${s.horizonEgs.toFixed(1)}</div>
+          <div class="meta">Σ Expected GW Score · Start Hits ${s.startHits}</div>
+        </button>`
+      ).join("");
+      root.querySelectorAll("[data-id]").forEach((el) =>
+        el.addEventListener("click", () => {
+          state.selectedId = el.getAttribute("data-id");
+          render();
+        })
+      );
+    }
+
+    function renderScenariosB() {
+      const root = document.getElementById("b-scenarios");
+      root.innerHTML = SCENARIOS.map(
+        (s) => `
+        <button type="button" class="scenario-card" data-id="${s.id}" aria-selected="${s.id === state.selectedId}" style="width:100%">
+          <div class="rank">#${s.rank} ${s.name}</div>
+          <div class="score" style="font-size:1.15rem">${s.horizonEgs.toFixed(1)}</div>
+          <div class="meta">Hits ${s.startHits} · Obj ${s.objective.toFixed(1)}</div>
+        </button>`
+      ).join("");
+      root.querySelectorAll("[data-id]").forEach((el) =>
+        el.addEventListener("click", () => {
+          state.selectedId = el.getAttribute("data-id");
+          render();
+        })
+      );
+    }
+
+    function renderScenariosC() {
+      const root = document.getElementById("c-scenarios");
+      root.innerHTML = SCENARIOS.map((s) => {
+        const open = s.id === state.selectedId;
+        return `
+        <article class="stack-card" data-id="${s.id}" aria-selected="${open}">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap">
+            <div>
+              <div class="rank" style="color:var(--text-muted);font-size:0.75rem;text-transform:uppercase">Rank ${s.rank}</div>
+              <h2 style="margin:0">${s.name}</h2>
+            </div>
+            <div class="big-score">${s.horizonEgs.toFixed(1)}</div>
+          </div>
+          <div class="meta" style="color:var(--text-muted);margin:0.35rem 0 0.75rem">Σ Expected GW Score · Start Hits ${s.startHits} · Solver Objective ${s.objective.toFixed(1)} (not rank)</div>
+          ${
+            open
+              ? `<div class="ledger">${ledgerHtml(s)}</div>
+                 <h3 style="margin:1rem 0 0.5rem;font-size:0.9rem;color:var(--text-muted)">Week strip</h3>
+                 <div class="week-strip">${weeksHtml(s)}</div>
+                 <p class="explorer-meta" style="margin-top:0.75rem">XI/bench omitted on purpose — document surface, not pitch.</p>`
+              : `<p class="explorer-meta">Click to expand buys/sells + week Expected GW Score</p>`
+          }
+        </article>`;
+      }).join("");
+      root.querySelectorAll("[data-id]").forEach((el) =>
+        el.addEventListener("click", () => {
+          state.selectedId = el.getAttribute("data-id");
+          render();
+        })
+      );
+    }
+
+    function renderState() {
+      const s = selected();
+      document.getElementById("proto-state").textContent = JSON.stringify(
+        {
+          variant: state.variant,
+          variantName: VARIANT_META[state.variant],
+          selectedScenario: s.name,
+          rankKey: "sum Expected GW Score over Transfer Plan Horizon",
+          startBuys: s.startBuys,
+          startSells: s.startSells,
+          startHits: s.startHits,
+          horizonEgs: s.horizonEgs,
+          solverObjectiveSecondary: s.objective,
+          notWhatIf: true,
+          dreamTeamOnExplorerOnly: true,
+        },
+        null,
+        2
+      );
+    }
+
+    function render() {
+      ORDER.forEach((k) => {
+        document.getElementById(`variant-${k}`).hidden = k !== state.variant;
+      });
+      document.getElementById("proto-label").textContent = VARIANT_META[state.variant];
+      const s = selected();
+      if (state.variant === "A") {
+        renderScenariosA();
+        document.getElementById("a-ledger").innerHTML = ledgerHtml(s);
+        document.getElementById("a-weeks").innerHTML = weeksHtml(s);
+        document.getElementById("a-pitch").innerHTML = pitchHtml(s);
+        document.getElementById("a-obj").textContent = s.objective.toFixed(1);
+      } else if (state.variant === "B") {
+        renderScenariosB();
+        document.getElementById("b-ledger").innerHTML = ledgerHtml(s);
+        document.getElementById("b-pitch").innerHTML = pitchHtml(s);
+        document.getElementById("b-weeks").innerHTML = weeksHtml(s);
+      } else {
+        renderScenariosC();
+      }
+      renderState();
+    }
+
+    function setVariant(v) {
+      state.variant = v;
+      const url = new URL(window.location.href);
+      url.searchParams.set("variant", v);
+      history.replaceState(null, "", url);
+      render();
+    }
+
+    function cycle(delta) {
+      const i = ORDER.indexOf(state.variant);
+      setVariant(ORDER[(i + delta + ORDER.length) % ORDER.length]);
+    }
+
+    document.getElementById("proto-prev").addEventListener("click", () => cycle(-1));
+    document.getElementById("proto-next").addEventListener("click", () => cycle(1));
+    window.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key === "ArrowLeft") cycle(-1);
+      if (e.key === "ArrowRight") cycle(1);
+    });
+
+    const initial = new URLSearchParams(window.location.search).get("variant") || "A";
+    state.variant = ORDER.includes(initial) ? initial : "A";
+    render();
+  </script>
+</body>
+</html>
