@@ -7,23 +7,28 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Charted. Cut closed. Four research tickets closed. Notes on disk under `docs/research/wayfinder-transfer-plan-spec/`.
-- **Files:** `docs/research/wayfinder-transfer-plan-spec/*.md`, `docs/research/INDEX.md`, `docs/agents/current-state.md`, `.agents/handoff-pointer`
-- **Decisions:** Must/Should/Later cut on issue 89. Transfer Plan = new dashboard surface (not What-If, not Dream Team). Ranked roll/1-FT/Hit. Expected GW Score new term. Single User Squad. Solve already writes `data/solution.json`; Explorer hides news/chance/fixtures. Official `selected_by_percent` is not EO. `price_report` is observed only.
-- **Blocked:** Surface sketch blocked on Expected GW Score + scenario arms.
-- **Next:** Bind this packet. Claim [Expected GW Score definition](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/94). Skills: grilling, domain-modeling. Do not implement dashboard.
+- **Status:** Must chapter complete (11/16). Should/Later remain.
+- **Files:** `CONTEXT.md`, `docs/adr/0034-transfer-plan-surface-peer-tab.md`, ADR 0021/0027 notes, `docs/agents/current-state.md`, this packet
+- **Decisions:** Must locked — Surface peer tabs, Expected GW Score, Roll/1FT/Optimal, first-run path, Explorer+Surface availability/fixtures. ADR 0034.
+- **Blocked:** none for Should grilling.
+- **Next:** Should tickets (chip / Champion trust / legends / Auto Captain) or Later differentials. Do not implement Surface until map empty or user asks implement.
 
 ## Todo
 
 - [x] Chart map 88 + child tickets
 - [x] Must Should Later cut (89)
 - [x] Research 90–93
-- [ ] Expected GW Score (94)
-- [ ] Remaining grilling/prototype tickets on the map
-- [ ] Glossary + first-run docs chapters after sketch
+- [x] Expected GW Score (94)
+- [x] Scenario arms (95)
+- [x] Surface sketch (99) → A
+- [x] Glossary + ADR 0034 (100)
+- [x] First-run chapter (101)
+- [x] Availability/fixtures Must (98)
+- [ ] Should: 96, 97, 102, 103
+- [ ] Later: 104
 
 ## Blockers / Notes
 
-- Live season parquet/JSON dirty in working tree: do not commit with this packet.
-- Research worktrees still on disk; notes copied to main. Cleanup `/delete-worktree` optional after push.
-- Other device: `git pull`, Bind packet `transfer-plan-dashboard-spec`, open map 88.
+- Spec-only; no dashboard build in this map.
+- Prototype branch `prototype/transfer-plan-surface-sketch` @ acba347 (local until push).
+- Other device: `git pull`, Bind packet, open map 88.
