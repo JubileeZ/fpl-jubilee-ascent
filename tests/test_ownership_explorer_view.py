@@ -33,10 +33,19 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert js.count("model: primaryModel") >= 2
     assert "default_model || \"default\"" not in js
     assert "filter(Boolean)" in js
-    assert 'id="tab-plan"' not in html
-    assert "plan.js" not in html
+    assert 'id="tab-explorer"' in html
+    assert 'id="tab-plan"' in html
+    assert "plan.js" in html
+    assert "Transfer Plan" in html
+    assert 'id="btn-transfer-plan"' in html
+    assert "Solve scenarios" in html
+    assert "Booked Chip" in html
+    assert "Enabled Chip" in html
+    assert "Expected GW Score" in html
+    assert 'id="champion-trust"' in html
+    assert 'id="explorer-legends"' in html
+    assert "marker size" in html
     assert "Squad Builder" not in html
-    assert "Transfer Plan" not in html
     assert "First-Half Horizon" not in html
     assert 'value="first_half"' not in html
     assert 'value="all_projection"' not in html
@@ -58,6 +67,28 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "toggleAssume90" not in js
     assert "applyMixLetter" not in js
     assert "mixA" not in js
+    assert "fixture_label" in js
+    assert "player.status" in js
+    assert "player.chance" in js
+    assert "player.news" in js
+    assert "news-cell" in js
+
+
+def test_transfer_plan_surface_script_ranks_scenarios() -> None:
+    html = Path("dashboard/index.html").read_text(encoding="utf-8")
+    plan = Path("dashboard/plan.js").read_text(encoding="utf-8")
+    app = Path("dashboard/app.js").read_text(encoding="utf-8")
+    assert "/api/transfer-plan" in app
+    assert "btn-transfer-plan" in app
+    assert "horizon_egs" in plan
+    assert "booked_chips" in plan
+    assert "enabled_chips" in plan
+    assert "auto_captain" in plan
+    assert "Auto Captain" in html
+    assert "Auto Vice-Captain" in html
+    assert "Next-best" in html
+    assert "read-only" in html.lower() or "read-only" in plan.lower()
+    assert "Does not load into Squad What-If" in html
 
 
 def test_squad_board_sits_before_charts() -> None:

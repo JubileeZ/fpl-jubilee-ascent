@@ -28,16 +28,15 @@ and [uv.lock](uv.lock).
 
 ## How to use
 
-Weekly path: ingest Official FPL data, then open Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a dashboard tab. Projection model names (CLI identifiers) are listed in [docs/model_name.md](docs/model_name.md).
+Weekly path: open the dashboard, Refresh, then Solve scenarios on the Transfer Plan tab. Projection model names (CLI identifiers) are listed in [docs/model_name.md](docs/model_name.md).
 
 ### Weekly loop
 
 ```bash
-uv run python -m commands.refresh_data
 uv run python -m commands.dashboard
 ```
 
-Server: `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`). Click **Refresh** in the page to ingest live data and re-project the selected Primary Model without restarting. You can skip `commands.refresh_data` if you will click Refresh after opening. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
+Server: `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`). Click **Refresh** in the page to ingest live data and re-project the selected Primary Model without restarting. Then open the **Transfer Plan** tab and click **Solve scenarios**. You can skip `commands.refresh_data` and `commands.solve` if you will click Refresh then Solve scenarios after opening. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
 
 Playwright Chromium plus `.env` (`FPL_EMAIL`, `FPL_PASSWORD`) are required for authenticated User Squad ingest. See [Installation](#installation).
 
@@ -50,6 +49,8 @@ uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
 uv run python -m commands.solve --horizon 5
 uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
 ```
+
+`commands.solve` writes `data/solution.json`. The live product view is Transfer Plan Surface (dashboard Solve scenarios). CLI flags stay here.
 
 Preseason draft (no User Squad):
 
@@ -65,7 +66,7 @@ Full CLI recipes follow.
 - `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Ownership Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
-- `dashboard/` — Ownership Explorer (`uv run python -m commands.dashboard`)
+- `dashboard/` — Ownership Explorer and Transfer Plan Surface (`uv run python -m commands.dashboard`)
 - `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
@@ -244,7 +245,7 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Ownership Explorer. Transfer Plan is CLI (`commands.solve`), not a tab.
+The local dashboard is Ownership Explorer plus Transfer Plan Surface (peer tabs). Weekly path: Refresh, then **Solve scenarios** on the Transfer Plan tab. `commands.solve` remains the CLI Transfer Plan writer (`data/solution.json`).
 
 **Open it**
 
@@ -254,9 +255,11 @@ uv run python -m commands.dashboard
 
 The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects the Primary Model (Champion by default) from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
 
-Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh and Solve cannot run at the same time; both buttons disable until the running job finishes.
+Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh, Dream Team Solve, and Transfer Plan Solve cannot run at the same time; those buttons disable until the running job finishes.
 
-Click **Solve Dream Team** to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
+Click **Solve Dream Team** (Ownership Explorer) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
+
+Open the **Transfer Plan** tab and click **Solve scenarios** to rank Roll / 1 FT / Optimal by horizon sum of Expected GW Score. That needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. The plan XI is read-only and does not load into Squad What-If.
 
 Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. After pull, open the dashboard (or Refresh) on each machine from the same processed tables. Leftover `data/processed` on one machine vs the Season Archive pin on another will disagree. Live Refresh at different times can also disagree because FPL data moved.
 
@@ -268,7 +271,9 @@ Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed;
 
 **Ownership Explorer**
 
-**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view.
+**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name, Signed Bias, provisional flag, Decision Regret, and walk-forward ranking.
+
+The explorer table shows status, chance-of-playing, news (tooltip), and per-GW fixture labels (opponent, H/A, Modified FDR). On-screen legends under the toolbar define Projected Rate, Assume 90, xMins as marker size, Total vs /90, and the Dream Team badge.
 
 **Squad Board** draws the User Squad (pitch + Squad xP strip). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
 
@@ -305,10 +310,15 @@ Feature Contract minutes.
 
 
 The rank table is sorted by horizon **Total** descending by default. Click any
-column header to sort. Per-GW xP columns follow the Planning Horizon. Rank `#`
+column header to sort. Per-GW xP columns follow the Planning Horizon and include
+fixture labels. Rank `#`
 is the player's place by Total before table-only sort. The status line under the
 toolbar reports how many players are on the chart vs in the table vs in the
 full slice.
+
+**Transfer Plan Surface**
+
+Peer tab. Plan Start is the upcoming open deadline (`is_next`). Horizon length is 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score. Solver Objective is secondary. Start buys/sells, Hits, week EGS strip, read-only plan XI (plan captain marked), Auto Captain / Auto Vice-Captain / next-best 1–2 XI. Booked Chip and Enabled Chip calendar on this tab only.
 
 ### 9. Season Archiving
 

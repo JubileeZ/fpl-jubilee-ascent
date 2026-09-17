@@ -238,6 +238,9 @@
     if (key === "pos") return player.pos;
     if (key === "price") return player.price;
     if (key === "own") return player.ownership_pct;
+    if (key === "status") return player.status || "";
+    if (key === "chance") return player.chance == null ? -1 : Number(player.chance);
+    if (key === "news") return player.news || "";
     if (key && key.startsWith("gw")) return slice.perGw[Number(key.slice(2))] || 0;
     return slice[key];
   }
@@ -277,6 +280,9 @@
           row.player.team,
           row.slice.total,
           row.slice.avg_minutes,
+          row.player.status || "",
+          row.player.chance == null ? "—" : `${row.player.chance}%`,
+          row.player.news || "",
         ]),
         marker: {
           size: subset.map((row) => markerSize(row.slice, row.player.id === selectedPlayerId)),
@@ -290,7 +296,8 @@
         hovertemplate:
           "<b>%{customdata[1]}</b> (%{customdata[2]})<br>" +
           (axisX === "own" ? "Own %: %{x:.1f}%<br>" : "Price: £%{x:.1f}m<br>") +
-          "Y: %{y:.2f}<br>Total: %{customdata[3]:.2f} · Avg mins: %{customdata[4]:.1f}<extra></extra>",
+          "Y: %{y:.2f}<br>Total: %{customdata[3]:.2f} · Avg mins: %{customdata[4]:.1f}<br>" +
+          "Avail: %{customdata[5]} %{customdata[6]}<br>%{customdata[7]}<extra></extra>",
       };
     });
   }
@@ -366,6 +373,9 @@
       '<th data-sort="name">Player</th>',
       '<th data-sort="club">Club</th>',
       '<th data-sort="pos">Pos</th>',
+      '<th data-sort="status">Status</th>',
+      '<th data-sort="chance">Chance</th>',
+      '<th data-sort="news">News</th>',
       '<th data-sort="price">Price</th>',
       '<th data-sort="own">Own%</th>',
       '<th data-sort="total">Total</th>',
@@ -398,12 +408,21 @@
         const owned = p.owned ? " owned" : "";
         const dream = dreamTeamIds.has(p.id) ? " dream" : "";
         const badges = `${p.owned ? ' <span class="owned-badge">Owned</span>' : ""}${dreamTeamIds.has(p.id) ? ' <span class="dream-badge">Dream</span>' : ""}`;
-        const gwCells = gws.map((gw) => `<td>${Number(s.perGw[gw] || 0).toFixed(2)}</td>`).join("");
+        const news = p.news ? String(p.news).replace(/"/g, "&quot;") : "";
+        const chance = p.chance == null ? "—" : `${p.chance}%`;
+        const gwCells = gws.map((gw) => {
+          const rowGw = gwProjection(p, gw);
+          const fx = rowGw.fixture_label ? `<div class="gw-fixture">${rowGw.fixture_label}</div>` : "";
+          return `<td>${Number(s.perGw[gw] || 0).toFixed(2)}${fx}</td>`;
+        }).join("");
         return `<tr class="${selected}${owned}${dream}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true">
           <td>${row.rank}</td>
-          <td>${p.name}${badges}</td>
+          <td${news ? ` title="${news}"` : ""}>${p.name}${badges}</td>
           <td>${p.team}</td>
           <td>${POS_LABEL[p.pos] || p.pos}</td>
+          <td>${p.status || "—"}</td>
+          <td>${chance}</td>
+          <td class="news-cell" title="${news}">${news || "—"}</td>
           <td>${Number(p.price).toFixed(1)}</td>
           <td>${Number(p.ownership_pct || 0).toFixed(1)}</td>
           <td>${Number(s.total).toFixed(2)}</td>

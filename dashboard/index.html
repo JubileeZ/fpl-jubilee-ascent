@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=19">
 </head>
 <body>
   <div class="app-container" data-view="explorer">
@@ -16,36 +16,52 @@
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle">Ownership Explorer</span>
+          <span class="subtitle" id="view-subtitle">Ownership Explorer</span>
         </div>
+        <nav class="nav-tabs" aria-label="Product surfaces">
+          <button type="button" id="tab-explorer" class="active">Ownership Explorer</button>
+          <button type="button" id="tab-plan">Transfer Plan</button>
+        </nav>
       </div>
 
       <div class="header-controls">
-        <div class="control-group">
+        <div class="control-group not-plan">
           <label for="horizonStart">Horizon begins</label>
           <select id="horizonStart" class="select-input"></select>
         </div>
-        <div class="control-group">
+        <div class="control-group not-plan">
           <label for="horizonEnd">Horizon to</label>
           <select id="horizonEnd" class="select-input"></select>
         </div>
-        <div class="control-group">
+        <div class="control-group not-plan">
           <label for="primaryModelSelect">Primary Model:</label>
           <select id="primaryModelSelect" class="select-input">
             <option value="">Champion Model</option>
           </select>
         </div>
+        <div class="control-group plan-only">
+          <label>Plan Start</label>
+          <span class="stat-value" id="plan-start">—</span>
+        </div>
+        <div class="control-group plan-only">
+          <label for="plan-horizon">Horizon</label>
+          <select id="plan-horizon" class="select-input"></select>
+        </div>
         <div class="control-group">
           <button type="button" id="btn-refresh" class="btn btn-primary">Refresh</button>
         </div>
-        <div class="control-group">
+        <div class="control-group not-plan">
           <button type="button" id="btn-dream-team" class="btn">Solve Dream Team</button>
+        </div>
+        <div class="control-group plan-only">
+          <button type="button" id="btn-transfer-plan" class="btn btn-primary">Solve scenarios</button>
         </div>
       </div>
     </header>
     <p id="refresh-status" class="explorer-meta"></p>
+    <p id="champion-trust" class="explorer-meta"></p>
 
-    <section class="squad-section" id="squad-board">
+    <section class="squad-section not-plan" id="squad-board">
       <div id="squad-board-empty" class="card squad-empty" hidden>
         No User Squad.
         <button type="button" class="btn btn-primary" id="squad-empty-refresh">Refresh</button>
@@ -113,7 +129,7 @@
       </div>
     </section>
 
-    <section class="explorer-root" id="explorer-root">
+    <section class="explorer-root not-plan" id="explorer-root">
       <div class="card explorer-toolbar">
         <div class="group">
           <label class="title">Y-axis</label>
@@ -152,6 +168,14 @@
         </div>
       </div>
       <p id="explorer-meta" class="explorer-meta"></p>
+      <p id="explorer-legends" class="explorer-meta">
+        <strong>Projected Rate</strong> = xP per 90 minutes.
+        <strong>xP per Gameweek</strong> = horizon total ÷ gameweeks.
+        <strong>Assume 90</strong> = view-only 90 minutes per existing Gameweek (does not change Feature Contract).
+        <strong>xMins</strong> = marker size (average minutes in the Planning Horizon).
+        Table <strong>Total</strong> is horizon xP; <strong>/90</strong> is Projected Rate.
+        <strong>Dream</strong> badge = Dream Team overlay (guide 15, not a Transfer Plan).
+      </p>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
@@ -185,11 +209,40 @@
         </table>
       </div>
     </section>
+
+    <section class="plan-root" id="plan-root" hidden>
+      <p class="explorer-meta">Dream Team and Squad What-If live on Ownership Explorer only. Selected plan is read-only. Does not load into Squad What-If.</p>
+      <p id="plan-champion-trust" class="explorer-meta"></p>
+      <div class="card plan-toolbar">
+        <div>
+          <p class="title">Booked Chip</p>
+          <p class="plan-hint">Pin an Available Chip to one Gameweek. At most one chip per week.</p>
+          <div id="booked-chips" class="plan-chip-calendar"></div>
+        </div>
+        <div>
+          <p class="title">Enabled Chip</p>
+          <p class="plan-hint">Solver places once in the Chip Set. Default none enabled.</p>
+          <div id="enabled-chips" class="plan-enabled-chips"></div>
+        </div>
+      </div>
+      <section id="plan-scenarios" class="scenario-row"></section>
+      <section class="card" id="plan-detail">
+        <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
+        <div id="plan-ledger" class="ledger"></div>
+        <h3 class="plan-subhead">Expected GW Score by week (rank = sum)</h3>
+        <div id="plan-weeks" class="week-strip"></div>
+        <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best</p>
+        <h3 class="plan-subhead">Plan XI · Start week (C = plan captain)</h3>
+        <div id="plan-pitch" class="mini-pitch"></div>
+        <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">—</span></p>
+      </section>
+    </section>
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
   <script src="squad.js?v=3"></script>
-  <script src="explorer.js?v=14"></script>
+  <script src="explorer.js?v=15"></script>
+  <script src="plan.js?v=1"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must + Should grilling complete** (15/16). Next: **implement Must+Should** (ADR 0034 Transfer Plan Surface). Later third: [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md` (`.agents/handoff-pointer`). Prototype `origin/prototype/transfer-plan-surface-sketch` @ acba347. Research: `docs/research/wayfinder-transfer-plan-spec/`. Glossary: `CONTEXT.md` (Champion Trust, Transfer Plan Surface).
+Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must+Should Transfer Plan Surface implemented** (ADR 0034). Next: Later [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md` (`.agents/handoff-pointer`). Research: `docs/research/wayfinder-transfer-plan-spec/`. Glossary: `CONTEXT.md` (Champion Trust, Transfer Plan Surface).
 
 ## Research truth
 
@@ -23,10 +23,10 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
 | Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Squad Board + Dream Team overlay. `http://127.0.0.1:8000`. IPv4 bind |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
-| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; `planning.py` + `transfer_plan.py` ours |
+| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; `planning.py` + `transfer_plan.py` + `scenarios.py` ours |
 | Research | `docs/research/`, `docs/archive/` | Live INDEX + topics. `data/archive/` = Season Archive pins |
 
 ## What does NOT exist yet (do not assume)

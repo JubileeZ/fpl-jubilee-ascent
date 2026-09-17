@@ -2,7 +2,7 @@
 
 CLI identifier is `BaseModel.name`, not the Python filename. `models.get_model(name)` scans `models/*.py` and returns the class whose `name` property matches.
 
-Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan (`commands.solve`) always uses that Champion. Ownership Explorer Primary defaults to Champion; `--model` / the in-page Primary control may select any catalog name.
+Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan (`commands.solve` and dashboard Solve scenarios) always uses that Champion. Ownership Explorer Primary defaults to Champion; `--model` / the in-page Primary control may select any catalog name.
 
 ## Catalog
 

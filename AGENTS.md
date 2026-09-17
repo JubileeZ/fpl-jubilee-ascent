@@ -21,7 +21,7 @@ projections/   # ProjectionContract exporter + Ownership Explorer slice metrics
 solver/        # Vendored open-fpl-solver source
 backtesting/   # Backtest evaluation engine and metrics
 commands/      # CLI command entry points
-dashboard/     # Ownership Explorer (served by commands.dashboard)
+dashboard/     # Ownership Explorer + Transfer Plan Surface (commands.dashboard)
 config/        # Model Champion selection
 tests/         # pytest suite
 data/          # Raw API cache, season snapshots, solver reports
@@ -42,7 +42,8 @@ docs/          # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
-| `uv run python -m commands.dashboard` | Serve Ownership Explorer; open projects Primary if JSON stale; Refresh ingest+Primary project; Solve Dream Team overlay; Refresh/Solve exclusive |
+| `uv run python -m commands.dashboard` | Serve Ownership Explorer and Transfer Plan Surface; open projects Primary if JSON stale; Refresh ingest+Primary project; Solve Dream Team overlay (Explorer); Solve scenarios on Transfer Plan tab; jobs exclusive |
+| `uv run python -m commands.solve` | CLI Transfer Plan MILP → `data/solution.json`. Weekly path uses dashboard Solve scenarios; this is the flag encyclopedia |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |

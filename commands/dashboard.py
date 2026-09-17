@@ -26,13 +26,18 @@ from commands.export_dashboard import (
     resolve_horizon_start,
 )
 from commands.dream_team import execute_dream_team
+from commands.transfer_plan_scenarios import (
+    SCENARIOS_PATH,
+    UserSquadRequired,
+    execute_transfer_plan_scenarios,
+)
 from commands import refresh_data
 from features.builder import build_features, resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_default_model_name, get_model
 from models.selection import projection_model_names
 from projections.exporter import write_solver_projection_csvs
-from solver.planning import clamp_planning_horizon, planning_window
+from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON
 import pandas as pd
 
@@ -51,6 +56,13 @@ _dream_state: dict[str, object] = {
     "budget": None,
     "leftover": None,
     "model": None,
+}
+_plan_lock = threading.Lock()
+_plan_state: dict[str, object] = {
+    "status": "idle",
+    "error": None,
+    "detail": None,
+    "payload": None,
 }
 
 
@@ -105,6 +117,20 @@ def reset_dream_team_state() -> None:
         leftover=None,
         model=None,
     )
+
+
+def transfer_plan_status() -> dict[str, object]:
+    with _plan_lock:
+        return dict(_plan_state)
+
+
+def _set_plan_state(**kwargs: object) -> None:
+    with _plan_lock:
+        _plan_state.update(kwargs)
+
+
+def reset_transfer_plan_state() -> None:
+    _set_plan_state(status="idle", error=None, detail=None, payload=None)
 
 
 def ingest_live_data(season: str = LIVE_SEASON) -> None:
@@ -187,6 +213,9 @@ def run_refresh_job(
     try:
         _set_refresh_state(status="running", error=None, detail="Ingesting FPL data…")
         reset_dream_team_state()
+        reset_transfer_plan_state()
+        if SCENARIOS_PATH.exists():
+            SCENARIOS_PATH.unlink()
         ingest_live_data()
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
@@ -207,6 +236,12 @@ def start_refresh(
                 "status": "error",
                 "error": "Dream Team Solve is running. Wait for it to finish.",
                 "detail": "Dream Team Solve is running. Wait for it to finish.",
+            }
+        if transfer_plan_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Transfer Plan Solve is running. Wait for it to finish.",
+                "detail": "Transfer Plan Solve is running. Wait for it to finish.",
             }
         with _refresh_lock:
             if _refresh_state["status"] == "running":
@@ -254,6 +289,12 @@ def start_dream_team(*, model_name: str, target_gw: int, horizon: int) -> tuple[
                 "error": "Refresh is running. Wait for it to finish.",
                 "detail": "Refresh is running. Wait for it to finish.",
             }
+        if transfer_plan_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Transfer Plan Solve is running. Wait for it to finish.",
+                "detail": "Transfer Plan Solve is running. Wait for it to finish.",
+            }
         with _dream_lock:
             if _dream_state["status"] == "running":
                 return 202, dict(_dream_state)
@@ -270,6 +311,120 @@ def start_dream_team(*, model_name: str, target_gw: int, horizon: int) -> tuple[
         daemon=True,
     ).start()
     return 202, dream_team_status()
+
+
+def _load_dashboard_dataset() -> dict[str, object]:
+    json_path = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
+    if not json_path.exists():
+        raise FileNotFoundError("No dashboard_data.json yet. Click Refresh.")
+    return json.loads(json_path.read_text(encoding="utf-8"))
+
+
+def run_transfer_plan_job(
+    *,
+    target_gw: int,
+    horizon: int,
+    booked_chips: dict[str, list[int]],
+    enabled_chips: list[dict[str, object]],
+) -> None:
+    try:
+        _set_plan_state(status="running", error=None, detail="Solving Transfer Plan Scenarios…", payload=None)
+        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+        dataset = _load_dashboard_dataset()
+        payload = execute_transfer_plan_scenarios(
+            processed_dir=processed_dir,
+            target_gw=target_gw,
+            horizon=horizon,
+            dataset=dataset,
+            booked_chips=booked_chips,
+            enabled_chips=enabled_chips,
+        )
+        _set_plan_state(status="ok", error=None, detail="Transfer Plan Scenarios ready.", payload=payload)
+    except UserSquadRequired as exc:
+        _set_plan_state(status="error", error=str(exc), detail=str(exc), payload=None)
+    except Exception as exc:
+        logger.exception("Transfer Plan Solve failed")
+        _set_plan_state(status="error", error=str(exc), detail="Solve failed.", payload=None)
+
+
+def start_transfer_plan(
+    *,
+    target_gw: int,
+    horizon: int,
+    booked_chips: dict[str, list[int]],
+    enabled_chips: list[dict[str, object]],
+) -> tuple[int, dict[str, object]]:
+    with _job_lock:
+        if refresh_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Refresh is running. Wait for it to finish.",
+                "detail": "Refresh is running. Wait for it to finish.",
+            }
+        if dream_team_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Dream Team Solve is running. Wait for it to finish.",
+                "detail": "Dream Team Solve is running. Wait for it to finish.",
+            }
+        with _plan_lock:
+            if _plan_state["status"] == "running":
+                return 202, dict(_plan_state)
+            _plan_state["status"] = "running"
+            _plan_state["error"] = None
+            _plan_state["detail"] = "Starting…"
+            _plan_state["payload"] = None
+    threading.Thread(
+        target=run_transfer_plan_job,
+        kwargs={
+            "target_gw": target_gw,
+            "horizon": horizon,
+            "booked_chips": booked_chips,
+            "enabled_chips": enabled_chips,
+        },
+        daemon=True,
+    ).start()
+    return 202, transfer_plan_status()
+
+
+def _booked_chips_from_body(body: dict[str, object] | None) -> dict[str, list[int]]:
+    raw = (body or {}).get("booked_chips")
+    chips = {"use_wc": [], "use_bb": [], "use_fh": [], "use_tc": []}
+    if not isinstance(raw, dict):
+        return chips
+    for key in chips:
+        values = raw.get(key) or []
+        if isinstance(values, list):
+            chips[key] = [int(v) for v in values]
+    return chips
+
+
+def _enabled_chips_from_body(body: dict[str, object] | None) -> list[dict[str, object]]:
+    raw = (body or {}).get("enabled_chips") or []
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, object]] = []
+    for item in raw:
+        if isinstance(item, dict) and item.get("chip"):
+            out.append(item)
+    return out
+
+
+def _transfer_plan_args(body: dict[str, object] | None) -> tuple[int, int, dict[str, list[int]], list[dict[str, object]]]:
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    target_gw = resolve_default_target_gw(processed_dir)
+    horizon = clamp_planning_horizon(int((body or {}).get("horizon") or DEFAULT_PLANNING_HORIZON))
+    return target_gw, horizon, _booked_chips_from_body(body), _enabled_chips_from_body(body)
+
+
+def _loaded_scenarios() -> dict[str, object] | None:
+    if not SCENARIOS_PATH.exists():
+        return None
+    try:
+        payload = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def _dream_team_args(body: dict[str, object] | None) -> tuple[str, int, int]:
@@ -302,6 +457,22 @@ def handle_dashboard_api(
             model_name, target_gw, horizon = _dream_team_args(body)
             return start_dream_team(
                 model_name=model_name, target_gw=target_gw, horizon=horizon
+            )
+    if path == "/api/transfer-plan":
+        if method == "GET":
+            state = transfer_plan_status()
+            if state.get("payload") is None:
+                loaded = _loaded_scenarios()
+                if loaded is not None:
+                    state = {**state, "payload": loaded}
+            return 200, state
+        if method == "POST":
+            target_gw, horizon, booked, enabled = _transfer_plan_args(body)
+            return start_transfer_plan(
+                target_gw=target_gw,
+                horizon=horizon,
+                booked_chips=booked,
+                enabled_chips=enabled,
             )
     return 404, {"error": "Not found"}
 
@@ -395,7 +566,7 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Serve Ownership Explorer. Open projects the Primary Model from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects the selected Primary Model. Solve Dream Team paints an Explorer overlay. Refresh and Solve cannot run together."
+        description="Serve Ownership Explorer and Transfer Plan Surface. Open projects the Primary Model from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects the selected Primary Model. Solve Dream Team paints an Explorer overlay. Solve scenarios ranks Roll / 1 FT / Optimal on the Transfer Plan tab. Refresh, Dream Team, and Transfer Plan Solve cannot run together."
     )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="Comparison Slate override (export all named models)")

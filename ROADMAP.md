@@ -17,6 +17,8 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
+Next work: Differentials ranking widget (Later of Transfer Plan dashboard spec). Transfer Plan Surface Must+Should is implemented (ADR 0034).
+
 ```mermaid
 flowchart TD
     P1["Phase 1: Foundations & Auth ✅"] --> P2["Phase 2: Ingestion & Processing ✅"]

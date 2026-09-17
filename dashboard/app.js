@@ -95,6 +95,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let modelBound = false;
   let refreshBound = false;
   let dreamBound = false;
+  let planBound = false;
+  let tabsBound = false;
   let activeJobs = 0;
 
   function unfinishedGws() {
@@ -245,6 +247,49 @@ document.addEventListener("DOMContentLoaded", () => {
         getViewGws: viewGws,
       });
     }
+    if (window.initTransferPlanSurface) {
+      window.initTransferPlanSurface({
+        getPlayers: () => allPlayers,
+        getMeta: () => metaData,
+        getPrimaryModel: () => primaryModel,
+      });
+    }
+    renderChampionTrust();
+  }
+
+  function renderChampionTrust() {
+    function fillTrust(el) {
+      if (!el) return;
+      const trust = metaData.champion_trust || {};
+      if (!trust.champion) {
+        el.textContent = "";
+        return;
+      }
+      const parts = [`Champion Trust: ${trust.champion}`];
+      if (trust.signed_bias != null) {
+        const sign = Number(trust.signed_bias) > 0 ? "+" : "";
+        const season = trust.bias_season ? ` (${trust.bias_season})` : "";
+        parts.push(`Signed Bias ${sign}${trust.signed_bias}${season}`);
+      }
+      if (trust.promotion_status && trust.promotion_status !== "active") {
+        parts.push(String(trust.promotion_status));
+      }
+      if (trust.decision_regret_mean != null) {
+        parts.push(`Decision Regret ${trust.decision_regret_mean}`);
+      }
+      if (Array.isArray(trust.walkforward_ranking) && trust.walkforward_ranking.length) {
+        const rank = trust.walkforward_ranking
+          .map((row) => `${row.arm_id} ${row.realized_points}`)
+          .join(", ");
+        parts.push(`Walk-forward ${rank}`);
+      } else if (trust.walkforward_best_arm) {
+        const pts = trust.walkforward_best_points != null ? ` ${trust.walkforward_best_points}` : "";
+        parts.push(`Walk-forward ${trust.walkforward_best_arm}${pts}`);
+      }
+      el.textContent = parts.join(" · ");
+    }
+    fillTrust(document.getElementById("champion-trust"));
+    fillTrust(document.getElementById("plan-champion-trust"));
   }
 
   function setRefreshStatus(text) {
@@ -255,9 +300,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function setJobsBusy(busy) {
     const refreshBtn = document.getElementById("btn-refresh");
     const dreamBtn = document.getElementById("btn-dream-team");
+    const planBtn = document.getElementById("btn-transfer-plan");
     const modelSelect = document.getElementById("primaryModelSelect");
     if (refreshBtn) refreshBtn.disabled = busy;
     if (dreamBtn) dreamBtn.disabled = busy;
+    if (planBtn) planBtn.disabled = busy;
     if (modelSelect) modelSelect.disabled = busy;
   }
 
@@ -330,6 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await loadDashboardJson();
       applyDataset(data);
       setRefreshStatus("Charts updated.");
+      if (window.setTransferPlanPayload) window.setTransferPlanPayload(null);
     } catch (err) {
       console.error(err);
       setRefreshStatus(err.message || String(err));
@@ -414,12 +462,117 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", solveDreamTeam);
   }
 
+  function setView(view) {
+    const root = document.querySelector(".app-container");
+    if (root) root.setAttribute("data-view", view);
+    const planRoot = document.getElementById("plan-root");
+    if (planRoot) planRoot.hidden = view !== "plan";
+    const explorerTab = document.getElementById("tab-explorer");
+    const planTab = document.getElementById("tab-plan");
+    if (explorerTab) explorerTab.classList.toggle("active", view === "explorer");
+    if (planTab) planTab.classList.toggle("active", view === "plan");
+    const subtitle = document.getElementById("view-subtitle");
+    if (subtitle) subtitle.textContent = view === "plan" ? "Transfer Plan" : "Ownership Explorer";
+    if (view === "explorer" && window.Plotly) {
+      ["chart-ownership", "chart-price"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) window.Plotly.Plots.resize(el);
+      });
+    }
+  }
+
+  function setupTabs() {
+    if (tabsBound) return;
+    tabsBound = true;
+    document.getElementById("tab-explorer")?.addEventListener("click", () => setView("explorer"));
+    document.getElementById("tab-plan")?.addEventListener("click", () => setView("plan"));
+  }
+
+  async function loadTransferPlanStatus() {
+    try {
+      const response = await fetch("/api/transfer-plan");
+      if (!response.ok) return;
+      const state = await response.json();
+      if (state.payload && window.setTransferPlanPayload) {
+        window.setTransferPlanPayload(state.payload);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function pollTransferPlan() {
+    const response = await fetch("/api/transfer-plan");
+    if (!response.ok) throw new Error("Transfer Plan status failed");
+    return response.json();
+  }
+
+  async function waitForTransferPlan() {
+    let idleTicks = 0;
+    for (;;) {
+      const state = await pollTransferPlan();
+      if (state.detail) setRefreshStatus(state.detail);
+      if (state.status === "running") {
+        idleTicks = 0;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      if (state.status === "ok") return state;
+      if (state.status === "idle") {
+        idleTicks += 1;
+        if (idleTicks > 5) throw new Error("Transfer Plan Solve did not start");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      throw new Error(state.error || "Transfer Plan Solve failed");
+    }
+  }
+
+  async function solveTransferPlan() {
+    const btn = document.getElementById("btn-transfer-plan");
+    if (btn && btn.disabled) return;
+    beginJob();
+    setRefreshStatus("Solving Transfer Plan Scenarios…");
+    try {
+      const body = window.transferPlanRequestBody ? window.transferPlanRequestBody() : { horizon: 6 };
+      const post = await fetch("/api/transfer-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await post.json();
+      if (post.status >= 400 && payload.status !== "running") {
+        throw new Error(payload.error || "Transfer Plan Solve failed to start");
+      }
+      const state = await waitForTransferPlan();
+      if (window.setTransferPlanPayload) window.setTransferPlanPayload(state.payload);
+      const n = (state.payload && state.payload.scenarios && state.payload.scenarios.length) || 0;
+      setRefreshStatus(`Transfer Plan Scenarios ready · ${n} arms ranked by Σ Expected GW Score.`);
+      setView("plan");
+    } catch (err) {
+      console.error(err);
+      setRefreshStatus(err.message || String(err));
+    } finally {
+      endJob();
+    }
+  }
+
+  function setupTransferPlan() {
+    const btn = document.getElementById("btn-transfer-plan");
+    if (!btn || planBound) return;
+    planBound = true;
+    btn.addEventListener("click", solveTransferPlan);
+  }
+
   async function init() {
     setupRefresh();
     setupDreamTeam();
+    setupTransferPlan();
+    setupTabs();
     try {
       const data = await loadDashboardJson();
       applyDataset(data);
+      await loadTransferPlanStatus();
       setRefreshStatus("Projected from processed tables. Click Refresh to ingest live FPL.");
     } catch (err) {
       console.error(err);

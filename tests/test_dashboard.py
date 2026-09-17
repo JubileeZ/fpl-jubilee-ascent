@@ -628,3 +628,47 @@ def test_dashboard_main_projects_then_serves_without_ingest(monkeypatch: pytest.
     dash.main()
     assert calls == ["export", "serve"]
 
+
+def test_dashboard_dataset_includes_fixtures_availability_and_champion_trust(tmp_path: Path) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    pd.DataFrame([{
+        "id": 10, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+        "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+        "status": "i", "chance_of_playing_next_round": 25, "news": "Knock",
+        "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+        "influence": "0", "creativity": "0", "threat": "0",
+        "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 0,
+    }]).to_parquet(processed_dir / "players.parquet")
+    pd.DataFrame([
+        {"id": 1, "name": "Manchester City", "short_name": "MCI"},
+        {"id": 2, "name": "Arsenal", "short_name": "ARS"},
+    ]).to_parquet(processed_dir / "clubs.parquet")
+    pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}]).to_parquet(
+        processed_dir / "gameweeks.parquet"
+    )
+    pd.DataFrame([{
+        "id": 100, "gameweek_id": 1, "home_club_id": 1, "away_club_id": 2,
+        "team_h_difficulty": 3, "team_a_difficulty": 4, "kickoff_time": None,
+    }]).to_parquet(processed_dir / "fixtures.parquet")
+    predictions = pd.DataFrame([{
+        "player_id": 10, "gameweek_id": 1, "projected_points": 8.0, "projected_minutes": 90.0,
+        "xp_goals": 1.0, "xp_assists": 0.0, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0,
+        "p_dnp": 0.2,
+    }])
+    dataset = build_dashboard_dataset(processed_dir, predictions, target_gw=1, horizon=1)
+    haaland = dataset["players"][0]
+    gw1 = haaland["projections"]["gw1"]
+    assert haaland["status"] == "i"
+    assert haaland["news"] == "Knock"
+    assert haaland["chance"] == 25
+    assert gw1["opponent"] == "ARS"
+    assert gw1["is_home"] is True
+    assert gw1["difficulty"] == 2.75
+    assert "ARS (H)" in gw1["fixture_label"]
+    assert gw1["p_appear"] == 0.8
+    assert dataset["meta"]["champion_trust"]["champion"]
+    assert dataset["meta"]["transfer_plan_available_chips"]
+    assert "transfer_plan" not in dataset
+
+

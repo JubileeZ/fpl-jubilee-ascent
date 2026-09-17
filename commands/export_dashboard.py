@@ -22,12 +22,17 @@ from projections.explorer_slice import (
     GameweekScore,
     planning_horizon_slice,
 )
+from features.fdr import modified_fdr, official_fdr
+from projections.expected_gw_score import appearance_probability
+from models.champion_trust import load_champion_trust
 from solver.planning import (
     MAX_PLANNING_HORIZON,
     SEASON_END_GW,
     available_chips,
     clamp_planning_horizon,
+    planning_gameweeks,
     planning_window,
+    resolve_default_target_gw,
 )
 from solver.utils import DEFAULT_PLANNING_HORIZON
 
@@ -97,7 +102,64 @@ def _groupby_predictions(df_pred: pd.DataFrame) -> pd.DataFrame:
     for col in COMPONENT_KEYS:
         if col in df_pred.columns:
             agg[col] = "sum"
+    if "p_dnp" in df_pred.columns:
+        agg["p_dnp"] = "prod"
     return df_pred.groupby(["player_id", "gameweek_id"], as_index=False).agg(agg)
+
+
+def load_club_gw_fixtures(processed_dir: Path, club_map: dict[Any, str]) -> dict[tuple[int, int], list[dict[str, Any]]]:
+    path = processed_dir / "fixtures.parquet"
+    out: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    if not path.exists():
+        return out
+    df = pd.read_parquet(path)
+    if df.empty or "gameweek_id" not in df.columns:
+        return out
+    for _, row in df.iterrows():
+        gw = int(row["gameweek_id"])
+        home_id = int(row["home_club_id"])
+        away_id = int(row["away_club_id"])
+        home_diff = modified_fdr(official_fdr(row.get("team_h_difficulty")), True)
+        away_diff = modified_fdr(official_fdr(row.get("team_a_difficulty")), False)
+        out.setdefault((home_id, gw), []).append(
+            {
+                "opponent": str(club_map.get(away_id, "UNK")),
+                "opponent_id": away_id,
+                "is_home": True,
+                "difficulty": round(home_diff, 2),
+            }
+        )
+        out.setdefault((away_id, gw), []).append(
+            {
+                "opponent": str(club_map.get(home_id, "UNK")),
+                "opponent_id": home_id,
+                "is_home": False,
+                "difficulty": round(away_diff, 2),
+            }
+        )
+    return out
+
+
+def _fixture_fields(cells: list[dict[str, Any]]) -> dict[str, Any]:
+    if not cells:
+        return {"opponent": None, "is_home": None, "difficulty": None, "fixture_label": ""}
+    homes = [bool(c["is_home"]) for c in cells]
+    is_home: bool | None
+    if all(homes):
+        is_home = True
+    elif not any(homes):
+        is_home = False
+    else:
+        is_home = None
+    label = ", ".join(
+        f"{c['opponent']} ({'H' if c['is_home'] else 'A'}) {c['difficulty']:.2f}" for c in cells
+    )
+    return {
+        "opponent": ", ".join(str(c["opponent"]) for c in cells),
+        "is_home": is_home,
+        "difficulty": round(sum(float(c["difficulty"]) for c in cells) / len(cells), 2),
+        "fixture_label": label,
+    }
 
 
 def _score_from_pred_row(row: pd.Series) -> GameweekScore:
@@ -257,6 +319,7 @@ def build_dashboard_dataset(
         all_gw_ids.update(int(g) for g in gw_grp["gameweek_id"].unique().tolist())
 
     gw_ids = sorted(all_gw_ids) if all_gw_ids else planning_gw_ids
+    club_fixtures = load_club_gw_fixtures(processed_dir, club_map)
 
     players_data: List[Dict[str, Any]] = []
 
@@ -315,6 +378,7 @@ def build_dashboard_dataset(
                     xp_min = _safe_float(r.get("xp_minutes"))
                     xp_conc = _safe_float(r.get("xp_conceded"))
                     xp_saves = _safe_float(r.get("xp_saves"))
+                    p_dnp = r["p_dnp"] if "p_dnp" in r.index and not pd.isna(r.get("p_dnp")) else None
                     xg_pts = round(xp_g * g_pts_factor, 2)
                     xa_pts = round(xp_a * _ASSIST_POINTS, 2)
                     xcs_pts = round(xp_cs * cs_pts_factor, 2)
@@ -337,7 +401,17 @@ def build_dashboard_dataset(
                     xp_def = 0.0
                     xp_saves = 0.0
                     xp_b = 0.0
+                    p_dnp = None
 
+                fixture = _fixture_fields(club_fixtures.get((club_id, gw), []))
+                p_appear = round(
+                    appearance_probability(
+                        xp_pts,
+                        xmins,
+                        None if p_dnp is None else float(p_dnp),
+                    ),
+                    4,
+                )
                 projections[f"gw{gw}"] = {
                     "total_xp": xp_pts,
                     "xmins": xmins,
@@ -354,6 +428,8 @@ def build_dashboard_dataset(
                     "xp_defcon": round(xp_def, 2),
                     "xp_saves": round(xp_saves, 2),
                     "xp_bonus": round(xp_b, 2),
+                    "p_appear": p_appear,
+                    **fixture,
                 }
                 if gw in planning_gw_set:
                     total_xp_horizon += xp_pts
@@ -417,6 +493,8 @@ def build_dashboard_dataset(
 
     user_chips = load_user_chips(processed_dir)
     _ = solution_path
+    plan_start = resolve_default_target_gw(processed_dir)
+    plan_gws = planning_gameweeks(plan_start, MAX_PLANNING_HORIZON)
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -436,6 +514,9 @@ def build_dashboard_dataset(
             "owned_vice_captain_id": owned_vice_captain_id,
             "itb": itb,
             "free_transfers": free_transfers,
+            "transfer_plan_start": plan_start,
+            "transfer_plan_available_chips": available_chips(plan_gws, user_chips),
+            "champion_trust": load_champion_trust(),
         },
         "players": players_data,
     }
