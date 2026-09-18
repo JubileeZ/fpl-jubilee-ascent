@@ -45,6 +45,7 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "Booked Chip" in html
     assert "Enabled Chip" in html
     assert "Expected GW Score" in html
+    assert 'id="plan-stale-banner"' in html
     assert 'id="champion-trust"' in html
     assert 'id="explorer-legends"' in html
     assert "marker size" in html

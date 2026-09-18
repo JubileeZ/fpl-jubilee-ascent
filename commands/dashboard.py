@@ -30,6 +30,7 @@ from commands.transfer_plan_scenarios import (
     SCENARIOS_PATH,
     UserSquadRequired,
     execute_transfer_plan_scenarios,
+    mark_scenarios_stale,
 )
 from commands import refresh_data
 from features.builder import build_features, resolve_operational_processed_dir
@@ -253,8 +254,14 @@ def run_refresh_job(
         _set_refresh_state(status="running", error=None, detail="Ingesting FPL data…")
         reset_dream_team_state()
         reset_transfer_plan_state()
-        if SCENARIOS_PATH.exists():
-            SCENARIOS_PATH.unlink()
+        stale = mark_scenarios_stale(SCENARIOS_PATH)
+        if stale is not None:
+            _set_plan_state(
+                status="idle",
+                error=None,
+                detail="Scenarios stale after Refresh — Solve again for current projections.",
+                payload=stale,
+            )
         ingest_live_data()
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
@@ -374,9 +381,28 @@ def run_transfer_plan_job(
     enabled_chips: list[dict[str, object]],
 ) -> None:
     try:
-        _set_plan_state(status="running", error=None, detail="Solving Transfer Plan Scenarios…", payload=None)
+        _set_plan_state(
+            status="running",
+            error=None,
+            detail="Solving Transfer Plan Scenarios…",
+            payload=None,
+        )
         processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
         dataset = _load_dashboard_dataset()
+
+        def on_progress(partial: dict[str, object]) -> None:
+            meta = partial.get("meta") or {}
+            done = len(meta.get("completed_arms") or [])
+            total = len(meta.get("arms") or [])
+            pending = meta.get("pending_arms") or []
+            pending_txt = ", ".join(str(a) for a in pending) if pending else "none"
+            _set_plan_state(
+                status="running",
+                error=None,
+                detail=f"Solved {done}/{total} arms · pending: {pending_txt}",
+                payload=partial,
+            )
+
         payload = execute_transfer_plan_scenarios(
             processed_dir=processed_dir,
             target_gw=target_gw,
@@ -384,6 +410,7 @@ def run_transfer_plan_job(
             dataset=dataset,
             booked_chips=booked_chips,
             enabled_chips=enabled_chips,
+            on_progress=on_progress,
         )
         _set_plan_state(status="ok", error=None, detail="Transfer Plan Scenarios ready.", payload=payload)
     except UserSquadRequired as exc:

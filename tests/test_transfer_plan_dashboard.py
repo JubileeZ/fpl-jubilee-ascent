@@ -1,6 +1,7 @@
 """Dashboard Transfer Plan Surface API."""
 
 from pathlib import Path
+import json
 
 import pandas as pd
 import pytest
@@ -107,6 +108,44 @@ def test_handle_dashboard_api_transfer_plan(monkeypatch: pytest.MonkeyPatch) -> 
     get_status, get_payload = dash.handle_dashboard_api("GET", "/api/transfer-plan", None)
     assert get_status == 200
     assert "status" in get_payload
+
+
+def test_refresh_marks_scenarios_stale_without_deleting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+    from commands.transfer_plan_scenarios import build_scenarios_payload, write_scenarios_payload
+    from solver.scenarios import ARM_ROLL
+
+    path = tmp_path / "transfer_plan_scenarios.json"
+    write_scenarios_payload(
+        path,
+        build_scenarios_payload(
+            rows=[{
+                "id": ARM_ROLL,
+                "name": "Roll",
+                "horizon_egs": 1.0,
+                "solver_objective": 1.0,
+                "plan": {"meta": {}, "weeks": []},
+            }],
+            arms=(ARM_ROLL,),
+            target_gw=1,
+            horizon=1,
+            free_transfers=0,
+            status="ok",
+        ),
+    )
+    monkeypatch.setattr(dash, "SCENARIOS_PATH", path)
+    monkeypatch.setattr("commands.transfer_plan_scenarios.SCENARIOS_PATH", path)
+    # mark_scenarios_stale imports path arg — run_refresh uses dash.SCENARIOS_PATH
+    monkeypatch.setattr(dash, "ingest_live_data", lambda: None)
+    monkeypatch.setattr(dash, "run_dashboard_export", lambda **_k: None)
+    dash.reset_refresh_state()
+    dash.reset_dream_team_state()
+    dash.reset_transfer_plan_state()
+    dash.run_refresh_job(model_name="linear_baseline", horizon=1, model_names=["linear_baseline"])
+    assert path.exists()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["meta"]["stale"] is True
+    assert dash.transfer_plan_status()["payload"]["meta"]["stale"] is True
 
 
 def test_refresh_conflicts_with_running_transfer_plan() -> None:

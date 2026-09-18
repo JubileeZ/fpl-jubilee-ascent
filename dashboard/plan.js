@@ -1,5 +1,6 @@
 (function () {
   const POS_ORDER = ["G", "D", "M", "F"];
+  const ARM_LABEL = { roll: "Roll", one_ft: "1 FT", optimal: "Optimal" };
   const CHIP_OPTION = { wc: "use_wc", bb: "use_bb", fh: "use_fh", tc: "use_tc" };
   const CHIP_LABEL = { wc: "Wildcard", bb: "Bench Boost", fh: "Free Hit", tc: "Triple Captain" };
   const STATUS_LABEL = { a: "Avail", d: "Doubt", i: "Inj", s: "Sus", u: "Unav", n: "n/a" };
@@ -159,24 +160,37 @@
 
   function renderScenarios() {
     const root = document.getElementById("plan-scenarios");
+    const staleEl = document.getElementById("plan-stale-banner");
+    if (staleEl) staleEl.hidden = !(payload && payload.meta && payload.meta.stale);
     if (!root) return;
     const rows = (payload && payload.scenarios) || [];
-    if (!rows.length) {
+    const pending = (payload && payload.meta && payload.meta.pending_arms) || [];
+    const running = payload && payload.meta && payload.meta.status === "running";
+    if (!rows.length && !pending.length) {
       root.innerHTML = '<p class="explorer-meta">Refresh, then Solve scenarios (needs a User Squad).</p>';
       return;
     }
-    if (!selectedId || !rows.some((row) => row.id === selectedId)) selectedId = rows[0].id;
-    root.innerHTML = rows
-      .map((row) => {
-        const week = startWeek(row);
-        return `<button type="button" class="scenario-card" data-id="${row.id}" aria-selected="${row.id === selectedId}">
-          <div class="rank">Rank ${row.rank}</div>
+    if (!selectedId || !rows.some((row) => row.id === selectedId)) selectedId = rows[0] ? rows[0].id : null;
+    const cards = rows.map((row) => {
+      const week = startWeek(row);
+      const rankLabel = running ? `Provisional ${row.rank}` : `Rank ${row.rank}`;
+      return `<button type="button" class="scenario-card" data-id="${row.id}" aria-selected="${row.id === selectedId}">
+          <div class="rank">${rankLabel}</div>
           <h3>${row.name}</h3>
           <div class="score">${Number(row.horizon_egs || 0).toFixed(1)}</div>
           <div class="meta">Σ Expected GW Score · Start Hits ${week.hits || 0}</div>
         </button>`;
-      })
-      .join("");
+    });
+    pending.forEach((arm) => {
+      const label = ARM_LABEL[arm] || arm;
+      cards.push(`<div class="scenario-card" aria-busy="true">
+          <div class="rank">Solving…</div>
+          <h3>${label}</h3>
+          <div class="score">—</div>
+          <div class="meta">Arm in progress</div>
+        </div>`);
+    });
+    root.innerHTML = cards.join("");
     root.querySelectorAll("[data-id]").forEach((el) => {
       el.addEventListener("click", () => {
         selectedId = el.getAttribute("data-id");

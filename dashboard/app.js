@@ -415,8 +415,12 @@ document.addEventListener("DOMContentLoaded", () => {
       await waitForRefresh();
       const data = await loadDashboardJson();
       applyDataset(data);
-      setRefreshStatus("Charts updated. Waiting for EO…");
-      if (window.setTransferPlanPayload) window.setTransferPlanPayload(null);
+      const planLoad = await loadTransferPlanStatus();
+      if (planLoad === "stale") {
+        setRefreshStatus("Charts updated. Scenarios stale — Solve again. Waiting for EO…");
+      } else if (planLoad !== "running") {
+        setRefreshStatus("Charts updated. Waiting for EO…");
+      }
       waitForEoAndReload().catch((err) => {
         console.error(err);
         setRefreshStatus(err.message || String(err));
@@ -534,13 +538,35 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadTransferPlanStatus() {
     try {
       const response = await fetch("/api/transfer-plan");
-      if (!response.ok) return;
+      if (!response.ok) return "idle";
       const state = await response.json();
       if (state.payload && window.setTransferPlanPayload) {
         window.setTransferPlanPayload(state.payload);
       }
+      const metaRunning = state.payload && state.payload.meta && state.payload.meta.status === "running";
+      if (state.status === "running" || metaRunning) {
+        setRefreshStatus(state.detail || "Solving Transfer Plan Scenarios…");
+        setView("plan");
+        waitForTransferPlan()
+          .then((done) => {
+            if (window.setTransferPlanPayload) window.setTransferPlanPayload(done.payload);
+            const n = (done.payload && done.payload.scenarios && done.payload.scenarios.length) || 0;
+            setRefreshStatus(`Transfer Plan Scenarios ready · ${n} arms ranked by Σ Expected GW Score.`);
+          })
+          .catch((err) => {
+            console.error(err);
+            setRefreshStatus(err.message || String(err));
+          });
+        return "running";
+      }
+      if (state.payload && state.payload.meta && state.payload.meta.stale) {
+        setRefreshStatus("Scenarios stale after Refresh — Solve again for current projections.");
+        return "stale";
+      }
+      return "idle";
     } catch (err) {
       console.error(err);
+      return "idle";
     }
   }
 
@@ -555,6 +581,9 @@ document.addEventListener("DOMContentLoaded", () => {
     for (;;) {
       const state = await pollTransferPlan();
       if (state.detail) setRefreshStatus(state.detail);
+      if (state.payload && window.setTransferPlanPayload) {
+        window.setTransferPlanPayload(state.payload);
+      }
       if (state.status === "running") {
         idleTicks = 0;
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -615,8 +644,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await loadDashboardJson();
       applyDataset(data);
-      await loadTransferPlanStatus();
-      setRefreshStatus("Projected from processed tables. Click Refresh to ingest live FPL.");
+      const planLoad = await loadTransferPlanStatus();
+      if (planLoad === "idle") {
+        setRefreshStatus("Projected from processed tables. Click Refresh to ingest live FPL.");
+      }
     } catch (err) {
       console.error(err);
       applyDataset({ meta: {}, players: [] });
