@@ -45,6 +45,10 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert 'id="champion-trust"' in html
     assert 'id="explorer-legends"' in html
     assert "marker size" in html
+    assert "Δ£" in html
+    assert 'id="differentials-ranking"' in html
+    assert 'id="differentials-empty-refresh"' in html
+    assert "/api/eo" in js
     assert "Squad Builder" not in html
     assert "First-Half Horizon" not in html
     assert 'value="first_half"' not in html
@@ -58,6 +62,8 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "per_gameweek" in js
     assert "getViewGws" in js
     assert "Projected Rate" in js
+    assert "change_since_refresh" in js
+    assert "renderDifferentials" in js or "differentials" in js
     assert "xP per Gameweek" in js
     assert "realized_points" not in js
     assert "first_half" not in js

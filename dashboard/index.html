@@ -174,8 +174,34 @@
         <strong>Assume 90</strong> = view-only 90 minutes per existing Gameweek (does not change Feature Contract).
         <strong>xMins</strong> = marker size (average minutes in the Planning Horizon).
         Table <strong>Total</strong> is horizon xP; <strong>/90</strong> is Projected Rate.
+        <strong>Δ£</strong> = Observed price change since previous Refresh (not a forecast).
         <strong>Dream</strong> badge = Dream Team overlay (guide 15, not a Transfer Plan).
       </p>
+      <div class="card" id="differentials-ranking" hidden>
+        <p class="title">Differentials Ranking</p>
+        <p id="differentials-meta" class="explorer-meta"></p>
+        <p id="differentials-empty" class="explorer-meta" hidden>
+          No User Squad.
+          <button type="button" class="btn btn-primary" id="differentials-empty-refresh">Refresh</button>
+        </p>
+        <div class="explorer-table-wrap" id="differentials-table-wrap">
+          <table class="data-table" id="differentials-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Club</th>
+                <th>Price</th>
+                <th>xP</th>
+                <th>EO%</th>
+                <th>Afford</th>
+              </tr>
+            </thead>
+            <tbody id="differentials-body"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="explorer-charts">
         <div id="chart-ownership" class="explorer-chart"></div>
         <div id="chart-price" class="explorer-chart"></div>
@@ -199,6 +225,7 @@
               <th data-sort="club">Club</th>
               <th data-sort="pos">Pos</th>
               <th data-sort="price">Price</th>
+              <th data-sort="delta">Δ£</th>
               <th data-sort="own">Own%</th>
               <th data-sort="total">Total</th>
               <th data-sort="rate_per_90">/90</th>
@@ -240,9 +267,9 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
   <script src="squad.js?v=3"></script>
-  <script src="explorer.js?v=15"></script>
+  <script src="explorer.js?v=16"></script>
   <script src="plan.js?v=1"></script>
 </body>
 </html>

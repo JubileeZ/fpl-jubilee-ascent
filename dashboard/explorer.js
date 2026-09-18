@@ -145,6 +145,9 @@
       assume90 = e.target.checked;
       render();
     });
+    document.getElementById("differentials-empty-refresh")?.addEventListener("click", () => {
+      document.getElementById("btn-refresh")?.click();
+    });
     document.getElementById("explorer-xmins-floor").addEventListener("input", (e) => {
       xminsFloor = parseFloat(e.target.value);
       document.getElementById("explorer-xmins-floor-val").textContent = String(xminsFloor);
@@ -237,6 +240,7 @@
     if (key === "club") return player.team;
     if (key === "pos") return player.pos;
     if (key === "price") return player.price;
+    if (key === "delta") return player.change_since_refresh == null ? null : Number(player.change_since_refresh);
     if (key === "own") return player.ownership_pct;
     if (key === "status") return player.status || "";
     if (key === "chance") return player.chance == null ? -1 : Number(player.chance);
@@ -377,6 +381,7 @@
       '<th data-sort="chance">Chance</th>',
       '<th data-sort="news">News</th>',
       '<th data-sort="price">Price</th>',
+      '<th data-sort="delta">Δ£</th>',
       '<th data-sort="own">Own%</th>',
       '<th data-sort="total">Total</th>',
       ...gws.map((gw) => `<th data-sort="gw${gw}">GW${gw}</th>`),
@@ -424,6 +429,7 @@
           <td>${chance}</td>
           <td class="news-cell" title="${news}">${news || "—"}</td>
           <td>${Number(p.price).toFixed(1)}</td>
+          <td>${p.change_since_refresh == null || Number.isNaN(Number(p.change_since_refresh)) ? "—" : (Number(p.change_since_refresh) > 0 ? "+" : "") + Number(p.change_since_refresh).toFixed(1)}</td>
           <td>${Number(p.ownership_pct || 0).toFixed(1)}</td>
           <td>${Number(s.total).toFixed(2)}</td>
           ${gwCells}
@@ -491,6 +497,50 @@
     }).join("");
   }
 
+  function renderDifferentials() {
+    const panel = document.getElementById("differentials-ranking");
+    const metaEl = document.getElementById("differentials-meta");
+    const body = document.getElementById("differentials-body");
+    const emptyEl = document.getElementById("differentials-empty");
+    const tableWrap = document.getElementById("differentials-table-wrap");
+    if (!panel || !metaEl || !body) return;
+    const payload = ctx && ctx.getDifferentials ? ctx.getDifferentials() : null;
+    if (!payload || !Array.isArray(payload.rows)) {
+      panel.hidden = true;
+      body.innerHTML = "";
+      metaEl.textContent = "";
+      if (emptyEl) emptyEl.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const stamp = payload.captured_at ? ` · ${payload.captured_at}` : "";
+    metaEl.textContent = `${payload.label || "Overall top N"} · GW${payload.gameweek_id || "—"} · N=${payload.n || 0}${stamp}`;
+    const owned = new Set((meta().owned_squad_ids || []).map(Number));
+    if (!owned.size) {
+      body.innerHTML = "";
+      if (emptyEl) emptyEl.hidden = false;
+      if (tableWrap) tableWrap.hidden = true;
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+    if (tableWrap) tableWrap.hidden = false;
+    body.innerHTML = payload.rows
+      .map((row, i) => {
+        const afford = row.affordable ? "Yes" : "No";
+        return `<tr data-player-id="${row.id}">
+          <td>${i + 1}</td>
+          <td>${row.name}</td>
+          <td>${POS_LABEL[row.pos] || row.pos}</td>
+          <td>${row.team}</td>
+          <td>£${Number(row.price).toFixed(1)}m</td>
+          <td>${Number(row.total_xp_horizon).toFixed(2)}</td>
+          <td>${Number(row.eo_pct).toFixed(1)}</td>
+          <td>${afford}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
   function render() {
     if (!ctx) return;
     bindControls();
@@ -503,6 +553,7 @@
       `Planning Horizon ${span}${assume90 ? " · Assume 90" : ""} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
+    renderDifferentials();
     renderPlayerComponents();
   }
 

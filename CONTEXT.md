@@ -437,8 +437,8 @@ Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Pr
 _Avoid_: combo, package, alternative 15, Differentials Ranking, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Effective Ownership**:
-Share of a defined manager entry set that owns a Player, with extra weight for captain (×2) and Triple Captain (×3) in that set. Not overall `selected_by_percent`. Official API has no EO field; constructed from entry picks. Entry set and product formula still open (Later).
-_Avoid_: selected_by_percent as EO, Ownership %, treating bootstrap Own% as captain-adjusted
+Among Overall classic managers with rank ≤ 10 000 (or all ranked if N&lt;10k, labelled Overall top N): EO% = Σ multiplier / N × 100 (owned=1, C=2, TC=3; VC adds nothing). League id from entry `short_name=overall`. Picks for Transfer Plan Start GW. Built on dashboard Refresh into a gitignored cache + freshness stamp; not Live Season Pin. Incomplete crawl is not product EO; last complete cache OK. Differentials Ranking panel only in v1. Not overall `selected_by_percent`.
+_Avoid_: selected_by_percent as EO, Ownership %, hard-coded league 314, partial crawl as Top-10k EO, mini-league as this EO, pinning 10k picks, VC/autosub EO model
 
 **Differentials Ranking**:
 Ownership Explorer–only ranked table of Players not in the User Squad: Planning Horizon xP primary, Effective Ownership secondary; Price + affordable hint; same Planning Horizon and Primary Projection Model as Explorer. Absent until Effective Ownership exists; never faked from overall ownership. Not Mix vs Mix; not Transfer Plan Surface; not Own% scatter.

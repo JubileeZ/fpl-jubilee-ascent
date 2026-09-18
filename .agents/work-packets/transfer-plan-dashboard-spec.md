@@ -1,27 +1,29 @@
 # Active Task: Transfer Plan dashboard spec
 
-- **Status:** In Progress — Must+Should shipped; Differentials Ranking intent locked; EO next
-- **Objective:** Hand-off Later chapter via wayfinder map. Differentials Ranking defined; Effective Ownership unblocks build.
-- **Acceptance:** Map Decisions include #104; glossary Differentials Ranking + Effective Ownership; frontier = EO grilling.
+- **Status:** In Progress — Must+Should + Differentials/EO build shipped; fog remains
+- **Objective:** Hand-off remaining Later fog or close map #88.
+- **Acceptance:** EO crawl + Differentials Ranking + Explorer Δ£ on main; tests green.
 - **Issue/Ticket:** [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 
 ## Work Packet (SFDBN)
 
-- **Status:** #104 closed. Next: [Effective Ownership for Differentials Ranking](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/105).
-- **Files:** `CONTEXT.md` (Differentials Ranking, Effective Ownership); map #88
-- **Decisions:** Differentials Ranking = Explorer-only non–User Squad table; xP↓ EO↑; omitted until EO; never overall Own%.
-- **Blocked:** none for grilling. Differentials Ranking **build** blocked on EO product definition + ingest.
-- **Next:** Bind this packet → claim #105. Research: `docs/research/wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md`.
+- **Status:** Differentials Ranking + Top-10k EO ingest implemented. Fog / unticketed Later gaps remain.
+- **Files:** `projections/effective_ownership.py`, `projections/differentials_ranking.py`, `commands/effective_ownership_crawl.py`, `commands/dashboard.py`, `commands/export_dashboard.py`, `dashboard/*`
+- **Decisions:** Refresh finishes charts first; EO crawl async; panel omitted until complete cache; Δ£ = observed since previous refresh.
+- **Blocked:** none.
+- **Next:** Graduate fog into tickets or close map #88.
 
 ## Todo
 
 - [x] Must grilling
-- [x] Should grilling (96, 97, 102, 103)
+- [x] Should grilling
 - [x] Implement Must+Should
 - [x] Later: Differentials Ranking intent (#104)
-- [ ] Later: Effective Ownership product (#105) + remaining fog/Later gaps
+- [x] Later: Effective Ownership product (#105)
+- [x] Implement EO crawl + Differentials Ranking + Δ£
+- [ ] Fog / remaining Later gaps or close map
 
 ## Blockers / Notes
 
-- Map Notes: EO (#105) next frontier.
-- Spec-only map: shipping Differentials Ranking panel out of this map until EO exists.
+- EO crawl is Official HTTP volume (~10k picks); fail closed; last complete cache kept.
+- Fog: mini-league, price forecast, walk-forward product, plain Top-10k Own%, manual C/VC, …

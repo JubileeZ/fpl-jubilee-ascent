@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import math
 from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional
@@ -25,6 +26,9 @@ from projections.explorer_slice import (
 from features.fdr import modified_fdr, official_fdr
 from projections.expected_gw_score import appearance_probability
 from models.champion_trust import load_champion_trust
+from commands.price_report import build_price_change_report
+from projections.differentials_ranking import build_differentials_ranking
+from projections.effective_ownership import load_complete_eo_cache
 from solver.planning import (
     MAX_PLANNING_HORIZON,
     SEASON_END_GW,
@@ -41,8 +45,58 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SEASON_START_GW = 1
+EO_CACHE_PATH = PROJECT_ROOT / "data" / "effective_ownership.json"
 
-import math
+
+def _price_change_by_player(processed_dir: Path) -> dict[int, float]:
+    history_path = processed_dir / "price_history.parquet"
+    if not history_path.exists():
+        return {}
+    try:
+        report = build_price_change_report(pd.read_parquet(history_path))
+    except (OSError, ValueError):
+        return {}
+    if report.empty or "change_since_refresh" not in report.columns:
+        return {}
+    out: dict[int, float] = {}
+    for _, row in report.iterrows():
+        change = row.get("change_since_refresh")
+        if pd.isna(change):
+            continue
+        out[int(row["player_id"])] = round(float(change), 1)
+    return out
+
+
+def _differentials_payload(
+    players_data: list[dict[str, Any]],
+    *,
+    owned_squad_ids: list[int],
+    owned_pick_meta: dict[int, dict[str, Any]],
+    itb: float,
+    eo_cache_path: Path,
+) -> dict[str, Any] | None:
+    eo = load_complete_eo_cache(eo_cache_path)
+    if eo is None:
+        return None
+    selling = {
+        pid: float((owned_pick_meta.get(pid) or {}).get("selling_price") or 0.0)
+        for pid in owned_squad_ids
+    }
+    rows = build_differentials_ranking(
+        players_data,
+        eo["by_player"],
+        owned_ids=set(owned_squad_ids),
+        itb=float(itb or 0.0),
+        owned_selling_prices=selling,
+    )
+    return {
+        "label": eo["label"],
+        "n": eo["n"],
+        "gameweek_id": eo["gameweek_id"],
+        "captured_at": eo["captured_at"],
+        "rows": rows,
+    }
+
 
 _POS_MAP = {1: "G", 2: "D", 3: "M", 4: "F"}
 _POS_NAME_MAP = {1: "Goalkeeper", 2: "Defender", 3: "Midfielder", 4: "Forward"}
@@ -278,11 +332,14 @@ def build_dashboard_dataset(
     horizon: int,
     solution_path: Optional[Path] = None,
     default_model_name: Optional[str] = None,
+    eo_cache_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
     horizon = clamp_planning_horizon(horizon)
     players_df = pd.read_parquet(processed_dir / "players.parquet")
     clubs_df = pd.read_parquet(processed_dir / "clubs.parquet")
+    price_deltas = _price_change_by_player(processed_dir)
+    eo_path = eo_cache_path or EO_CACHE_PATH
 
     club_map = dict(zip(clubs_df["id"], clubs_df["short_name"]))
     club_name_map = dict(zip(clubs_df["id"], clubs_df["name"]))
@@ -468,6 +525,7 @@ def build_dashboard_dataset(
             "chance": chance_val,
             "news": str(p.get("news", "") or ""),
             "ownership_pct": round(_safe_float(p.get("selected_by_percent")), 1),
+            "change_since_refresh": price_deltas.get(pid),
             "pts_per_start": pts_per_start,
             "pts_per_90": pts_per_90,
             "ict_per_90": ict_per_90,
@@ -519,6 +577,13 @@ def build_dashboard_dataset(
             "champion_trust": load_champion_trust(),
         },
         "players": players_data,
+        "differentials_ranking": _differentials_payload(
+            players_data,
+            owned_squad_ids=owned_squad_ids or [],
+            owned_pick_meta=owned_pick_meta,
+            itb=float(itb or 0.0),
+            eo_cache_path=eo_path,
+        ),
     }
     return dataset
 

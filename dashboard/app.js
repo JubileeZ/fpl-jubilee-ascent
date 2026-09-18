@@ -90,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const MAX_HORIZON = 10;
   let allPlayers = [];
   let metaData = {};
+  let differentialsRanking = null;
   let primaryModel = "";
   let horizonBound = false;
   let modelBound = false;
@@ -229,6 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyDataset(data) {
     metaData = (data && data.meta) || {};
     allPlayers = (data && data.players) || [];
+    differentialsRanking = (data && data.differentials_ranking) || null;
     setupHorizonSelects();
     setupModelSelect();
     if (window.initSquadBoard) {
@@ -243,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.initOwnershipExplorer({
         getPlayers: () => allPlayers,
         getMeta: () => metaData,
+        getDifferentials: () => differentialsRanking,
         getPrimaryModel: () => primaryModel,
         getViewGws: viewGws,
       });
@@ -357,6 +360,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function pollEo() {
+    const response = await fetch("/api/eo");
+    if (!response.ok) throw new Error("EO status failed");
+    return response.json();
+  }
+
+  async function waitForEoAndReload() {
+    let idleTicks = 0;
+    for (;;) {
+      const state = await pollEo();
+      if (state.detail) setRefreshStatus(state.detail);
+      if (state.status === "running") {
+        idleTicks = 0;
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        continue;
+      }
+      if (state.status === "ok") {
+        const data = await loadDashboardJson();
+        applyDataset(data);
+        setRefreshStatus(state.detail || "Differentials Ranking ready.");
+        return;
+      }
+      if (state.status === "error") {
+        setRefreshStatus(state.detail || state.error || "EO crawl failed");
+        return;
+      }
+      if (state.status === "idle") {
+        idleTicks += 1;
+        if (idleTicks > 30) return;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      return;
+    }
+  }
+
   async function refreshDashboard() {
     const btn = document.getElementById("btn-refresh");
     if (btn && btn.disabled) return;
@@ -376,8 +415,12 @@ document.addEventListener("DOMContentLoaded", () => {
       await waitForRefresh();
       const data = await loadDashboardJson();
       applyDataset(data);
-      setRefreshStatus("Charts updated.");
+      setRefreshStatus("Charts updated. Waiting for EO…");
       if (window.setTransferPlanPayload) window.setTransferPlanPayload(null);
+      waitForEoAndReload().catch((err) => {
+        console.error(err);
+        setRefreshStatus(err.message || String(err));
+      });
     } catch (err) {
       console.error(err);
       setRefreshStatus(err.message || String(err));
