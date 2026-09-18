@@ -20,6 +20,7 @@
   let bound = false;
   let assume90 = false;
   let dreamTeamIds = new Set();
+  let priceRangeUserSet = false;
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -135,6 +136,11 @@
       document.getElementById("explorer-xmins-floor"),
       document.getElementById("explorer-search"),
     ].forEach((el) => el && el.addEventListener("input", render));
+    ["explorer-price-min", "explorer-price-max"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("input", () => {
+        priceRangeUserSet = true;
+      });
+    });
     document.querySelectorAll("input[name=y-metric]").forEach((el) => {
       el.addEventListener("change", () => {
         yMetric = el.value;
@@ -183,13 +189,15 @@
     if (clubFilter) {
       clubFilter.rebuild(Array.from(new Set(players().map((p) => p.team))).sort());
     }
-    const prices = players().map((p) => p.price);
-    const minP = prices.length ? Math.floor(Math.min(...prices) * 2) / 2 : 4;
-    const maxP = prices.length ? Math.ceil(Math.max(...prices) * 2) / 2 : 15;
+    const prices = players().map((p) => Number(p.price)).filter((n) => Number.isFinite(n));
+    const minP = prices.length ? Math.floor(Math.min(...prices) * 2) / 2 : 3.5;
+    const maxP = prices.length ? Math.ceil(Math.max(...prices) * 2) / 2 : 20;
     const minEl = document.getElementById("explorer-price-min");
     const maxEl = document.getElementById("explorer-price-max");
-    if (minEl && !minEl.value) minEl.value = minP.toFixed(1);
-    if (maxEl && !maxEl.value) maxEl.value = maxP.toFixed(1);
+    if (!priceRangeUserSet) {
+      if (minEl) minEl.value = minP.toFixed(1);
+      if (maxEl) maxEl.value = maxP.toFixed(1);
+    }
   }
 
   function hideReason(player, slice, needle, applyChartOnly) {
@@ -559,6 +567,7 @@
 
   window.initOwnershipExplorer = function (context) {
     ctx = context;
+    priceRangeUserSet = false;
     render();
   };
 

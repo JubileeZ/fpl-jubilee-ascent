@@ -64,6 +64,8 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "Projected Rate" in js
     assert "change_since_refresh" in js
     assert "renderDifferentials" in js or "differentials" in js
+    assert "priceRangeUserSet" in js
+    assert "Math.ceil(Math.max" in js or "Math.max(...prices)" in js
     assert "xP per Gameweek" in js
     assert "realized_points" not in js
     assert "first_half" not in js
