@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: Differentials ranking widget (Later of Transfer Plan dashboard spec). Transfer Plan Surface Must+Should is implemented (ADR 0034).
+Next work: Effective Ownership product definition (unblocks Differentials Ranking). Transfer Plan Surface Must+Should implemented (ADR 0034); Differentials Ranking intent locked.
 
 ```mermaid
 flowchart TD

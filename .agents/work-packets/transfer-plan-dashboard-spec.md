@@ -1,27 +1,27 @@
 # Active Task: Transfer Plan dashboard spec
 
-- **Status:** In Progress — Must+Should implemented; Later open
-- **Objective:** Implement Must+Should Transfer Plan Surface per map + ADR 0034. Later (differentials) third.
-- **Acceptance:** Live path Refresh → Transfer Plan Surface scenarios; Should chip calendar, Champion Trust, legends, Auto C next-best.
+- **Status:** In Progress — Must+Should shipped; Differentials Ranking intent locked; EO next
+- **Objective:** Hand-off Later chapter via wayfinder map. Differentials Ranking defined; Effective Ownership unblocks build.
+- **Acceptance:** Map Decisions include #104; glossary Differentials Ranking + Effective Ownership; frontier = EO grilling.
 - **Issue/Ticket:** [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 
 ## Work Packet (SFDBN)
 
-- **Status:** Must+Should shipped (peer tab, EGS rank, fixtures/availability, chips, Champion Trust, legends, Auto C). Later open: Differentials ranking widget.
-- **Files:** `dashboard/plan.js`, ADR 0034, `docs/agents/current-state.md`, this packet
-- **Decisions:** Full Must+Should spec on map 88. Champion Trust includes Regret + walk-forward summary.
-- **Blocked:** none.
-- **Next:** Later [Differentials ranking widget](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/104) + map fog. Other device: `git pull`, Bind this packet, open map 88. Docs: README/AGENTS weekly path = Refresh → Solve scenarios.
+- **Status:** #104 closed. Next: [Effective Ownership for Differentials Ranking](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/105).
+- **Files:** `CONTEXT.md` (Differentials Ranking, Effective Ownership); map #88
+- **Decisions:** Differentials Ranking = Explorer-only non–User Squad table; xP↓ EO↑; omitted until EO; never overall Own%.
+- **Blocked:** none for grilling. Differentials Ranking **build** blocked on EO product definition + ingest.
+- **Next:** Bind this packet → claim #105. Research: `docs/research/wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md`.
 
 ## Todo
 
 - [x] Must grilling
 - [x] Should grilling (96, 97, 102, 103)
 - [x] Implement Must+Should
-- [ ] Later: Differentials (104) + fog
+- [x] Later: Differentials Ranking intent (#104)
+- [ ] Later: Effective Ownership product (#105) + remaining fog/Later gaps
 
 ## Blockers / Notes
 
-- Map Notes: Later third after this hand-off.
-- Prototype reference: `origin/prototype/transfer-plan-surface-sketch`.
-- Spec-only map tickets done except Later.
+- Map Notes: EO (#105) next frontier.
+- Spec-only map: shipping Differentials Ranking panel out of this map until EO exists.
