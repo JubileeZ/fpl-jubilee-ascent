@@ -62,32 +62,6 @@
     return Math.round(Number(value) * f) / f;
   }
 
-  function assumeNinetyRow(row) {
-    const xmins = Number(row.xmins || 0);
-    if (xmins <= 0) return row;
-    const total = Number(row.total_xp || 0);
-    const xpMinIn = Number(row.xp_minutes || 0);
-    const n = Math.max(1, Math.ceil(xmins / 90));
-    const target = 90 * n;
-    const inferred = xpMinIn > 0 ? xpMinIn : (xmins >= 60 ? 2 * n : 1);
-    const scale = target / xmins;
-    const newXpMin = 2 * n;
-    const scaled = (key) => round(Number(row[key] || 0) * scale, 2);
-    return {
-      ...row,
-      xmins: target,
-      xp_minutes: newXpMin,
-      total_xp: round((total - inferred) * scale + newXpMin, 2),
-      xp_goals: scaled("xp_goals"),
-      xp_assists: scaled("xp_assists"),
-      xp_clean_sheet: scaled("xp_clean_sheet"),
-      xp_conceded: scaled("xp_conceded"),
-      xp_defcon: scaled("xp_defcon"),
-      xp_saves: scaled("xp_saves"),
-      xp_bonus: scaled("xp_bonus"),
-    };
-  }
-
   function ownedState() {
     const ids = meta().owned_squad_ids || [];
     return ids.map((id, i) => {
@@ -312,12 +286,11 @@
     body.innerHTML = `<tr><th>What-If</th>${cells.join("")}</tr>`;
   }
 
-  function profileSum(state, gw, key, assume90) {
+  function profileSum(state, gw, key) {
     return state.reduce((sum, s) => {
       const p = byId(s.id);
       if (!p) return sum;
-      const row = assume90 ? assumeNinetyRow(gwRow(p, gw)) : gwRow(p, gw);
-      return sum + Number(row[key] || 0);
+      return sum + Number(gwRow(p, gw)[key] || 0);
     }, 0);
   }
 
@@ -327,16 +300,13 @@
     if (!head || !body) return;
     head.innerHTML = `<tr><th>Component</th>${gws.map((gw) => `<th>GW${gw}</th>`).join("")}<th>Total</th></tr>`;
     body.innerHTML = PROFILE_KEYS.map(([key, label]) => {
-      let totX = 0;
-      let totA = 0;
+      let tot = 0;
       const cells = gws.map((gw) => {
-        const x = profileSum(whatIf, gw, key, false);
-        const a = profileSum(whatIf, gw, key, true);
-        totX += x;
-        totA += a;
-        return `<td>${x.toFixed(2)} | ${a.toFixed(2)}</td>`;
+        const x = profileSum(whatIf, gw, key);
+        tot += x;
+        return `<td>${x.toFixed(2)}</td>`;
       }).join("");
-      return `<tr><th>${label}</th>${cells}<td>${totX.toFixed(2)} | ${totA.toFixed(2)}</td></tr>`;
+      return `<tr><th>${label}</th>${cells}<td>${tot.toFixed(2)}</td></tr>`;
     }).join("");
   }
 

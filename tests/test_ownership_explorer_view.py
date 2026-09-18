@@ -14,8 +14,11 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "explorer.js" in html
     assert "squad.js" in html
     assert "xP per Gameweek" in html
-    assert 'id="explorer-assume-90"' in html
-    assert html.index('value="per_gameweek"') < html.index('id="explorer-assume-90"')
+    assert 'id="explorer-assume-90"' not in html
+    assert "Assume 90" not in html
+    assert 'value="per_gameweek" checked' in html
+    assert 'value="rate_per_90"' in html
+    assert html.index('value="per_gameweek"') < html.index('value="rate_per_90"')
     assert 'class="title">Price' in html
     assert 'id="horizonStart"' in html
     assert 'id="horizonEnd"' in html
@@ -59,6 +62,7 @@ def test_dashboard_html_has_explorer_view() -> None:
 def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     js = Path("dashboard/explorer.js").read_text(encoding="utf-8")
     assert "rate_per_90" in js
+    assert "let yMetric = \"per_gameweek\"" in js or 'yMetric = "per_gameweek"' in js
     assert "per_gameweek" in js
     assert "getViewGws" in js
     assert "Projected Rate" in js
@@ -69,8 +73,9 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "xP per Gameweek" in js
     assert "realized_points" not in js
     assert "first_half" not in js
-    assert "assumeNinetyRow" in js
-    assert "explorer-assume-90" in js
+    assert "assumeNinetyRow" not in js
+    assert "explorer-assume-90" not in js
+    assert "Assume 90" not in js
     assert "data-mins90" not in js
     assert "toggleAssume90" not in js
     assert "applyMixLetter" not in js
@@ -123,7 +128,7 @@ def test_squad_board_script_has_what_if_rules() -> None:
     assert 'effectAllowed = "copy"' not in js
     assert "Already in the 15." in js
     assert "xp_goals" in js
-    assert "assumeNinetyRow" in js
+    assert "assumeNinetyRow" not in js
 
 
 def test_reload_rereads_dashboard_json_without_refresh() -> None:

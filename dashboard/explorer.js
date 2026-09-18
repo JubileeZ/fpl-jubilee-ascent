@@ -12,13 +12,12 @@
   };
 
   let ctx = null;
-  let yMetric = "rate_per_90";
+  let yMetric = "per_gameweek";
   let xminsFloor = 0;
   let selectedPlayerId = null;
   let tableSortKey = "total";
   let tableSortAsc = false;
   let bound = false;
-  let assume90 = false;
   let dreamTeamIds = new Set();
   let priceRangeUserSet = false;
 
@@ -41,40 +40,8 @@
     return (modelData && modelData.projections) || player.projections || {};
   }
 
-  function assumeNinetyRow(row) {
-    const xmins = Number(row.xmins || 0);
-    if (xmins <= 0) return row;
-    const total = Number(row.total_xp || 0);
-    const xpMinIn = Number(row.xp_minutes || 0);
-    const n = Math.max(1, Math.ceil(xmins / 90));
-    const target = 90 * n;
-    const inferred = xpMinIn > 0 ? xpMinIn : (xmins >= 60 ? 2 * n : 1);
-    const scale = target / xmins;
-    const newXpMin = 2 * n;
-    const scaled = (key) => round(Number(row[key] || 0) * scale, 2);
-    return {
-      ...row,
-      xmins: target,
-      xp_minutes: newXpMin,
-      total_xp: round((total - inferred) * scale + newXpMin, 2),
-      xg_pts: scaled("xg_pts"),
-      xa_pts: scaled("xa_pts"),
-      xcs_pts: scaled("xcs_pts"),
-      xdefcon_pts: scaled("xdefcon_pts"),
-      xb_pts: scaled("xb_pts"),
-      xp_goals: scaled("xp_goals"),
-      xp_assists: scaled("xp_assists"),
-      xp_clean_sheet: scaled("xp_clean_sheet"),
-      xp_conceded: scaled("xp_conceded"),
-      xp_saves: scaled("xp_saves"),
-      xp_defcon: scaled("xp_defcon"),
-      xp_bonus: scaled("xp_bonus"),
-    };
-  }
-
   function gwProjection(player, gw) {
-    const row = playerProj(player)[`gw${gw}`] || {};
-    return assume90 ? assumeNinetyRow(row) : row;
+    return playerProj(player)[`gw${gw}`] || {};
   }
 
   function sliceOf(player) {
@@ -146,10 +113,6 @@
         yMetric = el.value;
         render();
       });
-    });
-    document.getElementById("explorer-assume-90")?.addEventListener("change", (e) => {
-      assume90 = e.target.checked;
-      render();
     });
     document.getElementById("differentials-empty-refresh")?.addEventListener("click", () => {
       document.getElementById("btn-refresh")?.click();
@@ -491,7 +454,7 @@
     const n = Math.max(1, slice.n_gameweeks || 0);
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "horizon";
     const pos = POS_LABEL[player.pos] || player.pos;
-    nameEl.textContent = `${player.name} · ${pos} · ${player.team} · £${Number(player.price).toFixed(1)}m · ${span}${assume90 ? " · Assume 90" : ""}`;
+    nameEl.textContent = `${player.name} · ${pos} · ${player.team} · £${Number(player.price).toFixed(1)}m · ${span}`;
     head.innerHTML = `<tr><th>Component</th>${gws.map((gw) => `<th>GW${gw}</th>`).join("")}<th>Total</th><th>Avg / GW</th></tr>`;
     body.innerHTML = PLAYER_COMPONENT_ROWS.map(([key, label, digits]) => {
       const cells = gws.map((gw) => {
@@ -558,7 +521,7 @@
     const gws = viewGws();
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "—";
     document.getElementById("explorer-meta").textContent =
-      `Planning Horizon ${span}${assume90 ? " · Assume 90" : ""} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
+      `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
     renderDifferentials();

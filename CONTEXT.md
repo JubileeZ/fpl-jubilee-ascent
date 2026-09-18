@@ -449,20 +449,20 @@ A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Play
 _Avoid_: selected player, overlapping Mix occupancy, Dream Team
 
 **Assume 90**:
-Ownership Explorer view-only toolbar toggle next to Projected Rate / xP per Gameweek. When on, every Player is treated as a full 90-minute match on each Gameweek that already has projected minutes (180 on a Double Gameweek). Event Component xP scales by target/xMins; minutes points become 2 per match. Blank Gameweeks stay 0. Does not write Feature Contract or Availability Override. Does not enter Dream Team MILP. Component Profile always shows Assume 90 beside xMins-weighted; the toggle still replaces table and chart numbers.
-_Avoid_: xmins_cap, Availability Override, Project-time minutes, per-player pin, linear total xP scale including minutes points, Component Profile as a toggle, Dream Team Assume 90
+Retired from Ownership Explorer product UI. Was a view-only full-90 rescale; charts/table now use xMins-weighted projections only. Switch Y-axis between xP per Gameweek (default) and Projected Rate instead.
+_Avoid_: explorer Assume 90 toggle, Component Profile dual xMins|Assume 90 column
 
 **Component Profile**:
-Squad Board table of the What-If 15: clock xMins row plus Event Component xP per Gameweek and horizon total. Each cell is xMins-weighted | Assume 90. Appearance xP is minutes points, not clock minutes. Not Mix. Not the selected-player card.
-_Avoid_: Mix, treating Appearance xP as xMins, player-row as this table
+Squad Board table of the What-If 15: clock xMins row plus Event Component xP per Gameweek and horizon total (xMins-weighted). Appearance xP is minutes points, not clock minutes. Not Mix. Not the selected-player card.
+_Avoid_: Mix, treating Appearance xP as xMins, player-row as this table, Assume 90 dual column
 
 **Player components**:
 Ownership Explorer card for the selected pool Player. Planning Horizon clock xMins and Event Component xP as horizon total and average per Gameweek. Not Component Profile. Not Mix.
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with Assume 90, xMins, per-GW xP + fixture labels, status / chance / news, and linked ownership and price charts. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking is Later and omitted until Effective Ownership exists. Peer to Transfer Plan Surface; not the Transfer Plan. On-screen legends for Projected Rate, Assume 90, xMins as marker size, Total vs /90 (or xP per Gameweek), Dream Team badge; Champion Trust in the header. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%
+Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with xMins, per-GW xP + fixture labels, status / chance / news, and linked ownership and price charts. Y-axis default xP per Gameweek; switchable to Projected Rate. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking omitted until Effective Ownership exists. Peer to Transfer Plan Surface; not the Transfer Plan. On-screen legends for Projected Rate, xMins as marker size, Total vs /90 (or xP per Gameweek), Dream Team badge; Champion Trust in the header. Not a Season Window ranking.
+_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain. Champion Trust may show a summary on-product.

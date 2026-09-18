@@ -118,7 +118,7 @@
           </div>
         </div>
         <div class="card" id="component-profile-card">
-          <p class="title">Squad components (xMins | Assume 90)</p>
+          <p class="title">Squad components</p>
           <div class="explorer-table-wrap">
             <table class="data-table" id="component-profile">
               <thead id="component-profile-head"></thead>
@@ -134,9 +134,8 @@
         <div class="group">
           <label class="title">Y-axis</label>
           <div class="checks">
-            <label><input type="radio" name="y-metric" value="rate_per_90" checked> Projected Rate</label>
-            <label><input type="radio" name="y-metric" value="per_gameweek"> xP per Gameweek</label>
-            <label><input type="checkbox" id="explorer-assume-90"> Assume 90</label>
+            <label><input type="radio" name="y-metric" value="per_gameweek" checked> xP per Gameweek</label>
+            <label><input type="radio" name="y-metric" value="rate_per_90"> Projected Rate</label>
           </div>
         </div>
         <div class="group">
@@ -170,8 +169,7 @@
       <p id="explorer-meta" class="explorer-meta"></p>
       <p id="explorer-legends" class="explorer-meta">
         <strong>Projected Rate</strong> = xP per 90 minutes.
-        <strong>xP per Gameweek</strong> = horizon total ÷ gameweeks.
-        <strong>Assume 90</strong> = view-only 90 minutes per existing Gameweek (does not change Feature Contract).
+        <strong>xP per Gameweek</strong> = horizon total ÷ gameweeks (default Y-axis).
         <strong>xMins</strong> = marker size (average minutes in the Planning Horizon).
         Table <strong>Total</strong> is horizon xP; <strong>/90</strong> is Projected Rate.
         <strong>Δ£</strong> = Observed price change since previous Refresh (not a forecast).
@@ -268,8 +266,8 @@
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="app.js?v=19"></script>
-  <script src="squad.js?v=3"></script>
-  <script src="explorer.js?v=17"></script>
+  <script src="explorer.js?v=19"></script>
+  <script src="squad.js?v=4"></script>
   <script src="plan.js?v=1"></script>
 </body>
 </html>
