@@ -22,7 +22,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | Data dictionary | `docs/data_dictionary.md` | API → parquet |
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
-| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035) |
+| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035); Official processed heals from Live Season Pin on resolve (ADR 0036) |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |

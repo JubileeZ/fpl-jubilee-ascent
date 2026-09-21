@@ -12,6 +12,7 @@ from clients.env_loader import load_env, configure_utf8_stdio
 load_env()
 configure_utf8_stdio()
 
+from features.builder import resolve_operational_processed_dir
 from models import get_default_model_name
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
@@ -377,8 +378,8 @@ def main() -> None:
     except ValueError as exc:
         parser.error(str(exc))
         
-    processed_dir = PROJECT_ROOT / "data" / "processed"
-    
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+
     # Load target gameweek from processed parquet
     if args.target_gw is not None:
         target_gw = args.target_gw

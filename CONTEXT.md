@@ -53,8 +53,8 @@ The live season-year Season Archive folder. Mutating Official FPL capture, inclu
 _Avoid_: deadline-only git cadence, auto-commit from ingest, per-Gameweek duplicate raw trees, Git LFS/DVC for this corpus, machine-sync of User Squad via git
 
 **Operational Dataset**:
-Production Player, Club, Fixture, and performance tables. Official FPL API responses plus Season Archives of those responses only.
-_Avoid_: Dual-Source websites, FBref, Understat, live vaastav pull, editorial XI as Feature Contract input
+Production Player, Club, Fixture, and performance tables. Official FPL API responses plus Season Archives of those responses only. Live Official tables under `data/processed` must match Live Season Pin Official tables after resolve; User Squad excluded from that match.
+_Avoid_: Dual-Source websites, FBref, Understat, live vaastav pull, editorial XI as Feature Contract input, leftover `data/processed` Official tables that disagree with the Live Season Pin
 
 **Research-Only Evidence**:
 Third-party or editorial numbers allowed in a Research Note. May justify a frozen constant. Must not feed Feature Contract, Raw Cache, Season Archive ingest, or Model Champion inputs.

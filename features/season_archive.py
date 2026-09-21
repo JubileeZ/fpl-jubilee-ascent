@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import shutil
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from features.expected_role_prior import LIVE_SEASON
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONTENT_HASH_FILENAME = "official_content_hash"
+logger = logging.getLogger(__name__)
 
 OFFICIAL_PROCESSED_FILES = frozenset(
     {
@@ -57,6 +59,41 @@ def is_official_raw_filename(name: str) -> bool:
 
 def is_official_processed_filename(name: str) -> bool:
     return name in OFFICIAL_PROCESSED_FILES
+
+
+def heal_operational_official_from_pin(
+    project_root: Path,
+    *,
+    live_season: str = LIVE_SEASON,
+) -> tuple[Path, bool]:
+    """Copy Live Season Pin Official processed tables into `data/processed` when they diverge.
+
+    User Squad and other non-Official files under `data/processed` are untouched.
+    Returns (operational processed dir, healed).
+    """
+    processed = project_root / "data" / "processed"
+    pin = archive_processed_dir(live_season, archive_root=project_root / "data" / "archive")
+    if not pin.is_dir():
+        return processed, False
+    pin_files = [pin / name for name in sorted(OFFICIAL_PROCESSED_FILES) if (pin / name).is_file()]
+    if not pin_files:
+        return processed, False
+
+    healed = False
+    processed.mkdir(parents=True, exist_ok=True)
+    for src in pin_files:
+        dest = processed / src.name
+        if dest.is_file() and dest.read_bytes() == src.read_bytes():
+            continue
+        shutil.copy2(src, dest)
+        healed = True
+    if healed:
+        logger.info(
+            "Healed Official Operational tables from Live Season Pin %s -> %s",
+            pin,
+            processed,
+        )
+    return processed, healed
 
 
 def _canonical_json_bytes(path: Path) -> bytes:

@@ -13,6 +13,7 @@ from features.expected_role_prior import (
     minutes_if_appearance,
 )
 from features.fdr import modified_fdr, official_fdr
+from features.season_archive import heal_operational_official_from_pin
 
 EVENT_RATE_MAP = [
     ("goals_scored", "per90_goals"),
@@ -208,9 +209,13 @@ def resolve_history_cutoff_gw(
 
 
 def resolve_operational_processed_dir(project_root: Path) -> Path:
-    """Prefer live `data/processed`; else the live Season Archive pin (processed is gitignored)."""
+    """Return Operational Dataset dir: heal Official tables from Live Season Pin when they diverge.
+
+    User Squad under `data/processed` is never overwritten. When no pin Official tables exist,
+    falls back to live `data/processed` if complete, else the pin path, else `data/processed`.
+    """
+    processed, _ = heal_operational_official_from_pin(project_root)
     required = ("players.parquet", "player_performances.parquet", "fixtures.parquet")
-    processed = project_root / "data" / "processed"
     if all((processed / name).exists() for name in required):
         return processed
     archive = project_root / "data" / "archive" / LIVE_SEASON / "processed"

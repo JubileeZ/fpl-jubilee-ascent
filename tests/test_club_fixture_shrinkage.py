@@ -7,8 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from features.builder import build_features, resolve_operational_processed_dir
-from features.expected_role_prior import LIVE_SEASON
+from features.builder import build_features
 from tests.test_expected_role_prior import NAILED, _write_processed, _write_role_csv
 
 
@@ -849,16 +848,3 @@ def test_two_finished_starts_use_strength_one_state_prior(tmp_path: Path) -> Non
     starter = row[row["player_id"] == 1].iloc[0]
     assert starter["dnp_observation_weight"] == pytest.approx(0.0)
     assert starter["p_start"] == pytest.approx(0.8305, abs=0.001)
-
-
-def test_operational_processed_dir_prefers_live_then_archive_pin(tmp_path: Path) -> None:
-    archive = tmp_path / "data" / "archive" / LIVE_SEASON / "processed"
-    archive.mkdir(parents=True)
-    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
-        pd.DataFrame([{"id": 1}]).to_parquet(archive / name, index=False)
-    assert resolve_operational_processed_dir(tmp_path) == archive
-    processed = tmp_path / "data" / "processed"
-    processed.mkdir(parents=True)
-    for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
-        pd.DataFrame([{"id": 2}]).to_parquet(processed / name, index=False)
-    assert resolve_operational_processed_dir(tmp_path) == processed
