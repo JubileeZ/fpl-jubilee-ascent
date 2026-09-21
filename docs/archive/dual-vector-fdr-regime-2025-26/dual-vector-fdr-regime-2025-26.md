@@ -3,17 +3,17 @@
 **Updated**: 2026-09-22T02:50:00+07:00  
 **Data stamp**: 2025-26 processed archive GW1–38; 2024-25 Prior-Season Seed; shrink sweep + ADR 0037 2026-09-22  
 **Season**: 2025/26  
-**Status**: Active  
+**Status**: Archived. Decision: [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md).  
 **Purpose**: Decide whether Dual-Vector beats participation, and whether Modified FDR as `attack_multiplier`/`defence_multiplier` (live 2026-27 zero-strength path) is acceptable vs Club Strength ratios.  
 **Scope**: Exploratory walk-forward on `data/archive/2025-26/processed`. Forced FDR = overwrite Feature Contract multipliers with `(6−diff)/3` and `diff/3` clamp 0.4–1.8. Easy slice = `difficulty ≤ 2.0` × MID/FWD × `projected_minutes ≥ 60`. Not Solio. Not Hit policy. Not live calibration layer. Production follow-up: ADR 0037 neutral fallback (`FDR_FALLBACK_MULTIPLIER_SHRINK = 0.0`).  
-**Related**: [Champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [ADR 0013](../../adr/0013-bottom-up-calibrated-component-metrics-and-rqi.md) · [ADR 0019](../../adr/0019-modified-fdr-production.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [archive testing](../../testing/archive-testing.md) · [INDEX](../INDEX.md)  
+**Related**: [Champion signed bias](../../research/champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [ADR 0013](../../adr/0013-bottom-up-calibrated-component-metrics-and-rqi.md) · [ADR 0019](../../adr/0019-modified-fdr-production.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [archive testing](../../testing/archive-testing.md) · [INDEX](../../research/INDEX.md)  
 **Artifact**: [model_regime_summary.csv](model_regime_summary.csv) `signed_bias` · [fdr_fallback_shrink_sweep.csv](fdr_fallback_shrink_sweep.csv) `signed_bias`
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
 
 ## Sources
 
-- **Repository data**: `data/archive/2025-26/processed` evaluation; `data/archive/2024-25/processed` seed; `uv run python docs/research/dual-vector-fdr-regime-2025-26/runner.py` — 2026-09-22
+- **Repository data**: `data/archive/2025-26/processed` evaluation; `data/archive/2024-25/processed` seed; `uv run python docs/archive/dual-vector-fdr-regime-2025-26/runner.py` — 2026-09-22
 - **Glossary**: `CONTEXT.md` Club Strength Vector, Modified FDR, Dual-Vector Strength (not in production Python)
 
 **Source boundary**: Archive exploratory (`snapshot_backed=false`). Missing actuals filled 0. Forced FDR is a research overlay; 2025-26 natural path used non-zero Club Strength attack/defence. Solio excluded from correctness (no historical Solio archive).
@@ -21,10 +21,10 @@
 ## Agent Prompt
 
 ```text
-Full redo docs/research/dual-vector-fdr-regime-2025-26/dual-vector-fdr-regime-2025-26.md
+Full redo docs/archive/dual-vector-fdr-regime-2025-26/dual-vector-fdr-regime-2025-26.md
 
 1. Require data/archive/2025-26/processed and data/archive/2024-25/processed.
-2. Run: uv run python docs/research/dual-vector-fdr-regime-2025-26/runner.py
+2. Run: uv run python docs/archive/dual-vector-fdr-regime-2025-26/runner.py
 3. Refresh Findings from model_regime_summary.csv signed_bias / mae / sample_count.
    Rows: model × multiplier_regime × slice (all | easy_mid_fwd).
 4. Do not snapshot numeric totals in this prompt. Do not add a calibration layer.

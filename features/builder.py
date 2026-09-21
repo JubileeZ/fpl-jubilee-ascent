@@ -13,6 +13,7 @@ from features.expected_role_prior import (
     minutes_if_appearance,
 )
 from features.fdr import modified_fdr, official_fdr
+from features.matchup_share import apply_matchup_share_overlay
 from features.season_archive import heal_operational_official_from_pin
 
 EVENT_RATE_MAP = [
@@ -43,8 +44,8 @@ RATE_PRIOR_STRENGTH = 4.0
 # Trailing Start Window (ADR 0035). Set trailing_start_k=0 to disable.
 TRAILING_START_WINDOW_K = 3
 TRAILING_START_WINDOW_WEIGHT = 0.90
-# When Club Strength attack/defence are 0: scale FDR raw multipliers toward 1.0.
-# 0.0 = neutral ×1.0 (ADR 0037; research dual-vector-fdr-regime-2025-26 easy_mid_fwd).
+# When Matchup Share unavailable and Club Strength attack/defence are 0:
+# scale FDR raw multipliers toward 1.0. 0.0 = neutral ×1.0 (ADR 0037).
 FDR_FALLBACK_MULTIPLIER_SHRINK = 0.0
 
 
@@ -1028,6 +1029,17 @@ def build_features(
     df_feat["is_home"] = df_feat["is_home"].fillna(False)
     df_feat["difficulty"] = df_feat["difficulty"].fillna(3.0)
     df_feat["opponent_id"] = df_feat["opponent_id"].fillna(0).astype(int)
+    for mult_col in ("attack_multiplier", "defence_multiplier"):
+        if mult_col in df_feat.columns:
+            df_feat[mult_col] = df_feat[mult_col].fillna(1.0)
+
+    # Matchup Share (this-season club xG) → else Club Strength / neutral from fmap.
+    df_feat, _matchup_applied = apply_matchup_share_overlay(
+        df_feat,
+        df_hist_context if "club_id" in df_hist_context.columns else df_hist,
+        df_fixtures,
+        history_cutoff_gw=history_cutoff,
+    )
 
     # Define chance of playing
     chance_col = "chance_of_playing_next_round"

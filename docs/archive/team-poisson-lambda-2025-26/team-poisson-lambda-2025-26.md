@@ -3,7 +3,7 @@
 **Updated**: 2026-09-22T04:05:00+07:00  
 **Data stamp**: 2025-26 archive GW1–38; K=10 Official FPL club xG/xGC; Realized + Process (ADR 0038)  
 **Season**: 2025/26  
-**Status**: Active  
+**Status**: Archived. Decision: [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md).  
 **Purpose**: Test team-λ Poisson fixture scaling (top-model pattern) vs neutral ×1.0 and Club Strength.  
 **Scope**: Multiplier overlay on Champion predict. Not a separate CS Poisson rewrite. Not production.  
 **Related**: [Official Dual-Vector](../dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [ADR 0038](../../adr/0038-process-points-eval-target.md)  

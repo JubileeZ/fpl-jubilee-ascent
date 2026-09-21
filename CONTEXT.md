@@ -364,7 +364,7 @@ On-product Model Champion identity for a single User Squad: Champion name and pr
 _Avoid_: research-CSV-only trust, separate Trust tab, Signed Bias / Decision Regret / Walk-forward in the Trust line, showing validated or other promotion statuses in Trust, calibrating projections from Signed Bias, treating walk-forward as a live Transfer Plan
 
 **Transfer Plan**:
-MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Weekly product path: dashboard Solve scenarios → `data/transfer_plan_scenarios.json` (top arm also written to `data/solution.json`). CLI: `commands.solve` → `data/solution.json`. Shown on the Transfer Plan Surface as ranked Transfer Plan Scenarios. Distinct from Transfer Plan Surface (object vs view). Not Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
+MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion. Modified FDR is difficulty only (ADR 0037). Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Weekly product path: dashboard Solve scenarios → `data/transfer_plan_scenarios.json` (top arm also written to `data/solution.json`). CLI: `commands.solve` → `data/solution.json`. Shown on the Transfer Plan Surface as ranked Transfer Plan Scenarios. Distinct from Transfer Plan Surface (object vs view). Not Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
 _Avoid_: team plan, Re-solve as the only product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan, Dream Team as the plan, solving transfers for a deadline-passed gameweek, collapsing into Squad What-If, treating CLI emit as the Surface
 
 **Transfer Plan Start**:
@@ -572,19 +572,23 @@ Research Note mapping related source pages to child notes, freshness, scope, and
 _Avoid_: Merged research report, complete source transcription
 
 **Calibrated Component Architecture**:
-Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → neutral multipliers (shrink toward 1.0; ADR 0037). Modified FDR remains difficulty only, not the xP scale.
-_Avoid_: Top-down power rating, single composite score xP prediction, raw Modified FDR as attack_multiplier when strengths are 0
+Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) and projected minutes. Fixture context: **Matchup Share** when this-season Official club xG history exists (rate add-ons; multipliers ×1.0); else Club Strength Vector ratios as `attack_multiplier` / `defence_multiplier`; else neutral ×1.0 (ADR 0037). Modified FDR remains difficulty only.
+_Avoid_: Top-down power rating, single composite score xP prediction, raw Modified FDR as attack_multiplier when Matchup Share and Club Strength unavailable
 
 **Official Fixture Difficulty**:
 Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. Focal-team difficulty. 2026/27: home FDR = opponent `strength_overall_home`; away FDR = opponent `strength_overall_away`. Those `_home`/`_away` fields are your venue, not the opponent's own ground. Not attack/defence blend. Not production xP input.
 _Avoid_: Dual-Vector Strength, Club Strength Vector, treating API strength as finer FDR, ARS `strength_overall_away` as Arsenal stronger on the road, Modified FDR
 
 **Modified FDR**:
-Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Production difficulty for Feature Contract, Champion xP, Transfer Plan, Explorer, FDR report.
-_Avoid_: Official Fixture Difficulty, Dual-Vector Strength, DCS effective FDR (`defence_multiplier × 3`)
+Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Feature Contract `difficulty` for Explorer, FDR report, and backtests. Not the production xP scale when Matchup Share or Club Strength apply (ADR 0037).
+_Avoid_: Official Fixture Difficulty, Dual-Vector Strength, `attack_multiplier` / `defence_multiplier`, DCS effective FDR (`defence_multiplier × 3`)
+
+**Matchup Share**:
+This-season Official club xG/xA/xGC history as Feature Contract rate bumps: player share of club xG/xA × (opponent xGC − league) for attack; team (opponent xG − league) for goals-conceded λ; saves/defcon × (opponent xG / league). Applied only when finished this-season club xG rows exist; otherwise Club Strength then neutral (ADR 0037).
+_Avoid_: Dual-Vector Strength, Club Strength Vector ratios as the live in-season path, raw Modified FDR multiplier, Team Poisson λ overlay
 
 **Club Strength Vector**:
-Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Live 2026/27: `strength` null, attack/defence 0, overall = Official Fixture Difficulty ticks at focal venue.
+Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Cold-start / no Matchup Share path: attack/defence ratios as multipliers. Live 2026/27 often `strength` null and attack/defence 0 → neutral when Matchup Share also unavailable.
 _Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only), opponent's own home/away form
 
 **Dual-Vector Strength**:

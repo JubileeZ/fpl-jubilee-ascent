@@ -3,15 +3,15 @@
 **Updated**: 2026-09-22T03:35:00+07:00  
 **Data stamp**: 2025-26 processed archive GW1–38; 2024-25 Prior-Season Seed; companion includes Realized + Process Targets (ADR 0038) 2026-09-22  
 **Season**: 2025/26  
-**Status**: Active  
+**Status**: Archived. Decision: [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md).  
 **Purpose**: Test Official FPL Dual-Vector Strength multipliers (ratio to league avg; 50% all-venue + 50% H/A; sparse → league avg) as replacement for FDR-as-multiplier / ADR 0037 neutral ×1.0.  
 **Scope**: Research overlay on Feature Contract multipliers only. Walk-forward `dual_vector_state_hybrid`. Score vs Realized Points and Process Points. Not npxG. Not Explorer difficulty remapping. Not production wire.  
-**Related**: [FDR regime](../dual-vector-fdr-regime-2025-26/dual-vector-fdr-regime-2025-26.md) · [ADR 0013](../../adr/0013-bottom-up-calibrated-component-metrics-and-rqi.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [ADR 0038](../../adr/0038-process-points-eval-target.md) · [INDEX](../INDEX.md)  
+**Related**: [FDR regime](../dual-vector-fdr-regime-2025-26/dual-vector-fdr-regime-2025-26.md) · [ADR 0013](../../adr/0013-bottom-up-calibrated-component-metrics-and-rqi.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [ADR 0038](../../adr/0038-process-points-eval-target.md) · [INDEX](../../research/INDEX.md)  
 **Artifact**: [dual_vector_xg_summary.csv](dual_vector_xg_summary.csv) `signed_bias` (`eval_target` realized|process)
 
 ## Sources
 
-- **Repository data**: `data/archive/2025-26/processed` `player_performances` / `fixtures`; `uv run python docs/research/dual-vector-official-xg-2025-26/runner.py`
+- **Repository data**: `data/archive/2025-26/processed` `player_performances` / `fixtures`; `uv run python docs/archive/dual-vector-official-xg-2025-26/runner.py`
 - **Glossary**: Dual-Vector Strength; Prior-Season Dual-Vector Seed (FPL-xG proxy)
 
 **Source boundary**: Archive exploratory. Club xG = Σ `expected_goals`; club xGC = max `expected_goals_conceded` among minutes ≥ 60. Official FPL only.
@@ -19,10 +19,10 @@
 ## Agent Prompt
 
 ```text
-Full redo docs/research/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md
+Full redo docs/archive/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md
 
 1. Require data/archive/2025-26/processed and data/archive/2024-25/processed.
-2. Run: uv run python docs/research/dual-vector-official-xg-2025-26/runner.py
+2. Run: uv run python docs/archive/dual-vector-official-xg-2025-26/runner.py
 3. Refresh Findings from dual_vector_xg_summary.csv signed_bias / mae / sample_count / eval_target.
 4. Report both realized and process easy_mid_fwd. Do not wire production.
 5. Scratch under .tmp/agent/ only; delete before finish.

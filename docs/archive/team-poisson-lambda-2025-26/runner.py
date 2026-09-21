@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 _DV_PATH = (
     ROOT
-    / "docs/research/dual-vector-official-xg-2025-26/runner.py"
+    / "docs/archive/dual-vector-official-xg-2025-26/runner.py"
 )
 _spec = importlib.util.spec_from_file_location("dv_xg_runner", _DV_PATH)
 assert _spec is not None and _spec.loader is not None

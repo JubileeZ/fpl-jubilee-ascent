@@ -3,7 +3,8 @@
 Extends ``participation_state_hybrid`` with penalty threat isolation for
 ``penalties_order==1`` (open-play attack scales with Feature Contract multipliers;
 fixed ~0.15 xG/90 pen share does not). Fixture multipliers come from the Feature
-Contract (Club Strength ratios, or neutral ×1.0 when strengths are 0 — ADR 0037).
+Contract (Matchup Share forces ×1.0; else Club Strength ratios, or neutral ×1.0 when
+strengths are 0 — ADR 0037).
 Not Dual-Vector Strength (research-only; ADR 0013).
 """
 

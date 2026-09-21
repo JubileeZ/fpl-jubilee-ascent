@@ -1,0 +1,9 @@
+model,regime,slice,eval_target,sample_count,signed_bias,mae
+participation_penalty_hybrid,neutral,all,realized,31958,0.1846770873673471,1.082076770963432
+participation_penalty_hybrid,neutral,all,process,31958,0.1979379297229388,0.9675033605140052
+participation_penalty_hybrid,neutral,easy_mid_fwd,realized,442,-0.12035547263922494,2.9360632657023253
+participation_penalty_hybrid,neutral,easy_mid_fwd,process,442,0.22066262690828634,2.082307311514277
+participation_penalty_hybrid,matchup_share_k10,all,realized,31958,0.20008817985416072,1.0859845597957298
+participation_penalty_hybrid,matchup_share_k10,all,process,31958,0.21334902220975246,0.9708286969416777
+participation_penalty_hybrid,matchup_share_k10,easy_mid_fwd,realized,442,0.1089302301454552,3.0058930700838675
+participation_penalty_hybrid,matchup_share_k10,easy_mid_fwd,process,442,0.4499483296929665,2.1760155302228865

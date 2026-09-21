@@ -10,7 +10,7 @@ Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jub
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR**. Zero Club Strength attack/defence → neutral ×1.0 multipliers (ADR 0037), not raw FDR as xP scale. Champion = `participation_penalty_hybrid` (ADR 0039). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Matchup Share** when this-season Official club xG exists; else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `participation_penalty_hybrid` (ADR 0039). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
