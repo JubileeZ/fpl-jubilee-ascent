@@ -2,8 +2,7 @@
   "schema_version": 1,
   "champion": "dual_vector_state_hybrid",
   "candidates": [
-    "participation_state_hybrid",
-    "metrics_component_hybrid"
+    "participation_state_hybrid"
   ],
   "promotion_status": "provisional"
 }

@@ -111,9 +111,10 @@ uv run python -m commands.run_model MODEL_NAME --horizon GWS
 uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
 ```
 
-Champion is `config/model_selection.json` `champion`. Comparison Slate Candidates
-(`participation_state_hybrid`, `metrics_component_hybrid`) stay available while
-snapshot-backed promotion validation continues.
+Champion is `config/model_selection.json` `champion`. Comparison Slate keeps
+`participation_state_hybrid` as the sole Model Candidate while snapshot-backed
+promotion validation continues. `metrics_component_hybrid` remains in the catalog
+only.
 
 The component seed/current-season blend can be tuned without editing code:
 

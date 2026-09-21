@@ -10,7 +10,7 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 |------|--------|------|----------------|
 | `dual_vector_state_hybrid` | `models/dual_vector_state_hybrid.py` | Model Champion | Participation states plus Dual-Vector attack/defence multipliers, team xG scale, penalty isolation |
 | `participation_state_hybrid` | `models/participation_state_hybrid.py` | Model Candidate | Event scoring from the hybrid, with mutually exclusive DNP / Start / Sub-in minutes |
-| `metrics_component_hybrid` | `models/metrics_component_hybrid.py` | Model Candidate | Calibrated Event Component reconstruct through the scoring matrix (ADR 0005 / 0007) |
+| `metrics_component_hybrid` | `models/metrics_component_hybrid.py` | Catalog | Calibrated Event Component reconstruct through the scoring matrix (ADR 0005 / 0007). Ancestor of participation; not a registered Model Candidate |
 | `component_baseline` | `models/component_baseline.py` | Baseline | Per-90 Event Rates through the scoring matrix; Prior-Season Seed / Position-Price |
 | `linear_baseline` | `models/linear_baseline.py` | Baseline | Rolling points × Modified FDR × availability; Cold-Start projects ~0 |
 

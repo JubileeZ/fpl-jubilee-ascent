@@ -533,8 +533,8 @@ An explicit committed addition of a Model Candidate to the comparison slate. Reg
 _Avoid_: Model auto-discovery, implicit admission
 
 **Comparison Slate**:
-The Model Champion plus zero to two registered Model Candidates. It starts with `participation_state_hybrid` as Champion and `metrics_component_hybrid` as its sole Candidate.
-_Avoid_: All models, model pool
+The Model Champion plus zero to two registered Model Candidates. Current names live only in `config/model_selection.json` and the projection-model catalog.
+_Avoid_: All models, model pool, pinning Champion/Candidate identifiers in this glossary
 
 **Promotion Evidence Record**:
 Versioned JSON and Markdown artifacts that identify evaluated models and commits, evaluation windows and snapshot coverage, primary and guardrail metrics, promotion outcome, and resulting Comparison Slate.
