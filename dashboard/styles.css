@@ -1206,6 +1206,20 @@ body {
   border-radius: 8px;
   padding: 0.6rem;
   font-size: 0.8rem;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.week-cell:hover {
+  border-color: var(--accent-cyan);
+}
+
+.week-cell[aria-selected="true"] {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan);
 }
 
 .week-cell strong {

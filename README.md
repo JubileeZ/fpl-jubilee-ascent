@@ -278,7 +278,7 @@ Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed;
 
 **Ownership Explorer**
 
-**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name, Signed Bias, provisional flag, Decision Regret, and walk-forward ranking.
+**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name and provisional flag when promotion is not active.
 
 The explorer table shows status, chance-of-playing, news (tooltip), and per-GW fixture labels (opponent, H/A, Modified FDR). On-screen legends under the toolbar define Projected Rate, Assume 90, xMins as marker size, Total vs /90, and the Dream Team badge.
 
@@ -325,7 +325,7 @@ full slice.
 
 **Transfer Plan Surface**
 
-Peer tab beside Ownership Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Shows Start buys/sells, Hits, week EGS strip, read-only plan XI (plan captain marked), Auto Captain / Auto Vice-Captain / next-best 1–2 XI. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
+Peer tab beside Ownership Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
 
 ### 9. Season Archiving
 

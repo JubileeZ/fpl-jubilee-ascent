@@ -269,25 +269,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const parts = [`Champion Trust: ${trust.champion}`];
-      if (trust.signed_bias != null) {
-        const sign = Number(trust.signed_bias) > 0 ? "+" : "";
-        const season = trust.bias_season ? ` (${trust.bias_season})` : "";
-        parts.push(`Signed Bias ${sign}${trust.signed_bias}${season}`);
-      }
-      if (trust.promotion_status && trust.promotion_status !== "active") {
-        parts.push(String(trust.promotion_status));
-      }
-      if (trust.decision_regret_mean != null) {
-        parts.push(`Decision Regret ${trust.decision_regret_mean}`);
-      }
-      if (Array.isArray(trust.walkforward_ranking) && trust.walkforward_ranking.length) {
-        const rank = trust.walkforward_ranking
-          .map((row) => `${row.arm_id} ${row.realized_points}`)
-          .join(", ");
-        parts.push(`Walk-forward ${rank}`);
-      } else if (trust.walkforward_best_arm) {
-        const pts = trust.walkforward_best_points != null ? ` ${trust.walkforward_best_points}` : "";
-        parts.push(`Walk-forward ${trust.walkforward_best_arm}${pts}`);
+      if (trust.promotion_status === "provisional") {
+        parts.push("provisional");
       }
       el.textContent = parts.join(" · ");
     }

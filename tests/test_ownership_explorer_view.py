@@ -101,8 +101,17 @@ def test_transfer_plan_surface_script_ranks_scenarios() -> None:
     assert "Auto Captain" in html
     assert "Auto Vice-Captain" in html
     assert "Next-best" in html
+    assert "data-gw" in plan
+    assert "selectedGw" in plan
+    assert "click a GW" in html
     assert "read-only" in html.lower() or "read-only" in plan.lower()
     assert "Does not load into Squad What-If" in html
+    assert "Signed Bias" not in app
+    assert "Walk-forward" not in app
+    assert "Decision Regret" not in app
+    assert "Champion Trust:" in app
+    assert 'promotion_status === "provisional"' in app
+    assert "(Plan Start)" in plan or "Plan Start" in plan
 
 
 def test_squad_board_sits_before_charts() -> None:

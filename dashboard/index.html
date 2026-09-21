@@ -255,10 +255,10 @@
       <section class="card" id="plan-detail">
         <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
         <div id="plan-ledger" class="ledger"></div>
-        <h3 class="plan-subhead">Expected GW Score by week (rank = sum)</h3>
+        <h3 class="plan-subhead" id="plan-weeks-subhead">Expected GW Score by week — click a GW to inspect (rank = sum)</h3>
         <div id="plan-weeks" class="week-strip"></div>
-        <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best</p>
-        <h3 class="plan-subhead">Plan XI · Start week (C = plan captain)</h3>
+        <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best (Plan Start)</p>
+        <h3 class="plan-subhead" id="plan-xi-subhead">Plan XI · select a week (C = plan captain)</h3>
         <div id="plan-pitch" class="mini-pitch"></div>
         <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">—</span></p>
       </section>
@@ -266,9 +266,9 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
   <script src="explorer.js?v=19"></script>
   <script src="squad.js?v=4"></script>
-  <script src="plan.js?v=3"></script>
+  <script src="plan.js?v=4"></script>
 </body>
 </html>

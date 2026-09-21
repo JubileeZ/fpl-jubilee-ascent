@@ -8,6 +8,7 @@
   let ctx = null;
   let payload = null;
   let selectedId = null;
+  let selectedGw = null;
   let bound = false;
 
   function players() {
@@ -158,6 +159,20 @@
     return weeks[0] || {};
   }
 
+  function weekByGw(scenario, gw) {
+    const weeks = (scenario && scenario.plan && scenario.plan.weeks) || [];
+    return weeks.find((w) => Number(w.gw) === Number(gw)) || null;
+  }
+
+  function resolveSelectedGw(scenario) {
+    const weeks = (scenario && scenario.plan && scenario.plan.weeks) || [];
+    if (!weeks.length) return null;
+    if (selectedGw != null && weeks.some((w) => Number(w.gw) === Number(selectedGw))) {
+      return Number(selectedGw);
+    }
+    return Number(weeks[0].gw);
+  }
+
   function renderScenarios() {
     const root = document.getElementById("plan-scenarios");
     const staleEl = document.getElementById("plan-stale-banner");
@@ -194,6 +209,7 @@
     root.querySelectorAll("[data-id]").forEach((el) => {
       el.addEventListener("click", () => {
         selectedId = el.getAttribute("data-id");
+        selectedGw = null;
         root.querySelectorAll("[data-id]").forEach((btn) => {
           btn.setAttribute("aria-selected", btn.getAttribute("data-id") === selectedId ? "true" : "false");
         });
@@ -209,43 +225,65 @@
     const pitch = document.getElementById("plan-pitch");
     const obj = document.getElementById("plan-objective");
     const autoEl = document.getElementById("plan-auto-captain");
+    const xiHead = document.getElementById("plan-xi-subhead");
+    const stripHead = document.getElementById("plan-weeks-subhead");
     if (!scenario) {
       if (ledger) ledger.innerHTML = "";
       if (weeksEl) weeksEl.innerHTML = "";
       if (pitch) pitch.innerHTML = "";
       if (obj) obj.textContent = "—";
-      if (autoEl) autoEl.textContent = "Auto Captain · Auto Vice-Captain · Next-best";
+      if (autoEl) autoEl.textContent = "Auto Captain · Auto Vice-Captain · Next-best (Plan Start)";
+      if (xiHead) xiHead.textContent = "Plan XI · select a week (C = plan captain)";
+      if (stripHead) stripHead.textContent = "Expected GW Score by week — click a GW to inspect";
       return;
     }
-    const week = startWeek(scenario);
+    const weeks = (scenario.plan && scenario.plan.weeks) || [];
+    selectedGw = resolveSelectedGw(scenario);
+    const week = weekByGw(scenario, selectedGw) || startWeek(scenario);
+    const start = startWeek(scenario);
+    const isStart = Number(week.gw) === Number(start.gw);
+    const gwLabel = week.gw != null ? `GW${week.gw}` : "Start";
     const buys = (week.buy || []).map((row) => row.name || playerName(row.id));
     const sells = (week.sell || []).map((row) => row.name || playerName(row.id));
     if (ledger) {
-      const buyHtml = buys.length ? buys.map((n) => `<span class="buy">+ ${n}</span>`).join(" ") : "<span class=\"buy\">(none)</span>";
-      const sellHtml = sells.length ? sells.map((n) => `<span class="sell">− ${n}</span>`).join(" ") : "<span class=\"sell\">(none)</span>";
-      ledger.innerHTML = `<div><strong>Start buys</strong><br>${buyHtml}</div>
-        <div><strong>Start sells</strong><br>${sellHtml}</div>
-        <div><strong>Start Hits</strong><br>${week.hits || 0}</div>
+      const buyHtml = buys.length ? buys.map((n) => `<span class="buy">+ ${n}</span>`).join(" ") : '<span class="buy">(none)</span>';
+      const sellHtml = sells.length ? sells.map((n) => `<span class="sell">− ${n}</span>`).join(" ") : '<span class="sell">(none)</span>';
+      ledger.innerHTML = `<div><strong>${gwLabel} buys</strong><br>${buyHtml}</div>
+        <div><strong>${gwLabel} sells</strong><br>${sellHtml}</div>
+        <div><strong>${gwLabel} Hits</strong><br>${week.hits || 0}</div>
         <div><strong>Σ Expected GW Score</strong><br>${Number(scenario.horizon_egs || 0).toFixed(1)}</div>`;
     }
-    const weeks = (scenario.plan && scenario.plan.weeks) || [];
     if (weeksEl) {
       weeksEl.innerHTML = weeks
         .map((w) => {
           const chip = w.chip ? ` · ${w.chip}` : "";
-          return `<div class="week-cell"><strong>GW${w.gw}</strong>EGS ${Number(w.expected_gw_score || 0).toFixed(1)}<br>Hits ${w.hits || 0}${chip}</div>`;
+          const selected = Number(w.gw) === Number(selectedGw);
+          return `<button type="button" class="week-cell" data-gw="${w.gw}" aria-selected="${selected ? "true" : "false"}"><strong>GW${w.gw}</strong>EGS ${Number(w.expected_gw_score || 0).toFixed(1)}<br>Hits ${w.hits || 0}${chip}</button>`;
         })
         .join("");
+      weeksEl.querySelectorAll("[data-gw]").forEach((el) => {
+        el.addEventListener("click", () => {
+          selectedGw = Number(el.getAttribute("data-gw"));
+          renderDetail();
+        });
+      });
+    }
+    if (stripHead) {
+      stripHead.textContent = "Expected GW Score by week — click a GW to inspect (rank = sum)";
+    }
+    if (xiHead) {
+      xiHead.textContent = `Plan XI · ${gwLabel}${isStart ? " · Plan Start" : ""} (C = plan captain)`;
     }
     if (obj) obj.textContent = scenario.solver_objective == null ? "—" : Number(scenario.solver_objective).toFixed(1);
     const auto = (scenario.plan && scenario.plan.auto_captain) || {};
     const next = (auto.next_best || [])
       .map((row) => `${playerName(row.id)} (${Number(row.xp || 0).toFixed(1)})`)
       .join(", ") || "—";
-    const cap = auto.auto_captain_id ? `${playerName(auto.auto_captain_id)} (${xpOf(auto.auto_captain_id, week.gw)})` : "—";
-    const vice = auto.auto_vice_id ? `${playerName(auto.auto_vice_id)} (${xpOf(auto.auto_vice_id, week.gw)})` : "—";
+    const startGw = start.gw;
+    const cap = auto.auto_captain_id ? `${playerName(auto.auto_captain_id)} (${xpOf(auto.auto_captain_id, startGw)})` : "—";
+    const vice = auto.auto_vice_id ? `${playerName(auto.auto_vice_id)} (${xpOf(auto.auto_vice_id, startGw)})` : "—";
     if (autoEl) {
-      autoEl.textContent = `Auto Captain ${cap} · Auto Vice-Captain ${vice} · Next-best ${next}`;
+      autoEl.textContent = `Auto Captain ${cap} · Auto Vice-Captain ${vice} · Next-best ${next} (Plan Start GW${startGw})`;
     }
     if (pitch) pitch.innerHTML = pitchHtml(week);
   }
@@ -288,6 +326,7 @@
   function setPayload(next) {
     payload = next && next.scenarios ? next : null;
     selectedId = payload && payload.scenarios && payload.scenarios[0] ? payload.scenarios[0].id : null;
+    selectedGw = null;
     render();
   }
 

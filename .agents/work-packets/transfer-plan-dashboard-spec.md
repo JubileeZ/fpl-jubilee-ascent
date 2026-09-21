@@ -1,15 +1,15 @@
 # Active Task: Transfer Plan dashboard spec
 
-- **Status:** In Progress — Must+Should + Differentials/EO build shipped; fog remains
+- **Status:** In Progress — Trust slim + per-GW plan navigator; fog remains
 - **Objective:** Hand-off remaining Later fog or close map #88.
-- **Acceptance:** EO crawl + Differentials Ranking + Explorer Δ£ on main; tests green.
+- **Acceptance:** EO crawl + Differentials Ranking + Explorer Δ£ on main; Champion Trust = name + provisional; EGS strip navigates per-GW plan; tests green.
 - **Issue/Ticket:** [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 
 ## Work Packet (SFDBN)
 
-- **Status:** Differentials Ranking + Top-10k EO ingest implemented. Fog / unticketed Later gaps remain.
-- **Files:** `projections/effective_ownership.py`, `projections/differentials_ranking.py`, `commands/effective_ownership_crawl.py`, `commands/dashboard.py`, `commands/export_dashboard.py`, `dashboard/*`
-- **Decisions:** Refresh finishes charts first; EO crawl async; panel omitted until complete cache; Δ£ = observed since previous refresh.
+- **Status:** Champion Trust slimmed; Transfer Plan week strip is GW navigator (XI/buys/sells/Hits). Fog / unticketed Later gaps remain.
+- **Files:** `dashboard/app.js`, `dashboard/plan.js`, `dashboard/index.html`, `dashboard/styles.css`, `CONTEXT.md`, `README.md`, `tests/test_ownership_explorer_view.py`
+- **Decisions:** Trust chrome = Champion + provisional only. Week strip Must navigator; Auto Captain stays Plan Start. Scenario switch resets selected GW to Plan Start.
 - **Blocked:** none.
 - **Next:** Graduate fog into tickets or close map #88.
 
