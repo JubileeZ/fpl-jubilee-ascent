@@ -197,13 +197,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function catalogModels() {
+    return Array.isArray(metaData.catalog_models) ? metaData.catalog_models : [];
+  }
+
+  function primaryPayload() {
+    const catalog = catalogModels();
+    if (!primaryModel) return "default";
+    if (catalog.length && !catalog.includes(primaryModel)) return "default";
+    return primaryModel;
+  }
+
   function setupModelSelect() {
     const select = document.getElementById("primaryModelSelect");
     if (!select) return;
-    const models = (metaData.models && metaData.models.length)
-      ? metaData.models
+    const catalog = catalogModels();
+    let models = (metaData.models && metaData.models.length)
+      ? metaData.models.slice()
       : [metaData.default_model].filter(Boolean);
-    primaryModel = metaData.default_model || models[0] || "";
+    if (catalog.length) {
+      models = models.filter((name) => catalog.includes(name));
+      const champion = (metaData.champion_trust && metaData.champion_trust.champion) || metaData.default_model;
+      if (!models.length && champion && catalog.includes(champion)) models = [champion];
+      if (!models.length) models = catalog.slice(0, 1);
+    }
+    primaryModel = models.includes(metaData.default_model)
+      ? metaData.default_model
+      : (models[0] || "");
+    if (catalog.length && primaryModel && !catalog.includes(primaryModel)) {
+      primaryModel = models[0] || "";
+    }
     select.innerHTML = "";
     if (!models.length) {
       const opt = document.createElement("option");
@@ -389,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const post = await fetch("/api/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: primaryModel }),
+        body: JSON.stringify({ model: primaryPayload() }),
       });
       const body = await post.json();
       if (post.status >= 400 && body.status !== "running") {
@@ -462,7 +485,7 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: primaryModel,
+          model: primaryPayload(),
           horizon_start: Number(startSel && startSel.value),
           horizon_end: Number(endSel && endSel.value),
         }),

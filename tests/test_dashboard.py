@@ -132,6 +132,8 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert haaland["ownership_pct"] == 12.5
     assert "expected_role" not in haaland
     assert dataset["meta"]["planning_gw_ids"] == [1]
+    assert "participation_penalty_hybrid" in dataset["meta"]["catalog_models"]
+    assert "dual_vector_state_hybrid" not in dataset["meta"]["catalog_models"]
     slice_h = haaland["explorer"]["planning_horizon"]
     assert slice_h["n_gameweeks"] == 1
     assert slice_h["total"] == 7.5
@@ -557,6 +559,9 @@ def test_projection_model_names_defaults_to_champion_not_slate() -> None:
     assert posted_primary_model({"model": "default"}) == default_model_name()
     assert posted_primary_model({"model": ""}) == default_model_name()
     assert posted_primary_model({}) == default_model_name()
+    # Stale cache / retired names are not aliases — fall back to Champion.
+    assert posted_primary_model({"model": "dual_vector_state_hybrid"}) == default_model_name()
+    assert posted_primary_model({"model": "not_a_real_model"}) == default_model_name()
 
 
 def test_handle_dashboard_api_refresh_posts_primary_model(monkeypatch: pytest.MonkeyPatch) -> None:

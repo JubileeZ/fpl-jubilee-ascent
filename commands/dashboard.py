@@ -158,11 +158,16 @@ def ingest_live_data(season: str = LIVE_SEASON) -> None:
 
 
 def posted_primary_model(body: dict[str, object] | None) -> str:
-    """Posted Primary Model, or Champion when missing/placeholder `default`."""
+    """Posted Primary Model, or Champion when missing/placeholder `default`/unknown/retired."""
+    from models import resolve_model_name
+
     raw = str((body or {}).get("model") or "").strip()
     if not raw or raw.lower() == "default":
         return get_default_model_name()
-    return raw
+    try:
+        return resolve_model_name(raw)
+    except ValueError:
+        return get_default_model_name()
 
 
 def run_dashboard_export(

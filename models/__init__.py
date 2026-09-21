@@ -44,12 +44,22 @@ def list_model_names() -> list[str]:
     return sorted(model.name for model in _iter_registered_models())
 
 
+def resolve_model_name(model_name: str) -> str:
+    """Return `model_name` when registered, else raise."""
+    if model_name in list_model_names():
+        return model_name
+    raise ValueError(
+        f"Model '{model_name}' not found. Please ensure it is implemented in the models/ directory."
+    )
+
+
 def get_model(model_name: str) -> BaseModel:
     """
     Auto-discovers and returns an instance of the requested model from the models/ folder.
     """
+    resolved = resolve_model_name(model_name)
     for model in _iter_registered_models():
-        if model.name == model_name:
+        if model.name == resolved:
             return model
     raise ValueError(
         f"Model '{model_name}' not found. Please ensure it is implemented in the models/ directory."

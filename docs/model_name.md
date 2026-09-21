@@ -14,7 +14,7 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 | `component_baseline` | `models/component_baseline.py` | Baseline | Per-90 Event Rates through the scoring matrix; Prior-Season Seed / Position-Price |
 | `linear_baseline` | `models/linear_baseline.py` | Baseline | Rolling points × Modified FDR × availability; Cold-Start projects ~0 |
 
-Fallback if `model_selection.json` is missing: `participation_state_hybrid` (`models.DEFAULT_MODEL_NAME`).
+Fallback if `model_selection.json` missing: `participation_state_hybrid` (`models.DEFAULT_MODEL_NAME`). Unknown/retired Primary POST → Champion. No retired-name aliases.
 
 ## Commands that take a name
 

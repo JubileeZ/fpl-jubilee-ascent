@@ -10,21 +10,26 @@ _POS_CODES = {1: "GK", 2: "D", 3: "M", 4: "F"}
 _GOAL_POINTS = {"GK": 10.0, "D": 6.0, "M": 5.0, "F": 4.0}
 
 
+def _numeric_col(frame: pd.DataFrame, name: str) -> pd.Series:
+    if name not in frame.columns:
+        return pd.Series(0.0, index=frame.index, dtype=float)
+    return pd.to_numeric(frame[name], errors="coerce").fillna(0.0).astype(float)
+
+
 def process_points_from_performances(gw_perf: pd.DataFrame) -> pd.Series:
     """Return Process Points per row (fixture grain) given position_id on ``gw_perf``.
 
     ``total_points − realized goal pts − realized assist pts + xG pts + xA pts``.
-    Requires ``position_id``, ``total_points``, ``goals_scored``, ``assists``,
-    ``expected_goals``, ``expected_assists``.
+    Requires ``position_id``, ``total_points``; missing goal/assist/xG/xA cols → 0.
     """
     if gw_perf.empty:
         return pd.Series(dtype=float)
     pos = gw_perf["position_id"].map(_POS_CODES).fillna("M")
-    goals = pd.to_numeric(gw_perf.get("goals_scored", 0), errors="coerce").fillna(0.0)
-    assists = pd.to_numeric(gw_perf.get("assists", 0), errors="coerce").fillna(0.0)
-    xg = pd.to_numeric(gw_perf.get("expected_goals", 0), errors="coerce").fillna(0.0)
-    xa = pd.to_numeric(gw_perf.get("expected_assists", 0), errors="coerce").fillna(0.0)
-    total = pd.to_numeric(gw_perf["total_points"], errors="coerce").fillna(0.0)
+    goals = _numeric_col(gw_perf, "goals_scored")
+    assists = _numeric_col(gw_perf, "assists")
+    xg = _numeric_col(gw_perf, "expected_goals")
+    xa = _numeric_col(gw_perf, "expected_assists")
+    total = _numeric_col(gw_perf, "total_points")
     realized_goal_pts = goals * pos.map(_GOAL_POINTS)
     realized_assist_pts = assists * 3.0
     process_goal_pts = pd.Series(

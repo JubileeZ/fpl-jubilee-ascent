@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from models import get_model, resolve_model_name
 from models.selection import (
     ModelSelection,
     default_model_name,
@@ -10,6 +11,15 @@ from models.selection import (
     projection_model_names,
     save_model_selection,
 )
+
+
+def test_resolve_unknown_model_raises() -> None:
+    with pytest.raises(ValueError, match="not found"):
+        resolve_model_name("dual_vector_state_hybrid")
+    with pytest.raises(ValueError, match="not found"):
+        resolve_model_name("not_a_real_model")
+    with pytest.raises(ValueError, match="not found"):
+        get_model("dual_vector_state_hybrid")
 
 
 def test_load_model_selection_reads_champion_and_candidates(tmp_path: Path) -> None:

@@ -6,6 +6,21 @@ from backtesting.metrics import evaluate_predictions
 from backtesting.process_points import aggregate_process_points, process_points_from_performances
 
 
+def test_process_points_missing_event_columns_are_zero() -> None:
+    row = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "gameweek_id": 1,
+                "position_id": 3,
+                "total_points": 2.0,
+            }
+        ]
+    )
+    pts = process_points_from_performances(row)
+    assert float(pts.iloc[0]) == 2.0
+
+
 def test_process_points_replaces_goal_assist_luck() -> None:
     row = pd.DataFrame(
         [

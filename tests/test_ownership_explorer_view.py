@@ -33,8 +33,10 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "/api/dream-team" in js
     assert "setJobsBusy" in js
     assert "beginJob" in js
-    assert js.count("model: primaryModel") >= 2
+    assert "primaryPayload" in js
+    assert js.count("model: primaryPayload()") >= 2
     assert "default_model || \"default\"" not in js
+    assert "catalog_models" in js
     assert "filter(Boolean)" in js
     assert 'id="tab-explorer"' in html
     assert 'id="tab-plan"' in html

@@ -16,7 +16,7 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import build_features, resolve_operational_processed_dir
-from models import get_default_model_name, get_model
+from models import get_default_model_name, get_model, list_model_names
 from models.selection import projection_model_names
 from projections.explorer_slice import (
     COMPONENT_KEYS,
@@ -567,6 +567,7 @@ def build_dashboard_dataset(
             "available_chips": available_chips(planning_gw_ids, user_chips),
             "models": model_names,
             "default_model": primary_model_name,
+            "catalog_models": list_model_names(),
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
             "owned_vice_captain_id": owned_vice_captain_id,
