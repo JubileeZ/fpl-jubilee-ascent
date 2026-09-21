@@ -921,14 +921,17 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  min-height: 520px;
+  align-items: stretch;
+  min-height: 480px;
+  margin-top: 0.75rem;
 }
 
 .explorer-chart {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  min-height: 500px;
+  min-height: 460px;
+  height: 100%;
 }
 
 .explorer-table-wrap {

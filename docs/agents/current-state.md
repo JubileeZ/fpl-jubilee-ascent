@@ -23,7 +23,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
 | Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Ownership Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
 | Solver | `solver/` | open-fpl-solver `2ff829f` highspy; `planning.py` + `transfer_plan.py` + `scenarios.py` ours |

@@ -1,4 +1,4 @@
-"""Ownership Explorer dashboard view markers."""
+"""Explorer dashboard view markers."""
 
 from pathlib import Path
 
@@ -39,6 +39,8 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert 'id="tab-explorer"' in html
     assert 'id="tab-plan"' in html
     assert "plan.js" in html
+    assert ">Explorer</button>" in html
+    assert "Ownership Explorer" not in html
     assert "Transfer Plan" in html
     assert 'id="btn-transfer-plan"' in html
     assert "Solve scenarios" in html
@@ -48,6 +50,7 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert 'id="plan-stale-banner"' in html
     assert 'id="champion-trust"' in html
     assert 'id="explorer-legends"' in html
+    assert "/GW" in html
     assert "marker size" in html
     assert "Δ£" in html
     assert 'id="differentials-ranking"' in html
@@ -58,6 +61,9 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert 'value="first_half"' not in html
     assert 'value="all_projection"' not in html
     assert 'id="mix-a-list"' not in html
+    assert html.index('id="differentials-ranking"') < html.index('id="explorer-table-wrap"')
+    assert html.index('id="explorer-table-wrap"') < html.index('class="explorer-charts"')
+    assert html.index('class="explorer-charts"') < html.index('id="player-component-card"')
 
 
 def test_explorer_script_uses_planning_horizon_without_mix() -> None:
@@ -65,6 +71,7 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "rate_per_90" in js
     assert "let yMetric = \"per_gameweek\"" in js or 'yMetric = "per_gameweek"' in js
     assert "per_gameweek" in js
+    assert 'data-sort="per_gameweek"' in js
     assert "getViewGws" in js
     assert "Projected Rate" in js
     assert "change_since_refresh" in js
@@ -86,6 +93,7 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "player.chance" in js
     assert "player.news" in js
     assert "news-cell" in js
+    assert "/GW" in js
 
 
 def test_transfer_plan_surface_script_ranks_scenarios() -> None:
@@ -118,7 +126,7 @@ def test_squad_board_sits_before_charts() -> None:
     html = Path("dashboard/index.html").read_text(encoding="utf-8")
     assert html.index('id="squad-board"') < html.index('class="explorer-charts"')
     assert html.index('id="component-profile"') < html.index('class="explorer-charts"')
-    assert html.index('class="explorer-charts"') < html.index('id="explorer-table-wrap"')
+    assert html.index('id="explorer-table-wrap"') < html.index('class="explorer-charts"')
     assert 'id="squad-reset"' in html
     assert 'id="squad-reload"' in html
     assert 'id="squad-empty-refresh"' in html
@@ -155,8 +163,8 @@ def test_player_component_card_and_xmin_profile_labels() -> None:
     assert 'id="player-component-card"' in html
     assert 'id="player-component-head"' in html
     assert 'id="player-component-body"' in html
+    assert html.index('id="explorer-table-wrap"') < html.index('class="explorer-charts"')
     assert html.index('class="explorer-charts"') < html.index('id="player-component-card"')
-    assert html.index('id="player-component-card"') < html.index('id="explorer-table-wrap"')
     assert 'id="explorer-xmins-floor"' in html
     assert 'id="explorer-xmins-floor-val">0</span>' in html
     assert "renderPlayerComponents" in explorer
@@ -171,3 +179,4 @@ def test_player_component_card_and_xmin_profile_labels() -> None:
     assert '["xmins", "xMins"]' in squad
     assert '["xp_minutes", "Appearance xP"]' in squad
     assert '["xp_minutes", "Minutes"]' not in squad
+    assert 'data-sort="per_gameweek">/GW' in explorer

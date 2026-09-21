@@ -642,7 +642,7 @@ def start_server(port: int = 8000, open_browser: bool = True) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Serve Ownership Explorer and Transfer Plan Surface. Open projects the Primary Model from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects the selected Primary Model. Solve Dream Team paints an Explorer overlay. Solve scenarios ranks Roll / 1 FT / Optimal on the Transfer Plan tab. Refresh, Dream Team, and Transfer Plan Solve cannot run together."
+        description="Serve Explorer and Transfer Plan Surface. Open projects the Primary Model from processed data when JSON is stale. Refresh in the page ingests FPL and re-projects the selected Primary Model. Solve Dream Team paints an Explorer overlay. Solve scenarios ranks Roll / 1 FT / Optimal on the Transfer Plan tab. Refresh, Dream Team, and Transfer Plan Solve cannot run together."
     )
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
     parser.add_argument("--models", type=str, nargs="+", default=None, help="Comparison Slate override (export all named models)")

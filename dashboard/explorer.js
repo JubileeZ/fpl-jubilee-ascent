@@ -3,11 +3,11 @@
   const POS_LABEL = { G: "GKP", D: "DEF", M: "MID", F: "FWD" };
   const POS_COLORS = { G: "#eab308", D: "#3b82f6", M: "#10b981", F: "#ef4444" };
   const PLOT_LAYOUT = {
-    margin: { t: 36, r: 16, b: 48, l: 52 },
+    margin: { t: 40, r: 16, b: 48, l: 56 },
     paper_bgcolor: "#111827",
-    plot_bgcolor: "#111827",
+    plot_bgcolor: "#0b1220",
     font: { color: "#f8fafc", family: "Inter, sans-serif", size: 11 },
-    legend: { orientation: "h", y: 1.12, font: { size: 11 } },
+    legend: { orientation: "h", y: 1.08, x: 0, font: { size: 10 } },
     hovermode: "closest",
   };
 
@@ -221,8 +221,8 @@
   }
 
   function markerSize(slice, selected) {
-    const bonus = selected ? 4 : 0;
-    return Math.max(7 + bonus, Math.min(28, 6 + bonus + (slice.avg_minutes || 0) / 4.5));
+    const bonus = selected ? 5 : 0;
+    return Math.max(9 + bonus, Math.min(32, 8 + bonus + (slice.avg_minutes || 0) / 4));
   }
 
   function markerLineWidth(playerId) {
@@ -238,6 +238,7 @@
   }
 
   function traces(visible, axisX) {
+    const yLabel = yAxisTitle();
     return POS_ORDER.map((pos) => {
       const subset = visible.filter((row) => row.player.pos === pos);
       return {
@@ -254,6 +255,8 @@
           row.player.name,
           row.player.team,
           row.slice.total,
+          row.slice.per_gameweek,
+          row.slice.rate_per_90 == null ? "—" : Number(row.slice.rate_per_90).toFixed(2),
           row.slice.avg_minutes,
           row.player.status || "",
           row.player.chance == null ? "—" : `${row.player.chance}%`,
@@ -262,7 +265,7 @@
         marker: {
           size: subset.map((row) => markerSize(row.slice, row.player.id === selectedPlayerId)),
           color: POS_COLORS[pos],
-          opacity: subset.map((row) => (selectedPlayerId && row.player.id !== selectedPlayerId ? 0.35 : 0.88)),
+          opacity: subset.map((row) => (selectedPlayerId && row.player.id !== selectedPlayerId ? 0.35 : 0.9)),
           line: {
             width: subset.map((row) => markerLineWidth(row.player.id)),
             color: subset.map((row) => markerLineColor(row.player.id)),
@@ -270,9 +273,10 @@
         },
         hovertemplate:
           "<b>%{customdata[1]}</b> (%{customdata[2]})<br>" +
-          (axisX === "own" ? "Own %: %{x:.1f}%<br>" : "Price: £%{x:.1f}m<br>") +
-          "Y: %{y:.2f}<br>Total: %{customdata[3]:.2f} · Avg mins: %{customdata[4]:.1f}<br>" +
-          "Avail: %{customdata[5]} %{customdata[6]}<br>%{customdata[7]}<extra></extra>",
+          (axisX === "own" ? "Own%: %{x:.1f}%<br>" : "Price: £%{x:.1f}m<br>") +
+          `${yLabel}: %{y:.2f}<br>` +
+          "Total %{customdata[3]:.2f} · /GW %{customdata[4]:.2f} · /90 %{customdata[5]}<br>" +
+          "xMins %{customdata[6]:.1f} · %{customdata[7]} %{customdata[8]}<br>%{customdata[9]}<extra></extra>",
       };
     });
   }
@@ -355,6 +359,7 @@
       '<th data-sort="delta">Δ£</th>',
       '<th data-sort="own">Own%</th>',
       '<th data-sort="total">Total</th>',
+      '<th data-sort="per_gameweek">/GW</th>',
       ...gws.map((gw) => `<th data-sort="gw${gw}">GW${gw}</th>`),
       '<th data-sort="rate_per_90">/90</th>',
       '<th data-sort="avg_minutes">xMins</th>',
@@ -403,6 +408,7 @@
           <td>${p.change_since_refresh == null || Number.isNaN(Number(p.change_since_refresh)) ? "—" : (Number(p.change_since_refresh) > 0 ? "+" : "") + Number(p.change_since_refresh).toFixed(1)}</td>
           <td>${Number(p.ownership_pct || 0).toFixed(1)}</td>
           <td>${Number(s.total).toFixed(2)}</td>
+          <td>${Number(s.per_gameweek).toFixed(2)}</td>
           ${gwCells}
           <td>${s.rate_per_90 == null ? "—" : Number(s.rate_per_90).toFixed(2)}</td>
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
@@ -455,7 +461,7 @@
     const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "horizon";
     const pos = POS_LABEL[player.pos] || player.pos;
     nameEl.textContent = `${player.name} · ${pos} · ${player.team} · £${Number(player.price).toFixed(1)}m · ${span}`;
-    head.innerHTML = `<tr><th>Component</th>${gws.map((gw) => `<th>GW${gw}</th>`).join("")}<th>Total</th><th>Avg / GW</th></tr>`;
+    head.innerHTML = `<tr><th>Component</th>${gws.map((gw) => `<th>GW${gw}</th>`).join("")}<th>Total</th><th>/GW</th></tr>`;
     body.innerHTML = PLAYER_COMPONENT_ROWS.map(([key, label, digits]) => {
       const cells = gws.map((gw) => {
         const row = gwProjection(player, gw);
@@ -495,16 +501,20 @@
     }
     if (emptyEl) emptyEl.hidden = true;
     if (tableWrap) tableWrap.hidden = false;
+    const nGw = Math.max(1, viewGws().length);
     body.innerHTML = payload.rows
       .map((row, i) => {
         const afford = row.affordable ? "Yes" : "No";
+        const total = Number(row.total_xp_horizon || 0);
+        const perGw = round(total / nGw, 4);
         return `<tr data-player-id="${row.id}">
           <td>${i + 1}</td>
           <td>${row.name}</td>
           <td>${POS_LABEL[row.pos] || row.pos}</td>
           <td>${row.team}</td>
           <td>£${Number(row.price).toFixed(1)}m</td>
-          <td>${Number(row.total_xp_horizon).toFixed(2)}</td>
+          <td>${total.toFixed(2)}</td>
+          <td>${Number(perGw).toFixed(2)}</td>
           <td>${Number(row.eo_pct).toFixed(1)}</td>
           <td>${afford}</td>
         </tr>`;

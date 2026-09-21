@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FPL Jubilee Ascent - Ownership Explorer</title>
+  <title>FPL Jubilee Ascent - Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
   <div class="app-container" data-view="explorer">
@@ -16,10 +16,10 @@
         <span class="logo-icon">⚽</span>
         <div class="brand-text">
           <h1>FPL Jubilee Ascent</h1>
-          <span class="subtitle" id="view-subtitle">Ownership Explorer</span>
+          <span class="subtitle" id="view-subtitle">Explorer</span>
         </div>
         <nav class="nav-tabs" aria-label="Product surfaces">
-          <button type="button" id="tab-explorer" class="active">Ownership Explorer</button>
+          <button type="button" id="tab-explorer" class="active">Explorer</button>
           <button type="button" id="tab-plan">Transfer Plan</button>
         </nav>
       </div>
@@ -168,12 +168,8 @@
       </div>
       <p id="explorer-meta" class="explorer-meta"></p>
       <p id="explorer-legends" class="explorer-meta">
-        <strong>Projected Rate</strong> = xP per 90 minutes.
-        <strong>xP per Gameweek</strong> = horizon total ÷ gameweeks (default Y-axis).
-        <strong>xMins</strong> = marker size (average minutes in the Planning Horizon).
-        Table <strong>Total</strong> is horizon xP; <strong>/90</strong> is Projected Rate.
-        <strong>Δ£</strong> = Observed price change since previous Refresh (not a forecast).
-        <strong>Dream</strong> badge = Dream Team overlay (guide 15, not a Transfer Plan).
+        <strong>Total</strong> = horizon xP · <strong>/GW</strong> = xP per Gameweek · <strong>/90</strong> = Projected Rate ·
+        <strong>xMins</strong> = marker size · <strong>Δ£</strong> = observed since last Refresh · <strong>Dream</strong> = Dream Team overlay.
       </p>
       <div class="card" id="differentials-ranking" hidden>
         <p class="title">Differentials Ranking</p>
@@ -191,26 +187,13 @@
                 <th>Pos</th>
                 <th>Club</th>
                 <th>Price</th>
-                <th>xP</th>
+                <th>Total</th>
+                <th>/GW</th>
                 <th>EO%</th>
                 <th>Afford</th>
               </tr>
             </thead>
             <tbody id="differentials-body"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="explorer-charts">
-        <div id="chart-ownership" class="explorer-chart"></div>
-        <div id="chart-price" class="explorer-chart"></div>
-      </div>
-      <div class="card" id="player-component-card">
-        <p class="title">Player components (selected horizon)</p>
-        <p id="player-component-name" class="explorer-meta">Select a player in the table, on a chart, or on the pitch.</p>
-        <div class="explorer-table-wrap">
-          <table class="data-table" id="player-component">
-            <thead id="player-component-head"></thead>
-            <tbody id="player-component-body"></tbody>
           </table>
         </div>
       </div>
@@ -226,6 +209,8 @@
               <th data-sort="delta">Δ£</th>
               <th data-sort="own">Own%</th>
               <th data-sort="total">Total</th>
+              <th data-sort="per_gameweek">/GW</th>
+              <!-- per-GW columns inserted by renderHead before /90 -->
               <th data-sort="rate_per_90">/90</th>
               <th data-sort="avg_minutes">xMins</th>
             </tr>
@@ -233,10 +218,24 @@
           <tbody id="explorer-table"></tbody>
         </table>
       </div>
+      <div class="explorer-charts">
+        <div id="chart-ownership" class="explorer-chart"></div>
+        <div id="chart-price" class="explorer-chart"></div>
+      </div>
+      <div class="card" id="player-component-card">
+        <p class="title">Player components (selected horizon)</p>
+        <p id="player-component-name" class="explorer-meta">Select a player in the table, on a chart, or on the pitch.</p>
+        <div class="explorer-table-wrap">
+          <table class="data-table" id="player-component">
+            <thead id="player-component-head"></thead>
+            <tbody id="player-component-body"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="plan-root" id="plan-root" hidden>
-      <p class="explorer-meta">Dream Team and Squad What-If live on Ownership Explorer only. Selected plan is read-only. Does not load into Squad What-If.</p>
+      <p class="explorer-meta">Dream Team and Squad What-If live on Explorer only. Selected plan is read-only. Does not load into Squad What-If.</p>
       <p id="plan-stale-banner" class="explorer-meta text-danger" hidden>Scenarios from before last Refresh — Solve again for current projections.</p>
       <p id="plan-champion-trust" class="explorer-meta"></p>
       <div class="card plan-toolbar">
@@ -266,8 +265,8 @@
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=22"></script>
-  <script src="explorer.js?v=19"></script>
+  <script src="app.js?v=23"></script>
+  <script src="explorer.js?v=20"></script>
   <script src="squad.js?v=4"></script>
   <script src="plan.js?v=4"></script>
 </body>

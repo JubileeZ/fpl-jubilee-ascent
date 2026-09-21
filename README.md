@@ -1,6 +1,6 @@
 # FPL-Jubilee-Ascent
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Ownership Explorer plus Transfer Plan Surface.
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Explorer plus Transfer Plan Surface.
 
 ## Requirements
 
@@ -42,13 +42,13 @@ uv run python -m commands.dashboard
 5. Click **Refresh** (ingest live FPL + project Primary / Champion).
 6. Open the **Transfer Plan** tab → **Solve scenarios** (ranks Roll / 1 FT / Optimal by horizon Σ Expected GW Score).
 
-You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Ownership Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
+You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
 
 Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.md).
 
 ### CLI projections and advanced Transfer Plan
 
-The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Ownership Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
 uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
@@ -67,10 +67,10 @@ Full CLI recipes follow.
 ## Repository Layout
 
 - `clients/` — FPL API and authentication clients
-- `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Ownership Explorer slice metrics
+- `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
-- `dashboard/` — Ownership Explorer and Transfer Plan Surface (`uv run python -m commands.dashboard`)
+- `dashboard/` — Explorer and Transfer Plan Surface (`uv run python -m commands.dashboard`)
 - `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
@@ -252,7 +252,7 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Ownership Explorer plus Transfer Plan Surface (peer tabs). Happy path: **Refresh** → **Transfer Plan** → **Solve scenarios**. `commands.solve` remains the CLI writer for preseason / advanced flags (`data/solution.json`).
+The local dashboard is Explorer plus Transfer Plan Surface (peer tabs). Happy path: **Refresh** → **Transfer Plan** → **Solve scenarios**. `commands.solve` remains the CLI writer for preseason / advanced flags (`data/solution.json`).
 
 **Open it**
 
@@ -264,7 +264,7 @@ The command starts `http://127.0.0.1:8000`. If processed tables are newer than `
 
 Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh, Dream Team Solve, and Transfer Plan Solve cannot run at the same time; those buttons disable until the running job finishes.
 
-Click **Solve Dream Team** (Ownership Explorer only) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
+Click **Solve Dream Team** (Explorer only) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
 
 Open the **Transfer Plan** tab and click **Solve scenarios** to rank Roll / 1 FT / Optimal by horizon sum of Expected GW Score. Needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. Plan XI is read-only and does not load into Squad What-If. Payload: `data/transfer_plan_scenarios.json` (not embedded in `dashboard_data.json`).
 
@@ -276,32 +276,17 @@ Optional flags: `--export-only` writes JSON without serving (needs `data/process
 
 Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most nine weeks after Start (length 1–10), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates totals and charts immediately. It does not re-run the model.
 
-**Ownership Explorer**
+**Explorer**
 
-**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name and provisional flag when promotion is not active.
+**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name and provisional flag when promotion is provisional.
 
-The explorer table shows status, chance-of-playing, news (tooltip), and per-GW fixture labels (opponent, H/A, Modified FDR). On-screen legends under the toolbar define Projected Rate, Assume 90, xMins as marker size, Total vs /90, and the Dream Team badge.
+**Squad Board** draws the User Squad (pitch + Squad xP strip + Squad components). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
 
-**Squad Board** draws the User Squad (pitch + Squad xP strip). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
+Below the board: toolbar filters, **Differentials Ranking** (when EO cache exists), then the **rank table**, then ownership % and price scatter charts, then **Player components** for the selected player.
 
-**Squad components** under the board are xMins plus Event Component xP per Gameweek, as `xMins | Assume 90`. Select a player in the Explorer table for **Player components**: horizon total and average per Gameweek on the selected Planning Horizon.
+The rank table and Differentials show **Total** (horizon xP) and **/GW** (xP per Gameweek = Total ÷ gameweeks). The rank table also has **/90** (Projected Rate), per-GW xP with fixture labels, status / chance / news, Δ£, Own%, and xMins. On-screen legend under the toolbar: Total · /GW · /90 · xMins · Δ£ · Dream.
 
-**Y-axis** is shared by both charts: **Projected Rate** (xP per 90 minutes) or **xP per Gameweek** (horizon total divided by gameweeks).
-
-Two linked scatter charts sit above the table:
-
-- Left: ownership % (`selected_by_percent`) vs the selected Y-axis
-- Right: price (£m) vs the same Y-axis
-
-Marker colour is position (GKP / DEF / MID / FWD). Marker size is average
-minutes in the horizon. Click a marker to label that player and highlight the
-table row; click empty chart background or the same row again to clear.
-
-**Assume 90** (toolbar, next to Projected Rate / xP per Gameweek) treats every
-player as a full 90-minute match on Gameweeks that already have projected
-minutes. That is why those two Y-axis metrics then match when there is no
-double and no blank Gameweek. Off = Club Fixture xMins. Does not change
-Feature Contract minutes.
+**Y-axis** is shared by both charts: **xP per Gameweek** (default) or **Projected Rate**. Charts sit under the table. Marker colour is position; marker size is average minutes. Click a marker to label that player and highlight the table row.
 
 **Filters**
 
@@ -312,7 +297,6 @@ Feature Contract minutes.
 | Club              | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
 | Price             | Min–max £m band; applies to charts and table                                                                            |
 | Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them                                    |
-| Assume 90         | Toolbar checkbox. All players 90 minutes per existing Gameweek (view-only)                                              |
 | Search            | Player name or club; applies to charts and table                                                                        |
 
 
@@ -325,7 +309,7 @@ full slice.
 
 **Transfer Plan Surface**
 
-Peer tab beside Ownership Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
+Peer tab beside Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
 
 ### 9. Season Archiving
 

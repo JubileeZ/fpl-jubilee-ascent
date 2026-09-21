@@ -1,4 +1,4 @@
-"""Champion Trust evidence for Ownership Explorer and Transfer Plan Surface."""
+"""Champion Trust evidence for Explorer and Transfer Plan Surface."""
 
 from __future__ import annotations
 

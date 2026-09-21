@@ -85,7 +85,7 @@ A standardized interface that wraps any projection model, accepting a Feature Co
 _Avoid_: Core model, custom model logic
 
 **Planning Horizon**:
-Inclusive Gameweek window [Horizon Start, Horizon End] for Ownership Explorer ranking, Squad Board, and Component Profile. Length 1–10 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Transfer Plan Start (defaults to upcoming open deadline `is_next`); `--horizon` is length; clamp 1–10. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
+Inclusive Gameweek window [Horizon Start, Horizon End] for Explorer ranking, Squad Board, and Component Profile. Length 1–10 (default 6 when enough unfinished weeks remain: End = min(Start+5, 38)). Horizon Start is any unfinished Gameweek (`finished=false`) from the earliest unfinished through GW38; live deadline-passed week allowed; finished weeks cannot be Start. Default Start = earliest unfinished. A live unfinished Gameweek uses the full Gameweek Projection (no in-play trim). Clipped at GW38. Not First-Half Horizon, Full-Season Window, or Score Mode. CLI `commands.solve --target_gw` is Transfer Plan Start (defaults to upcoming open deadline `is_next`); `--horizon` is length; clamp 1–10. Start/End in the dashboard re-slices the Full-Season export; it does not re-project.
 _Avoid_: Optimization length, 1–5 from is_next as product Explorer start, default 5, excluding the live unfinished GW after deadline from Explorer, Season Window ranking, Realized Points / All Projection in product Explorer, in-play remaining-fixtures grain
 
 **Horizon Start**:
@@ -97,23 +97,23 @@ Last Gameweek of the Planning Horizon, inclusive. Must satisfy Start ≤ End ≤
 _Avoid_: length-only dropdown as the product control, End=38 as Full-Season, End=19 as First-Half, Horizon To as a second clock
 
 **First-Half Horizon**:
-Research window GW1–19 covering Set 1 chips. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
+Research window GW1–19 covering Set 1 chips. Not a Planning Horizon. Not the product Explorer ranking band.
 _Avoid_: Planning Horizon, full-season, GW1–6 Canonical window
 
 **Second-Half Horizon**:
-Research window GW20–38 covering Set 2 chips. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
+Research window GW20–38 covering Set 2 chips. Not a Planning Horizon. Not the product Explorer ranking band.
 _Avoid_: Planning Horizon, rest of season, second half (unbounded)
 
 **Full-Season Window**:
-Research window GW1–38. First-Half Horizon plus Second-Half Horizon. Not a Planning Horizon. Not the product Ownership Explorer ranking band.
+Research window GW1–38. First-Half Horizon plus Second-Half Horizon. Not a Planning Horizon. Not the product Explorer ranking band.
 _Avoid_: Planning Horizon, season horizon
 
 **Season Window**:
-Research ranking band: First-Half Horizon, Second-Half Horizon, or Full-Season Window. Not the product Ownership Explorer ranking band.
+Research ranking band: First-Half Horizon, Second-Half Horizon, or Full-Season Window. Not the product Explorer ranking band.
 _Avoid_: Planning Horizon, Horizon (ambiguous)
 
 **Score Mode**:
-Research slice: All Projection, Realized Points, or Remaining Projection. Not a product Ownership Explorer control.
+Research slice: All Projection, Realized Points, or Remaining Projection. Not a product Explorer control.
 _Avoid_: xP mode, results toggle, horizon mode, product Explorer toggle
 
 **All Projection**:
@@ -129,11 +129,11 @@ Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Seaso
 _Avoid_: All Projection, rest-of-season (unbounded), Realized Points
 
 **Projected Rate**:
-Planning Horizon xP divided by (Σ expected minutes / 90). Cameo minutes do not reduce this number. Equals xP per Gameweek when every horizon Gameweek is 90 minutes (Assume 90; no Double Gameweek, no blank). Ownership Explorer Y-axis option.
+Planning Horizon xP divided by (Σ expected minutes / 90). Cameo minutes do not reduce this number. Equals xP per Gameweek when every horizon Gameweek is 90 minutes (Assume 90; no Double Gameweek, no blank). Explorer Y-axis option and table **/90** column.
 _Avoid_: xP per game, Event Rate, Per-90 average, Season Window rate
 
 **xP per Gameweek**:
-Planning Horizon xP divided by gameweek count in that horizon. Equals Projected Rate when minutes are 90 every Gameweek. Ownership Explorer Y-axis option.
+Planning Horizon xP divided by gameweek count in that horizon. Equals Projected Rate when minutes are 90 every Gameweek. Explorer Y-axis option (default) and table **/GW** column.
 _Avoid_: xP per game, per-match xP, average points, Season Window average
 
 **Event Component**:
@@ -293,7 +293,7 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, per-gameweek Event Component projections, fixtures (opponent / H|A / Modified FDR), availability (status / chance / news), and Champion Trust for Ownership Explorer + Transfer Plan Surface chrome. Includes User Squad identity, ITB, Selling Price, Free Transfer Bank, and Transfer Plan Available Chips. Export grain is the Full-Season Window; Explorer ranking band is the Planning Horizon slice. Not Transfer Plan JSON (`data/transfer_plan_scenarios.json` is separate). Not Dream Team IDs.
+Exported player metadata, historical rates, per-gameweek Event Component projections, fixtures (opponent / H|A / Modified FDR), availability (status / chance / news), and Champion Trust for Explorer + Transfer Plan Surface chrome. Includes User Squad identity, ITB, Selling Price, Free Transfer Bank, and Transfer Plan Available Chips. Export grain is the Full-Season Window; Explorer ranking band is the Planning Horizon slice. Not Transfer Plan JSON (`data/transfer_plan_scenarios.json` is separate). Not Dream Team IDs.
 _Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed, prefilled_squad_ids, Dream Team persist
 
 **Dashboard Refresh**:
@@ -305,7 +305,7 @@ Retired product surface. Not a dashboard tab. A sandbox 15 is not a product obje
 _Avoid_: Roster picker, drag list, live tab name, treating Explorer as a draft sandbox, Squad Board, Squad What-If, Dream Team as a pitch 15
 
 **Squad Board**:
-Ownership Explorer panel that draws the User Squad as pitch plus number strip. Header shows ITB, Free Transfer Bank, and Hit warning. Number strip shows per-Gameweek Squad xP as what-if (Δ vs User Squad). Shirt C/VC are Auto Captain and Auto Vice-Captain. When Official Captain differs from Auto Captain, a hint names the Official Captain. No User Squad: empty board and a Refresh CTA; Explorer table still works. Same Planning Horizon and Primary Projection Model as Explorer. Not a Transfer Plan. Not Interactive Squad Builder. Not Dream Team.
+Explorer panel that draws the User Squad as pitch plus number strip. Header shows ITB, Free Transfer Bank, and Hit warning. Number strip shows per-Gameweek Squad xP as what-if (Δ vs User Squad). Shirt C/VC are Auto Captain and Auto Vice-Captain. When Official Captain differs from Auto Captain, a hint names the Official Captain. No User Squad: empty board and a Refresh CTA; Explorer table still works. Same Planning Horizon and Primary Projection Model as Explorer. Not a Transfer Plan. Not Interactive Squad Builder. Not Dream Team.
 _Avoid_: Squad Builder, sandbox 15, pitch planner as a second product, inventing a 15 when User Squad is missing, Load MILP Squad, Dream Team on the pitch, treating Squad Board as Transfer Plan Surface
 
 **Squad What-If**:
@@ -313,7 +313,7 @@ Browser-only overlay on the Squad Board. One 15 and one Starting Shape for the w
 _Avoid_: Interactive Squad Builder, sandbox 15, Re-solve, applying Hits, persisting a second 15, per-Gameweek transfers, Transfer Plan as What-If, Dream Team as What-If, populating What-If from Transfer Plan Surface
 
 **Dream Team**:
-Projected legal 15 for this Planning Horizon under current budget (ITB + Selling Prices of the User Squad; £100.0m if no User Squad). Ownership Explorer overlay only (badge Dream); frozen 15, no later transfers; Primary Projection Model; session-only. Exclusive with Dashboard Refresh and Transfer Plan Solve. Serial HiGHS (parallel off, one thread). Not a played chip. Not a Transfer Plan.
+Projected legal 15 for this Planning Horizon under current budget (ITB + Selling Prices of the User Squad; £100.0m if no User Squad). Explorer overlay only (badge Dream); frozen 15, no later transfers; Primary Projection Model; session-only. Exclusive with Dashboard Refresh and Transfer Plan Solve. Serial HiGHS (parallel off, one thread). Not a played chip. Not a Transfer Plan.
 _Avoid_: FPL in_dreamteam, dreamteam_count, realized GW XI, Wildcard 15, WC badge, Transfer Plan as Dream Team, sandbox 15, Guide 15, Best 15, Load MILP Squad, Available Chip gate, --preseason £100.0m when a User Squad exists, Assume 90 in the MILP, xmin_lb 100, embedding IDs in the Dashboard Data Contract, concurrent Refresh
 
 **Rule Breach**:
@@ -349,19 +349,19 @@ Last `transfer_plan_scenarios.json` kept after Dashboard Refresh but marked `met
 _Avoid_: deleting scenarios on Refresh, treating stale as current projections
 
 **Transfer Plan Surface**:
-Peer dashboard view beside Ownership Explorer (product tabs). Shows ranked Transfer Plan Scenarios (progressive while Solve runs). Expected GW Score week strip is a navigator: select a Gameweek to show that week's buys/sells, Hits, and read-only plan XI (plan captain marked). Default selected Gameweek = Transfer Plan Start. Rank key = horizon sum of Expected GW Score; Solver Objective is secondary only. Chip calendar = UI over Booked Chip and Enabled Chip (Surface only; default none enabled). Auto Captain + Auto Vice-Captain + next-best 1–2 XI by xMins-weighted xP for Transfer Plan Start only (no ownership/EO). Champion Trust echoed on the tab. Reloads last scenarios from disk; resumes an in-flight Solve. Does not load into Squad What-If. Squad What-If and Dream Team stay on Ownership Explorer only. ADR 0034.
+Peer dashboard view beside Explorer (product tabs). Shows ranked Transfer Plan Scenarios (progressive while Solve runs). Expected GW Score week strip is a navigator: select a Gameweek to show that week's buys/sells, Hits, and read-only plan XI (plan captain marked). Default selected Gameweek = Transfer Plan Start. Rank key = horizon sum of Expected GW Score; Solver Objective is secondary only. Chip calendar = UI over Booked Chip and Enabled Chip (Surface only; default none enabled). Auto Captain + Auto Vice-Captain + next-best 1–2 XI by xMins-weighted xP for Transfer Plan Start only (no ownership/EO). Champion Trust echoed on the tab. Reloads last scenarios from disk; resumes an in-flight Solve. Does not load into Squad What-If. Squad What-If and Dream Team stay on Explorer only. ADR 0034.
 _Avoid_: loading Transfer Plan into Squad What-If, Dream Team as the plan, plan-dock-only as Must layout, scenario-stack without peer tab, treating read-only plan XI as What-If, chip×transfer ranked arms as Must, inventing chips by default, manual C/VC, EO on next-best, requiring re-solve after every browser reload of a finished Solve, display-only week strip without GW selection
 
 **Champion Trust**:
-On-product Model Champion identity for a single User Squad: Champion name and provisional flag when `promotion_status` is provisional. Shown in Ownership Explorer header and echoed on Transfer Plan Surface. Signed Bias, Decision Regret, and Transfer Plan Walk-Forward ranking stay in research companions / CLI — not Trust chrome. Does not calibrate live xP from bias (ADR 0033).
+On-product Model Champion identity for a single User Squad: Champion name and provisional flag when `promotion_status` is provisional. Shown in Explorer header and echoed on Transfer Plan Surface. Signed Bias, Decision Regret, and Transfer Plan Walk-Forward ranking stay in research companions / CLI — not Trust chrome. Does not calibrate live xP from bias (ADR 0033).
 _Avoid_: research-CSV-only trust, separate Trust tab, Signed Bias / Decision Regret / Walk-forward in the Trust line, showing validated or other promotion statuses in Trust, calibrating projections from Signed Bias, treating walk-forward as a live Transfer Plan
 
 **Transfer Plan**:
-MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Weekly product path: dashboard Solve scenarios → `data/transfer_plan_scenarios.json` (top arm also written to `data/solution.json`). CLI: `commands.solve` → `data/solution.json`. Shown on the Transfer Plan Surface as ranked Transfer Plan Scenarios. Distinct from Transfer Plan Surface (object vs view). Not Ownership Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
+MILP 15-player result over a Transfer Plan Horizon: per-gameweek User Squad, lineup, transfers in and out, free transfers, hits, Force Keep, Force Ban, Booked Chips, and Enabled Chips. Always scored with the Model Champion on Modified FDR. Starting 15 is the live User Squad when it exists, otherwise a preseason draft. Starts from Transfer Plan Start (`is_next` upcoming open deadline, not locked in-play week). Weekly product path: dashboard Solve scenarios → `data/transfer_plan_scenarios.json` (top arm also written to `data/solution.json`). CLI: `commands.solve` → `data/solution.json`. Shown on the Transfer Plan Surface as ranked Transfer Plan Scenarios. Distinct from Transfer Plan Surface (object vs view). Not Explorer, not Canonical Preseason Chip Path, not a sandbox 15, not Squad What-If, not Dream Team.
 _Avoid_: team plan, Re-solve as the only product UI, Load MILP Squad, research chip path, Dual-Vector xP, Squad Builder, Official Fixture Difficulty as Transfer Plan score, sole live product surface, Squad Board as the plan, Dream Team as the plan, solving transfers for a deadline-passed gameweek, collapsing into Squad What-If, treating CLI emit as the Surface
 
 **Transfer Plan Start**:
-First Gameweek of the Transfer Plan Horizon. Must be a Gameweek whose transfer deadline has not passed (defaults to `is_next`, or earliest unfinished if `is_next` unset; preseason fallback GW1). Transfers cannot be made for an active or locked Gameweek. Distinct from Ownership Explorer Horizon Start.
+First Gameweek of the Transfer Plan Horizon. Must be a Gameweek whose transfer deadline has not passed (defaults to `is_next`, or earliest unfinished if `is_next` unset; preseason fallback GW1). Transfers cannot be made for an active or locked Gameweek. Distinct from Explorer Horizon Start.
 _Avoid_: solving for a live in-play gameweek, setting Transfer Plan Start to a passed deadline, confusing with Explorer Horizon Start
 
 **Transfer Plan Horizon**:
@@ -437,7 +437,7 @@ Research solver score for DEF and MID: Gameweek Projection xP minus `xp_defcon` 
 _Avoid_: high ceiling, ignoring clean sheets, FWD Defcon strip
 
 **Mix**:
-Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15. Not drawn in Ownership Explorer (ADR 0027).
+Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15. Not drawn in Explorer (ADR 0027).
 _Avoid_: combo, package, alternative 15, Differentials Ranking, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Effective Ownership**:
@@ -445,15 +445,15 @@ Among Overall classic managers with rank ≤ 10 000 (or all ranked if N&lt;10k
 _Avoid_: selected_by_percent as EO, Ownership %, hard-coded league 314, partial crawl as Top-10k EO, mini-league as this EO, pinning 10k picks, VC/autosub EO model
 
 **Differentials Ranking**:
-Ownership Explorer–only ranked table of Players not in the User Squad: Planning Horizon xP primary, Effective Ownership secondary; Price + affordable hint; same Planning Horizon and Primary Projection Model as Explorer. Absent until Effective Ownership exists; never faked from overall ownership. Not Mix vs Mix; not Transfer Plan Surface; not Own% scatter.
+Explorer-only ranked table of Players not in the User Squad: Planning Horizon Total (xP) primary, **/GW** secondary display, Effective Ownership secondary sort key; Price + affordable hint; same Planning Horizon and Primary Projection Model as Explorer. Absent until Effective Ownership exists; never faked from overall ownership. Not Mix vs Mix; not Transfer Plan Surface; not Own% scatter.
 _Avoid_: differential (bare), Mix, EO/top-10k as this panel, overall Own% stand-in, Surface differentials widget
 
 **Mix Member**:
-A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Ownership Explorer and from a Dream Team badge.
+A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Explorer and from a Dream Team badge.
 _Avoid_: selected player, overlapping Mix occupancy, Dream Team
 
 **Assume 90**:
-Retired from Ownership Explorer product UI. Was a view-only full-90 rescale; charts/table now use xMins-weighted projections only. Switch Y-axis between xP per Gameweek (default) and Projected Rate instead.
+Retired from Explorer product UI. Was a view-only full-90 rescale; charts/table now use xMins-weighted projections only. Switch Y-axis between xP per Gameweek (default) and Projected Rate instead.
 _Avoid_: explorer Assume 90 toggle, Component Profile dual xMins|Assume 90 column
 
 **Component Profile**:
@@ -461,12 +461,12 @@ Squad Board table of the What-If 15: clock xMins row plus Event Component xP per
 _Avoid_: Mix, treating Appearance xP as xMins, player-row as this table, Assume 90 dual column
 
 **Player components**:
-Ownership Explorer card for the selected pool Player. Planning Horizon clock xMins and Event Component xP as horizon total and average per Gameweek. Not Component Profile. Not Mix.
+Explorer card for the selected pool Player. Planning Horizon clock xMins and Event Component xP as horizon total and average per Gameweek. Not Component Profile. Not Mix.
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
-**Ownership Explorer**:
-Live product dashboard view. Ranks Feature Contract Players on the Planning Horizon, with xMins, per-GW xP + fixture labels, status / chance / news, and linked ownership and price charts. Y-axis default xP per Gameweek; switchable to Projected Rate. Includes the Squad Board and Component Profile. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking omitted until Effective Ownership exists. Peer to Transfer Plan Surface; not the Transfer Plan. On-screen legends for Projected Rate, xMins as marker size, Total vs /90 (or xP per Gameweek), Dream Team badge; Champion Trust in the header. Not a Season Window ranking.
-_Avoid_: Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle
+**Explorer**:
+Live product dashboard tab (peer to Transfer Plan Surface). Ranks Feature Contract Players on the Planning Horizon. Layout: Squad Board + Component Profile, toolbar, Differentials Ranking, rank table (Total · /GW · per-GW · /90 · xMins), ownership and price charts, Player components. Y-axis default xP per Gameweek; switchable to Projected Rate. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking omitted until Effective Ownership exists. Not the Transfer Plan. Champion Trust in the header. Not a Season Window ranking.
+_Avoid_: Ownership Explorer (legacy tab name), Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain. Research / CLI evidence; not Champion Trust chrome.
@@ -485,11 +485,11 @@ A Projection Model evaluated against the Model Champion. At most two Candidates 
 _Avoid_: Experimental model, challenger
 
 **Primary Projection Model**:
-The active model selected in the dashboard to drive Ownership Explorer ranking, Squad Board, Component Profile, and Dream Team. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
+The active model selected in the dashboard to drive Explorer ranking, Squad Board, Component Profile, and Dream Team. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
 _Avoid_: Active UI model, pitch model, MILP model, Dream Team as Champion-only when Primary differs
 
 **Secondary Comparison Model**:
-Retired with Interactive Squad Builder. Overlay xP/Diff columns are not a product control. Ownership Explorer uses the Primary Projection Model only. Transfer Plan is always the Model Champion.
+Retired with Interactive Squad Builder. Overlay xP/Diff columns are not a product control. Explorer uses the Primary Projection Model only. Transfer Plan is always the Model Champion.
 _Avoid_: Compare model, overlay model, Compare Models checkbox
 
 **Decision-First Evaluation**:
@@ -573,7 +573,7 @@ Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. Foc
 _Avoid_: Dual-Vector Strength, Club Strength Vector, treating API strength as finer FDR, ARS `strength_overall_away` as Arsenal stronger on the road, Modified FDR
 
 **Modified FDR**:
-Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Production difficulty for Feature Contract, Champion xP, Transfer Plan, Ownership Explorer, FDR report.
+Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Production difficulty for Feature Contract, Champion xP, Transfer Plan, Explorer, FDR report.
 _Avoid_: Official Fixture Difficulty, Dual-Vector Strength, DCS effective FDR (`defence_multiplier × 3`)
 
 **Club Strength Vector**:

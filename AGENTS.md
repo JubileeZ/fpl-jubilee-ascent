@@ -3,7 +3,7 @@
 
 ## Project Identity
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models using backtesting, and generates transfer plans via MILP. Weekly product = local dashboard (Ownership Explorer + Transfer Plan Surface). CLI for ingest, models, research, and advanced solve flags.
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models using backtesting, and generates transfer plans via MILP. Weekly product = local dashboard (Explorer + Transfer Plan Surface). CLI for ingest, models, research, and advanced solve flags.
 
 **Stack:** Python 3.14 · uv · pandas · pyarrow · highspy · pytest · playwright
 
@@ -21,7 +21,7 @@ projections/   # ProjectionContract exporter + Explorer slice + Expected GW Scor
 solver/        # Vendored open-fpl-solver + planning/scenarios
 backtesting/   # Backtest evaluation engine and metrics
 commands/      # CLI + dashboard/scenarios entry points
-dashboard/     # Ownership Explorer + Transfer Plan Surface (commands.dashboard)
+dashboard/     # Explorer + Transfer Plan Surface (commands.dashboard)
 config/        # Model Champion selection
 tests/         # pytest suite
 data/          # Raw API cache, season snapshots, solver reports
@@ -42,7 +42,7 @@ docs/          # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
-| `uv run python -m commands.dashboard` | Serve Ownership Explorer + Transfer Plan Surface @ `http://127.0.0.1:8000`. Open projects Primary if JSON stale. Refresh = ingest+Primary project. Explorer: Solve Dream Team. Transfer Plan tab: Solve scenarios (Roll/1 FT/Optimal → `data/transfer_plan_scenarios.json`). Jobs exclusive |
+| `uv run python -m commands.dashboard` | Serve Explorer + Transfer Plan Surface @ `http://127.0.0.1:8000`. Open projects Primary if JSON stale. Refresh = ingest+Primary project. Explorer: Solve Dream Team. Transfer Plan tab: Solve scenarios (Roll/1 FT/Optimal → `data/transfer_plan_scenarios.json`). Jobs exclusive |
 | `uv run python -m commands.solve` | CLI Transfer Plan MILP → `data/solution.json`. Weekly path = dashboard Solve scenarios; use this for preseason / advanced flags |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |

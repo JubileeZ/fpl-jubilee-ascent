@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (explorerTab) explorerTab.classList.toggle("active", view === "explorer");
     if (planTab) planTab.classList.toggle("active", view === "plan");
     const subtitle = document.getElementById("view-subtitle");
-    if (subtitle) subtitle.textContent = view === "plan" ? "Transfer Plan" : "Ownership Explorer";
+    if (subtitle) subtitle.textContent = view === "plan" ? "Transfer Plan" : "Explorer";
     if (view === "explorer" && window.Plotly) {
       ["chart-ownership", "chart-price"].forEach((id) => {
         const el = document.getElementById(id);
