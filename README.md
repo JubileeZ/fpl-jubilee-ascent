@@ -48,7 +48,7 @@ Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.m
 
 ### CLI projections and advanced Transfer Plan
 
-The Model Champion is `config/model_selection.json` `champion` (currently `participation_penalty_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+The Model Champion is `config/model_selection.json` `champion` (currently `participation_penalty_hybrid`). Fixture xP scale on the Feature Contract: **Matchup Share** when this-season Official club xG exists; else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
 uv run python -m commands.run_model participation_penalty_hybrid --horizon 5

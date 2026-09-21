@@ -1,6 +1,6 @@
 # Matchup share add-on (2025-26)
 
-**Updated**: 2026-09-22T05:15:00+07:00  
+**Updated**: 2026-09-22T05:35:00+07:00  
 **Data stamp**: 2025-26 archive GW1–38; Official FPL club xG/xGC/xA; K=10 blended venue  
 **Season**: 2025/26  
 **Status**: Active — research measured fail vs neutral; **shipped to production** with Club Strength → neutral cold-start (ADR 0037 revised).  

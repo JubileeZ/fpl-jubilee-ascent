@@ -1,5 +1,7 @@
 # 0005: Hybrid Metrics Component Projection Model (Calibrated Components)
 
+**Status:** Accepted. Clause 4 strength-missing FDR-as-multiplier path superseded for production Feature Contract by [ADR 0037](0037-fdr-fallback-multiplier-neutral.md) (Matchup Share → Club Strength → neutral; Modified FDR difficulty only). Model still consumes Feature Contract multiplier columns when present.
+
 ## Context
 
 `component_baseline` provides the explainable Cold-Start foundation. The hybrid model

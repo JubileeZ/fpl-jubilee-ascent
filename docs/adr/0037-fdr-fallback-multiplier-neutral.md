@@ -1,5 +1,7 @@
 # Matchup Share primary; Club Strength then neutral fallback
 
+Filename `0037-fdr-fallback-multiplier-neutral.md` is historical (first shipped as neutral FDR shrink).
+
 **Status:** Accepted. Supersedes prior ADR 0037 neutral-only when Club Strength is 0.
 
 Production Feature Contract fixture scaling priority:
