@@ -99,7 +99,7 @@ uv run python -m commands.refresh_data
 
 ### 2. Run Projections
 
-Generate per-player per-gameweek expected points (xP) and minutes projections using a catalog name from [docs/model_name.md](docs/model_name.md). Saves `data/<model_name>.csv`.
+Generate per-player per-gameweek expected points (xP) and minutes projections using a catalog name from [docs/model_name.md](docs/model_name.md). Saves `data/<model_name>.csv`. Minutes come from the Feature Contract Participation State posterior (Club Fixture shrinkage + Trailing Start Window — [ADR 0035](docs/adr/0035-trailing-start-window.md)), not Expected Role.
 
 ```bash
 uv run python -m commands.run_model MODEL_NAME --horizon GWS

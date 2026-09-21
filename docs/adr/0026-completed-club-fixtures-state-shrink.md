@@ -6,4 +6,4 @@ Live `element_summary` rows with 0 minutes before full-time were treated as Did 
 
 **Considered:** xMins = 90 with no shrink after two starts; strength 4 kept; include live 0s as DNP; latest archive folder including live pin. Rejected: two 90s should move toward 90 without dropping the pool; rate shrink was not the bug; Sunday not-played-yet is not DNP; live pin is this season, not prior.
 
-**Consequences:** Ownership Explorer and `run_model` pass `history_before_gw=39` so finished Saturday rows in the live Gameweek count. Backtest/walk-forward keep deadline `history_before_target`. João Pedro-style two finished 90s vs this-season FWD £7.7m land ~72 xMins, not 27.9.
+**Consequences:** Ownership Explorer and `run_model` pass `history_before_gw=39` so finished Saturday rows in the live Gameweek count. Backtest/walk-forward keep deadline `history_before_target`. João Pedro-style two finished 90s vs this-season FWD £7.7m land ~72 xMins, not 27.9. Trailing Start Window (ADR 0035) may further lift three-Start streaks after early DNP/sub.

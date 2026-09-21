@@ -171,7 +171,10 @@ Model output is long format with:
 * `fixture_id`: Fixture identifier; `-1` denotes a blank gameweek row.
 * `gameweek_id`: Target gameweek.
 * `projected_points`: Fixture-level expected FPL points.
-* `projected_minutes`: Fixture-level expected minutes.
+* `projected_minutes`: Fixture-level expected minutes from Participation State
+  posterior (Start / Sub-in mixture). After thin tenure, may apply Trailing
+  Start Window (ADR 0035): last \(K=3\) current-club Starts blend at \(w=0.90\)
+  toward the window; any non-Start resets. Opt-out: `trailing_start_k=0`.
 * Participation-state projections additionally expose `p_dnp`, `p_start`,
   `p_sub_in`, `xmins_if_start`, and `xmins_if_sub_in`.
 * Hybrid component projections expose the exact scoring ledger:

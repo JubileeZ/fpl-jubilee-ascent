@@ -10,7 +10,7 @@ Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jub
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage. Production difficulty = **Modified FDR**. Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR**. Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
@@ -22,7 +22,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | Data dictionary | `docs/data_dictionary.md` | API → parquet |
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
-| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired |
+| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035) |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |

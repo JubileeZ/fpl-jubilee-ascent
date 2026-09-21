@@ -134,7 +134,7 @@ Grain: one row per `player_id` × `fixture_id` (blank GW: `fixture_id == -1`). A
 | Chance-of-playing (API raw) | `chance_of_playing_next_round`, `chance_of_playing_this_round` | Player merge | `processor.py`; `data_dictionary.md` §4 |
 | Chance-of-playing (engine) | `chance_of_playing` | From `chance_of_playing_next_round` when snapshot/live path allows; else 100.0 if `as_of_gw` and no PIT snapshot (anti-leakage); fallback `appearance_probability * 100`; statuses `u`/`n` → 0 when snapshot present | `builder.py` chance block; `tests/test_fixture_contract.py` |
 | Immediate-GW flag | `is_immediate_next_gw` | `gameweek_id == target_gw` | `builder.py` |
-| xMins (conditional) | `xmins_if_start`, `xmins_if_sub_in`, `minutes_if_appearance`, `p_start`, `p_sub_in`, `p_dnp`, `appearance_probability` | Participation State posterior | `builder.py` seed merge; `CONTEXT.md` Participation State / Appearance Probability |
+| xMins (conditional) | `xmins_if_start`, `xmins_if_sub_in`, `minutes_if_appearance`, `p_start`, `p_sub_in`, `p_dnp`, `appearance_probability` | Participation State posterior; Trailing Start Window when last 3 Club Fixtures are Starts (ADR 0035) | `builder.py` seed merge; `CONTEXT.md` Participation State / Trailing Start Window |
 | Opponent | `opponent_id` | `_fixture_maps`; blank/NA → 0 | `builder.py` `_fixture_maps`; ADR 0006 |
 | Home/away | `is_home` | `_fixture_maps`; NA → False | same |
 | Difficulty (production) | `difficulty` | Modified FDR from Official ticks; NA/blank → 3.0 | `_fixture_maps` + `features/fdr.py`; ADR 0019; `tests/test_modified_fdr.py` |

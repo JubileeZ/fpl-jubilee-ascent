@@ -149,9 +149,12 @@ $1 - p_{\text{dnp}}$ from the Participation State posterior. Distinct from offic
 _Avoid_: Injury chance, playing chance, API chance as horizon appearance
 
 **Participation State**:
-One mutually exclusive finished Club Fixture outcome for a Player: Did Not Play, Start, or Sub-in. Estimated from actual Club Fixture playing time. State probabilities sum to one and determine conditional minutes and Event Component projections. Product reports xMins from this posterior, not an Expected Role label.
+One mutually exclusive finished Club Fixture outcome for a Player: Did Not Play, Start, or Sub-in. Estimated from actual Club Fixture playing time. State probabilities sum to one and determine conditional minutes and Event Component projections. Product reports xMins from this posterior, not an Expected Role label. May apply Trailing Start Window when streak qualifies.
 _Avoid_: Appearance Probability (only whether a Player features), lineup status, Expected Role, Role column as minutes, Incomplete History Row as a state
 
+**Trailing Start Window**:
+When the last \(K=3\) current-club Club Fixtures are Starts (any non-Start resets), Feature Contract blends that window's Participation State posterior with the full-tenure posterior at weight \(w=0.90\) toward the window. Data-only; not Expected Role.
+_Avoid_: Nailed Starter, Role prior, global prior-strength retune as this rule, Sub-in as still-nailed
 **Incomplete History Row**:
 An `element_summary` history row for a Fixture that is not finished. Not a Club Fixture. Not Did Not Play.
 _Avoid_: Recorded DNP, Sunday not-yet-played as DNP, future 0-minute pad
@@ -589,7 +592,7 @@ Cold-Start Dual-Vector Strength from the latest archive season: club attack = su
 _Avoid_: Dual-Vector Strength (live rolling npxG), Club Strength Vector, Official Fixture Difficulty, FDR-xP Canonical
 
 **Recency-Weighted Prior Shrinkage**:
-Feature Contract estimator for Participation State and Event Rates. Recency-weighted current-club Club Fixture observations. Cold-Start: shrink toward Prior-Season Seed else last-season Position-Price. After This-Season Evidence: this-season observations only, shrink toward this-season Position-Price; empty tenure is that pool, not last year's player. Per-90 Event Rates use minutes played; Recorded DNP updates state probabilities only. Data-only: finished FPL history, Season Archive seed during Cold-Start, next-GW 0% chance.
+Feature Contract estimator for Participation State and Event Rates. Recency-weighted current-club Club Fixture observations. Cold-Start: shrink toward Prior-Season Seed else last-season Position-Price. After This-Season Evidence: this-season observations only, shrink toward this-season Position-Price; empty tenure is that pool, not last year's player. Participation State may then apply Trailing Start Window. Per-90 Event Rates use minutes played; Recorded DNP updates state probabilities only. Data-only: finished FPL history, Season Archive seed during Cold-Start, next-GW 0% chance.
 _Avoid_: Simple unweighted current-season average, static role rates, Expected Role Prior, Appearance Blend, in-season per-player last season, Watch/Exclude as minutes, padded DNP, Incomplete History Row as DNP
 
 **Defensive Composite Score (DCS)**:

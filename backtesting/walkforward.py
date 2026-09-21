@@ -43,6 +43,8 @@ class WalkforwardConfig:
     require_snapshots: bool = False
     state_recency_decay: float | None = None
     state_prior_strength: float | None = None
+    trailing_start_k: int | None = None
+    trailing_start_weight: float | None = None
 
 
 @dataclass(frozen=True)
@@ -127,6 +129,8 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         for key, value in {
             "state_recency_decay": config.state_recency_decay,
             "state_prior_strength": config.state_prior_strength,
+            "trailing_start_k": config.trailing_start_k,
+            "trailing_start_weight": config.trailing_start_weight,
         }.items()
         if value is not None
     }

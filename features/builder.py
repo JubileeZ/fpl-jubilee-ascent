@@ -39,6 +39,9 @@ PARTICIPATION_STATES = ("dnp", "start", "sub_in")
 STATE_RECENCY_DECAY = 0.95
 STATE_PRIOR_STRENGTH = 1.0
 RATE_PRIOR_STRENGTH = 4.0
+# Trailing Start Window (ADR 0035). Set trailing_start_k=0 to disable.
+TRAILING_START_WINDOW_K = 3
+TRAILING_START_WINDOW_WEIGHT = 0.90
 
 
 class StateStats(TypedDict):
@@ -370,6 +373,80 @@ def _state_stats_for_player(
     return _summarize_state_rows(_player_club_rows(df_perf, player_id, club_id), recency_decay)
 
 
+def _row_participation_state(minutes: float, starts: float) -> str:
+    if minutes <= 0:
+        return "dnp"
+    return "start" if starts > 0 else "sub_in"
+
+
+def _trailing_start_count(rows: pd.DataFrame) -> int:
+    """Count consecutive Starts at the end of current-club Club Fixtures."""
+    if rows.empty or "minutes" not in rows.columns:
+        return 0
+    ordered = rows.sort_values("gameweek_id") if "gameweek_id" in rows.columns else rows
+    minutes = pd.to_numeric(ordered["minutes"], errors="coerce").fillna(0.0)
+    starts_source = (
+        ordered["starts"] if "starts" in ordered.columns else pd.Series(0.0, index=ordered.index)
+    )
+    starts = pd.to_numeric(starts_source, errors="coerce").fillna(0.0)
+    streak = 0
+    for minute, start in zip(reversed(minutes.tolist()), reversed(starts.tolist())):
+        if _row_participation_state(float(minute), float(start)) == "start":
+            streak += 1
+        else:
+            break
+    return streak
+
+
+def _trailing_start_window_rows(rows: pd.DataFrame, window_k: int) -> pd.DataFrame:
+    if window_k < 1 or _trailing_start_count(rows) < window_k:
+        return rows.iloc[0:0].copy()
+    ordered = rows.sort_values("gameweek_id") if "gameweek_id" in rows.columns else rows
+    return ordered.iloc[-window_k:].copy()
+
+
+def _blend_state_summaries(
+    window_summary: dict[str, float],
+    full_summary: dict[str, float],
+    window_weight: float,
+) -> dict[str, float]:
+    """Blend window posterior with full-tenure posterior; renormalize state probs."""
+    weight = min(1.0, max(0.0, float(window_weight)))
+    blended = dict(full_summary)
+    for key in ("p_dnp", "p_start", "p_sub_in"):
+        blended[key] = weight * float(window_summary[key]) + (1.0 - weight) * float(full_summary[key])
+    total = blended["p_dnp"] + blended["p_start"] + blended["p_sub_in"]
+    if total > 0:
+        for key in ("p_dnp", "p_start", "p_sub_in"):
+            blended[key] /= total
+    for key in ("xmins_if_start", "xmins_if_sub_in", "p_60_if_start", "p_60_if_sub_in"):
+        blended[key] = (
+            weight * float(window_summary[key]) + (1.0 - weight) * float(full_summary[key])
+        )
+    blended["trailing_start_window_active"] = 1.0
+    blended["trailing_start_window_weight"] = weight
+    return blended
+
+
+def _apply_trailing_start_window(
+    club_rows: pd.DataFrame,
+    full_summary: dict[str, float],
+    state_prior: StateStats,
+    state_prior_strength: float,
+    window_k: int,
+    window_weight: float,
+) -> dict[str, float]:
+    """If trailing Starts >= K, blend window-only posterior with full-tenure posterior."""
+    if window_k < 1 or window_weight <= 0:
+        return full_summary
+    window_rows = _trailing_start_window_rows(club_rows, window_k)
+    if window_rows.empty:
+        return full_summary
+    window_state = _summarize_state_rows(window_rows, recency_decay=1.0)
+    window_summary = _state_probability_summary(window_state, state_prior, state_prior_strength)
+    return _blend_state_summaries(window_summary, full_summary, window_weight)
+
+
 def _weighted_event_totals(
     rows: pd.DataFrame,
     recency_decay: float,
@@ -586,6 +663,8 @@ def build_features(
     history_before_gw: int | None = None,
     state_recency_decay: float = STATE_RECENCY_DECAY,
     state_prior_strength: float = STATE_PRIOR_STRENGTH,
+    trailing_start_k: int = TRAILING_START_WINDOW_K,
+    trailing_start_weight: float = TRAILING_START_WINDOW_WEIGHT,
     require_availability_snapshot: bool = False,
 ) -> pd.DataFrame:
     """
@@ -605,6 +684,10 @@ def build_features(
         raise ValueError("history_before_gw must be at least 1")
     if state_prior_strength < 0:
         raise ValueError("state_prior_strength must be non-negative")
+    if trailing_start_k < 0:
+        raise ValueError("trailing_start_k must be non-negative")
+    if not 0.0 <= trailing_start_weight <= 1.0:
+        raise ValueError("trailing_start_weight must be between 0 and 1")
     if minutes_prior_source not in {"expected_role", "seed_state"}:
         raise ValueError("minutes_prior_source must be expected_role or seed_state")
 
@@ -825,6 +908,19 @@ def build_features(
             state_prior,
             state_prior_strength,
         )
+        club_rows = _player_club_rows(
+            df_hist_context,
+            pid,
+            int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
+        )
+        state_summary = _apply_trailing_start_window(
+            club_rows,
+            state_summary,
+            state_prior,
+            state_prior_strength,
+            trailing_start_k,
+            trailing_start_weight,
+        )
         minutes_prior = _minutes_prior_from_state(
             prior_state if (not this_season_evidence) and prior_state_total > 0 else state_prior
         )
@@ -833,11 +929,6 @@ def build_features(
         p_dnp = state_summary["p_dnp"]
         xmins_if_start = state_summary["xmins_if_start"]
         xmins_if_sub_in = state_summary["xmins_if_sub_in"]
-        club_rows = _player_club_rows(
-            df_hist_context,
-            pid,
-            int(player_row["club_id"]) if pd.notna(player_row.get("club_id")) else None,
-        )
         weighted_minutes, weighted_events = _weighted_event_totals(club_rows, state_recency_decay)
         shrunk_rates = _shrink_rates(base_rates, weighted_minutes, weighted_events, RATE_PRIOR_STRENGTH)
 
