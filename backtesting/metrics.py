@@ -24,16 +24,16 @@ _LEDGER_COMPONENTS = (
 )
 
 
-def _top_k_stats(group: pd.DataFrame, k: int) -> tuple[float, float]:
+def _top_k_stats(group: pd.DataFrame, k: int, *, target_column: str = "actual_points") -> tuple[float, float]:
     count = min(k, len(group))
     if count == 0:
         return 0.0, 0.0
     predicted = group.nlargest(count, "projected_points")
-    actual = group.nlargest(count, "actual_points")
+    actual = group.nlargest(count, target_column)
     predicted_ids = set(predicted["player_id"])
     actual_ids = set(actual["player_id"])
     overlap = len(predicted_ids & actual_ids) / count
-    regret = float(actual["actual_points"].sum() - predicted["actual_points"].sum())
+    regret = float(actual[target_column].sum() - predicted[target_column].sum())
     return overlap, regret
 
 
@@ -65,28 +65,34 @@ def _validate_component_ledger(df_eval: pd.DataFrame) -> None:
 def evaluate_predictions(
     df_eval: pd.DataFrame,
     top_k_values: Iterable[int] = (11, 15),
+    *,
+    target_column: str = "actual_points",
 ) -> dict[str, object]:
     """Calculate forecast, ranking, and shortlist metrics.
 
     ``df_eval`` must already be at one row per player/gameweek. Missing actual
     rows should be represented as zero points before calling this function.
+
+    ``target_column`` is usually ``actual_points`` (Realized Points) or
+    ``process_points`` (Process Points; ADR 0038).
     """
-    required = {"player_id", "gameweek", "projected_points", "actual_points"}
+    required = {"player_id", "gameweek", "projected_points", target_column}
     missing = required.difference(df_eval.columns)
     if missing:
         raise ValueError(f"Missing evaluation columns: {sorted(missing)}")
     if df_eval.empty:
         raise ValueError("Cannot evaluate an empty prediction frame")
 
-    _validate_component_ledger(df_eval)
-    errors = df_eval["projected_points"] - df_eval["actual_points"]
+    if target_column == "actual_points":
+        _validate_component_ledger(df_eval)
+    errors = df_eval["projected_points"] - df_eval[target_column]
     correlations: list[float] = []
     undefined_rank_gameweeks = 0
     for _, group in df_eval.groupby("gameweek"):
         if len(group) < 2:
             undefined_rank_gameweeks += 1
             continue
-        correlation = group["projected_points"].corr(group["actual_points"], method="spearman")
+        correlation = group["projected_points"].corr(group[target_column], method="spearman")
         if pd.isna(correlation):
             undefined_rank_gameweeks += 1
         else:
@@ -95,7 +101,7 @@ def evaluate_predictions(
     position_metrics: dict[str, dict[str, float]] = {}
     if "position_id" in df_eval.columns:
         for position_id, group in df_eval.groupby("position_id"):
-            position_errors = group["projected_points"] - group["actual_points"]
+            position_errors = group["projected_points"] - group[target_column]
             position_metrics[str(position_id)] = {
                 "sample_count": float(len(group)),
                 "mae": float(position_errors.abs().mean()),
@@ -106,7 +112,7 @@ def evaluate_predictions(
     if "actual_minutes" in df_eval.columns:
         bands = _minute_bands(df_eval["actual_minutes"])
         for band, group in df_eval.groupby(bands, observed=True):
-            band_errors = group["projected_points"] - group["actual_points"]
+            band_errors = group["projected_points"] - group[target_column]
             minutes_band_metrics[str(band)] = {
                 "sample_count": float(len(group)),
                 "mae": float(band_errors.abs().mean()),
@@ -151,6 +157,7 @@ def evaluate_predictions(
 
     metrics: dict[str, object] = {
         "sample_count": int(len(df_eval)),
+        "eval_target": target_column,
         "mae": float(errors.abs().mean()),
         "rmse": float(np.sqrt(np.mean(errors**2))),
         "bias": float(errors.mean()),
@@ -171,7 +178,7 @@ def evaluate_predictions(
         overlaps: list[float] = []
         regrets: list[float] = []
         for _, group in df_eval.groupby("gameweek"):
-            overlap, regret = _top_k_stats(group, k)
+            overlap, regret = _top_k_stats(group, k, target_column=target_column)
             if len(group) > 0:
                 overlaps.append(overlap)
                 regrets.append(regret)

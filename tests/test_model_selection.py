@@ -88,7 +88,7 @@ def test_projection_model_names_defaults_to_champion_not_slate(tmp_path: Path) -
         json.dumps(
             {
                 "schema_version": 1,
-                "champion": "dual_vector_state_hybrid",
+                "champion": "participation_penalty_hybrid",
                 "candidates": ["participation_state_hybrid", "metrics_component_hybrid"],
                 "promotion_status": "provisional",
             }
@@ -96,12 +96,12 @@ def test_projection_model_names_defaults_to_champion_not_slate(tmp_path: Path) -
         encoding="utf-8",
     )
 
-    assert projection_model_names(config_path=config_path) == ["dual_vector_state_hybrid"]
+    assert projection_model_names(config_path=config_path) == ["participation_penalty_hybrid"]
     assert projection_model_names("metrics_component_hybrid", config_path=config_path) == [
         "metrics_component_hybrid"
     ]
     assert projection_model_names(
-        "dual_vector_state_hybrid",
+        "participation_penalty_hybrid",
         ["a", "b", "a"],
         config_path=config_path,
     ) == ["a", "b"]

@@ -67,8 +67,8 @@ def test_dream_team_budget_is_100_without_user_squad(tmp_path: Path) -> None:
 
 
 def test_dream_team_options_are_frozen_unconstrained_rebuild() -> None:
-    options = dream_team_options("dual_vector_state_hybrid", target_gw=3, horizon=5)
-    assert options["datasource"] == "dual_vector_state_hybrid"
+    options = dream_team_options("participation_penalty_hybrid", target_gw=3, horizon=5)
+    assert options["datasource"] == "participation_penalty_hybrid"
     assert options["horizon"] == 5
     assert options["xmin_lb"] == 0
     assert options["keep_top_ev_percent"] == 100
@@ -136,14 +136,14 @@ def test_execute_dream_team_returns_week1_ids_and_skips_dashboard_json(tmp_path:
     ):
         result = execute_dream_team(
             processed_dir,
-            model_name="dual_vector_state_hybrid",
+            model_name="participation_penalty_hybrid",
             target_gw=1,
             horizon=5,
         )
     assert result["player_ids"] == ids
     assert result["budget"] == 23.1
     assert result["leftover"] == 0.4
-    assert result["model"] == "dual_vector_state_hybrid"
+    assert result["model"] == "participation_penalty_hybrid"
     assert result["horizon_start"] == 1
     assert result["horizon"] == 5
     assert not json_path.exists()
@@ -159,12 +159,12 @@ def test_run_dream_team_job_ok_and_error(monkeypatch: pytest.MonkeyPatch) -> Non
             "player_ids": list(range(1, 16)),
             "budget": 100.0,
             "leftover": 1.5,
-            "model": "dual_vector_state_hybrid",
+            "model": "participation_penalty_hybrid",
             "horizon_start": 1,
             "horizon": 5,
         },
     )
-    dash.run_dream_team_job(model_name="dual_vector_state_hybrid", target_gw=1, horizon=5)
+    dash.run_dream_team_job(model_name="participation_penalty_hybrid", target_gw=1, horizon=5)
     state = dash.dream_team_status()
     assert state["status"] == "ok"
     assert state["player_ids"] == list(range(1, 16))

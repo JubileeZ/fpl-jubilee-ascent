@@ -1,9 +1,10 @@
-"""Dual-Vector State Hybrid projection model.
+"""Participation + penalty-isolated hybrid projection model.
 
-Extends ``participation_state_hybrid`` with:
-1. Dual-Vector team attack and defence strength multipliers with non-penalty calibration.
-2. Team-level match expected goals normalization to align attacker sums with realistic match volume.
-3. Penalty threat isolation from open-play attack rates.
+Extends ``participation_state_hybrid`` with penalty threat isolation for
+``penalties_order==1`` (open-play attack scales with Feature Contract multipliers;
+fixed ~0.15 xG/90 pen share does not). Fixture multipliers come from the Feature
+Contract (Club Strength ratios, or neutral ×1.0 when strengths are 0 — ADR 0037).
+Not Dual-Vector Strength (research-only; ADR 0013).
 """
 
 import numpy as np
@@ -20,16 +21,13 @@ from models.metrics_component_hybrid import (
 from models.participation_state_hybrid import ParticipationStateHybridModel
 from models.scoring_matrix import event_points
 
-# Baseline average Premier League goals per team per match
-_LEAGUE_AVG_TEAM_GOALS = 1.38
 
-
-class DualVectorStateHybridModel(ParticipationStateHybridModel):
-    """Project fixture outcomes using dual-vector strength and calibrated team goal scaling."""
+class ParticipationPenaltyHybridModel(ParticipationStateHybridModel):
+    """Participation states plus penalty isolation; Feature Contract multipliers."""
 
     @property
     def name(self) -> str:
-        return "dual_vector_state_hybrid"
+        return "participation_penalty_hybrid"
 
     def _project_event_components(
         self,
@@ -40,7 +38,7 @@ class DualVectorStateHybridModel(ParticipationStateHybridModel):
         clean_sheet_minutes: float,
         p_sixty_mins: float,
     ) -> dict[str, float]:
-        """Project non-minute events with non-penalty isolation and calibrated multipliers."""
+        """Project non-minute events with penalty isolation from open-play scaling."""
         pid = int(row["player_id"])
         diff = _number(row, "difficulty", 3.0)
         fdr_attack = max(0.2, (6.0 - diff) / 3.0)
@@ -55,7 +53,6 @@ class DualVectorStateHybridModel(ParticipationStateHybridModel):
         threat_per90 = _number(row, "per90_threat", 0.0)
         raw_goals_per90 = _number(row, "per90_goals", 0.0)
 
-        # Check penalty order to isolate penalty threat from open-play threat
         pen_order = _number(row, "penalties_order", 0.0)
         is_penalty_taker = pen_order == 1.0
 
@@ -70,7 +67,6 @@ class DualVectorStateHybridModel(ParticipationStateHybridModel):
 
         expected_goals_per90 = max(0.0, expected_goals_per90)
 
-        # Separate penalty share from open play attack scaling
         if is_penalty_taker and expected_goals_per90 > 0.15:
             open_play_xg_per90 = max(0.0, expected_goals_per90 - 0.15)
             penalty_xg_per90 = 0.15

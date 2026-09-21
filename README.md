@@ -48,12 +48,12 @@ Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.m
 
 ### CLI projections and advanced Transfer Plan
 
-The Model Champion is `config/model_selection.json` `champion` (currently `dual_vector_state_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+The Model Champion is `config/model_selection.json` `champion` (currently `participation_penalty_hybrid`). Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
-uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.run_model participation_penalty_hybrid --horizon 5
 uv run python -m commands.solve --horizon 5
-uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.report --model participation_penalty_hybrid --horizon 5
 ```
 
 `commands.solve` writes `data/solution.json`. Product ranking lives on Transfer Plan Surface (`data/transfer_plan_scenarios.json`). Use CLI for preseason draft and advanced flags:
@@ -108,7 +108,7 @@ uv run python -m commands.run_model MODEL_NAME --horizon GWS
 *Example (Champion, default 5 gameweeks horizon):*
 
 ```bash
-uv run python -m commands.run_model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.run_model participation_penalty_hybrid --horizon 5
 ```
 
 Champion is `config/model_selection.json` `champion`. Comparison Slate keeps
@@ -166,7 +166,7 @@ next gameweek, and save the full CSV report (including `Captain` and
 `Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`.
 
 ```bash
-uv run python -m commands.report --model dual_vector_state_hybrid --horizon 5
+uv run python -m commands.report --model participation_penalty_hybrid --horizon 5
 ```
 
 Record player prices after each refresh and report risers/fallers:

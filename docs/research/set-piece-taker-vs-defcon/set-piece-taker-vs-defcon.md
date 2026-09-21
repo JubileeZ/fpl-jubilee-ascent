@@ -6,7 +6,7 @@
 **Status**: Active
 **Purpose**: Decide when a set-piece taker with weaker Defcon is the better pick than a non-taker with stronger expected Defcon.
 **Scope**: Outfield regulars (≥900 minutes and ≥10 starts of 60+). Penalty / corner / direct-FK primary from FPL `*_order==1`. Not set-piece *targets* (box headers). Not live 2026/27 projections (`data/processed` absent this session).
-**Related**: [`INDEX.md`](../INDEX.md) · [ADR 0003](../../adr/0003-reconstruct-points-from-event-components.md) · `models/dual_vector_state_hybrid.py` penalty isolation
+**Related**: [`INDEX.md`](../INDEX.md) · [ADR 0003](../../adr/0003-reconstruct-points-from-event-components.md) · `models/participation_penalty_hybrid.py` penalty isolation
 **Artifact**: [def_breakeven.csv](def_breakeven.csv) `net_sp_vs_high_defcon` · [mid_breakeven.csv](mid_breakeven.csv) `mean_pts_per_start` · [def_examples.csv](def_examples.csv) `pts_per_start` · [implied_setpiece_xp.csv](implied_setpiece_xp.csv) `xp_per90`
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence.
@@ -22,7 +22,7 @@
 - **Secondary**: [BBC — Palmer penalty record](https://www.bbc.com/sport/football/articles/c2ld0rqxglyo) — 2024-12-10; accessed 2026-09-01; role: Opta penalty xG = 0.79
 - **Secondary**: [The Athletic — attacking performance versus xG](https://www.nytimes.com/athletic/6679514/2025/10/02/the-alternative-premier-league-table-expected-goals/) — 2025-10-02; accessed 2026-09-01; role: independent 0.79 penalty xG
 - **Secondary**: [Opta Analyst — most dangerous set-piece teams](https://theanalyst.com/articles/premier-league-teams-most-dangerous-set-pieces) — accessed 2026-09-01; role: 58.8% of 187 set-piece goals from corners; second-phase often denies taker the assist
-- **Repository data**: `data/archive/2024-25/processed` (no `defensive_contribution`); vaastav 2025-26 CSVs via runner; `models/dual_vector_state_hybrid.py`; `models/scoring_matrix.py`
+- **Repository data**: `data/archive/2024-25/processed` (no `defensive_contribution`); vaastav 2025-26 CSVs via runner; `models/participation_penalty_hybrid.py`; `models/scoring_matrix.py`
 
 **Source boundary**: FPL `*_order` is terminal season metadata (exploratory leakage). vaastav `xP` unused. 60% corner-assist credit in [implied_setpiece_xp.csv](implied_setpiece_xp.csv) is an assumption, not measured. League penalty rate 0.125/team/match is a midpoint, not a counted 2025-26 total.
 
@@ -106,7 +106,7 @@ Full redo docs/research/set-piece-taker-vs-defcon/set-piece-taker-vs-defcon.md
 ### Practical implications
 
 - User scenario (better expected Defcon, not a taker vs taker with decent Defcon): **on DEF, the CB wins unless the taker also brings CS + attacking returns**. Corners are not enough.
-- Engine (`dual_vector_state_hybrid`): only `penalties_order==1` is isolated (0.15 xG/90, unscaled by `attack_multiplier`). Corner duty enters only via historical `per90_xa` / creativity. A new corner taker is understated until Appearance Blend. Defcon is a negbin threshold on `per90_defensive_contribution`.
+- Engine (`participation_penalty_hybrid`): only `penalties_order==1` is isolated (0.15 xG/90, unscaled by `attack_multiplier`). Corner duty enters only via historical `per90_xa` / creativity. A new corner taker is understated until Appearance Blend. Defcon is a negbin threshold on `per90_defensive_contribution`.
 - Ownership Explorer already splits `xp_goals` / `xp_assists` / `xp_defcon`. Rank on the sum, not on Defcon or set-piece flags alone.
 
 ## Findings

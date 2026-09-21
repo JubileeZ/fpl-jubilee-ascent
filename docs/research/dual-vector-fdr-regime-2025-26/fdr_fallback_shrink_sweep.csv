@@ -1,0 +1,13 @@
+model,fdr_fallback_shrink,slice,sample_count,signed_bias,mae
+dual_vector_state_hybrid,club_strength,all,31958,0.17896204970542703,1.0779192829273605
+dual_vector_state_hybrid,club_strength,easy_mid_fwd,442,-0.1354933926599305,2.9300451767315794
+dual_vector_state_hybrid,1.0,all,31958,0.19800484472974061,1.0798076560984446
+dual_vector_state_hybrid,1.0,easy_mid_fwd,442,0.7528420220324925,3.2244406123270366
+dual_vector_state_hybrid,0.5,all,31958,0.18647357836092252,1.0781018293184035
+dual_vector_state_hybrid,0.5,easy_mid_fwd,442,0.2645895994926606,3.052067071093604
+dual_vector_state_hybrid,0.35,all,31958,0.18492000188714905,1.0787102698248336
+dual_vector_state_hybrid,0.35,easy_mid_fwd,442,0.1399076980588809,3.013217709585781
+dual_vector_state_hybrid,0.25,all,31958,0.18436454133772287,1.07939716520358
+dual_vector_state_hybrid,0.25,easy_mid_fwd,442,0.0615897170377799,2.989825431748026
+dual_vector_state_hybrid,0.0,all,31958,0.1846770873673471,1.082076770963432
+dual_vector_state_hybrid,0.0,easy_mid_fwd,442,-0.12035547263922494,2.9360632657023253

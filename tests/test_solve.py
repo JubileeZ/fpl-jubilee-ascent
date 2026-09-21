@@ -130,10 +130,10 @@ def test_solve_cli_uses_champion_not_stale_settings_datasource() -> None:
          patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
          patch("sys.argv", ["commands.solve", "--preseason"]):
         main()
-    assert pad_mock.call_args.args[0].name == "dual_vector_state_hybrid.csv"
+    assert pad_mock.call_args.args[0].name == "participation_penalty_hybrid.csv"
 
 
 def test_load_settings_uses_champion_as_default(tmp_path, monkeypatch):
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
 
-    assert load_settings()["datasource"] == "dual_vector_state_hybrid"
+    assert load_settings()["datasource"] == "participation_penalty_hybrid"

@@ -8,14 +8,14 @@ from models.champion_trust import load_champion_trust
 def test_load_champion_trust_reads_bias_walkforward_and_provisional(tmp_path: Path) -> None:
     selection = tmp_path / "model_selection.json"
     selection.write_text(
-        '{"schema_version":1,"champion":"dual_vector_state_hybrid","candidates":[],"promotion_status":"provisional"}',
+        '{"schema_version":1,"champion":"participation_penalty_hybrid","candidates":[],"promotion_status":"provisional"}',
         encoding="utf-8",
     )
     bias = tmp_path / "bias.csv"
     bias.write_text(
         "model,evaluation_season,gw_start,gw_end,signed_bias,mae\n"
-        "dual_vector_state_hybrid,2025-26,1,38,0.15,1.07\n"
-        "dual_vector_state_hybrid,2026-27,1,3,0.21,1.40\n",
+        "participation_penalty_hybrid,2025-26,1,38,0.15,1.07\n"
+        "participation_penalty_hybrid,2026-27,1,3,0.21,1.40\n",
         encoding="utf-8",
     )
     walk = tmp_path / "walk.csv"
@@ -33,7 +33,7 @@ def test_load_champion_trust_reads_bias_walkforward_and_provisional(tmp_path: Pa
         walkforward_path=walk,
         regret_path=regret,
     )
-    assert payload["champion"] == "dual_vector_state_hybrid"
+    assert payload["champion"] == "participation_penalty_hybrid"
     assert payload["promotion_status"] == "provisional"
     assert payload["signed_bias"] == 0.15
     assert payload["bias_season"] == "2025-26"

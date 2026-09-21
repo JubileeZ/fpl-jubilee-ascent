@@ -122,7 +122,11 @@ _Avoid_: Remaining Projection, Realized Points, hybrid total, Planning Horizon t
 
 **Realized Points**:
 Score Mode summing official FPL total_points over finished gameweeks in the Season Window. Not xP. Not a product Explorer mode.
-_Avoid_: Projection, Remaining Projection, xP
+_Avoid_: Projection, Remaining Projection, xP, Process Points
+
+**Process Points**:
+Player-gameweek evaluation target: Official scoring matrix with goals/assists from that fixture’s `expected_goals` / `expected_assists`; other components stay Realized (minutes, clean sheets, bonus, cards, Defcon, …). Removes finish luck on goals/assists. Not Gameweek Projection. Not Realized Points. Not FPL `ep_*`.
+_Avoid_: Realized Points, Projection, underlying xG alone, Solio xP
 
 **Remaining Projection**:
 Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Season Window. Not the product Planning Horizon slice.
@@ -404,8 +408,8 @@ A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per pai
 _Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion Signed Bias vs Realized Points
 
 **Champion Signed Bias**:
-Mean of `projected_points − actual_points` vs Realized Points for the Model Champion. Gate companion: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Positive = overprediction. Not FPL `ep_*`.
-_Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate
+Mean of `projected_points − actual_points` vs Realized Points for the Model Champion. Gate companion: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Positive = overprediction. Not FPL `ep_*`. Process Points is a separate research eval target (`--eval_target process`), not this gate.
+_Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate, Process Points as the ADR 0033 gate
 
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
@@ -568,8 +572,8 @@ Research Note mapping related source pages to child notes, freshness, scope, and
 _Avoid_: Merged research report, complete source transcription
 
 **Calibrated Component Architecture**:
-Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → Modified FDR fallback in `_fixture_maps`.
-_Avoid_: Top-down power rating, single composite score xP prediction
+Bottom-up expected points ($xP$) modeling derived from explicit underlying per-90 player skill rates (`per90_xg`, `per90_xa`, `per90_defcon`, `per90_saves`) multiplied by venue-adjusted team/opponent strength vectors and projected minutes. Goals/assists use `attack_multiplier`. Clean sheets, conceded, saves, and defcon use `defence_multiplier`. Missing or zero Club Strength Vector attack/defence → neutral multipliers (shrink toward 1.0; ADR 0037). Modified FDR remains difficulty only, not the xP scale.
+_Avoid_: Top-down power rating, single composite score xP prediction, raw Modified FDR as attack_multiplier when strengths are 0
 
 **Official Fixture Difficulty**:
 Per-club-fixture integer 1–5 on `team_h_difficulty` / `team_a_difficulty`. Focal-team difficulty. 2026/27: home FDR = opponent `strength_overall_home`; away FDR = opponent `strength_overall_away`. Those `_home`/`_away` fields are your venue, not the opponent's own ground. Not attack/defence blend. Not production xP input.
@@ -584,8 +588,8 @@ Official API club fields `strength`, `strength_overall_home/away`, `strength_att
 _Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only), opponent's own home/away form
 
 **Dual-Vector Strength**:
-Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Not implemented in production Python; not the API Club Strength Vector.
-_Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed
+Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Research-only; not implemented in production Python; not API Club Strength Vector; not Model Champion `participation_penalty_hybrid` (ADR 0039).
+_Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed, `dual_vector_state_hybrid` (retired name)
 
 **Prior-Season Dual-Vector Seed**:
 Cold-Start Dual-Vector Strength from the latest archive season: club attack = sum of player `expected_goals` per club-fixture; club defence = that fixture’s `expected_goals_conceded` (one team value, not summed across players); home/away split; scaled to league average. Promoted Clubs use league average. FPL-xG proxy, not npxG. Live research xP for Canonical Preseason Chip Path (Stage 3) and First-Half Chip Path. Also research DCS effective FDR (`defence_multiplier × 3`).

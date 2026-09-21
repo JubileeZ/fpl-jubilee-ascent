@@ -4,7 +4,7 @@
 **Data stamp**: 2025-26 processed archive GW1–38; 2024-25 Prior-Season Seed; 2026-27 pin GW1–3 sanity; companion written 2026-09-15T00:14:45+07:00  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
-**Purpose**: Measure Model Champion `dual_vector_state_hybrid` signed bias (`projected_points − actual_points`) vs Realized Points before any Hit ban or xP calibration layer (ADR 0033).  
+**Purpose**: Measure Model Champion `participation_penalty_hybrid` signed bias (`projected_points − actual_points`) vs Realized Points before any Hit ban or xP calibration layer (ADR 0033).  
 **Scope**: Gate = 2025-26 GW1–38. Sanity = 2026-27 finished GW1–3 only. Not FPL `ep_*`. Not third-party xP. Not Hit-allowed vs Hit-forbidden walk-forward. Not a calibration layer.  
 **Related**: [ADR 0033](../../adr/0033-transfer-plan-hits-until-champion-bias.md) · [ADR 0032](../../adr/0032-live-season-pin-official-only.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md)  
 **Artifact**: [champion_bias_summary.csv](champion_bias_summary.csv) `signed_bias`
@@ -38,7 +38,7 @@ Full redo docs/research/champion-signed-bias-2025-26/champion-signed-bias-2025-2
 **Method type**: Walk-forward backtest (ADR 0033 gate)
 
 **Inputs**:
-- Champion `dual_vector_state_hybrid` from `config/model_selection.json`
+- Champion `participation_penalty_hybrid` from `config/model_selection.json`
 - Evaluation: `data/archive/2025-26/processed` GW1–38
 - Prior-Season Seed: `data/archive/2024-25/processed`
 - Sanity: `data/archive/2026-27/processed` GW1–3; seed `2025-26`

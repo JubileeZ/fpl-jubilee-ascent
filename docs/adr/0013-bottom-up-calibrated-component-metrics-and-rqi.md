@@ -1,6 +1,6 @@
 # 0013: Bottom-Up Calibrated Component Metrics, Dual-Vector Strength, and RQI
 
-**Status:** Accepted. Clause 4 (Points-Heavy RQI) superseded by [ADR 0015](0015-defensive-composite-score.md). Clauses 1–3 unchanged.
+**Status:** Accepted. Clause 4 (Points-Heavy RQI) superseded by [ADR 0015](0015-defensive-composite-score.md). Clause 2 Dual-Vector Strength remains research architecture — not production Python; live Champion is `participation_penalty_hybrid` ([ADR 0039](0039-champion-participation-penalty-hybrid.md)). Clauses 1 and 3 unchanged for production.
 
 ## Context
 

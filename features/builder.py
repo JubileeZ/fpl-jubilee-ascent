@@ -43,6 +43,9 @@ RATE_PRIOR_STRENGTH = 4.0
 # Trailing Start Window (ADR 0035). Set trailing_start_k=0 to disable.
 TRAILING_START_WINDOW_K = 3
 TRAILING_START_WINDOW_WEIGHT = 0.90
+# When Club Strength attack/defence are 0: scale FDR raw multipliers toward 1.0.
+# 0.0 = neutral ×1.0 (ADR 0037; research dual-vector-fdr-regime-2025-26 easy_mid_fwd).
+FDR_FALLBACK_MULTIPLIER_SHRINK = 0.0
 
 
 class StateStats(TypedDict):
@@ -250,16 +253,22 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
             (home_id, away_id, True, difficulty_home, home_attack, home_defence, away_attack, away_defence),
             (away_id, home_id, False, difficulty_away, away_attack, away_defence, home_attack, home_defence),
         ]:
-            attack_multiplier = (
-                min(max(team_attack / opponent_defence, 0.4), 1.8)
-                if team_attack > 0 and opponent_defence > 0
-                else min(max((6.0 - difficulty) / 3.0, 0.4), 1.8)
-            )
-            defence_multiplier = (
-                min(max(opponent_attack / team_defence, 0.4), 1.8)
-                if opponent_attack > 0 and team_defence > 0
-                else min(max(difficulty / 3.0, 0.4), 1.8)
-            )
+            if team_attack > 0 and opponent_defence > 0:
+                attack_multiplier = min(max(team_attack / opponent_defence, 0.4), 1.8)
+            else:
+                raw_attack = min(max((6.0 - difficulty) / 3.0, 0.4), 1.8)
+                attack_multiplier = min(
+                    max(1.0 + (raw_attack - 1.0) * FDR_FALLBACK_MULTIPLIER_SHRINK, 0.4),
+                    1.8,
+                )
+            if opponent_attack > 0 and team_defence > 0:
+                defence_multiplier = min(max(opponent_attack / team_defence, 0.4), 1.8)
+            else:
+                raw_defence = min(max(difficulty / 3.0, 0.4), 1.8)
+                defence_multiplier = min(
+                    max(1.0 + (raw_defence - 1.0) * FDR_FALLBACK_MULTIPLIER_SHRINK, 0.4),
+                    1.8,
+                )
 
             fixture_maps.append({
                 "club_id": club_id,

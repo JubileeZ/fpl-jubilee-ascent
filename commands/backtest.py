@@ -15,6 +15,7 @@ configure_utf8_stdio()
 from models import get_model
 from features.builder import build_features, history_before_target
 from backtesting.metrics import evaluate_predictions
+from backtesting.process_points import aggregate_process_points
 from features.contracts import assert_projection_contract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -149,6 +150,13 @@ def main() -> None:
         "--require_snapshots",
         action="store_true",
         help="Require verified immutable pre-deadline snapshots for every evaluated Gameweek",
+    )
+    parser.add_argument(
+        "--eval_target",
+        type=str,
+        choices=("realized", "process"),
+        default="realized",
+        help="Score vs Realized Points (default) or Process Points (xG/xA goals/assists; ADR 0038)",
     )
     args = parser.parse_args()
     
@@ -336,7 +344,13 @@ def main() -> None:
         df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
         position_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
         df_compare = df_compare.merge(position_map, on="player_id", how="left")
-        
+        process_src = df_perf[df_perf["gameweek_id"] == gw].merge(
+            position_map, on="player_id", how="left"
+        )
+        process_gw = aggregate_process_points(process_src)
+        df_compare = df_compare.merge(process_gw, on=["player_id", "gameweek_id"], how="left")
+        df_compare["process_points"] = df_compare["process_points"].fillna(0.0)
+
         if not df_compare.empty:
             df_compare["gameweek"] = gw
             all_results.append(df_compare)
@@ -346,8 +360,8 @@ def main() -> None:
         sys.exit(1)
         
     df_eval = pd.concat(all_results, ignore_index=True)
-    
-    metrics = evaluate_predictions(df_eval)
+    target_column = "process_points" if args.eval_target == "process" else "actual_points"
+    metrics = evaluate_predictions(df_eval, target_column=target_column)
     mean_rank_corr = metrics["spearman"]
     rank_display = "n/a" if mean_rank_corr is None else f"{mean_rank_corr:.4f}"
     
@@ -355,6 +369,7 @@ def main() -> None:
     print(f"BACKTESTING REPORT: {args.model.upper()}")
     print("="*50)
     print(f"Gameweek Range  : {start_gw} - {end_gw}")
+    print(f"Eval Target     : {args.eval_target} ({target_column})")
     print(f"Data Directory  : {data_dir}")
     print(f"Sample Count    : {metrics['sample_count']}")
     print(f"Points MAE      : {metrics['mae']:.4f}")

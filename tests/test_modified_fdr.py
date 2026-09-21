@@ -53,8 +53,11 @@ def test_fixture_maps_use_modified_fdr_when_strength_zero() -> None:
     away = maps.loc[2]
     assert home["difficulty"] == 3.75
     assert away["difficulty"] == 5.25
-    assert home["attack_multiplier"] == (6.0 - 3.75) / 3.0
-    assert away["defence_multiplier"] == 5.25 / 3.0
+    # ADR 0037: zero Club Strength → neutral multipliers; Modified FDR stays on difficulty.
+    assert home["attack_multiplier"] == 1.0
+    assert home["defence_multiplier"] == 1.0
+    assert away["attack_multiplier"] == 1.0
+    assert away["defence_multiplier"] == 1.0
 
 
 def test_fixture_maps_missing_official_stays_unmodified_default() -> None:

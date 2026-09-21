@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "champion": "dual_vector_state_hybrid",
+  "champion": "participation_penalty_hybrid",
   "candidates": [
     "participation_state_hybrid"
   ],

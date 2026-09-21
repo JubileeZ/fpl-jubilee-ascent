@@ -1,0 +1,17 @@
+model,multiplier_regime,slice,eval_target,sample_count,signed_bias,mae
+dual_vector_state_hybrid,club_strength,all,realized,31958,0.17896204970542703,1.0779192829273605
+dual_vector_state_hybrid,club_strength,all,process,31958,0.19222289206101875,0.9643837073937119
+dual_vector_state_hybrid,club_strength,easy_mid_fwd,realized,442,-0.1354933926599305,2.9300451767315794
+dual_vector_state_hybrid,club_strength,easy_mid_fwd,process,442,0.20552470688758084,2.082082652169972
+dual_vector_state_hybrid,neutral,all,realized,31958,0.1846770873673471,1.082076770963432
+dual_vector_state_hybrid,neutral,all,process,31958,0.1979379297229388,0.9675033605140052
+dual_vector_state_hybrid,neutral,easy_mid_fwd,realized,442,-0.12035547263922494,2.9360632657023253
+dual_vector_state_hybrid,neutral,easy_mid_fwd,process,442,0.22066262690828634,2.082307311514277
+dual_vector_state_hybrid,poisson_opp_k10,all,realized,31958,0.20235835659061768,1.0878849242912436
+dual_vector_state_hybrid,poisson_opp_k10,all,process,31958,0.2156191989462094,0.9728030197365279
+dual_vector_state_hybrid,poisson_opp_k10,easy_mid_fwd,realized,442,0.15002412175165364,3.020047816689336
+dual_vector_state_hybrid,poisson_opp_k10,easy_mid_fwd,process,442,0.491042221299165,2.1947782724314786
+dual_vector_state_hybrid,poisson_full_k10,all,realized,31958,0.22272246556345604,1.0983571005167778
+dual_vector_state_hybrid,poisson_full_k10,all,process,31958,0.23598330791904776,0.9840083659464157
+dual_vector_state_hybrid,poisson_full_k10,easy_mid_fwd,realized,442,0.3957784408549708,3.117247287375218
+dual_vector_state_hybrid,poisson_full_k10,easy_mid_fwd,process,442,0.736796540402482,2.312634775987325

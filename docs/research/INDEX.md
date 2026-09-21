@@ -1,12 +1,15 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-17T17:50:00+07:00
+**Updated**: 2026-09-22T02:35:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Team Poisson λ (2025-26)**: [Note](team-poisson-lambda-2025-26/team-poisson-lambda-2025-26.md) · [Summary](team-poisson-lambda-2025-26/team_poisson_summary.csv) `signed_bias` (opp-only beats full; both lose to neutral)
+- **Official FPL Dual-Vector xG (2025-26)**: [Note](dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md) · [Summary](dual-vector-official-xg-2025-26/dual_vector_xg_summary.csv) `signed_bias` (realized + process; fails vs neutral)
+- **Dual-Vector FDR regime (2025-26)**: [Note](dual-vector-fdr-regime-2025-26/dual-vector-fdr-regime-2025-26.md) · [Summary](dual-vector-fdr-regime-2025-26/model_regime_summary.csv) `signed_bias` · [Shrink sweep](dual-vector-fdr-regime-2025-26/fdr_fallback_shrink_sweep.csv) `signed_bias` · ADR [0037](../adr/0037-fdr-fallback-multiplier-neutral.md)
 - **Wayfinder Transfer Plan dashboard spec**: [Ownership/rank](wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md) · [Solve payload](wayfinder-transfer-plan-spec/solve-command-transfer-plan-payload.md) · [Explorer availability](wayfinder-transfer-plan-spec/explorer-availability-and-fixture-fields.md) · [Price intelligence](wayfinder-transfer-plan-spec/price-intelligence-observed-vs-forecast.md) · map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 - **Champion signed bias (2025-26 GW1–38)**: [Note](champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [Summary](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias`
 - **Premier League arrival xG/xA translation**: [Note](epl-arrival-xg-xa-adjustment/epl-arrival-xg-xa-adjustment.md) · [Summary](epl-arrival-xg-xa-adjustment/arrival_xg_xa_summary.csv) `npxg_median_ratio` / `xag_median_ratio` · [Before/after](epl-arrival-xg-xa-adjustment/arrival_xg_xa_before_after.csv) `ratio_npxg` · [Literature](epl-arrival-xg-xa-adjustment/literature-sources.md)

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
+from backtesting.process_points import aggregate_process_points
 from features.builder import build_features, history_before_target
 from features.contracts import assert_projection_contract
 from models import get_model
@@ -45,6 +46,7 @@ class WalkforwardConfig:
     state_prior_strength: float | None = None
     trailing_start_k: int | None = None
     trailing_start_weight: float | None = None
+    eval_target: str = "actual_points"  # actual_points | process_points
 
 
 @dataclass(frozen=True)
@@ -195,6 +197,9 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
         position_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
         df_compare = df_compare.merge(position_map, on="player_id", how="left")
+        process_gw = aggregate_process_points(gw_perf)
+        df_compare = df_compare.merge(process_gw, on=["player_id", "gameweek_id"], how="left")
+        df_compare["process_points"] = df_compare["process_points"].fillna(0.0)
         if not df_compare.empty:
             df_compare["gameweek"] = gw
             all_results.append(df_compare)
@@ -203,7 +208,10 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         raise ValueError("No backtesting results generated for the selected range")
 
     df_eval = pd.concat(all_results, ignore_index=True)
-    metrics = evaluate_predictions(df_eval)
+    target = config.eval_target
+    if target not in {"actual_points", "process_points"}:
+        raise ValueError(f"Unsupported eval_target: {target}")
+    metrics = evaluate_predictions(df_eval, target_column=target)
     snapshot_backed = bool(snapshot_ids) and len(snapshot_ids) == (config.end_gw - config.start_gw + 1)
     return WalkforwardResult(
         model_name=config.model_name,

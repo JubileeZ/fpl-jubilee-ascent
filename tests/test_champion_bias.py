@@ -13,7 +13,7 @@ def test_signed_bias_is_mean_projected_minus_actual() -> None:
 
 def test_champion_bias_row_uses_eval_frame_not_metrics_bias() -> None:
     result = WalkforwardResult(
-        model_name="dual_vector_state_hybrid",
+        model_name="participation_penalty_hybrid",
         data_dir=Path("data/archive/2025-26/processed"),
         start_gw=1,
         end_gw=2,
@@ -34,7 +34,7 @@ def test_champion_bias_row_uses_eval_frame_not_metrics_bias() -> None:
     assert row["mae"] == 2.0
     assert row["sample_count"] == 2
     assert row["minutes_bias"] == 10.0
-    assert row["model"] == "dual_vector_state_hybrid"
+    assert row["model"] == "participation_penalty_hybrid"
     assert row["evaluation_season"] == "2025-26"
     assert row["seed_season"] == "2024-25"
 
@@ -45,7 +45,7 @@ def test_write_champion_bias_csv(tmp_path: Path) -> None:
         path,
         [
             {
-                "model": "dual_vector_state_hybrid",
+                "model": "participation_penalty_hybrid",
                 "evaluation_season": "2025-26",
                 "gw_start": 1,
                 "gw_end": 2,
