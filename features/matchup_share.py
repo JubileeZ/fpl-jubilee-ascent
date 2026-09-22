@@ -1,8 +1,10 @@
 """Matchup share overlay for Feature Contract rates.
 
 When this-season finished Club Fixtures exist, bump attack/defence rates from
-opponent xG gaps and player xG/xA share. Force ``attack_multiplier`` /
-``defence_multiplier`` to ×1.0 so Club Strength does not double-scale.
+opponent xG gaps and player xG/xA share with calibrated shrinkage and Bayesian
+positional share priors. Force ``attack_multiplier`` / ``defence_multiplier`` to
+×1.0 so Club Strength does not double-scale. Peripheral defensive rates (saves
+and DEFCON) are decoupled and remain neutral (×1.0).
 
 Fallback (caller): empty history → leave Club Strength / neutral multipliers.
 """
@@ -13,8 +15,14 @@ import numpy as np
 import pandas as pd
 
 MATCHUP_SHARE_K = 10
+MATCHUP_SHRINK_ATT = 0.40
+MATCHUP_SHRINK_DEF = 0.40
 EPS = 1e-6
-PEN_XG_PER90 = 0.15
+POSITION_PRIOR_WEIGHT = 4.0
+
+# Positional baseline share priors: FWD ~ 0.26/0.14, MID ~ 0.14/0.18, DEF ~ 0.03/0.07, GK ~ 0.00/0.01
+POSITION_DEFAULT_XG_SHARE = {1: 0.00, 2: 0.03, 3: 0.14, 4: 0.26}
+POSITION_DEFAULT_XA_SHARE = {1: 0.01, 2: 0.07, 3: 0.18, 4: 0.14}
 
 
 def _blended_rate(
@@ -25,7 +33,7 @@ def _blended_rate(
     k: int,
     league_avg: float,
 ) -> float:
-    """0.5·all + 0.5·venue, then w·mix + (1−w)·league_avg with w=min(1, n/K)."""
+    """Venue-blended rate with sample-weighted venue weighting and sparse league blend."""
     if history.empty or league_avg <= 0:
         return float(league_avg) if league_avg > 0 else 1.0
     hist = history.sort_values("gameweek_id").tail(k)
@@ -33,8 +41,13 @@ def _blended_rate(
     w = min(1.0, n / float(k))
     rate_all = float(hist[value_col].mean())
     venue = hist[hist["was_home"] == is_home]
-    rate_venue = float(venue[value_col].mean()) if not venue.empty else rate_all
-    rate_mix = 0.5 * rate_all + 0.5 * rate_venue
+    n_venue = len(venue)
+    if n_venue > 0:
+        rate_venue = float(venue[value_col].mean())
+        w_venue = min(0.5, n_venue / 6.0)
+        rate_mix = (1.0 - w_venue) * rate_all + w_venue * rate_venue
+    else:
+        rate_mix = rate_all
     return w * rate_mix + (1.0 - w) * float(league_avg)
 
 
@@ -109,6 +122,7 @@ def _share_maps(
     player_contrib: pd.DataFrame,
     club_xg: pd.DataFrame,
     club_xa: pd.DataFrame,
+    player_positions: dict[int, int] | None = None,
 ) -> tuple[dict[tuple[int, int], float], dict[tuple[int, int], float]]:
     club_xg_tot = club_xg.groupby("club_id")["expected_goals"].sum().to_dict()
     club_xa_tot = club_xa.groupby("club_id")["expected_assists"].sum().to_dict()
@@ -117,18 +131,34 @@ def _share_maps(
     player_sums = player_contrib.groupby(["player_id", "club_id"], as_index=False)[
         ["expected_goals", "expected_assists"]
     ].sum()
+    positions = player_positions or {}
     share_xg: dict[tuple[int, int], float] = {}
     share_xa: dict[tuple[int, int], float] = {}
     for row in player_sums.itertuples(index=False):
-        key = (int(row.player_id), int(row.club_id))
-        cx = float(club_xg_tot.get(int(row.club_id), 0.0))
-        ca = float(club_xa_tot.get(int(row.club_id), 0.0))
-        share_xg[key] = (
-            float(min(max(float(row.expected_goals) / cx, 0.0), 1.0)) if cx > EPS else 0.0
+        pid = int(row.player_id)
+        cid = int(row.club_id)
+        key = (pid, cid)
+        cx = float(club_xg_tot.get(cid, 0.0))
+        ca = float(club_xa_tot.get(cid, 0.0))
+        pos_id = positions.get(pid, 3)
+        prior_xg = POSITION_DEFAULT_XG_SHARE.get(pos_id, 0.14)
+        prior_xa = POSITION_DEFAULT_XA_SHARE.get(pos_id, 0.14)
+
+        denom_x = cx + POSITION_PRIOR_WEIGHT
+        shrunk_xg = (
+            (float(row.expected_goals) + POSITION_PRIOR_WEIGHT * prior_xg) / denom_x
+            if denom_x > EPS
+            else prior_xg
         )
-        share_xa[key] = (
-            float(min(max(float(row.expected_assists) / ca, 0.0), 1.0)) if ca > EPS else 0.0
+        denom_a = ca + POSITION_PRIOR_WEIGHT
+        shrunk_xa = (
+            (float(row.expected_assists) + POSITION_PRIOR_WEIGHT * prior_xa) / denom_a
+            if denom_a > EPS
+            else prior_xa
         )
+
+        share_xg[key] = float(min(max(shrunk_xg, 0.0), 1.0))
+        share_xa[key] = float(min(max(shrunk_xa, 0.0), 1.0))
     return share_xg, share_xa
 
 
@@ -160,6 +190,8 @@ def apply_matchup_share_overlay(
     df_fixtures: pd.DataFrame,
     *,
     history_cutoff_gw: int,
+    shrink_att: float = MATCHUP_SHRINK_ATT,
+    shrink_def: float = MATCHUP_SHRINK_DEF,
 ) -> tuple[pd.DataFrame, bool]:
     """Apply matchup share when this-season club xG history exists before cutoff.
 
@@ -189,7 +221,18 @@ def apply_matchup_share_overlay(
         return df_feat, False
 
     by_club = {int(cid): group for cid, group in club_xg.groupby("club_id")}
-    share_xg_map, share_xa_map = _share_maps(player_contrib, club_xg, club_xa)
+    club_xg_tot = club_xg.groupby("club_id")["expected_goals"].sum().to_dict()
+    club_xa_tot = club_xa.groupby("club_id")["expected_assists"].sum().to_dict()
+
+    player_positions: dict[int, int] = {}
+    if "player_id" in df_feat.columns and "position_id" in df_feat.columns:
+        for pid, pos in zip(df_feat["player_id"], df_feat["position_id"], strict=False):
+            if pd.notna(pid) and pd.notna(pos):
+                player_positions[int(pid)] = int(pos)
+
+    share_xg_map, share_xa_map = _share_maps(
+        player_contrib, club_xg, club_xa, player_positions=player_positions
+    )
 
     out = df_feat.copy()
     xg_vals: list[float] = []
@@ -218,30 +261,41 @@ def apply_matchup_share_overlay(
         )
         delta_att = opp_xgc - league_xgc
         delta_def = opp_xg - league_xg
-        def_scale = opp_xg / league_xg
+
         key = (int(row.player_id), int(row.club_id))
-        share_xg = share_xg_map.get(key, 0.0)
-        share_xa = share_xa_map.get(key, 0.0)
+        pos_id = int(getattr(row, "position_id", 3) or 3)
+        prior_xg = POSITION_DEFAULT_XG_SHARE.get(pos_id, 0.14)
+        prior_xa = POSITION_DEFAULT_XA_SHARE.get(pos_id, 0.14)
+        cid = int(getattr(row, "club_id", 0) or 0)
+        cx = float(club_xg_tot.get(cid, 0.0))
+        ca = float(club_xa_tot.get(cid, 0.0))
+        denom_x = cx + POSITION_PRIOR_WEIGHT
+        denom_a = ca + POSITION_PRIOR_WEIGHT
+        default_share_xg = (
+            (POSITION_PRIOR_WEIGHT * prior_xg) / denom_x if denom_x > EPS else prior_xg
+        )
+        default_share_xa = (
+            (POSITION_PRIOR_WEIGHT * prior_xa) / denom_a if denom_a > EPS else prior_xa
+        )
+
+        share_xg = share_xg_map.get(key, default_share_xg)
+        share_xa = share_xa_map.get(key, default_share_xa)
 
         per90_xg = float(getattr(row, "per90_xg", 0.0) or 0.0)
         per90_xa = float(getattr(row, "per90_xa", 0.0) or 0.0)
         per90_gc = float(getattr(row, "per90_goals_conceded", 1.2) or 1.2)
         per90_saves = float(getattr(row, "per90_saves", 0.0) or 0.0)
         per90_defcon = float(getattr(row, "per90_defensive_contribution", 0.0) or 0.0)
-        pen_order = float(getattr(row, "penalties_order", 0.0) or 0.0)
 
-        addon_g = share_xg * delta_att
-        if pen_order == 1.0:
-            open_xg = max(0.0, per90_xg - PEN_XG_PER90)
-            per90_xg = max(0.0, open_xg + addon_g) + PEN_XG_PER90
-        else:
-            per90_xg = max(0.0, per90_xg + addon_g)
+        addon_g = shrink_att * share_xg * delta_att
+        addon_a = shrink_att * share_xa * delta_att
 
-        xg_vals.append(per90_xg)
-        xa_vals.append(max(0.0, per90_xa + share_xa * delta_att))
-        gc_vals.append(max(0.05, per90_gc + delta_def))
-        saves_vals.append(max(0.0, per90_saves * def_scale))
-        defcon_vals.append(max(0.0, per90_defcon * def_scale))
+        xg_vals.append(max(0.0, per90_xg + addon_g))
+        xa_vals.append(max(0.0, per90_xa + addon_a))
+        gc_vals.append(max(0.05, per90_gc + shrink_def * delta_def))
+        # Saves and DEFCON decoupled from opponent xG scaling (neutral x1.0)
+        saves_vals.append(per90_saves)
+        defcon_vals.append(per90_defcon)
 
     out["per90_xg"] = xg_vals
     out["per90_xa"] = xa_vals

@@ -10,7 +10,7 @@ Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jub
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Matchup Share** when this-season Official club xG exists; else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `participation_penalty_hybrid` (ADR 0039). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `calibrated_matchup_hybrid` (ADR 0041). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
@@ -22,7 +22,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | Data dictionary | `docs/data_dictionary.md` | API → parquet |
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
-| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035); Matchup Share overlay (`features/matchup_share.py`, ADR 0037); Official processed heals from Live Season Pin on resolve (ADR 0036) |
+| Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035); Calibrated Matchup Share overlay (`features/matchup_share.py`, ADR 0040); Official processed heals from Live Season Pin on resolve (ADR 0036) |
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
@@ -41,7 +41,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 uv run pytest
 uv run ruff check .
 uv run python -m commands.refresh_data
-uv run python -m commands.run_model participation_penalty_hybrid
+uv run python -m commands.run_model calibrated_matchup_hybrid
 uv run python -m commands.dashboard
 uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.measure_champion_bias

@@ -44,7 +44,7 @@ def _bootstrap() -> dict:
 
 
 def test_prep_data_injects_missing_squad_player_and_preseason_itb(tmp_path: Path) -> None:
-    csv_path = tmp_path / "participation_penalty_hybrid.csv"
+    csv_path = tmp_path / "calibrated_matchup_hybrid.csv"
     pd.DataFrame([{
         "ID": 1, "code": 101, "Name": "A", "Pos": "M", "Price": 8.0, "Team": "ARS",
         "1_Pts": 5.0, "1_xMins": 90.0,

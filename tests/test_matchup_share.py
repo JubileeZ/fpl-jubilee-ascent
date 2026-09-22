@@ -283,4 +283,139 @@ def test_history_applies_share_addon_and_forces_neutral_multipliers() -> None:
     assert float(out.loc[0, "per90_xg"]) > 0.50
     assert float(out.loc[0, "per90_xa"]) > 0.20
     assert float(out.loc[0, "per90_goals_conceded"]) > 1.20
-    assert float(out.loc[0, "per90_saves"]) > 3.0
+    # Peripheral defense decoupled: saves and defcon remain unscaled (neutral x1.0)
+    assert float(out.loc[0, "per90_saves"]) == 3.0
+    assert float(out.loc[0, "per90_defensive_contribution"]) == 8.0
+
+
+def test_positional_prior_regularizes_returning_player_with_no_minutes() -> None:
+    """Player with 0 minutes gets regularized positional share rather than 0.0."""
+    fixtures = pd.DataFrame([
+        {"id": 101, "home_club_id": 10, "away_club_id": 30, "gameweek_id": 1},
+        {"id": 102, "home_club_id": 40, "away_club_id": 20, "gameweek_id": 1},
+    ])
+    rows = pd.DataFrame([
+        {
+            "player_id": 99,
+            "club_id": 10,
+            "fixture_id": 101,
+            "gameweek_id": 1,
+            "was_home": True,
+            "minutes": 90,
+            "expected_goals": 2.0,
+            "expected_assists": 1.0,
+            "expected_goals_conceded": 0.5,
+        },
+        {
+            "player_id": 88,
+            "club_id": 20,
+            "fixture_id": 102,
+            "gameweek_id": 1,
+            "was_home": False,
+            "minutes": 90,
+            "expected_goals": 1.0,
+            "expected_assists": 0.5,
+            "expected_goals_conceded": 3.0,
+        },
+    ])
+    # Player 1 is a FWD (pos 4), Player 2 is a DEF (pos 2). Neither has minutes in rows.
+    feat = pd.DataFrame([
+        {
+            "player_id": 1,
+            "club_id": 10,
+            "opponent_id": 20,
+            "position_id": 4,  # FWD
+            "is_home": True,
+            "gameweek_id": 2,
+            "fixture_id": 201,
+            "per90_xg": 0.60,
+            "per90_xa": 0.20,
+            "per90_goals_conceded": 1.0,
+            "per90_saves": 0.0,
+            "per90_defensive_contribution": 4.0,
+            "penalties_order": 0.0,
+        },
+        {
+            "player_id": 2,
+            "club_id": 10,
+            "opponent_id": 20,
+            "position_id": 2,  # DEF
+            "is_home": True,
+            "gameweek_id": 2,
+            "fixture_id": 201,
+            "per90_xg": 0.05,
+            "per90_xa": 0.05,
+            "per90_goals_conceded": 1.0,
+            "per90_saves": 0.0,
+            "per90_defensive_contribution": 10.0,
+            "penalties_order": 0.0,
+        },
+    ])
+    out, applied = apply_matchup_share_overlay(feat, rows, fixtures, history_cutoff_gw=2)
+    assert applied is True
+    # FWD with 0 minutes gets FWD prior share (~0.26), boosting xG against weak opponent
+    fwd_bump = float(out.loc[0, "per90_xg"]) - 0.60
+    def_bump = float(out.loc[1, "per90_xg"]) - 0.05
+    assert fwd_bump > 0.0
+    assert def_bump > 0.0
+    # Forward gets significantly higher share than defender from positional prior
+    assert fwd_bump > def_bump * 4.0
+
+
+def test_shrinkage_parameter_scales_delta_proportionally() -> None:
+    fixtures = pd.DataFrame([
+        {"id": 101, "home_club_id": 10, "away_club_id": 30, "gameweek_id": 1},
+        {"id": 102, "home_club_id": 40, "away_club_id": 20, "gameweek_id": 1},
+    ])
+    rows = pd.DataFrame([
+        {
+            "player_id": 1,
+            "club_id": 10,
+            "fixture_id": 101,
+            "gameweek_id": 1,
+            "was_home": True,
+            "minutes": 90,
+            "expected_goals": 2.0,
+            "expected_assists": 1.0,
+            "expected_goals_conceded": 0.5,
+        },
+        {
+            "player_id": 88,
+            "club_id": 20,
+            "fixture_id": 102,
+            "gameweek_id": 1,
+            "was_home": False,
+            "minutes": 90,
+            "expected_goals": 1.0,
+            "expected_assists": 0.5,
+            "expected_goals_conceded": 3.0,
+        },
+    ])
+    feat = pd.DataFrame([
+        {
+            "player_id": 1,
+            "club_id": 10,
+            "opponent_id": 20,
+            "position_id": 4,
+            "is_home": True,
+            "gameweek_id": 2,
+            "fixture_id": 201,
+            "per90_xg": 0.50,
+            "per90_xa": 0.20,
+            "per90_goals_conceded": 1.0,
+            "per90_saves": 0.0,
+            "per90_defensive_contribution": 4.0,
+            "penalties_order": 0.0,
+        }
+    ])
+    out_half, _ = apply_matchup_share_overlay(
+        feat, rows, fixtures, history_cutoff_gw=2, shrink_att=0.20, shrink_def=0.20
+    )
+    out_full, _ = apply_matchup_share_overlay(
+        feat, rows, fixtures, history_cutoff_gw=2, shrink_att=0.40, shrink_def=0.40
+    )
+    bump_half = float(out_half.loc[0, "per90_xg"]) - 0.50
+    bump_full = float(out_full.loc[0, "per90_xg"]) - 0.50
+    assert abs(bump_full - 2.0 * bump_half) < 1e-9
+
+

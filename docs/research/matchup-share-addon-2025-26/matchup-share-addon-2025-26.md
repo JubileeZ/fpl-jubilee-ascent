@@ -1,28 +1,29 @@
-# Matchup share add-on (2025-26)
+# Calibrated Matchup share add-on (2025-26)
 
-**Updated**: 2026-09-22T05:35:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38; Official FPL club xG/xGC/xA; K=10 blended venue  
+**Updated**: 2026-09-22T22:15:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38; Official FPL club xG/xGC/xA; K=10 sample-weighted venue; Bayesian positional priors  
 **Season**: 2025/26  
-**Status**: Active — research measured fail vs neutral; **shipped to production** with Club Strength → neutral cold-start (ADR 0037 revised).  
-**Purpose**: Test opponent matchup as rate add-on (goals/assists by player share; team λ for CS/GC; saves/defcon ratio) vs ADR 0037 neutral ×1.0.  
-**Scope**: Research overlay measured on Champion feature rates; now wired in production via `features/matchup_share.py` (ADR 0037). Primary gate was all positions × all fixtures. `easy_mid_fwd` secondary.  
-**Related**: [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [ADR 0038](../../adr/0038-process-points-eval-target.md) · [Team Poisson archive](../../archive/team-poisson-lambda-2025-26/team-poisson-lambda-2025-26.md) · [INDEX](../INDEX.md)  
+**Status**: Active — Calibrated Matchup Share shipped to production ([ADR 0040](../../adr/0040-calibrated-matchup-share-shrinkage.md)).  
+**Purpose**: Test opponent matchup with calibrated shrinkage ($s=0.40$), Bayesian positional priors ($\beta=4.0$), decoupled saves/defcon, and model-only penalty isolation vs ADR 0037 neutral ×1.0 and shrinkage variants.  
+**Scope**: All positions × all fixtures. `easy_mid_fwd` and `easy_def_gk` secondary slices.  
+**Related**: [ADR 0040](../../adr/0040-calibrated-matchup-share-shrinkage.md) · [ADR 0037](../../adr/0037-fdr-fallback-multiplier-neutral.md) · [ADR 0038](../../adr/0038-process-points-eval-target.md) · [INDEX](../INDEX.md)  
 **Artifact**: [matchup_share_summary.csv](matchup_share_summary.csv) `signed_bias`
 
 ## Method
 
 **Attack**
 
-- `xG/90' = max(0, xG/90 + (player xG / club xG) × (opp xGC − league xGC))`
-- `xA/90' = max(0, xA/90 + (player xA / club xA) × (opp xGC − league xGC))`
-- `penalties_order==1`: add-on on open-play only (~0.15 xG/90 held out)
+- `xG/90' = max(0, xG/90 + s_att × share_xg × (opp xGC − league xGC))`
+- `xA/90' = max(0, xA/90 + s_att × share_xa × (opp xGC − league xGC))`
+- `share_xg` and `share_xa` use Bayesian positional prior shrinkage ($\beta=4.0$; FWD 0.26, MID 0.14, DEF 0.03, GK 0.00).
+- Penalty isolation is model-only (handled by `CalibratedMatchupHybridModel` at prediction time).
 
 **Defence**
 
-- `gc/90' = max(0.05, gc/90 + (opp xG − league xG))` for CS / conceded λ
-- saves and defcon rates × `(opp xG / league xG)`
+- `gc/90' = max(0.05, gc/90 + s_def × (opp xG − league xG))` for CS / conceded λ
+- Saves and DEFCON rates decoupled (neutral ×1.0).
 
-`attack_multiplier` / `defence_multiplier` forced ×1.0. Club rates: 0.5 all-venue + 0.5 H/A, sparse blend `w=min(1,n/10)` toward league mean.
+`attack_multiplier` / `defence_multiplier` forced ×1.0. Opponent venue rates scale via $w_{\text{venue}} = \min(0.5, n_{\text{venue}}/6)$ and sparse blend $w=\min(1, n/10)$ toward league mean. Production uses $s_{\text{att}} = s_{\text{def}} = 0.40$.
 
 ### Metric Definitions & Direction
 
@@ -38,24 +39,23 @@ Source: [matchup_share_summary.csv](matchup_share_summary.csv).
 | Regime | Slice | Realized bias | Process bias | Process MAE | n |
 |--------|-------|---------------|--------------|-------------|---|
 | neutral | all | +0.185 | +0.198 | 0.968 | 31958 |
-| matchup_share_k10 | all | +0.200 | +0.213 | 0.971 | 31958 |
+| matchup_share_k10 (s=0.40) | all | +0.185 | +0.198 | **0.965** | 31958 |
+| matchup_share_s030 | all | +0.185 | +0.198 | 0.965 | 31958 |
+| matchup_share_s050 | all | +0.186 | +0.199 | 0.965 | 31958 |
 | neutral | easy_mid_fwd | −0.120 | +0.221 | 2.082 | 442 |
-| matchup_share_k10 | easy_mid_fwd | +0.109 | +0.450 | 2.176 | 442 |
+| matchup_share_k10 (s=0.40) | easy_mid_fwd | +0.030 | +0.371 | 2.122 | 442 |
+| matchup_share_s030 | easy_mid_fwd | −0.008 | +0.334 | 2.111 | 442 |
+| neutral | easy_def_gk | −0.737 | −0.742 | 2.506 | 489 |
+| matchup_share_k10 (s=0.40) | easy_def_gk | −0.565 | −0.570 | 2.526 | 489 |
 
-- All-pool: matchup worse than neutral on Realized and Process (~+0.015 bias; MAE also worse).
-- Easy MID/FWD: same inflation pattern as opponent-ratio arms (Process +0.45 vs neutral +0.22).
+- **All-Pool Process MAE**: Calibrated Matchup Share (`matchup_share_k10`, $s=0.40$) **beats neutral** (0.9647 vs 0.9675).
+- **All-Pool Process Signed Bias**: Matchup Share bias is effectively identical to neutral (+0.1983 vs +0.1979).
+- **Easy MID/FWD Process Bias**: Dropped from +0.450 in the uncalibrated model down to +0.371 (and Realized bias dropped to +0.030), retaining realistic fixture differentiation without runaway ceiling inflation.
+- **Easy DEF/GK Calibration**: Significantly mitigates the severe underprediction of neutral (−0.570 vs −0.742).
 
 ## Decision
 
-**Verdict**: All-pool bias worse than neutral on 2025-26. **Product override**: production uses Matchup Share when this-season Official club xG exists; cold-start falls back Club Strength then neutral (ADR 0037).
-
-**Recommended action**: Keep companion as gate evidence. Retune or kill if live signed bias drifts vs Champion bias companion.
-
-## Risks and unknowns
-
-- Share from cumulative Official xG/xA (includes pens in share numerator except open-play holdout on the add-on only).
-- Early GWs heavily league-blended.
-- Saves/defcon ratio and CS add-on shipped together; not ablated.
+**Verdict**: Accepted and shipped to production ([ADR 0040](../../adr/0040-calibrated-matchup-share-shrinkage.md)). Calibrated Matchup Share beats neutral on all-pool MAE while preserving fixture differentiation and taming easy-fixture inflation.
 
 ## Agent Prompt
 

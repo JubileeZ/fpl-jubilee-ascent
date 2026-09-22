@@ -584,16 +584,18 @@ Official Fixture Difficulty − 0.25 if focal home, + 0.25 if focal away. Featur
 _Avoid_: Official Fixture Difficulty, Dual-Vector Strength, `attack_multiplier` / `defence_multiplier`, DCS effective FDR (`defence_multiplier × 3`)
 
 **Matchup Share**:
-This-season Official club xG/xA/xGC history as Feature Contract rate bumps: player share of club xG/xA × (opponent xGC − league) for attack; team (opponent xG − league) for goals-conceded λ; saves/defcon × (opponent xG / league). Applied only when finished this-season club xG rows exist; otherwise Club Strength then neutral (ADR 0037).
-_Avoid_: Dual-Vector Strength, Club Strength Vector ratios as the live in-season path, raw Modified FDR multiplier, Team Poisson λ overlay
+This-season Official club xG/xA/xGC history as Feature Contract rate bumps: player share of club xG/xA with Bayesian positional priors × shrunk delta (s=0.40) × (opponent xGC − league) for attack; shrunk team delta (s=0.40) × (opponent xG − league) for goals-conceded λ; saves and defcon decoupled (neutral ×1.0); multipliers forced to ×1.0 (ADR 0040). Applied only when finished this-season club xG rows exist; otherwise Club Strength then neutral (ADR 0037).
+_Avoid_: Dual-Vector Strength, Club Strength Vector ratios as the live in-season path, raw Modified FDR multiplier, Team Poisson λ overlay, unregularized player shares, uncalibrated raw add-ons
+
 
 **Club Strength Vector**:
 Official API club fields `strength`, `strength_overall_home/away`, `strength_attack_home/away`, `strength_defence_home/away`. Cold-start / no Matchup Share path: attack/defence ratios as multipliers. Live 2026/27 often `strength` null and attack/defence 0 → neutral when Matchup Share also unavailable.
 _Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only), opponent's own home/away form
 
 **Dual-Vector Strength**:
-Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Research-only; not implemented in production Python; not API Club Strength Vector; not Model Champion `participation_penalty_hybrid` (ADR 0039).
-_Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed, `dual_vector_state_hybrid` (retired name)
+Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Research-only; not implemented in production Python; not API Club Strength Vector; not Model Champion `calibrated_matchup_hybrid` (ADR 0041).
+_Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed, `dual_vector_state_hybrid` (retired name), `participation_penalty_hybrid` (retired name)
+
 
 **Prior-Season Dual-Vector Seed**:
 Cold-Start Dual-Vector Strength from the latest archive season: club attack = sum of player `expected_goals` per club-fixture; club defence = that fixture’s `expected_goals_conceded` (one team value, not summed across players); home/away split; scaled to league average. Promoted Clubs use league average. FPL-xG proxy, not npxG. Live research xP for Canonical Preseason Chip Path (Stage 3) and First-Half Chip Path. Also research DCS effective FDR (`defence_multiplier × 3`).

@@ -1,0 +1,3 @@
+# Champion rename: participation_penalty_hybrid → calibrated_matchup_hybrid
+
+Retired production name `participation_penalty_hybrid`. Live Champion is `calibrated_matchup_hybrid`: Participation State minutes plus model-only penalty threat isolation (`penalties_order==1`), consuming Calibrated Matchup Share Feature Contract rates (shrunk additive delta $s=0.40$, Bayesian positional share priors $\beta=4.0$, decoupled peripheral defense; multipliers ×1.0 per [ADR 0040](0040-calibrated-matchup-share-shrinkage.md)); else Club Strength ratios; else neutral ×1.0 ([ADR 0037](0037-fdr-fallback-multiplier-neutral.md)). Historical research companions may still name `participation_penalty_hybrid` as the model that was run.

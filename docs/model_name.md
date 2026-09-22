@@ -8,7 +8,7 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 
 | Name | Module | Role | What it does |
 |------|--------|------|----------------|
-| `participation_penalty_hybrid` | `models/participation_penalty_hybrid.py` | Model Champion | Participation states plus penalty isolation (`penalties_order==1`); Feature Contract Matchup Share rates or Club Strength / ADR 0037 neutral multipliers. Not Dual-Vector Strength |
+| `calibrated_matchup_hybrid` | `models/calibrated_matchup_hybrid.py` | Model Champion | Calibrated Matchup Share (shrunk delta s=0.40, Bayesian positional priors, decoupled saves/defcon) with mutually exclusive participation states and model-only penalty isolation. Not Dual-Vector Strength |
 | `participation_state_hybrid` | `models/participation_state_hybrid.py` | Model Candidate | Event scoring from the hybrid, with mutually exclusive DNP / Start / Sub-in minutes |
 | `metrics_component_hybrid` | `models/metrics_component_hybrid.py` | Catalog | Calibrated Event Component reconstruct through the scoring matrix (ADR 0005 / 0007). Ancestor of participation; not a registered Model Candidate |
 | `component_baseline` | `models/component_baseline.py` | Baseline | Per-90 Event Rates through the scoring matrix; Prior-Season Seed / Position-Price |
@@ -32,7 +32,7 @@ Outputs: `data/<name>.csv` projections; `data/reports/top_picks_<name>.csv` from
 ## Examples
 
 ```bash
-uv run python -m commands.run_model participation_penalty_hybrid --horizon 5
+uv run python -m commands.run_model calibrated_matchup_hybrid --horizon 5
 uv run python -m commands.backtest metrics_component_hybrid --gw_range 20-30 --seed_season 2025-26
 uv run python -m commands.dashboard --model participation_state_hybrid
 ```

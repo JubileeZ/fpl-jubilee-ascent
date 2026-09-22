@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "champion": "participation_penalty_hybrid",
+  "champion": "calibrated_matchup_hybrid",
   "candidates": [
     "participation_state_hybrid"
   ],

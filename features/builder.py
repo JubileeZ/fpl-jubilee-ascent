@@ -681,7 +681,9 @@ def build_features(
     trailing_start_k: int = TRAILING_START_WINDOW_K,
     trailing_start_weight: float = TRAILING_START_WINDOW_WEIGHT,
     require_availability_snapshot: bool = False,
+    apply_matchup_share: bool = True,
 ) -> pd.DataFrame:
+
     """
     Compiles a FeatureContract DataFrame for a target gameweek.
     
@@ -1034,12 +1036,14 @@ def build_features(
             df_feat[mult_col] = df_feat[mult_col].fillna(1.0)
 
     # Matchup Share (this-season club xG) → else Club Strength / neutral from fmap.
-    df_feat, _matchup_applied = apply_matchup_share_overlay(
-        df_feat,
-        df_hist_context if "club_id" in df_hist_context.columns else df_hist,
-        df_fixtures,
-        history_cutoff_gw=history_cutoff,
-    )
+    if apply_matchup_share:
+        df_feat, _matchup_applied = apply_matchup_share_overlay(
+            df_feat,
+            df_hist_context if "club_id" in df_hist_context.columns else df_hist,
+            df_fixtures,
+            history_cutoff_gw=history_cutoff,
+        )
+
 
     # Define chance of playing
     chance_col = "chance_of_playing_next_round"

@@ -132,7 +132,8 @@ def test_build_dashboard_dataset(tmp_path: Path):
     assert haaland["ownership_pct"] == 12.5
     assert "expected_role" not in haaland
     assert dataset["meta"]["planning_gw_ids"] == [1]
-    assert "participation_penalty_hybrid" in dataset["meta"]["catalog_models"]
+    assert "calibrated_matchup_hybrid" in dataset["meta"]["catalog_models"]
+    assert "participation_penalty_hybrid" not in dataset["meta"]["catalog_models"]
     assert "dual_vector_state_hybrid" not in dataset["meta"]["catalog_models"]
     slice_h = haaland["explorer"]["planning_horizon"]
     assert slice_h["n_gameweeks"] == 1

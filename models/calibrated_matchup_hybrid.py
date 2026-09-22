@@ -1,34 +1,34 @@
-"""Participation + penalty-isolated hybrid projection model.
+"""Calibrated Matchup + penalty-isolated hybrid projection model.
 
 Extends ``participation_state_hybrid`` with penalty threat isolation for
 ``penalties_order==1`` (open-play attack scales with Feature Contract multipliers;
-fixed ~0.15 xG/90 pen share does not). Fixture multipliers come from the Feature
-Contract (Matchup Share forces ×1.0; else Club Strength ratios, or neutral ×1.0 when
-strengths are 0 — ADR 0037).
-Not Dual-Vector Strength (research-only; ADR 0013).
+fixed ~0.15 xG/90 pen share does not). Fixture context on Feature Contract:
+Calibrated Matchup Share (shrunk additive delta s=0.40, Bayesian positional share
+priors beta=4.0, decoupled saves/defcon; multipliers x1.0); else Club Strength ratios;
+else neutral x1.0 (ADR 0037, ADR 0040, ADR 0041).
 """
 
 import numpy as np
 import pandas as pd
 
 from models.metrics_component_hybrid import (
-    _number,
-    _optional_number,
     _CLEAN_SHEET_POINTS,
     _expected_negbin_conceded_penalty,
     _expected_poisson_floor,
     _negbin_cdf_complement,
+    _number,
+    _optional_number,
 )
 from models.participation_state_hybrid import ParticipationStateHybridModel
 from models.scoring_matrix import event_points
 
 
-class ParticipationPenaltyHybridModel(ParticipationStateHybridModel):
-    """Participation states plus penalty isolation; Feature Contract multipliers."""
+class CalibratedMatchupHybridModel(ParticipationStateHybridModel):
+    """Participation states plus penalty isolation; Feature Contract Calibrated Matchup Share."""
 
     @property
     def name(self) -> str:
-        return "participation_penalty_hybrid"
+        return "calibrated_matchup_hybrid"
 
     def _project_event_components(
         self,

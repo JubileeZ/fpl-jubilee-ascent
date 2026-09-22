@@ -22,5 +22,5 @@
 uv run python -m commands.backtest participation_state_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed
 
 # Same window scored vs Process Points (finish-luck reduced on goals/assists)
-uv run python -m commands.backtest participation_penalty_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed --seed_season 2024-25 --eval_target process
+uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed --seed_season 2024-25 --eval_target process
 ```
