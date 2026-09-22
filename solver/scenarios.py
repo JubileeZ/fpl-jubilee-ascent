@@ -1,4 +1,4 @@
-"""Transfer Plan Scenario arms: Roll, 1 FT, Optimal."""
+"""Transfer Plan Scenario arms: Optimal, No Hit (ADR 0042)."""
 
 from __future__ import annotations
 
@@ -6,23 +6,22 @@ from typing import Any, Mapping, Sequence
 
 from projections.expected_gw_score import PlayerGw, auto_captain_alternatives, expected_gw_score
 
-ARM_ROLL = "roll"
-ARM_ONE_FT = "one_ft"
 ARM_OPTIMAL = "optimal"
+ARM_NO_HIT = "no_hit"
 ARM_NAMES: dict[str, str] = {
-    ARM_ROLL: "Roll",
-    ARM_ONE_FT: "1 FT",
     ARM_OPTIMAL: "Optimal",
+    ARM_NO_HIT: "No Hit",
 }
-ARM_TIEBREAK: dict[str, int] = {ARM_OPTIMAL: 0, ARM_ONE_FT: 1, ARM_ROLL: 2}
+ARM_TIEBREAK: dict[str, int] = {ARM_OPTIMAL: 0, ARM_NO_HIT: 1}
 LIVE_WEEKLY_HIT_LIMIT = 1
 LIVE_HIT_COST = 4.0
+NO_HIT_WEEKLY_HIT_LIMIT = 0
 
 
 def feasible_scenario_arms(free_transfer_bank: int) -> tuple[str, ...]:
-    if int(free_transfer_bank) >= 1:
-        return (ARM_ROLL, ARM_ONE_FT, ARM_OPTIMAL)
-    return (ARM_ROLL, ARM_OPTIMAL)
+    """Must arms are always Optimal + No Hit (bank unused; kept for call-site stability)."""
+    _ = int(free_transfer_bank)
+    return (ARM_OPTIMAL, ARM_NO_HIT)
 
 
 def scenario_arm_overrides(
@@ -33,17 +32,17 @@ def scenario_arm_overrides(
 ) -> dict[str, Any]:
     if arm not in ARM_NAMES:
         raise ValueError(f"unknown Transfer Plan Scenario arm {arm!r}")
-    if arm == ARM_ONE_FT and int(free_transfer_bank) < 1:
-        raise ValueError("1 FT arm requires Free Transfer Bank ≥ 1")
-    overrides: dict[str, Any] = {
+    _ = int(start_gw)
+    _ = int(free_transfer_bank)
+    if arm == ARM_NO_HIT:
+        return {
+            "weekly_hit_limit": NO_HIT_WEEKLY_HIT_LIMIT,
+            "hit_cost": LIVE_HIT_COST,
+        }
+    return {
         "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
         "hit_cost": LIVE_HIT_COST,
     }
-    if arm == ARM_ROLL:
-        overrides["no_transfer_gws"] = [int(start_gw)]
-    elif arm == ARM_ONE_FT:
-        overrides["num_transfers"] = 1
-    return overrides
 
 
 def apply_scenario_arm(
@@ -117,4 +116,3 @@ def annotate_plan_with_egs(
         "next_best": [],
     }
     return annotated
-

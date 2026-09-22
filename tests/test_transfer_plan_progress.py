@@ -14,7 +14,7 @@ from commands.transfer_plan_scenarios import (
     mark_scenarios_stale,
     serial_arm_options,
 )
-from solver.scenarios import ARM_ONE_FT, ARM_OPTIMAL, ARM_ROLL
+from solver.scenarios import ARM_NO_HIT, ARM_OPTIMAL
 
 
 def _squad(processed_dir: Path) -> None:
@@ -48,13 +48,13 @@ def test_mark_scenarios_stale_keeps_cards(tmp_path: Path) -> None:
     path = tmp_path / "scenarios.json"
     payload = build_scenarios_payload(
         rows=[{
-            "id": ARM_ROLL,
-            "name": "Roll",
+            "id": ARM_OPTIMAL,
+            "name": "Optimal",
             "horizon_egs": 10.0,
             "solver_objective": 1.0,
             "plan": {"meta": {}, "weeks": []},
         }],
-        arms=(ARM_ROLL, ARM_OPTIMAL),
+        arms=(ARM_OPTIMAL, ARM_NO_HIT),
         target_gw=5,
         horizon=1,
         free_transfers=0,
@@ -65,7 +65,7 @@ def test_mark_scenarios_stale_keeps_cards(tmp_path: Path) -> None:
     stale = mark_scenarios_stale(path)
     assert stale is not None
     assert stale["meta"]["stale"] is True
-    assert stale["scenarios"][0]["id"] == ARM_ROLL
+    assert stale["scenarios"][0]["id"] == ARM_OPTIMAL
     reloaded = json.loads(path.read_text(encoding="utf-8"))
     assert reloaded["meta"]["stale"] is True
 
@@ -82,13 +82,13 @@ def test_execute_scenarios_progress_and_parallel_finish(tmp_path: Path) -> None:
         }]
     }
     progress: list[dict] = []
-    barrier = threading.Barrier(3)
+    barrier = threading.Barrier(2)
 
     def fake_execute(options: dict, **kwargs: object) -> dict:
         assert options.get("parallel") == "off"
         assert options.get("threads") == 1
         barrier.wait(timeout=2.0)
-        hits = 0 if options.get("no_transfer_gws") else (0 if options.get("num_transfers") == 1 else 1)
+        hits = 0 if int(options.get("weekly_hit_limit", 1)) == 0 else 1
         return {
             "meta": {"solver_objective": 10.0, "next_gw": 5, "horizon": 1},
             "weeks": [{
@@ -115,9 +115,9 @@ def test_execute_scenarios_progress_and_parallel_finish(tmp_path: Path) -> None:
     )
     assert payload["meta"]["status"] == "ok"
     assert payload["meta"]["stale"] is False
-    assert set(payload["meta"]["arms"]) == {ARM_ROLL, ARM_ONE_FT, ARM_OPTIMAL}
+    assert set(payload["meta"]["arms"]) == {ARM_OPTIMAL, ARM_NO_HIT}
     assert payload["meta"]["pending_arms"] == []
-    assert len(payload["scenarios"]) == 3
+    assert len(payload["scenarios"]) == 2
     assert any(p["meta"]["status"] == "running" for p in progress)
     assert progress[-1]["meta"]["status"] == "ok"
     disk = json.loads(scenarios_path.read_text(encoding="utf-8"))

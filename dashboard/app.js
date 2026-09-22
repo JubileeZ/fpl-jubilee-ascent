@@ -568,6 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btn && btn.disabled) return;
     beginJob();
     setRefreshStatus("Solving Transfer Plan Scenarios…");
+    if (window.resetTransferPlanSelection) window.resetTransferPlanSelection();
     try {
       const body = window.transferPlanRequestBody ? window.transferPlanRequestBody() : { horizon: 6 };
       const post = await fetch("/api/transfer-plan", {

@@ -40,7 +40,7 @@ uv run python -m commands.dashboard
 
 4. Visit `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`).
 5. Click **Refresh** (ingest live FPL + project Primary / Champion).
-6. Open the **Transfer Plan** tab → **Solve scenarios** (ranks Roll / 1 FT / Optimal by horizon Σ Expected GW Score).
+6. Open the **Transfer Plan** tab → **Solve scenarios** (ranks Optimal / No Hit by horizon Σ Expected GW Score).
 
 You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
 
@@ -266,7 +266,7 @@ Click **Refresh** in the header to ingest live FPL data, re-project the **Primar
 
 Click **Solve Dream Team** (Explorer only) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
 
-Open the **Transfer Plan** tab and click **Solve scenarios** to rank Roll / 1 FT / Optimal by horizon sum of Expected GW Score. Needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. Plan XI is read-only and does not load into Squad What-If. Payload: `data/transfer_plan_scenarios.json` (not embedded in `dashboard_data.json`).
+Open the **Transfer Plan** tab and click **Solve scenarios** to rank Optimal / No Hit by horizon sum of Expected GW Score. Needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. Plan XI is read-only and does not load into Squad What-If. Payload: `data/transfer_plan_scenarios.json` (not embedded in `dashboard_data.json`).
 
 Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. On project/export/solve resolve, Official tables in `data/processed` are healed from the Live Season Pin when they disagree (User Squad untouched; ADR 0036). After pull, open the dashboard or run export/`run_model`/`solve` — heal aligns Official tables automatically. Live Refresh at different times can still disagree because FPL data moved; Refresh advances both processed and pin.
 
@@ -309,7 +309,7 @@ full slice.
 
 **Transfer Plan Surface**
 
-Peer tab beside Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Roll / 1 FT / Optimal by undiscounted sum of Expected GW Score (1 FT omitted when Free Transfer Bank = 0). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
+Peer tab beside Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Optimal / No Hit by undiscounted sum of Expected GW Score (always both arms). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
 
 ### 9. Season Archiving
 

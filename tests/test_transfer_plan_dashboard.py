@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from commands.transfer_plan_scenarios import UserSquadRequired, execute_transfer_plan_scenarios
-from solver.scenarios import ARM_OPTIMAL, ARM_ROLL
+from solver.scenarios import ARM_NO_HIT, ARM_OPTIMAL
 
 
 def _squad(processed_dir: Path) -> None:
@@ -57,7 +57,7 @@ def test_execute_scenarios_ranks_feasible_arms(tmp_path: Path) -> None:
     }
 
     def fake_execute(options: dict, **kwargs: object) -> dict:
-        hits = 0 if options.get("no_transfer_gws") else 1
+        hits = 0 if int(options.get("weekly_hit_limit", 1)) == 0 else 1
         return {
             "meta": {"solver_objective": 10.0 if hits else 9.0, "next_gw": 5, "horizon": 1},
             "weeks": [{
@@ -81,9 +81,9 @@ def test_execute_scenarios_ranks_feasible_arms(tmp_path: Path) -> None:
         solution_path=tmp_path / "solution.json",
     )
     ids = [row["id"] for row in payload["scenarios"]]
-    assert ARM_ROLL in ids
-    assert ARM_OPTIMAL in ids
-    assert "one_ft" not in ids
+    assert ARM_OPTIMAL in ids and ARM_NO_HIT in ids
+    assert "roll" not in ids and "one_ft" not in ids
+    assert len(ids) == 2
     assert payload["scenarios"][0]["rank"] == 1
     assert (tmp_path / "scenarios.json").exists()
     assert (tmp_path / "solution.json").exists()
@@ -113,20 +113,20 @@ def test_handle_dashboard_api_transfer_plan(monkeypatch: pytest.MonkeyPatch) -> 
 def test_refresh_marks_scenarios_stale_without_deleting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from commands import dashboard as dash
     from commands.transfer_plan_scenarios import build_scenarios_payload, write_scenarios_payload
-    from solver.scenarios import ARM_ROLL
+    from solver.scenarios import ARM_OPTIMAL
 
     path = tmp_path / "transfer_plan_scenarios.json"
     write_scenarios_payload(
         path,
         build_scenarios_payload(
             rows=[{
-                "id": ARM_ROLL,
-                "name": "Roll",
+                "id": ARM_OPTIMAL,
+                "name": "Optimal",
                 "horizon_egs": 1.0,
                 "solver_objective": 1.0,
                 "plan": {"meta": {}, "weeks": []},
             }],
-            arms=(ARM_ROLL,),
+            arms=(ARM_OPTIMAL,),
             target_gw=1,
             horizon=1,
             free_transfers=0,

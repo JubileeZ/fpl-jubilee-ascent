@@ -1,6 +1,6 @@
 (function () {
   const POS_ORDER = ["G", "D", "M", "F"];
-  const ARM_LABEL = { roll: "Roll", one_ft: "1 FT", optimal: "Optimal" };
+  const ARM_LABEL = { optimal: "Optimal", no_hit: "No Hit" };
   const CHIP_OPTION = { wc: "use_wc", bb: "use_bb", fh: "use_fh", tc: "use_tc" };
   const CHIP_LABEL = { wc: "Wildcard", bb: "Bench Boost", fh: "Free Hit", tc: "Triple Captain" };
   const STATUS_LABEL = { a: "Avail", d: "Doubt", i: "Inj", s: "Sus", u: "Unav", n: "n/a" };
@@ -324,10 +324,16 @@
   }
 
   function setPayload(next) {
+    // Preserve selectedId / selectedGw across progressive poll updates so a finished
+    // arm stays inspectable (week strip + XI) while other arms are still solving.
     payload = next && next.scenarios ? next : null;
-    selectedId = payload && payload.scenarios && payload.scenarios[0] ? payload.scenarios[0].id : null;
-    selectedGw = null;
     render();
+  }
+
+  function resetSelection() {
+    selectedId = null;
+    selectedGw = null;
+    if (payload) render();
   }
 
   function render() {
@@ -355,6 +361,7 @@
 
   window.renderTransferPlanSurface = render;
   window.setTransferPlanPayload = setPayload;
+  window.resetTransferPlanSelection = resetSelection;
   window.transferPlanRequestBody = function () {
     return {
       horizon: planHorizon(),

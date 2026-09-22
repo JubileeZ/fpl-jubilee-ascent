@@ -114,6 +114,8 @@ def test_transfer_plan_surface_script_ranks_scenarios() -> None:
     assert "Next-best" in html
     assert "data-gw" in plan
     assert "selectedGw" in plan
+    assert "resetTransferPlanSelection" in plan
+    assert "resetTransferPlanSelection" in app
     assert "click a GW" in html
     assert "read-only" in html.lower() or "read-only" in plan.lower()
     assert "Does not load into Squad What-If" in html
