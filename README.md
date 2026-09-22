@@ -282,9 +282,9 @@ Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed;
 
 **Squad Board** draws the User Squad (pitch + Squad xP strip + Squad components). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
 
-Below the board: toolbar filters, **Differentials Ranking** (when EO cache exists), then the **rank table**, then ownership % and price scatter charts, then **Player components** for the selected player.
+Below the board: toolbar filters, then the **rank table**, then ownership % and price scatter charts, then **Player components** for the selected player.
 
-The rank table and Differentials show **Total** (horizon xP) and **/GW** (xP per Gameweek = Total ÷ gameweeks). The rank table also has **/90** (Projected Rate), per-GW xP with fixture labels, status / chance / news, Δ£, Own%, and xMins. On-screen legend under the toolbar: Total · /GW · /90 · xMins · Δ£ · Dream.
+The rank table shows **Total** (horizon xP) and **/GW** (xP per Gameweek = Total ÷ gameweeks), plus **/90** (Projected Rate), per-GW xP with fixture labels, status / chance / news, Δ£, Own%, and xMins. On-screen legend under the toolbar: Total · /GW · /90 · xMins · Δ£ · Dream.
 
 **Y-axis** is shared by both charts: **xP per Gameweek** (default) or **Projected Rate**. Charts sit under the table. Marker colour is position; marker size is average minutes. Click a marker to label that player and highlight the table row.
 

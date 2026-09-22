@@ -114,9 +114,6 @@
         render();
       });
     });
-    document.getElementById("differentials-empty-refresh")?.addEventListener("click", () => {
-      document.getElementById("btn-refresh")?.click();
-    });
     document.getElementById("explorer-xmins-floor").addEventListener("input", (e) => {
       xminsFloor = parseFloat(e.target.value);
       document.getElementById("explorer-xmins-floor-val").textContent = String(xminsFloor);
@@ -474,54 +471,6 @@
     }).join("");
   }
 
-  function renderDifferentials() {
-    const panel = document.getElementById("differentials-ranking");
-    const metaEl = document.getElementById("differentials-meta");
-    const body = document.getElementById("differentials-body");
-    const emptyEl = document.getElementById("differentials-empty");
-    const tableWrap = document.getElementById("differentials-table-wrap");
-    if (!panel || !metaEl || !body) return;
-    const payload = ctx && ctx.getDifferentials ? ctx.getDifferentials() : null;
-    if (!payload || !Array.isArray(payload.rows)) {
-      panel.hidden = true;
-      body.innerHTML = "";
-      metaEl.textContent = "";
-      if (emptyEl) emptyEl.hidden = true;
-      return;
-    }
-    panel.hidden = false;
-    const stamp = payload.captured_at ? ` · ${payload.captured_at}` : "";
-    metaEl.textContent = `${payload.label || "Overall top N"} · GW${payload.gameweek_id || "—"} · N=${payload.n || 0}${stamp}`;
-    const owned = new Set((meta().owned_squad_ids || []).map(Number));
-    if (!owned.size) {
-      body.innerHTML = "";
-      if (emptyEl) emptyEl.hidden = false;
-      if (tableWrap) tableWrap.hidden = true;
-      return;
-    }
-    if (emptyEl) emptyEl.hidden = true;
-    if (tableWrap) tableWrap.hidden = false;
-    const nGw = Math.max(1, viewGws().length);
-    body.innerHTML = payload.rows
-      .map((row, i) => {
-        const afford = row.affordable ? "Yes" : "No";
-        const total = Number(row.total_xp_horizon || 0);
-        const perGw = round(total / nGw, 4);
-        return `<tr data-player-id="${row.id}">
-          <td>${i + 1}</td>
-          <td>${row.name}</td>
-          <td>${POS_LABEL[row.pos] || row.pos}</td>
-          <td>${row.team}</td>
-          <td>£${Number(row.price).toFixed(1)}m</td>
-          <td>${total.toFixed(2)}</td>
-          <td>${Number(perGw).toFixed(2)}</td>
-          <td>${Number(row.eo_pct).toFixed(1)}</td>
-          <td>${afford}</td>
-        </tr>`;
-      })
-      .join("");
-  }
-
   function render() {
     if (!ctx) return;
     bindControls();
@@ -534,7 +483,6 @@
       `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
     renderCharts(visible);
     renderTable(tableRows);
-    renderDifferentials();
     renderPlayerComponents();
   }
 

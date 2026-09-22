@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: Transfer Plan dashboard spec fog / remaining Later gaps, or close map #88. Differentials Ranking + Top-10k EO + Explorer Δ£ shipped; Must+Should Surface shipped (ADR 0034).
+Next work: Transfer Plan dashboard spec fog / remaining Later gaps, or close map #88. Top-10k EO + Differentials Ranking retired. Must+Should Surface shipped (ADR 0034).
 
 ```mermaid
 flowchart TD

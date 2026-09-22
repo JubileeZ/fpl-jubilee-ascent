@@ -48,8 +48,6 @@ logger = logging.getLogger(__name__)
 _job_lock = threading.Lock()
 _refresh_lock = threading.Lock()
 _refresh_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
-_eo_lock = threading.Lock()
-_eo_state: dict[str, object] = {"status": "idle", "error": None, "detail": None}
 _dream_lock = threading.Lock()
 _dream_state: dict[str, object] = {
     "status": "idle",
@@ -98,22 +96,6 @@ def _set_refresh_state(*, status: str, error: str | None = None, detail: str | N
 
 def reset_refresh_state() -> None:
     _set_refresh_state(status="idle", error=None, detail=None)
-
-
-def eo_status() -> dict[str, object]:
-    with _eo_lock:
-        return dict(_eo_state)
-
-
-def _set_eo_state(*, status: str, error: str | None = None, detail: str | None = None) -> None:
-    with _eo_lock:
-        _eo_state["status"] = status
-        _eo_state["error"] = error
-        _eo_state["detail"] = detail
-
-
-def reset_eo_state() -> None:
-    _set_eo_state(status="idle", error=None, detail=None)
 
 
 def dream_team_status() -> dict[str, object]:
@@ -229,27 +211,6 @@ def run_dashboard_export(
     return json_path
 
 
-def run_eo_crawl_job(
-    model_name: str | None = None,
-    horizon: int = DEFAULT_PLANNING_HORIZON,
-    model_names: list[str] | None = None,
-) -> None:
-    try:
-        _set_eo_state(status="running", error=None, detail="Crawling Top-10k Effective Ownership…")
-        from commands.effective_ownership_crawl import crawl_effective_ownership
-
-        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
-        path = asyncio.run(crawl_effective_ownership(processed_dir=processed_dir, project_root=PROJECT_ROOT))
-        if path is None:
-            _set_eo_state(status="idle", error=None, detail="EO skipped (no entry / Overall league).")
-            return
-        run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
-        _set_eo_state(status="ok", error=None, detail="Differentials Ranking ready.")
-    except Exception as exc:
-        logger.exception("Effective Ownership crawl failed")
-        _set_eo_state(status="error", error=str(exc), detail="EO crawl failed; last complete cache kept.")
-
-
 def run_refresh_job(
     model_name: str | None = None,
     horizon: int = DEFAULT_PLANNING_HORIZON,
@@ -270,14 +231,7 @@ def run_refresh_job(
         ingest_live_data()
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
-        _set_refresh_state(status="ok", error=None, detail="Charts updated. EO crawl starting…")
-        if eo_status()["status"] != "running":
-            _set_eo_state(status="running", error=None, detail="Starting EO crawl…")
-            threading.Thread(
-                target=run_eo_crawl_job,
-                kwargs={"model_name": model_name, "horizon": horizon, "model_names": model_names},
-                daemon=True,
-            ).start()
+        _set_refresh_state(status="ok", error=None, detail="Charts updated.")
     except Exception as exc:
         logger.exception("Dashboard Refresh failed")
         _set_refresh_state(status="error", error=str(exc), detail="Refresh failed.")
@@ -528,9 +482,6 @@ def handle_dashboard_api(
         if method == "POST":
             model_name = posted_primary_model(body)
             return start_refresh(model_name=model_name)
-    if path == "/api/eo":
-        if method == "GET":
-            return 200, eo_status()
     if path == "/api/dream-team":
         if method == "GET":
             return 200, dream_team_status()

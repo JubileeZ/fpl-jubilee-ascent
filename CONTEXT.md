@@ -445,15 +445,15 @@ _Avoid_: high ceiling, ignoring clean sheets, FWD Defcon strip
 
 **Mix**:
 Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Projection in the Planning Horizon, and horizon total. Mix vs Mix requires the same size (1 vs 1, 2 vs 2, 3 vs 3). Same position is not required. A Player occupies at most one Mix. View-only: a Mix does not Force Keep or Force Ban. Not a Transfer Plan, not a legal 15. Not drawn in Explorer (ADR 0027).
-_Avoid_: combo, package, alternative 15, Differentials Ranking, solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
+_Avoid_: combo, package, alternative 15, Differentials Ranking (retired), solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Effective Ownership**:
-Among Overall classic managers with rank ≤ 10 000 (or all ranked if N&lt;10k, labelled Overall top N): EO% = Σ multiplier / N × 100 (owned=1, C=2, TC=3; VC adds nothing). League id from entry `short_name=overall`. Picks for Transfer Plan Start GW. Built on dashboard Refresh into a gitignored cache + freshness stamp; not Live Season Pin. Incomplete crawl is not product EO; last complete cache OK. Differentials Ranking panel only in v1. Not overall `selected_by_percent`.
-_Avoid_: selected_by_percent as EO, Ownership %, hard-coded league 314, partial crawl as Top-10k EO, mini-league as this EO, pinning 10k picks, VC/autosub EO model
+Retired from product. Was Top-10k Overall captain-adjusted ownership via Official standings + entry picks crawl on Refresh. Crawl unreliable; Differentials Ranking removed with it. Research notes on Official path remain under `docs/research/wayfinder-transfer-plan-spec/`. Not overall `selected_by_percent`.
+_Avoid_: selected_by_percent as EO, shipping Top-10k EO product, pinning 10k picks
 
 **Differentials Ranking**:
-Explorer-only ranked table of Players not in the User Squad: Planning Horizon Total (xP) primary, **/GW** secondary display, Effective Ownership secondary sort key; Price + affordable hint; same Planning Horizon and Primary Projection Model as Explorer. Absent until Effective Ownership exists; never faked from overall ownership. Not Mix vs Mix; not Transfer Plan Surface; not Own% scatter.
-_Avoid_: differential (bare), Mix, EO/top-10k as this panel, overall Own% stand-in, Surface differentials widget
+Retired from Explorer. Was EO-backed table of unowned Players. Do not fake from overall Own%.
+_Avoid_: differential (bare), Mix, EO/top-10k panel, overall Own% stand-in
 
 **Mix Member**:
 A Player occupying Mix A or Mix B, never both. Distinct from highlighting a Player in Explorer and from a Dream Team badge.
@@ -472,8 +472,8 @@ Explorer card for the selected pool Player. Planning Horizon clock xMins and Eve
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Explorer**:
-Live product dashboard tab (peer to Transfer Plan Surface). Ranks Feature Contract Players on the Planning Horizon. Layout: Squad Board + Component Profile, toolbar, Differentials Ranking, rank table (Total · /GW · per-GW · /90 · xMins), ownership and price charts, Player components. Y-axis default xP per Gameweek; switchable to Projected Rate. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking omitted until Effective Ownership exists. Not the Transfer Plan. Champion Trust in the header. Not a Season Window ranking.
-_Avoid_: Ownership Explorer (legacy tab name), Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle
+Live product dashboard tab (peer to Transfer Plan Surface). Ranks Feature Contract Players on the Planning Horizon. Layout: Squad Board + Component Profile, toolbar, rank table (Total · /GW · per-GW · /90 · xMins), ownership and price charts, Player components. Y-axis default xP per Gameweek; switchable to Projected Rate. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking / Top-10k EO retired. Not the Transfer Plan. Champion Trust in the header. Not a Season Window ranking.
+_Avoid_: Ownership Explorer (legacy tab name), Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle, Top-10k EO crawl product
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain. Research / CLI evidence; not Champion Trust chrome.

@@ -55,15 +55,15 @@ def test_dashboard_html_has_explorer_view() -> None:
     assert "/GW" in html
     assert "marker size" in html
     assert "Δ£" in html
-    assert 'id="differentials-ranking"' in html
-    assert 'id="differentials-empty-refresh"' in html
-    assert "/api/eo" in js
+    assert 'id="differentials-ranking"' not in html
+    assert 'id="differentials-empty-refresh"' not in html
+    assert "/api/eo" not in js
+    assert "waitForEo" not in js
     assert "Squad Builder" not in html
     assert "First-Half Horizon" not in html
     assert 'value="first_half"' not in html
     assert 'value="all_projection"' not in html
     assert 'id="mix-a-list"' not in html
-    assert html.index('id="differentials-ranking"') < html.index('id="explorer-table-wrap"')
     assert html.index('id="explorer-table-wrap"') < html.index('class="explorer-charts"')
     assert html.index('class="explorer-charts"') < html.index('id="player-component-card"')
 
@@ -77,7 +77,8 @@ def test_explorer_script_uses_planning_horizon_without_mix() -> None:
     assert "getViewGws" in js
     assert "Projected Rate" in js
     assert "change_since_refresh" in js
-    assert "renderDifferentials" in js or "differentials" in js
+    assert "renderDifferentials" not in js
+    assert "differentials" not in js
     assert "priceRangeUserSet" in js
     assert "Math.ceil(Math.max" in js or "Math.max(...prices)" in js
     assert "xP per Gameweek" in js

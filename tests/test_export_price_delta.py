@@ -1,4 +1,4 @@
-"""Export includes observed Δ£ and Differentials Ranking when EO cache is complete."""
+"""Export includes observed Δ£; no Differentials Ranking / EO payload."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 
 from commands.export_dashboard import build_dashboard_dataset
-from projections.effective_ownership import save_complete_eo_cache
 
 
 def _minimal_processed(processed_dir: Path) -> None:
@@ -44,7 +43,7 @@ def _minimal_processed(processed_dir: Path) -> None:
     pd.DataFrame([{"bank": 10, "transfers": 1}]).to_parquet(processed_dir / "user_state.parquet")
 
 
-def test_export_price_delta_and_differentials(tmp_path: Path) -> None:
+def test_export_price_delta_without_differentials(tmp_path: Path) -> None:
     processed = tmp_path / "processed"
     _minimal_processed(processed)
     history = pd.DataFrame([
@@ -54,30 +53,14 @@ def test_export_price_delta_and_differentials(tmp_path: Path) -> None:
         {"player_id": 2, "now_cost": 80, "gameweek_id": 1, "captured_at": "2026-09-08T00:00:00Z", "web_name": "Two"},
     ])
     history.to_parquet(processed / "price_history.parquet", index=False)
-    eo_path = tmp_path / "effective_ownership.json"
-    save_complete_eo_cache(
-        eo_path,
-        n=2,
-        gameweek_id=1,
-        league_id=314,
-        by_player={1: 80.0, 2: 5.0},
-        label="Overall top 2",
-        captured_at="2026-09-18T00:00:00+00:00",
-    )
     preds = pd.DataFrame([
         {"player_id": 1, "gameweek_id": 1, "projected_points": 4.0, "projected_minutes": 90.0,
          "xp_goals": 0, "xp_assists": 0, "xp_clean_sheet": 0, "xp_defcon": 0, "xp_bonus": 0, "p_dnp": 0},
         {"player_id": 2, "gameweek_id": 1, "projected_points": 9.0, "projected_minutes": 90.0,
          "xp_goals": 0, "xp_assists": 0, "xp_clean_sheet": 0, "xp_defcon": 0, "xp_bonus": 0, "p_dnp": 0},
     ])
-    dataset = build_dashboard_dataset(
-        processed, preds, target_gw=1, horizon=1, eo_cache_path=eo_path
-    )
+    dataset = build_dashboard_dataset(processed, preds, target_gw=1, horizon=1)
     by_id = {p["id"]: p for p in dataset["players"]}
     assert by_id[1]["change_since_refresh"] == 0.5
     assert by_id[2]["change_since_refresh"] == 0.0
-    diff = dataset["differentials_ranking"]
-    assert diff is not None
-    assert diff["label"] == "Overall top 2"
-    assert [r["id"] for r in diff["rows"]] == [2]
-    assert diff["rows"][0]["eo_pct"] == 5.0
+    assert "differentials_ranking" not in dataset

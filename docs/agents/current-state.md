@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must+Should Transfer Plan Surface implemented** (ADR 0034). Differentials Ranking + Top-10k EO product shipped (Refresh → EO crawl → Explorer panel; Δ£ observed column). Fog / unticketed Later remain. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md`. Research: `docs/research/wayfinder-transfer-plan-spec/`. Glossary: Differentials Ranking, Effective Ownership.
+Wayfinder map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88). **Must+Should Transfer Plan Surface implemented** (ADR 0034). Top-10k EO crawl + Differentials Ranking **retired** (crawl unreliable). Δ£ observed column remains. Fog / unticketed Later remain. Bind `.agents/work-packets/transfer-plan-dashboard-spec.md` for remaining map work. Research: `docs/research/wayfinder-transfer-plan-spec/`.
 
 ## Research truth
 
