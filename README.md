@@ -168,9 +168,30 @@ Live Transfer Plans (dashboard **Solve scenarios** and `commands.solve`) stop wh
 uv run python -m commands.solve --horizon 6 --no_hit
 ```
 
+**Full proof** (`--gap 0`): search until the Solver Objective is proven, instead of stopping within 1% of the best value. Live default is `--gap 0.01`.
+
+```bash
+uv run python -m commands.solve --horizon 6 --gap 0
+```
+
+**Booked chips:** force one chip onto a gameweek inside the horizon. At most one chip per gameweek. The horizon must include every booked gameweek (default horizon 6 from the next deadline does not reach a later chip week).
+
+| Flag | Chip |
+|------|------|
+| `--use_wc` | Wildcard |
+| `--use_bb` | Bench Boost |
+| `--use_fh` | Free Hit |
+| `--use_tc` | Triple Captain |
+
+Pass a gameweek, or comma-separated gameweeks. No Hit plus a full proof, with Triple Captain in GW11 and Free Hit in GW12, starting from the next deadline (GW6 needs horizon 7 to include GW12):
+
+```bash
+uv run python -m commands.solve --horizon 7 --use_tc 11 --use_fh 12 --no_hit --gap 0
+```
+
 The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV (or pass `--champion`).
 
-*Note:* Tune the horizon, decay, hit cost, No Hit mode (`--no_hit` / `--weekly_hit_limit 0`), Solver Objective gap (`--gap 0` for a full proof; live default 0.01), and supported solver options explicitly
+*Note:* Tune the horizon, decay, hit cost, No Hit mode (`--no_hit` / `--weekly_hit_limit 0`), Solver Objective gap (`--gap 0` for a full proof; live default 0.01), booked chips (`--use_wc`, `--use_bb`, `--use_fh`, `--use_tc`), and other supported solver options explicitly
 (for example `--horizon 6 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
 Unsupported solver options fail before solving.
 
