@@ -8,7 +8,7 @@ import pandas as pd
 from commands.export_dashboard import load_transfer_plan, load_transfer_plan_document
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
 from projections.exporter import pad_solver_csv_horizon, solver_csv_covers_horizon, write_solver_projection_csvs
-from solver.transfer_plan import serialize_transfer_plan
+from solver.transfer_plan import serialize_transfer_plan, solver_objective_stop_note
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
 
@@ -49,6 +49,23 @@ def _picks() -> pd.DataFrame:
     )
 
 
+def test_solver_objective_stop_note_hides_a_proven_plan() -> None:
+    assert solver_objective_stop_note(0.0, target_gap=0.01, model_status="Optimal", time_limit_secs=1200) is None
+    assert solver_objective_stop_note(1e-8, target_gap=0.01, model_status="Optimal", time_limit_secs=1200) is None
+
+
+def test_solver_objective_stop_note_names_a_one_percent_stop() -> None:
+    note = solver_objective_stop_note(0.008, target_gap=0.01, model_status="Optimal", time_limit_secs=1200)
+    assert note == "Within 1% of the best Solver Objective."
+
+
+def test_solver_objective_stop_note_names_the_clock_gap() -> None:
+    note = solver_objective_stop_note(
+        0.042, target_gap=0.01, model_status="Time limit reached", time_limit_secs=1200
+    )
+    assert note == "Stopped at 20 min, 4.2% from the best Solver Objective."
+
+
 def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     solution = {
         "picks": _picks(),
@@ -77,6 +94,7 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert loaded["meta"]["solver_objective"] == 14.2
     assert loaded["meta"]["total_xp"] == 15.0
     assert loaded["meta"]["booked_chips"]["use_bb"] == [1]
+    assert "solver_objective_note" not in loaded["meta"]
     assert loaded["weeks"][0]["gw"] == 1
     assert loaded["weeks"][0]["chip"] == "BB"
     assert loaded["weeks"][0]["xp"] == 8.0
@@ -92,6 +110,28 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert loaded["weeks"][1]["sell"] == [{"id": 10, "name": "Haaland"}]
     assert loaded["weeks"][1]["chip"] is None
     assert "model" not in dumped
+
+
+def test_serialize_transfer_plan_records_an_unproven_solver_objective() -> None:
+    solution = {
+        "picks": _picks(),
+        "total_xp": 15.0,
+        "score": 14.2,
+        "statistics": {},
+        "summary": "GW plan",
+        "solver_rel_gap": 0.008,
+        "solver_gap_target": 0.01,
+        "solver_model_status": "Optimal",
+        "solver_time_limit_secs": 1200,
+    }
+    plan = serialize_transfer_plan(
+        solution,
+        champion="calibrated_matchup_hybrid",
+        horizon=10,
+        next_gw=5,
+        decay_base=0.85,
+    )
+    assert plan["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
 
 
 def test_load_settings_defaults_planning_horizon_to_six(tmp_path: Path, monkeypatch: Any) -> None:
@@ -134,6 +174,52 @@ def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:
     assert loaded["weeks"][1]["buy"][0]["name"] == "Watkins"
     assert loaded["meta"]["champion"] == "linear_baseline"
     assert plan["weeks"][0]["chip"] == "BB"
+
+
+def test_execute_transfer_plan_stops_within_one_percent_unless_gap_is_set(tmp_path: Path) -> None:
+    seen: dict[str, float] = {}
+
+    def _solve(_data: object, options: dict[str, object]) -> list[dict[str, object]]:
+        seen["gap"] = float(options["gap"])  # type: ignore[arg-type]
+        return [{
+            "picks": _picks(),
+            "total_xp": 15.0,
+            "score": 14.2,
+            "statistics": {},
+            "summary": "",
+            "solver_rel_gap": 0.008,
+            "solver_gap_target": options["gap"],
+            "solver_model_status": "Optimal",
+            "solver_time_limit_secs": 1200,
+        }]
+
+    options: dict[str, object] = {
+        "datasource": "linear_baseline",
+        "horizon": 6,
+        "preseason": True,
+        "decay_base": 0.85,
+        "use_bb": [],
+        "use_wc": [],
+        "use_fh": [],
+        "use_tc": [],
+    }
+    with patch("commands.solve.pad_solver_csv_horizon"), patch(
+        "commands.solve.prep_data", return_value={}
+    ), patch("commands.solve.solve_multi_period_fpl", side_effect=_solve):
+        plan = execute_transfer_plan(
+            options, processed_dir=tmp_path, target_gw=1, solution_path=tmp_path / "solution.json"
+        )
+    assert seen["gap"] == 0.01
+    assert plan["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
+
+    options["gap"] = 0.05
+    with patch("commands.solve.pad_solver_csv_horizon"), patch(
+        "commands.solve.prep_data", return_value={}
+    ), patch("commands.solve.solve_multi_period_fpl", side_effect=_solve):
+        execute_transfer_plan(
+            options, processed_dir=tmp_path, target_gw=1, solution_path=tmp_path / "override.json"
+        )
+    assert seen["gap"] == 0.05
 
 
 def test_dashboard_transfer_plan_options_force_champion() -> None:

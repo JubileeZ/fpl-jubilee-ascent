@@ -26,7 +26,7 @@ from solver.planning import (
 )
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
-from solver.transfer_plan import serialize_transfer_plan
+from solver.transfer_plan import LIVE_SOLVER_REL_GAP, serialize_transfer_plan
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -219,6 +219,8 @@ def execute_transfer_plan(
     """Run MILP and write a JSON-safe Transfer Plan."""
     horizon = clamp_planning_horizon(int(options.get("horizon", DEFAULT_PLANNING_HORIZON)))
     options["horizon"] = horizon
+    if "gap" not in options:
+        options["gap"] = LIVE_SOLVER_REL_GAP
     validate_booked_chips(options, target_gw, horizon)
     options["override_next_gw"] = target_gw
 
@@ -394,6 +396,12 @@ def main() -> None:
 
     if args.no_hit:
         options["weekly_hit_limit"] = 0
+    if args.preseason:
+        options["preseason"] = True
+    if args.decay_base is not None:
+        options["decay_base"] = args.decay_base
+    if args.hit_cost is not None:
+        options["hit_cost"] = args.hit_cost
 
         
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
@@ -426,6 +434,9 @@ def main() -> None:
         sys.exit(1)
 
     logger.info("Solver run complete!")
+    note = (plan.get("meta") or {}).get("solver_objective_note")
+    if note:
+        print(note)
     if plan.get("summary"):
         print("\n" + "="*50)
         print("RECOMMENDED SQUAD & TRANSFER PLAN")

@@ -876,6 +876,7 @@ def solve_multi_period_fpl(data, options):
     solutions = []
 
     secs = options.get("secs", 20 * 60)
+    solver_stop: dict[str, object] = {}
     presolve = options.get("presolve", "on")
     gap = options.get("gap", 0)
     random_seed = options.get("random_seed", 0)
@@ -908,6 +909,10 @@ def solve_multi_period_fpl(data, options):
     def run_solve(iteration):
         if solver != "gurobi":
             m.run()
+            solver_stop["solver_model_status"] = m.modelStatusToString(m.getModelStatus())
+            solver_stop["solver_rel_gap"] = float(m.getInfo().mip_gap)
+            solver_stop["solver_gap_target"] = float(options.get("gap", 0) or 0)
+            solver_stop["solver_time_limit_secs"] = int(secs)
             # read the solution vector once - m.val re-copies it out of HiGHS on every single call
             return make_val(list(m.getSolution().col_value))
 
@@ -1116,6 +1121,7 @@ def solve_multi_period_fpl(data, options):
                 "chip": chip_decisions,
                 "score": val(objective_expr),
                 "decay_metrics": {key: val(value) for key, value in decay_metrics.items()},
+                **solver_stop,
             }
         )
 

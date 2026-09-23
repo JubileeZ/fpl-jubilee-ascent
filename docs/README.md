@@ -14,7 +14,7 @@ Start here to find durable project documentation.
 
 - [Data dictionary](data_dictionary.md)
 - [FPL scoring rules](fpl_scoring_rules_2025-26.md)
-- [Architecture decisions](adr/) — peer-tab Surface: [ADR 0034](adr/0034-transfer-plan-surface-peer-tab.md); Must arms Optimal/No Hit: [ADR 0042](adr/0042-must-arms-optimal-vs-no-hit.md); Trailing Start Window: [ADR 0035](adr/0035-trailing-start-window.md)
+- [Architecture decisions](adr/) — peer-tab Surface: [ADR 0034](adr/0034-transfer-plan-surface-peer-tab.md); Must arms Optimal/No Hit: [ADR 0042](adr/0042-must-arms-optimal-vs-no-hit.md); live plan 1% Solver Objective gap: [ADR 0043](adr/0043-transfer-plan-solver-gap.md); Trailing Start Window: [ADR 0035](adr/0035-trailing-start-window.md)
 
 ## Research
 

@@ -106,6 +106,8 @@ def test_transfer_plan_surface_script_ranks_scenarios() -> None:
     assert "/api/transfer-plan" in app
     assert "btn-transfer-plan" in app
     assert "horizon_egs" in plan
+    assert "solver_objective_note" in plan
+    assert "plan-objective-note" in html
     assert "booked_chips" in plan
     assert "enabled_chips" in plan
     assert "auto_captain" in plan

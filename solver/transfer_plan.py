@@ -2,9 +2,39 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import pandas as pd
+
+LIVE_SOLVER_REL_GAP = 0.01
+PROVEN_SOLVER_REL_GAP = 1e-4
+WITHIN_ONE_PERCENT = "Within 1% of the best Solver Objective."
+
+
+def solver_objective_stop_note(
+    rel_gap: float | None,
+    *,
+    target_gap: float,
+    model_status: str,
+    time_limit_secs: int,
+) -> str | None:
+    """Sentence when a live Transfer Plan stops short of a proven Solver Objective."""
+    if rel_gap is None:
+        return None
+    gap = float(rel_gap)
+    if not math.isfinite(gap) or gap <= PROVEN_SOLVER_REL_GAP:
+        return None
+    target = float(target_gap)
+    if gap <= target + 1e-12:
+        if abs(target - LIVE_SOLVER_REL_GAP) < 1e-12:
+            return WITHIN_ONE_PERCENT
+        shown = f"{target * 100:.1f}".rstrip("0").rstrip(".")
+        return f"Within {shown}% of the best Solver Objective."
+    if model_status == "Time limit reached":
+        minutes = max(int(time_limit_secs) // 60, 0)
+        return f"Stopped at {minutes} min, {gap * 100:.1f}% from the best Solver Objective."
+    return None
 
 
 def _json_value(value: Any) -> Any:
@@ -50,21 +80,30 @@ def serialize_transfer_plan(
         weeks = _weeks_from_picks(picks, solution.get("statistics") or {})
 
     chips = booked_chips or {}
-    return {
-        "meta": {
-            "champion": champion,
-            "horizon": int(horizon),
-            "next_gw": int(next_gw),
-            "decay_base": _json_value(decay_base),
-            "solver_objective": _json_value(solution.get("score")),
-            "total_xp": _json_value(solution.get("total_xp")),
-            "booked_chips": {
-                "use_wc": [int(g) for g in chips.get("use_wc", [])],
-                "use_bb": [int(g) for g in chips.get("use_bb", [])],
-                "use_fh": [int(g) for g in chips.get("use_fh", [])],
-                "use_tc": [int(g) for g in chips.get("use_tc", [])],
-            },
+    meta: dict[str, Any] = {
+        "champion": champion,
+        "horizon": int(horizon),
+        "next_gw": int(next_gw),
+        "decay_base": _json_value(decay_base),
+        "solver_objective": _json_value(solution.get("score")),
+        "total_xp": _json_value(solution.get("total_xp")),
+        "booked_chips": {
+            "use_wc": [int(g) for g in chips.get("use_wc", [])],
+            "use_bb": [int(g) for g in chips.get("use_bb", [])],
+            "use_fh": [int(g) for g in chips.get("use_fh", [])],
+            "use_tc": [int(g) for g in chips.get("use_tc", [])],
         },
+    }
+    note = solver_objective_stop_note(
+        solution.get("solver_rel_gap"),
+        target_gap=float(solution.get("solver_gap_target") or 0),
+        model_status=str(solution.get("solver_model_status") or ""),
+        time_limit_secs=int(solution.get("solver_time_limit_secs") or 0),
+    )
+    if note:
+        meta["solver_objective_note"] = note
+    return {
+        "meta": meta,
         "weeks": weeks,
         "summary": str(solution.get("summary") or ""),
     }

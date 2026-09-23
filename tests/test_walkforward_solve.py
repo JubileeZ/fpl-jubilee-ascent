@@ -63,6 +63,7 @@ def test_walkforward_options_forbid_chips_and_hits_and_clip_horizon() -> None:
     assert gw1["use_tc"] == []
     assert gw1["preseason"] is True
     assert gw1["horizon"] == 5
+    assert gw1["gap"] == 0
     assert gw1["override_next_gw"] == 1
     late = walkforward_solver_options(arm, deadline_gw=17, locked_ids=(3, 4))
     assert late["preseason"] is False
@@ -70,6 +71,7 @@ def test_walkforward_options_forbid_chips_and_hits_and_clip_horizon() -> None:
     assert late["locked"] == [3, 4]
     assert late["chip_limits"]["wc"] == 0
     assert late["use_wc"] == []
+    assert late["gap"] == 0
 
 
 def test_gw1_my_data_is_empty_hundred_million_draft() -> None:

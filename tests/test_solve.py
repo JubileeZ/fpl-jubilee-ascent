@@ -161,6 +161,18 @@ def test_solve_cli_hyphenated_no_hit_flag_sets_weekly_hit_limit_zero() -> None:
     assert options_passed["weekly_hit_limit"] == 0
 
 
+def test_solve_cli_prints_solver_objective_note(capsys: pytest.CaptureFixture[str]) -> None:
+    plan = {
+        "meta": {"solver_objective_note": "Within 1% of the best Solver Objective."},
+        "summary": "",
+    }
+    with patch("commands.solve.load_settings", return_value={"horizon": 6, "preseason": True}), \
+         patch("commands.solve.execute_transfer_plan", return_value=plan), \
+         patch("sys.argv", ["commands.solve", "--preseason"]):
+        main()
+    assert "Within 1% of the best Solver Objective." in capsys.readouterr().out
+
+
 def test_solve_cli_champion_flag_uses_champion() -> None:
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
          patch("commands.solve.prep_data", return_value={}), \

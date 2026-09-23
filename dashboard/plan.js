@@ -173,6 +173,22 @@
     return Number(weeks[0].gw);
   }
 
+  function objectiveNote(row) {
+    const meta = row && row.plan && row.plan.meta;
+    const note = meta && meta.solver_objective_note;
+    return note ? String(note) : "";
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;",
+    }[ch]));
+  }
+
   function renderScenarios() {
     const root = document.getElementById("plan-scenarios");
     const staleEl = document.getElementById("plan-stale-banner");
@@ -189,11 +205,14 @@
     const cards = rows.map((row) => {
       const week = startWeek(row);
       const rankLabel = running ? `Provisional ${row.rank}` : `Rank ${row.rank}`;
+      const note = objectiveNote(row);
+      const noteHtml = note ? `<div class="meta">${escapeHtml(note)}</div>` : "";
       return `<button type="button" class="scenario-card" data-id="${row.id}" aria-selected="${row.id === selectedId}">
           <div class="rank">${rankLabel}</div>
           <h3>${row.name}</h3>
           <div class="score">${Number(row.horizon_egs || 0).toFixed(1)}</div>
           <div class="meta">Σ Expected GW Score · Start Hits ${week.hits || 0}</div>
+          ${noteHtml}
         </button>`;
     });
     pending.forEach((arm) => {
@@ -224,6 +243,7 @@
     const weeksEl = document.getElementById("plan-weeks");
     const pitch = document.getElementById("plan-pitch");
     const obj = document.getElementById("plan-objective");
+    const noteEl = document.getElementById("plan-objective-note");
     const autoEl = document.getElementById("plan-auto-captain");
     const xiHead = document.getElementById("plan-xi-subhead");
     const stripHead = document.getElementById("plan-weeks-subhead");
@@ -232,6 +252,10 @@
       if (weeksEl) weeksEl.innerHTML = "";
       if (pitch) pitch.innerHTML = "";
       if (obj) obj.textContent = "—";
+      if (noteEl) {
+        noteEl.textContent = "";
+        noteEl.hidden = true;
+      }
       if (autoEl) autoEl.textContent = "Auto Captain · Auto Vice-Captain · Next-best (Plan Start)";
       if (xiHead) xiHead.textContent = "Plan XI · select a week (C = plan captain)";
       if (stripHead) stripHead.textContent = "Expected GW Score by week — click a GW to inspect";
@@ -275,6 +299,11 @@
       xiHead.textContent = `Plan XI · ${gwLabel}${isStart ? " · Plan Start" : ""} (C = plan captain)`;
     }
     if (obj) obj.textContent = scenario.solver_objective == null ? "—" : Number(scenario.solver_objective).toFixed(1);
+    const note = objectiveNote(scenario);
+    if (noteEl) {
+      noteEl.textContent = note;
+      noteEl.hidden = !note;
+    }
     const auto = (scenario.plan && scenario.plan.auto_captain) || {};
     const next = (auto.next_best || [])
       .map((row) => `${playerName(row.id)} (${Number(row.xp || 0).toFixed(1)})`)

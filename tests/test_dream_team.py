@@ -86,6 +86,7 @@ def test_dream_team_options_are_frozen_unconstrained_rebuild() -> None:
     assert options["enabled_chip_windows"] == []
     assert options["chip_limits"]["wc"] == 1
     assert options["secs"] == 90
+    assert options["gap"] == 0
     assert options["parallel"] == "off"
     assert options["threads"] == 1
     assert options["random_seed"] == 0

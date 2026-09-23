@@ -96,6 +96,7 @@ def walkforward_solver_options(
         "keep_top_ev_percent": 100,
         "xmin_lb": 0,
         "verbose": False,
+        "gap": 0,
         "delete_tmp": True,
         "num_iterations": 1,
         "datasource": get_default_model_name(),

@@ -26,7 +26,7 @@ Live index: `docs/research/INDEX.md`. Companions live in topic folders. Producti
 | Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
-| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; `planning.py` + `transfer_plan.py` + `scenarios.py` ours |
+| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; live Transfer Plan gap 1% (ADR 0043); Dream Team and Walk-Forward stay gap 0 |
 | Research | `docs/research/`, `docs/archive/` | Live INDEX + topics. `data/archive/` = Season Archive pins |
 
 ## What does NOT exist yet (do not assume)
