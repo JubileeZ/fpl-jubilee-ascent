@@ -348,7 +348,7 @@ One Gameweek Transfer Plan metric: expectation of Official-style GW points for t
 _Avoid_: Squad xP, Solver Objective, Auto Captain as the plan double, ignoring Hits, deterministic-only autosubs as the Must definition, treating Auto Vice-Captain mark-only as this chain
 
 **Transfer Plan Scenario**:
-One ranked Must solve on the Transfer Plan surface. Arms: **Optimal** (live `weekly_hit_limit` / `hit_cost`, no Start transfer-count pin; may Hit or not), **No Hit** (`weekly_hit_limit=0` for the whole Transfer Plan Horizon; Free Transfers only). Arms solve concurrently (each HiGHS serial). Surface shows each arm as it finishes, then final-ranks by Σ Expected GW Score. Chip variants are Should, not Must. Always show every feasible arm (no domination drop). Rank key = sum of Expected GW Score over the Transfer Plan Horizon (undiscounted). Solver Objective may display as secondary; it does not rank. ADR 0042.
+One ranked Must solve on the Transfer Plan surface. Arms: **Optimal** (live `weekly_hit_limit` / `hit_cost`, no Start transfer-count pin; may Hit or not), **No Hit** (`weekly_hit_limit=0` for the whole Transfer Plan Horizon; Free Transfers only). CLI solver reflects this arm via `--no_hit` / `--weekly_hit_limit 0`. Arms solve concurrently (each HiGHS serial). Surface shows each arm as it finishes, then final-ranks by Σ Expected GW Score. Chip variants are Should, not Must. Always show every feasible arm (no domination drop). Rank key = sum of Expected GW Score over the Transfer Plan Horizon (undiscounted). Solver Objective may display as secondary; it does not rank. ADR 0042.
 _Avoid_: Roll / 1 FT as Must arms, Start transfer-count pins as Must, Unconstrained as the Hit-allowed arm name, forced single-Hit arm, chip×transfer grid in Must, ranking by Solver Objective, Start-week Expected GW Score alone as the sort, hiding a losing arm, sequential wall-clock as the product rule
 
 **Stale Transfer Plan Scenarios**:
@@ -484,7 +484,7 @@ Research evaluation of a Transfer Plan policy. At each historical Gameweek deadl
 _Avoid_: backtest (ambiguous with model MAE), hindsight oracle, treating walk-forward as the live Transfer Plan Surface, in-season Prior-Season Seed after This-Season Evidence, Walk-forward ranking in the Trust header
 
 **Model Champion**:
-The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation.
+The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation. CLI commands (`run_model`, `report`, `decision_regret`, `solve`) default to Model Champion when model name is omitted or passed as `--champion` / `"champion"`.
 _Avoid_: Default model, production model
 
 **Model Candidate**:

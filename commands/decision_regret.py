@@ -17,7 +17,7 @@ from backtesting.decision_regret import (
 from clients.env_loader import configure_utf8_stdio, load_env
 from clients.fpl_api import fetch_gameweek_picks
 from features.builder import build_features
-from models import get_model
+from models import get_model, resolve_model_or_champion
 
 load_env()
 configure_utf8_stdio()
@@ -191,7 +191,8 @@ async def evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--entry_id", type=int, required=True)
-    parser.add_argument("--model", default="participation_state_hybrid")
+    parser.add_argument("--model", default=None, help="Model name (default: Champion)")
+    parser.add_argument("--champion", action="store_true", help="Explicitly use active Champion model")
     parser.add_argument("--gw_range", default="1-38")
     parser.add_argument("--data_dir", default="data/processed")
     parser.add_argument("--snapshot_root", default=None)
@@ -199,10 +200,12 @@ def main() -> None:
     parser.add_argument("--output", default="data/reports/decision_regret.csv")
     args = parser.parse_args()
     start_gw, end_gw = (int(value) for value in args.gw_range.split("-"))
+    raw_model = None if args.champion else args.model
+    model_name = resolve_model_or_champion(raw_model)
     result = asyncio.run(
         evaluate(
             entry_id=args.entry_id,
-            model_name=args.model,
+            model_name=model_name,
             data_dir=(PROJECT_ROOT / args.data_dir).resolve(),
             start_gw=start_gw,
             end_gw=end_gw,

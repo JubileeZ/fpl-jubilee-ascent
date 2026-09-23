@@ -13,7 +13,7 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import resolve_operational_processed_dir
-from models import get_default_model_name
+from models import get_default_model_name, resolve_model_or_champion
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
 from solver.planning import (
@@ -70,6 +70,7 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "max_players_from_team",
     "no_chip_gws",
     "no_future_transfer",
+    "no_hit",
     "no_opposing_play",
     "no_transfer_by_position",
     "no_transfer_gws",
@@ -110,6 +111,7 @@ BOOLEAN_DYNAMIC_OVERRIDES = frozenset({
     "export_debug",
     "hide_transfers",
     "no_future_transfer",
+    "no_hit",
     "no_opposing_play",
     "no_trs_except_wc",
     "only_booked_transfers",
@@ -282,6 +284,9 @@ def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> 
             except ValueError:
                 options[key] = value
         i += 1
+    if options.get("no_hit"):
+        options["weekly_hit_limit"] = 0
+
 
 
 def build_my_data_from_parquet(processed_dir: Path) -> dict:
@@ -345,7 +350,22 @@ def main() -> None:
         default=DEFAULT_PLANNING_HORIZON,
         help="Planning Horizon length (1-10, default 6)",
     )
-    parser.add_argument("--model", type=str, help="Projections model name to use as datasource")
+    parser.add_argument(
+        "--model",
+        type=str,
+        help="Projections model name to use as datasource (default: Champion)",
+    )
+    parser.add_argument(
+        "--champion",
+        action="store_true",
+        help="Explicitly use active Champion model projections",
+    )
+    parser.add_argument(
+        "--no_hit",
+        "--no-hit",
+        action="store_true",
+        help="Disallow points hits across the horizon (sets weekly_hit_limit=0)",
+    )
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
@@ -365,18 +385,16 @@ def main() -> None:
             clamped_horizon,
         )
     options["horizon"] = clamped_horizon
-    options["datasource"] = args.model or get_default_model_name()
-    if args.decay_base is not None:
-        options["decay_base"] = args.decay_base
-    if args.hit_cost is not None:
-        options["hit_cost"] = args.hit_cost
-    if args.preseason:
-        options["preseason"] = True
-        
+    raw_model = None if args.champion else args.model
+    options["datasource"] = resolve_model_or_champion(raw_model)
     try:
         _apply_dynamic_overrides(options, unknown)
     except ValueError as exc:
         parser.error(str(exc))
+
+    if args.no_hit:
+        options["weekly_hit_limit"] = 0
+
         
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
 

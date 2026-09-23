@@ -11,7 +11,7 @@ from clients.env_loader import load_env, configure_utf8_stdio
 load_env()
 configure_utf8_stdio()
 
-from models import get_model
+from models import get_model, resolve_model_or_champion
 from features.builder import build_features, resolve_operational_processed_dir
 from features.contracts import assert_projection_contract
 from projections.exporter import export_projections
@@ -24,8 +24,27 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description="Run a scoring model to generate score projections.")
-    parser.add_argument("model", type=str, help="Name of the model to run (e.g. linear_baseline)")
+    parser.add_argument(
+        "model",
+        type=str,
+        nargs="?",
+        default=None,
+        help="Name of the model to run (default: Champion)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        dest="model_flag",
+        default=None,
+        help="Explicit model name (overrides positional)",
+    )
+    parser.add_argument(
+        "--champion",
+        action="store_true",
+        help="Explicitly run the active Champion model",
+    )
     parser.add_argument("--horizon", type=int, default=5, help="Number of gameweeks to predict ahead")
+
     parser.add_argument(
         "--blend_start_appearances",
         type=int,
@@ -98,9 +117,12 @@ def main():
     )
     
     # 2. Instantiate and run model
-    logger.info(f"Loading model '{args.model}'...")
+    raw_model = None if args.champion else (args.model_flag or args.model)
+    model_name = resolve_model_or_champion(raw_model)
+
+    logger.info(f"Loading model '{model_name}'...")
     try:
-        model = get_model(args.model)
+        model = get_model(model_name)
     except Exception as e:
         logger.error(e)
         sys.exit(1)
@@ -114,7 +136,7 @@ def main():
     df_proj = assert_projection_contract(model.predict(df_feat, args.horizon))
     
     # 3. Export to CSV
-    output_csv = PROJECT_ROOT / "data" / f"{args.model}.csv"
+    output_csv = PROJECT_ROOT / "data" / f"{model_name}.csv"
     logger.info(f"Exporting projections to {output_csv}...")
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")

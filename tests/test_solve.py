@@ -137,3 +137,46 @@ def test_load_settings_uses_champion_as_default(tmp_path, monkeypatch):
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
 
     assert load_settings()["datasource"] == "calibrated_matchup_hybrid"
+
+
+def test_solve_cli_no_hit_flag_sets_weekly_hit_limit_zero() -> None:
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
+         patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon"), \
+         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]) as solve_mock, \
+         patch("sys.argv", ["commands.solve", "--preseason", "--no_hit"]):
+        main()
+    options_passed = solve_mock.call_args.args[1]
+    assert options_passed["weekly_hit_limit"] == 0
+
+
+def test_solve_cli_hyphenated_no_hit_flag_sets_weekly_hit_limit_zero() -> None:
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
+         patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon"), \
+         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]) as solve_mock, \
+         patch("sys.argv", ["commands.solve", "--preseason", "--no-hit"]):
+        main()
+    options_passed = solve_mock.call_args.args[1]
+    assert options_passed["weekly_hit_limit"] == 0
+
+
+def test_solve_cli_champion_flag_uses_champion() -> None:
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
+         patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
+         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
+         patch("sys.argv", ["commands.solve", "--preseason", "--champion"]):
+        main()
+    assert pad_mock.call_args.args[0].name == "calibrated_matchup_hybrid.csv"
+
+
+def test_solve_cli_model_champion_string_uses_champion() -> None:
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
+         patch("commands.solve.prep_data", return_value={}), \
+         patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
+         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
+         patch("sys.argv", ["commands.solve", "--preseason", "--model", "champion"]):
+        main()
+    assert pad_mock.call_args.args[0].name == "calibrated_matchup_hybrid.csv"
+

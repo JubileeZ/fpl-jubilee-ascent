@@ -109,3 +109,30 @@ def test_public_picks_convert_to_actual_lineup():
     assert decision.bench == (12, 13, 14, 15)
     assert decision.captain == 1
     assert decision.vice_captain == 2
+
+
+def test_decision_regret_cli_defaults_to_champion(monkeypatch) -> None:
+    from unittest.mock import AsyncMock, patch
+    import pandas as pd
+    from commands.decision_regret import main as regret_main
+
+    mock_eval = AsyncMock(return_value=pd.DataFrame())
+    with patch("commands.decision_regret.evaluate", mock_eval), \
+         patch("sys.argv", ["commands.decision_regret", "--entry_id", "12345"]):
+        regret_main()
+
+    assert mock_eval.call_args.kwargs["model_name"] == "calibrated_matchup_hybrid"
+
+
+def test_decision_regret_cli_accepts_champion_flag(monkeypatch) -> None:
+    from unittest.mock import AsyncMock, patch
+    import pandas as pd
+    from commands.decision_regret import main as regret_main
+
+    mock_eval = AsyncMock(return_value=pd.DataFrame())
+    with patch("commands.decision_regret.evaluate", mock_eval), \
+         patch("sys.argv", ["commands.decision_regret", "--entry_id", "12345", "--champion"]):
+        regret_main()
+
+    assert mock_eval.call_args.kwargs["model_name"] == "calibrated_matchup_hybrid"
+

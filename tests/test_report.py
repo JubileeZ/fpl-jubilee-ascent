@@ -102,3 +102,58 @@ def test_report_respects_target_gw_and_ignores_prior_columns(tmp_path: Path, cap
     assert "Captain      : PlayerA" in output
     assert "5_Pts" in output
     assert "4_Pts" not in output
+
+
+def test_report_defaults_to_champion_when_model_omitted(tmp_path: Path, capsys) -> None:
+    projections = pd.DataFrame([
+        {
+            "ID": 1,
+            "Name": "Captain",
+            "Pos": "M",
+            "Price": 10.0,
+            "Team": "AAA",
+            "1_Pts": 10.0,
+            "1_xMins": 90.0,
+            "2_Pts": 8.0,
+            "2_xMins": 90.0,
+        },
+    ])
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    projections.to_csv(data_dir / "calibrated_matchup_hybrid.csv", index=False)
+
+    with patch("commands.report.PROJECT_ROOT", tmp_path), \
+        patch("commands.report.load_settings", return_value={"datasource": "stale_model", "horizon": 2}), \
+        patch("sys.argv", ["commands.report", "--horizon", "2"]):
+        main()
+
+    report = pd.read_csv(tmp_path / "data" / "reports" / "top_picks_calibrated_matchup_hybrid.csv")
+    assert bool(report.loc[report["ID"] == 1, "Captain"].iloc[0])
+
+
+def test_report_champion_flag_uses_champion(tmp_path: Path, capsys) -> None:
+    projections = pd.DataFrame([
+        {
+            "ID": 1,
+            "Name": "Captain",
+            "Pos": "M",
+            "Price": 10.0,
+            "Team": "AAA",
+            "1_Pts": 10.0,
+            "1_xMins": 90.0,
+            "2_Pts": 8.0,
+            "2_xMins": 90.0,
+        },
+    ])
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    projections.to_csv(data_dir / "calibrated_matchup_hybrid.csv", index=False)
+
+    with patch("commands.report.PROJECT_ROOT", tmp_path), \
+        patch("commands.report.load_settings", return_value={"datasource": "stale_model", "horizon": 2}), \
+        patch("sys.argv", ["commands.report", "--champion", "--horizon", "2"]):
+        main()
+
+    report = pd.read_csv(tmp_path / "data" / "reports" / "top_picks_calibrated_matchup_hybrid.csv")
+    assert bool(report.loc[report["ID"] == 1, "Captain"].iloc[0])
+

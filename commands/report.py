@@ -14,6 +14,7 @@ configure_utf8_stdio()
 
 from solver.planning import resolve_default_target_gw
 from solver.utils import load_settings
+from models import resolve_model_or_champion
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -39,13 +40,24 @@ def recommend_captain_vice(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate top-picks rankings report.")
-    parser.add_argument("--model", type=str, help="Projections model name to rank (e.g. linear_baseline)")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Projections model name to rank (default: Champion)",
+    )
+    parser.add_argument(
+        "--champion",
+        action="store_true",
+        help="Explicitly rank active Champion model projections",
+    )
     parser.add_argument("--horizon", type=int, help="Number of gameweeks to rank over")
     parser.add_argument("--target_gw", type=int, help="Target Gameweek to start ranking from")
     args = parser.parse_args()
     
     options = load_settings()
-    model_name = args.model or options.get("datasource")
+    raw_model = None if args.champion else args.model
+    model_name = resolve_model_or_champion(raw_model)
     horizon = args.horizon or options.get("horizon", 5)
     
     proj_csv = PROJECT_ROOT / "data" / f"{model_name}.csv"

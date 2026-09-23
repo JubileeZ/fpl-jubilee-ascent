@@ -16,7 +16,7 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import build_features, resolve_operational_processed_dir
-from models import get_default_model_name, get_model, list_model_names
+from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
 from models.selection import projection_model_names
 from projections.explorer_slice import (
     COMPONENT_KEYS,
@@ -574,7 +574,7 @@ def main() -> None:
     args = parser.parse_args()
 
     model_names = projection_model_names(args.model, args.models)
-    default_model = args.model or model_names[0]
+    default_model = resolve_model_or_champion(args.model) if args.model else model_names[0]
 
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     if not (processed_dir / "players.parquet").exists():

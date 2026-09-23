@@ -3,8 +3,9 @@ import importlib
 import inspect
 from pathlib import Path
 from models.base import BaseModel
+from models.selection import FALLBACK_CHAMPION
 
-DEFAULT_MODEL_NAME = "participation_state_hybrid"
+DEFAULT_MODEL_NAME = FALLBACK_CHAMPION
 _SKIP_MODULES = frozenset({"base.py", "__init__.py"})
 
 
@@ -15,6 +16,17 @@ def get_default_model_name() -> str:
         return default_model_name()
     except (FileNotFoundError, ValueError, KeyError):
         return DEFAULT_MODEL_NAME
+
+
+def resolve_model_or_champion(model_name: str | None = None, *, validate: bool = False) -> str:
+    """Return model name, resolving None, empty, or 'champion' to active Champion."""
+    if model_name is None or not str(model_name).strip() or str(model_name).strip().lower() == "champion":
+        return get_default_model_name()
+    resolved = str(model_name).strip()
+    if validate:
+        return resolve_model_name(resolved)
+    return resolved
+
 
 
 def _iter_registered_models() -> list[BaseModel]:

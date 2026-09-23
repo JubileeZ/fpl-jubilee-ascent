@@ -51,9 +51,9 @@ Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.m
 The Model Champion is `config/model_selection.json` `champion` (currently `calibrated_matchup_hybrid`). Fixture xP scale on the Feature Contract: **Calibrated Matchup Share** when this-season Official club xG exists ([ADR 0040](docs/adr/0040-calibrated-matchup-share-shrinkage.md)); else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
-uv run python -m commands.run_model calibrated_matchup_hybrid --horizon 5
+uv run python -m commands.run_model --horizon 5
 uv run python -m commands.solve --horizon 5
-uv run python -m commands.report --model calibrated_matchup_hybrid --horizon 5
+uv run python -m commands.report --horizon 5
 ```
 
 `commands.solve` writes `data/solution.json`. Product ranking lives on Transfer Plan Surface (`data/transfer_plan_scenarios.json`). Use CLI for preseason draft and advanced flags:
@@ -99,15 +99,22 @@ uv run python -m commands.refresh_data
 
 ### 2. Run Projections
 
-Generate per-player per-gameweek expected points (xP) and minutes projections using a catalog name from [docs/model_name.md](docs/model_name.md). Saves `data/<model_name>.csv`. Minutes come from the Feature Contract Participation State posterior (Club Fixture shrinkage + Trailing Start Window — [ADR 0035](docs/adr/0035-trailing-start-window.md)), not Expected Role.
+Generate per-player per-gameweek expected points (xP) and minutes projections using the active Model Champion (from `config/model_selection.json`) by default, or an explicit catalog name from [docs/model_name.md](docs/model_name.md). Saves `data/<model_name>.csv`. Minutes come from the Feature Contract Participation State posterior (Club Fixture shrinkage + Trailing Start Window — [ADR 0035](docs/adr/0035-trailing-start-window.md)), not Expected Role.
 
 ```bash
-uv run python -m commands.run_model MODEL_NAME --horizon GWS
+uv run python -m commands.run_model [MODEL_NAME] --horizon GWS
 ```
 
-*Example (Champion, default 5 gameweeks horizon):*
+*Example (Champion by default, 5 gameweeks horizon):*
 
 ```bash
+uv run python -m commands.run_model --horizon 5
+```
+
+You can also pass `--champion` explicitly or choose any registered model:
+
+```bash
+uv run python -m commands.run_model --champion --horizon 5
 uv run python -m commands.run_model calibrated_matchup_hybrid --horizon 5
 ```
 
@@ -153,9 +160,15 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.solve --horizon 10
 ```
 
-The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV.
+**No Hit solver** (disallows paid transfer hits; free transfers only, matching ADR 0042 No Hit arm):
 
-*Note:* Tune the horizon, decay, hit cost, and supported solver options explicitly
+```bash
+uv run python -m commands.solve --horizon 6 --no_hit
+```
+
+The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV (or pass `--champion`).
+
+*Note:* Tune the horizon, decay, hit cost, No Hit mode (`--no_hit` / `--weekly_hit_limit 0`), and supported solver options explicitly
 (for example `--horizon 6 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
 Unsupported solver options fail before solving.
 
@@ -163,7 +176,13 @@ Unsupported solver options fail before solving.
 
 Produce console ranking tables by position, captain/vice recommendations for the
 next gameweek, and save the full CSV report (including `Captain` and
-`Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`.
+`Vice_Captain` columns) to `data/reports/top_picks_<model_name>.csv`. Defaults to active Champion:
+
+```bash
+uv run python -m commands.report --horizon 5
+```
+
+Or specify a catalog model explicitly:
 
 ```bash
 uv run python -m commands.report --model calibrated_matchup_hybrid --horizon 5

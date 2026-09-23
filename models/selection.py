@@ -9,6 +9,8 @@ from pathlib import Path
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "model_selection.json"
 _MAX_CANDIDATES = 2
+FALLBACK_CHAMPION = "calibrated_matchup_hybrid"
+FALLBACK_CANDIDATES: tuple[str, ...] = ("participation_state_hybrid",)
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,15 @@ class ModelSelection:
 
 def load_model_selection(path: Path | None = None) -> ModelSelection:
     config_path = path or DEFAULT_CONFIG_PATH
+    if path is None and not config_path.exists():
+        selection = ModelSelection(
+            champion=FALLBACK_CHAMPION,
+            candidates=FALLBACK_CANDIDATES,
+            promotion_status="provisional",
+            schema_version=1,
+        )
+        save_model_selection(selection, config_path)
+        return selection
     payload = json.loads(config_path.read_text(encoding="utf-8"))
     candidates = tuple(payload.get("candidates", ()))
     if len(candidates) > _MAX_CANDIDATES:
@@ -31,6 +42,7 @@ def load_model_selection(path: Path | None = None) -> ModelSelection:
         promotion_status=str(payload.get("promotion_status", "provisional")),
         schema_version=int(payload.get("schema_version", 1)),
     )
+
 
 
 def save_model_selection(selection: ModelSelection, path: Path | None = None) -> None:
@@ -60,9 +72,10 @@ def projection_model_names(
     """Models to project for Explorer. Default Champion only. `--models` keeps the slate."""
     if model_names:
         return list(dict.fromkeys(model_names))
-    if model_name:
-        return [model_name]
+    if model_name and model_name.strip().lower() != "champion":
+        return [model_name.strip()]
     try:
         return [default_model_name(config_path)]
     except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
-        return ["participation_state_hybrid"]
+        return [FALLBACK_CHAMPION]
+

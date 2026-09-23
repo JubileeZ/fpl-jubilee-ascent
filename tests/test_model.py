@@ -1,3 +1,4 @@
+from pathlib import Path
 import pandas as pd
 from features.builder import build_features
 from tests.expected_role_fixtures import role_kwargs, write_role_table
@@ -120,3 +121,65 @@ def test_linear_model_xmins_cap_scales_points():
 
     assert projection["projected_minutes"] == 45.0
     assert projection["projected_points"] == 3.0
+
+
+def test_run_model_defaults_to_champion(tmp_path: Path) -> None:
+    from unittest.mock import Mock, patch
+    import commands.run_model
+    from commands.run_model import main as run_model_main
+
+    processed = tmp_path / "data" / "processed"
+    processed.mkdir(parents=True)
+    pd.DataFrame([{"id": 8, "is_next": True, "finished": False}]).to_parquet(
+        processed / "gameweeks.parquet", index=False
+    )
+    pd.DataFrame().to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame().to_parquet(processed / "clubs.parquet", index=False)
+
+    model = Mock()
+    model.predict.return_value = pd.DataFrame()
+
+    with patch.object(commands.run_model, "PROJECT_ROOT", tmp_path), \
+        patch("commands.run_model.build_features", return_value=pd.DataFrame()), \
+        patch("commands.run_model.get_model", return_value=model) as mock_get_model, \
+        patch("commands.run_model.export_projections"), \
+        patch("sys.argv", ["commands.run_model", "--horizon", "3"]):
+        run_model_main()
+
+    mock_get_model.assert_called_once_with("calibrated_matchup_hybrid")
+
+
+def test_run_model_accepts_champion_flag_and_alias(tmp_path: Path) -> None:
+    from unittest.mock import Mock, patch
+    import commands.run_model
+    from commands.run_model import main as run_model_main
+
+    processed = tmp_path / "data" / "processed"
+    processed.mkdir(parents=True)
+    pd.DataFrame([{"id": 8, "is_next": True, "finished": False}]).to_parquet(
+        processed / "gameweeks.parquet", index=False
+    )
+    pd.DataFrame().to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame().to_parquet(processed / "clubs.parquet", index=False)
+
+    model = Mock()
+    model.predict.return_value = pd.DataFrame()
+
+    with patch.object(commands.run_model, "PROJECT_ROOT", tmp_path), \
+        patch("commands.run_model.build_features", return_value=pd.DataFrame()), \
+        patch("commands.run_model.get_model", return_value=model) as mock_get_model, \
+        patch("commands.run_model.export_projections"), \
+        patch("sys.argv", ["commands.run_model", "--champion", "--horizon", "3"]):
+        run_model_main()
+
+    mock_get_model.assert_called_with("calibrated_matchup_hybrid")
+
+    with patch.object(commands.run_model, "PROJECT_ROOT", tmp_path), \
+        patch("commands.run_model.build_features", return_value=pd.DataFrame()), \
+        patch("commands.run_model.get_model", return_value=model) as mock_get_model2, \
+        patch("commands.run_model.export_projections"), \
+        patch("sys.argv", ["commands.run_model", "champion", "--horizon", "3"]):
+        run_model_main()
+
+    mock_get_model2.assert_called_with("calibrated_matchup_hybrid")
+

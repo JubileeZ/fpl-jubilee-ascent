@@ -14,25 +14,27 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 | `component_baseline` | `models/component_baseline.py` | Baseline | Per-90 Event Rates through the scoring matrix; Prior-Season Seed / Position-Price |
 | `linear_baseline` | `models/linear_baseline.py` | Baseline | Rolling points × Modified FDR × availability; Cold-Start projects ~0 |
 
-Fallback if `model_selection.json` missing: `participation_state_hybrid` (`models.DEFAULT_MODEL_NAME`). Unknown/retired Primary POST → Champion. No retired-name aliases.
+Fallback if `model_selection.json` missing: `calibrated_matchup_hybrid` (`models.DEFAULT_MODEL_NAME`). Unknown/retired Primary POST → Champion. Passing `--champion` or `"champion"` resolves dynamically to the active Champion.
 
 ## Commands that take a name
 
 | Command | Argument | Default |
 |---------|----------|---------|
-| `uv run python -m commands.run_model NAME` | positional | required |
+| `uv run python -m commands.run_model [NAME]` | positional optional, `--model`, or `--champion` | Champion (`config/model_selection.json`) |
 | `uv run python -m commands.backtest NAME` | positional | required |
-| `uv run python -m commands.report --model NAME` | `--model` | solver `datasource` / Champion CSV |
-| `uv run python -m commands.dashboard --model NAME` | `--model` | Champion; Primary for Explorer / Dream Team; Transfer Plan Scenarios stay Champion; `--models` exports a Comparison Slate |
-| `uv run python -m commands.decision_regret --model NAME` | `--model` | `participation_state_hybrid` if omitted |
-| `uv run python -m commands.solve` | `--model` optional | Champion (`config/model_selection.json`); stale `data/user_settings.json` `datasource` is ignored |
+| `uv run python -m commands.report` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
+| `uv run python -m commands.dashboard --model NAME` | `--model` optional | Champion; Primary for Explorer / Dream Team; Transfer Plan Scenarios stay Champion; `--models` exports a Comparison Slate |
+| `uv run python -m commands.decision_regret` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
+| `uv run python -m commands.solve` | `--model` optional, `--champion`, `--no_hit` | Champion (`config/model_selection.json`); stale `data/user_settings.json` `datasource` is ignored |
 
 Outputs: `data/<name>.csv` projections; `data/reports/top_picks_<name>.csv` from `commands.report`.
 
 ## Examples
 
 ```bash
-uv run python -m commands.run_model calibrated_matchup_hybrid --horizon 5
+uv run python -m commands.run_model --horizon 5
+uv run python -m commands.solve --horizon 6 --no_hit
+uv run python -m commands.report --horizon 5
 uv run python -m commands.backtest metrics_component_hybrid --gw_range 20-30 --seed_season 2025-26
 uv run python -m commands.dashboard --model participation_state_hybrid
 ```
