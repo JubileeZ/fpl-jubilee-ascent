@@ -161,6 +161,20 @@ def test_solve_cli_hyphenated_no_hit_flag_sets_weekly_hit_limit_zero() -> None:
     assert options_passed["weekly_hit_limit"] == 0
 
 
+def test_solve_cli_gap_zero_keeps_full_proof() -> None:
+    seen: dict[str, object] = {}
+
+    def _execute(options: dict[str, object], **_kwargs: object) -> dict[str, object]:
+        seen["gap"] = options.get("gap")
+        return {"meta": {}, "summary": ""}
+
+    with patch("commands.solve.load_settings", return_value={"horizon": 6, "preseason": True}), \
+         patch("commands.solve.execute_transfer_plan", side_effect=_execute), \
+         patch("sys.argv", ["commands.solve", "--preseason", "--gap", "0"]):
+        main()
+    assert seen["gap"] == 0.0
+
+
 def test_solve_cli_prints_solver_objective_note(capsys: pytest.CaptureFixture[str]) -> None:
     plan = {
         "meta": {"solver_objective_note": "Within 1% of the best Solver Objective."},

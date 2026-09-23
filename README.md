@@ -160,6 +160,8 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.solve --horizon 10
 ```
 
+Live Transfer Plans (dashboard **Solve scenarios** and `commands.solve`) stop when the Solver Objective is within **1%** of the best possible value ([ADR 0043](docs/adr/0043-transfer-plan-solver-gap.md)). The 20-minute clock is a backstop and still returns the best plan found. An unproven plan shows “Within 1% of the best Solver Objective.” (or “Stopped at 20 min, …% from the best Solver Objective.”). A proven plan shows no extra line. Two solves can pick different legal plans inside that 1% band; `--gap 0` forces a full proof. Dream Team and Transfer Plan Walk-Forward stay on a full proof.
+
 **No Hit solver** (disallows paid transfer hits; free transfers only, matching ADR 0042 No Hit arm):
 
 ```bash
@@ -168,7 +170,7 @@ uv run python -m commands.solve --horizon 6 --no_hit
 
 The solver reads `data/<champion>.csv` (Champion from `config/model_selection.json`), not a leftover `datasource` in `data/user_settings.json`. Pass `--model NAME` only to score a different catalog CSV (or pass `--champion`).
 
-*Note:* Tune the horizon, decay, hit cost, No Hit mode (`--no_hit` / `--weekly_hit_limit 0`), and supported solver options explicitly
+*Note:* Tune the horizon, decay, hit cost, No Hit mode (`--no_hit` / `--weekly_hit_limit 0`), Solver Objective gap (`--gap 0` for a full proof; live default 0.01), and supported solver options explicitly
 (for example `--horizon 6 --decay_base 0.85 --hit_cost 4 --xmin_lb 0`).
 Unsupported solver options fail before solving.
 

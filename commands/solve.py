@@ -370,6 +370,11 @@ def main() -> None:
     )
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
+    parser.add_argument(
+        "--gap",
+        type=float,
+        help="Relative Solver Objective gap (live default 0.01; 0 = full proof)",
+    )
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
     parser.add_argument("--target_gw", type=int, help="Target Gameweek to start optimization from")
     args, unknown = parser.parse_known_args()
@@ -402,6 +407,8 @@ def main() -> None:
         options["decay_base"] = args.decay_base
     if args.hit_cost is not None:
         options["hit_cost"] = args.hit_cost
+    if args.gap is not None:
+        options["gap"] = args.gap
 
         
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
