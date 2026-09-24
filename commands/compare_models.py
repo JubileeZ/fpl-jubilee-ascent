@@ -61,6 +61,7 @@ def _run_model(
             snapshot_root=snapshot_root,
             snapshot_season=snapshot_season,
             require_snapshots=require_snapshots,
+            eval_target="blended_points",
         )
     )
 
@@ -102,6 +103,7 @@ def main() -> None:
     print(f"Gameweek Range  : {start_gw}-{end_gw}")
     print(f"Data Directory  : {data_dir}")
     print(f"Primary Metric  : {primary_name}")
+    print("Eval Target     : blend (blended_points; ADR 0044)")
     print(f"Git Commit      : {_git_commit() or 'unknown'}")
     print("-" * 72)
     print(

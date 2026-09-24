@@ -33,6 +33,7 @@ class PromotionVerdict:
     segment_wins: int
     guardrails_passed: bool
     reasons: tuple[str, ...]
+    eval_target: str = "actual_points"
 
 
 def _regret_is_informative(metrics: dict[str, Any]) -> bool:
@@ -67,25 +68,44 @@ def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetr
     )
 
 
-def segment_metrics(df_eval: pd.DataFrame, start_gw: int, end_gw: int) -> dict[str, Any] | None:
+def segment_metrics(
+    df_eval: pd.DataFrame,
+    start_gw: int,
+    end_gw: int,
+    *,
+    target_column: str = "actual_points",
+) -> dict[str, Any] | None:
     segment = df_eval[(df_eval["gameweek"] >= start_gw) & (df_eval["gameweek"] <= end_gw)]
     if segment.empty:
         return None
-    return evaluate_predictions(segment)
+    return evaluate_predictions(segment, target_column=target_column)
 
 
-def metrics_by_season_window(df_eval: pd.DataFrame) -> dict[str, dict[str, Any]]:
-    windows: dict[str, dict[str, Any]] = {"combined": evaluate_predictions(df_eval)}
+def metrics_by_season_window(
+    df_eval: pd.DataFrame, *, target_column: str = "actual_points"
+) -> dict[str, dict[str, Any]]:
+    windows: dict[str, dict[str, Any]] = {
+        "combined": evaluate_predictions(df_eval, target_column=target_column)
+    }
     for name, (start_gw, end_gw) in SEASON_WINDOWS.items():
-        segment_metrics_result = segment_metrics(df_eval, start_gw, end_gw)
+        segment_metrics_result = segment_metrics(
+            df_eval, start_gw, end_gw, target_column=target_column
+        )
         if segment_metrics_result is not None:
             windows[name] = segment_metrics_result
     return windows
 
 
+_REFERENCE_TARGETS = ("actual_points", "process_points")
+_REFERENCE_LABELS = {"actual_points": "Realized", "process_points": "Process"}
+
+
 def evaluate_historical_promotion_gate(
     champion_windows: dict[str, dict[str, Any]],
     candidate_windows: dict[str, dict[str, Any]],
+    *,
+    eval_target: str = "actual_points",
+    reference_windows: dict[str, tuple[dict[str, Any], dict[str, Any]]] | None = None,
 ) -> PromotionVerdict:
     combined_champion = champion_windows["combined"]
     combined_candidate = candidate_windows["combined"]
@@ -111,6 +131,18 @@ def evaluate_historical_promotion_gate(
         reasons.append(f"won only {segment_wins}/3 seasonal segments")
     if not guardrails_passed:
         reasons.append("failed one or more Champion guardrails")
+    if reference_windows:
+        for target in _REFERENCE_TARGETS:
+            pair = reference_windows.get(target)
+            if pair is None:
+                continue
+            champion_ref, candidate_ref = pair
+            if float(candidate_ref["mae"]) > float(champion_ref["mae"]):
+                guardrails_passed = False
+                reasons.append(
+                    f"regressed {_REFERENCE_LABELS[target]} MAE guardrail "
+                    f"({float(candidate_ref['mae']):.4f} vs {float(champion_ref['mae']):.4f})"
+                )
 
     passed = combined_delta > 0 and segment_wins >= 2 and guardrails_passed
     return PromotionVerdict(
@@ -120,6 +152,7 @@ def evaluate_historical_promotion_gate(
         segment_wins=segment_wins,
         guardrails_passed=guardrails_passed,
         reasons=tuple(reasons),
+        eval_target=eval_target,
     )
 
 

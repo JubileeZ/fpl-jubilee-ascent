@@ -53,10 +53,22 @@ def replace_candidate(selection: ModelSelection, incoming: str, outgoing: str) -
 def compare_to_reference(
     reference: WalkforwardResult,
     candidate: WalkforwardResult,
+    *,
+    primary_target: str = "blended_points",
 ) -> PromotionVerdict:
+    reference_windows = {
+        target: (
+            metrics_by_season_window(reference.df_eval, target_column=target)["combined"],
+            metrics_by_season_window(candidate.df_eval, target_column=target)["combined"],
+        )
+        for target in ("actual_points", "process_points")
+        if target != primary_target
+    }
     return evaluate_historical_promotion_gate(
-        metrics_by_season_window(reference.df_eval),
-        metrics_by_season_window(candidate.df_eval),
+        metrics_by_season_window(reference.df_eval, target_column=primary_target),
+        metrics_by_season_window(candidate.df_eval, target_column=primary_target),
+        eval_target=primary_target,
+        reference_windows=reference_windows or None,
     )
 
 
@@ -86,6 +98,7 @@ def build_evidence_record(
             {
                 "candidate": comparison.candidate,
                 "passed": comparison.verdict.passed,
+                "eval_target": comparison.verdict.eval_target,
                 "primary_metric": comparison.verdict.primary_metric,
                 "combined_primary_delta": comparison.verdict.combined_primary_delta,
                 "segment_wins": comparison.verdict.segment_wins,
@@ -129,6 +142,7 @@ def write_promotion_evidence(record: dict[str, Any], output_dir: Path) -> tuple[
             f"- Primary metric: `{comparison['primary_metric']}` "
             f"(delta {comparison['combined_primary_delta']:.4f})"
         )
+        lines.append(f"- Eval target: `{comparison.get('eval_target', 'actual_points')}`")
         lines.append(f"- Segment wins: {comparison['segment_wins']}/3")
         lines.append(f"- Guardrails passed: {comparison['guardrails_passed']}")
         lines.append(f"- Snapshot backed: {comparison['snapshot_backed']}")

@@ -67,6 +67,7 @@ def _run_model(
             snapshot_root=snapshot_root,
             snapshot_season=snapshot_season,
             require_snapshots=require_snapshots,
+            eval_target="blended_points",
         )
     )
 

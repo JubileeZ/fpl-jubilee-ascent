@@ -6,8 +6,19 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from pandas.errors import EmptyDataError
 
 from models.selection import load_model_selection
+
+
+def _read_artifact(path: Path) -> pd.DataFrame | None:
+    """Return artifact frame, or None when missing/unparseable (optional input)."""
+    if not path.exists():
+        return None
+    try:
+        return pd.read_csv(path)
+    except EmptyDataError:
+        return None
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BIAS = ROOT / "docs" / "research" / "champion-signed-bias-2025-26" / "champion_bias_summary.csv"
@@ -16,9 +27,9 @@ DEFAULT_REGRET = ROOT / "data" / "reports" / "decision_regret.csv"
 
 
 def _signed_bias_row(path: Path, champion: str) -> pd.Series | None:
-    if not path.exists():
+    df = _read_artifact(path)
+    if df is None:
         return None
-    df = pd.read_csv(path)
     if df.empty or "model" not in df.columns:
         return None
     rows = df[df["model"].astype(str) == champion]
@@ -36,9 +47,9 @@ def _signed_bias_row(path: Path, champion: str) -> pd.Series | None:
 
 
 def _walkforward(path: Path) -> tuple[str | None, float | None, list[dict[str, Any]]]:
-    if not path.exists():
+    df = _read_artifact(path)
+    if df is None:
         return None, None, []
-    df = pd.read_csv(path)
     if df.empty or "realized_points" not in df.columns:
         return None, None, []
     ok = df if "status" not in df.columns else df[df["status"].astype(str) == "ok"]
@@ -57,9 +68,9 @@ def _walkforward(path: Path) -> tuple[str | None, float | None, list[dict[str, A
 
 
 def _regret_mean(path: Path) -> float | None:
-    if not path.exists():
+    df = _read_artifact(path)
+    if df is None:
         return None
-    df = pd.read_csv(path)
     col = "model_regret" if "model_regret" in df.columns else None
     if col is None:
         return None

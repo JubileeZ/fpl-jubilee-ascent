@@ -411,6 +411,18 @@ _Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the defa
 Mean of `projected_points − actual_points` vs Realized Points for the Model Champion. Gate companion: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Positive = overprediction. Not FPL `ep_*`. Process Points is a separate research eval target (`--eval_target process`), not this gate.
 _Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate, Process Points as the ADR 0033 gate
 
+**Blended Eval Target**:
+Mean of Realized Points and Process Points per player-gameweek (50/50, all positions). Promotion primary for backtests and the Historical Promotion Gate (ADR 0044). Realized Points and Process Points stay reported guardrails. CLI `--eval_target blend`; companions triple-report `realized|process|blend`.
+_Avoid_: position-weighted blend, Process-only primary, calibrating live xP from this cell
+
+**Cross-Gameweek Dispersion**:
+Mean over a player pool of per-player sample Gameweek-to-Gameweek SD within a window, reported with median as skew check. Companion: `docs/research/xp-cross-gw-dispersion/dispersion_summary.csv` `mean_SD`. Expectation should swing less than actuals, not equal them.
+_Avoid_: score movement, pooled SD across player levels, SD of weekly means, ranking 6-GW live against 38-GW archive
+
+**Fixture Swing**:
+Live-horizon per-player SD of one xP component with minutes frozen, isolating fixture-driven move. Companion: `docs/research/xp-cross-gw-dispersion/fixture_component_swing.csv` `mean_SD`.
+_Avoid_: score movement, week-to-week revision after re-projection, treating horizon-frozen minutes as form change
+
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
 _Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
@@ -504,7 +516,7 @@ Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MA
 _Avoid_: Prediction-only evaluation, aggregate score
 
 **Historical Promotion Gate**:
-A Candidate may replace the Model Champion only after winning the combined prior-season evaluation and at least two of its Cold-Start, early/mid-season, and late-season segments while matching or improving every Champion guardrail. Evaluation replays This-Season Evidence (ADR 0024); the GW1–4 segment is true Cold-Start only while that season's history is empty.
+A Candidate may replace the Model Champion only after winning the combined prior-season evaluation and at least two of its Cold-Start, early/mid-season, and late-season segments while matching or improving every Champion guardrail. Primary xP metric is Blended Eval Target (ADR 0044); Realized Points and Process Points stay reported guardrails. Evaluation replays This-Season Evidence (ADR 0024); the GW1–4 segment is true Cold-Start only while that season's history is empty.
 _Avoid_: One-off backtest win, aggregate-only promotion, evaluating ADR 0022 in-season last-year blend while shipping 0024
 
 **Incremental Promotion**:

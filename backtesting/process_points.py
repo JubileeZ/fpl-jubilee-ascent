@@ -66,3 +66,16 @@ def aggregate_process_points(
         frame.groupby([player_col, gameweek_col], as_index=False)["process_points"]
         .sum()
     )
+
+
+def blended_points(
+    actual: pd.Series, process: pd.Series, weight: float = 0.5
+) -> pd.Series:
+    """Return Blended Eval Target: ``weight * process + (1 - weight) * actual``.
+
+    Default 50/50 across all positions (ADR 0044). Eval-only; never a
+    Feature Contract input.
+    """
+    if not 0.0 <= weight <= 1.0:
+        raise ValueError(f"Blended Eval Target weight must be within [0, 1], got {weight}")
+    return weight * process + (1.0 - weight) * actual

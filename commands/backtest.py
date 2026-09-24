@@ -15,7 +15,7 @@ configure_utf8_stdio()
 from models import get_model
 from features.builder import build_features, history_before_target
 from backtesting.metrics import evaluate_predictions
-from backtesting.process_points import aggregate_process_points
+from backtesting.process_points import aggregate_process_points, blended_points
 from features.contracts import assert_projection_contract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -154,11 +154,20 @@ def main() -> None:
     parser.add_argument(
         "--eval_target",
         type=str,
-        choices=("realized", "process"),
+        choices=("realized", "process", "blend"),
         default="realized",
-        help="Score vs Realized Points (default) or Process Points (xG/xA goals/assists; ADR 0038)",
+        help="Score vs Realized Points (default), Process Points (ADR 0038), or 50/50 Blended Eval Target (ADR 0044)",
+    )
+    parser.add_argument(
+        "--blend_weight",
+        type=float,
+        default=0.5,
+        help="Process share of Blended Eval Target within [0, 1] (default: 0.5)",
     )
     args = parser.parse_args()
+    if args.eval_target == "blend" and not 0.0 <= args.blend_weight <= 1.0:
+        logger.error("--blend_weight must be within [0, 1], got %s.", args.blend_weight)
+        sys.exit(1)
     
     requested_data_dir = (PROJECT_ROOT / args.data_dir).resolve()
     data_dir = resolve_backtest_data_dir(requested_data_dir)
@@ -360,7 +369,13 @@ def main() -> None:
         sys.exit(1)
         
     df_eval = pd.concat(all_results, ignore_index=True)
-    target_column = "process_points" if args.eval_target == "process" else "actual_points"
+    if args.eval_target == "blend":
+        df_eval["blended_points"] = blended_points(
+            df_eval["actual_points"], df_eval["process_points"], weight=args.blend_weight
+        )
+        target_column = "blended_points"
+    else:
+        target_column = "process_points" if args.eval_target == "process" else "actual_points"
     metrics = evaluate_predictions(df_eval, target_column=target_column)
     mean_rank_corr = metrics["spearman"]
     rank_display = "n/a" if mean_rank_corr is None else f"{mean_rank_corr:.4f}"
@@ -370,6 +385,8 @@ def main() -> None:
     print("="*50)
     print(f"Gameweek Range  : {start_gw} - {end_gw}")
     print(f"Eval Target     : {args.eval_target} ({target_column})")
+    if args.eval_target == "blend":
+        print(f"Blend Weight    : {args.blend_weight} Process share")
     print(f"Data Directory  : {data_dir}")
     print(f"Sample Count    : {metrics['sample_count']}")
     print(f"Points MAE      : {metrics['mae']:.4f}")

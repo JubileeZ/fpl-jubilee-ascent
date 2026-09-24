@@ -1,9 +1,14 @@
 """Process Points reconstruction and eval-target wiring."""
 
 import pandas as pd
+import pytest
 
 from backtesting.metrics import evaluate_predictions
-from backtesting.process_points import aggregate_process_points, process_points_from_performances
+from backtesting.process_points import (
+    aggregate_process_points,
+    blended_points,
+    process_points_from_performances,
+)
 
 
 def test_process_points_missing_event_columns_are_zero() -> None:
@@ -99,3 +104,49 @@ def test_aggregate_process_points_sums_fixtures() -> None:
     assert len(out) == 1
     # fixture1: 5 - 5 + 0.2*5 = 1.0; fixture2: 2 - 0 + 0.5 = 2.5; sum 3.5
     assert abs(float(out["process_points"].iloc[0]) - 3.5) < 1e-9
+
+
+def test_blended_points_default_is_fifty_fifty() -> None:
+    actual = pd.Series([10.0, 2.0])
+    process = pd.Series([4.0, 3.0])
+    out = blended_points(actual, process)
+    assert list(out) == [7.0, 2.5]
+
+
+def test_blended_points_weight_favors_process_at_one() -> None:
+    actual = pd.Series([10.0])
+    process = pd.Series([4.0])
+    out = blended_points(actual, process, weight=1.0)
+    assert float(out.iloc[0]) == 4.0
+
+
+def test_blended_points_rejects_out_of_range_weight() -> None:
+    with pytest.raises(ValueError, match="weight"):
+        blended_points(pd.Series([1.0]), pd.Series([1.0]), weight=1.5)
+
+
+def test_evaluate_predictions_blend_target() -> None:
+    df = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "gameweek": 1,
+                "projected_points": 5.0,
+                "actual_points": 10.0,
+                "process_points": 4.0,
+                "blended_points": 7.0,
+            },
+            {
+                "player_id": 2,
+                "gameweek": 1,
+                "projected_points": 3.0,
+                "actual_points": 2.0,
+                "process_points": 3.0,
+                "blended_points": 2.5,
+            },
+        ]
+    )
+    blend = evaluate_predictions(df, target_column="blended_points")
+    assert blend["eval_target"] == "blended_points"
+    # errors (5-7)=-2, (3-2.5)=0.5 → mae 1.25
+    assert abs(float(blend["mae"]) - 1.25) < 1e-9

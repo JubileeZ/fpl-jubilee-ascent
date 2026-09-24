@@ -1,12 +1,13 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-22T05:35:00+07:00
+**Updated**: 2026-09-24T12:10:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
 
 ## Active Research Index
 
+- **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~11% of Realized swing on `60+`; attack fixture ~zero)
 - **Matchup share add-on (2025-26)**: [Note](matchup-share-addon-2025-26/matchup-share-addon-2025-26.md) · [Summary](matchup-share-addon-2025-26/matchup_share_summary.csv) `signed_bias` (all-pool worse than neutral; **shipped** Matchup → Strength → neutral, ADR 0037)
 - **Wayfinder Transfer Plan dashboard spec**: [Ownership/rank](wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md) · [Solve payload](wayfinder-transfer-plan-spec/solve-command-transfer-plan-payload.md) · [Explorer availability](wayfinder-transfer-plan-spec/explorer-availability-and-fixture-fields.md) · [Price intelligence](wayfinder-transfer-plan-spec/price-intelligence-observed-vs-forecast.md) · map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 - **Champion signed bias (2025-26 GW1–38)**: [Note](champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [Summary](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias`

@@ -113,3 +113,93 @@ def test_metrics_by_season_window_splits_gameweeks() -> None:
 )
 def test_classify_live_lead(champion: float, candidate: float, expected: str) -> None:
     assert classify_live_lead(champion, candidate) == expected
+
+
+def _blend_windows(*, champ_mae: float, cand_mae: float) -> tuple[dict, dict]:
+    champion_windows = {
+        "combined": _metrics(mae=champ_mae, regret=0.0),
+        "cold_start": _metrics(mae=champ_mae, regret=0.0),
+        "early_mid": _metrics(mae=champ_mae, regret=0.0),
+        "late": _metrics(mae=champ_mae, regret=0.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=cand_mae, regret=0.0),
+        "cold_start": _metrics(mae=cand_mae, regret=0.0),
+        "early_mid": _metrics(mae=cand_mae, regret=0.0),
+        "late": _metrics(mae=cand_mae, regret=0.0),
+    }
+    return champion_windows, candidate_windows
+
+
+def _reference_windows(
+    *, champ_realized: float, cand_realized: float, champ_process: float, cand_process: float
+) -> dict:
+    return {
+        "actual_points": (
+            _metrics(mae=champ_realized, regret=0.0),
+            _metrics(mae=cand_realized, regret=0.0),
+        ),
+        "process_points": (
+            _metrics(mae=champ_process, regret=0.0),
+            _metrics(mae=cand_process, regret=0.0),
+        ),
+    }
+
+
+def test_blend_gate_passes_winner_holding_both_references() -> None:
+    champion_windows, candidate_windows = _blend_windows(champ_mae=2.0, cand_mae=1.5)
+    references = _reference_windows(
+        champ_realized=2.0, cand_realized=1.8, champ_process=1.9, cand_process=1.7
+    )
+    verdict = evaluate_historical_promotion_gate(
+        champion_windows,
+        candidate_windows,
+        eval_target="blended_points",
+        reference_windows=references,
+    )
+    assert verdict.passed
+    assert verdict.eval_target == "blended_points"
+    assert verdict.guardrails_passed
+
+
+def test_blend_gate_fails_when_realized_regresses() -> None:
+    champion_windows, candidate_windows = _blend_windows(champ_mae=2.0, cand_mae=1.5)
+    references = _reference_windows(
+        champ_realized=2.0, cand_realized=2.4, champ_process=1.9, cand_process=1.7
+    )
+    verdict = evaluate_historical_promotion_gate(
+        champion_windows,
+        candidate_windows,
+        eval_target="blended_points",
+        reference_windows=references,
+    )
+    assert not verdict.passed
+    assert not verdict.guardrails_passed
+    assert any("Realized" in reason for reason in verdict.reasons)
+
+
+def test_metrics_by_season_window_scores_blend_column() -> None:
+    df_eval = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "gameweek": 10,
+                "projected_points": 5.0,
+                "actual_points": 9.0,
+                "process_points": 3.0,
+                "blended_points": 6.0,
+            },
+            {
+                "player_id": 2,
+                "gameweek": 10,
+                "projected_points": 6.0,
+                "actual_points": 5.0,
+                "process_points": 5.0,
+                "blended_points": 5.0,
+            },
+        ]
+    )
+    windows = metrics_by_season_window(df_eval, target_column="blended_points")
+    # errors (5-6)=-1, (6-5)=1 → mae 1.0; realized mae would be 2.5
+    assert abs(float(windows["combined"]["mae"]) - 1.0) < 1e-9
+    assert windows["combined"]["eval_target"] == "blended_points"

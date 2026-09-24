@@ -1,0 +1,13 @@
+window,pool,component,mean_SD,median_SD
+GW6-11 2026-27 live horizon,all,projected_points,0.0378,0.0107
+GW6-11 2026-27 live horizon,all,xp_attack,0.0053,0.0012
+GW6-11 2026-27 live horizon,all,xp_clean,0.0227,0.0056
+GW6-11 2026-27 live horizon,DEF,projected_points,0.058,
+GW6-11 2026-27 live horizon,DEF,xp_attack,0.0034,
+GW6-11 2026-27 live horizon,DEF,xp_clean,0.0483,
+GW6-11 2026-27 live horizon,MID,projected_points,0.0243,
+GW6-11 2026-27 live horizon,MID,xp_attack,0.0067,
+GW6-11 2026-27 live horizon,MID,xp_clean,0.007,
+GW6-11 2026-27 live horizon,FWD,projected_points,0.0278,
+GW6-11 2026-27 live horizon,FWD,xp_attack,0.0096,
+GW6-11 2026-27 live horizon,FWD,xp_clean,0.0,

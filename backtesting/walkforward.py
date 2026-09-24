@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
-from backtesting.process_points import aggregate_process_points
+from backtesting.process_points import aggregate_process_points, blended_points
 from features.builder import build_features, history_before_target
 from features.contracts import assert_projection_contract
 from models import get_model
@@ -46,7 +46,8 @@ class WalkforwardConfig:
     state_prior_strength: float | None = None
     trailing_start_k: int | None = None
     trailing_start_weight: float | None = None
-    eval_target: str = "actual_points"  # actual_points | process_points
+    eval_target: str = "actual_points"  # actual_points | process_points | blended_points
+    blend_weight: float = 0.5  # Process share of Blended Eval Target (ADR 0044)
 
 
 @dataclass(frozen=True)
@@ -209,8 +210,12 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
 
     df_eval = pd.concat(all_results, ignore_index=True)
     target = config.eval_target
-    if target not in {"actual_points", "process_points"}:
+    if target not in {"actual_points", "process_points", "blended_points"}:
         raise ValueError(f"Unsupported eval_target: {target}")
+    if target == "blended_points":
+        df_eval["blended_points"] = blended_points(
+            df_eval["actual_points"], df_eval["process_points"], weight=config.blend_weight
+        )
     metrics = evaluate_predictions(df_eval, target_column=target)
     snapshot_backed = bool(snapshot_ids) and len(snapshot_ids) == (config.end_gw - config.start_gw + 1)
     return WalkforwardResult(
