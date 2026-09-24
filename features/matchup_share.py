@@ -17,7 +17,7 @@ import pandas as pd
 MATCHUP_SHARE_K = 10
 MATCHUP_SHRINK_ATT = 0.40
 MATCHUP_SHRINK_DEF = 0.40
-ATTACK_SCALE_MODES = ("none", "ratio")
+ATTACK_SCALE_MODES = ("none", "ratio", "downside")
 ATTACK_RATIO_LO = 0.7
 ATTACK_RATIO_HI = 1.4
 RATIO_ATTACK_POSITIONS = frozenset({3, 4})  # MID/FWD only; DEF/GKP stay neutral
@@ -205,6 +205,8 @@ def apply_matchup_share_overlay(
 
     ``attack_scale="ratio"`` restores a clamped multiplicative attack scale
     (opponent xGC / league xGC) for MID/FWD instead of forcing ×1.0;
+    ``attack_scale="downside"`` clamps the same ratio at 1.0 above, so hard
+    fixtures scale attack down while easy fixtures never inflate;
     DEF/GKP and ``defence_multiplier`` stay neutral.
     """
     if attack_scale not in ATTACK_SCALE_MODES:
@@ -311,13 +313,12 @@ def apply_matchup_share_overlay(
         # Saves and DEFCON decoupled from opponent xG scaling (neutral x1.0)
         saves_vals.append(per90_saves)
         defcon_vals.append(per90_defcon)
-        if (
-            attack_scale == "ratio"
-            and pos_id in RATIO_ATTACK_POSITIONS
-            and league_xgc > EPS
+        if attack_scale in ("ratio", "downside") and (
+            pos_id in RATIO_ATTACK_POSITIONS and league_xgc > EPS
         ):
+            ceiling = 1.0 if attack_scale == "downside" else ATTACK_RATIO_HI
             attack_mults.append(
-                min(max(opp_xgc / league_xgc, ATTACK_RATIO_LO), ATTACK_RATIO_HI)
+                min(max(opp_xgc / league_xgc, ATTACK_RATIO_LO), ceiling)
             )
         else:
             attack_mults.append(1.0)

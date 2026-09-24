@@ -626,3 +626,72 @@ def test_build_features_matchup_variant_kwargs_reach_overlay(tmp_path: Path) -> 
     assert mult > 1.0  # weak-defence opponent scales MID attack up
 
 
+def _downside_fixtures_and_hist() -> tuple[pd.DataFrame, pd.DataFrame]:
+    fixtures = pd.DataFrame(
+        [
+            {"id": 101, "home_club_id": 10, "away_club_id": 30, "gameweek_id": 1},
+            {"id": 102, "home_club_id": 40, "away_club_id": 20, "gameweek_id": 1},
+        ]
+    )
+    rows = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "club_id": 10,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 90,
+                "expected_goals": 1.0,
+                "expected_assists": 0.5,
+                "expected_goals_conceded": 2.0,
+            },
+            {
+                # Strong-defence opponent: low xGC pulls the downside ratio below 1.
+                "player_id": 88,
+                "club_id": 20,
+                "fixture_id": 102,
+                "gameweek_id": 1,
+                "was_home": False,
+                "minutes": 90,
+                "expected_goals": 0.5,
+                "expected_assists": 0.2,
+                "expected_goals_conceded": 0.4,
+            },
+        ]
+    )
+    return fixtures, rows
+
+
+def test_attack_scale_downside_never_inflates_weak_fixture() -> None:
+    fixtures, rows = _ratio_fixtures_and_hist()
+    out, applied = apply_matchup_share_overlay(
+        _ratio_feat(3), rows, fixtures, history_cutoff_gw=2, attack_scale="downside"
+    )
+    assert applied is True
+    # Weak-defence opponent: capped at 1.0, easy ceiling untouched.
+    assert float(out.loc[0, "attack_multiplier"]) == 1.0
+    assert float(out.loc[0, "defence_multiplier"]) == 1.0
+
+
+def test_attack_scale_downside_reduces_strong_fixture() -> None:
+    fixtures, rows = _downside_fixtures_and_hist()
+    out, applied = apply_matchup_share_overlay(
+        _ratio_feat(3), rows, fixtures, history_cutoff_gw=2, attack_scale="downside"
+    )
+    assert applied is True
+    mult = float(out.loc[0, "attack_multiplier"])
+    assert 0.7 <= mult < 1.0  # strong-defence opponent scales MID attack down
+
+
+def test_attack_scale_downside_leaves_def_gkp_neutral() -> None:
+    fixtures, rows = _downside_fixtures_and_hist()
+    for position_id in (1, 2):
+        out, applied = apply_matchup_share_overlay(
+            _ratio_feat(position_id), rows, fixtures, history_cutoff_gw=2,
+            attack_scale="downside",
+        )
+        assert applied is True
+        assert float(out.loc[0, "attack_multiplier"]) == 1.0
+
+
