@@ -1,12 +1,12 @@
 # Fixture-swing candidates: adjusted-additive vs multiplicative attack
 
-**Updated**: 2026-09-24T13:50:00+07:00
-**Data stamp**: Design only; no new evidence yet. Baseline cells: `xp-cross-gw-dispersion/dispersion_summary.csv` `mean_SD`, `matchup-share-addon-2025-26/matchup_share_summary.csv` `signed_bias`
-**Season**: 2025/26 (planned eval window GW1–38, seed 2024-25)
-**Status**: Draft
+**Updated**: 2026-09-24T13:55:00+07:00
+**Data stamp**: Three-arm walk-forward GW1–38 finished 2026-09-24T13:55:00+07:00; companion written same run
+**Season**: 2025/26 walk-forward GW1–38, seed 2024-25
+**Status**: Closed — archived, neither arm admitted; Champion stands
 **Purpose**: Test whether adjusted-additive or multiplicative attack fixture scale restores xP swing toward blend behavior without breaking blend MAE
 **Scope**: Three-arm walk-forward (Champion default / additive-adjusted / multiplicative). Model-effect-only: builder defaults unchanged, variants pass explicit params (blend_weight precedent). DEF/GKP untouched. Easy-slice spend bounded at +0.450 process bias. Not a live change; winner enters via Candidate Admission.
-**Related**: [ADR 0040](../../adr/0040-calibrated-matchup-share-shrinkage.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [Cross-GW dispersion](../xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [INDEX](../INDEX.md)
+**Related**: [ADR 0040](../../adr/0040-calibrated-matchup-share-shrinkage.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [Cross-GW dispersion](../research/xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [INDEX](../research/INDEX.md)
 **Artifact**: [candidate_swing_summary.csv](candidate_swing_summary.csv) `blend_mae` (to be written)
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
@@ -78,7 +78,10 @@ Full redo docs/research/fixture-swing-candidates/fixture-swing-candidates.md
 
 ### Evidence
 
-- None yet. Mechanism hypothesis (to be tested): multiplicative arm restores proportional swing for low-xG players without the additive ceiling blowup; additive arm replays the known s/bias trade.
+- Champion arm reproduces production exactly (`blend_mae` 1.0024, `easy_bias` +0.3714 — matches the addon note's +0.371 to the digit): harness validated, deltas below are real arm effects. Source: [candidate_swing_summary.csv](candidate_swing_summary.csv) `blend_mae`.
+- Multiplicative arm **killed on both rules**: loses blend MAE (1.0062 vs 1.0024) and breaches the easy cap (`easy_bias` +0.6814 vs cap +0.450; `easy_mae` 2.2504 vs 2.1218). Attack swing lifts to 0.2606 but the price exceeds the bounded spend. Source: [candidate_swing_summary.csv](candidate_swing_summary.csv) `easy_bias`.
+- Additive arm (s_att 0.60) ties blend MAE (1.0024 = 1.0024 — a tie is not a win), regresses easy bias (+0.4292, inside the cap but the wrong direction), negligible swing lift (0.2192 vs 0.2128). No admission. Source: [candidate_swing_summary.csv](candidate_swing_summary.csv) `blend_mae`.
+- Ordering held at full scale as in the 2-GW smoke: swing multiplicative > additive > champion, while accuracy runs the opposite way. Fixture swing and easy-ceiling bias remain coupled; the clamp did not decouple them.
 
 ### Alternatives
 
@@ -88,13 +91,14 @@ Full redo docs/research/fixture-swing-candidates/fixture-swing-candidates.md
 
 ## Decision
 
-**Verdict**: Pending experiment. Both arms to be tested, not picked blind.
+**Verdict**: Both arms dead under the locked kill rules — close topic, keep Champion, swing stays diagnostic.
 
 **Recommended action**:
-- Implement builder passthrough + overlay ratio mode, then run the three-arm walk-forward.
+- Archive this topic. No Candidate Admission. No contract-default change.
+- Next swing ideas come from the deferred list (FDR fallback when strengths null, xMins-side) as new topics, not reopening these arms.
 
 **Trigger / kill switch**:
-- Either arm breaching the easy cap or losing blend MAE ends that arm immediately.
+- A new fixture-scale idea with a mechanism that decouples swing from easy-ceiling bias opens a fresh topic. Re-running s_att or ratio-mode values needs new justification, not wider clamps.
 
 ## Risks and unknowns
 

@@ -1,0 +1,4 @@
+arm,sample_count,blend_mae,blend_bias,realized_mae,process_mae,easy_bias,easy_mae,xp_swing_60,attack_swing
+champion,31958,1.0024,0.1917,1.0794,0.9647,0.3714,2.1218,0.7443,0.2128
+additive_adjusted,31958,1.0024,0.1925,1.0795,0.9648,0.4292,2.1425,0.7508,0.2192
+multiplicative,31958,1.0062,0.199,1.0829,0.9686,0.6814,2.2504,0.7834,0.2606
