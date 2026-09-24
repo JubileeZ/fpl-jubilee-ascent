@@ -17,6 +17,10 @@ import pandas as pd
 MATCHUP_SHARE_K = 10
 MATCHUP_SHRINK_ATT = 0.40
 MATCHUP_SHRINK_DEF = 0.40
+ATTACK_SCALE_MODES = ("none", "ratio")
+ATTACK_RATIO_LO = 0.7
+ATTACK_RATIO_HI = 1.4
+RATIO_ATTACK_POSITIONS = frozenset({3, 4})  # MID/FWD only; DEF/GKP stay neutral
 EPS = 1e-6
 POSITION_PRIOR_WEIGHT = 4.0
 
@@ -192,12 +196,21 @@ def apply_matchup_share_overlay(
     history_cutoff_gw: int,
     shrink_att: float = MATCHUP_SHRINK_ATT,
     shrink_def: float = MATCHUP_SHRINK_DEF,
+    attack_scale: str = "none",
 ) -> tuple[pd.DataFrame, bool]:
     """Apply matchup share when this-season club xG history exists before cutoff.
 
     Returns ``(features, applied)``. When ``applied`` is False, features are
     unchanged (caller keeps Club Strength / neutral multipliers).
+
+    ``attack_scale="ratio"`` restores a clamped multiplicative attack scale
+    (opponent xGC / league xGC) for MID/FWD instead of forcing ×1.0;
+    DEF/GKP and ``defence_multiplier`` stay neutral.
     """
+    if attack_scale not in ATTACK_SCALE_MODES:
+        raise ValueError(
+            f"Unknown attack_scale {attack_scale!r}; expected one of {ATTACK_SCALE_MODES}"
+        )
     required = {"expected_goals", "expected_assists", "expected_goals_conceded", "gameweek_id"}
     if df_hist.empty or not required.issubset(df_hist.columns):
         return df_feat, False
@@ -240,6 +253,7 @@ def apply_matchup_share_overlay(
     gc_vals: list[float] = []
     saves_vals: list[float] = []
     defcon_vals: list[float] = []
+    attack_mults: list[float] = []
 
     for row in out.itertuples(index=False):
         opp_id = int(getattr(row, "opponent_id", 0) or 0)
@@ -250,6 +264,7 @@ def apply_matchup_share_overlay(
             gc_vals.append(float(getattr(row, "per90_goals_conceded", 1.2) or 1.2))
             saves_vals.append(float(getattr(row, "per90_saves", 0.0) or 0.0))
             defcon_vals.append(float(getattr(row, "per90_defensive_contribution", 0.0) or 0.0))
+            attack_mults.append(1.0)
             continue
 
         opp_xg, opp_xgc = _club_rates(
@@ -296,6 +311,16 @@ def apply_matchup_share_overlay(
         # Saves and DEFCON decoupled from opponent xG scaling (neutral x1.0)
         saves_vals.append(per90_saves)
         defcon_vals.append(per90_defcon)
+        if (
+            attack_scale == "ratio"
+            and pos_id in RATIO_ATTACK_POSITIONS
+            and league_xgc > EPS
+        ):
+            attack_mults.append(
+                min(max(opp_xgc / league_xgc, ATTACK_RATIO_LO), ATTACK_RATIO_HI)
+            )
+        else:
+            attack_mults.append(1.0)
 
     out["per90_xg"] = xg_vals
     out["per90_xa"] = xa_vals
@@ -304,6 +329,6 @@ def apply_matchup_share_overlay(
         out["per90_saves"] = saves_vals
     if "per90_defensive_contribution" in out.columns:
         out["per90_defensive_contribution"] = defcon_vals
-    out["attack_multiplier"] = 1.0
+    out["attack_multiplier"] = attack_mults
     out["defence_multiplier"] = 1.0
     return out, True

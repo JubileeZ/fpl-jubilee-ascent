@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 import pandas as pd
 
@@ -682,6 +682,9 @@ def build_features(
     trailing_start_weight: float = TRAILING_START_WINDOW_WEIGHT,
     require_availability_snapshot: bool = False,
     apply_matchup_share: bool = True,
+    matchup_shrink_att: float | None = None,
+    matchup_shrink_def: float | None = None,
+    matchup_attack_scale: str = "none",
 ) -> pd.DataFrame:
 
     """
@@ -1037,11 +1040,21 @@ def build_features(
 
     # Matchup Share (this-season club xG) → else Club Strength / neutral from fmap.
     if apply_matchup_share:
+        overlay_kwargs: dict[str, Any] = {"attack_scale": matchup_attack_scale}
+        if matchup_shrink_att is not None:
+            if not 0.0 <= matchup_shrink_att <= 1.0:
+                raise ValueError("matchup_shrink_att must be within [0, 1]")
+            overlay_kwargs["shrink_att"] = matchup_shrink_att
+        if matchup_shrink_def is not None:
+            if not 0.0 <= matchup_shrink_def <= 1.0:
+                raise ValueError("matchup_shrink_def must be within [0, 1]")
+            overlay_kwargs["shrink_def"] = matchup_shrink_def
         df_feat, _matchup_applied = apply_matchup_share_overlay(
             df_feat,
             df_hist_context if "club_id" in df_hist_context.columns else df_hist,
             df_fixtures,
             history_cutoff_gw=history_cutoff,
+            **overlay_kwargs,
         )
 
 

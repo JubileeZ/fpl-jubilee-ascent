@@ -419,3 +419,210 @@ def test_shrinkage_parameter_scales_delta_proportionally() -> None:
     assert abs(bump_full - 2.0 * bump_half) < 1e-9
 
 
+def _ratio_fixtures_and_hist() -> tuple[pd.DataFrame, pd.DataFrame]:
+    fixtures = pd.DataFrame(
+        [
+            {"id": 101, "home_club_id": 10, "away_club_id": 30, "gameweek_id": 1},
+            {"id": 102, "home_club_id": 40, "away_club_id": 20, "gameweek_id": 1},
+        ]
+    )
+    rows = pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "club_id": 10,
+                "fixture_id": 101,
+                "gameweek_id": 1,
+                "was_home": True,
+                "minutes": 90,
+                "expected_goals": 1.5,
+                "expected_assists": 0.5,
+                "expected_goals_conceded": 1.0,
+            },
+            {
+                # Weak-defence opponent: high xGC inflates the attack ratio.
+                "player_id": 88,
+                "club_id": 20,
+                "fixture_id": 102,
+                "gameweek_id": 1,
+                "was_home": False,
+                "minutes": 90,
+                "expected_goals": 0.5,
+                "expected_assists": 0.2,
+                "expected_goals_conceded": 3.0,
+            },
+        ]
+    )
+    return fixtures, rows
+
+
+def _ratio_feat(position_id: int) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "player_id": 7,
+                "club_id": 10,
+                "opponent_id": 20,
+                "position_id": position_id,
+                "is_home": True,
+                "gameweek_id": 2,
+                "fixture_id": 201,
+                "per90_xg": 0.30,
+                "per90_xa": 0.15,
+                "per90_goals_conceded": 1.0,
+                "per90_saves": 0.0,
+                "per90_defensive_contribution": 6.0,
+                "penalties_order": 0.0,
+            }
+        ]
+    )
+
+
+def test_attack_scale_ratio_moves_mid_fwd_with_opponent() -> None:
+    fixtures, rows = _ratio_fixtures_and_hist()
+    out, applied = apply_matchup_share_overlay(
+        _ratio_feat(3), rows, fixtures, history_cutoff_gw=2, attack_scale="ratio"
+    )
+    assert applied is True
+    mult = float(out.loc[0, "attack_multiplier"])
+    assert 0.7 <= mult <= 1.4
+    # Weak-defence opponent (xGC above league) scales attack up.
+    assert mult > 1.0
+    assert float(out.loc[0, "defence_multiplier"]) == 1.0
+
+
+def test_attack_scale_ratio_leaves_def_gkp_neutral() -> None:
+    fixtures, rows = _ratio_fixtures_and_hist()
+    for position_id in (1, 2):
+        out, applied = apply_matchup_share_overlay(
+            _ratio_feat(position_id), rows, fixtures, history_cutoff_gw=2,
+            attack_scale="ratio",
+        )
+        assert applied is True
+        assert float(out.loc[0, "attack_multiplier"]) == 1.0
+
+
+def test_attack_scale_rejects_unknown_mode() -> None:
+    fixtures, rows = _ratio_fixtures_and_hist()
+    try:
+        apply_matchup_share_overlay(
+            _ratio_feat(3), rows, fixtures, history_cutoff_gw=2,
+            attack_scale="turbo",
+        )
+    except ValueError as exc:
+        assert "attack_scale" in str(exc)
+    else:
+        raise AssertionError("expected ValueError for unknown attack_scale")
+
+
+def _passthrough_processed(processed: Path) -> None:
+    processed.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "club_id": 1,
+                "position_id": 3,
+                "now_cost": 90,
+                "chance_of_playing_next_round": 100.0,
+                "penalties_order": 0,
+            },
+            {
+                "id": 2,
+                "club_id": 2,
+                "position_id": 4,
+                "now_cost": 90,
+                "chance_of_playing_next_round": 100.0,
+                "penalties_order": 0,
+            },
+        ]
+    ).to_parquet(processed / "players.parquet", index=False)
+    pd.DataFrame(
+        [
+            {"id": 1, "name": "A", "short_name": "A", "strength": 3},
+            {"id": 2, "name": "B", "short_name": "B", "strength": 3},
+        ]
+    ).to_parquet(processed / "clubs.parquet", index=False)
+    pd.DataFrame(
+        [
+            {
+                "id": 10,
+                "gameweek_id": 1,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 2,
+                "team_a_difficulty": 4,
+                "finished": True,
+            },
+            {
+                "id": 11,
+                "gameweek_id": 2,
+                "home_club_id": 1,
+                "away_club_id": 2,
+                "team_h_difficulty": 2,
+                "team_a_difficulty": 4,
+                "finished": False,
+            },
+        ]
+    ).to_parquet(processed / "fixtures.parquet", index=False)
+    pd.DataFrame(
+        [
+            {
+                "player_id": 1,
+                "gameweek_id": 1,
+                "fixture_id": 10,
+                "kickoff_time": "2026-08-01T12:00:00Z",
+                "minutes": 90,
+                "total_points": 5,
+                "goals_scored": 1,
+                "assists": 0,
+                "was_home": True,
+                "expected_goals": 1.0,
+                "expected_assists": 0.5,
+                "expected_goals_conceded": 1.0,
+            },
+            {
+                "player_id": 2,
+                "gameweek_id": 1,
+                "fixture_id": 10,
+                "kickoff_time": "2026-08-01T12:00:00Z",
+                "minutes": 90,
+                "total_points": 2,
+                "goals_scored": 0,
+                "assists": 0,
+                "was_home": False,
+                "expected_goals": 0.5,
+                "expected_assists": 0.2,
+                "expected_goals_conceded": 3.0,
+            },
+        ]
+    ).to_parquet(processed / "player_performances.parquet", index=False)
+
+
+def test_build_features_matchup_variant_kwargs_reach_overlay(tmp_path: Path) -> None:
+    """Explicit variant kwargs change overlay output; defaults stay production."""
+    processed = tmp_path / "processed"
+    _passthrough_processed(processed)
+    table = write_role_table(tmp_path / "roles.csv", [1, 2])
+    base_kwargs = dict(
+        target_gw=2, horizon=1, use_archive_seed=False, **role_kwargs(table)
+    )
+    default = build_features(processed, **base_kwargs)
+    row_default = default[
+        (default["player_id"] == 1) & (default["fixture_id"] == 11)
+    ].iloc[0]
+    assert float(row_default["attack_multiplier"]) == 1.0
+
+    boosted = build_features(processed, **base_kwargs, matchup_shrink_att=0.80)
+    row_boosted = boosted[
+        (boosted["player_id"] == 1) & (boosted["fixture_id"] == 11)
+    ].iloc[0]
+    assert float(row_boosted["per90_xg"]) > float(row_default["per90_xg"])
+
+    ratio = build_features(processed, **base_kwargs, matchup_attack_scale="ratio")
+    row_ratio = ratio[(ratio["player_id"] == 1) & (ratio["fixture_id"] == 11)].iloc[0]
+    mult = float(row_ratio["attack_multiplier"])
+    assert 0.7 <= mult <= 1.4
+    assert mult > 1.0  # weak-defence opponent scales MID attack up
+
+

@@ -423,6 +423,10 @@ _Avoid_: score movement, pooled SD across player levels, SD of weekly means, ran
 Live-horizon per-player SD of one xP component with minutes frozen, isolating fixture-driven move. Companion: `docs/research/xp-cross-gw-dispersion/fixture_component_swing.csv` `mean_SD`.
 _Avoid_: score movement, week-to-week revision after re-projection, treating horizon-frozen minutes as form change
 
+**Attack Swing Ratio**:
+Diagnostic (directional, no fixed bar): walk-forward 60+ MID/FWD xp-attack SD ÷ Process SD on the same slice. Guards the fixture-swing experiment against accuracy bought with flatness.
+_Avoid_: optimization target, fixed halfway bar, pooled all-position swing
+
 **Free Transfer Bank**:
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
 _Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
