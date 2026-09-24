@@ -48,7 +48,7 @@ Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.m
 
 ### CLI projections and advanced Transfer Plan
 
-The Model Champion is `config/model_selection.json` `champion` (currently `calibrated_matchup_hybrid`). Fixture xP scale on the Feature Contract: **Calibrated Matchup Share** when this-season Official club xG exists ([ADR 0040](docs/adr/0040-calibrated-matchup-share-shrinkage.md)); else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+The Model Champion is `config/model_selection.json` `champion` (currently `hold_chase_challenger`). Fixture xP scale on the Feature Contract: **Calibrated Matchup Share** when this-season Official club xG exists ([ADR 0040](docs/adr/0040-calibrated-matchup-share-shrinkage.md)); else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
 
 ```bash
 uv run python -m commands.run_model --horizon 5

@@ -609,7 +609,7 @@ Official API club fields `strength`, `strength_overall_home/away`, `strength_att
 _Avoid_: Dual-Vector Strength, FDR, Elo-style 1000-scale ratings (prior-season archive only), opponent's own home/away form
 
 **Dual-Vector Strength**:
-Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Research-only; not implemented in production Python; not API Club Strength Vector; not Model Champion `calibrated_matchup_hybrid` (ADR 0041).
+Match-level team attack and opponent defense strength multipliers derived from 10-match rolling non-penalty xG (Team Attack) and xGA (Team Defense) scaled against league averages, falling back to Official Fixture Difficulty only when data is sparse. Research-only; not implemented in production Python; not API Club Strength Vector; not the live Model Champion.
 _Avoid_: Static FDR multiplier, single team rating, API `strength_*`, Prior-Season Dual-Vector Seed, `dual_vector_state_hybrid` (retired name), `participation_penalty_hybrid` (retired name)
 
 
