@@ -89,6 +89,8 @@ def main() -> None:
                             mean_abs_w2w=round(w2w, 3)))
     live_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     live_tg = resolve_default_target_gw(live_dir)
+    live_season = live_dir.parent.name if live_dir.parent.name != "data" else "live"
+    live_window = f"GW{live_tg}-{live_tg + 5} {live_season} live horizon"
     live_feat = build_features(live_dir, live_tg, horizon=6, history_before_gw=SEASON_END_GW + 1)
     live_perf = pd.read_parquet(live_dir / "player_performances.parquet")
     model.fit(live_perf[live_perf["gameweek_id"] < live_tg])
@@ -98,7 +100,7 @@ def main() -> None:
     live_g = live_proj.groupby(["player_id", "gameweek_id"], as_index=False)[
         ["projected_points", "xp_attack", "xp_clean"]].sum()
     mean_sd, med_sd, w2w = _stats(live_g, "projected_points")
-    out.append(dict(window=f"GW{live_tg}-{live_tg + 5} live horizon", pool="all", series="xp",
+    out.append(dict(window=live_window, pool="all", series="xp",
                     nplayers=int(live_g["player_id"].nunique()), mean_obs=6.0,
                     mean_SD=round(mean_sd, 3), median_SD=round(med_sd, 3),
                     mean_abs_w2w=round(w2w, 3)))
@@ -107,7 +109,7 @@ def main() -> None:
     for pool_label, frame in [("all", live_g)]:
         for comp in ["projected_points", "xp_attack", "xp_clean"]:
             mean_sd, med_sd, _ = _stats(frame, comp)
-            comp_rows.append(dict(window=f"GW{live_tg}-{live_tg + 5} live horizon",
+            comp_rows.append(dict(window=live_window,
                                   pool=pool_label, component=comp,
                                   mean_SD=round(mean_sd, 4), median_SD=round(med_sd, 4)))
     live_pos = pd.read_parquet(live_dir / "players.parquet")[["id", "position_id"]].rename(
@@ -117,7 +119,7 @@ def main() -> None:
         sub = live_g2[live_g2.position_id == pid]
         for comp in ["projected_points", "xp_attack", "xp_clean"]:
             mean_sd, _, _ = _stats(sub, comp)
-            comp_rows.append(dict(window=f"GW{live_tg}-{live_tg + 5} live horizon",
+            comp_rows.append(dict(window=live_window,
                                   pool=pname, component=comp,
                                   mean_SD=round(mean_sd, 4), median_SD=""))
     pd.DataFrame(comp_rows).to_csv(TOPIC / "fixture_component_swing.csv", index=False)

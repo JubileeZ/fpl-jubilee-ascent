@@ -1,7 +1,7 @@
 # Cross-Gameweek Dispersion: Champion xP vs Realized vs Process
 
-**Updated**: 2026-09-24T12:10:00+07:00
-**Data stamp**: 2025-26 archive GW1–38 walk-forward (seed 2024-25); 2026-27 live pin GW1–5 finished, GW6 next; companions written 2026-09-24T12:10:00+07:00
+**Updated**: 2026-09-24T13:30:00+07:00
+**Data stamp**: 2025-26 archive GW1–38 walk-forward (seed 2024-25); 2026-27 live pin GW1–5 finished, GW6 next; companions written 2026-09-24T13:30:00+07:00
 **Season**: 2025/26 gate · 2026/27 sanity
 **Status**: Active
 **Purpose**: Test whether Model Champion xP swings across gameweeks like Realized Points and Process Points, or too stable to capture fixture impact
@@ -27,8 +27,8 @@ Full redo docs/research/xp-cross-gw-dispersion/xp-cross-gw-dispersion.md
 2. Run: uv run python docs/research/xp-cross-gw-dispersion/runner.py
    (walk-forward ~25 min; rewrites both companions in this folder)
 3. Refresh Findings from dispersion_summary.csv mean_SD / median_SD / mean_abs_w2w
+   (headline pool 60+, series realized + process + blend + xp)
    and fixture_component_swing.csv mean_SD.
-   Headline row: window GW1-38 2025-26 walk-forward, pool 60+.
 4. Do not snapshot numeric totals in this prompt. Do not add a calibration layer.
 5. Scratch under .tmp/agent/ only; delete before finish.
 ```
@@ -90,6 +90,7 @@ Full redo docs/research/xp-cross-gw-dispersion/xp-cross-gw-dispersion.md
 
 - Headline `60+` (460 players): Realized `mean_SD` 2.802, Process 2.128, xP 0.299 (`median_SD` 2.802 / 2.092 / 0.182; `mean_abs_w2w` 3.018 / 2.404 / 0.213). Source: [dispersion_summary.csv](dispersion_summary.csv) `mean_SD`.
 - Ratios: xP ≈ 11% of Realized, ≈ 14% of Process. Expectation smoother than reality by design, but one order of magnitude = fixture signal missing, not prudence.
+- Blend baseline (ADR 0044 promotion primary), `60+`: `mean_SD` 2.387 (`median_SD` 2.429, `mean_abs_w2w` 2.644) — between Realized and Process, slightly below their midpoint (averaging dampens extremes). xP ≈ 12.5% of blend. Position blends: GKP 2.359 (≈ Realized 2.370, no strip); DEF 2.780 (nearest Realized 2.971, least strip); MID 2.039; FWD 2.454. Source: [dispersion_summary.csv](dispersion_summary.csv) `mean_SD`.
 - Finish-luck strip by position (`60+`): MID 2.651 → 1.639 (38% strip); FWD 3.153 → 1.976 (37%); DEF 2.971 → 2.693 (9%); GKP 2.370 → 2.354 (~0%). Luck lives in attackers; DEF/GKP noise is minutes + clean sheets. Source: [dispersion_summary.csv](dispersion_summary.csv) `mean_SD`.
 - xP position ratios vs Realized: GKP 9%, DEF 9%, MID 12%, FWD 13%. No position escapes flatness.
 - Skew: `all`-pool xP mean 0.203 vs median 0.053 — most players flat, few movers. Median alone would understate planning impact; mean alone overstates typical experience. Both reported per Q5 lock.
@@ -131,4 +132,4 @@ Full redo docs/research/xp-cross-gw-dispersion/xp-cross-gw-dispersion.md
 - [x] Source synthesis and Project interpretation remain separate.
 - [x] Unvalidated claims labeled.
 - [x] Agent Prompt remains runnable and points to stable slug.
-- [ ] Scratch files removed from `.tmp/agent/` (pending finish).
+- [x] Scratch files removed from `.tmp/agent/` (pending finish).

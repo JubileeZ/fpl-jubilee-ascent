@@ -1,23 +1,30 @@
 window,pool,series,nplayers,mean_obs,mean_SD,median_SD,mean_abs_w2w
 GW1-38 2025-26 walk-forward,all,realized,841,34.9,1.34,1.007,1.105
 GW1-38 2025-26 walk-forward,all,process,841,34.9,1.133,0.955,0.951
+GW1-38 2025-26 walk-forward,all,blend,841,34.9,1.206,0.988,1.008
 GW1-38 2025-26 walk-forward,all,xp,841,38.0,0.203,0.053,0.129
 GW1-38 2025-26 walk-forward,min>0,realized,537,21.2,2.357,2.464,2.318
 GW1-38 2025-26 walk-forward,min>0,process,537,21.2,1.898,1.891,1.967
+GW1-38 2025-26 walk-forward,min>0,blend,537,21.2,2.061,2.162,2.095
 GW1-38 2025-26 walk-forward,min>0,xp,537,21.2,0.269,0.178,0.172
 GW1-38 2025-26 walk-forward,60+,realized,460,16.8,2.802,2.802,3.018
 GW1-38 2025-26 walk-forward,60+,process,460,16.8,2.128,2.092,2.404
+GW1-38 2025-26 walk-forward,60+,blend,460,16.8,2.387,2.429,2.644
 GW1-38 2025-26 walk-forward,60+,xp,460,16.8,0.299,0.182,0.213
 GW1-38 2025-26 walk-forward,60+_GKP,realized,39,19.2,2.37,2.563,2.515
 GW1-38 2025-26 walk-forward,60+_GKP,process,39,19.2,2.354,2.565,2.513
+GW1-38 2025-26 walk-forward,60+_GKP,blend,39,19.2,2.359,2.564,2.513
 GW1-38 2025-26 walk-forward,60+_GKP,xp,39,19.2,0.21,0.151,0.181
 GW1-38 2025-26 walk-forward,60+_DEF,realized,168,17.8,2.971,2.873,3.316
 GW1-38 2025-26 walk-forward,60+_DEF,process,168,17.8,2.693,2.797,3.098
+GW1-38 2025-26 walk-forward,60+_DEF,blend,168,17.8,2.78,2.777,3.158
 GW1-38 2025-26 walk-forward,60+_DEF,xp,168,17.8,0.256,0.175,0.211
 GW1-38 2025-26 walk-forward,60+_MID,realized,201,16.1,2.651,2.656,2.769
 GW1-38 2025-26 walk-forward,60+_MID,process,201,16.1,1.639,1.6,1.829
+GW1-38 2025-26 walk-forward,60+_MID,blend,201,16.1,2.039,2.055,2.207
 GW1-38 2025-26 walk-forward,60+_MID,xp,201,16.1,0.328,0.205,0.206
 GW1-38 2025-26 walk-forward,60+_FWD,realized,52,14.5,3.153,3.234,3.383
 GW1-38 2025-26 walk-forward,60+_FWD,process,52,14.5,1.976,1.949,2.239
+GW1-38 2025-26 walk-forward,60+_FWD,blend,52,14.5,2.454,2.494,2.73
 GW1-38 2025-26 walk-forward,60+_FWD,xp,52,14.5,0.397,0.274,0.27
 GW6-11 2026-27 live horizon,all,xp,667,6.0,0.038,0.011,0.046
