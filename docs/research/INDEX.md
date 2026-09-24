@@ -8,7 +8,7 @@
 ## Active Research Index
 
 - **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~12.5% of blend swing on `60+`; attack fixture ~zero)
-- **Downside attack scale (Draft)**: [Note](fixture-downside-scale/fixture-downside-scale.md) · (hard-fixtures-only scale-down vs Champion; dual FDR/xG slices; full run pending)
+- **Downside attack scale (won scorecard)**: [Note](fixture-downside-scale/fixture-downside-scale.md) · [Summary](fixture-downside-scale/downside_swing_summary.csv) `blend_mae` (downside 0.9960 vs Champion 1.0024; all guardrails hold; pending gate plumbing + admission)
 - **Matchup share add-on (2025-26)**: [Note](matchup-share-addon-2025-26/matchup-share-addon-2025-26.md) · [Summary](matchup-share-addon-2025-26/matchup_share_summary.csv) `signed_bias` (all-pool worse than neutral; **shipped** Matchup → Strength → neutral, ADR 0037)
 - **Wayfinder Transfer Plan dashboard spec**: [Ownership/rank](wayfinder-transfer-plan-spec/fpl-ownership-and-rank-data-sources.md) · [Solve payload](wayfinder-transfer-plan-spec/solve-command-transfer-plan-payload.md) · [Explorer availability](wayfinder-transfer-plan-spec/explorer-availability-and-fixture-fields.md) · [Price intelligence](wayfinder-transfer-plan-spec/price-intelligence-observed-vs-forecast.md) · map [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88)
 - **Champion signed bias (2025-26 GW1–38)**: [Note](champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [Summary](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias`

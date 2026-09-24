@@ -7,7 +7,7 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Code committed; full two-arm run launched post-commit
+- **Status:** Experiment won; verdict committed. Open for phase 2 (gate plumbing + admission)
 - **Files:** features/matchup_share.py, features/builder.py (passthrough already generic), docs/research/fixture-downside-scale/runner.py + note, tests/test_matchup_share.py
 - **Decisions:** Downside-only [0.7, 1.0] MID/FWD; conceded-delta path untouched; share-gating retained; coherence measured (attack + clean swings must move consistently)
 - **Blocked:** None
@@ -17,7 +17,8 @@
 - [x] Mirror hard-slice constants + RED downside tests
 - [x] Green: overlay downside mode + topic runner + note
 - [x] Verify: ruff, targeted pytest, full suite, verify.sh, self-review
-- [ ] Launch full run, commit code
+- [x] Launch full run, commit code
+- [ ] Phase 2: gate plumbing + admission run
 
 ## Blockers / Notes
 - No mypy/pyright configured; ruff is the gate

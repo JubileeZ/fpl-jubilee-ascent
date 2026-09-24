@@ -1,0 +1,3 @@
+arm,sample_count,blend_mae,blend_bias,realized_mae,process_mae,easy_bias,easy_mae,hard_bias,hard_mae,easy_xg_bias,hard_xg_bias,xp_swing_60,attack_swing,clean_swing_60
+champion,31958,1.0024,0.1917,1.0794,0.9647,0.3714,2.1218,0.959,1.9563,0.5955169732740906,0.5226444186677317,0.7443,0.2128,0.2355
+downside,31958,0.996,0.1765,1.0722,0.9589,0.3528,2.1196,0.7795,1.8686,0.5591451890481012,0.3560679149017783,0.744,0.2161,0.2355
