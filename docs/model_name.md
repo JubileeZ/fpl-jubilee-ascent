@@ -9,9 +9,9 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 | Name | Module | Role | What it does |
 |------|--------|------|----------------|
 | `hold_chase_challenger` | `models/hold_chase_challenger.py` | Model Champion | `calibrated_matchup_hybrid` plus start-persistence participation, top-end ordering emphasis, relaxed hard-fixture defense |
-| `goals_path_challenger` | `models/goals_path_challenger.py` | Catalog | Goals-path Candidate (#111/#116): `hold_chase_challenger` without xG sharp/ceiling tilt; data-driven `goal_weights` scale. Not yet on Comparison Slate |
-| `defence_link_challenger` | `models/defence_link_challenger.py` | Catalog | Flip-path Candidate (#117/#118): `goals_path_challenger` plus post-link `k_cs`/`k_gc` on CS/conceded. Not yet on Comparison Slate |
-| `calibrated_matchup_hybrid` | `models/calibrated_matchup_hybrid.py` | Model Candidate | Calibrated Matchup Share (shrunk delta s=0.40, Bayesian positional priors, decoupled saves/defcon) with mutually exclusive participation states and model-only penalty isolation. Not Dual-Vector Strength |
+| `goals_path_challenger` | `models/goals_path_challenger.py` | Catalog | Goals-path Candidate (#111/#116): `hold_chase_challenger` without xG sharp/ceiling tilt; data-driven `goal_weights` scale. Parent of flip Candidate; not on Comparison Slate |
+| `defence_link_challenger` | `models/defence_link_challenger.py` | Model Candidate | Flip-path Candidate (#117/#118/#119): `goals_path_challenger` plus post-link `k_cs`/`k_gc`. Admitted replacing `calibrated_matchup_hybrid` |
+| `calibrated_matchup_hybrid` | `models/calibrated_matchup_hybrid.py` | Catalog | Calibrated Matchup Share (shrunk delta s=0.40, Bayesian positional priors, decoupled saves/defcon) with mutually exclusive participation states and model-only penalty isolation. Not Dual-Vector Strength. Displaced from Comparison Slate by #119 |
 | `participation_state_hybrid` | `models/participation_state_hybrid.py` | Model Candidate | Event scoring from the hybrid, with mutually exclusive DNP / Start / Sub-in minutes |
 | `metrics_component_hybrid` | `models/metrics_component_hybrid.py` | Catalog | Calibrated Event Component reconstruct through the scoring matrix (ADR 0005 / 0007). Ancestor of participation; not a registered Model Candidate |
 | `component_baseline` | `models/component_baseline.py` | Baseline | Per-90 Event Rates through the scoring matrix; Prior-Season Seed / Position-Price |

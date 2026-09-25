@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Run Comparison Slate admission race for defence_link_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/119). Flip Candidate `defence_link_challenger` shipped (#118). Champion `hold_chase_challenger`, provisional.
+Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Settle conceded soft-pre-gate bar before Champion apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/120). Flip Candidate `defence_link_challenger` on Comparison Slate (#119). Champion `hold_chase_challenger`, provisional.
 
 ```mermaid
 flowchart TD

@@ -1,0 +1,37 @@
+{
+  "goals": true,
+  "cs": true,
+  "conceded": false,
+  "flip_soft_pre_gate": false,
+  "arms": [
+    {
+      "arm": "goals",
+      "pass": true,
+      "champ_bias": 0.0745653620074902,
+      "cand_bias": 0.0469708336192733,
+      "champ_mse": 0.3271652953761561,
+      "cand_mse": 0.3201691925229011,
+      "champ_label": "structural",
+      "cand_label": "variance"
+    },
+    {
+      "arm": "cs",
+      "pass": true,
+      "champ_bias": -0.1879935422863482,
+      "cand_bias": -0.049999794107276,
+      "champ_mse": 0.1964138230051446,
+      "cand_mse": 0.1938430688869714,
+      "champ_label": "link-bias",
+      "cand_label": "variance"
+    },
+    {
+      "arm": "conceded",
+      "pass": false,
+      "champ_bias": 0.09852005049869639,
+      "cand_bias": 0.05000000463584242,
+      "mse_ok": false,
+      "bias_ok": true,
+      "note": "mse_share slightly worse on GKP+DEF; bias improved"
+    }
+  ]
+}

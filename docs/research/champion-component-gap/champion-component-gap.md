@@ -143,17 +143,31 @@ Flip Candidate `defence_link_challenger`: subclass goals_path; post-link `_CS_SC
 
 **Soft pre-gate defence arm (#115):** CS **PASS** — `|bias|`→τ, `link-bias`→`variance`, `|mse_share|`↓. Conceded **mixed** — combined `|bias|`→τ and GKP clears label; DEF still `link-bias` (|bias| 0.052); `|mse_share|` slightly ↑ vs Champion. Document before admission (#112). Source: [component_gap_summary.csv](component_gap_summary.csv).
 
+## Admission race (#119)
+
+Hand dry-run Historical Promotion Gate (Blended primary, Realized+Process guardrails) with each slate seat as reference: [admission_race_119.json](admission_race_119.json).
+
+| Reference seat | passed | primary | delta | segments | guardrails |
+|---|---|---|---|---|---|
+| `calibrated_matchup_hybrid` | **PASS** | decision_regret | +1.169 | 3/3 | True |
+| `participation_state_hybrid` | **PASS** | decision_regret | +1.169 | 3/3 | True |
+
+**Seat outcome:** beat both → replace worse Blended primary. Primaries tied; replace `calibrated_matchup_hybrid` (slightly worse MAE). Slate now: Champion `hold_chase_challenger`; Candidates `participation_state_hybrid`, `defence_link_challenger`.
+
+**Soft pre-gate flip checklist** ([soft_pre_gate_119.json](soft_pre_gate_119.json)): goals PASS · CS PASS · conceded **FAIL** (`|mse_share|` ↑). **No Champion `--apply`** until conceded soft bar settled (map fog).
+
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
-- **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not yet on Comparison Slate.
-- **Flip Candidate shipped (#118):** `defence_link_challenger` — goals + post-link CS/conceded scales; soft pre-gate CS PASS / conceded mixed; not yet on Comparison Slate.
+- **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not on Comparison Slate (parent only).
+- **Flip Candidate shipped (#118) + admitted (#119):** `defence_link_challenger` on Comparison Slate; soft pre-gate CS PASS / conceded FAIL for Champion apply.
 - **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115).
 
 ## Risks and unknowns
 
 - τ=0.05 near goals + defence biases — Candidate sits on τ edge; small τ change flips label.
-- Conceded soft pre-gate: bias cleared but `|mse_share|` not improved — admission may still proceed on bias/label or re-tune.
+- Conceded soft pre-gate: bias cleared but `|mse_share|` not improved — blocks Champion `--apply` until fog settled.
+- Both seats shared identical decision_regret primary on dry-run; MAE tie-break used for worse-seat rule.
 - Fill-0 actuals on `pool=all` inflate minutes-related shares.
 - Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
 - 2026-27 sanity: short window only — provisional archive.
@@ -161,4 +175,5 @@ Flip Candidate `defence_link_challenger`: subclass goals_path; post-link `_CS_SC
 ## Appendix
 
 - Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py)
+- Admission: [admission_race_119.json](admission_race_119.json) · Soft pre-gate: [soft_pre_gate_119.json](soft_pre_gate_119.json)
 - Glossary: Process Points · Poisson-xGC Twin · Extended Process Points in `CONTEXT.md`

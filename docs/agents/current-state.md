@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Run Comparison Slate admission race for defence_link_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/119). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Grill [Settle conceded soft-pre-gate bar before Champion apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/120). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** `goals_path_challenger` (#116); defence form (#117); `defence_link_challenger` (#118) — `k_cs=1.296903` / `k_gc=1.145226`; soft pre-gate CS PASS / conceded mixed.
+**Done so far:** Flip Candidate `defence_link_challenger` built (#118) and **admitted** (#119) replacing `calibrated_matchup_hybrid`. Soft pre-gate: goals+CS PASS; conceded FAIL (`|mse_share|` ↑) → no Champion `--apply`.
 
-**This session:** closed #118. Next = #119 admission race (hand dry-run) → soft pre-gate flip → `--apply` if greenlit. Not minutes-conditional / Admission CLI.
+**This session:** closed #119. Slate = Champion `hold_chase_challenger` + Candidates `participation_state_hybrid`, `defence_link_challenger`.
 
-**After #119:** Live Validation schedule; minutes-conditional if sub-60 check fires; Admission CLI fog.
+**After #120:** Champion dry-run/`--apply` if soft bar allows. Fog: Live Validation; minutes-conditional; Admission CLI.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional.
 

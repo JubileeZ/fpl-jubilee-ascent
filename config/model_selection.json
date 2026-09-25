@@ -2,8 +2,8 @@
   "schema_version": 1,
   "champion": "hold_chase_challenger",
   "candidates": [
-    "calibrated_matchup_hybrid",
-    "participation_state_hybrid"
+    "participation_state_hybrid",
+    "defence_link_challenger"
   ],
   "promotion_status": "provisional"
 }

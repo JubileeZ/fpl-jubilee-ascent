@@ -1,0 +1,45 @@
+{
+  "evaluation_season": "2025-26",
+  "gw_range": "1-38",
+  "seed_season": "2024-25",
+  "primary_metric_name": "decision_regret",
+  "races": [
+    {
+      "reference_seat": "calibrated_matchup_hybrid",
+      "incoming": "defence_link_challenger",
+      "passed": true,
+      "eval_target": "blended_points",
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": 1.1688157894736833,
+      "segment_wins": 3,
+      "guardrails_passed": true,
+      "reasons": [],
+      "reference_primary": 72.84026315789474,
+      "incoming_primary": 71.67144736842106,
+      "reference_mae": 1.002403149704738,
+      "incoming_mae": 0.9609907274703366,
+      "snapshot_backed": false
+    },
+    {
+      "reference_seat": "participation_state_hybrid",
+      "incoming": "defence_link_challenger",
+      "passed": true,
+      "eval_target": "blended_points",
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": 1.1688157894736833,
+      "segment_wins": 3,
+      "guardrails_passed": true,
+      "reasons": [],
+      "reference_primary": 72.84026315789474,
+      "incoming_primary": 71.67144736842106,
+      "reference_mae": 1.0023919216529367,
+      "incoming_mae": 0.9609907274703366,
+      "snapshot_backed": false
+    }
+  ],
+  "outcome": {
+    "action": "replace_worse_of_both",
+    "replace": "calibrated_matchup_hybrid",
+    "note": "both seats beaten; replace seat with worse reference primary (higher=worse for MAE-like)"
+  }
+}
