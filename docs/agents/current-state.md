@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-Open wayfinder map: [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Decisions #111–#115 closed. Frontier Task: [Implement goals-path Candidate + post-goals residual refresh](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116). Then defence-link form → admission race → soft pre-gate → flip. Fog: Live Validation schedule; minutes-conditional constants; Admission CLI. Eval canon: `docs/research/INDEX.md`. Champion `hold_chase_challenger` provisional.
+Open wayfinder map: [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). `goals_path_challenger` shipped (#116); soft pre-gate goals PASS; gate `xp_goals`→variance. Next: defence-link form (#113) → admission race (#112) → flip Candidate. Fog: Live Validation schedule; minutes-conditional; Admission CLI. Eval canon: `docs/research/INDEX.md`. Champion `hold_chase_challenger` provisional.
 
 ## Research truth
 

@@ -1,13 +1,13 @@
 # Champion Event Component gap (mse_share)
 
-**Updated**: 2026-09-25T22:12:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companion written 2026-09-25T22:10:36+07:00  
+**Updated**: 2026-09-25T23:41:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` (k=0.891559) written 2026-09-25  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
 **Purpose**: Rank which Event Component drives Model Champion Official MSE; demote finish/link noise via Process G/A and Poisson-xGC CS/GC twins; name Candidate improve target.  
-**Scope**: Comparison Slate walk-forward. Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
-**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md)  
-**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae`
+**Scope**: Comparison Slate walk-forward + catalog `goals_path_challenger` (#116). Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
+**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md) · map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · [#116](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116)  
+**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae` · [calibrate_goals_k.py](calibrate_goals_k.py)
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
 
@@ -114,25 +114,38 @@ Full redo docs/research/champion-component-gap/champion-component-gap.md
 
 ### Open questions
 
-- τ / θ sensitivity (goals barely structural on bias).
 - Bonus / minutes Candidate if goals fix lands and residual MSE reorders.
-- CS Poisson link Candidate as secondary arm from `mins_60` `link-bias`.
+- Poisson defence-link form/constants for `mins_60` CS+conceded (still `link-bias` after goals Candidate).
+
+## Post-goals residual (#116)
+
+Catalog Candidate `goals_path_challenger`: identity xG sharp/ceiling off; `_GOAL_WEIGHT_SCALE=0.891559` from [calibrate_goals_k.py](calibrate_goals_k.py) on 2025-26 gate after identity sharp.
+
+| Row | Champion | goals_path |
+|---|---|---|
+| 2025-26 `all`/`ALL` `xp_goals` | bias +0.075 `structural` \|mse_share\| 0.327 | bias +0.047 **`variance`** \|mse_share\| 0.322 |
+| 2025-26 `mins_60`/`ALL` `xp_clean_sheet` | link-bias −0.188 | link-bias −0.188 |
+| 2025-26 `mins_60`/`ALL` `xp_conceded` | variance +0.048 | variance +0.048 |
+
+**Soft pre-gate goals arm (#115):** PASS — Candidate improves `|mse_share|`, `|bias|`, and clears `structural`→`variance` vs Champion on gate `xp_goals`. Source: [component_gap_summary.csv](component_gap_summary.csv).
+
+**Defence-link next:** CS under-prediction on `mins_60` unchanged — form grilling/build unblocked for #113 family.
 
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
-- **Improve next:** Candidate aimed at goals path (rate / Matchup / hold-chase xG sharp / conversion), not CS rate from all-pool alone.
-- **Secondary watch:** CS `link-bias` on `mins_60` → optional Poisson CS-link Candidate later.
-- **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Do not re-litigate in later sessions without updating that block.
-- Step-2 Candidate design = follow-on wayfinder / packet.
+- **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not yet on Comparison Slate.
+- **Secondary arm:** Poisson defence link (CS+conceded) still `link-bias` on `mins_60` after goals Candidate.
+- **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115).
 
 ## Risks and unknowns
 
-- τ=0.05 near goals bias — small τ change flips goals to `variance` on `all`.
+- τ=0.05 near goals bias — Candidate sits just inside τ on gate; small τ change flips label.
 - Fill-0 actuals on `pool=all` inflate minutes-related shares.
 - Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
+- 2026-27 sanity: Candidate `xp_goals` still `structural` (+0.089) on short window — provisional archive only.
 
 ## Appendix
 
-- Runner: [runner.py](runner.py)
+- Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py)
 - Glossary: Process Points · Poisson-xGC Twin · Extended Process Points in `CONTEXT.md`

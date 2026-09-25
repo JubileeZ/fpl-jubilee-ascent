@@ -36,6 +36,19 @@ class HoldChaseChallengerModel(CalibratedMatchupHybridModel):
         return "hold_chase_challenger"
 
     @staticmethod
+    def _apply_hard_fixture_defence(feat: pd.DataFrame) -> pd.DataFrame:
+        """Raise ``per90_goals_conceded`` on hard Modified FDR fixtures."""
+        out = feat
+        diff = pd.to_numeric(out.get("difficulty", 3.0), errors="coerce").fillna(3.0)
+        hard = diff >= _HARD_DIFF
+        if "per90_goals_conceded" in out.columns:
+            gc = pd.to_numeric(out["per90_goals_conceded"], errors="coerce").fillna(1.2)
+            out.loc[hard, "per90_goals_conceded"] = gc[hard] * (
+                1.0 + _DEF_RELAX * (diff[hard] - 3.0) / 2.0
+            )
+        return out
+
+    @staticmethod
     def _state_probabilities(row: pd.Series) -> tuple[float, float, float]:
         p_dnp, p_start, p_sub_in = ParticipationStateHybridModel._state_probabilities(row)
         app = min(1.0, max(0.0, _number(row, "appearance_probability", 1.0 - p_dnp)))
@@ -62,9 +75,5 @@ class HoldChaseChallengerModel(CalibratedMatchupHybridModel):
         for column in ("xmins_if_start", "xmins_if_sub_in"):
             if column in feat.columns:
                 feat.loc[ceiling, column] = pd.to_numeric(feat.loc[ceiling, column], errors="coerce").fillna(0.0) * _MINS_TILT
-        diff = pd.to_numeric(feat.get("difficulty", 3.0), errors="coerce").fillna(3.0)
-        hard = diff >= _HARD_DIFF
-        if "per90_goals_conceded" in feat.columns:
-            gc = pd.to_numeric(feat["per90_goals_conceded"], errors="coerce").fillna(1.2)
-            feat.loc[hard, "per90_goals_conceded"] = gc[hard] * (1.0 + _DEF_RELAX * (diff[hard] - 3.0) / 2.0)
+        feat = self._apply_hard_fixture_defence(feat)
         return super().predict(feat, horizon)

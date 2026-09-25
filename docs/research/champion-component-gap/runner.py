@@ -381,9 +381,16 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+# Research-only companions (#116); not Comparison Slate until admission (#112).
+_EXTRA_RESEARCH_MODELS = ("goals_path_challenger",)
+
+
 def main() -> int:
     selection = load_model_selection()
     models = [selection.champion, *list(selection.candidates)]
+    for name in _EXTRA_RESEARCH_MODELS:
+        if name not in models:
+            models.append(name)
     windows: list[tuple[str, str, int, int | None]] = [
         ("2025-26", "2024-25", 1, 38),
         ("2026-27", "2025-26", 1, None),
