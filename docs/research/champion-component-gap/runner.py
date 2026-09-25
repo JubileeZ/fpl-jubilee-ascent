@@ -381,8 +381,8 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
-# Research-only companions (#116); not Comparison Slate until admission (#112).
-_EXTRA_RESEARCH_MODELS = ("goals_path_challenger",)
+# Research-only companions (#116/#118); not Comparison Slate until admission (#112).
+_EXTRA_RESEARCH_MODELS = ("goals_path_challenger", "defence_link_challenger")
 
 
 def main() -> int:

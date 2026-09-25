@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: no open wayfinder map. Transfer Plan dashboard spec closed (hand-off enough). Champion challenger map closed. Champion `hold_chase_challenger`, provisional.
+Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Run Comparison Slate admission race for defence_link_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/119). Flip Candidate `defence_link_challenger` shipped (#118). Champion `hold_chase_challenger`, provisional.
 
 ```mermaid
 flowchart TD

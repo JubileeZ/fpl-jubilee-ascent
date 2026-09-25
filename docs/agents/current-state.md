@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Implement defence-link Candidate (k_cs / k_gc)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/118). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Run Comparison Slate admission race for defence_link_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/119). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** `goals_path_challenger` (#116) — soft pre-gate goals PASS; gate `xp_goals`→variance. Defence form (#117): post-link `k_cs`/`k_gc` on `goals_path` subclass; `k_cs` from `mins_60`/`ALL` CS; `k_gc` from `mins_60` GKP+DEF conceded.
+**Done so far:** `goals_path_challenger` (#116); defence form (#117); `defence_link_challenger` (#118) — `k_cs=1.296903` / `k_gc=1.145226`; soft pre-gate CS PASS / conceded mixed.
 
-**This session:** implement #118 only (catalog model + calibrate + companion refresh + soft pre-gate defence checklist). Not slate admission / `--apply`.
+**This session:** closed #118. Next = #119 admission race (hand dry-run) → soft pre-gate flip → `--apply` if greenlit. Not minutes-conditional / Admission CLI.
 
-**After #118:** admission race (#112) → flip Candidate soft pre-gate (#115) → `--apply`. Fog: Live Validation schedule; minutes-conditional; Admission CLI.
+**After #119:** Live Validation schedule; minutes-conditional if sub-60 check fires; Admission CLI fog.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional.
 

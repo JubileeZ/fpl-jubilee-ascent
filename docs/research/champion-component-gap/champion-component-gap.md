@@ -1,13 +1,13 @@
 # Champion Event Component gap (mse_share)
 
-**Updated**: 2026-09-25T23:41:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` (k=0.891559) written 2026-09-25  
+**Updated**: 2026-09-26T00:30:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` + `defence_link_challenger` (k_cs=1.296903, k_gc=1.145226)  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
 **Purpose**: Rank which Event Component drives Model Champion Official MSE; demote finish/link noise via Process G/A and Poisson-xGC CS/GC twins; name Candidate improve target.  
-**Scope**: Comparison Slate walk-forward + catalog `goals_path_challenger` (#116). Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
-**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md) · map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · [#116](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116)  
-**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae` · [calibrate_goals_k.py](calibrate_goals_k.py)
+**Scope**: Comparison Slate walk-forward + catalog `goals_path_challenger` (#116) + `defence_link_challenger` (#118). Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
+**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md) · map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · [#116](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116) · [#118](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/118)  
+**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae` · [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py)
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
 
@@ -114,8 +114,8 @@ Full redo docs/research/champion-component-gap/champion-component-gap.md
 
 ### Open questions
 
-- Bonus / minutes Candidate if goals fix lands and residual MSE reorders.
-- Poisson defence-link form/constants for `mins_60` CS+conceded (still `link-bias` after goals Candidate).
+- Bonus / minutes / Defcon / cards Candidate if goals+defence residual MSE reorders.
+- Admission race for `defence_link_challenger` (#112) then soft pre-gate flip → `--apply`.
 
 ## Post-goals residual (#116)
 
@@ -129,23 +129,36 @@ Catalog Candidate `goals_path_challenger`: identity xG sharp/ceiling off; `_GOAL
 
 **Soft pre-gate goals arm (#115):** PASS — Candidate improves `|mse_share|`, `|bias|`, and clears `structural`→`variance` vs Champion on gate `xp_goals`. Source: [component_gap_summary.csv](component_gap_summary.csv).
 
-**Defence-link next:** CS under-prediction on `mins_60` unchanged — form grilling/build unblocked for #113 family.
+## Post-defence residual (#118)
+
+Flip Candidate `defence_link_challenger`: subclass goals_path; post-link `_CS_SCALE=1.296903` / `_GC_SCALE=1.145226` from [calibrate_defence_k.py](calibrate_defence_k.py) (mins_60 CS ALL; mins_60 GKP+DEF conceded; τ=0.05).
+
+| Row | Champion | defence_link |
+|---|---|---|
+| 2025-26 `mins_60`/`ALL` `xp_clean_sheet` | bias −0.188 `link-bias` \|mse_share\| 0.196 | bias −0.050 **`variance`** \|mse_share\| 0.194 |
+| 2025-26 `mins_60` GKP+DEF `xp_conceded` (combined) | bias +0.099 | bias +0.050 |
+| 2025-26 `mins_60`/`GKP` `xp_conceded` | bias +0.096 `link-bias` \|mse_share\| 0.082 | bias +0.043 **`variance`** \|mse_share\| 0.086 |
+| 2025-26 `mins_60`/`DEF` `xp_conceded` | bias +0.099 `link-bias` \|mse_share\| 0.050 | bias +0.052 `link-bias` \|mse_share\| 0.054 |
+| 2025-26 `all`/`ALL` `xp_goals` (inherited) | bias +0.075 `structural` | bias +0.047 **`variance`** |
+
+**Soft pre-gate defence arm (#115):** CS **PASS** — `|bias|`→τ, `link-bias`→`variance`, `|mse_share|`↓. Conceded **mixed** — combined `|bias|`→τ and GKP clears label; DEF still `link-bias` (|bias| 0.052); `|mse_share|` slightly ↑ vs Champion. Document before admission (#112). Source: [component_gap_summary.csv](component_gap_summary.csv).
 
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
 - **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not yet on Comparison Slate.
-- **Secondary arm:** Poisson defence link (CS+conceded) still `link-bias` on `mins_60` after goals Candidate.
+- **Flip Candidate shipped (#118):** `defence_link_challenger` — goals + post-link CS/conceded scales; soft pre-gate CS PASS / conceded mixed; not yet on Comparison Slate.
 - **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115).
 
 ## Risks and unknowns
 
-- τ=0.05 near goals bias — Candidate sits just inside τ on gate; small τ change flips label.
+- τ=0.05 near goals + defence biases — Candidate sits on τ edge; small τ change flips label.
+- Conceded soft pre-gate: bias cleared but `|mse_share|` not improved — admission may still proceed on bias/label or re-tune.
 - Fill-0 actuals on `pool=all` inflate minutes-related shares.
 - Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
-- 2026-27 sanity: Candidate `xp_goals` still `structural` (+0.089) on short window — provisional archive only.
+- 2026-27 sanity: short window only — provisional archive.
 
 ## Appendix
 
-- Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py)
+- Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py)
 - Glossary: Process Points · Poisson-xGC Twin · Extended Process Points in `CONTEXT.md`
