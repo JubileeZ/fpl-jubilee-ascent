@@ -1,8 +1,10 @@
 {
+  "rule_ticket": 120,
+  "rule": "bias/demotion and/or |mse_share| down; conceded grain = mins_60 GKP+DEF combined",
   "goals": true,
   "cs": true,
-  "conceded": false,
-  "flip_soft_pre_gate": false,
+  "conceded": true,
+  "flip_soft_pre_gate": true,
   "arms": [
     {
       "arm": "goals",
@@ -26,12 +28,12 @@
     },
     {
       "arm": "conceded",
-      "pass": false,
+      "pass": true,
       "champ_bias": 0.09852005049869639,
       "cand_bias": 0.05000000463584242,
       "mse_ok": false,
       "bias_ok": true,
-      "note": "mse_share slightly worse on GKP+DEF; bias improved"
+      "note": "#120: bias/demotion and/or — |mse_share| up alone does not fail; grain=combined GKP+DEF"
     }
   ]
 }

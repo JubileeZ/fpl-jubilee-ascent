@@ -1,27 +1,22 @@
 # Active Task: Challenger beats Champion (goals then defence link)
 
-- **Status:** Flip Candidate on Comparison Slate; frontier = soft-pre-gate grill #120
+- **Status:** Soft pre-gate PASS; frontier = Champion apply Task #121
 - **Objective:** Flip Champion via goals + Poisson defence-link Candidate on 2025-26 Historical Promotion Gate
-- **Acceptance:** Map Destination met; soft pre-gate companion improve before `--apply`
-- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind next:** [#120 Settle conceded soft-pre-gate bar](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/120)
+- **Acceptance:** Map Destination met; soft pre-gate PASS (#120); Blended gate `--apply`
+- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind next:** [#121 Champion dry-run and --apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/121)
 
 ## Work Packet (SFDBN)
 
-- **Status:** #111–#119 closed. Frontier **#120** (grilling · unclaimed).
-- **Files:** Slate `config/model_selection.json` = Champion `hold_chase_challenger` + Candidates `participation_state_hybrid`, `defence_link_challenger`; race `admission_race_119.json`; soft `soft_pre_gate_119.json`
-- **Decisions:** Admission #119 — beat both; replace `calibrated_matchup_hybrid`. Soft pre-gate: goals+CS PASS; conceded FAIL (`|mse_share|` ↑) → no Champion `--apply`
-- **Blocked:** Champion `--apply` until #120 settles conceded soft bar
-- **Next:** Claim #120 (HITL grill) → then Champion dry-run/`--apply` Task
+- **Status:** #111–#120 closed. Frontier **#121** (unclaimed).
+- **Files:** Slate already has `defence_link_challenger`; soft `soft_pre_gate_119.json` (flip PASS under #120 rule)
+- **Decisions:** #120 — conceded soft bar = bias/demotion and/or; grain = mins_60 GKP+DEF combined; allow Champion apply
+- **Blocked:** None for #121
+- **Next:** Claim #121 → Blended dry-run → `--apply` if PASS → sub-60 close check note
 
 ## Todo
-- [x] Component-gap diagnosis + Eval canon
-- [x] Decision tickets #111–#115, #117
-- [x] #116 `goals_path_challenger`
-- [x] #118 `defence_link_challenger`
-- [x] #119 admission race (seat swap; no Champion apply)
-- [ ] **#120** settle conceded soft-pre-gate bar
-- [ ] Champion dry-run / `--apply` (after #120)
+- [x] #111–#119 build + admission
+- [x] #120 soft-pre-gate conceded bar
+- [ ] **#121** Champion dry-run / `--apply`
 
 ## Blockers / Notes
-- Handoff: `challenger-beats-champion` → map #110 / task #120
-- Both seats tied on decision_regret primary; MAE tie-break → displace calibrated
+- Handoff: `challenger-beats-champion` → map #110 / task #121

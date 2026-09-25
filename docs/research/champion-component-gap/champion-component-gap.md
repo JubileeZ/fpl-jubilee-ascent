@@ -154,20 +154,21 @@ Hand dry-run Historical Promotion Gate (Blended primary, Realized+Process guardr
 
 **Seat outcome:** beat both → replace worse Blended primary. Primaries tied; replace `calibrated_matchup_hybrid` (slightly worse MAE). Slate now: Champion `hold_chase_challenger`; Candidates `participation_state_hybrid`, `defence_link_challenger`.
 
-**Soft pre-gate flip checklist** ([soft_pre_gate_119.json](soft_pre_gate_119.json)): goals PASS · CS PASS · conceded **FAIL** (`|mse_share|` ↑). **No Champion `--apply`** until conceded soft bar settled (map fog).
+**Soft pre-gate flip checklist** ([soft_pre_gate_119.json](soft_pre_gate_119.json)): goals PASS · CS PASS · conceded **PASS** under #120 rule (bias/demotion and/or; grain = mins_60 GKP+DEF combined). `|mse_share|`↑ alone does not fail. **Champion `--apply` allowed** — Task #121.
 
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
 - **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not on Comparison Slate (parent only).
-- **Flip Candidate shipped (#118) + admitted (#119):** `defence_link_challenger` on Comparison Slate; soft pre-gate CS PASS / conceded FAIL for Champion apply.
-- **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115).
+- **Flip Candidate shipped (#118) + admitted (#119):** `defence_link_challenger` on Comparison Slate.
+- **Soft pre-gate (#120):** conceded PASS via bias/demotion and/or + combined GKP+DEF grain; flip soft bar PASS → allow Champion apply (#121).
+- **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115/#120).
 
 ## Risks and unknowns
 
 - τ=0.05 near goals + defence biases — Candidate sits on τ edge; small τ change flips label.
-- Conceded soft pre-gate: bias cleared but `|mse_share|` not improved — blocks Champion `--apply` until fog settled.
-- Both seats shared identical decision_regret primary on dry-run; MAE tie-break used for worse-seat rule.
+- Conceded `|mse_share|` slightly ↑ after `k_gc` — accepted under #120; not a soft-bar fail.
+- Both seats shared identical decision_regret primary on admission dry-run; MAE tie-break used for worse-seat rule.
 - Fill-0 actuals on `pool=all` inflate minutes-related shares.
 - Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
 - 2026-27 sanity: short window only — provisional archive.
