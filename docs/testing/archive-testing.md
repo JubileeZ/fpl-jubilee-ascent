@@ -1,6 +1,6 @@
 # Historical Archive Testing Guide
 
-**Updated**: 2026-08-01T15:48:00+07:00  
+**Updated**: 2026-09-25T22:20:00+07:00  
 **Status**: Active  
 
 ---
@@ -12,6 +12,7 @@
 - **Immutability Rule**: Treat `data/archive/` Parquet files as immutable. Regenerate historical data through archive/snapshot tooling; never edit or delete archive files directly.
 - **Exploratory Scope**: Archive backtests are exploratory only: terminal player, club, fixture, and availability metadata may not represent the pre-deadline information set.
 - **Eval target**: `--eval_target realized|process|blend` (blend = 50/50 Blended Eval Target, ADR 0044). Promotion primary is blend; Realized Points + Process Points stay reported guardrails. Champion Signed Bias gate migrates to blend at next window; current companion still Realized.
+- **Eval canon**: [docs/research/INDEX.md](../research/INDEX.md) **Eval canon** — promotion vs Event Component gap (`mse_share`). Component-gap runner: `docs/research/champion-component-gap/runner.py`.
 
 ---
 
@@ -26,4 +27,7 @@ uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --d
 
 # Same window scored vs 50/50 Blended Eval Target (promotion primary; ADR 0044)
 uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed --seed_season 2024-25 --eval_target blend
+
+# Event Component gap companion (mse_share + twins)
+uv run python docs/research/champion-component-gap/runner.py
 ```

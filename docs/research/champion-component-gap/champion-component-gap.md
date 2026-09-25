@@ -1,0 +1,138 @@
+# Champion Event Component gap (mse_share)
+
+**Updated**: 2026-09-25T22:12:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companion written 2026-09-25T22:10:36+07:00  
+**Season**: 2025/26 gate · 2026/27 sanity  
+**Status**: Active  
+**Purpose**: Rank which Event Component drives Model Champion Official MSE; demote finish/link noise via Process G/A and Poisson-xGC CS/GC twins; name Candidate improve target.  
+**Scope**: Comparison Slate walk-forward. Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
+**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md)  
+**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae`
+
+> `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
+
+## Sources
+
+- **Primary**: Grill design 2026-09-25 (mse_share + twins + demotion) — role: ranking object and twin policy
+- **Repository data**: `data/archive/2025-26/processed` GW1–38 seed `2024-25`; `data/archive/2026-27/processed` finished GW1–5 seed `2025-26`; `config/model_selection.json`; `uv run python docs/research/champion-component-gap/runner.py`
+
+**Source boundary**: Archive exploratory (`snapshot_backed=false`). Poisson-xGC overstates CS vs Realized (known link bias). Missing actuals filled 0 at player/gameweek grain.
+
+## Agent Prompt
+
+```text
+Full redo docs/research/champion-component-gap/champion-component-gap.md
+
+1. Require archives 2025-26 + 2024-25; 2026-27 for sanity.
+2. Run: uv run python docs/research/champion-component-gap/runner.py
+3. Refresh Findings from component_gap_summary.csv:
+   - Gate: evaluation_season=2025-26 pool=all position=ALL model=hold_chase_challenger
+   - Rank by |mse_share|; read demotion_label on twin components
+   - Sanity: evaluation_season=2026-27 finished GWs
+   - Compare slate Δshare vs calibrated_matchup_hybrid / participation_state_hybrid
+4. Totals context: component_gap_totals.csv realized|process|blend MAE
+5. Do not snapshot numeric totals in this prompt. Scratch under .tmp/agent/; delete before finish.
+```
+
+## Method
+
+**Method type**: Walk-forward backtest + additive MSE attribution
+
+**Inputs**:
+- Comparison Slate from `config/model_selection.json`
+- Evaluation windows + Prior-Season Seeds as in Agent Prompt
+- Official `expected_goals` / `expected_assists` / on-pitch `expected_goals_conceded`
+
+**Procedure**:
+1. `run_walkforward_backtest` per model/window (Realized component ledger).
+2. Attach twins: Process G/A pts; Poisson-xGC CS/GC (`λ` = Official on-pitch xGC; not Feature Contract `per90_goals_conceded`).
+3. `mse_share_c = mean(e_c · e) / mean(e²)` with `e = proj − actual` on Realized.
+4. Dual pool `all` / `mins_60`; Position `ALL` + GKP/DEF/MID/FWD.
+5. Demotion: twin shrink `≥ 0.50` and `|signed_bias| ≤ 0.05` → `variance`; CS/GC shrink with large Realized bias → `link-bias`; else `structural`.
+6. Write companions. Primary crown = top `|mse_share|` after demotion read.
+
+**Definitions and assumptions**:
+- Primary ranking never uses twin actuals
+- Twin λ source ≠ Champion λ (Feature Contract GC rate)
+- θ = 0.50; τ = 0.05 (stated constants; τ near Champion bias companion scale)
+- `demotion_label=no_twin` when no twin applies (avoid CSV token `n/a` — pandas NA)
+
+### Metric Definitions & Direction
+
+| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |
+|---|---|---|---|---|---|
+| Component MSE share | `mse_share` | $\mathrm{mean}(e_c\cdot e)/\mathrm{mean}(e^2)$ | Rank by $\|\,\|$ | Top structural after demotion | Gap Event Component |
+| Twin shrink | `twin_shrink` | $1 - \|mse\_share\_twin\|/\|mse\_share\|$ | Higher → more noise | ≥ 0.50 triggers demotion check | Finish/link noise fraction |
+| Twin link bias | `twin_link_bias` | $\mathrm{mean}(twin_c - actual_c)$ | Near zero | Context | Poisson-xGC CS overstatement |
+| Demotion label | `demotion_label` | `structural` / `variance` / `link-bias` / `no_twin` | Context | structural = Candidate lever | Decision label |
+
+**Validation boundary**: Exploratory archive. 2026-27 unfinished season. No Availability Snapshots.
+
+## Source synthesis
+
+### Main claims
+
+- Additive MSE partition attributes Official squared error to Event Components.
+- Process G/A and Poisson-xGC twins diagnose noise; Blended stays promotion totals only (ADR 0044).
+
+### Source rationale
+
+- Grill probes: Realized primary; twins + demotion; Extended Process deferred.
+
+## Project interpretation
+
+### Decision rules
+
+- Crown = highest `|mse_share|` on Champion gate row (`pool=all`, `position=ALL`) after applying `demotion_label`.
+- `variance` → do not open Candidate on that component rate.
+- `link-bias` on CS/GC → Candidate targets Poisson CS link / calibration, not only λ inputs.
+- `structural` → Candidate lever mapped to that Event Component.
+- If slate parent shows same top structural component, gap is inherited; else hold-chase-specific.
+- `mins_60` slice = rate check; may demote attack noise that `all` keeps as structural.
+
+### Practical implications
+
+- Step-1 diagnosis complete when crown named. Step-2 = Candidate design for crown.
+
+## Findings
+
+### Evidence
+
+- Gate Champion `hold_chase_challenger` `2025-26` `pool=all` `position=ALL`: top `mse_share` = `xp_goals` with `demotion_label=structural` (twin shrink clears θ but `|signed_bias|` exceeds τ). Source: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` / `demotion_label`.
+- Same gate: `xp_clean_sheet` and `xp_assists` → `variance` (finish/CS noise). Next non-twin mass: `xp_bonus`, `xp_minutes`.
+- `mins_60` same gate: `xp_goals` → `variance`; `xp_clean_sheet` → `link-bias` (Poisson twin shrinks share but Realized CS bias remains). Rate-view crown after variance skip = CS link / then `xp_bonus`.
+- Position secondary (`pool=all`): GKP/DEF top raw share = `xp_clean_sheet` (`variance`); MID/FWD = `xp_goals` (`structural`).
+- Slate: `calibrated_matchup_hybrid` and `participation_state_hybrid` same gate crown `xp_goals` `structural` — gap **inherited**, not hold-chase-only.
+- Sanity `2026-27` GW1–5 Champion `pool=all`: same pattern — `xp_goals` `structural`; CS/assists `variance`.
+- Totals: Champion gate Realized MAE below parents ([component_gap_totals.csv](component_gap_totals.csv) `realized_mae`); component crown still goals.
+
+### Alternatives
+
+- Rank by component MAE — rejected.
+- Blended / Extended Process primary — rejected (grill).
+- Open Candidate on CS from `all`-pool raw rank-2 — rejected (`variance`).
+
+### Open questions
+
+- τ / θ sensitivity (goals barely structural on bias).
+- Bonus / minutes Candidate if goals fix lands and residual MSE reorders.
+- CS Poisson link Candidate as secondary arm from `mins_60` `link-bias`.
+
+## Decision
+
+- **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
+- **Improve next:** Candidate aimed at goals path (rate / Matchup / hold-chase xG sharp / conversion), not CS rate from all-pool alone.
+- **Secondary watch:** CS `link-bias` on `mins_60` → optional Poisson CS-link Candidate later.
+- **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Do not re-litigate in later sessions without updating that block.
+- Step-2 Candidate design = follow-on wayfinder / packet.
+
+## Risks and unknowns
+
+- τ=0.05 near goals bias — small τ change flips goals to `variance` on `all`.
+- Fill-0 actuals on `pool=all` inflate minutes-related shares.
+- Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
+
+## Appendix
+
+- Runner: [runner.py](runner.py)
+- Glossary: Process Points · Poisson-xGC Twin · Extended Process Points in `CONTEXT.md`

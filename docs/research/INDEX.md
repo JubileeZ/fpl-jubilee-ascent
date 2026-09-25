@@ -1,12 +1,45 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-24T12:10:00+07:00
+**Updated**: 2026-09-25T22:20:00+07:00
 **Status**: Live index. Active research topics tracked below.
+
+---
+
+## Eval canon (session-durable)
+
+Agents starting any model / Candidate / Champion work **read this block first**. Topic notes hold evidence; this block holds which metric is primary for which job.
+
+### Promotion & model selection (production gate)
+
+| Job | Primary | Guardrails | Authority |
+|-----|---------|------------|-----------|
+| Historical Promotion Gate / Candidate vs Champion | **Blended Eval Target** MAE (`--eval_target blend`, 50/50) | Realized MAE, Process MAE, \|bias\|, xMins, Spearman (ADR 0044) | [ADR 0044](../adr/0044-blended-eval-target-promotion-primary.md) · [ADR 0038](../adr/0038-process-points-eval-target.md) |
+| Champion Signed Bias gate (Hits / no mean calibrate) | Realized `signed_bias` | `mae`, `minutes_bias` | [ADR 0033](../adr/0033-transfer-plan-hits-until-champion-bias.md) · [champion-signed-bias](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias` |
+| Totals context in research companions | Triple-report `realized` \| `process` \| `blend` | — | ADR 0044 |
+
+**Rejected as promotion primary:** Process-only; Blended without Realized/Process guardrails; component MAE; FPL `ep_*`.
+
+### Event Component gap diagnosis (which ledger row to improve)
+
+| Job | Primary | Diagnostics | Authority |
+|-----|---------|-------------|-----------|
+| Rank gap Event Component | **Realized** `mse_share` = $\mathrm{mean}(e_c\cdot e)/\mathrm{mean}(e^2)$ | Process G/A twins; Poisson-xGC CS/GC twins; `demotion_label` ∈ {`structural`,`variance`,`link-bias`,`no_twin`} | [champion-component-gap](champion-component-gap/champion-component-gap.md) · `component_gap_summary.csv` `mse_share` |
+| Demotion thresholds | θ twin shrink ≥ **0.50**; τ \|signed_bias\| ≤ **0.05** | CS/GC shrink + large Realized bias → `link-bias` | Same note Method |
+| Pools | `all` primary crown; `mins_60` rate check | Position `ALL` + GKP/DEF/MID/FWD secondary | Grill 2026-09-25 |
+
+**Rejected for component ranking:** component MAE; raw \|bias\| alone; relative bias; Blended/Process as component ledger primary; Extended Process Points (deferred).
+
+**Current crown (2025-26 gate, Champion `hold_chase_challenger`, `pool=all` `position=ALL`):** `xp_goals` `structural` — inherited across Comparison Slate. CS/assists often `variance` on `all`; CS `link-bias` on `mins_60`.
+
+### Glossary pointers
+
+`CONTEXT.md`: Realized Points · Process Points · Blended Eval Target · Poisson-xGC Twin · Extended Process Points · Historical Promotion Gate · Model Champion / Candidate / Comparison Slate.
 
 ---
 
 ## Active Research Index
 
+- **Champion component gap**: [Note](champion-component-gap/champion-component-gap.md) · [Summary](champion-component-gap/component_gap_summary.csv) `mse_share` · [Totals](champion-component-gap/component_gap_totals.csv) `realized_mae` (Realized `mse_share` primary; Process G/A + Poisson-xGC CS/GC twins; demotion / `link-bias`)
 - **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~12.5% of blend swing on `60+`; attack fixture ~zero)
 - **Downside attack scale (won scorecard)**: [Note](fixture-downside-scale/fixture-downside-scale.md) · [Summary](fixture-downside-scale/downside_swing_summary.csv) `blend_mae` (downside 0.9960 vs Champion 1.0024; all guardrails hold; pending gate plumbing + admission)
 - **Hold vs chase (2025-26)**: [Note](hold-vs-chase-2025-26/hold-vs-chase-2025-26.md) · [Summary](hold-vs-chase-2025-26/hold_chase_summary.csv) `value` (autocorr ~0.09, hauls ~28%, CS 3× easy/hard, 82 nailed; barbell strategy)
@@ -39,7 +72,7 @@
 - **Timestamps**: `Updated` = note revision (ISO 8601 + timezone). `Data stamp` = evidence cutoff. No duplicate `Last update`.
 - **Artifact**: link companions in the note header; same-folder relative path.
 - **Evidence**: keep `Source synthesis` separate from `Project interpretation`. Label unvalidated claims.
-- **Metrics**: every quantitative note includes `### Metric Definitions & Direction` (Definition/Formula, Direction, Ideal Benchmark, Description).
+- **Metrics**: every quantitative note includes `### Metric Definitions & Direction` (Definition/Formula, Direction, Ideal Benchmark, Description). Promotion vs component-gap primary metrics live in **Eval canon** at top of this INDEX — do not invent a competing primary in a topic note.
 - **Agent Prompt**: inputs, refresh steps, stable output path in the topic folder, scratch cleanup.
 - **Figures**: caches of named companion CSV cells. Prompt names path + column (e.g. `gkp_rotation_pairs_summary.csv` `total_mod_fdr`), not a numeric snapshot.
 
@@ -60,6 +93,9 @@
 | **Rotation** | **Rotated / Effective FDR** | `Rot FDR` | Average weekly fixture difficulty rating across started slots | Lower is better $\downarrow$ | **$\le 2.40$** | Benchmark baseline for unrotated schedule is $3.00$; rotation targets $\le 2.40$. |
 | **Rotation** | **Rotated Expected Points** | `Rotated xP` | $\sum_{t=1}^N \max_{i \in \text{squad}} xP_{i,t}$ | Higher is better $\uparrow$ | Maximized | Sum of weekly projected points under optimal starting selection. |
 | **Walk-Forward** | **Champion signed bias** | `signed_bias` | $\mathrm{mean}(\text{projected\_points} - \text{actual\_points})$ | Near zero (context) | Gate in `champion_bias_summary.csv` `signed_bias` | Model Champion vs Realized Points. Positive = overprediction. Not FPL `ep_*`. |
+| **Walk-Forward** | **Component MSE share** | `mse_share` | $\mathrm{mean}(e_c\cdot e)/\mathrm{mean}(e^2)$ on Realized ledger | Context (rank by $\|\,\|$) | `component_gap_summary.csv` `mse_share` | Which Event Component drives Official squared error. Not component MAE. Not promotion primary. |
+| **Walk-Forward** | **Twin shrink** | `twin_shrink` | $1 - \|mse\_share\_twin\|/\|mse\_share\|$ | Higher → more finish/link noise | ≥ 0.50 with τ → demotion check | Process G/A or Poisson-xGC twin vs Realized share |
+| **Walk-Forward** | **Demotion label** | `demotion_label` | `structural` / `variance` / `link-bias` / `no_twin` | Context | structural = Candidate lever | Gap diagnosis decision label |
 | **Walk-Forward** | **First-Half Realized Points** | `realized_points` | Scoring-15 Realized Points GW1–19 after autosubs; Hits forbidden | Higher is better $\uparrow$ | Unconstrained baseline | Transfer Plan Walk-Forward ranking object (ADR 0020). |
 | **Chip Strategy** | **Scenario Expected Points** | `Total xP` | Cumulative projected points across target window under Chip Path | Higher is better $\uparrow$ | Maximized | MILP-optimized points under chip constraints. |
 | **Chip Strategy** | **Value Over Chip Baseline** | `VoC` | $xP(\text{Scenario } k) - xP(\text{No Chip Baseline})$ | Higher is better $\uparrow$ | **$\ge +12.0\text{ xP}$** | Net points gained by deploying specific chip combinations early vs holding. |

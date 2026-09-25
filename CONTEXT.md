@@ -126,7 +126,15 @@ _Avoid_: Projection, Remaining Projection, xP, Process Points
 
 **Process Points**:
 Player-gameweek evaluation target: Official scoring matrix with goals/assists from that fixture’s `expected_goals` / `expected_assists`; other components stay Realized (minutes, clean sheets, bonus, cards, Defcon, …). Removes finish luck on goals/assists. Not Gameweek Projection. Not Realized Points. Not FPL `ep_*`.
-_Avoid_: Realized Points, Projection, underlying xG alone, Solio xP
+_Avoid_: Realized Points, Projection, underlying xG alone, Solio xP, Poisson-xGC Twin, Extended Process Points
+
+**Poisson-xGC Twin**:
+Diagnostic clean-sheet / goals-conceded actuals from Official per-player on-pitch `expected_goals_conceded` pushed through a Poisson scoring link (`e^{-λ}` CS; `−E[⌊GC/2⌋]` conceded for GK/D). Not an Official outcome. Not a primary eval target. Not Extended Process Points.
+_Avoid_: Official xCS field, Process Points, ranking `mse_share` on the twin, Extended Process Points
+
+**Extended Process Points**:
+Deferred joint-process evaluation replacing Realized defense/bonus/etc. with $E[\text{scoring}\mid\text{underlying}]$. Not implemented. Not Process Points. Not Poisson-xGC Twin.
+_Avoid_: Process Points, Poisson-xGC Twin as full Extended Process, Blended Eval Target
 
 **Remaining Projection**:
 Score Mode summing Gameweek Projection xP over unfinished gameweeks in the Season Window. Not the product Planning Horizon slice.
@@ -413,7 +421,11 @@ _Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as th
 
 **Blended Eval Target**:
 Mean of Realized Points and Process Points per player-gameweek (50/50, all positions). Promotion primary for backtests and the Historical Promotion Gate (ADR 0044). Realized Points and Process Points stay reported guardrails. CLI `--eval_target blend`; companions triple-report `realized|process|blend`.
-_Avoid_: position-weighted blend, Process-only primary, calibrating live xP from this cell
+_Avoid_: position-weighted blend, Process-only primary, calibrating live xP from this cell, component-gap ranking primary
+
+**Component MSE Share**:
+Additive attribution of Official Realized Points squared error to one Event Component: $\mathrm{mean}(e_c\cdot e)/\mathrm{mean}(e^2)$. Primary ranking object for which Event Component to improve next. Not Historical Promotion Gate primary. Companion: `docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`. Canon: `docs/research/INDEX.md` Eval canon.
+_Avoid_: component MAE as the gap rank, Blended/Process component ledgers as primary, Extended Process Points
 
 **Cross-Gameweek Dispersion**:
 Mean over a player pool of per-player sample Gameweek-to-Gameweek SD within a window, reported with median as skew check. Companion: `docs/research/xp-cross-gw-dispersion/dispersion_summary.csv` `mean_SD`. Expectation should swing less than actuals, not equal them.

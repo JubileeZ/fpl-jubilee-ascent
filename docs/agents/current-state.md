@@ -6,11 +6,11 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-No open wayfinder map. [Transfer Plan dashboard spec](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/88) closed (hand-off enough; ADR 0034). [Champion challenger from hold-vs-chase evidence](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/106) closed. Champion `hold_chase_challenger`, provisional. Δ£ observed column remains. Research notes: `docs/research/wayfinder-transfer-plan-spec/`.
+Open wayfinder map: [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Decisions #111–#115 closed. Frontier Task: [Implement goals-path Candidate + post-goals residual refresh](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116). Then defence-link form → admission race → soft pre-gate → flip. Fog: Live Validation schedule; minutes-conditional constants; Admission CLI. Eval canon: `docs/research/INDEX.md`. Champion `hold_chase_challenger` provisional.
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md`. Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `hold_chase_challenger` (Historical Promotion Gate, ADR 0044; former Champion `calibrated_matchup_hybrid` stays on the slate). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `hold_chase_challenger` (Historical Promotion Gate, ADR 0044; former Champion `calibrated_matchup_hybrid` stays on the slate). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
