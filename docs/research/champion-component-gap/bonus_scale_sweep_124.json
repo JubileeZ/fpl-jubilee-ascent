@@ -1,0 +1,44 @@
+{
+  "any_pass": false,
+  "best_segment_wins": 2,
+  "any_late_win": false,
+  "pass_labels": [],
+  "two_plus_and_late_pos": [],
+  "best_late": [
+    {
+      "label": "cs_prod_bonus_4.00",
+      "late_delta": -0.04657894736840262,
+      "segment_wins": 1,
+      "combined_primary_delta": -0.05552631578947853,
+      "realized_mae_cand": 1.1511899858969965
+    },
+    {
+      "label": "cs_prod_bonus_0.75",
+      "late_delta": -0.2992105263157754,
+      "segment_wins": 2,
+      "combined_primary_delta": 0.251842105263151,
+      "realized_mae_cand": 1.0327998866556958
+    },
+    {
+      "label": "cs_prod_bonus_1.00",
+      "late_delta": -0.42789473684209156,
+      "segment_wins": 2,
+      "combined_primary_delta": 0.3001315789473722,
+      "realized_mae_cand": 1.040888094856101
+    },
+    {
+      "label": "cs_1.10_bonus_4.00",
+      "late_delta": -0.4684210526315553,
+      "segment_wins": 1,
+      "combined_primary_delta": -0.439342105263151,
+      "realized_mae_cand": 1.135973518990793
+    },
+    {
+      "label": "goals_bonus_4.00",
+      "late_delta": -0.7444736842105186,
+      "segment_wins": 1,
+      "combined_primary_delta": -0.576578947368418,
+      "realized_mae_cand": 1.1285058408925182
+    }
+  ]
+}

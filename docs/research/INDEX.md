@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-25T22:20:00+07:00
+**Updated**: 2026-09-27T00:30:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -39,7 +39,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ## Active Research Index
 
-- **Champion component gap**: [Note](champion-component-gap/champion-component-gap.md) · [Summary](champion-component-gap/component_gap_summary.csv) `mse_share` · [Totals](champion-component-gap/component_gap_totals.csv) `realized_mae` (Realized `mse_share` primary; Process G/A + Poisson-xGC CS/GC twins; demotion / `link-bias`) · [Segment loss #123](champion-component-gap/segment-loss-121.md) · [segment summary](champion-component-gap/segment_loss_121_summary.csv) `blend_regret_delta_champ_minus_cand`
+- **Champion component gap**: [Note](champion-component-gap/champion-component-gap.md) · [Summary](champion-component-gap/component_gap_summary.csv) `mse_share` · [Totals](champion-component-gap/component_gap_totals.csv) `realized_mae` (Realized `mse_share` primary; Process G/A + Poisson-xGC CS/GC twins; demotion / `link-bias`) · [Segment loss #123](champion-component-gap/segment-loss-121.md) · [segment summary](champion-component-gap/segment_loss_121_summary.csv) `blend_regret_delta_champ_minus_cand` · [AFK segment-fix experiments #124](champion-component-gap/segment_fix_experiments_124.md) · [CS/GC sweep](champion-component-gap/segment_fix_sweep_124.csv) · [bonus sweep](champion-component-gap/bonus_scale_sweep_124.csv) · [Bonus/BPS inventory #125](champion-component-gap/bonus-bps-inventory-125.md)
 - **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~12.5% of blend swing on `60+`; attack fixture ~zero)
 - **Downside attack scale (won scorecard)**: [Note](fixture-downside-scale/fixture-downside-scale.md) · [Summary](fixture-downside-scale/downside_swing_summary.csv) `blend_mae` (downside 0.9960 vs Champion 1.0024; all guardrails hold; pending gate plumbing + admission)
 - **Hold vs chase (2025-26)**: [Note](hold-vs-chase-2025-26/hold-vs-chase-2025-26.md) · [Summary](hold-vs-chase-2025-26/hold_chase_summary.csv) `value` (autocorr ~0.09, hauls ~28%, CS 3× easy/hard, 82 nailed; barbell strategy)

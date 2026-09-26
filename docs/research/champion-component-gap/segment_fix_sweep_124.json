@@ -1,0 +1,24 @@
+{
+  "champion": "hold_chase_challenger",
+  "base_candidate": "goals_path_challenger",
+  "calibrate": {
+    "k_cs_mins60": 1.2969025568993957,
+    "k_cs_all": 1.0,
+    "k_gc_mins60": 1.1452260138756023,
+    "k_gc_all": 1.0
+  },
+  "n_configs": 43,
+  "any_pass": false,
+  "best_segment_wins": 2,
+  "pass_labels": [],
+  "two_plus_seg_labels": [
+    "cs_only_prod",
+    "cs_mins60_gc_1",
+    "sweep_cs_1.30_gcprod",
+    "sweep_cs_1.30_gc1",
+    "sweep_cs_1.10_gc1",
+    "sweep_cs_0.95_gcprod",
+    "sweep_cs_0.95_gc1",
+    "sweep_cs_1.15_gcprod"
+  ]
+}

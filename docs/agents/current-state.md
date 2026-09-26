@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Grilling [Re-grill route after defence_link segment diagnosis](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/124). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Prototype [bonus-arm Candidate stub](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/126). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** Flip Candidate admitted (#119). Soft PASS (#120). Blended dry-run (#121) **FAIL**. Path (#122) closed. Segment forensics (#123) closed: won `cold_start` only; lost `early_mid`+`late` on Blended `decision_regret`; CS all-pool inflate / GKP+DEF MAE. Note: `docs/research/champion-component-gap/segment-loss-121.md`.
+**Done so far:** Flip Candidate admitted (#119). Soft PASS (#120). Blended dry-run (#121) **FAIL**. Path (#122) closed. Segment forensics (#123) closed. Route (#124) closed: **bonus-first**; reject `k_cs`/`k_gc`-only and flat `k_bonus`; non-flat BPS Bonus Model lever; stack `defence_link` subclass. Inventory (#125) closed: note `docs/research/champion-component-gap/bonus-bps-inventory-125.md`.
 
-**This session:** closed #123. Frontier = #124 route re-grill. Bonus tickets #125–#128 blocked by #124.
+**This session:** closed #125. Surface = `xbps` + fixture softmax $T=6$ + ≥45 eligibility; residual rank-3 `no_twin` mins_60 underpredict. Frontier = #126 prototype stub.
 
-**After #124:** confirm bonus or redirect → bonus chain or re-scope. Live Validation only after flip.
+**After #126:** #127 levers → #128 soft-bar → build/admit/gate. Live Validation only after flip.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 
