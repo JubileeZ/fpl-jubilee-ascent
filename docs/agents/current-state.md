@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Prototype [bonus-arm Candidate stub](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/126). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Wire + calibrate bonus_arm_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/129). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** Flip Candidate admitted (#119). Soft PASS (#120). Blended dry-run (#121) **FAIL**. Path (#122) closed. Segment forensics (#123) closed. Route (#124) closed: **bonus-first**; reject `k_cs`/`k_gc`-only and flat `k_bonus`; non-flat BPS Bonus Model lever; stack `defence_link` subclass. Inventory (#125) closed: note `docs/research/champion-component-gap/bonus-bps-inventory-125.md`.
+**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Soft #128: bonus = bias/τ and/or `|mse_share|`↓ on `mins_60`/`ALL`; checklist goals·CS·conceded·bonus. Levers: global weights + $T$.
 
-**This session:** closed #125. Surface = `xbps` + fixture softmax $T=6$ + ≥45 eligibility; residual rank-3 `no_twin` mins_60 underpredict. Frontier = #126 prototype stub.
+**This session:** closed #128; graduated #129–#131. Frontier = #129 (unclaimed).
 
-**After #126:** #127 levers → #128 soft-bar → build/admit/gate. Live Validation only after flip.
+**After #129:** #130 soft+admit → #131 dry-run/`--apply`. Live Validation only after flip.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 
