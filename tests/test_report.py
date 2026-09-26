@@ -118,20 +118,26 @@ def test_report_defaults_to_champion_when_model_omitted(tmp_path: Path, capsys) 
             "2_xMins": 90.0,
         },
     ])
+    from models import get_default_model_name
+
+    champion = get_default_model_name()
     data_dir = tmp_path / "data"
     data_dir.mkdir()
-    projections.to_csv(data_dir / "calibrated_matchup_hybrid.csv", index=False)
+    projections.to_csv(data_dir / f"{champion}.csv", index=False)
 
     with patch("commands.report.PROJECT_ROOT", tmp_path), \
         patch("commands.report.load_settings", return_value={"datasource": "stale_model", "horizon": 2}), \
         patch("sys.argv", ["commands.report", "--horizon", "2"]):
         main()
 
-    report = pd.read_csv(tmp_path / "data" / "reports" / "top_picks_calibrated_matchup_hybrid.csv")
+    report = pd.read_csv(tmp_path / "data" / "reports" / f"top_picks_{champion}.csv")
     assert bool(report.loc[report["ID"] == 1, "Captain"].iloc[0])
 
 
 def test_report_champion_flag_uses_champion(tmp_path: Path, capsys) -> None:
+    from models import get_default_model_name
+
+    champion = get_default_model_name()
     projections = pd.DataFrame([
         {
             "ID": 1,
@@ -147,13 +153,13 @@ def test_report_champion_flag_uses_champion(tmp_path: Path, capsys) -> None:
     ])
     data_dir = tmp_path / "data"
     data_dir.mkdir()
-    projections.to_csv(data_dir / "calibrated_matchup_hybrid.csv", index=False)
+    projections.to_csv(data_dir / f"{champion}.csv", index=False)
 
     with patch("commands.report.PROJECT_ROOT", tmp_path), \
         patch("commands.report.load_settings", return_value={"datasource": "stale_model", "horizon": 2}), \
         patch("sys.argv", ["commands.report", "--champion", "--horizon", "2"]):
         main()
 
-    report = pd.read_csv(tmp_path / "data" / "reports" / "top_picks_calibrated_matchup_hybrid.csv")
+    report = pd.read_csv(tmp_path / "data" / "reports" / f"top_picks_{champion}.csv")
     assert bool(report.loc[report["ID"] == 1, "Captain"].iloc[0])
 

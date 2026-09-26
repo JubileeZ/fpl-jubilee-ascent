@@ -146,13 +146,16 @@ def test_run_model_defaults_to_champion(tmp_path: Path) -> None:
         patch("sys.argv", ["commands.run_model", "--horizon", "3"]):
         run_model_main()
 
-    mock_get_model.assert_called_once_with("calibrated_matchup_hybrid")
+    from models import get_default_model_name
+
+    mock_get_model.assert_called_once_with(get_default_model_name())
 
 
 def test_run_model_accepts_champion_flag_and_alias(tmp_path: Path) -> None:
     from unittest.mock import Mock, patch
     import commands.run_model
     from commands.run_model import main as run_model_main
+    from models import get_default_model_name
 
     processed = tmp_path / "data" / "processed"
     processed.mkdir(parents=True)
@@ -164,6 +167,7 @@ def test_run_model_accepts_champion_flag_and_alias(tmp_path: Path) -> None:
 
     model = Mock()
     model.predict.return_value = pd.DataFrame()
+    champion = get_default_model_name()
 
     with patch.object(commands.run_model, "PROJECT_ROOT", tmp_path), \
         patch("commands.run_model.build_features", return_value=pd.DataFrame()), \
@@ -172,7 +176,7 @@ def test_run_model_accepts_champion_flag_and_alias(tmp_path: Path) -> None:
         patch("sys.argv", ["commands.run_model", "--champion", "--horizon", "3"]):
         run_model_main()
 
-    mock_get_model.assert_called_with("calibrated_matchup_hybrid")
+    mock_get_model.assert_called_with(champion)
 
     with patch.object(commands.run_model, "PROJECT_ROOT", tmp_path), \
         patch("commands.run_model.build_features", return_value=pd.DataFrame()), \
@@ -181,5 +185,5 @@ def test_run_model_accepts_champion_flag_and_alias(tmp_path: Path) -> None:
         patch("sys.argv", ["commands.run_model", "champion", "--horizon", "3"]):
         run_model_main()
 
-    mock_get_model2.assert_called_with("calibrated_matchup_hybrid")
+    mock_get_model2.assert_called_with(champion)
 

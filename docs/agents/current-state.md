@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Wire + calibrate bonus_arm_challenger](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/129). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Soft pre-gate + admission race for bonus_arm](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/130). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Soft #128: bonus = bias/τ and/or `|mse_share|`↓ on `mins_60`/`ALL`; checklist goals·CS·conceded·bonus. Levers: global weights + $T$.
+**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Wire+calibrate (#129): `_XBPS_WEIGHTS`=(0.1,96,48,48,24,8) `_BONUS_SOFTMAX_T`=8.0; mins_60 bias≈−0.067 (τ not cleared). Soft #128 locked.
 
-**This session:** closed #128; graduated #129–#131. Frontier = #129 (unclaimed).
+**This session:** closed #129. Frontier = #130 (unclaimed).
 
-**After #129:** #130 soft+admit → #131 dry-run/`--apply`. Live Validation only after flip.
+**After #130:** #131 dry-run/`--apply`. Live Validation only after flip.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 

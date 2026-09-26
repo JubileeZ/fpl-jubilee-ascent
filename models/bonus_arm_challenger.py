@@ -1,14 +1,11 @@
-"""PROTOTYPE bonus-arm Candidate stub (wayfinder #126).
+"""Bonus-arm Model Candidate (wayfinder #126 / #127 / #129).
 
-Throwaway identity vs ``defence_link_challenger`` until #127 locks levers.
-Non-flat BPS hooks only — **no** flat ``xp_bonus *= k`` (out per #124/#125).
+Subclass of ``defence_link_challenger``: keeps goals + post-link CS/GC scales;
+overrides BPS Bonus Model ``xbps`` weights and softmax temperature only.
+**No** flat ``xp_bonus *= k`` (out per #124/#125/#127).
 
-Placeholder knobs (identity defaults = shipped Champion-path bonus form):
-- ``_BONUS_SOFTMAX_T`` — fixture allocation temperature (ADR 0007; shipped 6.0)
-- ``_XBPS_WEIGHTS`` — mins/goals/assists/CS/Defcon/saves (documented; wired in #127)
-- ``_BONUS_ELIG_MINS`` — eligibility minutes gate (documented; wired in #127)
-
-Do not Admission-race or ``--apply`` from this stub alone.
+Calibrate via ``docs/research/champion-component-gap/calibrate_bonus_arm.py``.
+Eligibility / allocation form frozen (#127).
 """
 
 from __future__ import annotations
@@ -16,28 +13,84 @@ from __future__ import annotations
 from collections import defaultdict
 
 import numpy as np
+import pandas as pd
 
 from models.defence_link_challenger import DefenceLinkChallengerModel
+from models.metrics_component_hybrid import (
+    _CLEAN_SHEET_POINTS,
+    _number,
+    _optional_number,
+)
 
-# Identity defaults — #127 may retune; must stay non-flat (not global xp_bonus scale).
-_BONUS_SOFTMAX_T = 6.0
-_BONUS_ELIG_MINS = 45.0
-_XBPS_WEIGHTS = (0.1, 24.0, 12.0, 12.0, 6.0, 2.0)  # mins, goals, assists, CS, Defcon, saves
+# Frozen by calibrate_bonus_arm.py (#129): mins_60/ALL xp_bonus bias then T grid.
+_BONUS_SOFTMAX_T = 8.0
+_BONUS_ELIG_MINS = 45.0  # documented; eligibility frozen (#127) — not wired
+_XBPS_WEIGHTS = (0.1, 96.0, 48.0, 48.0, 24.0, 8.0)  # mins, goals, assists, CS, Defcon, saves; event k=4
+
+_GOAL_POINTS = {"GK": 10.0, "D": 6.0, "M": 5.0, "F": 4.0}
+_DEFCON_POINTS = {"GK": 0.0, "D": 2.0, "M": 2.0, "F": 2.0}
 
 
 class BonusArmChallengerModel(DefenceLinkChallengerModel):
-    """Defence-link stack plus placeholder BPS Bonus Model hooks (#126 stub)."""
+    """Defence-link stack plus non-flat BPS Bonus Model levers (#129)."""
 
     @property
     def name(self) -> str:
         return "bonus_arm_challenger"
+
+    def _project_event_components(
+        self,
+        row: pd.Series,
+        position: str,
+        expected_minutes: float,
+        *,
+        clean_sheet_minutes: float,
+        p_sixty_mins: float,
+    ) -> dict[str, float]:
+        """Parent Event Components; ``xbps`` rebuilt from ``_XBPS_WEIGHTS`` only."""
+        components = super()._project_event_components(
+            row,
+            position,
+            expected_minutes,
+            clean_sheet_minutes=clean_sheet_minutes,
+            p_sixty_mins=p_sixty_mins,
+        )
+        w_mins, w_goals, w_assists, w_cs, w_defcon, w_saves = _XBPS_WEIGHTS
+        goal_pts = _GOAL_POINTS[position]
+        expected_goals = float(components["xp_goals"]) / goal_pts if goal_pts else 0.0
+        expected_assists = float(components["xp_assists"]) / 3.0
+        cs_pts = _CLEAN_SHEET_POINTS[position]
+        prob_clean_sheet = float(components["xp_clean_sheet"]) / cs_pts if cs_pts else 0.0
+        dc_pts = _DEFCON_POINTS[position]
+        prob_defcon = float(components["xp_defcon"]) / dc_pts if dc_pts else 0.0
+        expected_saves = self._expected_saves(row, position, expected_minutes)
+        components["xbps"] = (
+            expected_minutes * w_mins
+            + expected_goals * w_goals
+            + expected_assists * w_assists
+            + prob_clean_sheet * w_cs
+            + prob_defcon * w_defcon
+            + expected_saves * w_saves
+        )
+        return components
+
+    @staticmethod
+    def _expected_saves(row: pd.Series, position: str, expected_minutes: float) -> float:
+        if position != "GK":
+            return 0.0
+        diff = _number(row, "difficulty", 3.0)
+        fdr_defence = max(0.2, diff / 3.0)
+        defence_input = _optional_number(row, "defence_multiplier")
+        defence_multiplier = fdr_defence if defence_input is None else defence_input
+        saves_per90 = _number(row, "per90_saves", 0.0)
+        return saves_per90 * expected_minutes / 90.0 * defence_multiplier
 
     @staticmethod
     def _allocate_bonus(
         components: list[dict[str, object]],
         bonus_groups: defaultdict[int, list[int]],
     ) -> None:
-        """Same Plackett-Luce form as metrics hybrid; temperature = ``_BONUS_SOFTMAX_T``."""
+        """Plackett-Luce fixture tiers; temperature = ``_BONUS_SOFTMAX_T``."""
         temperature = float(_BONUS_SOFTMAX_T)
         if temperature <= 0.0:
             raise ValueError("_BONUS_SOFTMAX_T must be > 0")

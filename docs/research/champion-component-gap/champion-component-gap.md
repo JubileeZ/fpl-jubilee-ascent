@@ -1,13 +1,13 @@
 # Champion Event Component gap (mse_share)
 
-**Updated**: 2026-09-26T00:30:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` + `defence_link_challenger` (k_cs=1.296903, k_gc=1.145226)  
+**Updated**: 2026-09-27T03:00:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` + `defence_link_challenger` + `bonus_arm_challenger` (#129 weights/T)  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
 **Purpose**: Rank which Event Component drives Model Champion Official MSE; demote finish/link noise via Process G/A and Poisson-xGC CS/GC twins; name Candidate improve target.  
-**Scope**: Comparison Slate walk-forward + catalog `goals_path_challenger` (#116) + `defence_link_challenger` (#118). Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
-**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md) · map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · [#116](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116) · [#118](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/118)  
-**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae` · [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py)
+**Scope**: Comparison Slate walk-forward + catalog `goals_path_challenger` (#116) + `defence_link_challenger` (#118) + `bonus_arm_challenger` (#129 calibrate). Realized `mse_share` primary. Twins diagnostic only. Not Historical Promotion Gate. Not Extended Process Points. Not Blended component ledger.  
+**Related**: [ADR 0038](../../adr/0038-process-points-eval-target.md) · [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md) · [champion signed bias](../champion-signed-bias-2025-26/champion-signed-bias-2025-26.md) · [INDEX](../INDEX.md) · [archive testing](../../testing/archive-testing.md) · map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · [#116](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/116) · [#118](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/118) · [#129](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/129)  
+**Artifact**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` · [component_gap_totals.csv](component_gap_totals.csv) `realized_mae` · [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py) · [calibrate_bonus_arm.py](calibrate_bonus_arm.py) · [calibrate-bonus-arm-129.md](calibrate-bonus-arm-129.md)
 
 > `Updated` is last note revision time. `Data stamp` is freshness of data or source evidence. Do not add duplicate `Last update` fields.
 
@@ -156,18 +156,30 @@ Hand dry-run Historical Promotion Gate (Blended primary, Realized+Process guardr
 
 **Soft pre-gate flip checklist** ([soft_pre_gate_119.json](soft_pre_gate_119.json)): goals PASS · CS PASS · conceded **PASS** under #120 rule (bias/demotion and/or; grain = mins_60 GKP+DEF combined). `|mse_share|`↑ alone does not fail. **Champion `--apply` allowed** — Task #121.
 
+## Bonus-arm Candidate (#129)
+
+Wired + calibrated `bonus_arm_challenger` (subclass `defence_link`; non-flat BPS only):
+
+- `_XBPS_WEIGHTS` = `(0.1, 96, 48, 48, 24, 8)` (event scale k=4; mins fixed)
+- `_BONUS_SOFTMAX_T` = `8.0` (early_mid↑ + 2/3 segs best on grid; combined primary still ↓)
+- mins_60/ALL `xp_bonus` bias after freeze ≈ −0.067 (τ not cleared; softmax sum constrains mean)
+- Note: [calibrate-bonus-arm-129.md](calibrate-bonus-arm-129.md) · JSON: [calibrate_bonus_arm_129.json](calibrate_bonus_arm_129.json)
+- Soft+admit → #130; dry-run/`--apply` → #131. No slate mutate this ticket.
+
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
 - **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not on Comparison Slate (parent only).
 - **Flip Candidate shipped (#118) + admitted (#119):** `defence_link_challenger` on Comparison Slate.
-- **Soft pre-gate (#120):** conceded PASS via bias/demotion and/or + combined GKP+DEF grain; flip soft bar PASS → allow Champion apply (#121).
+- **Bonus-arm Candidate wired (#129):** `bonus_arm_challenger` catalog; weights+T frozen; not on slate yet.
+- **Soft pre-gate (#120/#128):** goals·CS·conceded·bonus checklist; bonus grain mins_60/ALL bias/τ and/or `|mse_share|`↓.
 - **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115/#120).
 
 ## Risks and unknowns
 
 - τ=0.05 near goals + defence biases — Candidate sits on τ edge; small τ change flips label.
 - Conceded `|mse_share|` slightly ↑ after `k_gc` — accepted under #120; not a soft-bar fail.
+- Bonus mins_60 bias not inside τ after weight grid (asymptote ~−0.06); soft #128 and/or may need `|mse_share|`↓ vs Champion (#130).
 - Both seats shared identical decision_regret primary on admission dry-run; MAE tie-break used for worse-seat rule.
 - Fill-0 actuals on `pool=all` inflate minutes-related shares.
 - Poisson-xGC CS overstatement documented; `link-bias` expected often on CS.
@@ -175,6 +187,6 @@ Hand dry-run Historical Promotion Gate (Blended primary, Realized+Process guardr
 
 ## Appendix
 
-- Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py)
+- Runner: [runner.py](runner.py) · Calibrate: [calibrate_goals_k.py](calibrate_goals_k.py) · [calibrate_defence_k.py](calibrate_defence_k.py) · [calibrate_bonus_arm.py](calibrate_bonus_arm.py)
 - Admission: [admission_race_119.json](admission_race_119.json) · Soft pre-gate: [soft_pre_gate_119.json](soft_pre_gate_119.json)
 - Glossary: Process Points · Poisson-xGC Twin · Extended Process Points in `CONTEXT.md`

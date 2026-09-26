@@ -1,0 +1,303 @@
+{
+  "frozen_weights": [
+    0.1,
+    96.0,
+    48.0,
+    48.0,
+    24.0,
+    8.0
+  ],
+  "frozen_T": 8.0,
+  "weight_best": {
+    "event_scale": 4.0,
+    "weights": [
+      0.1,
+      96.0,
+      48.0,
+      48.0,
+      24.0,
+      8.0
+    ],
+    "T": 6.0,
+    "mean_projected": 0.2360878916978149,
+    "mean_actual": 0.2967174980615146,
+    "signed_bias": -0.06062960636369971,
+    "mse_share": 0.19371862831598977,
+    "abs_bias": 0.06062960636369971,
+    "inside_tau": false
+  },
+  "weight_grid": [
+    {
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.2360878916978149,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.06062960636369971,
+      "mse_share": 0.19371862831598977,
+      "abs_bias": 0.06062960636369971,
+      "inside_tau": false
+    },
+    {
+      "event_scale": 3.0,
+      "weights": [
+        0.1,
+        72.0,
+        36.0,
+        36.0,
+        18.0,
+        6.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.2315661085733741,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.0651513894881405,
+      "mse_share": 0.18972677914859756,
+      "abs_bias": 0.0651513894881405,
+      "inside_tau": false
+    },
+    {
+      "event_scale": 2.5,
+      "weights": [
+        0.1,
+        60.0,
+        30.0,
+        30.0,
+        15.0,
+        5.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.2267406720172027,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.06997682604431191,
+      "mse_share": 0.18712192252450882,
+      "abs_bias": 0.06997682604431191,
+      "inside_tau": false
+    },
+    {
+      "event_scale": 2.0,
+      "weights": [
+        0.1,
+        48.0,
+        24.0,
+        24.0,
+        12.0,
+        4.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.2185917587005288,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.07812573936098581,
+      "mse_share": 0.18418692894842598,
+      "abs_bias": 0.07812573936098581,
+      "inside_tau": false
+    },
+    {
+      "event_scale": 1.5,
+      "weights": [
+        0.1,
+        36.0,
+        18.0,
+        18.0,
+        9.0,
+        3.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.20536362870212432,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.09135386935939027,
+      "mse_share": 0.18124843499741014,
+      "abs_bias": 0.09135386935939027,
+      "inside_tau": false
+    },
+    {
+      "event_scale": 1.0,
+      "weights": [
+        0.1,
+        24.0,
+        12.0,
+        12.0,
+        6.0,
+        2.0
+      ],
+      "T": 6.0,
+      "mean_projected": 0.18545410634487378,
+      "mean_actual": 0.2967174980615146,
+      "signed_bias": -0.1112633917166408,
+      "mse_share": 0.17881467442532967,
+      "abs_bias": 0.1112633917166408,
+      "inside_tau": false
+    }
+  ],
+  "t_best": {
+    "T": 8.0,
+    "event_scale": 4.0,
+    "weights": [
+      0.1,
+      96.0,
+      48.0,
+      48.0,
+      24.0,
+      8.0
+    ],
+    "passed": false,
+    "primary_metric": "decision_regret",
+    "combined_primary_delta": -0.4972368421052522,
+    "segment_wins": 2,
+    "guardrails_passed": false,
+    "reasons": "combined primary metric did not improve; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0358 vs 1.0334); regressed Process MAE guardrail (0.9255 vs 0.9205)",
+    "cold_start_delta": 0.6149999999999949,
+    "early_mid_delta": 0.5443333333333271,
+    "late_delta": -1.5536842105263133,
+    "blend_mae_cand": 0.9617331975644323,
+    "realized_mae_cand": 1.0357522255742928
+  },
+  "t_grid": [
+    {
+      "T": 8.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -0.4972368421052522,
+      "segment_wins": 2,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0358 vs 1.0334); regressed Process MAE guardrail (0.9255 vs 0.9205)",
+      "cold_start_delta": 0.6149999999999949,
+      "early_mid_delta": 0.5443333333333271,
+      "late_delta": -1.5536842105263133,
+      "blend_mae_cand": 0.9617331975644323,
+      "realized_mae_cand": 1.0357522255742928
+    },
+    {
+      "T": 3.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -0.9471052631578942,
+      "segment_wins": 1,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; won only 1/3 seasonal segments; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0373 vs 1.0334); regressed Process MAE guardrail (0.9304 vs 0.9205)",
+      "cold_start_delta": 1.4475000000000051,
+      "early_mid_delta": -0.20666666666667766,
+      "late_delta": -2.03578947368419,
+      "blend_mae_cand": 0.965231541251656,
+      "realized_mae_cand": 1.037256015270703
+    },
+    {
+      "T": 6.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -1.0931578947368479,
+      "segment_wins": 1,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; won only 1/3 seasonal segments; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0361 vs 1.0334); regressed Process MAE guardrail (0.9271 vs 0.9205)",
+      "cold_start_delta": 0.8774999999999977,
+      "early_mid_delta": -0.4973333333333301,
+      "late_delta": -1.9784210526315604,
+      "blend_mae_cand": 0.9629456498369172,
+      "realized_mae_cand": 1.036135411235852
+    },
+    {
+      "T": 10.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -1.3073684210526295,
+      "segment_wins": 1,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; won only 1/3 seasonal segments; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0359 vs 1.0334); regressed Process MAE guardrail (0.9245 vs 0.9205)",
+      "cold_start_delta": 2.242500000000007,
+      "early_mid_delta": -1.38600000000001,
+      "late_delta": -1.9926315789473534,
+      "blend_mae_cand": 0.9611162175443799,
+      "realized_mae_cand": 1.0358574960953146
+    },
+    {
+      "T": 4.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -1.4594736842105362,
+      "segment_wins": 1,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; won only 1/3 seasonal segments; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0368 vs 1.0334); regressed Process MAE guardrail (0.9293 vs 0.9205)",
+      "cold_start_delta": 0.8537500000000051,
+      "early_mid_delta": -0.25,
+      "late_delta": -2.9013157894736707,
+      "blend_mae_cand": 0.9644656681747658,
+      "realized_mae_cand": 1.036825814262592
+    },
+    {
+      "T": 5.0,
+      "event_scale": 4.0,
+      "weights": [
+        0.1,
+        96.0,
+        48.0,
+        48.0,
+        24.0,
+        8.0
+      ],
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -1.3230263157894768,
+      "segment_wins": 0,
+      "guardrails_passed": false,
+      "reasons": "combined primary metric did not improve; won only 0/3 seasonal segments; failed one or more Champion guardrails; regressed Realized MAE guardrail (1.0365 vs 1.0334); regressed Process MAE guardrail (0.9282 vs 0.9205)",
+      "cold_start_delta": -1.0762500000000017,
+      "early_mid_delta": -0.27033333333335463,
+      "late_delta": -2.2060526315789275,
+      "blend_mae_cand": 0.9636753514841077,
+      "realized_mae_cand": 1.0364622805831993
+    }
+  ],
+  "tau": 0.05
+}

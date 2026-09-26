@@ -124,19 +124,23 @@ def test_solve_cli_prints_summary(capsys):
 
 
 def test_solve_cli_uses_champion_not_stale_settings_datasource() -> None:
+    from models import get_default_model_name
+
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
          patch("commands.solve.prep_data", return_value={}), \
          patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
          patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
          patch("sys.argv", ["commands.solve", "--preseason"]):
         main()
-    assert pad_mock.call_args.args[0].name == "calibrated_matchup_hybrid.csv"
+    assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 
 
 def test_load_settings_uses_champion_as_default(tmp_path, monkeypatch):
+    from models import get_default_model_name
+
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
 
-    assert load_settings()["datasource"] == "calibrated_matchup_hybrid"
+    assert load_settings()["datasource"] == get_default_model_name()
 
 
 def test_solve_cli_no_hit_flag_sets_weekly_hit_limit_zero() -> None:
@@ -188,21 +192,25 @@ def test_solve_cli_prints_solver_objective_note(capsys: pytest.CaptureFixture[st
 
 
 def test_solve_cli_champion_flag_uses_champion() -> None:
+    from models import get_default_model_name
+
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
          patch("commands.solve.prep_data", return_value={}), \
          patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
          patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
          patch("sys.argv", ["commands.solve", "--preseason", "--champion"]):
         main()
-    assert pad_mock.call_args.args[0].name == "calibrated_matchup_hybrid.csv"
+    assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 
 
 def test_solve_cli_model_champion_string_uses_champion() -> None:
+    from models import get_default_model_name
+
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}), \
          patch("commands.solve.prep_data", return_value={}), \
          patch("commands.solve.pad_solver_csv_horizon") as pad_mock, \
          patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]), \
          patch("sys.argv", ["commands.solve", "--preseason", "--model", "champion"]):
         main()
-    assert pad_mock.call_args.args[0].name == "calibrated_matchup_hybrid.csv"
+    assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 

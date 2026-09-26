@@ -115,24 +115,26 @@ def test_decision_regret_cli_defaults_to_champion(monkeypatch) -> None:
     from unittest.mock import AsyncMock, patch
     import pandas as pd
     from commands.decision_regret import main as regret_main
+    from models import get_default_model_name
 
     mock_eval = AsyncMock(return_value=pd.DataFrame())
     with patch("commands.decision_regret.evaluate", mock_eval), \
          patch("sys.argv", ["commands.decision_regret", "--entry_id", "12345"]):
         regret_main()
 
-    assert mock_eval.call_args.kwargs["model_name"] == "calibrated_matchup_hybrid"
+    assert mock_eval.call_args.kwargs["model_name"] == get_default_model_name()
 
 
 def test_decision_regret_cli_accepts_champion_flag(monkeypatch) -> None:
     from unittest.mock import AsyncMock, patch
     import pandas as pd
     from commands.decision_regret import main as regret_main
+    from models import get_default_model_name
 
     mock_eval = AsyncMock(return_value=pd.DataFrame())
     with patch("commands.decision_regret.evaluate", mock_eval), \
          patch("sys.argv", ["commands.decision_regret", "--entry_id", "12345", "--champion"]):
         regret_main()
 
-    assert mock_eval.call_args.kwargs["model_name"] == "calibrated_matchup_hybrid"
+    assert mock_eval.call_args.kwargs["model_name"] == get_default_model_name()
 

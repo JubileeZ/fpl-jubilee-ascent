@@ -231,7 +231,9 @@ def test_dashboard_transfer_plan_options_force_champion() -> None:
             {"use_wc": [4], "use_bb": [1], "use_fh": [], "use_tc": []},
             horizon=5,
         )
-    assert options["datasource"] == "calibrated_matchup_hybrid"
+    from models import get_default_model_name
+
+    assert options["datasource"] == get_default_model_name()
     assert options["horizon"] == 5
     assert options["use_wc"] == [4]
     assert options["use_bb"] == [1]
