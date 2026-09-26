@@ -1,0 +1,1318 @@
+{
+  "evaluation_season": "2025-26",
+  "gw_range": "1-38",
+  "seed_season": "2024-25",
+  "champion": "hold_chase_challenger",
+  "candidate": "defence_link_challenger",
+  "goals_counterfactual": "goals_path_challenger",
+  "verdict": {
+    "passed": false,
+    "primary_metric": "decision_regret",
+    "combined_primary_delta": 0.07697368421052886,
+    "segment_wins": 1,
+    "guardrails_passed": false,
+    "reasons": [
+      "won only 1/3 seasonal segments",
+      "failed one or more Champion guardrails",
+      "regressed Realized MAE guardrail (1.0373 vs 1.0334)",
+      "regressed Process MAE guardrail (0.9234 vs 0.9205)"
+    ],
+    "eval_target": "blended_points"
+  },
+  "goals_only_vs_champion_verdict": {
+    "passed": false,
+    "primary_metric": "decision_regret",
+    "combined_primary_delta": -0.8115789473684032,
+    "segment_wins": 1,
+    "guardrails_passed": false,
+    "reasons": [
+      "combined primary metric did not improve",
+      "won only 1/3 seasonal segments",
+      "failed one or more Champion guardrails"
+    ]
+  },
+  "segments_won": [
+    "cold_start"
+  ],
+  "segments_lost": [
+    "early_mid",
+    "late"
+  ],
+  "goals_only_segments_won": [
+    "cold_start"
+  ],
+  "season_windows": {
+    "cold_start": [
+      1,
+      4
+    ],
+    "early_mid": [
+      5,
+      19
+    ],
+    "late": [
+      20,
+      38
+    ]
+  },
+  "champion_blend_windows": {
+    "combined": {
+      "mae": 0.9576621366772562,
+      "bias": 0.1301401466416992,
+      "spearman": 0.689971267146824,
+      "top_11_regret": 71.74842105263158,
+      "primary_metric": "decision_regret",
+      "primary_value": 71.74842105263158,
+      "sample_count": 31958,
+      "valid_rank_gameweeks": 38
+    },
+    "cold_start": {
+      "mae": 1.0833698023077833,
+      "bias": 0.10345007543411507,
+      "spearman": 0.6338988945289903,
+      "top_11_regret": 76.5825,
+      "primary_metric": "decision_regret",
+      "primary_value": 76.5825,
+      "sample_count": 3364,
+      "valid_rank_gameweeks": 4
+    },
+    "early_mid": {
+      "mae": 0.9636130645501336,
+      "bias": 0.15738969653538257,
+      "spearman": 0.6976588281433216,
+      "top_11_regret": 76.40533333333333,
+      "primary_metric": "decision_regret",
+      "primary_value": 76.40533333333333,
+      "sample_count": 12615,
+      "valid_rank_gameweeks": 15
+    },
+    "late": {
+      "mae": 0.9264992640132946,
+      "bias": 0.11424630645354587,
+      "spearman": 0.695706850069133,
+      "top_11_regret": 67.0542105263158,
+      "primary_metric": "decision_regret",
+      "primary_value": 67.0542105263158,
+      "sample_count": 15979,
+      "valid_rank_gameweeks": 19
+    }
+  },
+  "candidate_blend_windows": {
+    "combined": {
+      "mae": 0.9609907274703366,
+      "bias": 0.14458961482537405,
+      "spearman": 0.6889562652174486,
+      "top_11_regret": 71.67144736842106,
+      "primary_metric": "decision_regret",
+      "primary_value": 71.67144736842106,
+      "sample_count": 31958,
+      "valid_rank_gameweeks": 38
+    },
+    "cold_start": {
+      "mae": 1.0826837052715532,
+      "bias": 0.12070657807784808,
+      "spearman": 0.6325853309566042,
+      "top_11_regret": 71.81,
+      "primary_metric": "decision_regret",
+      "primary_value": 71.81,
+      "sample_count": 3364,
+      "valid_rank_gameweeks": 4
+    },
+    "early_mid": {
+      "mae": 0.9673880236323367,
+      "bias": 0.17190059507828687,
+      "spearman": 0.6967670681653797,
+      "top_11_regret": 76.52333333333333,
+      "primary_metric": "decision_regret",
+      "primary_value": 76.52333333333333,
+      "sample_count": 12615,
+      "valid_rank_gameweeks": 15
+    },
+    "late": {
+      "mae": 0.9303206562263963,
+      "bias": 0.1280563223620273,
+      "spearman": 0.6946574069450491,
+      "top_11_regret": 67.81184210526315,
+      "primary_metric": "decision_regret",
+      "primary_value": 67.81184210526315,
+      "sample_count": 15979,
+      "valid_rank_gameweeks": 19
+    }
+  },
+  "goals_blend_windows": {
+    "combined": {
+      "mae": 0.9462164267897036,
+      "bias": 0.10247528803542238,
+      "spearman": 0.6898659857547561,
+      "top_11_regret": 72.55999999999999,
+      "primary_metric": "decision_regret",
+      "primary_value": 72.55999999999999,
+      "sample_count": 31958,
+      "valid_rank_gameweeks": 38
+    },
+    "cold_start": {
+      "mae": 1.0668174372571197,
+      "bias": 0.07288595463862912,
+      "spearman": 0.6338487847318454,
+      "top_11_regret": 74.22874999999999,
+      "primary_metric": "decision_regret",
+      "primary_value": 74.22874999999999,
+      "sample_count": 3364,
+      "valid_rank_gameweeks": 4
+    },
+    "early_mid": {
+      "mae": 0.9514017995257215,
+      "bias": 0.12840249558886288,
+      "spearman": 0.6976147437507821,
+      "top_11_regret": 76.964,
+      "primary_metric": "decision_regret",
+      "primary_value": 76.964,
+      "sample_count": 12615,
+      "valid_rank_gameweeks": 15
+    },
+    "late": {
+      "mae": 0.916733025057602,
+      "bias": 0.08823577331361004,
+      "spearman": 0.6955416401837697,
+      "top_11_regret": 68.73184210526317,
+      "primary_metric": "decision_regret",
+      "primary_value": 68.73184210526317,
+      "sample_count": 15979,
+      "valid_rank_gameweeks": 19
+    }
+  },
+  "segments": [
+    {
+      "segment": "combined",
+      "gw_range": "1-38",
+      "n": 31958,
+      "blend_champ_mae": 0.9576621366772562,
+      "blend_champ_regret": 71.74842105263158,
+      "blend_champ_primary": 71.74842105263158,
+      "blend_champ_primary_name": "decision_regret",
+      "blend_cand_mae": 0.9609907274703366,
+      "blend_cand_regret": 71.67144736842106,
+      "blend_cand_primary": 71.67144736842106,
+      "blend_cand_primary_name": "decision_regret",
+      "blend_goals_mae": 0.9462164267897036,
+      "blend_goals_regret": 72.55999999999999,
+      "blend_goals_primary": 72.55999999999999,
+      "blend_goals_primary_name": "decision_regret",
+      "blend_mae_delta_champ_minus_cand": -0.003328590793080455,
+      "blend_mae_delta_champ_minus_goals": 0.011445709887552558,
+      "blend_regret_delta_champ_minus_cand": 0.07697368421052886,
+      "blend_cand_wins_primary": true,
+      "blend_regret_delta_champ_minus_goals": -0.8115789473684032,
+      "blend_goals_wins_primary": false,
+      "realized_champ_mae": 1.0333896894396108,
+      "realized_champ_regret": 88.63157894736842,
+      "realized_champ_primary": 88.63157894736842,
+      "realized_champ_primary_name": "decision_regret",
+      "realized_cand_mae": 1.037264094054507,
+      "realized_cand_regret": 88.36842105263158,
+      "realized_cand_primary": 88.36842105263158,
+      "realized_cand_primary_name": "decision_regret",
+      "realized_goals_mae": 1.0215157016019205,
+      "realized_goals_regret": 89.42105263157895,
+      "realized_goals_primary": 89.42105263157895,
+      "realized_goals_primary_name": "decision_regret",
+      "realized_mae_delta_champ_minus_cand": -0.0038744046148961875,
+      "realized_mae_delta_champ_minus_goals": 0.011873987837690336,
+      "realized_regret_delta_champ_minus_cand": 0.2631578947368496,
+      "realized_cand_wins_primary": true,
+      "realized_regret_delta_champ_minus_goals": -0.7894736842105203,
+      "realized_goals_wins_primary": false,
+      "process_champ_mae": 0.920549160335894,
+      "process_champ_regret": 61.739999999999995,
+      "process_champ_primary": 61.739999999999995,
+      "process_champ_primary_name": "decision_regret",
+      "process_cand_mae": 0.9234357983770909,
+      "process_cand_regret": 61.84921052631579,
+      "process_cand_primary": 61.84921052631579,
+      "process_cand_primary_name": "decision_regret",
+      "process_goals_mae": 0.9091863526429238,
+      "process_goals_regret": 62.57368421052631,
+      "process_goals_primary": 62.57368421052631,
+      "process_goals_primary_name": "decision_regret",
+      "process_mae_delta_champ_minus_cand": -0.0028866380411969317,
+      "process_mae_delta_champ_minus_goals": 0.011362807692970156,
+      "process_regret_delta_champ_minus_cand": -0.10921052631579187,
+      "process_cand_wins_primary": false,
+      "process_regret_delta_champ_minus_goals": -0.8336842105263145,
+      "process_goals_wins_primary": false,
+      "components": {
+        "xp_goals": {
+          "champ": {
+            "mae": 0.3202529990274565,
+            "signed_bias": 0.07456536200749027,
+            "mse_share": 0.32716529537615613,
+            "mean_proj": 0.22560735462279785,
+            "mean_actual": 0.1510419926153076
+          },
+          "cand": {
+            "mae": 0.3003221209009662,
+            "signed_bias": 0.0469708336192733,
+            "mse_share": 0.32016919252290116,
+            "mean_proj": 0.19801282623458086,
+            "mean_actual": 0.1510419926153076
+          },
+          "goals": {
+            "mae": 0.3003221209009662,
+            "signed_bias": 0.0469708336192733,
+            "mse_share": 0.3217574896202654,
+            "mean_proj": 0.19801282623458086,
+            "mean_actual": 0.1510419926153076
+          },
+          "mae_delta_champ_minus_cand": 0.019930878126490303,
+          "bias_delta_cand_minus_champ": -0.027594528388216966,
+          "mse_share_delta_cand_minus_champ": -0.006996102853254971,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_clean_sheet": {
+          "champ": {
+            "mae": 0.26033780198726547,
+            "signed_bias": 0.014004660666207883,
+            "mse_share": 0.17727399809705227,
+            "mean_proj": 0.17202456178642814,
+            "mean_actual": 0.1580199011202203
+          },
+          "cand": {
+            "mae": 0.29081874888617687,
+            "signed_bias": 0.06509079481621147,
+            "mse_share": 0.18455257014341298,
+            "mean_proj": 0.22311069593643176,
+            "mean_actual": 0.1580199011202203
+          },
+          "goals": {
+            "mae": 0.26034129610726636,
+            "signed_bias": 0.014013547747144325,
+            "mse_share": 0.1793877250678385,
+            "mean_proj": 0.17203344886736463,
+            "mean_actual": 0.1580199011202203
+          },
+          "mae_delta_champ_minus_cand": -0.0304809468989114,
+          "bias_delta_cand_minus_champ": 0.051086134150003584,
+          "mse_share_delta_cand_minus_champ": 0.007278572046360704,
+          "mae_delta_goals_minus_cand": -0.030477452778910508
+        },
+        "xp_conceded": {
+          "champ": {
+            "mae": 0.07986250735270145,
+            "signed_bias": -0.008084156661181006,
+            "mse_share": 0.012551601789658137,
+            "mean_proj": -0.06171704983346963,
+            "mean_actual": -0.05363289317228863
+          },
+          "cand": {
+            "mae": 0.0837020876420443,
+            "signed_bias": -0.017047076940296474,
+            "mse_share": 0.012167107439171076,
+            "mean_proj": -0.0706799701125851,
+            "mean_actual": -0.05363289317228863
+          },
+          "goals": {
+            "mae": 0.07986250735270145,
+            "signed_bias": -0.008084156661181006,
+            "mse_share": 0.012734673929330054,
+            "mean_proj": -0.06171704983346963,
+            "mean_actual": -0.05363289317228863
+          },
+          "mae_delta_champ_minus_cand": -0.0038395802893428504,
+          "bias_delta_cand_minus_champ": -0.008962920279115468,
+          "mse_share_delta_cand_minus_champ": -0.00038449435048706036,
+          "mae_delta_goals_minus_cand": -0.0038395802893428504
+        },
+        "xp_bonus": {
+          "champ": {
+            "mae": 0.12828901034425663,
+            "signed_bias": -0.004224294386382127,
+            "mse_share": 0.15485901540582234,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07556793291194693
+          },
+          "cand": {
+            "mae": 0.12902988234744983,
+            "signed_bias": -0.004224294386382128,
+            "mse_share": 0.15319811712979378,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07556793291194693
+          },
+          "goals": {
+            "mae": 0.12902988234744983,
+            "signed_bias": -0.004224294386382128,
+            "mse_share": 0.15468812339135243,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07556793291194693
+          },
+          "mae_delta_champ_minus_cand": -0.0007408720031931992,
+          "bias_delta_cand_minus_champ": -8.673617379884035e-19,
+          "mse_share_delta_cand_minus_champ": -0.0016608982760285551,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_assists": {
+          "champ": {
+            "mae": 0.17092574225863108,
+            "signed_bias": 0.01281224806796065,
+            "mse_share": 0.10418053278072532,
+            "mean_proj": 0.1012408105562265,
+            "mean_actual": 0.08842856248826585
+          },
+          "cand": {
+            "mae": 0.17089863257890184,
+            "signed_bias": 0.012751378449329016,
+            "mse_share": 0.10476613641287448,
+            "mean_proj": 0.10117994093759487,
+            "mean_actual": 0.08842856248826585
+          },
+          "goals": {
+            "mae": 0.17089863257890184,
+            "signed_bias": 0.012751378449329016,
+            "mse_share": 0.1053803570803457,
+            "mean_proj": 0.10117994093759487,
+            "mean_actual": 0.08842856248826585
+          },
+          "mae_delta_champ_minus_cand": 2.7109679729242497e-05,
+          "bias_delta_cand_minus_champ": -6.086961863163362e-05,
+          "mse_share_delta_cand_minus_champ": 0.0005856036321491565,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_minutes": {
+          "champ": {
+            "mae": 0.35136873186600964,
+            "signed_bias": 0.031457268222641915,
+            "mse_share": 0.14468306601079683,
+            "mean_proj": 0.6355313654752859,
+            "mean_actual": 0.604074097252644
+          },
+          "cand": {
+            "mae": 0.35136873186600964,
+            "signed_bias": 0.031457268222641915,
+            "mse_share": 0.14546360999469657,
+            "mean_proj": 0.6355313654752859,
+            "mean_actual": 0.604074097252644
+          },
+          "goals": {
+            "mae": 0.35136873186600964,
+            "signed_bias": 0.031457268222641915,
+            "mse_share": 0.14593155757501935,
+            "mean_proj": 0.6355313654752859,
+            "mean_actual": 0.604074097252644
+          },
+          "mae_delta_champ_minus_cand": 0.0,
+          "bias_delta_cand_minus_champ": 0.0,
+          "mse_share_delta_cand_minus_champ": 0.0007805439838997341,
+          "mae_delta_goals_minus_cand": 0.0
+        }
+      },
+      "position_blend_mae": {
+        "GKP": {
+          "blend_champ_mae": 0.6066739704665399,
+          "blend_cand_mae": 0.6286401204675438,
+          "blend_goals_mae": 0.6083254817168079,
+          "blend_mae_delta_champ_minus_cand": -0.02196615000100388,
+          "blend_mae_delta_champ_minus_goals": -0.0016515112502679674,
+          "n": 3686,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.3313158998661543,
+              "cand_mae": 0.36795533449145545,
+              "delta": -0.03663943462530117
+            },
+            "xp_conceded": {
+              "champ_mae": 0.13136426518385086,
+              "cand_mae": 0.13687442676240844,
+              "delta": -0.005510161578557576
+            }
+          }
+        },
+        "DEF": {
+          "blend_champ_mae": 1.1348430297603105,
+          "blend_cand_mae": 1.1589408336063625,
+          "blend_goals_mae": 1.1320476644125683,
+          "blend_mae_delta_champ_minus_cand": -0.02409780384605198,
+          "blend_mae_delta_champ_minus_goals": 0.0027953653477421625,
+          "n": 10260,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.5242812310450331,
+              "cand_mae": 0.5849357882532703,
+              "delta": -0.0606545572082372
+            },
+            "xp_conceded": {
+              "champ_mae": 0.2015630924473644,
+              "cand_mae": 0.21154309744816907,
+              "delta": -0.009980005000804676
+            }
+          }
+        },
+        "MID": {
+          "blend_champ_mae": 0.9155980802667589,
+          "blend_cand_mae": 0.9127674072465249,
+          "blend_goals_mae": 0.9043412562405446,
+          "blend_mae_delta_champ_minus_cand": 0.002830673020233987,
+          "blend_mae_delta_champ_minus_goals": 0.011256824026214307,
+          "n": 14402,
+          "defence_components": {}
+        },
+        "FWD": {
+          "blend_champ_mae": 0.9802862247782385,
+          "blend_cand_mae": 0.9301288178636894,
+          "blend_goals_mae": 0.9301288178636894,
+          "blend_mae_delta_champ_minus_cand": 0.05015740691454906,
+          "blend_mae_delta_champ_minus_goals": 0.05015740691454906,
+          "n": 3610,
+          "defence_components": {}
+        }
+      }
+    },
+    {
+      "segment": "cold_start",
+      "gw_range": "1-4",
+      "n": 3364,
+      "blend_champ_mae": 1.0833698023077833,
+      "blend_champ_regret": 76.5825,
+      "blend_champ_primary": 76.5825,
+      "blend_champ_primary_name": "decision_regret",
+      "blend_cand_mae": 1.0826837052715532,
+      "blend_cand_regret": 71.81,
+      "blend_cand_primary": 71.81,
+      "blend_cand_primary_name": "decision_regret",
+      "blend_goals_mae": 1.0668174372571197,
+      "blend_goals_regret": 74.22874999999999,
+      "blend_goals_primary": 74.22874999999999,
+      "blend_goals_primary_name": "decision_regret",
+      "blend_mae_delta_champ_minus_cand": 0.0006860970362301266,
+      "blend_mae_delta_champ_minus_goals": 0.016552365050663598,
+      "blend_regret_delta_champ_minus_cand": 4.772499999999994,
+      "blend_cand_wins_primary": true,
+      "blend_regret_delta_champ_minus_goals": 2.353750000000005,
+      "blend_goals_wins_primary": true,
+      "realized_champ_mae": 1.1401257830084304,
+      "realized_champ_regret": 92.5,
+      "realized_champ_primary": 92.5,
+      "realized_champ_primary_name": "decision_regret",
+      "realized_cand_mae": 1.1407839823954082,
+      "realized_cand_regret": 87.0,
+      "realized_cand_primary": 87.0,
+      "realized_cand_primary_name": "decision_regret",
+      "realized_goals_mae": 1.1241114841603628,
+      "realized_goals_regret": 88.75,
+      "realized_goals_primary": 88.75,
+      "realized_goals_primary_name": "decision_regret",
+      "realized_mae_delta_champ_minus_cand": -0.0006581993869778646,
+      "realized_mae_delta_champ_minus_goals": 0.0160142988480676,
+      "realized_regret_delta_champ_minus_cand": 5.5,
+      "realized_cand_wins_primary": true,
+      "realized_regret_delta_champ_minus_goals": 3.75,
+      "realized_goals_wins_primary": true,
+      "process_champ_mae": 1.052898160959857,
+      "process_champ_regret": 67.75750000000001,
+      "process_champ_primary": 67.75750000000001,
+      "process_champ_primary_name": "decision_regret",
+      "process_cand_mae": 1.052058674956628,
+      "process_cand_regret": 63.712500000000006,
+      "process_cand_primary": 63.712500000000006,
+      "process_cand_primary_name": "decision_regret",
+      "process_goals_mae": 1.0369083961423136,
+      "process_goals_regret": 66.80000000000001,
+      "process_goals_primary": 66.80000000000001,
+      "process_goals_primary_name": "decision_regret",
+      "process_mae_delta_champ_minus_cand": 0.0008394860032290286,
+      "process_mae_delta_champ_minus_goals": 0.01598976481754355,
+      "process_regret_delta_champ_minus_cand": 4.045000000000002,
+      "process_cand_wins_primary": true,
+      "process_regret_delta_champ_minus_goals": 0.957499999999996,
+      "process_goals_wins_primary": true,
+      "components": {
+        "xp_goals": {
+          "champ": {
+            "mae": 0.33414802684353,
+            "signed_bias": 0.12491209100371033,
+            "mse_share": 0.2722891658461768,
+            "mean_proj": 0.2577896177575748,
+            "mean_actual": 0.13287752675386444
+          },
+          "cand": {
+            "mae": 0.31042057970629705,
+            "signed_bias": 0.0943856302067535,
+            "mse_share": 0.26100130234475755,
+            "mean_proj": 0.22726315696061797,
+            "mean_actual": 0.13287752675386444
+          },
+          "goals": {
+            "mae": 0.31042057970629705,
+            "signed_bias": 0.0943856302067535,
+            "mse_share": 0.2598669992891234,
+            "mean_proj": 0.22726315696061797,
+            "mean_actual": 0.13287752675386444
+          },
+          "mae_delta_champ_minus_cand": 0.02372744713723296,
+          "bias_delta_cand_minus_champ": -0.030526460796956825,
+          "mse_share_delta_cand_minus_champ": -0.011287863501419249,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_clean_sheet": {
+          "champ": {
+            "mae": 0.3243859286485707,
+            "signed_bias": -0.04784629712545782,
+            "mse_share": 0.237728895629995,
+            "mean_proj": 0.1902630964536147,
+            "mean_actual": 0.23810939357907254
+          },
+          "cand": {
+            "mae": 0.35000008129337606,
+            "signed_bias": 0.0086561126277305,
+            "mse_share": 0.24354132901089307,
+            "mean_proj": 0.246765506206803,
+            "mean_actual": 0.23810939357907254
+          },
+          "goals": {
+            "mae": 0.3243846876560416,
+            "signed_bias": -0.0478364848057849,
+            "mse_share": 0.24298256039263386,
+            "mean_proj": 0.19027290877328762,
+            "mean_actual": 0.23810939357907254
+          },
+          "mae_delta_champ_minus_cand": -0.025614152644805377,
+          "bias_delta_cand_minus_champ": 0.05650240975318832,
+          "mse_share_delta_cand_minus_champ": 0.005812433380898069,
+          "mae_delta_goals_minus_cand": -0.02561539363733445
+        },
+        "xp_conceded": {
+          "champ": {
+            "mae": 0.0813957066410386,
+            "signed_bias": -0.01334028123588447,
+            "mse_share": 0.014941021891633524,
+            "mean_proj": -0.059713646277501586,
+            "mean_actual": -0.04637336504161712
+          },
+          "cand": {
+            "mae": 0.08648186122215616,
+            "signed_bias": -0.02201225523018092,
+            "mse_share": 0.015424483971893974,
+            "mean_proj": -0.06838562027179804,
+            "mean_actual": -0.04637336504161712
+          },
+          "goals": {
+            "mae": 0.0813957066410386,
+            "signed_bias": -0.01334028123588447,
+            "mse_share": 0.015289038709056523,
+            "mean_proj": -0.059713646277501586,
+            "mean_actual": -0.04637336504161712
+          },
+          "mae_delta_champ_minus_cand": -0.005086154581117566,
+          "bias_delta_cand_minus_champ": -0.00867197399429645,
+          "mse_share_delta_cand_minus_champ": 0.0004834620802604498,
+          "mae_delta_goals_minus_cand": -0.005086154581117566
+        },
+        "xp_bonus": {
+          "champ": {
+            "mae": 0.1253169043283935,
+            "signed_bias": -0.0023781212841854954,
+            "mse_share": 0.13752168281127547,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07372175980975029
+          },
+          "cand": {
+            "mae": 0.12609842126418194,
+            "signed_bias": -0.0023781212841854967,
+            "mse_share": 0.1370224569208538,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07372175980975029
+          },
+          "goals": {
+            "mae": 0.12609842126418194,
+            "signed_bias": -0.0023781212841854967,
+            "mse_share": 0.13788153515639337,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07372175980975029
+          },
+          "mae_delta_champ_minus_cand": -0.0007815169357884288,
+          "bias_delta_cand_minus_champ": -1.3010426069826053e-18,
+          "mse_share_delta_cand_minus_champ": -0.0004992258904216729,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_assists": {
+          "champ": {
+            "mae": 0.14733955828640732,
+            "signed_bias": -0.0019348602265597927,
+            "mse_share": 0.09904439083168831,
+            "mean_proj": 0.07743493763313104,
+            "mean_actual": 0.07936979785969084
+          },
+          "cand": {
+            "mae": 0.14728688787503272,
+            "signed_bias": -0.0019932758039741877,
+            "mse_share": 0.10024251485947465,
+            "mean_proj": 0.07737652205571664,
+            "mean_actual": 0.07936979785969084
+          },
+          "goals": {
+            "mae": 0.14728688787503272,
+            "signed_bias": -0.0019932758039741877,
+            "mse_share": 0.10083743009486798,
+            "mean_proj": 0.07737652205571664,
+            "mean_actual": 0.07936979785969084
+          },
+          "mae_delta_champ_minus_cand": 5.267041137460571e-05,
+          "bias_delta_cand_minus_champ": -5.841557741439497e-05,
+          "mse_share_delta_cand_minus_champ": 0.0011981240277863375,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_minutes": {
+          "champ": {
+            "mae": 0.42910588361481844,
+            "signed_bias": 0.05340129211970961,
+            "mse_share": 0.16878758558228987,
+            "mean_proj": 0.6616058105501496,
+            "mean_actual": 0.60820451843044
+          },
+          "cand": {
+            "mae": 0.42910588361481844,
+            "signed_bias": 0.05340129211970961,
+            "mse_share": 0.17213033433281857,
+            "mean_proj": 0.6616058105501496,
+            "mean_actual": 0.60820451843044
+          },
+          "goals": {
+            "mae": 0.42910588361481844,
+            "signed_bias": 0.05340129211970961,
+            "mse_share": 0.17198356449497987,
+            "mean_proj": 0.6616058105501496,
+            "mean_actual": 0.60820451843044
+          },
+          "mae_delta_champ_minus_cand": 0.0,
+          "bias_delta_cand_minus_champ": 0.0,
+          "mse_share_delta_cand_minus_champ": 0.0033427487505287012,
+          "mae_delta_goals_minus_cand": 0.0
+        }
+      },
+      "position_blend_mae": {
+        "GKP": {
+          "blend_champ_mae": 0.8075096118646817,
+          "blend_cand_mae": 0.8304684902771804,
+          "blend_goals_mae": 0.8086936333353664,
+          "blend_mae_delta_champ_minus_cand": -0.022958878412498662,
+          "blend_mae_delta_champ_minus_goals": -0.0011840214706846375,
+          "n": 388,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.43268736460043855,
+              "cand_mae": 0.46320615976910356,
+              "delta": -0.030518795168665014
+            },
+            "xp_conceded": {
+              "champ_mae": 0.14107144315892645,
+              "cand_mae": 0.14958128250126906,
+              "delta": -0.008509839342342618
+            }
+          }
+        },
+        "DEF": {
+          "blend_champ_mae": 1.283897210503517,
+          "blend_cand_mae": 1.3073345705870068,
+          "blend_goals_mae": 1.2818854944027651,
+          "blend_mae_delta_champ_minus_cand": -0.023437360083489844,
+          "blend_mae_delta_champ_minus_goals": 0.0020117161007517925,
+          "n": 1080,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.6295648534255859,
+              "cand_mae": 0.6768301730281286,
+              "delta": -0.047265319602542766
+            },
+            "xp_conceded": {
+              "champ_mae": 0.20285133073591696,
+              "cand_mae": 0.21563652179707493,
+              "delta": -0.012785191061157969
+            }
+          }
+        },
+        "MID": {
+          "blend_champ_mae": 1.0147667490270338,
+          "blend_cand_mae": 1.0105429194723494,
+          "blend_goals_mae": 0.999038645839005,
+          "blend_mae_delta_champ_minus_cand": 0.004223829554684366,
+          "blend_mae_delta_champ_minus_goals": 0.015728103188028753,
+          "n": 1516,
+          "defence_components": {}
+        },
+        "FWD": {
+          "blend_champ_mae": 1.0688076491871208,
+          "blend_cand_mae": 0.9895310740839747,
+          "blend_goals_mae": 0.9895310740839747,
+          "blend_mae_delta_champ_minus_cand": 0.07927657510314612,
+          "blend_mae_delta_champ_minus_goals": 0.07927657510314612,
+          "n": 380,
+          "defence_components": {}
+        }
+      }
+    },
+    {
+      "segment": "early_mid",
+      "gw_range": "5-19",
+      "n": 12615,
+      "blend_champ_mae": 0.9636130645501336,
+      "blend_champ_regret": 76.40533333333333,
+      "blend_champ_primary": 76.40533333333333,
+      "blend_champ_primary_name": "decision_regret",
+      "blend_cand_mae": 0.9673880236323367,
+      "blend_cand_regret": 76.52333333333333,
+      "blend_cand_primary": 76.52333333333333,
+      "blend_cand_primary_name": "decision_regret",
+      "blend_goals_mae": 0.9514017995257215,
+      "blend_goals_regret": 76.964,
+      "blend_goals_primary": 76.964,
+      "blend_goals_primary_name": "decision_regret",
+      "blend_mae_delta_champ_minus_cand": -0.0037749590822030443,
+      "blend_mae_delta_champ_minus_goals": 0.012211265024412166,
+      "blend_regret_delta_champ_minus_cand": -0.117999999999995,
+      "blend_cand_wins_primary": false,
+      "blend_regret_delta_champ_minus_goals": -0.5586666666666673,
+      "blend_goals_wins_primary": false,
+      "realized_champ_mae": 1.0416779889026506,
+      "realized_champ_regret": 94.8,
+      "realized_champ_primary": 94.8,
+      "realized_champ_primary_name": "decision_regret",
+      "realized_cand_mae": 1.046621674581169,
+      "realized_cand_regret": 94.53333333333333,
+      "realized_cand_primary": 94.53333333333333,
+      "realized_cand_primary_name": "decision_regret",
+      "realized_goals_mae": 1.02988805134715,
+      "realized_goals_regret": 95.46666666666667,
+      "realized_goals_primary": 95.46666666666667,
+      "realized_goals_primary_name": "decision_regret",
+      "realized_mae_delta_champ_minus_cand": -0.004943685678518328,
+      "realized_mae_delta_champ_minus_goals": 0.011789937555500618,
+      "realized_regret_delta_champ_minus_cand": 0.2666666666666657,
+      "realized_cand_wins_primary": true,
+      "realized_regret_delta_champ_minus_goals": -0.6666666666666714,
+      "realized_goals_wins_primary": false,
+      "process_champ_mae": 0.9227891473479322,
+      "process_champ_regret": 64.30199999999999,
+      "process_champ_primary": 64.30199999999999,
+      "process_champ_primary_name": "decision_regret",
+      "process_cand_mae": 0.9252868011915919,
+      "process_cand_regret": 64.80466666666668,
+      "process_cand_primary": 64.80466666666668,
+      "process_cand_primary_name": "decision_regret",
+      "process_goals_mae": 0.9096913870926414,
+      "process_goals_regret": 64.75266666666667,
+      "process_goals_primary": 64.75266666666667,
+      "process_goals_primary_name": "decision_regret",
+      "process_mae_delta_champ_minus_cand": -0.0024976538436597417,
+      "process_mae_delta_champ_minus_goals": 0.013097760255290747,
+      "process_regret_delta_champ_minus_cand": -0.5026666666666841,
+      "process_cand_wins_primary": false,
+      "process_regret_delta_champ_minus_goals": -0.45066666666667743,
+      "process_goals_wins_primary": false,
+      "components": {
+        "xp_goals": {
+          "champ": {
+            "mae": 0.335081037148553,
+            "signed_bias": 0.07770893819428833,
+            "mse_share": 0.33627507585870536,
+            "mean_proj": 0.23521983791684084,
+            "mean_actual": 0.15751089972255253
+          },
+          "cand": {
+            "mae": 0.31419335672545284,
+            "signed_bias": 0.04877525045302833,
+            "mse_share": 0.3272294224716883,
+            "mean_proj": 0.20628615017558086,
+            "mean_actual": 0.15751089972255253
+          },
+          "goals": {
+            "mae": 0.31419335672545284,
+            "signed_bias": 0.04877525045302833,
+            "mse_share": 0.3297540140011692,
+            "mean_proj": 0.20628615017558086,
+            "mean_actual": 0.15751089972255253
+          },
+          "mae_delta_champ_minus_cand": 0.02088768042310013,
+          "bias_delta_cand_minus_champ": -0.028933687741259997,
+          "mse_share_delta_cand_minus_champ": -0.009045653387017072,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_clean_sheet": {
+          "champ": {
+            "mae": 0.2560859652161395,
+            "signed_bias": 0.02983861683653171,
+            "mse_share": 0.1692807477081571,
+            "mean_proj": 0.17680651219919521,
+            "mean_actual": 0.1469678953626635
+          },
+          "cand": {
+            "mae": 0.28871097254085415,
+            "signed_bias": 0.08233963429390552,
+            "mse_share": 0.1787201896813404,
+            "mean_proj": 0.229307529656569,
+            "mean_actual": 0.1469678953626635
+          },
+          "goals": {
+            "mae": 0.25608827928227235,
+            "signed_bias": 0.02984373176486188,
+            "mse_share": 0.17153561879830526,
+            "mean_proj": 0.17681162712752538,
+            "mean_actual": 0.1469678953626635
+          },
+          "mae_delta_champ_minus_cand": -0.03262500732471463,
+          "bias_delta_cand_minus_champ": 0.05250101745737381,
+          "mse_share_delta_cand_minus_champ": 0.009439441973183305,
+          "mae_delta_goals_minus_cand": -0.0326226932585818
+        },
+        "xp_conceded": {
+          "champ": {
+            "mae": 0.08181255336028391,
+            "signed_bias": -0.0037725454674372,
+            "mse_share": 0.01367593302723931,
+            "mean_proj": -0.061957246220508945,
+            "mean_actual": -0.05818470075307174
+          },
+          "cand": {
+            "mae": 0.08525288125124955,
+            "signed_bias": -0.012770348507056835,
+            "mse_share": 0.013379357926021638,
+            "mean_proj": -0.07095504926012858,
+            "mean_actual": -0.05818470075307174
+          },
+          "goals": {
+            "mae": 0.08181255336028391,
+            "signed_bias": -0.0037725454674372,
+            "mse_share": 0.013882205679852369,
+            "mean_proj": -0.061957246220508945,
+            "mean_actual": -0.05818470075307174
+          },
+          "mae_delta_champ_minus_cand": -0.0034403278909656415,
+          "bias_delta_cand_minus_champ": -0.008997803039619634,
+          "mse_share_delta_cand_minus_champ": -0.0002965751012176717,
+          "mae_delta_goals_minus_cand": -0.0034403278909656415
+        },
+        "xp_bonus": {
+          "champ": {
+            "mae": 0.12762592684934476,
+            "signed_bias": -0.0045977011494252856,
+            "mse_share": 0.15531830564350838,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07594133967499009
+          },
+          "cand": {
+            "mae": 0.12845673560214577,
+            "signed_bias": -0.004597701149425286,
+            "mse_share": 0.1533535697097391,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07594133967499009
+          },
+          "goals": {
+            "mae": 0.12845673560214577,
+            "signed_bias": -0.004597701149425286,
+            "mse_share": 0.1551675366115606,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.07594133967499009
+          },
+          "mae_delta_champ_minus_cand": -0.0008308087528010044,
+          "bias_delta_cand_minus_champ": -8.673617379884035e-19,
+          "mse_share_delta_cand_minus_champ": -0.0019647359337692794,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_assists": {
+          "champ": {
+            "mae": 0.17867868431586026,
+            "signed_bias": 0.015378650448895963,
+            "mse_share": 0.10590516620603742,
+            "mean_proj": 0.10693631989003746,
+            "mean_actual": 0.09155766944114149
+          },
+          "cand": {
+            "mae": 0.17865755420420626,
+            "signed_bias": 0.015336163480781371,
+            "mse_share": 0.10679928522534347,
+            "mean_proj": 0.10689383292192288,
+            "mean_actual": 0.09155766944114149
+          },
+          "goals": {
+            "mae": 0.17865755420420626,
+            "signed_bias": 0.015336163480781371,
+            "mse_share": 0.10748811361298234,
+            "mean_proj": 0.10689383292192288,
+            "mean_actual": 0.09155766944114149
+          },
+          "mae_delta_champ_minus_cand": 2.1130111653999695e-05,
+          "bias_delta_cand_minus_champ": -4.248696811459153e-05,
+          "mse_share_delta_cand_minus_champ": 0.0008941190193060555,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_minutes": {
+          "champ": {
+            "mae": 0.34556205210642726,
+            "signed_bias": 0.03490200598291407,
+            "mse_share": 0.13493803260279982,
+            "mean_proj": 0.6409265799028506,
+            "mean_actual": 0.6060245739199366
+          },
+          "cand": {
+            "mae": 0.34556205210642726,
+            "signed_bias": 0.03490200598291407,
+            "mse_share": 0.13569175113395238,
+            "mean_proj": 0.6409265799028506,
+            "mean_actual": 0.6060245739199366
+          },
+          "goals": {
+            "mae": 0.34556205210642726,
+            "signed_bias": 0.03490200598291407,
+            "mse_share": 0.13647378701900584,
+            "mean_proj": 0.6409265799028506,
+            "mean_actual": 0.6060245739199366
+          },
+          "mae_delta_champ_minus_cand": 0.0,
+          "bias_delta_cand_minus_champ": 0.0,
+          "mse_share_delta_cand_minus_champ": 0.0007537185311525529,
+          "mae_delta_goals_minus_cand": 0.0
+        }
+      },
+      "position_blend_mae": {
+        "GKP": {
+          "blend_champ_mae": 0.5753586655232582,
+          "blend_cand_mae": 0.6005646481424428,
+          "blend_goals_mae": 0.5770161448784725,
+          "blend_mae_delta_champ_minus_cand": -0.025205982619184608,
+          "blend_mae_delta_champ_minus_goals": -0.0016574793552143197,
+          "n": 1455,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.32503289840032457,
+              "cand_mae": 0.36618971943478823,
+              "delta": -0.041156821034463664
+            },
+            "xp_conceded": {
+              "champ_mae": 0.13673265936897114,
+              "cand_mae": 0.14201729071656494,
+              "delta": -0.005284631347593799
+            }
+          }
+        },
+        "DEF": {
+          "blend_champ_mae": 1.1470488556807281,
+          "blend_cand_mae": 1.1723877727363268,
+          "blend_goals_mae": 1.1438734941800706,
+          "blend_mae_delta_champ_minus_cand": -0.025338917055598653,
+          "blend_mae_delta_champ_minus_goals": 0.0031753615006575586,
+          "n": 4050,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.5142389028203121,
+              "cand_mae": 0.5787099166666022,
+              "delta": -0.06447101384629006
+            },
+            "xp_conceded": {
+              "champ_mae": 0.20570847932299471,
+              "cand_mae": 0.2145259108622003,
+              "delta": -0.008817431539205584
+            }
+          }
+        },
+        "MID": {
+          "blend_champ_mae": 0.930078871441056,
+          "blend_cand_mae": 0.9266856963288949,
+          "blend_goals_mae": 0.917552834991509,
+          "blend_mae_delta_champ_minus_cand": 0.0033931751121611953,
+          "blend_mae_delta_champ_minus_goals": 0.012526036449547084,
+          "n": 5685,
+          "defence_components": {}
+        },
+        "FWD": {
+          "blend_champ_mae": 0.9724811939047308,
+          "blend_cand_mae": 0.9216839942896725,
+          "blend_goals_mae": 0.9216839942896725,
+          "blend_mae_delta_champ_minus_cand": 0.05079719961505824,
+          "blend_mae_delta_champ_minus_goals": 0.05079719961505824,
+          "n": 1425,
+          "defence_components": {}
+        }
+      }
+    },
+    {
+      "segment": "late",
+      "gw_range": "20-38",
+      "n": 15979,
+      "blend_champ_mae": 0.9264992640132946,
+      "blend_champ_regret": 67.0542105263158,
+      "blend_champ_primary": 67.0542105263158,
+      "blend_champ_primary_name": "decision_regret",
+      "blend_cand_mae": 0.9303206562263963,
+      "blend_cand_regret": 67.81184210526315,
+      "blend_cand_primary": 67.81184210526315,
+      "blend_cand_primary_name": "decision_regret",
+      "blend_goals_mae": 0.916733025057602,
+      "blend_goals_regret": 68.73184210526317,
+      "blend_goals_primary": 68.73184210526317,
+      "blend_goals_primary_name": "decision_regret",
+      "blend_mae_delta_champ_minus_cand": -0.0038213922131016265,
+      "blend_mae_delta_champ_minus_goals": 0.009766238955692619,
+      "blend_regret_delta_champ_minus_cand": -0.757631578947354,
+      "blend_cand_wins_primary": false,
+      "blend_regret_delta_champ_minus_goals": -1.67763157894737,
+      "blend_goals_wins_primary": false,
+      "realized_champ_mae": 1.00437553858588,
+      "realized_champ_regret": 82.94736842105263,
+      "realized_champ_primary": 82.94736842105263,
+      "realized_champ_primary_name": "decision_regret",
+      "realized_cand_mae": 1.008082869777479,
+      "realized_cand_regret": 83.78947368421052,
+      "realized_cand_primary": 83.78947368421052,
+      "realized_cand_primary_name": "decision_regret",
+      "realized_goals_mae": 0.9933068396854883,
+      "realized_goals_regret": 84.78947368421052,
+      "realized_goals_primary": 84.78947368421052,
+      "realized_goals_primary_name": "decision_regret",
+      "realized_mae_delta_champ_minus_cand": -0.0037073311915991614,
+      "realized_mae_delta_champ_minus_goals": 0.011068698900391638,
+      "realized_regret_delta_champ_minus_cand": -0.8421052631578902,
+      "realized_cand_wins_primary": false,
+      "realized_regret_delta_champ_minus_goals": -1.8421052631578902,
+      "realized_goals_wins_primary": false,
+      "process_champ_mae": 0.8909178020371347,
+      "process_champ_regret": 58.45052631578947,
+      "process_champ_primary": 58.45052631578947,
+      "process_champ_primary_name": "decision_regret",
+      "process_cand_mae": 0.8948959800331086,
+      "process_cand_regret": 59.123684210526314,
+      "process_cand_primary": 59.123684210526314,
+      "process_cand_primary_name": "decision_regret",
+      "process_goals_mae": 0.8818987899722225,
+      "process_goals_regret": 59.96368421052631,
+      "process_goals_primary": 59.96368421052631,
+      "process_goals_primary_name": "decision_regret",
+      "process_mae_delta_champ_minus_cand": -0.003978177995973886,
+      "process_mae_delta_champ_minus_goals": 0.00901901206491218,
+      "process_regret_delta_champ_minus_cand": -0.6731578947368462,
+      "process_cand_wins_primary": false,
+      "process_regret_delta_champ_minus_goals": -1.5131578947368425,
+      "process_goals_wins_primary": false,
+      "components": {
+        "xp_goals": {
+          "champ": {
+            "mae": 0.30562138412847023,
+            "signed_bias": 0.06148427996607702,
+            "mse_share": 0.3323941034160037,
+            "mean_proj": 0.21124333873070555,
+            "mean_actual": 0.14975905876462858
+          },
+          "cand": {
+            "mae": 0.2872451539226176,
+            "signed_bias": 0.03556423157420771,
+            "mse_share": 0.32784360807413004,
+            "mean_proj": 0.1853232903388363,
+            "mean_actual": 0.14975905876462858
+          },
+          "goals": {
+            "mae": 0.2872451539226176,
+            "signed_bias": 0.03556423157420771,
+            "mse_share": 0.32936257268557906,
+            "mean_proj": 0.1853232903388363,
+            "mean_actual": 0.14975905876462858
+          },
+          "mae_delta_champ_minus_cand": 0.018376230205852606,
+          "bias_delta_cand_minus_champ": -0.02592004839186931,
+          "mse_share_delta_cand_minus_champ": -0.004550495341873628,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_clean_sheet": {
+          "champ": {
+            "mae": 0.2502106990884059,
+            "signed_bias": 0.014525423224723957,
+            "mse_share": 0.1698610614575327,
+            "mean_proj": 0.16440964626746757,
+            "mean_actual": 0.1498842230427436
+          },
+          "cand": {
+            "mae": 0.2800235549678109,
+            "signed_bias": 0.0633542756892911,
+            "mse_share": 0.17592812598084484,
+            "mean_proj": 0.2132384987320347,
+            "mean_actual": 0.1498842230427436
+          },
+          "goals": {
+            "mae": 0.25021612169567725,
+            "signed_bias": 0.014537093533773466,
+            "mse_share": 0.1712799470951872,
+            "mean_proj": 0.1644213165765171,
+            "mean_actual": 0.1498842230427436
+          },
+          "mae_delta_champ_minus_cand": -0.02981285587940502,
+          "bias_delta_cand_minus_champ": 0.04882885246456714,
+          "mse_share_delta_cand_minus_champ": 0.006067064523312127,
+          "mae_delta_goals_minus_cand": -0.029807433272133643
+        },
+        "xp_conceded": {
+          "champ": {
+            "mae": 0.07800021854917064,
+            "signed_bias": -0.01038150769314644,
+            "mse_share": 0.011093398647976004,
+            "mean_proj": -0.06194919027653714,
+            "mean_actual": -0.0515676825833907
+          },
+          "cand": {
+            "mae": 0.081892561407385,
+            "signed_bias": -0.019378140800246826,
+            "mse_share": 0.010453130283249243,
+            "mean_proj": -0.07094582338363753,
+            "mean_actual": -0.0515676825833907
+          },
+          "goals": {
+            "mae": 0.07800021854917064,
+            "signed_bias": -0.01038150769314644,
+            "mse_share": 0.011232403307123471,
+            "mean_proj": -0.06194919027653714,
+            "mean_actual": -0.0515676825833907
+          },
+          "mae_delta_champ_minus_cand": -0.0038923428582143677,
+          "bias_delta_cand_minus_champ": -0.008996633107100386,
+          "mse_share_delta_cand_minus_champ": -0.0006402683647267603,
+          "mae_delta_goals_minus_cand": -0.0038923428582143677
+        },
+        "xp_bonus": {
+          "champ": {
+            "mae": 0.12943820384357932,
+            "signed_bias": -0.004318167594968397,
+            "mse_share": 0.1584678827746934,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.0756618061205332
+          },
+          "cand": {
+            "mae": 0.13009951632179897,
+            "signed_bias": -0.004318167594968397,
+            "mse_share": 0.15672785489559418,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.0756618061205332
+          },
+          "goals": {
+            "mae": 0.13009951632179897,
+            "signed_bias": -0.004318167594968397,
+            "mse_share": 0.15811422672857067,
+            "mean_proj": 0.0713436385255648,
+            "mean_actual": 0.0756618061205332
+          },
+          "mae_delta_champ_minus_cand": -0.0006613124782196556,
+          "bias_delta_cand_minus_champ": 0.0,
+          "mse_share_delta_cand_minus_champ": -0.0017400278790992152,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_assists": {
+          "champ": {
+            "mae": 0.16977051094444465,
+            "signed_bias": 0.01389079530291076,
+            "mse_share": 0.10396444645075757,
+            "mean_proj": 0.10175611853965899,
+            "mean_actual": 0.08786532323674823
+          },
+          "cand": {
+            "mae": 0.16974406175973922,
+            "signed_bias": 0.013814896425193615,
+            "mse_share": 0.10414817784739934,
+            "mean_proj": 0.10168021966194185,
+            "mean_actual": 0.08786532323674823
+          },
+          "goals": {
+            "mae": 0.16974406175973922,
+            "signed_bias": 0.013814896425193615,
+            "mse_share": 0.10471543523822702,
+            "mean_proj": 0.10168021966194185,
+            "mean_actual": 0.08786532323674823
+          },
+          "mae_delta_champ_minus_cand": 2.644918470542934e-05,
+          "bias_delta_cand_minus_champ": -7.589887771714508e-05,
+          "mse_share_delta_cand_minus_champ": 0.00018373139664176752,
+          "mae_delta_goals_minus_cand": 0.0
+        },
+        "xp_minutes": {
+          "champ": {
+            "mae": 0.33958723657119394,
+            "signed_bias": 0.024117943907254913,
+            "mse_share": 0.14703299852869237,
+            "mean_proj": 0.6257826288061847,
+            "mean_actual": 0.6016646848989299
+          },
+          "cand": {
+            "mae": 0.33958723657119394,
+            "signed_bias": 0.024117943907254913,
+            "mse_share": 0.14732080793337393,
+            "mean_proj": 0.6257826288061847,
+            "mean_actual": 0.6016646848989299
+          },
+          "goals": {
+            "mae": 0.33958723657119394,
+            "signed_bias": 0.024117943907254913,
+            "mse_share": 0.1476298132075714,
+            "mean_proj": 0.6257826288061847,
+            "mean_actual": 0.6016646848989299
+          },
+          "mae_delta_champ_minus_cand": 0.0,
+          "bias_delta_cand_minus_champ": 0.0,
+          "mse_share_delta_cand_minus_champ": 0.000287809404681566,
+          "mae_delta_goals_minus_cand": 0.0
+        }
+      },
+      "position_blend_mae": {
+        "GKP": {
+          "blend_champ_mae": 0.589115391969522,
+          "blend_cand_mae": 0.6083147839221739,
+          "blend_goals_mae": 0.5908606104589551,
+          "blend_mae_delta_champ_minus_cand": -0.019199391952651856,
+          "blend_mae_delta_champ_minus_goals": -0.001745218489433098,
+          "n": 1843,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.3149348031845915,
+              "cand_mae": 0.34929643579353004,
+              "delta": -0.03436163260893854
+            },
+            "xp_conceded": {
+              "champ_mae": 0.12508244283242417,
+              "cand_mae": 0.13013914348515634,
+              "delta": -0.005056700652732171
+            }
+          }
+        },
+        "DEF": {
+          "blend_champ_mae": 1.0938270238772003,
+          "blend_cand_mae": 1.117084042297308,
+          "blend_goals_mae": 1.091166676703446,
+          "blend_mae_delta_champ_minus_cand": -0.023257018420107745,
+          "blend_mae_delta_champ_minus_goals": 0.002660347173754296,
+          "n": 5130,
+          "defence_components": {
+            "xp_clean_sheet": {
+              "champ_mae": 0.5100444117739069,
+              "cand_mae": 0.5705047637638274,
+              "delta": -0.0604603519899205
+            },
+            "xp_conceded": {
+              "champ_mae": 0.19801921053743468,
+              "cand_mae": 0.2083264712057431,
+              "delta": -0.010307260668308421
+            }
+          }
+        },
+        "MID": {
+          "blend_champ_mae": 0.883288262232256,
+          "blend_cand_mae": 0.8811949659234279,
+          "blend_goals_mae": 0.8739747699427389,
+          "blend_mae_delta_champ_minus_cand": 0.002093296308828041,
+          "blend_mae_delta_champ_minus_goals": 0.009313492289517056,
+          "n": 7201,
+          "defence_components": {}
+        },
+        "FWD": {
+          "blend_champ_mae": 0.967812001908085,
+          "blend_cand_mae": 0.9242900456915374,
+          "blend_goals_mae": 0.9242900456915374,
+          "blend_mae_delta_champ_minus_cand": 0.04352195621654764,
+          "blend_mae_delta_champ_minus_goals": 0.04352195621654764,
+          "n": 1805,
+          "defence_components": {}
+        }
+      }
+    }
+  ]
+}

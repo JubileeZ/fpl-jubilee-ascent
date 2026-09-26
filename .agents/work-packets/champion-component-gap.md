@@ -1,23 +1,25 @@
 # Active Task: Challenger beats Champion (goals then defence link)
 
-- **Status:** #122 grilling in progress (claimed); pause mid-grill
+- **Status:** #123 closed; frontier #124 grilling
 - **Objective:** Flip Champion via goals + Poisson defence-link Candidate on 2025-26 Historical Promotion Gate
 - **Acceptance:** Map Destination met; soft pre-gate PASS (#120); Blended gate PASS + `--apply`
-- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#122 Path after defence_link FAIL](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/122)
+- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#124 Re-grill route after defence_link segment diagnosis](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/124)
 
 ## Work Packet (SFDBN)
 
-- **Status:** #111–#121 closed. **#122** claimed; grill open (round 3 pending).
-- **Files:** Slate unchanged (`hold_chase_challenger` Champion; `defence_link_challenger` Candidate). Soft PASS. No #121 apply evidence.
-- **Decisions:** #121 Blended FAIL (primary↑; 1/3 segments; Realized/Process MAE); no `--apply`. #122 grill so far: bonus-first residual arm; `xp_bonus` only; soft extends to bonus; new Candidate subclassing `defence_link_challenger`. Round 3 open: Q5 research-then-grill; Q6 defer soft-bar ticket; Q7 fog segments.
-- **Blocked:** None
-- **Next:** Resume #122 → finish Q5–Q7 → resolve + graduate research/lever/soft tickets
+- **Status:** #111–#123 closed. **#124** frontier (grilling). Bonus chain #125–#128 blocked behind #124.
+- **Files:** Note `docs/research/champion-component-gap/segment-loss-121.md` + companions. Slate unchanged (`hold_chase_challenger` Champion; `defence_link_challenger` Candidate). Soft PASS. No #121 apply.
+- **Decisions:** #123 = won cold_start only; lost early_mid+late on Blended decision_regret; combined primary↑ via cold_start margin; CS all-pool inflate / GKP+DEF MAE drive losses. #122 path = provisional bonus-first hard-gated on #124.
+- **Blocked:** Bonus path until #124
+- **Next:** #124 route grill (confirm bonus or redirect) using segment-loss note
 
 ## Todo
-- [x] #111–#119 build + admission
-- [x] #120 soft-pre-gate conceded bar
-- [x] #121 Champion dry-run / `--apply` (FAIL; no apply)
-- [ ] **#122** Path after Blended FAIL (grill pause; Q1–Q4 locked)
+- [x] #111–#121 build + admission + soft + dry-run FAIL
+- [x] #122 Path after Blended FAIL
+- [x] #123 Segment-loss diagnosis (research)
+- [ ] **#124** Route re-grill
+- [ ] #125–#128 bonus chain (if route confirms)
 
 ## Blockers / Notes
-- Handoff: `challenger-beats-champion` → map #110 / #122 (claimed; mid-grill)
+- Handoff: `challenger-beats-champion` → map #110 / #124
+- Segment note: early_mid+late Blended regret loss; `xp_clean_sheet` all-pool overprediction vs mins_60 k_cs
