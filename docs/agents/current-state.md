@@ -6,13 +6,15 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Champion dry-run/--apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/131). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Grill [Path after bonus_arm Champion gate FAIL](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/132) (HITL). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
 **Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Wire+calibrate (#129). Soft+admit (#130): soft checklist PASS; `bonus_arm_challenger` replaced `participation_state_hybrid` (beat-one rule); lost to parent `defence_link_challenger`.
 
 **Slate:** Champion `hold_chase_challenger`; Candidates `defence_link_challenger`, `bonus_arm_challenger`.
 
-**Next:** #131 Champion dry-run for `bonus_arm_challenger`. Risk: loses Blended primary to own parent → flip unlikely. Live Validation only after flip.
+**#131 FAIL (no apply):** bonus_arm 2/3 segs (early_mid fixed) but late −1.55 + Realized/Process MAE regress; defence_link 1/3. Companion `champion_dry_run_131.json`.
+
+**Next:** #132 route re-grill (HITL). Live Validation only after flip.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 

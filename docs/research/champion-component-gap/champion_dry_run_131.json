@@ -1,0 +1,59 @@
+{
+  "champion": "hold_chase_challenger",
+  "evaluation_season": "2025-26",
+  "gw_range": "1-38",
+  "seed_season": "2024-25",
+  "applied": false,
+  "candidates": {
+    "bonus_arm_challenger": {
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -0.4972368421052522,
+      "segment_wins": 2,
+      "segment_deltas": {
+        "cold_start": 0.6149999999999949,
+        "early_mid": 0.5443333333333271,
+        "late": -1.5536842105263133
+      },
+      "realized_mae": [
+        1.0333896894396108,
+        1.0357522255742928
+      ],
+      "process_mae": [
+        0.920549160335894,
+        0.9254535427807008
+      ],
+      "reasons": [
+        "combined primary metric did not improve",
+        "failed one or more Champion guardrails",
+        "regressed Realized MAE guardrail (1.0358 vs 1.0334)",
+        "regressed Process MAE guardrail (0.9255 vs 0.9205)"
+      ]
+    },
+    "defence_link_challenger": {
+      "passed": false,
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": 0.07697368421052886,
+      "segment_wins": 1,
+      "segment_deltas": {
+        "cold_start": 4.772499999999994,
+        "early_mid": -0.117999999999995,
+        "late": -0.757631578947354
+      },
+      "realized_mae": [
+        1.0333896894396108,
+        1.037264094054507
+      ],
+      "process_mae": [
+        0.920549160335894,
+        0.9234357983770909
+      ],
+      "reasons": [
+        "won only 1/3 seasonal segments",
+        "failed one or more Champion guardrails",
+        "regressed Realized MAE guardrail (1.0373 vs 1.0334)",
+        "regressed Process MAE guardrail (0.9234 vs 0.9205)"
+      ]
+    }
+  }
+}

@@ -1,22 +1,22 @@
 # Active Task: Challenger beats Champion (goals then defence link)
 
-- **Status:** #130 closed; frontier #131 task (unclaimed)
+- **Status:** #131 closed FAIL; frontier #132 grilling (HITL, unclaimed)
 - **Objective:** Flip Champion via goals + Poisson defence-link + bonus-arm Candidate on 2025-26 Historical Promotion Gate
 - **Acceptance:** Map Destination met; soft pre-gate PASS; Blended gate PASS + `--apply`
-- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#131 Champion dry-run/--apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/131)
+- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#132 Path after bonus_arm Champion gate FAIL](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/132)
 
 ## Work Packet (SFDBN)
 
-- **Status:** #111–#130 closed. **#131** frontier (dry-run/`--apply`).
-- **Files:** `soft_admit_130.py`; `soft_pre_gate_130.json`; `admission_race_130.json`; `config/model_selection.json` slate = `defence_link_challenger` + `bonus_arm_challenger`.
-- **Decisions:** #130 soft 4/4 PASS (bonus via bias↓ vs Champion); admission beat-one → replace `participation_state_hybrid`.
-- **Blocked:** none; `--apply` gated on #131 dry-run PASS
-- **Next:** Claim #131 → `commands.evaluate_model_promotion` dry-run for `bonus_arm_challenger`
+- **Status:** #111–#131 closed. **#132** frontier (route grill, HITL).
+- **Files:** `champion_dry_run_131.json`; note § Champion dry-run (#131). Slate = `defence_link_challenger` + `bonus_arm_challenger`.
+- **Decisions:** #131 FAIL both, no apply. bonus_arm 2/3 segs; late −1.55; Realized/Process MAE regress.
+- **Blocked:** flip until #132 picks route
+- **Next:** Grill #132 with user (grilling + domain-modeling skills)
 
 ## Todo
-- [x] #126–#130 stub / levers / soft-bar / calibrate / soft+admit
-- [ ] #131 Dry-run / `--apply`
+- [x] #126–#131 stub → dry-run
+- [ ] **#132** Route re-grill
 
 ## Blockers / Notes
-- Handoff: `challenger-beats-champion` → map #110 / #131
-- Risk: `bonus_arm` lost Blended primary to parent `defence_link` (Δ −0.57, 1/3 segs) → Champion flip unlikely
+- Handoff: `challenger-beats-champion` → map #110 / #132
+- Fail signature: late GW20–38 segment + Realized/Process MAE guardrails

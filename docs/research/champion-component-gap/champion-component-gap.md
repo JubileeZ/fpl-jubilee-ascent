@@ -1,6 +1,6 @@
 # Champion Event Component gap (mse_share)
 
-**Updated**: 2026-09-27T13:30:00+07:00  
+**Updated**: 2026-09-27T14:10:00+07:00  
 **Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` + `defence_link_challenger` + `bonus_arm_challenger` (#129 weights/T)  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
@@ -174,6 +174,17 @@ Runner [soft_admit_130.py](soft_admit_130.py). Companions: [soft_pre_gate_130.js
 - **Admission:** beat `participation_state_hybrid` (Δpri +0.59, 2/3 segs, guardrails ok); lost to `defence_link_challenger` (Δpri −0.57, 1/3, Process MAE guardrail regress).
 - **#112 beat-one rule:** replace `participation_state_hybrid`. Slate now `defence_link_challenger` + `bonus_arm_challenger`.
 - Risk for #131: incoming loses to own parent on Blended primary → Champion gate flip unlikely without new lever.
+
+## Champion dry-run (#131)
+
+`commands.evaluate_model_promotion` 2025-26 GW1–38 seed 2024-25, no `--apply`. Companion [champion_dry_run_131.json](champion_dry_run_131.json) `candidates.<model>.passed` / `segment_deltas`.
+
+| Candidate | Blended primary Δ (decision_regret) | Segments | cold / early_mid / late Δ | Realized MAE | Process MAE |
+|---|---:|---|---|---|---|
+| `bonus_arm_challenger` | −0.50 | 2/3 | +0.61 / +0.54 / **−1.55** | 1.0358 vs 1.0334 ↑ | 0.9255 vs 0.9205 ↑ |
+| `defence_link_challenger` | +0.08 | 1/3 | +4.77 / −0.12 / −0.76 | 1.0373 vs 1.0334 ↑ | 0.9234 vs 0.9205 ↑ |
+
+**FAIL both; no apply.** Bonus arm fixes early_mid (segments 1/3→2/3) but late loss dominates combined primary; both regress Realized + Process MAE guardrails. Fail signature = **late segment + MAE guardrails**. Route → re-grill ticket.
 
 ## Decision
 
