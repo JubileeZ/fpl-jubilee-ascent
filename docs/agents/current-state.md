@@ -6,13 +6,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Soft pre-gate + admission race for bonus_arm](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/130). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Task [Champion dry-run/--apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/131). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
 
-**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Wire+calibrate (#129): `_XBPS_WEIGHTS`=(0.1,96,48,48,24,8) `_BONUS_SOFTMAX_T`=8.0; mins_60 bias≈−0.067 (τ not cleared). Soft #128 locked.
+**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Wire+calibrate (#129). Soft+admit (#130): soft checklist PASS; `bonus_arm_challenger` replaced `participation_state_hybrid` (beat-one rule); lost to parent `defence_link_challenger`.
 
-**This session:** closed #129. Frontier = #130 (unclaimed).
+**Slate:** Champion `hold_chase_challenger`; Candidates `defence_link_challenger`, `bonus_arm_challenger`.
 
-**After #130:** #131 dry-run/`--apply`. Live Validation only after flip.
+**Next:** #131 Champion dry-run for `bonus_arm_challenger`. Risk: loses Blended primary to own parent → flip unlikely. Live Validation only after flip.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 

@@ -1,6 +1,6 @@
 # Champion Event Component gap (mse_share)
 
-**Updated**: 2026-09-27T03:00:00+07:00  
+**Updated**: 2026-09-27T13:30:00+07:00  
 **Data stamp**: 2025-26 archive GW1–38; 2026-27 finished GW1–5; companions include `goals_path_challenger` + `defence_link_challenger` + `bonus_arm_challenger` (#129 weights/T)  
 **Season**: 2025/26 gate · 2026/27 sanity  
 **Status**: Active  
@@ -164,14 +164,23 @@ Wired + calibrated `bonus_arm_challenger` (subclass `defence_link`; non-flat BPS
 - `_BONUS_SOFTMAX_T` = `8.0` (early_mid↑ + 2/3 segs best on grid; combined primary still ↓)
 - mins_60/ALL `xp_bonus` bias after freeze ≈ −0.067 (τ not cleared; softmax sum constrains mean)
 - Note: [calibrate-bonus-arm-129.md](calibrate-bonus-arm-129.md) · JSON: [calibrate_bonus_arm_129.json](calibrate_bonus_arm_129.json)
-- Soft+admit → #130; dry-run/`--apply` → #131. No slate mutate this ticket.
+- Soft+admit → #130; dry-run/`--apply` → #131.
+
+## Soft pre-gate + admission (#130)
+
+Runner [soft_admit_130.py](soft_admit_130.py). Companions: [soft_pre_gate_130.json](soft_pre_gate_130.json) `arms[].pass` · [admission_race_130.json](admission_race_130.json) `races[].passed`.
+
+- **Soft flip checklist PASS** (goals · CS · conceded · bonus). Bonus clears via bias↓ vs Champion (−0.106→−0.067); `|mse_share|`↑ tolerated (#128).
+- **Admission:** beat `participation_state_hybrid` (Δpri +0.59, 2/3 segs, guardrails ok); lost to `defence_link_challenger` (Δpri −0.57, 1/3, Process MAE guardrail regress).
+- **#112 beat-one rule:** replace `participation_state_hybrid`. Slate now `defence_link_challenger` + `bonus_arm_challenger`.
+- Risk for #131: incoming loses to own parent on Blended primary → Champion gate flip unlikely without new lever.
 
 ## Decision
 
 - **Gap Event Component (step-1 crown):** `xp_goals` — structural on gate `all`/`ALL`; inherited across Comparison Slate.
 - **Goals Candidate shipped (#116):** `goals_path_challenger` — soft pre-gate goals arm PASS; not on Comparison Slate (parent only).
 - **Flip Candidate shipped (#118) + admitted (#119):** `defence_link_challenger` on Comparison Slate.
-- **Bonus-arm Candidate wired (#129):** `bonus_arm_challenger` catalog; weights+T frozen; not on slate yet.
+- **Bonus-arm Candidate wired (#129) + admitted (#130):** `bonus_arm_challenger` replaces `participation_state_hybrid`; soft checklist PASS.
 - **Soft pre-gate (#120/#128):** goals·CS·conceded·bonus checklist; bonus grain mins_60/ALL bias/τ and/or `|mse_share|`↓.
 - **Eval metrics locked** in [INDEX Eval canon](../INDEX.md) — Blended for promotion; Realized `mse_share` + twins for component gap. Soft pre-gate before `--apply` (#115/#120).
 

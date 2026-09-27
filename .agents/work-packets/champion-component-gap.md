@@ -1,23 +1,22 @@
 # Active Task: Challenger beats Champion (goals then defence link)
 
-- **Status:** #129 closed; frontier #130 task (unclaimed)
+- **Status:** #130 closed; frontier #131 task (unclaimed)
 - **Objective:** Flip Champion via goals + Poisson defence-link + bonus-arm Candidate on 2025-26 Historical Promotion Gate
 - **Acceptance:** Map Destination met; soft pre-gate PASS; Blended gate PASS + `--apply`
-- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#130 Soft pre-gate + admission race](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/130)
+- **Issue/Ticket:** Map [#110](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · **Bind:** [#131 Champion dry-run/--apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/131)
 
 ## Work Packet (SFDBN)
 
-- **Status:** #111–#129 closed. **#130** frontier (soft+admit). #131←#130.
-- **Files:** `bonus_arm_challenger` wired; `_XBPS_WEIGHTS`=(0.1,96,48,48,24,8) `_BONUS_SOFTMAX_T`=8.0; note `calibrate-bonus-arm-129.md`.
-- **Decisions:** #128 = bonus soft bias/τ and/or `|mse_share|`↓ on `mins_60`/`ALL`; #129 = event k=4 + T=8 (τ not cleared on bias).
-- **Blocked:** apply until #130/#131
-- **Next:** Claim #130 → soft checklist + admission race
+- **Status:** #111–#130 closed. **#131** frontier (dry-run/`--apply`).
+- **Files:** `soft_admit_130.py`; `soft_pre_gate_130.json`; `admission_race_130.json`; `config/model_selection.json` slate = `defence_link_challenger` + `bonus_arm_challenger`.
+- **Decisions:** #130 soft 4/4 PASS (bonus via bias↓ vs Champion); admission beat-one → replace `participation_state_hybrid`.
+- **Blocked:** none; `--apply` gated on #131 dry-run PASS
+- **Next:** Claim #131 → `commands.evaluate_model_promotion` dry-run for `bonus_arm_challenger`
 
 ## Todo
-- [x] #126–#129 stub / levers / soft-bar / wire+calibrate
-- [ ] **#130** Soft + admission
+- [x] #126–#130 stub / levers / soft-bar / calibrate / soft+admit
 - [ ] #131 Dry-run / `--apply`
 
 ## Blockers / Notes
-- Handoff: `challenger-beats-champion` → map #110 / #130
-- Soft risk: mins_60 bonus bias ≈ −0.067 (outside τ); need `|mse_share|`↓ half of and/or
+- Handoff: `challenger-beats-champion` → map #110 / #131
+- Risk: `bonus_arm` lost Blended primary to parent `defence_link` (Δ −0.57, 1/3 segs) → Champion flip unlikely

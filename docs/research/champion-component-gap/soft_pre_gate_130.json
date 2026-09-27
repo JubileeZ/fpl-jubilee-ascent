@@ -1,0 +1,66 @@
+{
+  "rule_tickets": [
+    115,
+    120,
+    128
+  ],
+  "rule": "arm PASS = bias(|b|<=tau or |b| down) and/or demotion off structural/link-bias and/or |mse_share| down",
+  "champion": "hold_chase_challenger",
+  "incoming": "bonus_arm_challenger",
+  "tau": 0.05,
+  "arms": [
+    {
+      "arm": "goals",
+      "pass": true,
+      "bias_ok": true,
+      "demotion_ok": true,
+      "mse_ok": true,
+      "champ_bias": 0.07456536200749027,
+      "cand_bias": 0.0469708336192733,
+      "champ_mse_share": 0.32716529537615613,
+      "cand_mse_share": 0.3170309230615749,
+      "champ_label": "structural",
+      "cand_label": "variance"
+    },
+    {
+      "arm": "cs",
+      "pass": true,
+      "bias_ok": true,
+      "demotion_ok": true,
+      "mse_ok": true,
+      "champ_bias": -0.18799354228634826,
+      "cand_bias": -0.04999979410727605,
+      "champ_mse_share": 0.1964138230051446,
+      "cand_mse_share": 0.190770039571178,
+      "champ_label": "link-bias",
+      "cand_label": "variance"
+    },
+    {
+      "arm": "conceded",
+      "pass": true,
+      "bias_ok": true,
+      "demotion_ok": false,
+      "mse_ok": false,
+      "champ_bias": 0.09852005049869635,
+      "cand_bias": 0.050000004635842456,
+      "champ_mse_share": 0.05639512654703634,
+      "cand_mse_share": 0.05987864348198234,
+      "champ_label": "link-bias/link-bias",
+      "cand_label": "variance/link-bias"
+    },
+    {
+      "arm": "bonus",
+      "pass": true,
+      "bias_ok": true,
+      "demotion_ok": false,
+      "mse_ok": false,
+      "champ_bias": -0.1059173923858905,
+      "cand_bias": -0.06715025237975598,
+      "champ_mse_share": 0.17974179324984876,
+      "cand_mse_share": 0.1895378960980879,
+      "champ_label": "no_twin",
+      "cand_label": "no_twin"
+    }
+  ],
+  "flip_soft_pre_gate": true
+}

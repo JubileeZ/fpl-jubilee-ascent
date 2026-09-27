@@ -1,0 +1,65 @@
+{
+  "evaluation_season": "2025-26",
+  "gw_range": "1-38",
+  "seed_season": "2024-25",
+  "slate_before": [
+    "participation_state_hybrid",
+    "defence_link_challenger"
+  ],
+  "races": [
+    {
+      "reference_seat": "participation_state_hybrid",
+      "incoming": "bonus_arm_challenger",
+      "passed": true,
+      "eval_target": "blended_points",
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": 0.5946052631579022,
+      "segment_wins": 2,
+      "segment_deltas": {
+        "cold_start": -1.5387499999999932,
+        "early_mid": 1.8299999999999983,
+        "late": 0.06842105263154963
+      },
+      "guardrails_passed": true,
+      "reasons": [],
+      "reference_primary": 72.84026315789474,
+      "incoming_primary": 72.24565789473684,
+      "reference_mae": 1.0023919216529367,
+      "incoming_mae": 0.9617331975644323
+    },
+    {
+      "reference_seat": "defence_link_challenger",
+      "incoming": "bonus_arm_challenger",
+      "passed": false,
+      "eval_target": "blended_points",
+      "primary_metric": "decision_regret",
+      "combined_primary_delta": -0.5742105263157811,
+      "segment_wins": 1,
+      "segment_deltas": {
+        "cold_start": -4.157499999999999,
+        "early_mid": 0.6623333333333221,
+        "late": -0.7960526315789593
+      },
+      "guardrails_passed": false,
+      "reasons": [
+        "combined primary metric did not improve",
+        "won only 1/3 seasonal segments",
+        "failed one or more Champion guardrails",
+        "regressed Process MAE guardrail (0.9255 vs 0.9234)"
+      ],
+      "reference_primary": 71.67144736842106,
+      "incoming_primary": 72.24565789473684,
+      "reference_mae": 0.9609907274703366,
+      "incoming_mae": 0.9617331975644323
+    }
+  ],
+  "outcome": {
+    "action": "replace_beaten_seat",
+    "replace": "participation_state_hybrid",
+    "note": "#112 rule; higher primary = worse"
+  },
+  "slate_after": [
+    "defence_link_challenger",
+    "bonus_arm_challenger"
+  ]
+}

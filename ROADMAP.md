@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Soft pre-gate + admission race for bonus_arm](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/130). Wire+calibrate #129 done. Then #131 dry-run/`--apply`. Champion `hold_chase_challenger`, provisional.
+Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Champion dry-run/--apply](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/131). #130 soft PASS + `bonus_arm_challenger` admitted (replaced `participation_state_hybrid`). Champion `hold_chase_challenger`, provisional.
 
 ```mermaid
 flowchart TD
