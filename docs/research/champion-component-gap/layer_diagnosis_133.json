@@ -1,0 +1,246 @@
+{
+  "minutes_forecast_vs_champion": {
+    "rows": 31958,
+    "rows_differ": 104,
+    "max_abs": 6.995688698972202,
+    "mean_abs": 0.009736246034303299
+  },
+  "season": "2025-26",
+  "seed": "2024-25",
+  "gw": "1-38",
+  "late": [
+    20,
+    38
+  ],
+  "prod_k_cs": 1.296903,
+  "prod_k_gc": 1.145226,
+  "reduced_k_cs_precommitted": [
+    1.0,
+    1.1,
+    1.15
+  ],
+  "quality": [
+    {
+      "model": "hold_chase_challenger",
+      "rows": 31958,
+      "columns": [
+        "player_id",
+        "gameweek_id",
+        "projected_points",
+        "projected_minutes",
+        "xp_minutes",
+        "xp_goals",
+        "xp_assists",
+        "xp_clean_sheet",
+        "xp_conceded",
+        "xp_saves",
+        "xp_penalties_saved",
+        "xp_penalties_missed",
+        "xp_own_goals",
+        "xp_yellow_cards",
+        "xp_red_cards",
+        "xp_defcon",
+        "xp_bonus",
+        "actual_points",
+        "actual_minutes",
+        "actual_xp_minutes",
+        "actual_xp_goals",
+        "actual_xp_assists",
+        "actual_xp_clean_sheet",
+        "actual_xp_conceded",
+        "actual_xp_saves",
+        "actual_xp_penalties_saved",
+        "actual_xp_penalties_missed",
+        "actual_xp_own_goals",
+        "actual_xp_yellow_cards",
+        "actual_xp_red_cards",
+        "actual_xp_defcon",
+        "actual_xp_bonus",
+        "position_id",
+        "process_points",
+        "gameweek",
+        "blended_points"
+      ],
+      "gw_min": 1,
+      "gw_max": 38,
+      "duplicate_player_gw": 0,
+      "nulls": {
+        "projected_points": 0,
+        "actual_points": 0,
+        "process_points": 0,
+        "blended_points": 0,
+        "position_id": 0
+      },
+      "rows_outside_gw_1_38": 0,
+      "bad_position_id": 0,
+      "max_abs_ledger_residual": 7.105427357601002e-15
+    },
+    {
+      "model": "goals_path_challenger",
+      "rows": 31958,
+      "columns": [
+        "player_id",
+        "gameweek_id",
+        "projected_points",
+        "projected_minutes",
+        "xp_minutes",
+        "xp_goals",
+        "xp_assists",
+        "xp_clean_sheet",
+        "xp_conceded",
+        "xp_saves",
+        "xp_penalties_saved",
+        "xp_penalties_missed",
+        "xp_own_goals",
+        "xp_yellow_cards",
+        "xp_red_cards",
+        "xp_defcon",
+        "xp_bonus",
+        "actual_points",
+        "actual_minutes",
+        "actual_xp_minutes",
+        "actual_xp_goals",
+        "actual_xp_assists",
+        "actual_xp_clean_sheet",
+        "actual_xp_conceded",
+        "actual_xp_saves",
+        "actual_xp_penalties_saved",
+        "actual_xp_penalties_missed",
+        "actual_xp_own_goals",
+        "actual_xp_yellow_cards",
+        "actual_xp_red_cards",
+        "actual_xp_defcon",
+        "actual_xp_bonus",
+        "position_id",
+        "process_points",
+        "gameweek",
+        "blended_points"
+      ],
+      "gw_min": 1,
+      "gw_max": 38,
+      "duplicate_player_gw": 0,
+      "nulls": {
+        "projected_points": 0,
+        "actual_points": 0,
+        "process_points": 0,
+        "blended_points": 0,
+        "position_id": 0
+      },
+      "rows_outside_gw_1_38": 0,
+      "bad_position_id": 0,
+      "max_abs_ledger_residual": 3.552713678800501e-15
+    },
+    {
+      "model": "bonus_arm_challenger",
+      "rows": 31958,
+      "columns": [
+        "player_id",
+        "gameweek_id",
+        "projected_points",
+        "projected_minutes",
+        "xp_minutes",
+        "xp_goals",
+        "xp_assists",
+        "xp_clean_sheet",
+        "xp_conceded",
+        "xp_saves",
+        "xp_penalties_saved",
+        "xp_penalties_missed",
+        "xp_own_goals",
+        "xp_yellow_cards",
+        "xp_red_cards",
+        "xp_defcon",
+        "xp_bonus",
+        "actual_points",
+        "actual_minutes",
+        "actual_xp_minutes",
+        "actual_xp_goals",
+        "actual_xp_assists",
+        "actual_xp_clean_sheet",
+        "actual_xp_conceded",
+        "actual_xp_saves",
+        "actual_xp_penalties_saved",
+        "actual_xp_penalties_missed",
+        "actual_xp_own_goals",
+        "actual_xp_yellow_cards",
+        "actual_xp_red_cards",
+        "actual_xp_defcon",
+        "actual_xp_bonus",
+        "position_id",
+        "process_points",
+        "gameweek",
+        "blended_points"
+      ],
+      "gw_min": 1,
+      "gw_max": 38,
+      "duplicate_player_gw": 0,
+      "nulls": {
+        "projected_points": 0,
+        "actual_points": 0,
+        "process_points": 0,
+        "blended_points": 0,
+        "position_id": 0
+      },
+      "rows_outside_gw_1_38": 0,
+      "bad_position_id": 0,
+      "max_abs_ledger_residual": 3.552713678800501e-15
+    }
+  ],
+  "align_max_abs": {
+    "bonus_unscaled_cs_vs_goals": 4.440892098500626e-16,
+    "goals_vs_bonus_goals": 0.0
+  },
+  "any_pass": false,
+  "identity": [
+    {
+      "label": "goals_path_challenger",
+      "kind": "layer",
+      "regret_parts_minus_gate": 0.0
+    },
+    {
+      "label": "defence_link_challenger",
+      "kind": "layer",
+      "regret_parts_minus_gate": 1.4210854715202004e-14
+    },
+    {
+      "label": "bonus_arm_challenger",
+      "kind": "layer",
+      "regret_parts_minus_gate": 0.0
+    },
+    {
+      "label": "goals_bonus_no_def",
+      "kind": "ablation",
+      "regret_parts_minus_gate": 0.0
+    },
+    {
+      "label": "def_gkp_def_only",
+      "kind": "ablation",
+      "regret_parts_minus_gate": 0.0
+    },
+    {
+      "label": "reduced_k_cs_1.10",
+      "kind": "ablation",
+      "regret_parts_minus_gate": 1.4210854715202004e-14
+    }
+  ],
+  "sample_champion": [
+    {
+      "player_id": 1,
+      "gameweek": 1,
+      "position_id": 1,
+      "projected_points": 4.0000335001,
+      "actual_points": 10.0,
+      "process_points": 10.0,
+      "blended_points": 10.0
+    },
+    {
+      "player_id": 2,
+      "gameweek": 1,
+      "position_id": 1,
+      "projected_points": 3.3498141885,
+      "actual_points": 0.0,
+      "process_points": 0.0,
+      "blended_points": 0.0
+    }
+  ]
+}

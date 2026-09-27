@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Next work: wayfinder map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110). Frontier: [Layer-by-layer late-segment + MAE diagnosis](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/133) (AFK research). #131 FAIL; #132 route = diagnose first, un-stacking allowed. Champion `hold_chase_challenger`, provisional.
+No active map. [Challenger beats Champion](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) closed unreached (2026-09-27); user builds next model outside map. Champion `hold_chase_challenger`, provisional.
 
 ```mermaid
 flowchart TD

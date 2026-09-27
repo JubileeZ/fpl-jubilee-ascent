@@ -6,17 +6,11 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Bind:** map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) · Research [Layer-by-layer late-segment + MAE diagnosis](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/133) (AFK). Packet: `.agents/work-packets/champion-component-gap.md`. Handoff: `.agents/handoff-pointer`.
+**No active map.** Map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) closed 2026-09-27 by user (not planned); Destination not reached. #134 build pick closed unresolved. User builds next model outside map.
 
-**Done so far:** Flip admitted (#119); soft PASS (#120); Blended FAIL (#121). Path→stub→levers→soft (#122–#128). Wire+calibrate (#129). Soft+admit (#130): soft checklist PASS; `bonus_arm_challenger` replaced `participation_state_hybrid` (beat-one rule); lost to parent `defence_link_challenger`.
+**Slate:** Champion `hold_chase_challenger`; Candidates `defence_link_challenger`, `bonus_arm_challenger` (both FAIL gate, #131).
 
-**Slate:** Champion `hold_chase_challenger`; Candidates `defence_link_challenger`, `bonus_arm_challenger`.
-
-**#131 FAIL (no apply):** bonus_arm 2/3 segs (early_mid fixed) but late −1.55 + Realized/Process MAE regress; defence_link 1/3. Companion `champion_dry_run_131.json`.
-
-**#132 route:** keep Destination; diagnose before build; un-stacking allowed; user picks build after diagnosis.
-
-**Next:** #133 diagnosis (Champion → goals_path → defence_link → bonus_arm; late GW20–38 + MAE by position/component; post-hoc CS/GC ablations on full gate). Live Validation only after flip.
+**Final evidence (#133):** late regret opened by goals FWD top-11; defence repairs late, breaks Realized/Process MAE; bonus re-opens late; no ablation passes. Note `docs/research/champion-component-gap/layer-diagnosis-133.md`.
 
 Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
 
