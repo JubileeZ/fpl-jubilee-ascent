@@ -589,6 +589,16 @@ def test_handle_dashboard_api_refresh_posts_primary_model(monkeypatch: pytest.Mo
     assert captured["model_name"] == default_model_name()
 
 
+def test_handle_dashboard_api_champion_reads_live_selection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    monkeypatch.setattr(dash, "get_default_model_name", lambda: "face_value_challenger")
+    assert dash.handle_dashboard_api("GET", "/api/champion", None) == (200, {"champion": "face_value_challenger"})
+    js = (Path(__file__).resolve().parents[1] / "dashboard" / "app.js").read_text(encoding="utf-8")
+    assert "/api/champion" in js
+    assert "!primaryPicked) return \"default\"" in js
+
+
 def test_explorer_reports_xmins_not_role() -> None:
     root = Path(__file__).resolve().parents[1]
     html = (root / "dashboard" / "index.html").read_text(encoding="utf-8")
@@ -601,6 +611,7 @@ def test_explorer_reports_xmins_not_role() -> None:
 
 def test_should_project_on_open_when_processed_newer_than_json(tmp_path: Path) -> None:
     from commands.dashboard import should_project_on_open
+    from models import get_default_model_name
 
     processed = tmp_path / "processed"
     processed.mkdir()
@@ -608,7 +619,7 @@ def test_should_project_on_open_when_processed_newer_than_json(tmp_path: Path) -
     for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
         (processed / name).write_bytes(b"p")
     assert should_project_on_open(processed, json_path) is True
-    json_path.write_text("{}", encoding="utf-8")
+    json_path.write_text(json.dumps({"meta": {"models": [get_default_model_name()]}}), encoding="utf-8")
     later = json_path.stat().st_mtime + 10
     for name in ("players.parquet", "player_performances.parquet", "fixtures.parquet"):
         os.utime(processed / name, (later, later))
@@ -616,6 +627,9 @@ def test_should_project_on_open_when_processed_newer_than_json(tmp_path: Path) -
     even_later = later + 10
     os.utime(json_path, (even_later, even_later))
     assert should_project_on_open(processed, json_path) is False
+    json_path.write_text(json.dumps({"meta": {"models": ["retired_champion"]}}), encoding="utf-8")
+    os.utime(json_path, (even_later, even_later))
+    assert should_project_on_open(processed, json_path) is True
     empty = tmp_path / "empty"
     empty.mkdir()
     assert should_project_on_open(empty, json_path) is False

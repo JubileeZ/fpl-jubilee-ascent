@@ -68,7 +68,7 @@ _plan_state: dict[str, object] = {
 
 
 def should_project_on_open(processed_dir: Path, json_path: Path) -> bool:
-    """True when processed tables exist and are newer than dashboard JSON (or JSON is missing)."""
+    """True when processed tables exist and JSON is missing, older than them, or lacks the current Champion."""
     players = processed_dir / "players.parquet"
     if not players.exists():
         return False
@@ -79,7 +79,11 @@ def should_project_on_open(processed_dir: Path, json_path: Path) -> bool:
         path = processed_dir / name
         if path.exists() and path.stat().st_mtime > json_mtime:
             return True
-    return False
+    try:
+        projected = json.loads(json_path.read_text(encoding="utf-8")).get("meta", {}).get("models") or []
+    except (OSError, ValueError, AttributeError):
+        return True
+    return get_default_model_name() not in projected
 
 
 def refresh_status() -> dict[str, object]:
@@ -476,6 +480,8 @@ def handle_dashboard_api(
     path: str,
     body: dict[str, object] | None = None,
 ) -> tuple[int, dict[str, object]]:
+    if path == "/api/champion" and method == "GET":
+        return 200, {"champion": get_default_model_name()}
     if path == "/api/refresh":
         if method == "GET":
             return 200, refresh_status()

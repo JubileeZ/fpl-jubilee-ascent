@@ -91,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let allPlayers = [];
   let metaData = {};
   let primaryModel = "";
+  let primaryPicked = false;
   let horizonBound = false;
   let modelBound = false;
   let refreshBound = false;
@@ -202,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function primaryPayload() {
     const catalog = catalogModels();
-    if (!primaryModel) return "default";
+    if (!primaryModel || !primaryPicked) return "default";
     if (catalog.length && !catalog.includes(primaryModel)) return "default";
     return primaryModel;
   }
@@ -236,7 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
     models.forEach((name) => {
       const opt = document.createElement("option");
       opt.value = name;
-      opt.textContent = name === metaData.default_model ? `${name} (Champion)` : name;
+      const championName = (metaData.champion_trust && metaData.champion_trust.champion) || metaData.default_model;
+      opt.textContent = name === championName ? `${name} (Champion)` : name;
       if (name === primaryModel) opt.selected = true;
       select.appendChild(opt);
     });
@@ -244,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modelBound = true;
     select.addEventListener("change", () => {
       primaryModel = select.value;
+      primaryPicked = true;
       setRefreshStatus("");
       rerenderExplorer();
     });
@@ -328,6 +331,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const response = await fetch(`dashboard_data.json?t=${Date.now()}`);
     if (!response.ok) throw new Error("No dashboard_data.json yet. Click Refresh.");
     return response.json();
+  }
+
+  async function liveChampionMissing() {
+    try {
+      const response = await fetch("/api/champion");
+      if (!response.ok) return null;
+      const { champion } = await response.json();
+      return champion && !(metaData.models || []).includes(champion) ? champion : null;
+    } catch (err) {
+      return null;
+    }
   }
 
   window.reloadDashboardJson = async function () {
@@ -611,6 +625,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const planLoad = await loadTransferPlanStatus();
       if (planLoad === "idle") {
         setRefreshStatus("Projected from processed tables. Click Refresh to ingest live FPL.");
+      }
+      const missingChampion = await liveChampionMissing();
+      if (missingChampion) {
+        setRefreshStatus(`Champion is now ${missingChampion} — click Refresh to project it.`);
       }
     } catch (err) {
       console.error(err);
