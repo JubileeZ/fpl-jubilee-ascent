@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from backtesting.promotion import (
+    BOOTSTRAP_MIN_P,
+    CONFIRMATION_BOOTSTRAP_MIN_P,
     block_bootstrap_win_probability,
     classify_live_lead,
     evaluate_historical_promotion_gate,
@@ -136,6 +138,20 @@ def test_gate_requires_block_bootstrap_significance() -> None:
     assert any("bootstrap" in reason for reason in noisy.reasons)
     assert steady.passed
     assert steady.bootstrap_p == 1.0
+
+
+def test_confirmation_bar_accepts_moderate_bootstrap_confidence() -> None:
+    champion, candidate = _clear_winner_windows()
+    deltas = [3.0, -1.0, 2.0, -1.5, 1.5, 0.5]
+
+    dev = evaluate_historical_promotion_gate(champion, candidate, gw_primary_deltas=deltas)
+    confirm = evaluate_historical_promotion_gate(
+        champion, candidate, gw_primary_deltas=deltas, bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P
+    )
+
+    assert dev.bootstrap_p is not None and CONFIRMATION_BOOTSTRAP_MIN_P <= dev.bootstrap_p < BOOTSTRAP_MIN_P
+    assert not dev.passed
+    assert confirm.passed
 
 
 def test_guardrails_tolerate_noise_but_not_real_regression() -> None:

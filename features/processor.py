@@ -108,8 +108,9 @@ def process_directory(input_dir: Path, output_dir: Path):
 
     # --- Player Performances ---
     performances = []
-    # Search for all element_summary_*.json files
-    summary_files = list(input_dir.glob("element_summary_*.json"))
+    # Raw cache keeps prior-season summaries for ids absent from this bootstrap; fixture ids restart each season.
+    bootstrap_ids = {str(element["id"]) for element in elements}
+    summary_files = [sf for sf in input_dir.glob("element_summary_*.json") if sf.stem.removeprefix("element_summary_") in bootstrap_ids]
     for sf in summary_files:
         summary_data = load_json(sf)
         if not summary_data:

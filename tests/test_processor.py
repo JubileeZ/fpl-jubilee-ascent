@@ -53,6 +53,25 @@ def test_process_directory(tmp_path):
     assert bool(df_fix.loc[0, "finished"]) is True
 
 
+def test_process_directory_skips_summaries_for_players_not_in_bootstrap(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    input_dir.mkdir()
+    bootstrap = {
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "Gameweek 1", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 99, "web_name": "Odegaard", "team": 1, "element_type": 3, "now_cost": 85, "status": "a"}],
+    }
+    (input_dir / "bootstrap_static.json").write_text(json.dumps(bootstrap))
+    for player_id in (1, 900):
+        history = [{"element": player_id, "fixture": 1, "round": 1, "opponent_team": 2, "minutes": 90, "total_points": 2}]
+        (input_dir / f"element_summary_{player_id}.json").write_text(json.dumps({"history": history}))
+
+    process_directory(input_dir, tmp_path / "processed")
+
+    df_perf = pd.read_parquet(tmp_path / "processed" / "player_performances.parquet")
+    assert df_perf["player_id"].tolist() == [1]
+
+
 def test_process_directory_writes_user_chips(tmp_path: Path) -> None:
     input_dir = tmp_path / "raw"
     output_dir = tmp_path / "processed"

@@ -100,6 +100,12 @@ def test_cold_start_keeps_champion_projection() -> None:
     pd.testing.assert_frame_equal(champion.predict(frame, horizon=1), candidate.predict(frame, horizon=1))
 
 
+def test_empty_features_do_not_crash() -> None:
+    candidate = MultiFeatureAssistChallengerModel()
+    candidate.fit(_history())
+    assert candidate._fit_assist_rates(pd.DataFrame([_row()]).iloc[0:0]) == {}
+
+
 def test_glm_assists_replace_champion_and_reconcile_ledger() -> None:
     players = [_row(player_id=1000 + k, fixture_id=500) for k in range(3)]
     players += [_row(player_id=2000 + k, club_id=2, opponent_id=1, is_home=False, fixture_id=500) for k in range(3)]

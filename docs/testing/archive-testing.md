@@ -12,7 +12,7 @@
 - **Immutability Rule**: Treat `data/archive/` Parquet files as immutable. Regenerate historical data through archive/snapshot tooling; never edit or delete archive files directly.
 - **Exploratory Scope**: Archive backtests are exploratory only: terminal player, club, fixture, and availability metadata may not represent the pre-deadline information set.
 - **Point-in-time guard (ADR 0046)**: as-of builds without snapshot take price/club from pre-target performance rows and drop `TERMINAL_PLAYER_COLUMNS` (`features/builder.py`). Residual terminal inputs: club strength (GW1 only), fixture FDR, player universe (all season players listed from GW1). Guard tests: `tests/test_feature_leakage.py`.
-- **Holdout (ADR 0047)**: 2025-26 = development; 2024-25 = confirmation season (no seed, one gate run per frozen Candidate, never tuned); 2026-27 GW6+ sealed (one post-promotion check per Champion).
+- **Holdout (ADR 0047, 0048)**: 2025-26 = development (boot P ≥ 0.95); 2024-25 = confirmation season (no seed, one gate run per frozen Candidate, never tuned, boot P ≥ 0.60 via `CONFIRMATION_BOOTSTRAP_MIN_P`); 2026-27 GW6+ sealed (one post-promotion check per Champion).
 - **Eval target**: `--eval_target realized|process|blend` (blend = 50/50 Blended Eval Target, ADR 0044). Promotion primary is blend; Realized Points + Process Points stay reported guardrails. Champion Signed Bias gate migrates to blend at next window; current companion still Realized.
 - **Eval canon**: [docs/research/INDEX.md](../research/INDEX.md) **Eval canon** — promotion vs Event Component gap (`mse_share`). Component-gap runner: `docs/research/champion-component-gap/runner.py`.
 

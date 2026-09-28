@@ -22,6 +22,8 @@ _MEANINGFUL_LIVE_LEAD = 0.05
 # Statistical gate (ADR 0046).
 MIN_EFFECT_SHARE = 0.01
 BOOTSTRAP_MIN_P = 0.95
+# 2024-25 confirmation season bar (ADR 0048); 2025-26 development season keeps BOOTSTRAP_MIN_P.
+CONFIRMATION_BOOTSTRAP_MIN_P = 0.60
 BOOTSTRAP_DRAWS = 20_000
 BOOTSTRAP_BLOCK_GWS = 3
 GUARDRAIL_REL_TOL = 0.01
@@ -134,9 +136,10 @@ def evaluate_historical_promotion_gate(
     eval_target: str = "actual_points",
     reference_windows: dict[str, tuple[dict[str, Any], dict[str, Any]]] | None = None,
     gw_primary_deltas: Sequence[float] | None = None,
+    bootstrap_min_p: float = BOOTSTRAP_MIN_P,
 ) -> PromotionVerdict:
     """Pass = combined delta ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
-    (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ BOOTSTRAP_MIN_P."""
+    (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ bootstrap_min_p."""
     combined_champion = champion_windows["combined"]
     combined_candidate = candidate_windows["combined"]
     champion_primary = primary_metric_value(combined_champion)
@@ -162,9 +165,9 @@ def evaluate_historical_promotion_gate(
         reasons.append("combined primary metric did not improve")
     elif not effect_ok:
         reasons.append(f"combined improvement {combined_delta:.4f} below minimum effect {min_effect:.4f}")
-    significant = bootstrap_p is None or bootstrap_p >= BOOTSTRAP_MIN_P
+    significant = bootstrap_p is None or bootstrap_p >= bootstrap_min_p
     if not significant:
-        reasons.append(f"bootstrap P(delta>0) {bootstrap_p:.3f} below {BOOTSTRAP_MIN_P:.2f}")
+        reasons.append(f"bootstrap P(delta>0) {bootstrap_p:.3f} below {bootstrap_min_p:.2f}")
     if segment_wins < 2:
         reasons.append(f"won only {segment_wins}/3 seasonal segments")
     if not guardrails_passed:

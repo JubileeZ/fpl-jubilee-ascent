@@ -164,7 +164,7 @@ class MultiFeatureAssistChallengerModel(FaceValueChallengerModel):
 
     def _fit_assist_rates(self, features_df: pd.DataFrame) -> dict[tuple[int, int], float]:
         hist = self._history
-        if hist.empty or hist["gameweek_id"].nunique() < _MIN_TRAIN_GWS:
+        if features_df.empty or hist.empty or hist["gameweek_id"].nunique() < _MIN_TRAIN_GWS:
             return {}
         positions = features_df.drop_duplicates("player_id").set_index("player_id")["position_id"]
         club_fx = _club_fixture_table(hist)

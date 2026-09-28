@@ -12,9 +12,9 @@
 
 **Dead lever MUST NOT be rebuilt, re-swept, re-smoked, re-gated, or stacked into a Candidate before its `revisit_after` date (evidence date + 1 year). No exceptions** — not for new Champion, new season data, new harness, or "small tweak". Only user's explicit words override. `never` = structural (leakage); no revisit.
 
-## Sealed holdout (ADR 0046)
+## Sealed holdout + confirmation season (ADR 0046, 0047, 0048)
 
-2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
+2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning; ADR 0048: bootstrap bar 0.60 there, 0.95 on 2025-26); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
 
 ## Rules
 
@@ -27,10 +27,11 @@
 - Rows with evidence ≤ 2026-09-28 measured on pre-ADR-0046 features (terminal price/club/penalty order). Leak fix alone is not revisit exception; only user's explicit words reopen.
 - Baseline column matters: deltas vs former Champion are hints, not verdicts vs current one — but Dead still holds until revisit date.
 
-## Shipped (in Champion `face_value_challenger` or production)
+## Shipped (in Champion `multi_feature_assist_challenger` or production)
 
 | Lever | Where | Date | Evidence |
 |---|---|---|---|
+| Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | `models/multi_feature_assist_challenger.py` | 2026-09-28 | [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md) · `confirmation_gate_summary.csv` (dev PASS; 2024-25 P 0.896 passes 0.60 bar) |
 | Face-value G/A weights (1.0 xG, 0 threat); no in-season ridge refit | `models/face_value_challenger.py` | 2026-09-28 | [ADR 0045](../../adr/0045-champion-face-value-challenger.md) · `face_value_gate_summary.csv` |
 | Minute-pooled goal finishing offset Σ(goals−xG)·90/(Σmin+1800) | same | 2026-09-28 | same (+0.96 combined, flips late) |
 | Start-probability shrink p·(1−0.15(1−p)) | same | 2026-09-28 | same (xMins, \|bias\|) |
@@ -39,7 +40,7 @@
 
 ## Dead (do not retry before `Revisit after`)
 
-Baseline HC = former Champion `hold_chase_challenger`; FV = Champion `face_value_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
+Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `face_value_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
 
 | Lever class | Tried as | Baseline | Result | Evidence date | Revisit after | Evidence |
 |---|---|---|---|---|---|---|
@@ -79,7 +80,6 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = Champion `face_value
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | Frozen Candidate `multi_feature_assist_challenger`; dev gate PASS +0.901 2/3 boot P 0.976 vs `face_value_challenger` | [multi-feature-event-rate](../multi-feature-event-rate/multi-feature-event-rate.md) `candidate_gate_summary.csv` | Holdout 2026-27 GW6+ pending (one run); Comparison Slate admission + `--apply` = user decision |
 | Learned hurdle / direct residual correction on face-value base (ridge λ 10–100, min-GW 4–8) | On paper vs HC: +2.4 … +3.4, 3/3; holdout +2.51 < face-value base | Smoke B1 `v2_hurdle_face_*`, `hurdle_unfit_*` | Needs per-GW feature memory in live `fit` path; must beat `face_value_challenger`, not HC |
 | Fixture downside attack scale | Won scorecard vs pre-HC Champion (blend MAE 0.9960 vs 1.0024) | [fixture-downside-scale](../fixture-downside-scale/fixture-downside-scale.md) `downside_swing_summary.csv` `blend_mae` | Plumb `matchup_*` params through WalkforwardConfig; gate vs current Champion |
 | Position-split goals weight (restore FWD, keep MID/DEF dampen) | Untried as built Candidate | layer-diagnosis-133 option 1 | Differs from flat MID/FWD 0.9/1.1 (Dead); gate vs current Champion |

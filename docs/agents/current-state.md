@@ -6,13 +6,17 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**No active map.** 2026-09-28 Champion search (5 lanes, smoke harness) → `face_value_challenger` PASS Historical Promotion Gate, applied (ADR 0045). Note `docs/research/face-value-challenger/face-value-challenger.md`.
+**No active map.** 2026-09-28 multi-feature event-rate search → `multi_feature_assist_challenger` promoted (ADR 0048): dev PASS; 2024-25 P 0.896 passes lowered 0.60 confirmation bar. Note `docs/research/multi-feature-event-rate/multi-feature-event-rate.md`.
 
-**Slate:** Champion `face_value_challenger` (provisional); Candidates `hold_chase_challenger` (former Champion), `multi_feature_assist_challenger` (dev gate PASS +0.901 2/3 P 0.976; holdout pending; `docs/research/multi-feature-event-rate/`). `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
+**Slate:** Champion `multi_feature_assist_challenger` (provisional); Candidates `face_value_challenger`, `hold_chase_challenger` (former Champions). `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
 
 **Eval hardening 2026-09-28 (ADR 0046):** backtest features point-in-time (price/club pre-target, terminal player cols dropped); gate adds min effect 1%, block-bootstrap P ≥ 0.95, guardrail tolerances; 2026-27 GW6+ sealed holdout. Point-in-time re-gate: `face_value_challenger` vs `hold_chase_challenger` = regret tie (FAIL), accuracy win → Champion kept by user decision.
 
-**Next leads:** 2026-27 GW6+ finished → one holdout gate run for `multi_feature_assist_challenger`, log in Candidate Ledger; `--apply` only on user's words. Learned hurdle correction on Champion (needs per-GW feature memory in live path); first clean holdout = 2026-27 GW6+. Deferred eval work: constrained valid-XI regret, 2024-25 second gate season, White/SPA across variants.
+**Promotion protocol (ADR 0047, 0048):** gate PASS 2025-26 (boot P ≥ 0.95) + 2024-25 (no seed, one run, boot P ≥ 0.60) → promote on user's words; 2026-27 GW6+ = post-promotion check (FAIL → revert to `face_value_challenger`).
+
+**Live data fix 2026-09-28:** `features/processor.py` ingests only `element_summary_<id>.json` for ids in current bootstrap. Raw cache held 174 stale 2025-26 summaries (ids 668–841) → 4401 prior-season rows in 2026-27 pin `player_performances` (fixture-id collisions; crashed new Champion). Pin rebuilt locally (`snapshot_season --season 2026-27 --from-raw-dir`), 3216 rows GW1–5.
+
+**Next leads:** Learned hurdle correction on Champion (needs per-GW feature memory in live path); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
@@ -49,7 +53,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 uv run pytest
 uv run ruff check .
 uv run python -m commands.refresh_data
-uv run python -m commands.run_model face_value_challenger
+uv run python -m commands.run_model multi_feature_assist_challenger
 uv run python -m commands.dashboard
 uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.measure_champion_bias

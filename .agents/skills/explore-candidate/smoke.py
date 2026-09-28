@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT))
 
 from backtesting import walkforward  # noqa: E402
 from backtesting.model_evaluation import compare_to_reference  # noqa: E402
+from backtesting.promotion import BOOTSTRAP_MIN_P, CONFIRMATION_BOOTSTRAP_MIN_P  # noqa: E402
 from backtesting.walkforward import LEDGER_COMPONENTS, WalkforwardConfig, WalkforwardResult, run_walkforward_backtest  # noqa: E402
 from features.builder import TERMINAL_PLAYER_COLUMNS  # noqa: E402
 from models import get_model  # noqa: E402
@@ -240,7 +241,8 @@ def main() -> int:
 
     rows = []
     for name in challengers:
-        verdict = compare_to_reference(results[champion], results[name])
+        bar = CONFIRMATION_BOOTSTRAP_MIN_P if args.season == "confirm" else BOOTSTRAP_MIN_P
+        verdict = compare_to_reference(results[champion], results[name], bootstrap_min_p=bar)
         rows.append({
             "date": date.today().isoformat(), "season": args.season, "data_season": season.name, "lane": args.lane,
             "variant": name, "champion": champion, "gw_range": gw_range, "pass": verdict.passed, "combined_delta": verdict.combined_primary_delta,

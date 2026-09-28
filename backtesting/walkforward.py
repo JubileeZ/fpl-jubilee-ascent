@@ -30,6 +30,8 @@ LEDGER_COMPONENTS = (
     "xp_defcon",
     "xp_bonus",
 )
+# 2024-25 Assistant Manager elements (position 5) score team results outside the player ledger.
+PLAYER_POSITIONS = (1, 2, 3, 4)
 
 
 @dataclass(frozen=True)
@@ -152,6 +154,7 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
             require_availability_snapshot=config.require_snapshots,
             **feature_kwargs,
         )
+        df_feat = df_feat[df_feat["position_id"].isin(PLAYER_POSITIONS)] if "position_id" in df_feat.columns else df_feat
         if df_feat.empty:
             if config.require_snapshots:
                 raise ValueError(f"Point-in-time backtest cannot evaluate empty GW {gw}")

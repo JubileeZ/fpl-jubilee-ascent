@@ -1,13 +1,13 @@
 # Multi-feature Event Rate (explore-candidate 2026-09-28)
 
-**Updated**: 2026-09-28T13:30:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38 seed 2024-25 (dev season); point-in-time features (ADR 0046); recompute 2026-09-28  
-**Season**: 2025/26 (dev). 2026-27 GW6+ holdout pending (GW6 unfinished)  
-**Status**: Active — Candidate `multi_feature_assist_challenger` dev gate PASS; not on Comparison Slate; not promoted  
+**Updated**: 2026-09-28T13:45:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38 seed 2024-25 (dev); 2024-25 archive GW1–38 no seed (confirmation, ADR 0047); point-in-time features (ADR 0046); recompute 2026-09-28  
+**Season**: 2025/26 (dev) + 2024/25 (confirmation)  
+**Status**: Closed — `multi_feature_assist_challenger` dev PASS, 2024-25 boot P 0.896 (FAIL at 0.95, PASS at 0.60 bar) → promoted to Champion (ADR 0048); goals/GC/stack levers Dead  
 **Purpose**: Test user idea: project Event Rates from several signals jointly (xG/xA, threat/creativity, opponent xG conceded, own-team xG, home) instead of one per90 signal × fixture multiplier.  
 **Scope**: Goals, assists, goals conceded / clean sheet rates on Champion `face_value_challenger`. Excluded: minutes, bonus, saves, defcon; official FDR as GLM input (see Method).  
-**Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [face-value-challenger](../face-value-challenger/face-value-challenger.md) · [Eval canon](../INDEX.md) · [ADR 0046](../../adr/0046-point-in-time-backtest-and-statistical-gate.md)  
-**Artifact**: [smoke_results.csv](smoke_results.csv) `combined_delta` / `segs` / `boot_p_gt0` (frozen smoke snapshot) · [candidate_gate_summary.csv](candidate_gate_summary.csv) `combined_delta` / `*_regret` / `blend_mae` (regenerable via `runner.py`)
+**Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [face-value-challenger](../face-value-challenger/face-value-challenger.md) · [Eval canon](../INDEX.md) · [ADR 0046](../../adr/0046-point-in-time-backtest-and-statistical-gate.md) · [ADR 0047](../../adr/0047-two-season-promotion-gate.md) · [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md)  
+**Artifact**: [smoke_results.csv](smoke_results.csv) `combined_delta` / `segs` / `boot_p_gt0` (frozen smoke snapshot) · [candidate_gate_summary.csv](candidate_gate_summary.csv) `combined_delta` / `*_regret` / `blend_mae` (regenerable via `runner.py`) · [confirmation_gate_summary.csv](confirmation_gate_summary.csv) `gate_passed` / `combined_delta` / `boot_p_gt0` (official `commands.evaluate_model_promotion` verdicts, both seasons)
 
 ## Sources
 
@@ -25,7 +25,7 @@ Full redo docs/research/multi-feature-event-rate/multi-feature-event-rate.md
 1. uv run python docs/research/multi-feature-event-rate/runner.py  (~10 min, 2 procs)
 2. Refresh Findings from candidate_gate_summary.csv columns combined_delta, *_regret, blend_mae, realized_mae, process_mae, abs_bias, spearman, boot_p_gt0.
 3. smoke_results.csv frozen; do not regenerate.
-4. Holdout (once, after 2026-27 GW6+ finished): uv run python -m commands.evaluate_model_promotion --config <scratch config with candidate> --data_dir data/archive/2026-27/processed --seed_season 2025-26 --gw_range 6-<last finished GW>; log date + verdict in Candidate Ledger row.
+4. confirmation_gate_summary.csv = official gate verdicts; 2024-25 run is one-shot (ADR 0047); rows at bootstrap_min_p 0.95 and 0.60 (ADR 0048 re-score, same run); do not re-run.
 5. Scratch under .tmp/agent/ only; delete before finish.
 ```
 
@@ -55,63 +55,35 @@ Full redo docs/research/multi-feature-event-rate/multi-feature-event-rate.md
 |---|---|---|---|---|---|
 | Blended top-11 regret | `top_11_regret` | Mean GW (best-11 blended − projected-top-11 blended) | Lower $\downarrow$ | < Champion | Gate primary |
 | Combined delta | `combined_delta` | Champion regret − Candidate regret | Higher $\uparrow$ | ≥ `min_effect` (1% Champion regret) | Gate primary delta |
-| Bootstrap P | `boot_p_gt0` | Block-bootstrap share of GW resamples with mean delta > 0 | Higher $\uparrow$ | ≥ 0.95 | Gate robustness |
+| Bootstrap P | `boot_p_gt0` | Block-bootstrap share of GW resamples with mean delta > 0 | Higher $\uparrow$ | ≥ `bootstrap_min_p` (0.95 dev; 0.60 confirmation, ADR 0048) | Gate robustness |
 | Segment wins | `segs` / `segment_wins` | Seasonal segments (cold/early-mid/late) with regret delta > 0 | Higher $\uparrow$ | ≥ 2/3 | Gate robustness |
 | Guardrails | `blend_mae`, `realized_mae`, `process_mae`, `abs_bias`, `spearman`, `xmins_mae` | ADR 0044/0046 | MAE/bias/xMins $\downarrow$; Spearman $\uparrow$ | within Champion tolerance | Gate guardrails |
 | Assist bias | `assist_bias_realized` | mean(`xp_assists` − realized assist points) | Near 0 | 0 | Component calibration context; not gate |
 
-**Validation boundary**: One dev season, 38 GWs, 24 variants tried → selection luck possible (1 of 18 round-1 variants passes). Sealed holdout (2026-27 GW6+) not yet run.
+**Validation boundary**: One dev season, 38 GWs, 24 variants tried → selection luck possible (1 of 18 round-1 variants passes). 2024-25 confirmation run once (FAIL 0.95 / PASS 0.60); 2026-27 GW6+ untouched.
 
 ## Project interpretation
 
-### Decision rules
+#### Confirmation season (`confirmation_gate_summary.csv`, ADR 0047)
 
-- Multi-feature assist rate trained on xA beats Champion's xA × attack_multiplier on ranking; accuracy flat.
-- Realized-assist or blended target hurts (FPL assists noisier than xA; realized target trips Realized MAE guardrail).
-- Goals: fixture terms carry signal (no-fixture ablation negative), but no goals variant wins > 1/3 segments.
-- GC: realized-target GLM near-miss (+0.99, 2/3, P 0.92); own-defence term needed (opp-only negative).
-- Stacks raise point delta (best +1.52) but P < 0.95; gains not additive → stay single-lever.
-
-### Practical implications
-
-- Live path (`run_model`, `dashboard`, `export_dashboard`) calls `fit(history)` → Candidate works live, not only in backtest.
-- Refit cost ≈ 1–3 s per `predict` (history loop per GW).
-
-## Findings
-
-### Round 1 lanes (`smoke_results.csv` lane `mfer_r1`)
-
-| Lane | Best variant | `combined_delta` | `segs` | `boot_p_gt0` | Pass |
-|---|---|---:|---:|---:|---|
-| Goals | `g_blend_finpos_l10` | +0.547 | 1 | 0.698 | no |
-| Assists | `a_xa_l10` | **+0.901** | 2 | **0.976** | **yes** |
-| GC / CS | `c_gc_l10` | +0.986 | 2 | 0.923 | no |
-
-16/18 variants positive delta. Negative: `g_blend_nofix_l10` −0.263, `c_blend_opponly_l10` −0.313.
-
-### Round 2 stacks (`smoke_results.csv` lane `mfer_r2`)
-
-`s_a_repro` reproduces +0.9014 exactly. Stacks: `s_acgfp` +1.524 (2/3, P 0.891), `s_ag` +1.213 (1/3), `s_ac100` +0.955 (P 0.879), `s_ac` +0.858 (P 0.888), `s_acg` +0.412 (1/3). None pass.
-
-### Candidate gate (`candidate_gate_summary.csv`)
-
-`multi_feature_assist_challenger` vs `face_value_challenger`: PASS, `combined_delta` +0.901 (min 0.720), 2/3 segments, boot P 0.976, guardrails pass. Regret 71.08 vs 71.98; early-mid 74.62 vs 76.52; late 67.24 vs 67.54; cold start tie (GLM inactive < 3 GWs). Blend MAE 0.8993 vs 0.8987; Realized MAE 0.9701 vs 0.9693 (within tolerance); \|bias\| 0.0006 vs 0.0032; Spearman 0.6931 vs 0.6929. Official dry gate (`commands.evaluate_model_promotion`) identical.
+2024-25 GW1–38, no seed, `commands.evaluate_model_promotion` (Assistant Manager elements excluded): `combined_delta` +0.796 (min 0.630), 3/3 segments, `boot_p_gt0` 0.896 → FAIL at pre-registered 0.95; **PASS** at user-lowered 0.60 bar (ADR 0048, same run re-scored). Direction consistent with dev season.
 
 ## Decision
 
-**Verdict**: `multi_feature_assist_challenger` = dev-season gate PASS; frozen. Promotion blocked on sealed holdout + user decision.
+**Verdict**: Promoted to Champion 2026-09-28 (ADR 0048, provisional). User lowered 2024-25 bootstrap bar to 0.60 after seeing verdict; `face_value_challenger` → Candidate.
 
 **Recommended action**:
-- User decision: add to `config/model_selection.json` `candidates` (max 2 → replaces one current entry).
-- After 2026-27 GW6+ finished: one holdout gate run; log in Candidate Ledger.
-- `--apply` only on user's words; Champion change → ADR.
+- Weekly projections use `multi_feature_assist_challenger` (dashboard reads `config/model_selection.json`).
+- No retune of assist GLM grid without new evidence.
 
 **Trigger / kill switch**:
-- Holdout FAIL (any gate rule) → mark ledger row Dead (revisit evidence + 1 year).
+- 2026-27 GW6+ post-promotion check (ADR 0047) FAIL → revert to `face_value_challenger` on user's words; log in Ledger.
 
 ## Risks and unknowns
 
 - Forking paths: 24 variants on one season; P 0.976 not multiplicity-adjusted.
+- Confirmation bar lowered post-hoc (after 2024-25 verdict seen); P 0.896 ≈ 1-in-10 chance 2024-25 gain = noise.
 - Win concentrated in early-mid segment; late edge small (+0.31).
 - Accuracy not improved; win = ranking of assist-heavy players.
+- Official FDR never compared head-to-head vs as-of opponent xG substitute (unavailable in `fit` history).
 - Training uses current-season history only (no seed) → inactive GW1–3; early behavior = Champion.

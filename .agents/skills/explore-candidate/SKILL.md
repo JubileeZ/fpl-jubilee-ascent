@@ -46,7 +46,7 @@ Record resolved names in packet at step 0; roles roll forward automatically when
 - **Zero leakage.** Inputs only from `fit(history_df)` / `predict(features_df)` handed in by walk-forward (as-of `gw`, history before target deadline). No direct file reads. No `players.parquet` season columns (`TERMINAL_PLAYER_COLUMNS`, `features/builder.py`). Prototype source holds no season literal (audit refuses). Holdout sealed.
 - **Strict feature audit.** Each prototype declares `FEATURES` manifest; every column literal in source must be declared; `smoke.py` refuses undeclared or terminal columns and fails any run where fit history reaches target GW.
 - **Ledger law.** Dead row with `revisit_after` > today = untouchable (rebuild, re-sweep, re-smoke, stack). Only user's explicit words override. Match by mechanism, not name. Retuned grid / wider clamp / new stack order of Dead form = same lever.
-- Gate code = `backtesting.model_evaluation.compare_to_reference` (Blended `top_11_regret`, ≥1% effect, block-bootstrap P ≥ 0.95, ≥2/3 segments, guardrails). No private metric replaces it. Never loosen gate, drop guardrail, or shrink GW range to manufacture a win.
+- Gate code = `backtesting.model_evaluation.compare_to_reference` (Blended `top_11_regret`, ≥1% effect, block-bootstrap P ≥ 0.95 dev / ≥ 0.60 confirm per ADR 0048, ≥2/3 segments, guardrails). No private metric replaces it. Never loosen gate, drop guardrail, or shrink GW range to manufacture a win.
 
 ## Workflow
 
@@ -159,7 +159,7 @@ From winning prototype:
    - Lever depends on scoring rule absent in confirm season (e.g. defcon points, BPS weights) → skip confirm (uninformative); Human Queue "holdout-first per ADR 0046; wait holdout GW6+"; Exit (c).
 3. PASS both → Human Queue adoption bundle:
    - add Candidate first in `config/model_selection.json` `candidates`;
-   - `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/<confirm season>/processed --apply` — deterministic replay of same gate (bootstrap seed 0), not new look; verdict must match smoke confirm row;
+   - `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/<confirm season>/processed --confirmation --apply` — deterministic replay of same gate (bootstrap seed 0), not new look; verdict must match smoke confirm row;
    - draft ADR (status Proposed, pattern ADR 0045) + catalog Role update + INDEX entry;
    - post-promotion holdout check once holdout GW6+ finished (`--data_dir data/archive/<holdout season>/processed --seed_season <dev season> --gw_range 6-<last finished>`); FAIL → revert on user's words.
 

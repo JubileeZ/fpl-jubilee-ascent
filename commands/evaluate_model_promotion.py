@@ -22,6 +22,7 @@ from backtesting.model_evaluation import (
     promote_candidate,
     write_promotion_evidence,
 )
+from backtesting.promotion import BOOTSTRAP_MIN_P, CONFIRMATION_BOOTSTRAP_MIN_P
 from backtesting.walkforward import WalkforwardConfig, run_walkforward_backtest
 from commands.backtest import resolve_backtest_data_dir, resolve_seed_processed_dir
 from models.selection import DEFAULT_CONFIG_PATH, load_model_selection, save_model_selection
@@ -83,6 +84,7 @@ def evaluate_and_apply(
     snapshot_season: str | None,
     require_snapshots: bool,
     apply: bool,
+    bootstrap_min_p: float = BOOTSTRAP_MIN_P,
 ) -> tuple[object, list[CandidateComparison], tuple[Path, Path] | None]:
     selection = load_model_selection(config_path)
     champion_result = _run_model(
@@ -110,7 +112,7 @@ def evaluate_and_apply(
             snapshot_season=snapshot_season,
             require_snapshots=require_snapshots,
         )
-        verdict = compare_to_reference(champion_result, candidate_result)
+        verdict = compare_to_reference(champion_result, candidate_result, bootstrap_min_p=bootstrap_min_p)
         comparisons.append(
             CandidateComparison(
                 candidate=candidate,
@@ -151,6 +153,7 @@ def main() -> None:
     parser.add_argument("--season", type=str, default=None)
     parser.add_argument("--require_snapshots", action="store_true")
     parser.add_argument("--apply", action="store_true", help="Update Comparison Slate when gate passes")
+    parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.60 (ADR 0048)")
     args = parser.parse_args()
 
     start_gw, end_gw = _parse_gw_range(args.gw_range)
@@ -168,6 +171,7 @@ def main() -> None:
         snapshot_season=snapshot_season,
         require_snapshots=args.require_snapshots,
         apply=args.apply,
+        bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P if args.confirmation else BOOTSTRAP_MIN_P,
     )
 
     print("\n" + "=" * 60)

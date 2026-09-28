@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-No active map. Champion `face_value_challenger` (ADR 0045, provisional), promoted 2026-09-28 over `hold_chase_challenger` via Historical Promotion Gate.
+No active map. Champion `multi_feature_assist_challenger` (ADR 0048, provisional), promoted 2026-09-28 over `face_value_challenger` via two-season gate (2024-25 bootstrap bar 0.60).
 
 ```mermaid
 flowchart TD

@@ -1,0 +1,4 @@
+season,seed,champion,candidate,gate_passed,combined_delta,min_effect,segment_wins,boot_p_gt0,bootstrap_min_p,reasons
+2025-26,2024-25,face_value_challenger,multi_feature_assist_challenger,True,0.901447,0.719795,2,0.97575,0.95,
+2024-25,none,face_value_challenger,multi_feature_assist_challenger,False,0.7964,0.6298,3,0.896,0.95,bootstrap P(delta>0) 0.896 below 0.95
+2024-25,none,face_value_challenger,multi_feature_assist_challenger,True,0.7964,0.6298,3,0.896,0.6,ADR 0048 confirmation bar 0.60

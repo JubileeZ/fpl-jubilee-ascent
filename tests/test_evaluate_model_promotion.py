@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
+from backtesting.promotion import CONFIRMATION_BOOTSTRAP_MIN_P
 from backtesting.walkforward import WalkforwardResult
 from commands.evaluate_model_promotion import evaluate_and_apply
 from models.selection import ModelSelection, load_model_selection, save_model_selection
@@ -91,6 +92,32 @@ def test_evaluate_and_apply_promotes_clear_candidate(tmp_path: Path) -> None:
     assert comparisons[0].verdict.passed
     assert evidence_paths is not None
     assert load_model_selection(config_path).champion == "participation_state_hybrid"
+
+
+def test_evaluate_and_apply_forwards_confirmation_bootstrap_bar(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(ModelSelection(champion="metrics_component_hybrid", candidates=("participation_state_hybrid",)), config_path)
+    data_dir = tmp_path / "processed"
+    data_dir.mkdir()
+
+    with (
+        patch("commands.evaluate_model_promotion._run_model", side_effect=lambda *, model_name, **kwargs: _result(model_name, worse=False)),
+        patch("commands.evaluate_model_promotion.compare_to_reference") as gate,
+    ):
+        evaluate_and_apply(
+            config_path=config_path,
+            data_dir=data_dir,
+            start_gw=1,
+            end_gw=38,
+            seed_season=None,
+            snapshot_root=None,
+            snapshot_season="2024-25",
+            require_snapshots=False,
+            apply=False,
+            bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P,
+        )
+
+    assert gate.call_args.kwargs["bootstrap_min_p"] == CONFIRMATION_BOOTSTRAP_MIN_P
 
 
 def test_evaluate_and_apply_leaves_config_when_gate_fails(tmp_path: Path) -> None:

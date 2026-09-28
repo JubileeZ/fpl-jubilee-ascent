@@ -12,6 +12,7 @@ import pandas as pd
 
 from backtesting.metrics import top_k_regret_by_gameweek
 from backtesting.promotion import (
+    BOOTSTRAP_MIN_P,
     PromotionVerdict,
     evaluate_historical_promotion_gate,
     metrics_by_season_window,
@@ -59,6 +60,7 @@ def compare_to_reference(
     candidate: WalkforwardResult,
     *,
     primary_target: str = "blended_points",
+    bootstrap_min_p: float = BOOTSTRAP_MIN_P,
 ) -> PromotionVerdict:
     reference_windows = {
         target: (
@@ -86,6 +88,7 @@ def compare_to_reference(
         eval_target=primary_target,
         reference_windows=reference_windows or None,
         gw_primary_deltas=gw_deltas,
+        bootstrap_min_p=bootstrap_min_p,
     )
 
 
