@@ -32,7 +32,7 @@
 - **Status:** Exit (a); committed + pushed per user 00:16/00:19
 - **Files:** `config/model_selection.json`, `models/club_def_prior_challenger.py`, `models/def_xg_shrink_challenger.py`, `tests/test_club_def_prior_challenger.py`, `tests/test_def_xg_shrink_challenger.py`, `docs/adr/0051-champion-club-def-prior-challenger.md`, `docs/model_name.md`, `docs/research/component-model-ideas/{component-model-ideas.md,idea_queue.csv,smoke_results.csv,candidate_gate.csv}`, `docs/research/candidate-ledger/*`, `docs/research/INDEX.md`, `ROADMAP.md`, `docs/agents/current-state.md`
 - **Decisions:** frozen pick = best single after stack ablation; `atk_05_def_k5` over `def_k15` (higher verified delta). `face_value_challenger` off slate (max 2 Candidates). Dead-row override not treated as blanket.
-- **Blocked:** holdout GW6+ not finished (post-promotion check waits)
+- **Blocked:** holdout GW6+ not finished (post-promotion check waits). Rechecked 2026-09-29: GW6 deadline 2026-10-10.
 - **Next:** resolve Human Queue; next `/explore-candidate docs/research/component-model-ideas/idea_queue.csv` = batch 3 vs new Champion (DEF-02, BON-02, MIN-03, MIN-04, DEF-05+06 by order; re-smoke DEF-01 / ATK-02 Open rows)
 
 ## Human Queue

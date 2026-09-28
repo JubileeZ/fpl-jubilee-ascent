@@ -16,13 +16,13 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Live data fix 2026-09-28:** `features/processor.py` ingests only `element_summary_<id>.json` for ids in current bootstrap. Raw cache held 174 stale 2025-26 summaries (ids 668–841) → 4401 prior-season rows in 2026-27 pin `player_performances` (fixture-id collisions; crashed new Champion). Pin rebuilt locally (`snapshot_season --season 2026-27 --from-raw-dir`), 3216 rows GW1–5. Source cleanup: `prune_stale_element_summaries` (`features/season_archive.py`) runs in `refresh_data` on `data/raw` and in `pin_season_archive` on pin raw; 174 stale files removed from both, pin hash refreshed.
 
-**Dual-lane search 2026-09-28:** 88 variants vs Champion, no pass; 11 levers → Dead. User override: frozen `learned_start_challenger` promoted to Champion (ADR 0050, provisional). Slate: `multi_feature_assist_challenger`, `face_value_challenger`. Pending: 2026-27 GW6+ post-promotion check.
+**Dual-lane search 2026-09-28:** 88 variants vs Champion, no pass; 11 levers → Dead. User override: frozen `learned_start_challenger` promoted to Champion (ADR 0050, provisional). Slate: `multi_feature_assist_challenger`, `face_value_challenger`. Superseded by ADR 0051.
 
 **Dual-lane search round 2 (2026-09-28):** 18 variants vs Champion `learned_start_challenger`. Position-split goals all negative; penalty taker detection inert (+0.0000); asymmetric finishing shrinkage dev PASS (+0.261 2/3 P 0.989), confirm 2024-25 FAIL (-0.231 0/3 P 0.199) -> Dead. Champion `learned_start_challenger` stands. Note `docs/research/asymmetric-finishing-challenger/asymmetric-finishing-challenger.md`.
 
 **Component-model-ideas Queue run (2026-09-29):** explore-candidate Queue mode, batches 1–2 (10 ideas) vs `learned_start_challenger`. ATK-05 club × DEF xG prior dev +0.504 2/3 P 0.955, confirm 2024-25 +0.080 2/3 P 0.619 → Champion `club_def_prior_challenger` (ADR 0051, user-authorized). ATK-04 DEF K2400 (`def_xg_shrink_challenger`, Catalog) dev PASS, confirm FAIL. DEF-01 Poisson GC + ATK-02 club assist mass dev pass, dropped by stack ablation → ledger Open. 6 ideas Dead. Remaining queue rows untested vs new Champion. Note `docs/research/component-model-ideas/component-model-ideas.md`.
 
-**Next leads:** Component idea queue `docs/research/component-model-ideas/idea_queue.csv` (29 ideas, P1 first, explore-candidate Queue mode); Open ledger row (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
+**Next leads:** Component idea queue `docs/research/component-model-ideas/idea_queue.csv` (29 ideas, P1 first, explore-candidate Queue mode); Open ledger row (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check for `club_def_prior_challenger` (ADR 0047). Rechecked 2026-09-29: GW5 last finished, GW6 deadline 2026-10-10 → status stays provisional. Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
