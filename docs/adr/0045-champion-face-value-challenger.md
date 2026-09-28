@@ -1,0 +1,5 @@
+# Champion face_value_challenger (face-value xG/xA, pooled finishing, start shrink)
+
+`face_value_challenger` replaces `hold_chase_challenger` as Model Champion after passing Historical Promotion Gate (ADR 0044; 2025-26 GW1–38, seed 2024-25, Blended primary + Realized/Process guardrails): 3/3 segments, all guardrails improve. Attack takes per-90 xG/xA at face value (weights 1.0/0.0) instead of in-season ridge refit on Realized goals/assists; goal finishing offset pooled over minutes, shrink 1800 min, no assist offset; mid-range start probability shrink k=0.15. Status provisional (archive not snapshot-backed). Evidence: `docs/research/face-value-challenger/`.
+
+**Considered Options**: unfitted Champion only — rejected (passes, margin +0.05, late loses); learned hurdle correction (P(plays)×E[pts|plays], walk-forward ridge) — deferred (larger 2025-26 margin, needs per-GW feature memory unavailable to live `fit(history)` path, contaminated holdout below base); 50/50 xG-only + fitted `defence_link` ensemble — rejected (dominated, weight-fragile); club-pooled goals conceded — rejected (failed 2026-27 holdout).

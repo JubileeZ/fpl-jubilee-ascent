@@ -8,10 +8,11 @@ Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan a
 
 | Name | Module | Role | What it does |
 |------|--------|------|----------------|
-| `hold_chase_challenger` | `models/hold_chase_challenger.py` | Model Champion | `calibrated_matchup_hybrid` plus start-persistence participation, top-end ordering emphasis, relaxed hard-fixture defense |
+| `face_value_challenger` | `models/face_value_challenger.py` | Model Champion | `hold_chase_challenger` with face-value xG/xA attack (no in-season weight refit), minute-pooled goal finishing offset (shrink 1800 min), mid-range start shrink k=0.15. Promoted 2026-09-28 (ADR 0045) |
+| `hold_chase_challenger` | `models/hold_chase_challenger.py` | Model Candidate | `calibrated_matchup_hybrid` plus start-persistence participation, top-end ordering emphasis, relaxed hard-fixture defense. Former Champion; stays on Comparison Slate |
 | `goals_path_challenger` | `models/goals_path_challenger.py` | Catalog | Goals-path Candidate (#111/#116): `hold_chase_challenger` without xG sharp/ceiling tilt; data-driven `goal_weights` scale. Parent of flip Candidate; not on Comparison Slate |
 | `defence_link_challenger` | `models/defence_link_challenger.py` | Model Candidate | Flip-path Candidate (#117/#118/#119): `goals_path_challenger` plus post-link `k_cs`/`k_gc`. Admitted replacing `calibrated_matchup_hybrid` |
-| `bonus_arm_challenger` | `models/bonus_arm_challenger.py` | Model Candidate | Bonus-arm Candidate (#127/#129): `defence_link_challenger` plus data-driven `_XBPS_WEIGHTS` + `_BONUS_SOFTMAX_T`. Admitted (#130) replacing `participation_state_hybrid` |
+| `bonus_arm_challenger` | `models/bonus_arm_challenger.py` | Catalog | Bonus-arm Candidate (#127/#129): `defence_link_challenger` plus data-driven `_XBPS_WEIGHTS` + `_BONUS_SOFTMAX_T`. Displaced from Comparison Slate by `face_value_challenger` (2026-09-28) |
 | `calibrated_matchup_hybrid` | `models/calibrated_matchup_hybrid.py` | Catalog | Calibrated Matchup Share (shrunk delta s=0.40, Bayesian positional priors, decoupled saves/defcon) with mutually exclusive participation states and model-only penalty isolation. Not Dual-Vector Strength. Displaced from Comparison Slate by #119 |
 | `participation_state_hybrid` | `models/participation_state_hybrid.py` | Catalog | Event scoring from the hybrid, with mutually exclusive DNP / Start / Sub-in minutes. Displaced from Comparison Slate by #130 |
 | `metrics_component_hybrid` | `models/metrics_component_hybrid.py` | Catalog | Calibrated Event Component reconstruct through the scoring matrix (ADR 0005 / 0007). Ancestor of participation; not a registered Model Candidate |

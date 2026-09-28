@@ -6,17 +6,17 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**No active map.** Map [Challenger beats Champion (goals then CS)](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) closed 2026-09-27 by user (not planned); Destination not reached. #134 build pick closed unresolved. User builds next model outside map.
+**No active map.** 2026-09-28 Champion search (5 lanes, smoke harness) → `face_value_challenger` PASS Historical Promotion Gate, applied (ADR 0045). Note `docs/research/face-value-challenger/face-value-challenger.md`.
 
-**Slate:** Champion `hold_chase_challenger`; Candidates `defence_link_challenger`, `bonus_arm_challenger` (both FAIL gate, #131).
+**Slate:** Champion `face_value_challenger` (provisional); Candidates `hold_chase_challenger` (former Champion), `defence_link_challenger` (FAIL #131). `bonus_arm_challenger` → Catalog.
 
-**Final evidence (#133):** late regret opened by goals FWD top-11; defence repairs late, breaks Realized/Process MAE; bonus re-opens late; no ablation passes. Note `docs/research/champion-component-gap/layer-diagnosis-133.md`.
+**Next leads:** learned hurdle correction on Champion (needs per-GW feature memory in live path); first clean holdout = 2026-27 GW6+. Archive feature cols from `players.parquet` terminal (leak) — never new inputs.
 
-Eval canon: `docs/research/INDEX.md`. Residual note: `docs/research/champion-component-gap/champion-component-gap.md`. Champion `hold_chase_challenger` provisional (Blended flip blocked).
+Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `hold_chase_challenger` (Historical Promotion Gate, ADR 0044; former Champion `calibrated_matchup_hybrid` stays on the slate). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `face_value_challenger` (Historical Promotion Gate, ADR 0044/0045; former Champion `hold_chase_challenger` stays on the slate). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
@@ -47,7 +47,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 uv run pytest
 uv run ruff check .
 uv run python -m commands.refresh_data
-uv run python -m commands.run_model hold_chase_challenger
+uv run python -m commands.run_model face_value_challenger
 uv run python -m commands.dashboard
 uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.measure_champion_bias

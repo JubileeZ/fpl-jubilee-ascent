@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-No active map. [Challenger beats Champion](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/110) closed unreached (2026-09-27); user builds next model outside map. Champion `hold_chase_challenger`, provisional.
+No active map. Champion `face_value_challenger` (ADR 0045, provisional), promoted 2026-09-28 over `hold_chase_challenger` via Historical Promotion Gate.
 
 ```mermaid
 flowchart TD
