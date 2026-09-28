@@ -1,5 +1,5 @@
 status,lever,tried_as,baseline,result,evidence_date,revisit_after,evidence_path
-shipped,Face-value G/A weights (1.0 xG; 0 threat); no in-season ridge refit,face_value_challenger,hold_chase_challenger,gate PASS 3/3 combined +1.670 (stack),2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
+shipped,Face-value G/A weights (1.0 xG; 0 threat); no in-season ridge refit,face_value_challenger,hold_chase_challenger,gate PASS 3/3 +1.670 on leaky features; point-in-time re-gate FAIL +0.028 1/3 boot P 0.52 (accuracy still better),2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
 shipped,Minute-pooled goal finishing offset K=1800,face_value_challenger,hold_chase_challenger,+0.96 combined over lever 1+3; flips late,2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
 shipped,Start-probability shrink k=0.15,face_value_challenger,hold_chase_challenger,xMins and |bias| improve,2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
 shipped,Calibrated Matchup Share -> Club Strength -> neutral fixture scale,builder,neutral,beats neutral all-pool MAE,2026-09-22,,docs/adr/0040-calibrated-matchup-share-shrinkage.md

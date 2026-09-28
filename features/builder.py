@@ -148,6 +148,43 @@ def _load_players(processed_dir: Path) -> pd.DataFrame:
     return pd.read_parquet(processed_dir / "players.parquet")
 
 
+# players.parquet columns that hold season-end values in an archive; unknowable at a past deadline.
+TERMINAL_PLAYER_COLUMNS: tuple[str, ...] = (
+    "status", "news", "news_added", "chance_of_playing_next_round", "chance_of_playing_this_round",
+    "selected_by_percent", "corners_and_indirect_freekicks_order", "direct_freekicks_order",
+    "penalties_order", "total_points", "minutes", "goals_scored", "assists", "clean_sheets",
+    "goals_conceded", "own_goals", "penalties_saved", "penalties_missed", "yellow_cards",
+    "red_cards", "saves", "bonus", "bps", "influence", "creativity", "threat", "ict_index",
+    "starts", "expected_goals", "expected_assists", "expected_goal_involvements",
+    "expected_goals_conceded",
+)
+
+
+def point_in_time_players(
+    df_players: pd.DataFrame, df_perf: pd.DataFrame, df_fixtures: pd.DataFrame, history_cutoff_gw: int
+) -> pd.DataFrame:
+    """As-of metadata without a snapshot: price/club from last pre-cutoff row, terminal columns dropped.
+
+    Players with no pre-cutoff row fall back to their first recorded row (GW1 price/club for
+    opening-day squads), then to players.parquet.
+    """
+    out = df_players.drop(columns=[c for c in TERMINAL_PLAYER_COLUMNS if c in df_players.columns])
+    if df_perf.empty or "gameweek_id" not in df_perf.columns:
+        return out
+    rows = _attach_fixture_clubs(df_perf, df_fixtures).sort_values(
+        [c for c in ("gameweek_id", "kickoff_time") if c in df_perf.columns], kind="stable"
+    )
+    before = rows[rows["gameweek_id"] < history_cutoff_gw]
+    for source, target in (("price", "now_cost"), ("club_id_at_fixture", "club_id")):
+        if source not in rows.columns or target not in out.columns:
+            continue
+        last = before.dropna(subset=[source]).groupby("player_id")[source].last()
+        first = rows.dropna(subset=[source]).groupby("player_id")[source].first()
+        value = out["player_id"].map(last).fillna(out["player_id"].map(first)).fillna(out[target])
+        out[target] = value.astype(out[target].dtype)
+    return out
+
+
 def _completed_performance_rows(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame) -> pd.DataFrame:
     """Drop rows whose Fixture is known unfinished. Unknown fixture ids stay."""
     if (
@@ -751,7 +788,7 @@ def build_features(
     
     # 2. Current-season Club Fixtures known now (not "before GW1" when Full-Season starts at 1).
     history_cutoff = resolve_history_cutoff_gw(
-        target_gw, history_before_gw, df_fixtures, target_deadline
+        target_gw, history_before_gw if history_before_gw is not None else as_of_gw, df_fixtures, target_deadline
     )
     df_hist = history_before_target(
         df_perf,
@@ -760,6 +797,8 @@ def build_features(
         require_availability_snapshot,
     )
     df_hist = _completed_performance_rows(df_hist, df_fixtures)
+    if as_of_gw is not None and not has_point_in_time_snapshot:
+        df_players = point_in_time_players(df_players, df_perf, df_fixtures, history_cutoff)
 
     # Simple rolling GW averages
     rolling_stats = []

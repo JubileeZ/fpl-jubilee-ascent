@@ -12,6 +12,10 @@
 
 **Dead lever MUST NOT be rebuilt, re-swept, re-smoked, re-gated, or stacked into a Candidate before its `revisit_after` date (evidence date + 1 year). No exceptions** — not for new Champion, new season data, new harness, or "small tweak". Only user's explicit words override. `never` = structural (leakage); no revisit.
 
+## Sealed holdout (ADR 0046)
+
+2026-27 GW6+ = sealed holdout. Only frozen Candidates (selection done on 2025-26) get one gate run there; log run date + verdict in that Candidate's row. Tuning, smoke, or ablation on it = protocol breach.
+
 ## Rules
 
 - **Dead** row: see hard rule. Retuning grid values, wider clamps, or new stack order of same form = same lever.
@@ -20,6 +24,7 @@
 - **Shipped** row: already inside Champion or production contract; do not re-add as Candidate.
 - **Open** row: tried-on-paper-but-deferred, or untried. Next-lever pool.
 - Every Candidate attempt (pass or fail) → append/update row in `candidate_ledger.csv` + table view in same Checkpoint. Date = evidence date.
+- Rows with evidence ≤ 2026-09-28 measured on pre-ADR-0046 features (terminal price/club/penalty order). Leak fix alone is not revisit exception; only user's explicit words reopen.
 - Baseline column matters: deltas vs former Champion are hints, not verdicts vs current one — but Dead still holds until revisit date.
 
 ## Shipped (in Champion `face_value_challenger` or production)

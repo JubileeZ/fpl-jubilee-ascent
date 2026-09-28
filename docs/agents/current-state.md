@@ -10,7 +10,9 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Slate:** Champion `face_value_challenger` (provisional); Candidates `hold_chase_challenger` (former Champion), `defence_link_challenger` (FAIL #131). `bonus_arm_challenger` → Catalog.
 
-**Next leads:** learned hurdle correction on Champion (needs per-GW feature memory in live path); first clean holdout = 2026-27 GW6+. Archive feature cols from `players.parquet` terminal (leak) — never new inputs.
+**Eval hardening 2026-09-28 (ADR 0046):** backtest features point-in-time (price/club pre-target, terminal player cols dropped); gate adds min effect 1%, block-bootstrap P ≥ 0.95, guardrail tolerances; 2026-27 GW6+ sealed holdout. Point-in-time re-gate: `face_value_challenger` vs `hold_chase_challenger` = regret tie (FAIL), accuracy win → Champion kept by user decision.
+
+**Next leads:** learned hurdle correction on Champion (needs per-GW feature memory in live path); first clean holdout = 2026-27 GW6+. Deferred eval work: constrained valid-XI regret, 2024-25 second gate season, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 

@@ -91,9 +91,17 @@ Candidate Spearman 0.6919 vs 0.6900; Realized MAE 0.9696 vs 1.0334; Process MAE 
 
 170 variant rows, 113 gate-pass. Lane picks: A1 face value +0.53; A2 unfitted + pooled goal offsets +1.46 (3/3); A3 start shrink +0.18; B1 learned hurdle on face-value base +2.61 (3/3, boot P 0.94; holdout +2.51 < base); B2 50/50 xG-only + fitted `defence_link` +1.01 (weight-fragile).
 
+### Point-in-time re-gate (ADR 0046, `point_in_time_regate.csv`)
+
+Same pair re-run after leak fix (price/club from pre-target rows, terminal player columns dropped incl. `penalties_order`) + statistical gate. Runner: `regate_point_in_time.py` (~9 min, 4 procs).
+
+- 2025-26: combined Δ collapses +1.670 → +0.028 (`combined_delta`), 1/3 segments, boot P 0.516 → **FAIL** (would fail old gate too: 1/3 segments). Accuracy edge survives: blend MAE 0.8987 vs 0.9572, \|bias\| 0.003 vs 0.133, xMins 14.45 vs 14.58, Spearman 0.6929 vs 0.6909.
+- 2026-27 GW1–5: Δ +1.525, 1/3 segments, boot P 0.763 → FAIL.
+- Reading: regret win at promotion was mostly leaked-metadata interaction; clean pipeline = regret tie, accuracy win. Champion not changed automatically (user decision).
+
 ## Decision
 
-**Verdict**: Promote `face_value_challenger`; gate PASS applied 2026-09-28 (ADR 0045).
+**Verdict**: Promote `face_value_challenger`; gate PASS applied 2026-09-28 (ADR 0045). **Superseded evidence**: point-in-time re-gate fails (see above); Champion kept pending user decision.
 
 **Recommended action**:
 - Next lever: learned hurdle correction on top of Champion, once live path can label past-GW features.

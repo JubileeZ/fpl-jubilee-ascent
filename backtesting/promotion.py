@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
@@ -16,6 +18,15 @@ SEASON_WINDOWS: dict[str, tuple[int, int]] = {
 }
 _SEGMENT_NAMES = ("cold_start", "early_mid", "late")
 _MEANINGFUL_LIVE_LEAD = 0.05
+
+# Statistical gate (ADR 0046).
+MIN_EFFECT_SHARE = 0.01
+BOOTSTRAP_MIN_P = 0.95
+BOOTSTRAP_DRAWS = 20_000
+BOOTSTRAP_BLOCK_GWS = 3
+GUARDRAIL_REL_TOL = 0.01
+BIAS_ABS_TOL = 0.01
+SPEARMAN_ABS_TOL = 0.005
 
 
 @dataclass(frozen=True)
@@ -34,6 +45,22 @@ class PromotionVerdict:
     guardrails_passed: bool
     reasons: tuple[str, ...]
     eval_target: str = "actual_points"
+    min_effect: float = 0.0
+    bootstrap_p: float | None = None
+
+
+def block_bootstrap_win_probability(
+    deltas: Sequence[float], *, draws: int = BOOTSTRAP_DRAWS, block: int = BOOTSTRAP_BLOCK_GWS, seed: int = 0
+) -> float:
+    """Share of circular block-bootstrap resamples (blocks of consecutive GWs) with mean delta > 0."""
+    values = np.asarray(deltas, dtype=float)
+    n = len(values)
+    if n == 0:
+        return 0.0
+    size = min(block, n)
+    starts = np.random.default_rng(seed).integers(0, n, size=(draws, -(-n // size)))
+    idx = ((starts[:, :, None] + np.arange(size)) % n).reshape(draws, -1)[:, :n]
+    return float((values[idx].mean(axis=1) > 0).mean())
 
 
 def _regret_is_informative(metrics: dict[str, Any]) -> bool:
@@ -62,9 +89,9 @@ def guardrail_metrics(metrics: dict[str, Any]) -> GuardrailMetrics:
 
 def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetrics) -> bool:
     return (
-        candidate.xmins_mae <= champion.xmins_mae
-        and candidate.xp_bias <= champion.xp_bias
-        and candidate.rank_correlation >= champion.rank_correlation
+        candidate.xmins_mae <= champion.xmins_mae * (1.0 + GUARDRAIL_REL_TOL)
+        and candidate.xp_bias <= champion.xp_bias + BIAS_ABS_TOL
+        and candidate.rank_correlation >= champion.rank_correlation - SPEARMAN_ABS_TOL
     )
 
 
@@ -106,12 +133,17 @@ def evaluate_historical_promotion_gate(
     *,
     eval_target: str = "actual_points",
     reference_windows: dict[str, tuple[dict[str, Any], dict[str, Any]]] | None = None,
+    gw_primary_deltas: Sequence[float] | None = None,
 ) -> PromotionVerdict:
+    """Pass = combined delta ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
+    (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ BOOTSTRAP_MIN_P."""
     combined_champion = champion_windows["combined"]
     combined_candidate = candidate_windows["combined"]
     champion_primary = primary_metric_value(combined_champion)
     candidate_primary = primary_metric_value(combined_candidate)
     combined_delta = champion_primary - candidate_primary
+    min_effect = MIN_EFFECT_SHARE * max(champion_primary, 0.0)
+    bootstrap_p = None if gw_primary_deltas is None else block_bootstrap_win_probability(gw_primary_deltas)
     guardrails_passed = metrics_meet_guardrails(
         guardrail_metrics(combined_candidate),
         guardrail_metrics(combined_champion),
@@ -125,8 +157,14 @@ def evaluate_historical_promotion_gate(
             segment_wins += 1
 
     reasons: list[str] = []
+    effect_ok = combined_delta > 0 and combined_delta >= min_effect
     if combined_delta <= 0:
         reasons.append("combined primary metric did not improve")
+    elif not effect_ok:
+        reasons.append(f"combined improvement {combined_delta:.4f} below minimum effect {min_effect:.4f}")
+    significant = bootstrap_p is None or bootstrap_p >= BOOTSTRAP_MIN_P
+    if not significant:
+        reasons.append(f"bootstrap P(delta>0) {bootstrap_p:.3f} below {BOOTSTRAP_MIN_P:.2f}")
     if segment_wins < 2:
         reasons.append(f"won only {segment_wins}/3 seasonal segments")
     if not guardrails_passed:
@@ -137,14 +175,14 @@ def evaluate_historical_promotion_gate(
             if pair is None:
                 continue
             champion_ref, candidate_ref = pair
-            if float(candidate_ref["mae"]) > float(champion_ref["mae"]):
+            if float(candidate_ref["mae"]) > float(champion_ref["mae"]) * (1.0 + GUARDRAIL_REL_TOL):
                 guardrails_passed = False
                 reasons.append(
                     f"regressed {_REFERENCE_LABELS[target]} MAE guardrail "
                     f"({float(candidate_ref['mae']):.4f} vs {float(champion_ref['mae']):.4f})"
                 )
 
-    passed = combined_delta > 0 and segment_wins >= 2 and guardrails_passed
+    passed = effect_ok and significant and segment_wins >= 2 and guardrails_passed
     return PromotionVerdict(
         passed=passed,
         primary_metric=primary_metric_name(combined_champion),
@@ -153,6 +191,8 @@ def evaluate_historical_promotion_gate(
         guardrails_passed=guardrails_passed,
         reasons=tuple(reasons),
         eval_target=eval_target,
+        min_effect=min_effect,
+        bootstrap_p=bootstrap_p,
     )
 
 

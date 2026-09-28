@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from backtesting.promotion import (
+    block_bootstrap_win_probability,
     classify_live_lead,
     evaluate_historical_promotion_gate,
     guardrail_metrics,
@@ -101,6 +102,58 @@ def test_metrics_by_season_window_splits_gameweeks() -> None:
     assert windows["cold_start"]["sample_count"] == 1
     assert windows["early_mid"]["sample_count"] == 1
     assert windows["late"]["sample_count"] == 1
+
+
+def _regret_metrics(*, mae: float, regret: float) -> dict:
+    return {**_metrics(mae=mae, regret=regret), "valid_rank_gameweeks": 6}
+
+
+def _clear_winner_windows() -> tuple[dict, dict]:
+    champion = {name: _regret_metrics(mae=2.0, regret=10.0) for name in ("combined", "cold_start", "early_mid", "late")}
+    candidate = {name: _regret_metrics(mae=1.9, regret=9.0) for name in ("combined", "cold_start", "early_mid", "late")}
+    return champion, candidate
+
+
+def test_gate_rejects_improvement_below_minimum_effect() -> None:
+    champion, candidate = _clear_winner_windows()
+    candidate["combined"] = _regret_metrics(mae=1.9, regret=9.95)
+
+    verdict = evaluate_historical_promotion_gate(champion, candidate)
+
+    assert not verdict.passed
+    assert verdict.min_effect == pytest.approx(0.1)
+    assert any("minimum effect" in reason for reason in verdict.reasons)
+
+
+def test_gate_requires_block_bootstrap_significance() -> None:
+    champion, candidate = _clear_winner_windows()
+
+    noisy = evaluate_historical_promotion_gate(champion, candidate, gw_primary_deltas=[5.0, -4.0, 3.0, -4.5, 1.5, -0.5])
+    steady = evaluate_historical_promotion_gate(champion, candidate, gw_primary_deltas=[1.0, 0.5, 1.5, 0.8, 1.2, 1.0])
+
+    assert not noisy.passed
+    assert noisy.bootstrap_p is not None and noisy.bootstrap_p < 0.95
+    assert any("bootstrap" in reason for reason in noisy.reasons)
+    assert steady.passed
+    assert steady.bootstrap_p == 1.0
+
+
+def test_guardrails_tolerate_noise_but_not_real_regression() -> None:
+    champion = guardrail_metrics(_metrics(mae=2.0, bias=0.10, xmins_mae=14.0, spearman=0.69))
+    within = guardrail_metrics(_metrics(mae=2.0, bias=0.105, xmins_mae=14.1, spearman=0.687))
+    outside = guardrail_metrics(_metrics(mae=2.0, bias=0.10, xmins_mae=14.3, spearman=0.69))
+
+    assert metrics_meet_guardrails(within, champion)
+    assert not metrics_meet_guardrails(outside, champion)
+
+
+def test_block_bootstrap_is_deterministic_and_bounded() -> None:
+    deltas = [0.4, -0.2, 0.9, -1.1, 0.3, 0.6, -0.1]
+    first = block_bootstrap_win_probability(deltas)
+
+    assert first == block_bootstrap_win_probability(deltas)
+    assert 0.0 < first < 1.0
+    assert block_bootstrap_win_probability([]) == 0.0
 
 
 @pytest.mark.parametrize(

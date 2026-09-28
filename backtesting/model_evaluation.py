@@ -8,10 +8,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
+from backtesting.metrics import top_k_regret_by_gameweek
 from backtesting.promotion import (
     PromotionVerdict,
     evaluate_historical_promotion_gate,
     metrics_by_season_window,
+    primary_metric_name,
 )
 from backtesting.walkforward import WalkforwardResult
 from models.selection import ModelSelection
@@ -64,11 +68,24 @@ def compare_to_reference(
         for target in ("actual_points", "process_points")
         if target != primary_target
     }
+    champion_windows = metrics_by_season_window(reference.df_eval, target_column=primary_target)
+    gw_deltas = None
+    if primary_metric_name(champion_windows["combined"]) == "decision_regret":
+        paired = pd.concat(
+            [
+                top_k_regret_by_gameweek(reference.df_eval, target_column=primary_target).rename("champion"),
+                top_k_regret_by_gameweek(candidate.df_eval, target_column=primary_target).rename("candidate"),
+            ],
+            axis=1,
+            join="inner",
+        ).sort_index()
+        gw_deltas = (paired["champion"] - paired["candidate"]).tolist()
     return evaluate_historical_promotion_gate(
-        metrics_by_season_window(reference.df_eval, target_column=primary_target),
+        champion_windows,
         metrics_by_season_window(candidate.df_eval, target_column=primary_target),
         eval_target=primary_target,
         reference_windows=reference_windows or None,
+        gw_primary_deltas=gw_deltas,
     )
 
 
@@ -101,6 +118,8 @@ def build_evidence_record(
                 "eval_target": comparison.verdict.eval_target,
                 "primary_metric": comparison.verdict.primary_metric,
                 "combined_primary_delta": comparison.verdict.combined_primary_delta,
+                "min_effect": comparison.verdict.min_effect,
+                "bootstrap_p": comparison.verdict.bootstrap_p,
                 "segment_wins": comparison.verdict.segment_wins,
                 "guardrails_passed": comparison.verdict.guardrails_passed,
                 "reasons": list(comparison.verdict.reasons),
@@ -140,8 +159,10 @@ def write_promotion_evidence(record: dict[str, Any], output_dir: Path) -> tuple[
         lines.append(f"### `{comparison['candidate']}` ({outcome})")
         lines.append(
             f"- Primary metric: `{comparison['primary_metric']}` "
-            f"(delta {comparison['combined_primary_delta']:.4f})"
+            f"(delta {comparison['combined_primary_delta']:.4f}, min effect {comparison.get('min_effect', 0.0):.4f})"
         )
+        if comparison.get("bootstrap_p") is not None:
+            lines.append(f"- Block-bootstrap P(delta>0): {comparison['bootstrap_p']:.3f}")
         lines.append(f"- Eval target: `{comparison.get('eval_target', 'actual_points')}`")
         lines.append(f"- Segment wins: {comparison['segment_wins']}/3")
         lines.append(f"- Guardrails passed: {comparison['guardrails_passed']}")

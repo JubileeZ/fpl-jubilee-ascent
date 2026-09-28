@@ -178,7 +178,12 @@ def main() -> None:
     print(f"Promotion status: {updated.promotion_status}")
     for comparison in comparisons:
         outcome = "PASS" if comparison.verdict.passed else "FAIL"
-        print(f"- {comparison.candidate}: {outcome}")
+        verdict = comparison.verdict
+        boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
+        print(
+            f"- {comparison.candidate}: {outcome} (delta {verdict.combined_primary_delta:+.4f}, "
+            f"min {verdict.min_effect:.4f}, segs {verdict.segment_wins}/3, boot P {boot})"
+        )
         if comparison.verdict.reasons:
             print(f"  reasons: {', '.join(comparison.verdict.reasons)}")
     if evidence_paths:

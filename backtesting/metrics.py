@@ -37,6 +37,14 @@ def _top_k_stats(group: pd.DataFrame, k: int, *, target_column: str = "actual_po
     return overlap, regret
 
 
+def top_k_regret_by_gameweek(df_eval: pd.DataFrame, k: int = 11, *, target_column: str = "actual_points") -> pd.Series:
+    """Per-GW top-k regret (same definition as ``top_{k}_regret``), indexed by gameweek."""
+    return pd.Series(
+        {gw: _top_k_stats(group, k, target_column=target_column)[1] for gw, group in df_eval.groupby("gameweek")},
+        dtype=float,
+    )
+
+
 def _minute_bands(minutes: pd.Series) -> pd.Categorical:
     return pd.cut(
         minutes,
