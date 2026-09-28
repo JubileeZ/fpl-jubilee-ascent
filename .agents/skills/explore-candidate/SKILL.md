@@ -14,8 +14,16 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 
 - **Arm goal.** First invocation in conversation, no goal active: call `CreateGoal` once (per `/goal` contract) with objective:
   `explore-candidate <scope or "dual-lane">: frozen Candidate passing Historical Promotion Gate on dev + confirm seasons via smoke.py, adoption queued in Human Queue — or scope exhausted with every attempt in Candidate Ledger. State: .agents/work-packets/explore-candidate-<slug>.md`
-  Goal already active → skip. Then start step 0 same turn.
-- **Disk = memory.** Chat is not state. Work Packet `.agents/work-packets/explore-candidate-<slug>.md` (from `.agents/work-packet.md.tmpl`) holds: mode, scope, current step, round, per-lane mechanism / grid / best smoke row, ledger verdicts, `## Human Queue`. Scratch `.tmp/agent/explore-candidate/` persists across iterations. Every invocation: packet exists → resume at its `Next`; else create. Update packet after every step; iteration ends with `Next` = exact next action.
+  Goal already active → skip. `CreateGoal` unavailable → continue without goal; packet = state. Then start step 0 same turn.
+- **Disk = memory.** Chat is not state. Work Packet `.agents/work-packets/explore-candidate-<slug>.md` (from `.agents/work-packet.md.tmpl`) holds: mode, scope, current step, round, per-lane mechanism / grid / best smoke row, ledger verdicts, `## Human Queue`. Update packet after every step; iteration ends with `Next` = exact next action.
+  - **Slug:** Queue = queue CSV's parent folder name (e.g. `component-model-ideas`); Scoped / Dual-lane = topic slug fixed at step 0. Same invocation args → same packet path.
+  - **Bind:** invoking this skill = user naming Packet ID `explore-candidate-<slug>` (AGENTS.md Bind satisfied). Packet exists → Bind + resume at `Next` (never re-create from template); else create.
+  - **Scratch** `.tmp/agent/explore-candidate/` persists across iterations and interruptions; exempt from end-of-turn scratch cleanup. Deleted only at Exit (a)/(b).
+- **Resume after interruption** (quota, chat death, kill). Every invocation, step 0 first:
+  1. `pgrep -fl smoke.py` → running run for this packet = wait for it (poll output file); never launch duplicate.
+  2. Lane `smoke.csv` holds every grid variant for current Champion (`champion` column) → lane done; go step 4 for it. Partial or missing → re-dispatch lane with same `prototypes.py` + same `--out`: smoke.py skips variants already in `--out` (same season / Champion / GW range) and appends each row as it finishes.
+  3. Queue rows `status` = `in-progress-b<N>` = resume batch N first, before new rows.
+  4. Champion (`config/model_selection.json`) differs from packet's recorded Champion → prior smoke rows = hints only; re-smoke on new Champion.
 - **Never block mid-run.** No `AskQuestion` before Exit. Decision needing human → append to `## Human Queue` (question · options · default taken · evidence path) → take default → continue. Harness/gate crash (traceback, not verdict) ≠ FAIL: queue traceback + command, no ledger verdict; blocks that step only.
 - **Human Gates** (queue only; AFK never executes): `config/model_selection.json` edit · `commands.evaluate_model_promotion --apply` · Dead-row override · commit / push · Champion-change ADR acceptance (draft allowed, status Proposed).
 - **Progress guard.** Lane closes after 2 consecutive rounds with no new best `combined_delta`. Mechanism already in lane CSVs or ledger never re-smoked. All lanes closed → Exit.
@@ -24,6 +32,7 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
   - (b) Scope exhausted, every attempt in ledger → goal complete (verdict: no win).
   - (c) Only Human Queue items remain (e.g. every scoped mechanism Dead) → BLOCKED; goal stays active.
   - At Exit: write report (template below) into packet + topic note; write packet id to `.agents/handoff-pointer`; run goal completion audit, `UpdateGoal complete` for (a)/(b); final turn presents Human Queue via `AskQuestion`.
+  - Packet keeps ≥1 open `- [ ]` Human Queue item until user resolves it (commit-gate treats all-checked packet as finished → deletion loses resume state).
 
 ## Mode
 
@@ -35,13 +44,16 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 
 ## Queue mode
 
-Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_id`, `tier`, `mechanism`, `inputs`, `replaces`, `nearest_ledger_row`, `confirm_2024_25`, `grid`, `conflicts_with`, `status`, `ledger_result`. Topic slug = queue's folder; notes/companions go there.
+Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_id`, `tier`, `mechanism`, `inputs`, `replaces`, `nearest_ledger_row`, `confirm_informative` (re-check vs resolved confirm season), `grid`, `conflicts_with`, `status`, `ledger_result`. Topic slug = queue's folder; notes/companions go there.
 
-- **Eligible row:** `status` = `untested`. Skip `needs ruling` (Human Queue "rule on <id>?", default skip), `holdout-first`, `blocked*`, anything already verdicted.
-- **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict (on top of it if it won). Deferred rows wait for next batch.
-- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`. Step 5 Stack protocol on batch winners. Then steps 6–7 on frozen result.
-- **Row updates** after every verdict: `status` ∈ {`dead-match`, `fail`, `pass-dev`, `stack-member`, `confirm-pass`, `confirm-fail`}; `ledger_result` = `combined_delta segs boot P` (+ stack name if stacked). Ledger row per step 8.
-- **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate); next run re-screens remaining `untested` rows on new Champion. Queue has no eligible rows → Exit (b)/(c).
+- **Eligible row:** `status` = `untested` or `in-progress-b<N>` (resume first). Skip `needs ruling` (Human Queue "rule on <id>?", default skip), `holdout-first`, `blocked*`, anything already verdicted.
+- **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict. Base for `after:` row = current Champion; `<id>` `confirm-pass` unpromoted → row waits. Grid entry naming another row (`+ <id>`) = implicit `after:<id>`; grid token `best` = second smoke round same lane, counts toward ≤6. Deferred rows wait for next batch.
+- **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
+- **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
+- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`. Step 5 Stack protocol on batch winners (stack/verify runs under `.tmp/agent/explore-candidate/stack_b<N>/`). Then steps 6–7 on frozen result.
+- **Row verdict = one atomic edit:** `status` ∈ {`dead-match`, `fail`, `pass-dev`, `stack-member`, `confirm-pass`, `confirm-fail`} + `ledger_result` = `combined_delta segs boot P` (+ stack name if stacked) + ledger row (step 8 rules) + verified smoke rows appended to `docs/research/<slug>/smoke_results.csv` (ledger `evidence_path`; never `.tmp`). Order: evidence CSV → ledger row → queue row. Never status without ledger row.
+- **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
+- **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
 
 ## Seasons (never hard-code)
 
@@ -109,6 +121,7 @@ Write only under .tmp/agent/explore-candidate/<lane>/. No edits to repo files. U
    Inputs only via fit(history_df)/predict(features_df). No file reads, no players.parquet, no season literals.
 2. uv run python .agents/skills/explore-candidate/smoke.py .tmp/agent/explore-candidate/<lane>/prototypes.py --audit_only   (must PASS)
 3. uv run python .agents/skills/explore-candidate/smoke.py .tmp/agent/explore-candidate/<lane>/prototypes.py --lane <lane> --workers 2 --out .tmp/agent/explore-candidate/<lane>/smoke.csv
+   Run in background; poll until `Wrote … rows`. Re-run of same command resumes (Resume after interruption). Changed prototype code = new variant name (skip-done keys on name).
 Return: table variant|pass|combined_delta|segs|boot_p_gt0|reasons, manifest per variant, one-line mechanism per variant, best variant + why.
 ```
 
@@ -159,7 +172,7 @@ Paper win = verified smoke row `pass=True` (full gate, dev season, full season r
 2. Ablate: leave-one-out variant per lever in same smoke file. Lever whose removal does not lower `combined_delta` → drop; re-smoke reduced stack.
 3. Frozen pick = best of {surviving stack, best single} by verified `combined_delta` with `pass=True`.
 4. Only winners stack: failed or near-miss lever = Dead row, never added to stack.
-5. Confirm (step 7) runs once, on frozen pick only — never on singles then stack (each extra frozen name = extra look at confirm season).
+5. Confirm (step 7) runs once, on frozen pick only — never on singles then stack (each extra frozen name = extra look at confirm season). Confirm FAIL on frozen pick → every member row `confirm-fail` + Dead; no confirm on subsets or singles from same batch.
 
 ### 6. Build Candidate
 
@@ -172,7 +185,7 @@ From winning prototype:
 ### 7. Adopt gate
 
 1. Dev PASS = step 6 row.
-2. Confirmation (ADR 0047), once: `uv run python .agents/skills/explore-candidate/smoke.py --model <name> --season confirm --out docs/research/<slug>/candidate_gate.csv`. Harness refuses repeat runs, prototypes, partial GW range, scratch `--out`. Ledger `result` records `confirm <confirm season> PASS|FAIL <delta> <segs> boot P <p>` (harness reads this to block repeats).
+2. Confirmation (ADR 0047), once: `uv run python .agents/skills/explore-candidate/smoke.py --model <name> --season confirm --out docs/research/<slug>/candidate_gate.csv`. Harness refuses repeat runs, prototypes, partial GW range, scratch `--out`. Ledger `result` records `confirm <confirm season> PASS|FAIL <delta> <segs> boot P <p>` (harness reads this, `--out`, and every `docs/{research,archive}/*/candidate_gate.csv` to block repeats). `--out` must be `docs/research/<slug>/candidate_gate.csv`.
    - FAIL → Dead ledger row; back to step 5 if scope remains, else Exit (b).
    - Lever depends on scoring rule absent in confirm season (e.g. defcon points, BPS weights) → skip confirm (uninformative); Human Queue "holdout-first per ADR 0046; wait holdout GW6+"; Exit (c).
 3. PASS both → Human Queue adoption bundle:
@@ -183,7 +196,7 @@ From winning prototype:
 
 ### 8. Record + Exit
 
-- Topic folder `docs/research/<slug>/` from `docs/research/template/research-note.md`: note + frozen `smoke_results.csv` (concat lane CSVs) + `candidate_gate.csv`. Metric section per INDEX conventions.
+- Topic folder `docs/research/<slug>/` from `docs/research/template/research-note.md`: note + frozen `smoke_results.csv` (append verified lane rows; never overwrite) + `candidate_gate.csv`. Metric section per INDEX conventions.
 - Every attempt (pass/fail) → `candidate_ledger.csv` row (Dead: `revisit_after` = evidence date + 1 year) + ledger table view. `uv run pytest tests/test_candidate_ledger.py`.
 - Code touched → `uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`. Failures fixed before Exit.
 - Delete `.tmp/agent/explore-candidate/` only at Exit (a)/(b); keep for (c).

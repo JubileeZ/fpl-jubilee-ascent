@@ -9,7 +9,8 @@
 Season roles resolve from ``data/archive/YYYY-YY`` (complete = every fixture finished; seed = prior archive season if present):
 ``dev`` = latest complete season, ``confirm`` = second-latest complete season (ADR 0047), incomplete seasons = sealed live
 holdout (never run here). ``--season confirm``: registered models only, full season, durable ``--out``, one run per model
-(refused when ``--out`` or Candidate Ledger already holds it).
+(refused when ``--out``, any ``docs/{research,archive}/*/candidate_gate.csv``, or Candidate Ledger already holds it).
+Rows append to ``--out`` as each variant finishes; re-running skips variants already there for same season/Champion/GW range.
 Prototype file exports ``PROTOTYPES: dict[str, type[BaseModel]]`` and ``FEATURES: dict[str, tuple[str, ...]]``
 (entries ``features.<col>`` / ``history.<col>`` / ``local.<key>``). Exit 2 = audit, leakage, or confirm-protocol failure.
 """
@@ -22,7 +23,7 @@ import csv
 import importlib.util
 import re
 import sys
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -167,13 +168,36 @@ def _run(job: tuple[str, Season, int, int]) -> tuple[str, WalkforwardResult]:
     return name, run_walkforward_backtest(config)
 
 
-def confirm_violations(models: list[str], prototypes: Path | None, out: Path, full_season: bool, season: str) -> list[str]:
+def _read_rows(path: Path) -> list[dict[str, str]]:
+    return list(csv.DictReader(path.read_text().splitlines())) if path.exists() else []
+
+
+def append_row(out: Path, row: dict[str, object]) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    new_file = not out.exists()
+    with out.open("a", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(row))
+        if new_file:
+            writer.writeheader()
+        writer.writerow(row)
+
+
+def done_variants(out: Path, *, season: str, data_season: str, champion: str, gw_range: str) -> set[str]:
+    key = (season, data_season, champion, gw_range)
+    return {r["variant"] for r in _read_rows(out) if (r.get("season"), r.get("data_season"), r.get("champion"), r.get("gw_range")) == key}
+
+
+def confirm_violations(
+    models: list[str], prototypes: Path | None, out: Path, full_season: bool, season: str, prior_gates: list[Path] | None = None
+) -> list[str]:
     issues = ["confirm season takes registered --model only, no prototypes"] if prototypes or not models else []
     if not full_season:
         issues.append("confirm season runs full season only")
     if ".tmp" in out.resolve().parts:
         issues.append("confirm season needs durable --out (docs/research/<slug>/...), not .tmp")
-    rows = list(csv.DictReader(out.read_text().splitlines())) if out.exists() else []
+    if prior_gates is None:
+        prior_gates = [*ROOT.glob("docs/research/*/candidate_gate.csv"), *ROOT.glob("docs/archive/*/candidate_gate.csv")]
+    rows = [r for path in {out, *prior_gates} for r in _read_rows(path)]
     done_out = {r["variant"] for r in rows if r.get("season") == "confirm" and r.get("data_season") == season}
     ledger = list(csv.DictReader(LEDGER_CSV.read_text().splitlines()))
     for name in models:
@@ -230,39 +254,46 @@ def main() -> int:
 
     champion = load_model_selection().champion
     print(f"Season {args.season} = {season.name} GW{gw_range}, seed {season.seed_dir.parent.name if season.seed_dir else 'none'}")
-    jobs = [(name, season, start_gw, end_gw) for name in (champion, *challengers)]
+    done = done_variants(args.out, season=args.season, data_season=season.name, champion=champion, gw_range=gw_range) & set(challengers)
+    if done:
+        print(f"Skipping variants already in {args.out}: {', '.join(sorted(done))}")
+    pending = [name for name in challengers if name not in done]
+    if not pending:
+        print(f"Wrote 0 rows -> {args.out} (all variants done)")
+        return 0
     path_arg = str(args.prototypes.resolve()) if args.prototypes else None
-    try:
-        with ProcessPoolExecutor(args.workers, initializer=_init_worker, initargs=(path_arg,)) as pool:
-            results = dict(pool.map(_run, jobs))
-    except LeakageError as error:
-        print(f"LEAKAGE FAIL: {error}")
-        return 2
-
-    rows = []
-    for name in challengers:
-        bar = CONFIRMATION_BOOTSTRAP_MIN_P if args.season == "confirm" else BOOTSTRAP_MIN_P
-        verdict = compare_to_reference(results[champion], results[name], bootstrap_min_p=bar)
-        rows.append({
-            "date": date.today().isoformat(), "season": args.season, "data_season": season.name, "lane": args.lane,
-            "variant": name, "champion": champion, "gw_range": gw_range, "pass": verdict.passed, "combined_delta": verdict.combined_primary_delta,
-            "min_effect": verdict.min_effect, "segs": verdict.segment_wins, "boot_p_gt0": verdict.bootstrap_p,
-            "guardrails_passed": verdict.guardrails_passed, "reasons": "; ".join(verdict.reasons),
-            "source": str(args.prototypes or "registered"),
-        })
-        boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
-        print(f"{name}: {'PASS' if verdict.passed else 'FAIL'} delta {verdict.combined_primary_delta:+.4f} "
-              f"(min {verdict.min_effect:.4f}) segs {verdict.segment_wins}/3 boot P {boot} {'; '.join(verdict.reasons)}")
-
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    new_file = not args.out.exists()
-    with args.out.open("a", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        if new_file:
-            writer.writeheader()
-        writer.writerows(rows)
-    print(f"Wrote {len(rows)} rows -> {args.out}")
-    return 0
+    bar = CONFIRMATION_BOOTSTRAP_MIN_P if args.season == "confirm" else BOOTSTRAP_MIN_P
+    written, leaked = 0, False
+    with ProcessPoolExecutor(args.workers, initializer=_init_worker, initargs=(path_arg,)) as pool:
+        reference = pool.submit(_run, (champion, season, start_gw, end_gw))
+        futures = [pool.submit(_run, (name, season, start_gw, end_gw)) for name in pending]
+        try:
+            base = reference.result()[1]
+        except LeakageError as error:
+            pool.shutdown(cancel_futures=True)
+            print(f"LEAKAGE FAIL (Champion reference): {error}")
+            return 2
+        for future in as_completed(futures):
+            try:
+                name, result = future.result()
+            except LeakageError as error:
+                print(f"LEAKAGE FAIL: {error}")
+                leaked = True
+                continue
+            verdict = compare_to_reference(base, result, bootstrap_min_p=bar)
+            append_row(args.out, {
+                "date": date.today().isoformat(), "season": args.season, "data_season": season.name, "lane": args.lane,
+                "variant": name, "champion": champion, "gw_range": gw_range, "pass": verdict.passed, "combined_delta": verdict.combined_primary_delta,
+                "min_effect": verdict.min_effect, "segs": verdict.segment_wins, "boot_p_gt0": verdict.bootstrap_p,
+                "guardrails_passed": verdict.guardrails_passed, "reasons": "; ".join(verdict.reasons),
+                "source": str(args.prototypes or "registered"),
+            })
+            written += 1
+            boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
+            print(f"{name}: {'PASS' if verdict.passed else 'FAIL'} delta {verdict.combined_primary_delta:+.4f} "
+                  f"(min {verdict.min_effect:.4f}) segs {verdict.segment_wins}/3 boot P {boot} {'; '.join(verdict.reasons)}", flush=True)
+    print(f"Wrote {written} rows -> {args.out}")
+    return 2 if leaked else 0
 
 
 if __name__ == "__main__":
