@@ -3,7 +3,7 @@ from pathlib import Path
 
 from commands.snapshot_season import main, process_season_archive
 from features.expected_role_prior import LIVE_SEASON
-from features.season_archive import pin_season_archive
+from features.season_archive import pin_season_archive, prune_stale_element_summaries
 
 
 def test_from_raw_dir_writes_processed_archive(tmp_path: Path) -> None:
@@ -110,6 +110,40 @@ def test_pin_season_archive_excludes_user_squad_files(tmp_path: Path) -> None:
     assert not (pin.processed_dir / "user_picks.parquet").exists()
     assert not (pin.processed_dir / "user_state.parquet").exists()
     assert not (pin.processed_dir / "user_chips.parquet").exists()
+
+
+def test_prune_stale_element_summaries_keeps_bootstrap_ids_only(tmp_path: Path) -> None:
+    (tmp_path / "bootstrap_static.json").write_text(json.dumps({"elements": [{"id": 1}]}), encoding="utf-8")
+    for player_id in (1, 900):
+        (tmp_path / f"element_summary_{player_id}.json").write_text("{}", encoding="utf-8")
+
+    assert prune_stale_element_summaries(tmp_path) == 1
+    assert sorted(p.name for p in tmp_path.glob("element_summary_*.json")) == ["element_summary_1.json"]
+
+
+def test_prune_stale_element_summaries_noop_without_bootstrap_elements(tmp_path: Path) -> None:
+    (tmp_path / "bootstrap_static.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "element_summary_900.json").write_text("{}", encoding="utf-8")
+
+    assert prune_stale_element_summaries(tmp_path) == 0
+    assert (tmp_path / "element_summary_900.json").exists()
+
+
+def test_pin_drops_prior_season_element_summaries(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    processed = tmp_path / "processed"
+    raw.mkdir()
+    processed.mkdir()
+    (raw / "bootstrap_static.json").write_text(json.dumps({"elements": [{"id": 1}]}), encoding="utf-8")
+    (raw / "element_summary_1.json").write_text("{}", encoding="utf-8")
+    (processed / "players.parquet").write_bytes(b"players")
+    dest_raw = tmp_path / "archive" / LIVE_SEASON / "raw"
+    dest_raw.mkdir(parents=True)
+    (dest_raw / "element_summary_900.json").write_text("{}", encoding="utf-8")
+
+    pin_season_archive(LIVE_SEASON, raw, processed, archive_root=tmp_path / "archive")
+
+    assert sorted(p.name for p in dest_raw.glob("element_summary_*.json")) == ["element_summary_1.json"]
 
 
 def test_official_content_hash_ignores_json_key_order_and_user_files(tmp_path: Path) -> None:

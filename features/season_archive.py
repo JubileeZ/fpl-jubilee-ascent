@@ -133,6 +133,22 @@ def _remove_non_official(directory: Path, *, allow: Callable[[str], bool]) -> No
             path.unlink()
 
 
+def prune_stale_element_summaries(raw_dir: Path) -> int:
+    """Delete ``element_summary_<id>.json`` for ids absent from ``raw_dir/bootstrap_static.json``; return count.
+
+    Element ids are reassigned each season; prior-season summaries otherwise leak into ``player_performances``.
+    """
+    bootstrap_path = raw_dir / "bootstrap_static.json"
+    elements = json.loads(bootstrap_path.read_text(encoding="utf-8")).get("elements", []) if bootstrap_path.is_file() else []
+    if not elements:
+        return 0
+    keep = {str(element["id"]) for element in elements}
+    stale = [p for p in raw_dir.glob("element_summary_*.json") if p.stem.removeprefix("element_summary_") not in keep]
+    for path in stale:
+        path.unlink()
+    return len(stale)
+
+
 def pin_season_archive(
     season: str,
     raw_dir: Path,
@@ -161,6 +177,7 @@ def pin_season_archive(
     _copy_official_files(processed_dir, dest_processed, allow=is_official_processed_filename)
     _remove_non_official(dest_raw, allow=is_official_raw_filename)
     _remove_non_official(dest_processed, allow=is_official_processed_filename)
+    prune_stale_element_summaries(dest_raw)
 
     content_hash = official_content_hash(dest_raw)
     hash_path.write_text(content_hash + "\n", encoding="utf-8")

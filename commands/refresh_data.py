@@ -25,7 +25,7 @@ from clients.fpl_auth import get_jwt_token
 from features.processor import process_directory
 from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
-from features.season_archive import pin_season_archive
+from features.season_archive import pin_season_archive, prune_stale_element_summaries
 from features.expected_role_prior import LIVE_SEASON
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -122,6 +122,9 @@ async def main(argv: list[str] | None = None) -> None:
         logger.info("Processing raw JSON files into Parquet tables...")
         raw_dir = PROJECT_ROOT / "data" / "raw"
         processed_dir = PROJECT_ROOT / "data" / "processed"
+        pruned = prune_stale_element_summaries(raw_dir)
+        if pruned:
+            logger.info(f"Removed {pruned} prior-season element summaries from {raw_dir}")
         process_directory(raw_dir, processed_dir)
         logger.info("Data processing complete! Parquet tables saved to data/processed/")
         try:

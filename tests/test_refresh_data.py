@@ -28,6 +28,7 @@ async def test_refresh_data_fetches_player_summaries():
          patch("commands.refresh_data.get_jwt_token", mock_get_jwt), \
          mock_process as mock_process_dir, \
          patch("commands.refresh_data.append_price_snapshot") as mock_price_snapshot, \
+         patch("commands.refresh_data.prune_stale_element_summaries", return_value=0) as mock_prune, \
          patch("commands.refresh_data.pin_season_archive") as mock_pin:
         mock_pin.return_value = LiveSeasonPin(
             processed_dir=MagicMock(),
@@ -49,6 +50,7 @@ async def test_refresh_data_fetches_player_summaries():
         
         # Verify process_directory was called
         mock_process_dir.assert_called_once()
+        mock_prune.assert_called_once_with(mock_process_dir.call_args.args[0])
         mock_price_snapshot.assert_called_once()
         mock_pin.assert_called_once()
 
@@ -65,6 +67,7 @@ async def test_refresh_data_logs_hash_and_does_not_invoke_git(caplog):
          patch("commands.refresh_data.get_jwt_token", AsyncMock(side_effect=Exception("No auth"))), \
          patch("commands.refresh_data.process_directory"), \
          patch("commands.refresh_data.append_price_snapshot"), \
+         patch("commands.refresh_data.prune_stale_element_summaries", return_value=0), \
          patch("commands.refresh_data.pin_season_archive", return_value=pin), \
          caplog.at_level("INFO"):
         from commands.refresh_data import main
