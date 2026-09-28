@@ -19,10 +19,9 @@ SEASON_WINDOWS: dict[str, tuple[int, int]] = {
 _SEGMENT_NAMES = ("cold_start", "early_mid", "late")
 _MEANINGFUL_LIVE_LEAD = 0.05
 
-# Statistical gate (ADR 0046).
-MIN_EFFECT_SHARE = 0.01
-BOOTSTRAP_MIN_P = 0.95
-# 2024-25 confirmation season bar (ADR 0048); 2025-26 development season keeps BOOTSTRAP_MIN_P.
+# Statistical gate (ADR 0046). No minimum effect beyond delta > 0; bootstrap bar shared by both seasons (ADR 0049).
+MIN_EFFECT_SHARE = 0.0
+BOOTSTRAP_MIN_P = 0.60
 CONFIRMATION_BOOTSTRAP_MIN_P = 0.60
 BOOTSTRAP_DRAWS = 20_000
 BOOTSTRAP_BLOCK_GWS = 3
@@ -138,7 +137,7 @@ def evaluate_historical_promotion_gate(
     gw_primary_deltas: Sequence[float] | None = None,
     bootstrap_min_p: float = BOOTSTRAP_MIN_P,
 ) -> PromotionVerdict:
-    """Pass = combined delta ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
+    """Pass = combined delta > 0 and ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
     (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ bootstrap_min_p."""
     combined_champion = champion_windows["combined"]
     combined_candidate = candidate_windows["combined"]

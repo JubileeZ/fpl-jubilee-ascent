@@ -153,7 +153,7 @@ def main() -> None:
     parser.add_argument("--season", type=str, default=None)
     parser.add_argument("--require_snapshots", action="store_true")
     parser.add_argument("--apply", action="store_true", help="Update Comparison Slate when gate passes")
-    parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.60 (ADR 0048)")
+    parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.60 (ADR 0049)")
     args = parser.parse_args()
 
     start_gw, end_gw = _parse_gw_range(args.gw_range)

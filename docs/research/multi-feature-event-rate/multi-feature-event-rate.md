@@ -3,7 +3,7 @@
 **Updated**: 2026-09-28T13:45:00+07:00  
 **Data stamp**: 2025-26 archive GW1–38 seed 2024-25 (dev); 2024-25 archive GW1–38 no seed (confirmation, ADR 0047); point-in-time features (ADR 0046); recompute 2026-09-28  
 **Season**: 2025/26 (dev) + 2024/25 (confirmation)  
-**Status**: Closed — `multi_feature_assist_challenger` dev PASS, 2024-25 boot P 0.896 (FAIL at 0.95, PASS at 0.60 bar) → promoted to Champion (ADR 0048); goals/GC/stack levers Dead  
+**Status**: Closed — `multi_feature_assist_challenger` dev PASS, 2024-25 boot P 0.896 (FAIL at 0.95, PASS at 0.60 bar) → promoted to Champion (ADR 0048; also passes 0.60 bar both seasons, ADR 0049); goals/GC/stack levers Dead  
 **Purpose**: Test user idea: project Event Rates from several signals jointly (xG/xA, threat/creativity, opponent xG conceded, own-team xG, home) instead of one per90 signal × fixture multiplier.  
 **Scope**: Goals, assists, goals conceded / clean sheet rates on Champion `face_value_challenger`. Excluded: minutes, bonus, saves, defcon; official FDR as GLM input (see Method).  
 **Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [face-value-challenger](../face-value-challenger/face-value-challenger.md) · [Eval canon](../INDEX.md) · [ADR 0046](../../adr/0046-point-in-time-backtest-and-statistical-gate.md) · [ADR 0047](../../adr/0047-two-season-promotion-gate.md) · [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md)  
@@ -11,7 +11,7 @@
 
 ## Sources
 
-- **Primary**: `backtesting/model_evaluation.py` `compare_to_reference` — gate rule (Blended `top_11_regret`, ≥1% effect, block-bootstrap P ≥ 0.95, ≥2/3 segments, guardrails)
+- **Primary**: `backtesting/model_evaluation.py` `compare_to_reference` — gate rule (Blended `top_11_regret`, ≥1% effect, block-bootstrap P ≥ 0.95 at search time; 0.60 both seasons after ADR 0049, ≥2/3 segments, guardrails)
 - **Primary**: `models/multi_feature_assist_challenger.py` — frozen Candidate
 - **Repository data**: `data/archive/2025-26/processed` (target), `data/archive/2024-25/processed` (seed) — cutoff 2025-26 GW38
 
@@ -55,7 +55,7 @@ Full redo docs/research/multi-feature-event-rate/multi-feature-event-rate.md
 |---|---|---|---|---|---|
 | Blended top-11 regret | `top_11_regret` | Mean GW (best-11 blended − projected-top-11 blended) | Lower $\downarrow$ | < Champion | Gate primary |
 | Combined delta | `combined_delta` | Champion regret − Candidate regret | Higher $\uparrow$ | ≥ `min_effect` (1% Champion regret) | Gate primary delta |
-| Bootstrap P | `boot_p_gt0` | Block-bootstrap share of GW resamples with mean delta > 0 | Higher $\uparrow$ | ≥ `bootstrap_min_p` (0.95 dev; 0.60 confirmation, ADR 0048) | Gate robustness |
+| Bootstrap P | `boot_p_gt0` | Block-bootstrap share of GW resamples with mean delta > 0 | Higher $\uparrow$ | ≥ `bootstrap_min_p` (0.95 dev; 0.60 confirmation at search time, ADR 0048; 0.60 both, ADR 0049) | Gate robustness |
 | Segment wins | `segs` / `segment_wins` | Seasonal segments (cold/early-mid/late) with regret delta > 0 | Higher $\uparrow$ | ≥ 2/3 | Gate robustness |
 | Guardrails | `blend_mae`, `realized_mae`, `process_mae`, `abs_bias`, `spearman`, `xmins_mae` | ADR 0044/0046 | MAE/bias/xMins $\downarrow$; Spearman $\uparrow$ | within Champion tolerance | Gate guardrails |
 | Assist bias | `assist_bias_realized` | mean(`xp_assists` − realized assist points) | Near 0 | 0 | Component calibration context; not gate |

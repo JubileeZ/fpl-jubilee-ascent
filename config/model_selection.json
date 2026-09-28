@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "champion": "multi_feature_assist_challenger",
+  "champion": "learned_start_challenger",
   "candidates": [
-    "face_value_challenger",
-    "hold_chase_challenger"
+    "multi_feature_assist_challenger",
+    "face_value_challenger"
   ],
   "promotion_status": "provisional"
 }

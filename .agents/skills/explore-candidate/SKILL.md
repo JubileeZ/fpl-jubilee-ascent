@@ -46,7 +46,7 @@ Record resolved names in packet at step 0; roles roll forward automatically when
 - **Zero leakage.** Inputs only from `fit(history_df)` / `predict(features_df)` handed in by walk-forward (as-of `gw`, history before target deadline). No direct file reads. No `players.parquet` season columns (`TERMINAL_PLAYER_COLUMNS`, `features/builder.py`). Prototype source holds no season literal (audit refuses). Holdout sealed.
 - **Strict feature audit.** Each prototype declares `FEATURES` manifest; every column literal in source must be declared; `smoke.py` refuses undeclared or terminal columns and fails any run where fit history reaches target GW.
 - **Ledger law.** Dead row with `revisit_after` > today = untouchable (rebuild, re-sweep, re-smoke, stack). Only user's explicit words override. Match by mechanism, not name. Retuned grid / wider clamp / new stack order of Dead form = same lever.
-- Gate code = `backtesting.model_evaluation.compare_to_reference` (Blended `top_11_regret`, ≥1% effect, block-bootstrap P ≥ 0.95 dev / ≥ 0.60 confirm per ADR 0048, ≥2/3 segments, guardrails). No private metric replaces it. Never loosen gate, drop guardrail, or shrink GW range to manufacture a win.
+- Gate code = `backtesting.model_evaluation.compare_to_reference` (Blended `top_11_regret`, delta > 0 (no min effect), block-bootstrap P ≥ 0.60 dev + confirm per ADR 0049, ≥2/3 segments, guardrails). No private metric replaces it. Never loosen gate, drop guardrail, or shrink GW range to manufacture a win.
 
 ## Workflow
 

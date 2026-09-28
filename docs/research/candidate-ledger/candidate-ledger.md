@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-09-28T13:30:00+07:00  
+**Updated**: 2026-09-28T21:20:00+07:00  
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -14,7 +14,7 @@
 
 ## Sealed holdout + confirmation season (ADR 0046, 0047, 0048)
 
-2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning; ADR 0048: bootstrap bar 0.60 there, 0.95 on 2025-26); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
+2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning; ADR 0049: bootstrap bar 0.60 on both seasons, no minimum effect); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
 
 ## Rules
 
@@ -27,11 +27,12 @@
 - Rows with evidence ≤ 2026-09-28 measured on pre-ADR-0046 features (terminal price/club/penalty order). Leak fix alone is not revisit exception; only user's explicit words reopen.
 - Baseline column matters: deltas vs former Champion are hints, not verdicts vs current one — but Dead still holds until revisit date.
 
-## Shipped (in Champion `multi_feature_assist_challenger` or production)
+## Shipped (in Champion `learned_start_challenger` or production)
 
 | Lever | Where | Date | Evidence |
 |---|---|---|---|
-| Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | `models/multi_feature_assist_challenger.py` | 2026-09-28 | [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md) · `confirmation_gate_summary.csv` (dev PASS; 2024-25 P 0.896 passes 0.60 bar) |
+| Learned start probability (ridge-logistic, per-GW mass preserved to Champion total) + P(60)-weighted bonus pool | `models/learned_start_challenger.py` | 2026-09-28 | [ADR 0050](../../adr/0050-champion-learned-start-challenger.md) · `candidate_gate.csv` (user override of Dead row; dev PASS +1.198 P 0.928; 2024-25 PASS +0.518 2/3 P 0.638 under ADR 0049) |
+| Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | `models/multi_feature_assist_challenger.py` | 2026-09-28 | [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md) · `confirmation_gate_summary.csv` (dev PASS; 2024-25 P 0.896 passes 0.60 bar, and 0.60 both-season bar per ADR 0049) |
 | Face-value G/A weights (1.0 xG, 0 threat); no in-season ridge refit | `models/face_value_challenger.py` | 2026-09-28 | [ADR 0045](../../adr/0045-champion-face-value-challenger.md) · `face_value_gate_summary.csv` |
 | Minute-pooled goal finishing offset Σ(goals−xG)·90/(Σmin+1800) | same | 2026-09-28 | same (+0.96 combined, flips late) |
 | Start-probability shrink p·(1−0.15(1−p)) | same | 2026-09-28 | same (xMins, \|bias\|) |
@@ -40,7 +41,7 @@
 
 ## Dead (do not retry before `Revisit after`)
 
-Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `face_value_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
+Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `face_value_challenger`; MFA = Champion `multi_feature_assist_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
 
 | Lever class | Tried as | Baseline | Result | Evidence date | Revisit after | Evidence |
 |---|---|---|---|---|---|---|
@@ -74,20 +75,26 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Multi-feature Poisson GLM goals rate (xG/threat/opp xG conceded/team xG/home; +finishing/position) | smoke `g_*` | FV | best +0.547 1/3 P 0.70; no-fixture −0.263 | 2026-09-28 | 2027-09-28 | [multi-feature-event-rate](../multi-feature-event-rate/multi-feature-event-rate.md) `smoke_results.csv` |
 | Multi-feature Poisson GLM goals-conceded rate (player xGC/opp xG/own xG conceded/home) | smoke `c_*` | FV | best `c_gc_l10` +0.986 2/3 P 0.923 (near miss); opp-only −0.313 | 2026-09-28 | 2027-09-28 | same |
 | Stacked multi-feature GLM rates (assists + GC and/or goals) | smoke `s_*` | FV | best +1.524 2/3 P 0.891; not additive | 2026-09-28 | 2027-09-28 | same |
+| Fixture downside attack scale (clip opp ratio at 1.0, floor 0.6–0.8) | smoke `a2_down_*` | MFA | best +0.179 2/3 P 0.664 | 2026-09-28 | 2027-09-28 | [dual-lane-candidate-search](../dual-lane-candidate-search/dual-lane-candidate-search.md) `smoke_results.csv` |
+| xMins-side fixture effects (expected-margin xmins_if_start trim) | smoke `a2r2_*` | MFA | all ≤ 0 | 2026-09-28 | 2027-09-28 | same |
+| Venue-split player attack rates | smoke `a2r3_*` | MFA | all −0.11 … −0.49 | 2026-09-28 | 2027-09-28 | same |
+| Non-flat bonus: residual BPS rate, soft P(60) eligibility, heteroscedastic Normal rank allocation | smoke `a1_*`, `a1r2_*` | MFA | standalone ≤ +0.03 or negative; combo +0.666 P 0.961 < min effect | 2026-09-28 | 2027-09-28 | same |
+| Transfer-share DNP hazard | smoke `a3_news_*` | MFA | −0.20 … −1.34 (ownership churn, lagged) | 2026-09-28 | 2027-09-28 | same |
+| Benched-last-GW DNP hazard | smoke `a3_bench_h30` | MFA | +0.027 guardrail fail | 2026-09-28 | 2027-09-28 | same |
+| Post-absence DNP hazard + return ramp | smoke `a3r2_*` | MFA | −0.320 / 0.000 | 2026-09-28 | 2027-09-28 | same |
+| True scoreline Poisson (share × λ_for; CS/GC from λ_against) | smoke `b1_sl_*` | MFA | attack half = Dead opp rate multiplier (void); defence best +0.491 1/3 | 2026-09-28 | 2027-09-28 | same |
+| Schedule-adjusted as-of player xG/xA | smoke `b1r2_*` | MFA | −0.09 … −1.67 0/3 | 2026-09-28 | 2027-09-28 | same |
+| Learned hurdle / residual correction (history-reconstructed base) | smoke `b2_res_*` | MFA | −0.98 … −1.57 0/3 | 2026-09-28 | 2027-09-28 | same |
+| Learned participation variants other than shipped `learned_start_challenger` (per-position / learned xmins / p_sub_in / no or per-club mass), alone or + soft P(60) bonus eligibility | smoke `b2r2_*`, `b2r3_*`, `s_*`, `s4_*`, `s5_*` | MFA | near miss at 0.95: +1.388 3/3 P 0.959 bias fail; per-club mass +0.711 | 2026-09-28 | 2027-09-28 | `smoke_results.csv` · `best_stack_prototype.py` |
 | Terminal archive columns as inputs (`total_points`, `minutes`, `goals_scored`, `expected_goals`, `bps`, `threat`, `selected_by_percent`, `now_cost`, `status`, `chance_of_playing`) | any | — | leakage (season-end values in archive features) | 2026-09-28 | never (structural) | face-value-challenger Method |
 
 ## Open (next-lever pool; not proven dead)
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Learned hurdle / direct residual correction on face-value base (ridge λ 10–100, min-GW 4–8) | On paper vs HC: +2.4 … +3.4, 3/3; holdout +2.51 < face-value base | Smoke B1 `v2_hurdle_face_*`, `hurdle_unfit_*` | Needs per-GW feature memory in live `fit` path; must beat `face_value_challenger`, not HC |
-| Fixture downside attack scale | Won scorecard vs pre-HC Champion (blend MAE 0.9960 vs 1.0024) | [fixture-downside-scale](../fixture-downside-scale/fixture-downside-scale.md) `downside_swing_summary.csv` `blend_mae` | Plumb `matchup_*` params through WalkforwardConfig; gate vs current Champion |
 | Position-split goals weight (restore FWD, keep MID/DEF dampen) | Untried as built Candidate | layer-diagnosis-133 option 1 | Differs from flat MID/FWD 0.9/1.1 (Dead); gate vs current Champion |
-| Non-flat bonus beyond xbps weights + T: eligibility pool, expanded BPS terms, allocation form | Untried | [bonus-bps-inventory-125](../champion-component-gap/bonus-bps-inventory-125.md) | Must not reduce to flat scale or T/weight retune (Dead) |
 | Dual-Vector ratios shrunk toward 1.0 (`1 + s·(r−1)`) | Untried | dual-vector-official-xg follow-up | Both eval targets; easy-slice bias ≤ neutral |
-| True scoreline Poisson (player share × λ, CS = e^{−λ_against}) | Untried | team-poisson-lambda "next only if reopened" | Different form from Dead rate multiplier |
-| xMins-side fixture effects | Untried | fixture-swing-candidates deferred list | New topic |
-| Penalty-taker signal from per90 only | Untried | smoke brief idea | Verify `penalties_order` not terminal in archive before use |
+| Penalty-taker signal from per90 only | Untried | smoke brief idea | `penalties_order` confirmed terminal (smoke audit refuses it; lineage penalty isolation inert in backtest) — derive taker from history only |
 
 ## Agent Prompt
 

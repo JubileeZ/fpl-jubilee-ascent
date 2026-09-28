@@ -1,0 +1,3 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-09-28,dev,2025-26,adopt,learned_start_challenger,multi_feature_assist_challenger,1-38,True,1.1980263157894768,0.7107802631578948,3,0.9281,True,,registered
+2026-09-28,confirm,2024-25,adopt,learned_start_challenger,multi_feature_assist_challenger,1-38,False,0.5176315789473804,0.6218276315789474,2,0.63775,True,combined improvement 0.5176 below minimum effect 0.6218; bootstrap P(delta>0) 0.638 below 0.75,registered

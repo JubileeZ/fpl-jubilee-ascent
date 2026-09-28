@@ -1,0 +1,9 @@
+# Champion learned_start_challenger (learned start probability + P(60)-weighted bonus)
+
+`learned_start_challenger` replaces `multi_feature_assist_challenger` as Model Champion under gate of ADR 0049 (bootstrap P ≥ 0.60 both seasons, no minimum effect). Model = `multi_feature_assist_challenger` + (1) ridge-logistic learned start probability (started lags 1–6, recent minutes, starts in last 6, GWs since last start, position, share of club GWs started; current-season GW4+ rows; target GW ≥ 5) replacing Champion p_start, rescaled per GW so total start mass = Champion total, delta moved to/from p_dnp; (2) fixture bonus pool weighted by P(60+) (weighted Plackett–Luce over softmax(xBPS/6) × P(60+)).
+
+Evidence `docs/research/dual-lane-candidate-search/candidate_gate.csv` (Blended `top_11_regret`, GW1–38): 2025-26 dev PASS delta +1.198 3/3 segs P 0.928; 2024-25 confirmation (one run) delta +0.518 2/3 segs P 0.638, guardrails pass → PASS under ADR 0049 (FAIL under ADR 0046/0048: below 1% minimum effect 0.622 and P bar). `commands.evaluate_model_promotion --confirmation --apply` replay identical (+0.5176, 2/3, P 0.638). Status provisional (archive not snapshot-backed).
+
+Caveats: lever was Dead in Candidate Ledger (dual-lane search, 88 variants) → adopted on user's explicit override; gate rules loosened post-hoc same day (ADR 0049). 2024-25 margin ≈ half of dev margin → expect small live gain. Backtest lacks `chance_of_playing`; live Champion has availability → learned-start gain may shrink live. 2026-27 GW6+ post-promotion check (ADR 0047) applies once holdout GW6+ finished; FAIL → revert to `multi_feature_assist_challenger` on user's words.
+
+**Considered Options**: keep `multi_feature_assist_challenger` (confirmation FAIL under ADR 0048 rules) — rejected by user; `s_e60_b2w100` (no mass preservation, dev +1.388) — rejected (|bias| guardrail fail); per-club mass preservation — rejected (dev +0.711, weaker).

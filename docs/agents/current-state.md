@@ -6,23 +6,25 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**No active map.** 2026-09-28 multi-feature event-rate search → `multi_feature_assist_challenger` promoted (ADR 0048): dev PASS; 2024-25 P 0.896 passes lowered 0.60 confirmation bar. Note `docs/research/multi-feature-event-rate/multi-feature-event-rate.md`.
+**No active map.** Champion `learned_start_challenger` (ADR 0050, 2026-09-28, provisional) — see Dual-lane search below. Earlier same day: multi-feature event-rate search → `multi_feature_assist_challenger` promoted (ADR 0048). Note `docs/research/multi-feature-event-rate/multi-feature-event-rate.md`.
 
-**Slate:** Champion `multi_feature_assist_challenger` (provisional); Candidates `face_value_challenger`, `hold_chase_challenger` (former Champions). `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
+**Slate:** Champion `learned_start_challenger` (provisional); Candidates `multi_feature_assist_challenger`, `face_value_challenger` (former Champions). `hold_chase_challenger`, `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
 
-**Eval hardening 2026-09-28 (ADR 0046):** backtest features point-in-time (price/club pre-target, terminal player cols dropped); gate adds min effect 1%, block-bootstrap P ≥ 0.95, guardrail tolerances; 2026-27 GW6+ sealed holdout. Point-in-time re-gate: `face_value_challenger` vs `hold_chase_challenger` = regret tie (FAIL), accuracy win → Champion kept by user decision.
+**Eval hardening 2026-09-28 (ADR 0046):** backtest features point-in-time (price/club pre-target, terminal player cols dropped); gate adds min effect 1% (removed, ADR 0049), block-bootstrap P ≥ 0.95 (now 0.60, ADR 0049), guardrail tolerances; 2026-27 GW6+ sealed holdout. Point-in-time re-gate: `face_value_challenger` vs `hold_chase_challenger` = regret tie (FAIL), accuracy win → Champion kept by user decision.
 
-**Promotion protocol (ADR 0047, 0048):** gate PASS 2025-26 (boot P ≥ 0.95) + 2024-25 (no seed, one run, boot P ≥ 0.60) → promote on user's words; 2026-27 GW6+ = post-promotion check (FAIL → revert to `face_value_challenger`).
+**Promotion protocol (ADR 0047, 0049):** gate PASS 2025-26 (boot P ≥ 0.60) + 2024-25 (no seed, one run, boot P ≥ 0.60) → promote on user's words; 2026-27 GW6+ = post-promotion check (FAIL → revert to prior Champion).
 
 **Live data fix 2026-09-28:** `features/processor.py` ingests only `element_summary_<id>.json` for ids in current bootstrap. Raw cache held 174 stale 2025-26 summaries (ids 668–841) → 4401 prior-season rows in 2026-27 pin `player_performances` (fixture-id collisions; crashed new Champion). Pin rebuilt locally (`snapshot_season --season 2026-27 --from-raw-dir`), 3216 rows GW1–5. Source cleanup: `prune_stale_element_summaries` (`features/season_archive.py`) runs in `refresh_data` on `data/raw` and in `pin_season_archive` on pin raw; 174 stale files removed from both, pin hash refreshed.
 
-**Next leads:** Learned hurdle correction on Champion (needs per-GW feature memory in live path); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
+**Dual-lane search 2026-09-28:** 88 variants vs Champion, no pass; 11 levers → Dead (incl. learned hurdle residual, downside attack, learned participation stack near miss +1.198 P 0.928). User override: frozen `learned_start_challenger` dev PASS +1.198 P 0.928; 2024-25 +0.518 2/3 P 0.638 → gate loosened (ADR 0049: P ≥ 0.60 both seasons, no min effect) → PASS → **Champion `learned_start_challenger`** (ADR 0050, provisional). Slate: `multi_feature_assist_challenger`, `face_value_challenger`. Pending: 2026-27 GW6+ post-promotion check (FAIL → revert to `multi_feature_assist_challenger`). Note `docs/research/dual-lane-candidate-search/dual-lane-candidate-search.md`.
+
+**Next leads:** Open ledger rows only (position-split goals, Dual-Vector shrunk, penalty taker from history); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `face_value_challenger` (Historical Promotion Gate, ADR 0044/0045; former Champion `hold_chase_challenger` stays on the slate). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `learned_start_challenger` (ADR 0050; see Slate above). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
@@ -53,7 +55,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 uv run pytest
 uv run ruff check .
 uv run python -m commands.refresh_data
-uv run python -m commands.run_model multi_feature_assist_challenger
+uv run python -m commands.run_model learned_start_challenger
 uv run python -m commands.dashboard
 uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.measure_champion_bias

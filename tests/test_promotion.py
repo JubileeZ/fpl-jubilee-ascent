@@ -116,15 +116,18 @@ def _clear_winner_windows() -> tuple[dict, dict]:
     return champion, candidate
 
 
-def test_gate_rejects_improvement_below_minimum_effect() -> None:
+def test_gate_has_no_minimum_effect_beyond_improvement() -> None:
     champion, candidate = _clear_winner_windows()
     candidate["combined"] = _regret_metrics(mae=1.9, regret=9.95)
 
-    verdict = evaluate_historical_promotion_gate(champion, candidate)
+    small = evaluate_historical_promotion_gate(champion, candidate)
+    candidate["combined"] = _regret_metrics(mae=1.9, regret=10.0)
+    flat = evaluate_historical_promotion_gate(champion, candidate)
 
-    assert not verdict.passed
-    assert verdict.min_effect == pytest.approx(0.1)
-    assert any("minimum effect" in reason for reason in verdict.reasons)
+    assert small.passed
+    assert small.min_effect == pytest.approx(0.0)
+    assert not flat.passed
+    assert "combined primary metric did not improve" in flat.reasons
 
 
 def test_gate_requires_block_bootstrap_significance() -> None:
@@ -134,13 +137,13 @@ def test_gate_requires_block_bootstrap_significance() -> None:
     steady = evaluate_historical_promotion_gate(champion, candidate, gw_primary_deltas=[1.0, 0.5, 1.5, 0.8, 1.2, 1.0])
 
     assert not noisy.passed
-    assert noisy.bootstrap_p is not None and noisy.bootstrap_p < 0.95
+    assert noisy.bootstrap_p is not None and noisy.bootstrap_p < BOOTSTRAP_MIN_P
     assert any("bootstrap" in reason for reason in noisy.reasons)
     assert steady.passed
     assert steady.bootstrap_p == 1.0
 
 
-def test_confirmation_bar_accepts_moderate_bootstrap_confidence() -> None:
+def test_both_seasons_accept_moderate_bootstrap_confidence() -> None:
     champion, candidate = _clear_winner_windows()
     deltas = [3.0, -1.0, 2.0, -1.5, 1.5, 0.5]
 
@@ -149,8 +152,9 @@ def test_confirmation_bar_accepts_moderate_bootstrap_confidence() -> None:
         champion, candidate, gw_primary_deltas=deltas, bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P
     )
 
-    assert dev.bootstrap_p is not None and CONFIRMATION_BOOTSTRAP_MIN_P <= dev.bootstrap_p < BOOTSTRAP_MIN_P
-    assert not dev.passed
+    assert BOOTSTRAP_MIN_P == CONFIRMATION_BOOTSTRAP_MIN_P == 0.60
+    assert dev.bootstrap_p is not None and BOOTSTRAP_MIN_P <= dev.bootstrap_p < 0.95
+    assert dev.passed
     assert confirm.passed
 
 
