@@ -9,6 +9,8 @@
 
 Agents starting any model / Candidate / Champion work **read this block first**. Topic notes hold evidence; this block holds which metric is primary for which job.
 
+**Before proposing a Candidate lever:** read [Candidate Ledger](candidate-ledger/candidate-ledger.md). Dead lever = no retry until `Revisit after` (evidence date + 1 year); new Champion does not reopen early. Record every attempt there.
+
 ### Promotion & model selection (production gate)
 
 | Job | Primary | Guardrails | Authority |
@@ -39,6 +41,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ## Active Research Index
 
+- **Candidate Ledger (tried / untried levers)**: [Ledger](candidate-ledger/candidate-ledger.md) (Shipped / Dead with `Revisit after` / Open next-lever pool)
 - **Face-value Challenger (Champion 2026-09-28)**: [Note](face-value-challenger/face-value-challenger.md) · [Gate](face-value-challenger/face_value_gate_summary.csv) `combined_delta` / `boot_p_gt0` · [Smoke lanes](face-value-challenger/smoke_lane_results.csv) `combined_delta` (face-value xG/xA + minute-pooled finishing + start shrink; 3/3 segs; ADR 0045)
 - **Champion component gap**: [Note](champion-component-gap/champion-component-gap.md) · [Summary](champion-component-gap/component_gap_summary.csv) `mse_share` · [Totals](champion-component-gap/component_gap_totals.csv) `realized_mae` (Realized `mse_share` primary; Process G/A + Poisson-xGC CS/GC twins; demotion / `link-bias`) · [Segment loss #123](champion-component-gap/segment-loss-121.md) · [segment summary](champion-component-gap/segment_loss_121_summary.csv) `blend_regret_delta_champ_minus_cand` · [AFK segment-fix experiments #124](champion-component-gap/segment_fix_experiments_124.md) · [CS/GC sweep](champion-component-gap/segment_fix_sweep_124.csv) · [bonus sweep](champion-component-gap/bonus_scale_sweep_124.csv) · [Bonus/BPS inventory #125](champion-component-gap/bonus-bps-inventory-125.md) · [Layer diagnosis #133](champion-component-gap/layer-diagnosis-133.md) · [gate](champion-component-gap/layer_diagnosis_133_gate.csv) `late_delta` · [late position](champion-component-gap/layer_diagnosis_133_late_position.csv) `regret_delta`
 - **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~12.5% of blend swing on `60+`; attack fixture ~zero)

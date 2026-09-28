@@ -1,0 +1,42 @@
+status,lever,tried_as,baseline,result,evidence_date,revisit_after,evidence_path
+shipped,Face-value G/A weights (1.0 xG; 0 threat); no in-season ridge refit,face_value_challenger,hold_chase_challenger,gate PASS 3/3 combined +1.670 (stack),2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
+shipped,Minute-pooled goal finishing offset K=1800,face_value_challenger,hold_chase_challenger,+0.96 combined over lever 1+3; flips late,2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
+shipped,Start-probability shrink k=0.15,face_value_challenger,hold_chase_challenger,xMins and |bias| improve,2026-09-28,,docs/research/face-value-challenger/face_value_gate_summary.csv
+shipped,Calibrated Matchup Share -> Club Strength -> neutral fixture scale,builder,neutral,beats neutral all-pool MAE,2026-09-22,,docs/adr/0040-calibrated-matchup-share-shrinkage.md
+shipped,Participation penalty + calibrated matchup hybrid base,models lineage,-,Champion ADRs,2026-09-22,,docs/adr/0041-champion-calibrated-matchup-hybrid.md
+dead,In-season ridge G/A refit + per-player offsets n/(n+15) (any K),A1 d_k50 d_k150 a_weights_only b_default_w_offsets b_default_w_k150,hold_chase_challenger,combined -0.13..-1.41; bias up,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,xG-only weights while keeping fit,A1 f_xg_only_weights,hold_chase_challenger,combined -0.63,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Pooled fit without offsets,B2 pf_pooledfit_nooffs,hold_chase_challenger,combined -0.96 1/3,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Assist finishing offsets (goals+assists pooled),A2 off_k900 off_k1800 off_k3600,hold_chase_challenger,no gain vs goals-only; off_k1800 late -0.54,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Finishing pool K >= 3600,A2 off_goals_k3600,hold_chase_challenger,FAIL combined -0.10,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Flat MID/FWD goal scale 0.9/1.1,A2 mid_goal_* fwd_goal_*,hold_chase_challenger,2/3 late negative,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Bonus softmax temperature T 4/8/10,A2 bonus_t*,hold_chase_challenger,late -1.7..-1.9; T8 FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Attack/defence strength scale; xG sharp slope; mins tilt,A2 atk_* def_* sharp_* tilt_*,hold_chase_challenger,no effect; sharp_0 tilt_1.00 FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Nailed-starter lift 0.15/0.50,A2 nailed_*,hold_chase_challenger,FAIL both,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Start shrink k >= 0.30,A3 a3_k0.3* a3_k0.45*,hold_chase_challenger,1/3 segments,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Uniform play-probability hedge h 0.05,A3 *_h0.05_*,hold_chase_challenger,FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Player per90 GC log-shrink to league (a 0.4-0.8),A3 a3_*_a0.*,hold_chase_challenger,FAIL / noise,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,xMins-if-start compression toward 80 (s 0.7),A3 *_s0.7_*,hold_chase_challenger,FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Club-pooled per90 GC (pool 0.5/1.0; ax shrink),A3 *_pool*_ax*,hold_chase_challenger,best +0.75 2/3 late -1.81; holdout 2026-27 FAIL 1/3,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Learned correction as Poisson GLM,B1 poisson_unfit_*,hold_chase_challenger,<= +0.51; lam10 FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Ensemble with component_baseline,B2 ens_P+CB* component_baseline*,hold_chase_challenger,|bias| 0.17-1.36 FAIL,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,Equal-weight ensembles of hybrid Candidates,B2 ens_eq_*,hold_chase_challenger,best +1.01 weight-fragile; below single-model winner,2026-09-28,2027-09-28,docs/research/face-value-challenger/smoke_lane_results.csv
+dead,defence_link_challenger (post-link CS inflation),Candidate #119,hold_chase_challenger,+0.08 1/3; breaks MAE guardrails,2026-09-27,2027-09-27,docs/research/champion-component-gap/layer-diagnosis-133.md
+dead,goals_path_challenger (goals layer re-shape),Candidate,hold_chase_challenger,-0.81; opens late via FWD swaps,2026-09-27,2027-09-27,docs/research/champion-component-gap/layer-diagnosis-133.md
+dead,bonus_arm_challenger calibrated xbps weights + T,Candidate #129,hold_chase_challenger,late -0.80; fit -0.50,2026-09-27,2027-09-27,docs/research/champion-component-gap/layer-diagnosis-133.md
+dead,Flat global bonus scale xp_bonus *= k,#124 sweep,hold_chase_challenger,cannot unlock late,2026-09-26,2027-09-26,docs/research/champion-component-gap/bonus_scale_sweep_124.csv
+dead,Post-hoc CS/GC retune k_cs/k_gc,#124 #133,hold_chase_challenger,late delta < 0 always,2026-09-27,2027-09-27,docs/research/champion-component-gap/segment_fix_experiments_124.md
+dead,Fixture swing multiplicative (s_att) and additive arms,fixture-swing-candidates,calibrated_matchup_hybrid,mult breached easy cap +0.681; additive worse easy bias,2026-09-24,2027-09-24,docs/archive/fixture-swing-candidates/candidate_swing_summary.csv
+dead,Raw FDR as attack/defence multiplier fallback,dual-vector-fdr-regime,pre-ADR-0037,easy MID/FWD bias ~ +0.75,2026-09-22,2027-09-22,docs/archive/dual-vector-fdr-regime-2025-26/fdr_fallback_shrink_sweep.csv
+dead,Official FPL Dual-Vector multipliers (unshrunk),dual-vector-official-xg,ADR 0037 neutral,not ready on Realized or Process,2026-09-22,2027-09-22,docs/archive/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md
+dead,Opponent-relative team Poisson lambda rate multiplier,team-poisson-lambda,ADR 0037 neutral,over-predicts easy fixtures,2026-09-22,2027-09-22,docs/archive/team-poisson-lambda-2025-26/team-poisson-lambda-2025-26.md
+dead,Uncalibrated Matchup Share,matchup-share-addon,neutral,all-pool worse than neutral,2026-09-22,2027-09-22,docs/research/matchup-share-addon-2025-26/matchup_share_summary.csv
+dead,Terminal archive columns as model inputs,any,-,leakage: season-end values in archive features,2026-09-28,never,docs/research/face-value-challenger/face-value-challenger.md
+open,Learned hurdle / direct residual correction on face-value base,B1 v2_hurdle_face_* hurdle_unfit_*,hold_chase_challenger,+2.4..+3.4 3/3 on paper; holdout +2.51 < face-value base,2026-09-28,,docs/research/face-value-challenger/smoke_lane_results.csv
+open,Fixture downside attack scale,fixture-downside-scale,calibrated_matchup_hybrid,won scorecard blend MAE 0.9960 vs 1.0024; needs gate plumbing,2026-09-24,,docs/research/fixture-downside-scale/downside_swing_summary.csv
+open,Position-split goals weight (restore FWD; keep MID/DEF dampen),untried,-,layer-diagnosis-133 option 1,2026-09-27,,docs/research/champion-component-gap/layer-diagnosis-133.md
+open,Non-flat bonus: eligibility pool / expanded BPS terms / allocation form,untried,-,must not reduce to flat scale or T/weight retune,2026-09-27,,docs/research/champion-component-gap/bonus-bps-inventory-125.md
+open,Dual-Vector ratios shrunk toward 1.0,untried,-,follow-up in dual-vector-official-xg,2026-09-22,,docs/archive/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md
+open,True scoreline Poisson (player share x lambda; CS = e^-lambda_against),untried,-,team-poisson-lambda next-if-reopened,2026-09-22,,docs/archive/team-poisson-lambda-2025-26/team-poisson-lambda-2025-26.md
+open,xMins-side fixture effects,untried,-,fixture-swing deferred list,2026-09-24,,docs/archive/fixture-swing-candidates/fixture-swing-candidates.md
+open,Penalty-taker signal from per90 only,untried,-,verify penalties_order not terminal in archive first,2026-09-28,,docs/research/face-value-challenger/face-value-challenger.md
