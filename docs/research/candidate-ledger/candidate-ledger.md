@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-09-28T21:20:00+07:00  
+**Updated**: 2026-09-29T02:50:00+07:00  
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -27,10 +27,11 @@
 - Rows with evidence ≤ 2026-09-28 measured on pre-ADR-0046 features (terminal price/club/penalty order). Leak fix alone is not revisit exception; only user's explicit words reopen.
 - Baseline column matters: deltas vs former Champion are hints, not verdicts vs current one — but Dead still holds until revisit date.
 
-## Shipped (in Champion `learned_start_challenger` or production)
+## Shipped (in Champion `club_def_prior_challenger` or production)
 
 | Lever | Where | Date | Evidence |
 |---|---|---|---|
+| Club × DEF xG rate prior (DEF xG/90 shrinks 360 pseudo-min toward as-of club × DEF pooled rate; club prior 5 matches to DEF mean) | `models/club_def_prior_challenger.py` | 2026-09-29 | [ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md) · [component-model-ideas](../component-model-ideas/component-model-ideas.md) `candidate_gate.csv` (dev PASS +0.504 2/3 P 0.955; 2024-25 PASS +0.080 2/3 P 0.619) |
 | Learned start probability (ridge-logistic, per-GW mass preserved to Champion total) + P(60)-weighted bonus pool | `models/learned_start_challenger.py` | 2026-09-28 | [ADR 0050](../../adr/0050-champion-learned-start-challenger.md) · `candidate_gate.csv` (user override of Dead row; dev PASS +1.198 P 0.928; 2024-25 PASS +0.518 2/3 P 0.638 under ADR 0049) |
 | Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | `models/multi_feature_assist_challenger.py` | 2026-09-28 | [ADR 0048](../../adr/0048-champion-multi-feature-assist-challenger.md) · `confirmation_gate_summary.csv` (dev PASS; 2024-25 P 0.896 passes 0.60 bar, and 0.60 both-season bar per ADR 0049) |
 | Face-value G/A weights (1.0 xG, 0 threat); no in-season ridge refit | `models/face_value_challenger.py` | 2026-09-28 | [ADR 0045](../../adr/0045-champion-face-value-challenger.md) · `face_value_gate_summary.csv` |
@@ -89,6 +90,13 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Terminal archive columns as inputs (`total_points`, `minutes`, `goals_scored`, `expected_goals`, `bps`, `threat`, `selected_by_percent`, `now_cost`, `status`, `chance_of_playing`) | any | — | leakage (season-end values in archive features) | 2026-09-28 | never (structural) | face-value-challenger Method |
 | Position-split goals weight (restore FWD; keep MID/DEF dampen) | smoke `a1_posgoals_*` (6) | LSC | all negative −0.28 … −0.89; MID/DEF dampen misses hauls | 2026-09-28 | 2027-09-28 | [asymmetric-finishing](../asymmetric-finishing-challenger/asymmetric-finishing-challenger.md) `smoke_results.csv` |
 | Penalty-taker signal from per90 only | smoke `a3_pen_taker_*` (6) | LSC | delta +0.0000 0/3; inert on top-11 | 2026-09-28 | 2027-09-28 | same `smoke_results.csv` |
+| State-conditional bonus logits (start-state / two-entrant xbps in logit; T6 pool6) | smoke `bon_01_*` (3) | LSC | all −0.687 1/3 P 0.131; variants identical on top-11 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
+| Start vs sub attack intensity (pooled sub/start per90 ρ by position; per-state rate split) | smoke `atk_03_*` (5) | LSC | all 1/3 segs; best `atk_03_ga_k0` +0.176 P 0.827; start-deflate only −0.037 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
+| Position FPL-assist conversion (GLM xA rate × (1 + α(c_pos − 1)), as-of pooled A/xA by position) | smoke `atk_01_*` (6) | LSC | 5/6 negative −0.16 … −0.53; best FWD-only +0.073 1/3 P 0.686 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
+| Suspension ledger DNP hazard (5/10 cumulative yellows + red h1–h3; optional teammate mass) | smoke `min_01_*` (6) | LSC | all 1/3 segs; best `v4_preserve_mass` +0.593 P 0.784; rest +0.058 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
+| Position-specific xG/xA rate shrink K (DEF xG 2400 vs flat 360; FWD 900; as-of K; + xA) | `def_xg_shrink_challenger` (smoke `atk_04_*` (6)) | LSC | dev 2025-26 PASS +0.707 3/3 boot P 0.959; confirm 2024-25 FAIL −0.076 1/3 boot P 0.385 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `candidate_gate.csv` |
+| Result-coupled two-stage bonus pool (Skellam W/D/L × shrunk team share; within-team PL) | smoke `bon_03_*` (4) | LSC | all −0.22 … −0.58 P ≤ 0.28 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
+| Empirical-Bayes P(60\|state) Beta-binomial (n0 MoM/fixed per position) | smoke `min_02_*` (6) | LSC | all −0.07 … −0.85; best `n0_10` −0.074 1/3 P 0.39 | 2026-09-29 | 2027-09-29 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
 | Asymmetric goal finishing shrinkage (K_pos=1500; K_neg=3000) | `asymmetric_finishing_challenger` (smoke `a2_asym_fin_*`) | LSC | dev 2025-26 PASS +0.261 2/3 boot P 0.989; confirm 2024-25 FAIL −0.231 0/3 boot P 0.199 | 2026-09-28 | 2027-09-28 | [asymmetric-finishing](../asymmetric-finishing-challenger/asymmetric-finishing-challenger.md) `candidate_gate.csv` |
 
 ## Open (next-lever pool; not proven dead)
@@ -96,6 +104,8 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
 | Dual-Vector ratios shrunk toward 1.0 (`1 + s·(r−1)`) | Untried | dual-vector-official-xg follow-up | Both eval targets; easy-slice bias ≤ neutral |
+| Goals-conceded shape Poisson (was NegBin r=3; λ + CS unchanged) | Dev pass, not confirmed | smoke `def_01_nu1p0` +0.371 2/3 P 0.989 vs LSC ([component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv`) | Dropped from batch-2 stack by ablation; re-smoke vs `club_def_prior_challenger` before any gate |
+| Club-coherent assist mass (w 0.5, realized ρ) | Dev pass, not confirmed | smoke `atk_02_w05_real` +0.173 2/3 P 0.655 vs LSC (same) | Fragile grid; hurt batch-2 stack; re-smoke vs new Champion before any gate |
 
 ## Agent Prompt
 

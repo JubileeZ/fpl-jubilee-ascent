@@ -1,9 +1,9 @@
 # Component model ideas (idea backlog for explore-candidate)
 
-**Updated**: 2026-09-28T23:59:00+07:00  
-**Data stamp**: Code at `2287e51`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); ledger `candidate_ledger.csv` 2026-09-28  
+**Updated**: 2026-09-29T02:50:00+07:00  
+**Data stamp**: Code at `730e831`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-29 vs `learned_start_challenger`  
 **Season**: Multi-season (dev 2025-26, confirm 2024-25; 2026-27 GW6+ sealed)  
-**Status**: Active — idea list only; nothing smoke-tested  
+**Status**: Active — Queue batches 1–2 done (10 ideas); ATK-05 promoted (ADR 0051); 19 rows untested vs new Champion  
 **Purpose**: Per ledger component: how Champion models it today + new model ideas, queued for `explore-candidate` Queue mode runs until all tried  
 **Scope**: All 13 `LEDGER_COMPONENTS` + `projected_minutes`. Excludes Dead-ledger mechanisms, solver, fixture-scale Open row (Dual-Vector shrunk)  
 **Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [Eval canon](../INDEX.md) · [champion-component-gap](../champion-component-gap/champion-component-gap.md) · [dual-lane-candidate-search](../dual-lane-candidate-search/dual-lane-candidate-search.md)  
@@ -145,9 +145,28 @@ Queue order + status: [idea_queue.csv](idea_queue.csv). Detail below. Evidence n
 
 Team-goal share × team λ (Dead scoreline / team λ) · prior-season seed blending (ADR 0024; 2024-25 no seed) · NegBin/haul goals (xp_goals linear → no top-11 effect) · GBM/ranking loss on same signals (Dead GLM / learned residual) · per-player conversion shrink (Shipped K1800 + Dead asymmetric) · DEF goal dampening (Dead position-split) · threat-informed xG prior (Dead `g_xg_l10`) · set-piece order (terminal) · Elo/state-space team defence (Dead λ-level rows) · opponent-scaled saves (reverses ADR 0040) · learned 4-state / survival minutes (Dead learned participation) · score-state early subs (Dead margin trim) · xbps reweight / expanded BPS terms (Dead bonus_arm class) · 4-yellow caution effect (inconsistent across seasons).
 
+## Findings — Queue run 2026-09-29 (batches 1–2)
+
+Evidence: [smoke_results.csv](smoke_results.csv) `variant` / `combined_delta` / `segs` / `boot_p_gt0` (58 rows: 51 lane + 7 stack, dev 2025-26 GW1–38 vs `learned_start_challenger`) · [candidate_gate.csv](candidate_gate.csv) `season` / `pass` (frozen Candidates, dev + confirm). Every prototype AUDIT PASS, no LEAKAGE FAIL; every winner re-run by orchestrator (identical).
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| ATK-05 club × DEF xG prior | `confirm-pass` → Champion | `atk_05_def_k5` +0.504 2/3 P 0.955 | +0.080 2/3 P 0.619 PASS |
+| ATK-04 position rate shrink K | `confirm-fail` | `atk_04_def2400` +0.707 3/3 P 0.959 | −0.076 1/3 P 0.385 FAIL |
+| DEF-01 goals-against shape | `pass-dev` (Open) | `def_01_nu1p0` (Poisson GC) +0.371 2/3 P 0.989 | not run (dropped by stack ablation) |
+| ATK-02 club assist mass | `pass-dev` (Open) | `atk_02_w05_real` +0.173 2/3 P 0.655 | not run (dropped by stack ablation) |
+| MIN-01 suspension ledger | `fail` | `v4_preserve_mass` +0.593 1/3 | — |
+| ATK-03 start vs sub intensity | `fail` | `ga_k0` +0.176 1/3 | — |
+| ATK-01 position assist conversion | `fail` | `a05_k50_fwd` +0.073 1/3 | — |
+| MIN-02 EB P(60) | `fail` | `n0_10` −0.074 | — |
+| BON-03 result-coupled bonus | `fail` | `comps_k10` −0.216 | — |
+| BON-01 state bonus logits | `fail` | all −0.687 | — |
+
+Stack (batch 2, `stack_b2_*`): all three −0.252 FAIL; ATK-05 + DEF-01 +0.417; ATK-05 + ATK-02 −0.200; DEF-01 + ATK-02 +0.054 → levers not additive; frozen pick = single ATK-05. DEF xG levers pass dev strongly; ATK-04 did not transfer to 2024-25, ATK-05 did (narrowly).
+
 ## Decision
 
-Queue = [idea_queue.csv](idea_queue.csv). Run `/explore-candidate idea_queue.csv` (Queue mode): batches by `order`, stacks winners, one confirm per frozen pick. RULING rows wait for user's words. HOLDOUT rows wait until 2026-27 GW6+ protocol allows (ADR 0046) or user decides.
+Champion → `club_def_prior_challenger` ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. Next Queue run re-screens remaining rows vs new Champion (DEF-02 next; DEF-01 / ATK-02 Open rows need re-smoke vs new Champion). Queue = [idea_queue.csv](idea_queue.csv). Run `/explore-candidate idea_queue.csv` (Queue mode): batches by `order`, stacks winners, one confirm per frozen pick. RULING rows wait for user's words. HOLDOUT rows wait until 2026-27 GW6+ protocol allows (ADR 0046) or user decides.
 
 ## Risks and unknowns
 

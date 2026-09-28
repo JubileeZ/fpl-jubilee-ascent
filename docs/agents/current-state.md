@@ -6,9 +6,9 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**No active map.** Champion `learned_start_challenger` (ADR 0050, 2026-09-28, provisional) — see Dual-lane search below. Earlier same day: multi-feature event-rate search → `multi_feature_assist_challenger` promoted (ADR 0048). Note `docs/research/multi-feature-event-rate/multi-feature-event-rate.md`.
+**No active map.** Champion `club_def_prior_challenger` (ADR 0051, 2026-09-29, provisional) — see Component-model-ideas Queue run below. Prior Champion `learned_start_challenger` (ADR 0050, 2026-09-28) — see Dual-lane search below. Earlier same day: multi-feature event-rate search → `multi_feature_assist_challenger` promoted (ADR 0048). Note `docs/research/multi-feature-event-rate/multi-feature-event-rate.md`.
 
-**Slate:** Champion `learned_start_challenger` (provisional); Candidates `multi_feature_assist_challenger`, `face_value_challenger` (former Champions). `hold_chase_challenger`, `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
+**Slate:** Champion `club_def_prior_challenger` (provisional); Candidates `learned_start_challenger`, `multi_feature_assist_challenger` (former Champions). `face_value_challenger` → Catalog (2026-09-29). `hold_chase_challenger`, `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
 
 **Eval hardening 2026-09-28 (ADR 0046):** backtest features point-in-time (price/club pre-target, terminal player cols dropped); gate adds min effect 1% (removed, ADR 0049), block-bootstrap P ≥ 0.95 (now 0.60, ADR 0049), guardrail tolerances; 2026-27 GW6+ sealed holdout. Point-in-time re-gate: `face_value_challenger` vs `hold_chase_challenger` = regret tie (FAIL), accuracy win → Champion kept by user decision.
 
@@ -20,13 +20,15 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Dual-lane search round 2 (2026-09-28):** 18 variants vs Champion `learned_start_challenger`. Position-split goals all negative; penalty taker detection inert (+0.0000); asymmetric finishing shrinkage dev PASS (+0.261 2/3 P 0.989), confirm 2024-25 FAIL (-0.231 0/3 P 0.199) -> Dead. Champion `learned_start_challenger` stands. Note `docs/research/asymmetric-finishing-challenger/asymmetric-finishing-challenger.md`.
 
+**Component-model-ideas Queue run (2026-09-29):** explore-candidate Queue mode, batches 1–2 (10 ideas) vs `learned_start_challenger`. ATK-05 club × DEF xG prior dev +0.504 2/3 P 0.955, confirm 2024-25 +0.080 2/3 P 0.619 → Champion `club_def_prior_challenger` (ADR 0051, user-authorized). ATK-04 DEF K2400 (`def_xg_shrink_challenger`, Catalog) dev PASS, confirm FAIL. DEF-01 Poisson GC + ATK-02 club assist mass dev pass, dropped by stack ablation → ledger Open. 6 ideas Dead. Remaining queue rows untested vs new Champion. Note `docs/research/component-model-ideas/component-model-ideas.md`.
+
 **Next leads:** Component idea queue `docs/research/component-model-ideas/idea_queue.csv` (29 ideas, P1 first, explore-candidate Queue mode); Open ledger row (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
 ## Research truth
 
-Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `learned_start_challenger` (ADR 0050; see Slate above). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
+Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). Champion = `club_def_prior_challenger` (ADR 0051; see Slate above). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.
 
 ## What exists
 
@@ -57,7 +59,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 uv run pytest
 uv run ruff check .
 uv run python -m commands.refresh_data
-uv run python -m commands.run_model learned_start_challenger
+uv run python -m commands.run_model club_def_prior_challenger
 uv run python -m commands.dashboard
 uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.measure_champion_bias

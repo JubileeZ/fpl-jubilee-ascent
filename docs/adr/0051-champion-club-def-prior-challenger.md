@@ -1,0 +1,11 @@
+# Champion club_def_prior_challenger (club × DEF xG rate prior)
+
+**Status**: Accepted (2026-09-29, user authorized promotion on dev + confirm PASS)
+
+`club_def_prior_challenger` replaces `learned_start_challenger` as Model Champion under gate of ADR 0049 (bootstrap P ≥ 0.60 both seasons, no minimum effect). Model = `learned_start_challenger` + one lever (idea ATK-05, `docs/research/component-model-ideas`): DEF xG/90 keeps Champion shrink strength (360 pseudo-minutes, recency decay 0.95) but shrinks toward as-of club × DEF pooled xG/90 instead of DEF mean. Club prior shrinks toward DEF mean with 5 90-minute matches. Club of history row = other side of its fixture; player club = as-of `features.club_id`. Applied as ratio on `features.per90_xg` (builder prior, matchup addon, penalty isolation kept). Rationale: DEF xG/90 per player noisy; club pooling captures set-piece structure.
+
+Evidence `docs/research/component-model-ideas/candidate_gate.csv` (Blended `top_11_regret`, GW1–38): 2025-26 dev PASS +0.504 2/3 segs P 0.955; 2024-25 confirmation (one run) +0.080 2/3 segs P 0.619, guardrails pass → PASS. `commands.evaluate_model_promotion --data_dir data/archive/2024-25/processed --confirmation --apply` replay identical (+0.0799, 2/3, P 0.619). Status provisional (archive not snapshot-backed). Slate: `learned_start_challenger`, `multi_feature_assist_challenger`; `face_value_challenger` leaves slate (max 2 Candidates).
+
+Caveats: 2024-25 margin small (+0.080; P 0.619 just over 0.60 bar) → expect small live gain. Sibling DEF lever `def_xg_shrink_challenger` (position K 2400) passed dev +0.707 but failed 2024-25 −0.076 same day → DEF-xG levers fragile across seasons. Frozen pick = best single of batch 2 after stack ablation (stack with DEF-01 / ATK-02 weaker). 2026-27 GW6+ post-promotion check (ADR 0047) once holdout GW6+ finished (GW5 last finished at promotion); FAIL → revert to `learned_start_challenger` on user's words.
+
+**Considered Options**: keep `learned_start_challenger` — rejected (Candidate passes both seasons); `atk_05_def_k15` (+0.379 3/3 P 0.994 dev) — rejected (lower dev delta; frozen pick rule = best verified delta); batch-2 stacks with DEF-01 Poisson GC / ATK-02 club assist mass — rejected (ablation: +0.417 / −0.252 < single +0.504).
