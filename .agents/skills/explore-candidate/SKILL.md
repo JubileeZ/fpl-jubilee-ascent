@@ -1,6 +1,6 @@
 ---
 name: explore-candidate
-description: FPL modeler orchestrator that hunts a Model Candidate to replace the Champion via backtest gate wins. Runs AFK as a /goal; spawns ≤5 subagents to smoke-test leakage-audited prototypes, builds Candidate from winner, gates it on dev + confirmation seasons, queues adoption for human. Use when user says explore candidate, beat/replace Champion, or hands a model idea to prototype.
+description: FPL modeler orchestrator that hunts a Model Candidate to replace the Champion via backtest gate wins. Runs AFK as a /goal; spawns ≤5 subagents to smoke-test leakage-audited prototypes, stacks verified winners, builds Candidate, gates it on dev + confirmation seasons, queues adoption for human. Use when user says explore candidate, beat/replace Champion, hands a model idea to prototype, or points at an idea queue CSV.
 disable-model-invocation: true
 ---
 
@@ -31,6 +31,17 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 - **Dual-lane** (no idea): two parallel lanes.
   - Lane A **iterate stack**: subclass Champion; levers from Ledger Open rows + component-gap crown (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`).
   - Lane B **alternative architecture**: new `BaseModel` not inheriting Champion lineage (new form: e.g. learned model over Feature Contract, true scoreline Poisson).
+- **Queue** (user points at idea queue CSV, e.g. `docs/research/component-model-ideas/idea_queue.csv`): queue = scope; one lane per idea row; batches until queue exhausted. See Queue mode.
+
+## Queue mode
+
+Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_id`, `tier`, `mechanism`, `inputs`, `replaces`, `nearest_ledger_row`, `confirm_2024_25`, `grid`, `conflicts_with`, `status`, `ledger_result`. Topic slug = queue's folder; notes/companions go there.
+
+- **Eligible row:** `status` = `untested`. Skip `needs ruling` (Human Queue "rule on <id>?", default skip), `holdout-first`, `blocked*`, anything already verdicted.
+- **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict (on top of it if it won). Deferred rows wait for next batch.
+- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`. Step 5 Stack protocol on batch winners. Then steps 6–7 on frozen result.
+- **Row updates** after every verdict: `status` ∈ {`dead-match`, `fail`, `pass-dev`, `stack-member`, `confirm-pass`, `confirm-fail`}; `ledger_result` = `combined_delta segs boot P` (+ stack name if stacked). Ledger row per step 8.
+- **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate); next run re-screens remaining `untested` rows on new Champion. Queue has no eligible rows → Exit (b)/(c).
 
 ## Seasons (never hard-code)
 
@@ -81,6 +92,7 @@ Done when every lever has row verdict or "new" in packet.
 ≤5 lanes total, one subagent each.
 - Scoped: split idea across pipeline steps it touches — inputs (as-of features), minutes/participation, event rates, fixture scaling, scoring/bonus, ordering/calibration. Step idea does not touch → no lane.
 - Dual-lane: ~3 Lane A + ~2 Lane B.
+- Queue: one lane per batch row (Queue mode); Dead match at step 1 → row `dead-match`, backfill batch from next eligible row.
 
 Each lane brief pre-declares: mechanism, pipeline step, tiny grid (≤6 variants), expected sign. Grid fixed in packet before first smoke run — no post-hoc grid widening.
 
@@ -140,8 +152,14 @@ Smoke row counts only with AUDIT PASS and no `LEAKAGE FAIL`. Winner claims → r
 
 Paper win = verified smoke row `pass=True` (full gate, dev season, full season range).
 - No win: read `reasons` + segment deltas; next round = new mechanism inside scope (Scoped) or inside lane (Dual-lane), fresh pre-declared grid. Failed mechanism → Dead row at step 8. Apply progress guard.
-- Orthogonal lane winners may stack; stack = new prototype, re-smoke, ablate each lever.
 - All lanes closed → step 8, Exit (b).
+
+**Stack protocol** (≥2 verified dev winners, non-conflicting):
+1. Stack = new prototype combining each winner's best variant (prefix `stack_`); one smoke run on dev. Stack must itself be paper win — sum of singles is not evidence.
+2. Ablate: leave-one-out variant per lever in same smoke file. Lever whose removal does not lower `combined_delta` → drop; re-smoke reduced stack.
+3. Frozen pick = best of {surviving stack, best single} by verified `combined_delta` with `pass=True`.
+4. Only winners stack: failed or near-miss lever = Dead row, never added to stack.
+5. Confirm (step 7) runs once, on frozen pick only — never on singles then stack (each extra frozen name = extra look at confirm season).
 
 ### 6. Build Candidate
 

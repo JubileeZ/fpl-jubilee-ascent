@@ -20,7 +20,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Dual-lane search round 2 (2026-09-28):** 18 variants vs Champion `learned_start_challenger`. Position-split goals all negative; penalty taker detection inert (+0.0000); asymmetric finishing shrinkage dev PASS (+0.261 2/3 P 0.989), confirm 2024-25 FAIL (-0.231 0/3 P 0.199) -> Dead. Champion `learned_start_challenger` stands. Note `docs/research/asymmetric-finishing-challenger/asymmetric-finishing-challenger.md`.
 
-**Next leads:** Open ledger row only (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
+**Next leads:** Component idea queue `docs/research/component-model-ideas/idea_queue.csv` (29 ideas, P1 first, explore-candidate Queue mode); Open ledger row (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
