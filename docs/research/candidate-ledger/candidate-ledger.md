@@ -87,14 +87,15 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Learned hurdle / residual correction (history-reconstructed base) | smoke `b2_res_*` | MFA | −0.98 … −1.57 0/3 | 2026-09-28 | 2027-09-28 | same |
 | Learned participation variants other than shipped `learned_start_challenger` (per-position / learned xmins / p_sub_in / no or per-club mass), alone or + soft P(60) bonus eligibility | smoke `b2r2_*`, `b2r3_*`, `s_*`, `s4_*`, `s5_*` | MFA | near miss at 0.95: +1.388 3/3 P 0.959 bias fail; per-club mass +0.711 | 2026-09-28 | 2027-09-28 | `smoke_results.csv` · `best_stack_prototype.py` |
 | Terminal archive columns as inputs (`total_points`, `minutes`, `goals_scored`, `expected_goals`, `bps`, `threat`, `selected_by_percent`, `now_cost`, `status`, `chance_of_playing`) | any | — | leakage (season-end values in archive features) | 2026-09-28 | never (structural) | face-value-challenger Method |
+| Position-split goals weight (restore FWD; keep MID/DEF dampen) | smoke `a1_posgoals_*` (6) | LSC | all negative −0.28 … −0.89; MID/DEF dampen misses hauls | 2026-09-28 | 2027-09-28 | [asymmetric-finishing](../asymmetric-finishing-challenger/asymmetric-finishing-challenger.md) `smoke_results.csv` |
+| Penalty-taker signal from per90 only | smoke `a3_pen_taker_*` (6) | LSC | delta +0.0000 0/3; inert on top-11 | 2026-09-28 | 2027-09-28 | same `smoke_results.csv` |
+| Asymmetric goal finishing shrinkage (K_pos=1500; K_neg=3000) | `asymmetric_finishing_challenger` (smoke `a2_asym_fin_*`) | LSC | dev 2025-26 PASS +0.261 2/3 boot P 0.989; confirm 2024-25 FAIL −0.231 0/3 boot P 0.199 | 2026-09-28 | 2027-09-28 | [asymmetric-finishing](../asymmetric-finishing-challenger/asymmetric-finishing-challenger.md) `candidate_gate.csv` |
 
 ## Open (next-lever pool; not proven dead)
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Position-split goals weight (restore FWD, keep MID/DEF dampen) | Untried as built Candidate | layer-diagnosis-133 option 1 | Differs from flat MID/FWD 0.9/1.1 (Dead); gate vs current Champion |
 | Dual-Vector ratios shrunk toward 1.0 (`1 + s·(r−1)`) | Untried | dual-vector-official-xg follow-up | Both eval targets; easy-slice bias ≤ neutral |
-| Penalty-taker signal from per90 only | Untried | smoke brief idea | `penalties_order` confirmed terminal (smoke audit refuses it; lineage penalty isolation inert in backtest) — derive taker from history only |
 
 ## Agent Prompt
 

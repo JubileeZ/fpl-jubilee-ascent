@@ -1,0 +1,3 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-09-28,dev,2025-26,,asymmetric_finishing_challenger,learned_start_challenger,1-38,True,0.26105263157896275,0.0,2,0.9885,True,,registered
+2026-09-28,confirm,2024-25,,asymmetric_finishing_challenger,learned_start_challenger,1-38,False,-0.2310526315789545,0.0,0,0.1987,True,combined primary metric did not improve; bootstrap P(delta>0) 0.199 below 0.60; won only 0/3 seasonal segments,registered

@@ -16,9 +16,11 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Live data fix 2026-09-28:** `features/processor.py` ingests only `element_summary_<id>.json` for ids in current bootstrap. Raw cache held 174 stale 2025-26 summaries (ids 668–841) → 4401 prior-season rows in 2026-27 pin `player_performances` (fixture-id collisions; crashed new Champion). Pin rebuilt locally (`snapshot_season --season 2026-27 --from-raw-dir`), 3216 rows GW1–5. Source cleanup: `prune_stale_element_summaries` (`features/season_archive.py`) runs in `refresh_data` on `data/raw` and in `pin_season_archive` on pin raw; 174 stale files removed from both, pin hash refreshed.
 
-**Dual-lane search 2026-09-28:** 88 variants vs Champion, no pass; 11 levers → Dead (incl. learned hurdle residual, downside attack, learned participation stack near miss +1.198 P 0.928). User override: frozen `learned_start_challenger` dev PASS +1.198 P 0.928; 2024-25 +0.518 2/3 P 0.638 → gate loosened (ADR 0049: P ≥ 0.60 both seasons, no min effect) → PASS → **Champion `learned_start_challenger`** (ADR 0050, provisional). Slate: `multi_feature_assist_challenger`, `face_value_challenger`. Pending: 2026-27 GW6+ post-promotion check (FAIL → revert to `multi_feature_assist_challenger`). Note `docs/research/dual-lane-candidate-search/dual-lane-candidate-search.md`.
+**Dual-lane search 2026-09-28:** 88 variants vs Champion, no pass; 11 levers → Dead. User override: frozen `learned_start_challenger` promoted to Champion (ADR 0050, provisional). Slate: `multi_feature_assist_challenger`, `face_value_challenger`. Pending: 2026-27 GW6+ post-promotion check.
 
-**Next leads:** Open ledger rows only (position-split goals, Dual-Vector shrunk, penalty taker from history); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
+**Dual-lane search round 2 (2026-09-28):** 18 variants vs Champion `learned_start_challenger`. Position-split goals all negative; penalty taker detection inert (+0.0000); asymmetric finishing shrinkage dev PASS (+0.261 2/3 P 0.989), confirm 2024-25 FAIL (-0.231 0/3 P 0.199) -> Dead. Champion `learned_start_challenger` stands. Note `docs/research/asymmetric-finishing-challenger/asymmetric-finishing-challenger.md`.
+
+**Next leads:** Open ledger row only (Dual-Vector shrunk); 2026-27 GW6+ = post-promotion check (ADR 0047). Deferred eval work: constrained valid-XI regret, White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
