@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-09-28T02:45:00+07:00
+**Updated**: 2026-09-28T13:30:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -9,7 +9,7 @@
 
 Agents starting any model / Candidate / Champion work **read this block first**. Topic notes hold evidence; this block holds which metric is primary for which job.
 
-**Leakage / holdout (ADR 0046):** 2025-26 = development season. 2026-27 GW6+ sealed: no tuning/smoke/ablation; one gate run per frozen Candidate, logged in Candidate Ledger. Backtest features without snapshot are point-in-time (price/club from pre-target rows; season-end player columns dropped) — never read `players.parquet` season totals, status, ownership, or set-piece orders in backtest code.
+**Leakage / holdout (ADR 0046, 0047):** 2025-26 = development season. Promotion = gate PASS on 2025-26 (seed 2024-25) **and** 2024-25 (no seed; confirmation, never tuned; one run per frozen Candidate). 2026-27 GW6+ sealed: no tuning/smoke/ablation; one post-promotion check per Champion. All runs logged in Candidate Ledger. Backtest features without snapshot are point-in-time (price/club from pre-target rows; season-end player columns dropped) — never read `players.parquet` season totals, status, ownership, or set-piece orders in backtest code.
 
 **Before proposing a Candidate lever:** read [Candidate Ledger](candidate-ledger/candidate-ledger.md). Dead lever = no retry until `Revisit after` (evidence date + 1 year); new Champion does not reopen early. Record every attempt there.
 
@@ -45,6 +45,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 - **Candidate Ledger (tried / untried levers)**: [Ledger](candidate-ledger/candidate-ledger.md) (Shipped / Dead with `Revisit after` / Open next-lever pool)
 - **Face-value Challenger (Champion 2026-09-28)**: [Note](face-value-challenger/face-value-challenger.md) · [Gate](face-value-challenger/face_value_gate_summary.csv) `combined_delta` / `boot_p_gt0` · [Smoke lanes](face-value-challenger/smoke_lane_results.csv) `combined_delta` (face-value xG/xA + minute-pooled finishing + start shrink; 3/3 segs; ADR 0045) · [Point-in-time re-gate](face-value-challenger/point_in_time_regate.csv) `combined_delta` / `boot_p_gt0` (ADR 0046: FAIL, regret tie, accuracy win)
+- **Multi-feature event rate (2026-09-28)**: [Note](multi-feature-event-rate/multi-feature-event-rate.md) · [Gate](multi-feature-event-rate/candidate_gate_summary.csv) `combined_delta` / `boot_p_gt0` · [Smoke](multi-feature-event-rate/smoke_results.csv) `combined_delta` (GLM assist rate on xA target = dev gate PASS, Candidate `multi_feature_assist_challenger`; goals/GC/stacks dead; holdout pending)
 - **Champion component gap**: [Note](champion-component-gap/champion-component-gap.md) · [Summary](champion-component-gap/component_gap_summary.csv) `mse_share` · [Totals](champion-component-gap/component_gap_totals.csv) `realized_mae` (Realized `mse_share` primary; Process G/A + Poisson-xGC CS/GC twins; demotion / `link-bias`) · [Segment loss #123](champion-component-gap/segment-loss-121.md) · [segment summary](champion-component-gap/segment_loss_121_summary.csv) `blend_regret_delta_champ_minus_cand` · [AFK segment-fix experiments #124](champion-component-gap/segment_fix_experiments_124.md) · [CS/GC sweep](champion-component-gap/segment_fix_sweep_124.csv) · [bonus sweep](champion-component-gap/bonus_scale_sweep_124.csv) · [Bonus/BPS inventory #125](champion-component-gap/bonus-bps-inventory-125.md) · [Layer diagnosis #133](champion-component-gap/layer-diagnosis-133.md) · [gate](champion-component-gap/layer_diagnosis_133_gate.csv) `late_delta` · [late position](champion-component-gap/layer_diagnosis_133_late_position.csv) `regret_delta`
 - **Cross-GW dispersion (2025-26)**: [Note](xp-cross-gw-dispersion/xp-cross-gw-dispersion.md) · [Summary](xp-cross-gw-dispersion/dispersion_summary.csv) `mean_SD` · [Components](xp-cross-gw-dispersion/fixture_component_swing.csv) `mean_SD` (Champion xP ~12.5% of blend swing on `60+`; attack fixture ~zero)
 - **Downside attack scale (won scorecard)**: [Note](fixture-downside-scale/fixture-downside-scale.md) · [Summary](fixture-downside-scale/downside_swing_summary.csv) `blend_mae` (downside 0.9960 vs Champion 1.0024; all guardrails hold; pending gate plumbing + admission)

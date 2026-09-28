@@ -130,8 +130,9 @@ From winning prototype:
 
 1. `config/model_selection.json` edit (add Candidate to `candidates`, max 2) → ask user first.
 2. Dry gate: `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/2025-26/processed --seed_season 2024-25` → PASS required.
-3. Sealed holdout, once, only if 2026-27 GW6+ finished: `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/2026-27/processed --seed_season 2025-26 --gw_range 6-<last finished GW>`. Log date + verdict in Ledger row. Else mark "holdout pending".
-4. PASS → report; `--apply` (writes Champion + `data/reports/promotion_evidence/`) only on user's words. Champion change → new ADR in `docs/adr/` (pattern ADR 0045), catalog Role update, INDEX entry.
+3. Confirmation season, once (ADR 0047): `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/2024-25/processed` (no seed) → PASS required. Log date + verdict in Ledger row. Defcon/BPS-specific lever → 2024-25 uninformative; use 2026-27 GW6+ holdout-first instead.
+4. PASS both → report; `--apply` on 2024-25 run (writes Champion + `data/reports/promotion_evidence/`) only on user's words; list Candidate first in `candidates` so no other slate entry promotes. Champion change → new ADR in `docs/adr/` (pattern ADR 0045), catalog Role update, INDEX entry.
+5. After promotion, once 2026-27 GW6+ finished: one post-promotion check `--data_dir data/archive/2026-27/processed --seed_season 2025-26 --gw_range 6-<last finished GW>`; FAIL → revert on user's words; log in Ledger.
 
 ### 8. Record + clean
 

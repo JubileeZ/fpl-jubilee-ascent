@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-09-28T09:45:00+07:00  
+**Updated**: 2026-09-28T13:30:00+07:00  
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -14,7 +14,7 @@
 
 ## Sealed holdout (ADR 0046)
 
-2026-27 GW6+ = sealed holdout. Only frozen Candidates (selection done on 2025-26) get one gate run there; log run date + verdict in that Candidate's row. Tuning, smoke, or ablation on it = protocol breach.
+2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
 
 ## Rules
 
@@ -39,7 +39,7 @@
 
 ## Dead (do not retry before `Revisit after`)
 
-Baseline HC = former Champion `hold_chase_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
+Baseline HC = former Champion `hold_chase_challenger`; FV = Champion `face_value_challenger`. Δ = combined Blended `top_11_regret` delta (positive = Candidate better). Smoke = [smoke_lane_results.csv](../face-value-challenger/smoke_lane_results.csv) `lane`/`variant`.
 
 | Lever class | Tried as | Baseline | Result | Evidence date | Revisit after | Evidence |
 |---|---|---|---|---|---|---|
@@ -70,12 +70,16 @@ Baseline HC = former Champion `hold_chase_challenger`. Δ = combined Blended `to
 | Official FPL Dual-Vector multipliers (unshrunk) | dual-vector-official-xg | ADR 0037 neutral | not ready on Realized or Process | 2026-09-22 | 2027-09-22 | [archive note](../../archive/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md) |
 | Opponent-relative team Poisson λ rate multiplier | team-poisson-lambda | ADR 0037 neutral | over-predicts easy fixtures | 2026-09-22 | 2027-09-22 | [archive note](../../archive/team-poisson-lambda-2025-26/team-poisson-lambda-2025-26.md) |
 | Uncalibrated Matchup Share | matchup-share-addon | neutral | all-pool worse than neutral; superseded by calibrated | 2026-09-22 | 2027-09-22 | [matchup-share note](../matchup-share-addon-2025-26/matchup-share-addon-2025-26.md) |
+| Multi-feature Poisson GLM goals rate (xG/threat/opp xG conceded/team xG/home; +finishing/position) | smoke `g_*` | FV | best +0.547 1/3 P 0.70; no-fixture −0.263 | 2026-09-28 | 2027-09-28 | [multi-feature-event-rate](../multi-feature-event-rate/multi-feature-event-rate.md) `smoke_results.csv` |
+| Multi-feature Poisson GLM goals-conceded rate (player xGC/opp xG/own xG conceded/home) | smoke `c_*` | FV | best `c_gc_l10` +0.986 2/3 P 0.923 (near miss); opp-only −0.313 | 2026-09-28 | 2027-09-28 | same |
+| Stacked multi-feature GLM rates (assists + GC and/or goals) | smoke `s_*` | FV | best +1.524 2/3 P 0.891; not additive | 2026-09-28 | 2027-09-28 | same |
 | Terminal archive columns as inputs (`total_points`, `minutes`, `goals_scored`, `expected_goals`, `bps`, `threat`, `selected_by_percent`, `now_cost`, `status`, `chance_of_playing`) | any | — | leakage (season-end values in archive features) | 2026-09-28 | never (structural) | face-value-challenger Method |
 
 ## Open (next-lever pool; not proven dead)
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
+| Multi-feature Poisson GLM assist rate (xA target; xA/creativity/opp xG conceded/team xG/home) | Frozen Candidate `multi_feature_assist_challenger`; dev gate PASS +0.901 2/3 boot P 0.976 vs `face_value_challenger` | [multi-feature-event-rate](../multi-feature-event-rate/multi-feature-event-rate.md) `candidate_gate_summary.csv` | Holdout 2026-27 GW6+ pending (one run); Comparison Slate admission + `--apply` = user decision |
 | Learned hurdle / direct residual correction on face-value base (ridge λ 10–100, min-GW 4–8) | On paper vs HC: +2.4 … +3.4, 3/3; holdout +2.51 < face-value base | Smoke B1 `v2_hurdle_face_*`, `hurdle_unfit_*` | Needs per-GW feature memory in live `fit` path; must beat `face_value_challenger`, not HC |
 | Fixture downside attack scale | Won scorecard vs pre-HC Champion (blend MAE 0.9960 vs 1.0024) | [fixture-downside-scale](../fixture-downside-scale/fixture-downside-scale.md) `downside_swing_summary.csv` `blend_mae` | Plumb `matchup_*` params through WalkforwardConfig; gate vs current Champion |
 | Position-split goals weight (restore FWD, keep MID/DEF dampen) | Untried as built Candidate | layer-diagnosis-133 option 1 | Differs from flat MID/FWD 0.9/1.1 (Dead); gate vs current Champion |
