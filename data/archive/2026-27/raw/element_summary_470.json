@@ -142,7 +142,7 @@
       "kickoff_time": "2026-12-05T15:00:00Z",
       "event_name": "Gameweek 14",
       "is_home": true,
-      "difficulty": 2
+      "difficulty": 3
     },
     {
       "id": 150,
@@ -366,7 +366,7 @@
       "kickoff_time": "2027-03-03T20:00:00Z",
       "event_name": "Gameweek 28",
       "is_home": true,
-      "difficulty": 2
+      "difficulty": 3
     },
     {
       "id": 290,
@@ -446,7 +446,7 @@
       "kickoff_time": "2027-04-24T14:00:00Z",
       "event_name": "Gameweek 33",
       "is_home": true,
-      "difficulty": 2
+      "difficulty": 3
     },
     {
       "id": 332,
@@ -462,7 +462,7 @@
       "kickoff_time": "2027-05-01T14:00:00Z",
       "event_name": "Gameweek 34",
       "is_home": false,
-      "difficulty": 3
+      "difficulty": 4
     },
     {
       "id": 349,
@@ -478,7 +478,7 @@
       "kickoff_time": "2027-05-08T14:00:00Z",
       "event_name": "Gameweek 35",
       "is_home": true,
-      "difficulty": 3
+      "difficulty": 2
     },
     {
       "id": 351,
