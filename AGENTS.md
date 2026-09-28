@@ -69,6 +69,7 @@ docs/          # Durable project documentation and decision records
 - **MUST** read [docs/testing/archive-testing.md](docs/testing/archive-testing.md) before performing backtesting or historical data exploration.
 - **MUST** read [docs/research/INDEX.md](docs/research/INDEX.md) for active research index, **Eval canon**, and layout conventions.
 - **MUST** read [Candidate Ledger](docs/research/candidate-ledger/candidate-ledger.md) before new Candidate lever. Hard rule: Dead lever never retried before `revisit_after` (evidence + 1 year), no exceptions without user's explicit words. Log every attempt in `candidate_ledger.csv`.
+- Candidate / Champion search: `explore-candidate` skill (`.agents/skills/explore-candidate/`; AFK `/goal`, Human Queue, harness `smoke.py`).
 - Live research topic = `docs/research/<topic-slug>/` (note, runners, and companion CSV/HTML in that folder).
 - Archive a topic by moving the whole folder to `docs/archive/<topic-slug>/`. Companions travel with it.
 - `data/archive/` = season ingest (`YYYY-YY`) only. `data/reports/` = solver/tool outputs. Session scratch = `.tmp/agent/` (delete before finish).
