@@ -1,9 +1,9 @@
 # Component model ideas (idea backlog for explore-candidate)
 
-**Updated**: 2026-09-29T21:20:00+07:00  
+**Updated**: 2026-09-29T23:55:00+07:00  
 **Data stamp**: Code at `f002f88`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-29 vs `club_def_prior_challenger`  
 **Season**: Multi-season (dev 2025-26, confirm 2024-25; 2026-27 GW6+ sealed)  
-**Status**: Active — Queue batches 1–3 done (15 ideas); 14 rows remain (7 eligible, 3 needs ruling, 3 holdout, 1 blocked)  
+**Status**: Active — Queue batches 1–7 done (25 ideas tried: 1 promoted, 22 dead/failed, 2 Open dev winners); 4 rows remain (3 holdout, 1 blocked)  
 **Purpose**: Per ledger component: how Champion models it today + new model ideas, queued for `explore-candidate` Queue mode runs until all tried  
 **Scope**: All 13 `LEDGER_COMPONENTS` + `projected_minutes`. Excludes Dead-ledger mechanisms, solver, fixture-scale Open row (Dual-Vector shrunk)  
 **Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [Eval canon](../INDEX.md) · [champion-component-gap](../champion-component-gap/champion-component-gap.md) · [dual-lane-candidate-search](../dual-lane-candidate-search/dual-lane-candidate-search.md)  
@@ -203,9 +203,30 @@ Evidence: [smoke_results.csv](smoke_results.csv) (7 rows across 2 lanes). Every 
 
 Both card lanes failed dev. Champion `club_def_prior_challenger` stands.
 
+## Findings — Queue run 2026-09-29 (batch 6 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (9 rows across 2 lanes). Every prototype AUDIT PASS, no LEAKAGE FAIL. Tested via explicit user override of Dead-adjacent status.
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| MIN-05 GKP club-fixture slot accounting | `fail` | `min_05_gkp_scale` −0.108 1/3 boot P 0.239 | — |
+| BON-04 Fitted Plackett-Luce rank model | `fail` | `bon_04_lam10_no_bps` −1.443 0/3 boot P 0.044 | — |
+
+Both lanes failed dev. Champion `club_def_prior_challenger` stands.
+
+## Findings — Queue run 2026-09-29 (batch 7 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (6 rows across 1 lane). Every prototype AUDIT PASS, no LEAKAGE FAIL. Tested via explicit user override of Dead-adjacent status (deferred from batch 6 due to pairwise conflict with MIN-05).
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| MIN-06 Latent-role HMM | `fail` | `min_06_hmm3_pooled_blend` −0.896 0/3 boot P 0.099 (MAE fail) | — |
+
+All 6 variants failed dev and regressed MAE guardrails. Champion `club_def_prior_challenger` stands.
+
 ## Decision
 
-Champion `club_def_prior_challenger` stands ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. All standard eligible queue rows evaluated (17 Dead, 1 Promoted Champion, 2 Open dev winners awaiting re-smoke/stacking). Remaining rows: MIN-07 (blocked on new feature), MIN-05/MIN-06/BON-04 (needs ruling), DEF-03/DEF-04/DEF-07 (holdout-first for 2026-27 GW6+). Queue = [idea_queue.csv](idea_queue.csv).
+Champion `club_def_prior_challenger` stands ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. All eligible and user-ruled queue rows evaluated across Batches 1–7 (20 Dead, 1 Promoted Champion, 2 Open dev winners awaiting re-smoke/stacking). Remaining rows: MIN-07 (blocked on new feature), DEF-03/DEF-04/DEF-07 (holdout-first for 2026-27 GW6+). Queue = [idea_queue.csv](idea_queue.csv).
 
 ## Risks and unknowns
 
