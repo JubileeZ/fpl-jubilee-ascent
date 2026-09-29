@@ -1,9 +1,9 @@
 # Component model ideas (idea backlog for explore-candidate)
 
-**Updated**: 2026-09-29T02:50:00+07:00  
-**Data stamp**: Code at `730e831`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-29 vs `learned_start_challenger`  
+**Updated**: 2026-09-29T21:20:00+07:00  
+**Data stamp**: Code at `f002f88`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-29 vs `club_def_prior_challenger`  
 **Season**: Multi-season (dev 2025-26, confirm 2024-25; 2026-27 GW6+ sealed)  
-**Status**: Active — Queue batches 1–2 done (10 ideas); ATK-05 promoted (ADR 0051); 19 rows untested vs new Champion  
+**Status**: Active — Queue batches 1–3 done (15 ideas); 14 rows remain (7 eligible, 3 needs ruling, 3 holdout, 1 blocked)  
 **Purpose**: Per ledger component: how Champion models it today + new model ideas, queued for `explore-candidate` Queue mode runs until all tried  
 **Scope**: All 13 `LEDGER_COMPONENTS` + `projected_minutes`. Excludes Dead-ledger mechanisms, solver, fixture-scale Open row (Dual-Vector shrunk)  
 **Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [Eval canon](../INDEX.md) · [champion-component-gap](../champion-component-gap/champion-component-gap.md) · [dual-lane-candidate-search](../dual-lane-candidate-search/dual-lane-candidate-search.md)  
@@ -164,9 +164,48 @@ Evidence: [smoke_results.csv](smoke_results.csv) `variant` / `combined_delta` / 
 
 Stack (batch 2, `stack_b2_*`): all three −0.252 FAIL; ATK-05 + DEF-01 +0.417; ATK-05 + ATK-02 −0.200; DEF-01 + ATK-02 +0.054 → levers not additive; frozen pick = single ATK-05. DEF xG levers pass dev strongly; ATK-04 did not transfer to 2024-25, ATK-05 did (narrowly).
 
+## Findings — Queue run 2026-09-29 (batch 3 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (21 rows across 5 lanes) · [candidate_gate.csv](candidate_gate.csv). Every prototype AUDIT PASS, no LEAKAGE FAIL.
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| DEF-02 CS exposure over 60+ starts | `confirm-fail` | `def_02_m60_k4` +0.096 2/3 P 0.664 | −0.443 0/3 boot P 0.000 FAIL |
+| BON-02 correlated MC BPS rank | `fail` | `all_s2000` −1.086 0/3 | — |
+| MIN-03 route displaced start mass | `fail` | `r045_fv_shrink` −0.380 2/3 (MAE fail) | — |
+| MIN-04 incumbent-return displacement | `fail` | all −0.504 1/3 | — |
+| DEF-05+06 rare-event pooled rates | `fail` | `k900` −0.0036 0/3 | — |
+
+Single dev winner `def_02_m60_k4` frozen as `cs_exposure_challenger`; dev gate confirmed (+0.096, segs 2/3, P 0.664), but confirmation on 2024-25 failed (-0.443, 0/3, P 0.000) $\to$ Dead. Champion `club_def_prior_challenger` stands.
+
+## Findings — Queue run 2026-09-29 (batch 4 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (20 rows across 5 lanes). Every prototype AUDIT PASS, no LEAKAGE FAIL.
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| CRD-02 Pooled red-card rate | `fail` | `crd_02_k9000` / `kinf` −0.126 1/3 boot P 0.355 | — |
+| ATK-07 Penalty-miss de-noising | `fail` | `atk_07_zero` −0.409 0/3 boot P 0.013 | — |
+| DEF-08 Club SoT volume $\times$ pooled save rate | `fail` | `def_08_pool05_k200` −0.267 0/3 boot P 0.090 | — |
+| DEF-09 Back-line personnel $\lambda$ adjust | `fail` | `def_09_beta04` −0.472 1/3 boot P 0.196 (guardrail fail) | — |
+| ATK-06 Teammate-absence share redistribution | `fail` | `atk_06_w025_same_pos_goals` −0.722 1/3 boot P 0.152 (MAE fail) | — |
+
+All 5 lanes failed dev. Champion `club_def_prior_challenger` stands.
+
+## Findings — Queue run 2026-09-29 (batch 5 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (7 rows across 2 lanes). Every prototype AUDIT PASS, no LEAKAGE FAIL.
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| CRD-01 Empirical-Bayes yellow card rate | `fail` | `crd_01_k1800` −0.505 1/3 boot P 0.185 | — |
+| CRD-03 Minutes-state + venue card hazard | `fail` | `crd_03_state_on` −0.203 0/3 boot P 0.024 | — |
+
+Both card lanes failed dev. Champion `club_def_prior_challenger` stands.
+
 ## Decision
 
-Champion → `club_def_prior_challenger` ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. Next Queue run re-screens remaining rows vs new Champion (DEF-02 next; DEF-01 / ATK-02 Open rows need re-smoke vs new Champion). Queue = [idea_queue.csv](idea_queue.csv). Run `/explore-candidate idea_queue.csv` (Queue mode): batches by `order`, stacks winners, one confirm per frozen pick. RULING rows wait for user's words. HOLDOUT rows wait until 2026-27 GW6+ protocol allows (ADR 0046) or user decides.
+Champion `club_def_prior_challenger` stands ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. All standard eligible queue rows evaluated (17 Dead, 1 Promoted Champion, 2 Open dev winners awaiting re-smoke/stacking). Remaining rows: MIN-07 (blocked on new feature), MIN-05/MIN-06/BON-04 (needs ruling), DEF-03/DEF-04/DEF-07 (holdout-first for 2026-27 GW6+). Queue = [idea_queue.csv](idea_queue.csv).
 
 ## Risks and unknowns
 
