@@ -19,11 +19,7 @@ configure_utf8_stdio()
 
 from commands.export_dashboard import (
     PROJECT_ROOT,
-    SEASON_END_GW,
-    SEASON_START_GW,
-    build_dashboard_dataset,
-    export_dashboard_data,
-    resolve_horizon_start,
+    run_dashboard_export,
 )
 from commands.dream_team import execute_dream_team
 from commands.transfer_plan_scenarios import (
@@ -33,14 +29,11 @@ from commands.transfer_plan_scenarios import (
     mark_scenarios_stale,
 )
 from commands import refresh_data
-from features.builder import build_features, resolve_operational_processed_dir
+from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
-from models import get_default_model_name, get_model
-from models.selection import projection_model_names
-from projections.exporter import write_solver_projection_csvs
+from models import get_default_model_name
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON
-import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -156,63 +149,6 @@ def posted_primary_model(body: dict[str, object] | None) -> str:
         return get_default_model_name()
 
 
-def run_dashboard_export(
-    model_name: str | None = None,
-    horizon: int = DEFAULT_PLANNING_HORIZON,
-    target_gw: int | None = None,
-    model_names: list[str] | None = None,
-) -> Path:
-    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
-    if not (processed_dir / "players.parquet").exists():
-        raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
-
-    names = projection_model_names(model_name, model_names)
-    default_model = model_name or names[0]
-    horizon = clamp_planning_horizon(horizon)
-    if target_gw is None:
-        target_gw = resolve_horizon_start(processed_dir)
-
-    logger.info(
-        f"Generating Full-Season Window projections GW{SEASON_START_GW}–{SEASON_END_GW}; "
-        f"Planning Horizon {horizon} from GW{target_gw}"
-    )
-    df_feat = build_features(
-        processed_dir,
-        SEASON_START_GW,
-        horizon=SEASON_END_GW,
-        history_before_gw=SEASON_END_GW + 1,
-    )
-
-    model_preds: dict[str, pd.DataFrame] = {}
-    perf_path = processed_dir / "player_performances.parquet"
-    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
-
-    for m_name in names:
-        logger.info(f"Loading model '{m_name}'...")
-        model = get_model(m_name)
-        if hasattr(model, "fit") and df_perf is not None:
-            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
-
-    dataset = build_dashboard_dataset(
-        processed_dir,
-        model_preds,
-        target_gw,
-        horizon,
-        default_model_name=default_model,
-    )
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
-    write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
-
-    dashboard_dir = PROJECT_ROOT / "dashboard"
-    dashboard_dir.mkdir(parents=True, exist_ok=True)
-    json_path = dashboard_dir / "dashboard_data.json"
-    export_dashboard_data(dataset, json_path)
-    data_json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
-    data_json_path.parent.mkdir(parents=True, exist_ok=True)
-    export_dashboard_data(dataset, data_json_path)
-    return json_path
 
 
 def run_refresh_job(

@@ -18,6 +18,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
+from models.base import resolve_asof_target_gw
 from models.face_value_challenger import FaceValueChallengerModel
 from models.multi_feature_assist_challenger import MultiFeatureAssistChallengerModel
 
@@ -115,7 +116,7 @@ def learned_start_probabilities(history_df: pd.DataFrame, features_df: pd.DataFr
     """player_id -> learned start probability for the target GW; empty when gated off."""
     if history_df.empty or features_df.empty or not set(_HIST_COLUMNS).issubset(history_df.columns):
         return {}
-    target_gw = int(pd.to_numeric(features_df["gameweek_id"]).min())
+    target_gw = resolve_asof_target_gw(features_df, history_df)
     if target_gw < _MIN_TARGET_GW:
         return {}
     current = features_df[["player_id", "position_id", "club_id"]].drop_duplicates(subset=["player_id"])

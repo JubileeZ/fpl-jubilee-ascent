@@ -16,6 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from models.base import resolve_asof_target_gw
 from models.face_value_challenger import FaceValueChallengerModel
 from models.scoring_matrix import event_points
 
@@ -177,7 +178,7 @@ class MultiFeatureAssistChallengerModel(FaceValueChallengerModel):
         offset = np.log(train["minutes"].to_numpy() / 90.0) + log_base
         beta = _poisson_ridge((z - mu) / sd, train["y"].to_numpy(dtype=float), offset, _RIDGE_LAMBDA)
 
-        target_gw = int(features_df["gameweek_id"].min())
+        target_gw = resolve_asof_target_gw(features_df, hist)
         fx = features_df[features_df["fixture_id"] >= 0].drop_duplicates(["player_id", "fixture_id"])
         clubs, league = _club_asof(club_fx, target_gw)
         frame = pd.concat([

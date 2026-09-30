@@ -36,6 +36,16 @@ def cap_projected_minutes(row: pd.Series, expected_minutes: float) -> float:
     return min(expected_minutes, float(cap))
 
 
+def resolve_asof_target_gw(features_df: pd.DataFrame, history_df: pd.DataFrame) -> int:
+    """Resolve operational target Gameweek, advancing past finished Gameweeks in history."""
+    target_gw = int(pd.to_numeric(features_df["gameweek_id"]).min())
+    if not history_df.empty and "gameweek_id" in history_df.columns:
+        last_finished = pd.to_numeric(history_df["gameweek_id"], errors="coerce").max()
+        if pd.notna(last_finished) and target_gw <= int(last_finished):
+            return int(last_finished) + 1
+    return target_gw
+
+
 class BaseModel(abc.ABC):
     @property
     @abc.abstractmethod

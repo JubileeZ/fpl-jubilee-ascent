@@ -18,6 +18,7 @@ configure_utf8_stdio()
 from features.builder import build_features, resolve_operational_processed_dir
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
 from models.selection import projection_model_names
+from projections.exporter import write_solver_projection_csvs
 from projections.explorer_slice import (
     COMPONENT_KEYS,
     GameweekScore,
@@ -554,6 +555,73 @@ def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:
     logger.info(f"Dashboard data exported successfully to {output_path}")
 
 
+def run_dashboard_export(
+    model_name: str | None = None,
+    horizon: int = DEFAULT_PLANNING_HORIZON,
+    target_gw: int | None = None,
+    model_names: list[str] | None = None,
+    output_path: Path | None = None,
+) -> Path:
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    if not (processed_dir / "players.parquet").exists():
+        raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
+
+    names = projection_model_names(model_name, model_names)
+    default_model = resolve_model_or_champion(model_name) if model_name else names[0]
+    horizon = clamp_planning_horizon(horizon)
+    if target_gw is None:
+        target_gw = resolve_horizon_start(processed_dir)
+
+    remaining_horizon = SEASON_END_GW - target_gw + 1
+    logger.info(
+        f"Generating projections GW{target_gw}–{SEASON_END_GW}; "
+        f"Planning Horizon {horizon} from GW{target_gw}"
+    )
+    df_feat = build_features(
+        processed_dir,
+        target_gw,
+        horizon=remaining_horizon,
+        history_before_gw=SEASON_END_GW + 1,
+    )
+
+    model_preds: Dict[str, pd.DataFrame] = {}
+    perf_path = processed_dir / "player_performances.parquet"
+    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
+
+    for m_name in names:
+        logger.info(f"Generating projections using model '{m_name}'...")
+        model = get_model(m_name)
+        if hasattr(model, "fit") and df_perf is not None:
+            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+        model_preds[m_name] = model.predict(df_feat, remaining_horizon)
+
+    dataset = build_dashboard_dataset(
+        processed_dir,
+        model_preds,
+        target_gw,
+        horizon,
+        default_model_name=default_model,
+    )
+    df_players = pd.read_parquet(processed_dir / "players.parquet")
+    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
+
+    dashboard_dir = PROJECT_ROOT / "dashboard"
+    dashboard_dir.mkdir(parents=True, exist_ok=True)
+    json_path = dashboard_dir / "dashboard_data.json"
+    export_dashboard_data(dataset, json_path)
+    data_json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
+    data_json_path.parent.mkdir(parents=True, exist_ok=True)
+    export_dashboard_data(dataset, data_json_path)
+
+    if output_path is not None and output_path not in (json_path, data_json_path):
+        if not output_path.is_absolute():
+            output_path = PROJECT_ROOT / output_path
+        export_dashboard_data(dataset, output_path)
+
+    return json_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export player projections and stats for dashboard.")
     parser.add_argument("--model", type=str, default=None, help="Primary model name")
@@ -573,56 +641,16 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    model_names = projection_model_names(args.model, args.models)
-    default_model = resolve_model_or_champion(args.model) if args.model else model_names[0]
-
-    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
-    if not (processed_dir / "players.parquet").exists():
-        logger.error("No processed data found. Please run 'python -m commands.refresh_data' first.")
-        sys.exit(1)
-
-    if args.target_gw is not None:
-        target_gw = args.target_gw
-    else:
-        target_gw = resolve_horizon_start(processed_dir)
-
-    args.horizon = clamp_planning_horizon(args.horizon)
-    logger.info(
-        f"Building Full-Season Window features GW{SEASON_START_GW}–{SEASON_END_GW}; "
-        f"Planning Horizon {args.horizon} from GW{target_gw}"
+    run_dashboard_export(
+        model_name=args.model,
+        horizon=args.horizon,
+        target_gw=args.target_gw,
+        model_names=args.models,
+        output_path=args.output,
     )
-    df_feat = build_features(
-        processed_dir,
-        SEASON_START_GW,
-        horizon=SEASON_END_GW,
-        history_before_gw=SEASON_END_GW + 1,
-    )
-
-    model_preds: Dict[str, pd.DataFrame] = {}
-    perf_path = processed_dir / "player_performances.parquet"
-    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
-
-    for m_name in model_names:
-        logger.info(f"Generating projections using model '{m_name}'...")
-        model = get_model(m_name)
-        if hasattr(model, "fit") and df_perf is not None:
-            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-        model_preds[m_name] = model.predict(df_feat, SEASON_END_GW)
-
-    dataset = build_dashboard_dataset(
-        processed_dir,
-        model_preds,
-        target_gw,
-        args.horizon,
-        default_model_name=default_model,
-    )
-
-    output_path = args.output
-    if not output_path.is_absolute():
-        output_path = PROJECT_ROOT / output_path
-    export_dashboard_data(dataset, output_path)
 
 
 if __name__ == "__main__":
     main()
+
 
