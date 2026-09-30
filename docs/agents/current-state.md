@@ -41,7 +41,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 | CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
 | Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035); Calibrated Matchup Share overlay (`features/matchup_share.py`, ADR 0040); Official processed heals from Live Season Pin on resolve (ADR 0036) |
-| Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive |
+| Dashboard | `dashboard/`, `commands/dashboard.py` | Explorer + Transfer Plan Surface peer tabs. `http://127.0.0.1:8000`. IPv4 bind. Refresh / Dream Team / Solve scenarios exclusive. ADR 0053: 3-arm scenarios (Optimal / No Hit / Conservative); Conservative bans unowned flagged players + locks 1-match-missed starters; inline status badges + warning banners; 🔒 Force Keep button; horizon mean-reversion (gamma=0.5, h≥1) in `learned_start_challenger` |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
 | Solver | `solver/` | open-fpl-solver `2ff829f` highspy; live Transfer Plan gap 1% (ADR 0043); Dream Team and Walk-Forward stay gap 0 |
