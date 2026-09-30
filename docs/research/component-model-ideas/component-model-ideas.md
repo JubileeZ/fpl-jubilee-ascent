@@ -1,9 +1,9 @@
 # Component model ideas (idea backlog for explore-candidate)
 
-**Updated**: 2026-09-29T23:55:00+07:00  
-**Data stamp**: Code at `f002f88`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-29 vs `club_def_prior_challenger`  
+**Updated**: 2026-09-30T20:05:00+07:00  
+**Data stamp**: Code at `f002f88`; archives 2024-25 + 2025-26 (`data/archive/*/processed`); smoke/gate runs 2026-09-30 vs `club_def_prior_challenger`  
 **Season**: Multi-season (dev 2025-26, confirm 2024-25; 2026-27 GW6+ sealed)  
-**Status**: Active — Queue batches 1–7 done (25 ideas tried: 1 promoted, 22 dead/failed, 2 Open dev winners); 4 rows remain (3 holdout, 1 blocked)  
+**Status**: Active — Queue batches 1–9 done (28 ideas tried: 1 promoted, 25 dead/failed, 2 Open dev winners); 1 row remains (MIN-07 blocked on new feature)  
 **Purpose**: Per ledger component: how Champion models it today + new model ideas, queued for `explore-candidate` Queue mode runs until all tried  
 **Scope**: All 13 `LEDGER_COMPONENTS` + `projected_minutes`. Excludes Dead-ledger mechanisms, solver, fixture-scale Open row (Dual-Vector shrunk)  
 **Related**: [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [Eval canon](../INDEX.md) · [champion-component-gap](../champion-component-gap/champion-component-gap.md) · [dual-lane-candidate-search](../dual-lane-candidate-search/dual-lane-candidate-search.md)  
@@ -224,9 +224,46 @@ Evidence: [smoke_results.csv](smoke_results.csv) (6 rows across 1 lane). Every p
 
 All 6 variants failed dev and regressed MAE guardrails. Champion `club_def_prior_challenger` stands.
 
+## Findings — Queue run 2026-09-30 (batch 8 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (12 rows across 2 lanes: `def_03`, `def_07`). Every prototype AUDIT PASS, no LEAKAGE FAIL. Tested via explicit user override to evaluate holdout-first defcon queue ideas on dev season (2025-26).
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| DEF-03 Defcon within-player dispersion + minutes mixture | `fail` | `def_03_mix_r8p5_7` −0.146 0/3 boot P 0.000 | — (uninformative; no defcon) |
+| DEF-07 Defcon venue + opposition pressure | `fail` | `def_07_beta01` −0.172 1/3 boot P 0.279 | — (uninformative; no defcon) |
+
+All 6 variants of `def_03` and all 6 variants of `def_07` failed dev. Both levers Dead. Champion `club_def_prior_challenger` stands.
+
+## Findings — Queue run 2026-09-30 (batch 9 vs `club_def_prior_challenger`)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (6 rows across 1 lane: `def_04`). Every prototype AUDIT PASS, no LEAKAGE FAIL. Tested via explicit user override to evaluate holdout-first defcon queue ideas on dev season (2025-26).
+
+| Idea | Verdict | Best variant (dev) | Confirm 2024-25 |
+|---|---|---|---|
+| DEF-04 Defcon Beta-binomial hit rate | `fail` | `def_04_a4_60plus` −0.133 1/3 boot P 0.416 | — (uninformative; no defcon) |
+
+All 6 variants of `def_04` failed dev. Lever Dead. Champion `club_def_prior_challenger` stands.
+
+## Findings — Open Levers Re-test vs Champion `club_def_prior_challenger` (2026-09-30)
+
+Evidence: [smoke_results.csv](smoke_results.csv) (11 rows across 2 lanes: `def_01`, `atk_02`).
+- **DEF-01 (One fitted goals-against distribution)**: 6 variants re-tested against CDP. All negative (−0.06 … −0.83, 0/3 segments, boot P ≤ 0.027; best `def_01_nb_r8` −0.057). Failed dev. Moved from Open to Dead.
+- **ATK-02 (Club-coherent assist mass)**: 5 variants re-tested against CDP. All negative (−0.33 … −1.20, 0-1/3 segments, boot P ≤ 0.330; best `atk_02_w05_real` −0.334, regressed Realized and Process MAE guardrails). Failed dev. Moved from Open to Dead.
+
+## Findings — MIN-07 Schedule-Congestion Start Shift (2026-09-30)
+
+Unblocked by adding `kickoff_time` to `_fixture_maps` in Feature Contract.
+Evidence: [smoke_results.csv](smoke_results.csv) (6 rows) and [candidate_gate.csv](candidate_gate.csv) (2 rows).
+- Dev 2025-26: `min_07_shift_m02_raw` (logit shift -0.2, no mass preservation) won dev: `PASS delta +0.0629 (min 0.0000) segs 2/3 boot P 0.967`.
+- Built Candidate `models/schedule_congestion_challenger.py`.
+- Confirm 2024-25: `schedule_congestion_challenger` failed: `FAIL delta -0.1050 (min 0.0000) segs 0/3 boot P 0.000`.
+- Verdict: `confirm-fail` (Dead row).
+
 ## Decision
 
-Champion `club_def_prior_challenger` stands ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. All eligible and user-ruled queue rows evaluated across Batches 1–7 (20 Dead, 1 Promoted Champion, 2 Open dev winners awaiting re-smoke/stacking). Remaining rows: MIN-07 (blocked on new feature), DEF-03/DEF-04/DEF-07 (holdout-first for 2026-27 GW6+). Queue = [idea_queue.csv](idea_queue.csv).
+Champion `club_def_prior_challenger` stands ([ADR 0051](../../adr/0051-champion-club-def-prior-challenger.md)); 2026-27 GW6+ post-promotion check pending. All 29 queue ideas in [idea_queue.csv](idea_queue.csv) are fully evaluated and resolved (1 Shipped Champion, 3 confirm-fail Candidates in catalog, 25 fail/dead). All Open levers in the Candidate Ledger are resolved. The queue is 100% complete.
+
 
 ## Risks and unknowns
 

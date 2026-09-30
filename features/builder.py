@@ -321,6 +321,7 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
                 "opponent_defence_strength": opponent_defence,
                 "attack_multiplier": attack_multiplier,
                 "defence_multiplier": defence_multiplier,
+                "kickoff_time": str(fixture.get("kickoff_time") or ""),
             })
 
     columns = [
@@ -336,6 +337,7 @@ def _fixture_maps(df_fixtures: pd.DataFrame, df_clubs: pd.DataFrame, gameweeks: 
         "opponent_defence_strength",
         "attack_multiplier",
         "defence_multiplier",
+        "kickoff_time",
     ]
     return pd.DataFrame(fixture_maps, columns=columns)
 

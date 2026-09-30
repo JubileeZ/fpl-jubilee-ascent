@@ -5,3 +5,5 @@ date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_e
 2026-09-29,confirm,2024-25,atk_05,club_def_prior_challenger,learned_start_challenger,1-38,True,0.07986842105263037,0.0,2,0.61935,True,,registered
 2026-09-29,dev,2025-26,,cs_exposure_challenger,club_def_prior_challenger,1-38,True,0.09631578947370656,0.0,2,0.66395,True,,registered
 2026-09-29,confirm,2024-25,,cs_exposure_challenger,club_def_prior_challenger,1-38,False,-0.4432894736842101,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.60; won only 0/3 seasonal segments,registered
+2026-09-30,dev,2025-26,,schedule_congestion_challenger,club_def_prior_challenger,1-38,True,0.0628947368421251,0.0,2,0.9671,True,,registered
+2026-09-30,confirm,2024-25,,schedule_congestion_challenger,club_def_prior_challenger,1-38,False,-0.10500000000001108,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.60; won only 0/3 seasonal segments,registered
