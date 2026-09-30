@@ -79,24 +79,27 @@ fi
 shopt -s nullglob
 _azg_packets=(.agents/work-packets/*.md)
 shopt -u nullglob
-for _pkt in "${_azg_packets[@]}"; do
-  for marker in \
-    "**Objective:**" \
-    "**Acceptance:**" \
-    "## Work Packet (SFDBN)" \
-    "**Status:**" \
-    "**Files:**" \
-    "**Decisions:**" \
-    "**Blocked:**" \
-    "**Next:**"
-  do
-    if grep -qF "${marker}" "${_pkt}"; then
-      pass "Work Packet ${_pkt} has ${marker}"
-    else
-      fail "Work Packet ${_pkt} missing ${marker}"
-    fi
+# Bash 3.2 + set -u: empty "${arr[@]}" is unbound. Skip when no packets.
+if [ "${#_azg_packets[@]}" -gt 0 ]; then
+  for _pkt in "${_azg_packets[@]}"; do
+    for marker in \
+      "**Objective:**" \
+      "**Acceptance:**" \
+      "## Work Packet (SFDBN)" \
+      "**Status:**" \
+      "**Files:**" \
+      "**Decisions:**" \
+      "**Blocked:**" \
+      "**Next:**"
+    do
+      if grep -qF "${marker}" "${_pkt}"; then
+        pass "Work Packet ${_pkt} has ${marker}"
+      else
+        fail "Work Packet ${_pkt} missing ${marker}"
+      fi
+    done
   done
-done
+fi
 
 # --- Project validation (optional until configured) ---
 project_test_cmd=""

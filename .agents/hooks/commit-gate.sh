@@ -9,10 +9,24 @@ cmd=$(printf '%s' "$input" | jq -r '.toolCall.args.CommandLine // empty' 2>/dev/
 if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
   if echo "$cmd" | grep -qE '^git[[:space:]]+commit'; then
     _hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _repo_root="$(cd "${_hook_dir}/../.." && pwd)"
+    cd "${_repo_root}" || exit 1
+
     # shellcheck source=commit-scan.sh
     source "${_hook_dir}/commit-scan.sh"
-    # Finished Work Packet still on disk → delete it (do not leave stubs)
+
+    # Reject non-markdown files or directories inside .agents/work-packets/ to prevent sneaking code
     shopt -s nullglob
+    for entry in .agents/work-packets/*; do
+      if [ -d "$entry" ] || ([ -f "$entry" ] && [[ "$entry" != *.md ]]); then
+        reason="Security violation: non-markdown file or directory found in .agents/work-packets/: ${entry}. Work packets must be markdown (*.md) files only."
+        jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
+        shopt -u nullglob
+        exit 0
+      fi
+    done
+
+    # Finished Work Packet still on disk → delete it (do not leave stubs)
     for pkt in .agents/work-packets/*.md; do
       if azg_packet_is_finished "$pkt"; then
         reason="Finished Work Packet still present: ${pkt}. Delete it in this Checkpoint (do not leave empty stubs)."

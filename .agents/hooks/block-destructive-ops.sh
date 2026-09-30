@@ -27,17 +27,51 @@ fi
 
 # 1. Protect hooks and .agents configuration from being modified via file writing tools
 if [[ "$tool_name" =~ ^(write_to_file|replace_file_content|multi_replace_file_content|write_file|edit_file)$ ]]; then
-  if [[ "$target_file" =~ (\.agents|hooks\.json|hooks/) ]]; then
+  # Deny direct modifications to hook scripts or configurations
+  if [[ "$target_file" =~ (hooks\.json|hooks/|\.cursor/hooks) ]]; then
     printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
     exit 0
+  fi
+  # Whitelist strictly .agents/work-packets/*.md and .agents/handoff-pointer under .agents/
+  if [[ "$target_file" =~ \.agents ]]; then
+    if ! [[ "$target_file" =~ (^|/)\.agents/(work-packets/[a-zA-Z0-9_.-]+\.md|handoff-pointer)$ ]]; then
+      printf '{"decision":"deny","reason":"Modifying safety-gate configuration or non-packet files in .agents is not allowed. Only .agents/work-packets/*.md and .agents/handoff-pointer may be edited by agents."}\n'
+      exit 0
+    fi
   fi
 fi
 
 # 2. Protect hooks and .agents configuration from being modified via command line
 if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
-  if printf '%s' "$cmd" | grep -qE '(\b(rm|mv|cp|sed|echo|tee|chmod|write|overwrite)\b|>|>>|\bgit\s+(checkout|reset|clean|revert)\b).*(hooks\.json|\.agents)'; then
+  # Block chmod under .agents or .cursor
+  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])chmod[[:space:]]+.*(\.agents|\.cursor)'; then
+    printf '{"decision":"deny","reason":"Modifying permissions under .agents or .cursor is not allowed."}\n'
+    exit 0
+  fi
+
+  # Block executing scripts from .agents/work-packets
+  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])(\./\.agents/work-packets/|(bash|sh|zsh|python|python3|node|perl|ruby)[[:space:]]+.*\.agents/work-packets)'; then
+    printf '{"decision":"deny","reason":"Executing scripts from .agents/work-packets is not allowed."}\n'
+    exit 0
+  fi
+
+  # Block modifying safety hooks, hook configs, or .cursor hooks
+  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])((rm|mv|cp|sed|echo|tee|chmod|write|overwrite|touch)[[:space:]]+|>|>>|git[[:space:]]+(checkout|reset|clean|revert)[[:space:]]+).*(hooks\.json|hooks/|\.cursor)'; then
     printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
     exit 0
+  fi
+
+  # Block modifying .agents generally, unless strictly targeting .agents/work-packets/*.md or .agents/handoff-pointer
+  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])((rm|mv|cp|sed|echo|tee|chmod|write|overwrite|touch)[[:space:]]+|>|>>|git[[:space:]]+(checkout|reset|clean|revert)[[:space:]]+).*\.agents'; then
+    if printf '%s' "$cmd" | grep -qE 'rm[[:space:]]+.*(-[a-zA-Z]*[rR]|--recursive).*\.agents'; then
+      printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
+      exit 0
+    fi
+    stripped=$(printf '%s' "$cmd" | sed -E 's/\.agents\/(work-packets\/[a-zA-Z0-9_.-]+\.md|handoff-pointer)//g')
+    if printf '%s' "$stripped" | grep -q '\.agents'; then
+      printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
+      exit 0
+    fi
   fi
 fi
 

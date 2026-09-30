@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # commit-scan.sh — classify staged/commit paths for Checkpoint (commit-gate)
 # After azg_commit_classify_paths: AZG_COMMIT_HAS_CODE, AZG_COMMIT_HAS_PACKET (true/false)
-# Packet = any path under .agents/work-packets/ (add/modify/delete).
+# Packet = markdown files under .agents/work-packets/ (*.md) (add/modify/delete).
 # Not code: ROADMAP, docs/agents/*, handoff pointer, leftover task.md / session-handoff.md
 
 azg_commit_classify_paths() {
@@ -13,7 +13,7 @@ azg_commit_classify_paths() {
     f="${f#\"}"
     f="${f%\"}"
     case "${f}" in
-      .agents/work-packets/*)
+      .agents/work-packets/*.md)
         AZG_COMMIT_HAS_PACKET=true
         ;;
       ROADMAP.md|docs/agents/*|.agents/session-handoff.md|.agents/handoff-pointer|task.md)

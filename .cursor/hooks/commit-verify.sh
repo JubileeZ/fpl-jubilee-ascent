@@ -25,8 +25,17 @@ _hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../../.agents/hooks/commit-scan.sh
 source "${_hook_dir}/../../.agents/hooks/commit-scan.sh"
 
-# Finished Work Packet still on disk → delete it
+# Reject non-markdown files or directories inside .agents/work-packets/
 shopt -s nullglob
+for entry in .agents/work-packets/*; do
+  if [ -d "${entry}" ] || ([ -f "${entry}" ] && [[ "${entry}" != *.md ]]); then
+    jq -n --arg p "${entry}" '{permission:"deny",user_message:"Non-markdown file in work-packets",agent_message:("Security violation: non-markdown file or directory found in .agents/work-packets/: " + $p + ". Work packets must be markdown (*.md) files only.")}'
+    shopt -u nullglob
+    exit 0
+  fi
+done
+
+# Finished Work Packet still on disk → delete it
 for pkt in .agents/work-packets/*.md; do
   if azg_packet_is_finished "${pkt}"; then
     jq -n --arg p "${pkt}" '{permission:"deny",user_message:"Finished Work Packet still present",agent_message:("Delete " + $p + " in this Checkpoint.")}'
