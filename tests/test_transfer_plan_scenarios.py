@@ -1,13 +1,15 @@
-"""Transfer Plan Scenario arms and ranking (ADR 0042)."""
-
+import pandas as pd
 import pytest
 
 from solver.scenarios import (
+    ARM_CONSERVATIVE,
     ARM_NO_HIT,
     ARM_OPTIMAL,
     annotate_plan_with_egs,
     apply_scenario_arm,
     feasible_scenario_arms,
+    find_protected_one_match_missed_starters,
+    find_unowned_flagged_players,
     rank_scenarios,
     scenario_arm_overrides,
 )
@@ -30,10 +32,31 @@ def test_no_hit_forbids_hits_for_whole_horizon() -> None:
     assert overrides["hit_cost"] == 4.0
 
 
+def test_conservative_forbids_hits_and_applies_bans_locks() -> None:
+    overrides = scenario_arm_overrides(ARM_CONSERVATIVE, start_gw=5, free_transfer_bank=2)
+    assert "num_transfers" not in overrides
+    assert "no_transfer_gws" not in overrides
+    assert overrides["weekly_hit_limit"] == 0
+    assert overrides["hit_cost"] == 4.0
+
+    base = {"banned_next_gw": [5], "locked_next_gw": [8]}
+    applied = apply_scenario_arm(
+        base,
+        ARM_CONSERVATIVE,
+        start_gw=5,
+        free_transfer_bank=2,
+        banned_next_gw=[10, 11],
+        locked_next_gw=[20],
+    )
+    assert applied["weekly_hit_limit"] == 0
+    assert applied["banned_next_gw"] == [5, 10, 11]
+    assert applied["locked_next_gw"] == [8, 20]
+
+
 def test_both_arms_always_feasible() -> None:
-    assert feasible_scenario_arms(0) == (ARM_OPTIMAL, ARM_NO_HIT)
-    assert feasible_scenario_arms(1) == (ARM_OPTIMAL, ARM_NO_HIT)
-    assert feasible_scenario_arms(5) == (ARM_OPTIMAL, ARM_NO_HIT)
+    assert feasible_scenario_arms(0) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+    assert feasible_scenario_arms(1) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+    assert feasible_scenario_arms(5) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
 
 
 def test_apply_scenario_arm_clears_conflicting_pins() -> None:
@@ -48,6 +71,43 @@ def test_apply_scenario_arm_clears_conflicting_pins() -> None:
     assert "no_transfer_gws" not in no_hit
     assert no_hit["weekly_hit_limit"] == 0
     assert no_hit["hit_cost"] == 4.0
+
+
+def test_find_unowned_flagged_players() -> None:
+    players_df = pd.DataFrame([
+        {"id": 1, "status": "a", "chance_of_playing_next_round": 100},  # unowned, fit
+        {"id": 2, "status": "d", "chance_of_playing_next_round": 75},   # unowned, doubtful -> flagged
+        {"id": 3, "status": "i", "chance_of_playing_next_round": 0},    # unowned, injured -> flagged
+        {"id": 4, "status": "d", "chance_of_playing_next_round": 75},   # owned, doubtful -> ignored
+    ])
+    flagged = find_unowned_flagged_players(players_df, owned_ids=[4])
+    assert flagged == [2, 3]
+
+
+def test_find_protected_one_match_missed_starters() -> None:
+    perf_df = pd.DataFrame([
+        # Player 1: started GW1-4, missed GW5 -> protected
+        {"player_id": 1, "gameweek_id": 1, "starts": 1, "minutes": 90},
+        {"player_id": 1, "gameweek_id": 2, "starts": 1, "minutes": 85},
+        {"player_id": 1, "gameweek_id": 3, "starts": 1, "minutes": 90},
+        {"player_id": 1, "gameweek_id": 4, "starts": 1, "minutes": 90},
+        {"player_id": 1, "gameweek_id": 5, "starts": 0, "minutes": 0},
+        # Player 2: bench warmer (0 starts) -> not protected
+        {"player_id": 2, "gameweek_id": 1, "starts": 0, "minutes": 10},
+        {"player_id": 2, "gameweek_id": 2, "starts": 0, "minutes": 15},
+        {"player_id": 2, "gameweek_id": 3, "starts": 0, "minutes": 0},
+        # Player 3: played GW5 -> not missed
+        {"player_id": 3, "gameweek_id": 4, "starts": 1, "minutes": 90},
+        {"player_id": 3, "gameweek_id": 5, "starts": 1, "minutes": 90},
+        # Player 4: missed GW4 and GW5 (multi-match absence) -> not protected
+        {"player_id": 4, "gameweek_id": 1, "starts": 1, "minutes": 90},
+        {"player_id": 4, "gameweek_id": 2, "starts": 1, "minutes": 90},
+        {"player_id": 4, "gameweek_id": 3, "starts": 1, "minutes": 90},
+        {"player_id": 4, "gameweek_id": 4, "starts": 0, "minutes": 0},
+        {"player_id": 4, "gameweek_id": 5, "starts": 0, "minutes": 0},
+    ])
+    protected = find_protected_one_match_missed_starters(perf_df, owned_ids=[1, 2, 3, 4])
+    assert protected == [1]
 
 
 def test_unknown_arm_raises() -> None:

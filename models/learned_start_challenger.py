@@ -30,6 +30,7 @@ _LAGS = 6
 _MIN_TRAIN_GW = 4
 _MIN_TARGET_GW = 5
 _MIN_ROWS = 500
+_HORIZON_START_DECAY = 0.5
 _HIST_COLUMNS = ("player_id", "fixture_id", "gameweek_id", "was_home", "opponent_club_id", "minutes", "starts")
 _LAG_COLUMNS = tuple(f"s_lag{k}" for k in range(1, _LAGS + 1))
 _COVARIATES = (*_LAG_COLUMNS, "min3", "starts6", "since_start", "pos_gk", "pos_def", "pos_mid", "club_frac")
@@ -159,8 +160,13 @@ def preserve_mass(p_new: np.ndarray, target: float, cap: float = _CAP) -> np.nda
     return out
 
 
-def target_start_probabilities(features_df: pd.DataFrame, p_learn: dict[int, float]) -> dict[tuple[int, int], float]:
-    """(player_id, fixture_id) -> learned start probability, rescaled per GW to Champion start mass."""
+def target_start_probabilities(
+    features_df: pd.DataFrame,
+    p_learn: dict[int, float],
+    target_gw: int | None = None,
+    decay: float = _HORIZON_START_DECAY,
+) -> dict[tuple[int, int], float]:
+    """(player_id, fixture_id) -> learned start probability, rescaled per GW to Champion start mass and decayed across horizon."""
     if not p_learn or features_df.empty:
         return {}
     rows = features_df[features_df["player_id"].isin(p_learn) & pd.to_numeric(features_df["fixture_id"]).ge(0)]
@@ -171,6 +177,10 @@ def target_start_probabilities(features_df: pd.DataFrame, p_learn: dict[int, flo
     frame["p_new"] = frame["player_id"].map(p_learn).to_numpy(float)
     for _, group in frame.groupby("gameweek_id", dropna=False):
         frame.loc[group.index, "p_new"] = preserve_mass(group["p_new"].to_numpy(), float(group["p_champ"].sum()))
+    base_gw = target_gw if target_gw is not None else int(pd.to_numeric(frame["gameweek_id"]).min())
+    h = (pd.to_numeric(frame["gameweek_id"]) - base_gw).clip(lower=0).to_numpy(float)
+    w = decay ** h
+    frame["p_new"] = frame["p_champ"] + w * (frame["p_new"] - frame["p_champ"])
     return {(int(pid), int(fid)): float(p) for pid, fid, p in zip(frame["player_id"], frame["fixture_id"], frame["p_new"])}
 
 
@@ -201,7 +211,12 @@ class LearnedStartChallengerModel(MultiFeatureAssistChallengerModel):
         self._raw_history = history_df
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
-        self._p_target = target_start_probabilities(features_df, learned_start_probabilities(self._raw_history, features_df))
+        target_gw = resolve_asof_target_gw(features_df, self._raw_history)
+        self._p_target = target_start_probabilities(
+            features_df,
+            learned_start_probabilities(self._raw_history, features_df),
+            target_gw=target_gw,
+        )
         return super().predict(features_df, horizon)
 
     def _state_probabilities(self, row: pd.Series) -> tuple[float, float, float]:

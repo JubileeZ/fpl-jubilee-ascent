@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from commands.transfer_plan_scenarios import UserSquadRequired, execute_transfer_plan_scenarios
-from solver.scenarios import ARM_NO_HIT, ARM_OPTIMAL
+from solver.scenarios import ARM_CONSERVATIVE, ARM_NO_HIT, ARM_OPTIMAL
 
 
 def _squad(processed_dir: Path) -> None:
@@ -81,9 +81,9 @@ def test_execute_scenarios_ranks_feasible_arms(tmp_path: Path) -> None:
         solution_path=tmp_path / "solution.json",
     )
     ids = [row["id"] for row in payload["scenarios"]]
-    assert ARM_OPTIMAL in ids and ARM_NO_HIT in ids
+    assert ARM_OPTIMAL in ids and ARM_NO_HIT in ids and ARM_CONSERVATIVE in ids
     assert "roll" not in ids and "one_ft" not in ids
-    assert len(ids) == 2
+    assert len(ids) == 3
     assert payload["scenarios"][0]["rank"] == 1
     assert (tmp_path / "scenarios.json").exists()
     assert (tmp_path / "solution.json").exists()
@@ -100,7 +100,7 @@ def test_handle_dashboard_api_transfer_plan(monkeypatch: pytest.MonkeyPatch) -> 
         return 202, {"status": "running", "error": None, "detail": "Starting…"}
 
     monkeypatch.setattr(dash, "start_transfer_plan", fake_start)
-    monkeypatch.setattr(dash, "_transfer_plan_args", lambda _body: (5, 6, {"use_wc": []}, []))
+    monkeypatch.setattr(dash, "_transfer_plan_args", lambda _body: (5, 6, {"use_wc": []}, [], []))
     status, payload = dash.handle_dashboard_api("POST", "/api/transfer-plan", {"horizon": 6})
     assert status == 202
     assert captured["target_gw"] == 5
@@ -108,6 +108,27 @@ def test_handle_dashboard_api_transfer_plan(monkeypatch: pytest.MonkeyPatch) -> 
     get_status, get_payload = dash.handle_dashboard_api("GET", "/api/transfer-plan", None)
     assert get_status == 200
     assert "status" in get_payload
+
+
+def test_handle_dashboard_api_transfer_plan_force_keep(monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    dash.reset_transfer_plan_state()
+    captured: dict[str, object] = {}
+
+    def fake_start(**kwargs: object) -> tuple[int, dict[str, object]]:
+        captured.update(kwargs)
+        return 202, {"status": "running", "error": None, "detail": "Starting…"}
+
+    monkeypatch.setattr(dash, "start_transfer_plan", fake_start)
+    monkeypatch.setattr(dash, "resolve_default_target_gw", lambda _dir: 5)
+    status, payload = dash.handle_dashboard_api(
+        "POST",
+        "/api/transfer-plan",
+        {"horizon": 6, "force_keep": [{"player_id": 165, "gw": 6}]},
+    )
+    assert status == 202
+    assert captured["force_keep"] == [{"player_id": 165, "gw": 6}]
 
 
 def test_refresh_marks_scenarios_stale_without_deleting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

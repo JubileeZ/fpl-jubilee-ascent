@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable
@@ -18,6 +19,8 @@ from solver.scenarios import (
     annotate_plan_with_egs,
     apply_scenario_arm,
     feasible_scenario_arms,
+    find_protected_one_match_missed_starters,
+    find_unowned_flagged_players,
     rank_scenarios,
 )
 
@@ -79,6 +82,8 @@ def build_scenarios_payload(
     free_transfers: int,
     status: str,
     stale: bool = False,
+    unowned_flagged: list[int] | None = None,
+    protected_starters: list[int] | None = None,
 ) -> dict[str, Any]:
     completed = [str(row["id"]) for row in rows]
     pending = [arm for arm in arms if arm not in set(completed)]
@@ -94,6 +99,8 @@ def build_scenarios_payload(
             "stale": bool(stale),
             "completed_arms": completed,
             "pending_arms": pending,
+            "unowned_flagged": unowned_flagged or [],
+            "protected_starters": protected_starters or [],
         },
         "scenarios": ranked,
     }
@@ -108,6 +115,7 @@ def execute_transfer_plan_scenarios(
     booked_chips: dict[str, list[int]] | None = None,
     enabled_chips: list[dict[str, object]] | None = None,
     available: list[dict[str, object]] | None = None,
+    force_keep: list[dict[str, object]] | None = None,
     execute_plan: ExecutePlan = execute_transfer_plan,
     scenarios_path: Path = SCENARIOS_PATH,
     solution_path: Path = SOLUTION_PATH,
@@ -129,7 +137,15 @@ def execute_transfer_plan_scenarios(
         enabled_chips=enabled_chips or [],
         available=available if available is not None else available_chips(gws, user_chips),
         target_gw=target_gw,
+        force_keep=force_keep or [],
     )
+    players_path = processed_dir / "players.parquet"
+    perf_path = processed_dir / "player_performances.parquet"
+    players_df = pd.read_parquet(players_path) if players_path.exists() else pd.DataFrame()
+    perf_df = pd.read_parquet(perf_path) if perf_path.exists() else pd.DataFrame()
+    unowned_flagged = find_unowned_flagged_players(players_df, owned_ids)
+    protected_starters = find_protected_one_match_missed_starters(perf_df, owned_ids)
+
     lookup = player_gw_from_dashboard(dataset)
     arms = feasible_scenario_arms(free_transfers)
     completed: dict[str, dict[str, Any]] = {}
@@ -145,6 +161,8 @@ def execute_transfer_plan_scenarios(
                 free_transfers=free_transfers,
                 status=status,
                 stale=False,
+                unowned_flagged=unowned_flagged,
+                protected_starters=protected_starters,
             )
             write_scenarios_payload(scenarios_path, payload)
             if status == "ok" and payload["scenarios"]:
@@ -159,7 +177,14 @@ def execute_transfer_plan_scenarios(
 
     def solve_one(arm: str) -> dict[str, Any]:
         options = serial_arm_options(
-            apply_scenario_arm(base, arm, start_gw=target_gw, free_transfer_bank=free_transfers)
+            apply_scenario_arm(
+                base,
+                arm,
+                start_gw=target_gw,
+                free_transfer_bank=free_transfers,
+                banned_next_gw=unowned_flagged,
+                locked_next_gw=protected_starters,
+            )
         )
         arm_path = scenarios_path.parent / f".arm_{arm}.json"
         try:

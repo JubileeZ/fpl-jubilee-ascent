@@ -70,3 +70,31 @@ def test_predict_reconciles_ledger_and_preserves_start_mass() -> None:
     assert (out["projected_points"] - out[components].sum(axis=1)).abs().max() < 1e-9
     champion_mass = sum(FaceValueChallengerModel._state_probabilities(row)[1] for _, row in frame.iterrows())
     assert sum(model._p_target.values()) == pytest.approx(champion_mass)
+
+
+def test_predict_horizon_mean_reversion() -> None:
+    history = _start_history()
+    f13, f14, f15 = _features(13), _features(14), _features(15)
+    multi_frame = pd.concat([f13, f14, f15], ignore_index=True)
+
+    model = LearnedStartChallengerModel()
+    model.fit(history)
+    out = model.predict(multi_frame, horizon=3)
+    assert not out.empty
+
+    for gw in (13, 14, 15):
+        gw_rows = multi_frame[multi_frame["gameweek_id"] == gw]
+        gw_champ = sum(FaceValueChallengerModel._state_probabilities(r)[1] for _, r in gw_rows.iterrows())
+        gw_p = sum(model._p_target[(int(r["player_id"]), int(r["fixture_id"]))] for _, r in gw_rows.iterrows())
+        assert gw_p == pytest.approx(gw_champ)
+
+    fix13 = int(f13[f13["player_id"] == 1000]["fixture_id"].iloc[0])
+    fix14 = int(f14[f14["player_id"] == 1000]["fixture_id"].iloc[0])
+    fix15 = int(f15[f15["player_id"] == 1000]["fixture_id"].iloc[0])
+    p13 = model._p_target[(1000, fix13)]
+    p14 = model._p_target[(1000, fix14)]
+    p15 = model._p_target[(1000, fix15)]
+    p_champ = FaceValueChallengerModel._state_probabilities(f13[f13["player_id"] == 1000].iloc[0])[1]
+
+    assert p14 == pytest.approx(p_champ + 0.5 * (p13 - p_champ))
+    assert p15 == pytest.approx(p_champ + 0.25 * (p13 - p_champ))

@@ -1,6 +1,6 @@
 (function () {
   const POS_ORDER = ["G", "D", "M", "F"];
-  const ARM_LABEL = { optimal: "Optimal", no_hit: "No Hit" };
+  const ARM_LABEL = { optimal: "Optimal", no_hit: "No Hit", conservative: "Conservative" };
   const CHIP_OPTION = { wc: "use_wc", bb: "use_bb", fh: "use_fh", tc: "use_tc" };
   const CHIP_LABEL = { wc: "Wildcard", bb: "Bench Boost", fh: "Free Hit", tc: "Triple Captain" };
   const STATUS_LABEL = { a: "Avail", d: "Doubt", i: "Inj", s: "Sus", u: "Unav", n: "n/a" };
@@ -10,6 +10,24 @@
   let selectedId = null;
   let selectedGw = null;
   let bound = false;
+  const forceKeepIds = new Set();
+
+  function isPlayerFlagged(p) {
+    if (!p) return false;
+    const status = p.status || "a";
+    const chance = p.chance;
+    return status !== "a" || (chance != null && chance !== "" && Number(chance) < 100);
+  }
+
+  function playerBadgeHtml(p) {
+    if (!isPlayerFlagged(p)) return "";
+    const status = p.status || "a";
+    const chance = p.chance;
+    const label = STATUS_LABEL[status] || status.toUpperCase();
+    const chanceTxt = (chance != null && chance !== "") ? ` ${chance}%` : "";
+    const title = escapeHtml(p.news || `${label}${chanceTxt}`);
+    return ` <span class="status-badge status-${status}" title="${title}">⚠️ ${label}${chanceTxt}</span>`;
+  }
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -247,7 +265,12 @@
     const autoEl = document.getElementById("plan-auto-captain");
     const xiHead = document.getElementById("plan-xi-subhead");
     const stripHead = document.getElementById("plan-weeks-subhead");
+    const bannerEl = document.getElementById("plan-warning-banner");
     if (!scenario) {
+      if (bannerEl) {
+        bannerEl.innerHTML = "";
+        bannerEl.hidden = true;
+      }
       if (ledger) ledger.innerHTML = "";
       if (weeksEl) weeksEl.innerHTML = "";
       if (pitch) pitch.innerHTML = "";
@@ -267,15 +290,79 @@
     const start = startWeek(scenario);
     const isStart = Number(week.gw) === Number(start.gw);
     const gwLabel = week.gw != null ? `GW${week.gw}` : "Start";
-    const buys = (week.buy || []).map((row) => row.name || playerName(row.id));
-    const sells = (week.sell || []).map((row) => row.name || playerName(row.id));
+
+    const warnings = [];
+    const protectedIds = new Set((payload && payload.meta && payload.meta.protected_starters) || []);
+
+    (week.sell || []).forEach((row) => {
+      const p = byId(row.id);
+      const name = p ? p.name : playerName(row.id);
+      if (protectedIds.has(Number(row.id))) {
+        warnings.push(`⚠️ <strong>Sell Alert:</strong> Plan sells <strong>${escapeHtml(name)}</strong> who missed only 1 match after regular starts. If this was a 1-match rest, consider <strong>[🔒 Keep]</strong> or the <strong>Conservative</strong> scenario.`);
+      }
+    });
+
+    (week.buy || []).forEach((row) => {
+      const p = byId(row.id);
+      if (isPlayerFlagged(p)) {
+        const status = p.status || "a";
+        const chance = p.chance;
+        const label = STATUS_LABEL[status] || status.toUpperCase();
+        const chanceTxt = (chance != null && chance !== "") ? ` (${chance}%)` : "";
+        warnings.push(`⚠️ <strong>Buy Alert:</strong> Plan buys <strong>${escapeHtml(p.name)}</strong> with active ${label}${chanceTxt} flag.`);
+      }
+    });
+
+    if (bannerEl) {
+      if (warnings.length > 0) {
+        bannerEl.innerHTML = warnings.join("<br>");
+        bannerEl.hidden = false;
+      } else {
+        bannerEl.innerHTML = "";
+        bannerEl.hidden = true;
+      }
+    }
+
+    const buyRows = (week.buy || []).map((row) => {
+      const p = byId(row.id);
+      const name = p ? p.name : playerName(row.id);
+      const badge = playerBadgeHtml(p);
+      return `<span class="buy">+ ${escapeHtml(name)}${badge}</span>`;
+    });
+    const sellRows = (week.sell || []).map((row) => {
+      const p = byId(row.id);
+      const name = p ? p.name : playerName(row.id);
+      const badge = playerBadgeHtml(p);
+      const isLocked = forceKeepIds.has(Number(row.id));
+      const lockBtn = `<button type="button" class="btn-lock${isLocked ? " locked" : ""}" data-lock-id="${row.id}" title="${isLocked ? "Unlock player" : "Force keep in squad"}">${isLocked ? "🔒 Kept" : "🔒 Keep"}</button>`;
+      return `<span class="sell">− ${escapeHtml(name)}${badge}${lockBtn}</span>`;
+    });
+
     if (ledger) {
-      const buyHtml = buys.length ? buys.map((n) => `<span class="buy">+ ${n}</span>`).join(" ") : '<span class="buy">(none)</span>';
-      const sellHtml = sells.length ? sells.map((n) => `<span class="sell">− ${n}</span>`).join(" ") : '<span class="sell">(none)</span>';
+      const buyHtml = buyRows.length ? buyRows.join(" ") : '<span class="buy">(none)</span>';
+      const sellHtml = sellRows.length ? sellRows.join(" ") : '<span class="sell">(none)</span>';
       ledger.innerHTML = `<div><strong>${gwLabel} buys</strong><br>${buyHtml}</div>
         <div><strong>${gwLabel} sells</strong><br>${sellHtml}</div>
         <div><strong>${gwLabel} Hits</strong><br>${week.hits || 0}</div>
         <div><strong>Σ Expected GW Score</strong><br>${Number(scenario.horizon_egs || 0).toFixed(1)}</div>`;
+
+      ledger.querySelectorAll("[data-lock-id]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const pid = Number(btn.getAttribute("data-lock-id"));
+          if (forceKeepIds.has(pid)) {
+            forceKeepIds.delete(pid);
+          } else {
+            forceKeepIds.add(pid);
+          }
+          const trigger = document.getElementById("btn-transfer-plan");
+          if (trigger && !trigger.disabled) {
+            trigger.click();
+          } else {
+            renderDetail();
+          }
+        });
+      });
     }
     if (weeksEl) {
       weeksEl.innerHTML = weeks
@@ -344,8 +431,9 @@
     const role = cap ? "C" : vice ? "VC" : "";
     const avail = availabilityText(player);
     const fixture = fixtureText(player, gw);
+    const badge = playerBadgeHtml(player);
     return `<div class="shirt${cap ? " c" : ""}" title="${avail}">
-      <strong>${player.name}${role ? ` (${role})` : ""}</strong>
+      <strong>${player.name}${role ? ` (${role})` : ""}${badge}</strong>
       <span>${Number((((player.projections || {})[`gw${gw}`] || {}).total_xp) || 0).toFixed(1)}</span>
       <span>${fixture}</span>
       ${avail && !isBench ? `<span>${avail}</span>` : ""}
@@ -392,10 +480,18 @@
   window.setTransferPlanPayload = setPayload;
   window.resetTransferPlanSelection = resetSelection;
   window.transferPlanRequestBody = function () {
+    const keepRows = [];
+    const gws = planGws();
+    forceKeepIds.forEach((pid) => {
+      gws.forEach((gw) => {
+        keepRows.push({ player_id: pid, gw: gw });
+      });
+    });
     return {
       horizon: planHorizon(),
       booked_chips: bookedChipsFromUi(),
       enabled_chips: enabledChipsFromUi(),
+      force_keep: keepRows,
     };
   };
 })();

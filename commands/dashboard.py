@@ -278,6 +278,7 @@ def run_transfer_plan_job(
     horizon: int,
     booked_chips: dict[str, list[int]],
     enabled_chips: list[dict[str, object]],
+    force_keep: list[dict[str, object]] | None = None,
 ) -> None:
     try:
         _set_plan_state(
@@ -309,6 +310,7 @@ def run_transfer_plan_job(
             dataset=dataset,
             booked_chips=booked_chips,
             enabled_chips=enabled_chips,
+            force_keep=force_keep or [],
             on_progress=on_progress,
         )
         _set_plan_state(status="ok", error=None, detail="Transfer Plan Scenarios ready.", payload=payload)
@@ -325,6 +327,7 @@ def start_transfer_plan(
     horizon: int,
     booked_chips: dict[str, list[int]],
     enabled_chips: list[dict[str, object]],
+    force_keep: list[dict[str, object]] | None = None,
 ) -> tuple[int, dict[str, object]]:
     with _job_lock:
         if refresh_status()["status"] == "running":
@@ -353,6 +356,7 @@ def start_transfer_plan(
             "horizon": horizon,
             "booked_chips": booked_chips,
             "enabled_chips": enabled_chips,
+            "force_keep": force_keep or [],
         },
         daemon=True,
     ).start()
@@ -382,11 +386,36 @@ def _enabled_chips_from_body(body: dict[str, object] | None) -> list[dict[str, o
     return out
 
 
-def _transfer_plan_args(body: dict[str, object] | None) -> tuple[int, int, dict[str, list[int]], list[dict[str, object]]]:
+def _force_keep_from_body(body: dict[str, object] | None, target_gw: int = 1) -> list[dict[str, object]]:
+    raw = (body or {}).get("force_keep") or []
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, object]] = []
+    for item in raw:
+        if isinstance(item, dict) and "player_id" in item:
+            gw = int(item.get("gw") or target_gw)
+            out.append({"player_id": int(item["player_id"]), "gw": gw})
+        elif isinstance(item, (int, str)):
+            try:
+                out.append({"player_id": int(item), "gw": int(target_gw)})
+            except ValueError:
+                pass
+    return out
+
+
+def _transfer_plan_args(
+    body: dict[str, object] | None,
+) -> tuple[int, int, dict[str, list[int]], list[dict[str, object]], list[dict[str, object]]]:
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     target_gw = resolve_default_target_gw(processed_dir)
     horizon = clamp_planning_horizon(int((body or {}).get("horizon") or DEFAULT_PLANNING_HORIZON))
-    return target_gw, horizon, _booked_chips_from_body(body), _enabled_chips_from_body(body)
+    return (
+        target_gw,
+        horizon,
+        _booked_chips_from_body(body),
+        _enabled_chips_from_body(body),
+        _force_keep_from_body(body, target_gw),
+    )
 
 
 def _loaded_scenarios() -> dict[str, object] | None:
@@ -441,12 +470,13 @@ def handle_dashboard_api(
                     state = {**state, "payload": loaded}
             return 200, state
         if method == "POST":
-            target_gw, horizon, booked, enabled = _transfer_plan_args(body)
+            target_gw, horizon, booked, enabled, force_keep = _transfer_plan_args(body)
             return start_transfer_plan(
                 target_gw=target_gw,
                 horizon=horizon,
                 booked_chips=booked,
                 enabled_chips=enabled,
+                force_keep=force_keep,
             )
     return 404, {"error": "Not found"}
 

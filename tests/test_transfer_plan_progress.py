@@ -14,7 +14,7 @@ from commands.transfer_plan_scenarios import (
     mark_scenarios_stale,
     serial_arm_options,
 )
-from solver.scenarios import ARM_NO_HIT, ARM_OPTIMAL
+from solver.scenarios import ARM_CONSERVATIVE, ARM_NO_HIT, ARM_OPTIMAL
 
 
 def _squad(processed_dir: Path) -> None:
@@ -54,7 +54,7 @@ def test_mark_scenarios_stale_keeps_cards(tmp_path: Path) -> None:
             "solver_objective": 1.0,
             "plan": {"meta": {}, "weeks": []},
         }],
-        arms=(ARM_OPTIMAL, ARM_NO_HIT),
+        arms=(ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE),
         target_gw=5,
         horizon=1,
         free_transfers=0,
@@ -82,7 +82,7 @@ def test_execute_scenarios_progress_and_parallel_finish(tmp_path: Path) -> None:
         }]
     }
     progress: list[dict] = []
-    barrier = threading.Barrier(2)
+    barrier = threading.Barrier(3)
 
     def fake_execute(options: dict, **kwargs: object) -> dict:
         assert options.get("parallel") == "off"
@@ -115,9 +115,9 @@ def test_execute_scenarios_progress_and_parallel_finish(tmp_path: Path) -> None:
     )
     assert payload["meta"]["status"] == "ok"
     assert payload["meta"]["stale"] is False
-    assert set(payload["meta"]["arms"]) == {ARM_OPTIMAL, ARM_NO_HIT}
+    assert set(payload["meta"]["arms"]) == {ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE}
     assert payload["meta"]["pending_arms"] == []
-    assert len(payload["scenarios"]) == 2
+    assert len(payload["scenarios"]) == 3
     assert any(p["meta"]["status"] == "running" for p in progress)
     assert progress[-1]["meta"]["status"] == "ok"
     disk = json.loads(scenarios_path.read_text(encoding="utf-8"))

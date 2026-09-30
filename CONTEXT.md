@@ -243,6 +243,11 @@ _Avoid_: Average minutes, Expected Role Prior minutes, in-season last-year playe
 An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has not yet reflected confirmed club information. Production Feature Contract does not apply these caps.
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
+**Horizon Mean-Reversion**:
+Exponential decay of multi-week learned start probabilities toward baseline Champion state over planning horizon steps ($h \ge 1$, decay $\gamma = 0.5$). Single-step target gameweek predictions ($h=0$) bit-for-bit identical to Model Champion. Preserves exact total starting mass across all gameweeks. ADR 0053.
+_Avoid_: Frozen multi-week DNP, unconstrained horizon broadcast, altering single-step backtests
+
+
 **Availability Snapshot**:
 A time-stamped record of Player availability captured before a Gameweek deadline. Used to evaluate Availability and xMins without future-information leakage. Deadline replay after Live Season Pin git work; not the mutating pin.
 _Avoid_: Current status, injury history, Live Season Pin as the deadline snapshot
@@ -356,7 +361,7 @@ One Gameweek Transfer Plan metric: expectation of Official-style GW points for t
 _Avoid_: Squad xP, Solver Objective, Auto Captain as the plan double, ignoring Hits, deterministic-only autosubs as the Must definition, treating Auto Vice-Captain mark-only as this chain
 
 **Transfer Plan Scenario**:
-One ranked Must solve on the Transfer Plan surface. Arms: **Optimal** (live `weekly_hit_limit` / `hit_cost`, no Start transfer-count pin; may Hit or not), **No Hit** (`weekly_hit_limit=0` for the whole Transfer Plan Horizon; Free Transfers only). CLI solver reflects this arm via `--no_hit` / `--weekly_hit_limit 0`. Arms solve concurrently (each HiGHS serial). Surface shows each arm as it finishes, then final-ranks by Σ Expected GW Score. Chip variants are Should, not Must. Always show every feasible arm (no domination drop). Rank key = sum of Expected GW Score over the Transfer Plan Horizon (undiscounted). Solver Objective may display as secondary; it does not rank. A live arm may stop within 1% of the best Solver Objective and then shows “Within 1% of the best Solver Objective.” A 20-minute clock stop with a wider gap shows “Stopped at 20 min, {gap}% from the best Solver Objective.” A proven arm shows nothing. ADR 0042. ADR 0043.
+One ranked Must solve on Transfer Plan surface. Arms: **Optimal** (live `weekly_hit_limit` / `hit_cost`, no Start transfer-count pin; may Hit or not), **No Hit** (`weekly_hit_limit=0` for whole Transfer Plan Horizon; Free Transfers only), **Conservative** (`weekly_hit_limit=0`, bans unowned flagged players via `banned_next_gw`, locks regular starters who missed single match via `locked_next_gw`). CLI solver reflects No Hit via `--no_hit` / `--weekly_hit_limit 0`. Arms solve concurrently (each HiGHS serial). Surface shows each arm as it finishes, then final-ranks by Σ Expected GW Score. Chip variants are Should, not Must. Always show every feasible arm (no domination drop). Rank key = sum of Expected GW Score over Transfer Plan Horizon (undiscounted). Solver Objective may display as secondary; does not rank. Live arm may stop within 1% of best Solver Objective and then shows “Within 1% of the best Solver Objective.” 20-minute clock stop with wider gap shows “Stopped at 20 min, {gap}% from the best Solver Objective.” Proven arm shows nothing. ADR 0042. ADR 0043. ADR 0053.
 _Avoid_: Roll / 1 FT as Must arms, Start transfer-count pins as Must, Unconstrained as the Hit-allowed arm name, forced single-Hit arm, chip×transfer grid in Must, ranking by Solver Objective, Start-week Expected GW Score alone as the sort, hiding a losing arm, sequential wall-clock as the product rule, reading the 1% line as Expected GW Score, hiding an unproven arm, applying this stop to Dream Team or Transfer Plan Walk-Forward
 
 **Stale Transfer Plan Scenarios**:

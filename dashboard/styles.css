@@ -1197,6 +1197,70 @@ body {
 .ledger .buy { color: var(--accent); }
 .ledger .sell { color: var(--danger); }
 
+.plan-warning-banner {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+.plan-warning-banner:empty {
+  display: none;
+}
+
+.status-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  vertical-align: middle;
+}
+
+.status-badge.status-d {
+  color: #451a03;
+  background: #f59e0b;
+}
+
+.status-badge.status-i,
+.status-badge.status-s,
+.status-badge.status-u {
+  color: #fff;
+  background: #ef4444;
+}
+
+.btn-lock {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 0.45rem;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+}
+
+.btn-lock:hover {
+  border-color: var(--accent);
+  color: var(--text-main);
+}
+
+.btn-lock.locked {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .week-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
