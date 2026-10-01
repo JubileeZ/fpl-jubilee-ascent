@@ -17,7 +17,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 | Job | Primary | Guardrails | Authority |
 |-----|---------|------------|-----------|
-| Historical Promotion Gate / Candidate vs Champion | **Blended Eval Target** `top_11_regret` (50/50); delta > 0 (no min effect, ADR 0049); block-bootstrap P(delta>0) ≥ 0.60 (ADR 0049); ≥2/3 segments | Realized MAE, Process MAE, xMins (≤ ×1.01), \|bias\| (≤ +0.01), Spearman (≥ −0.005) | [ADR 0046](../adr/0046-point-in-time-backtest-and-statistical-gate.md) · [ADR 0044](../adr/0044-blended-eval-target-promotion-primary.md) · [ADR 0038](../adr/0038-process-points-eval-target.md) |
+| Historical Promotion Gate / Candidate vs Champion | **Blended Eval Target** `formation_xi_regret` (50/50); delta > 0 (ADR 0049); block-bootstrap P(delta>0) ≥ 0.60 (ADR 0049); ≥2/3 segments | Playable MAE (≤ ×1.01), Playable \|bias\| (≤ +0.01), Captaincy Regret (≤ +0.15), xMins (≤ ×1.01), Spearman (≥ −0.005) | [ADR 0054](../adr/0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) · [ADR 0049](../adr/0049-gate-bootstrap-060-no-min-effect.md) · [ADR 0046](../adr/0046-point-in-time-backtest-and-statistical-gate.md) · [ADR 0044](../adr/0044-blended-eval-target-promotion-primary.md) · [ADR 0038](../adr/0038-process-points-eval-target.md) |
 | Champion Signed Bias gate (Hits / no mean calibrate) | Realized `signed_bias` | `mae`, `minutes_bias` | [ADR 0033](../adr/0033-transfer-plan-hits-until-champion-bias.md) · [champion-signed-bias](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias` |
 | Totals context in research companions | Triple-report `realized` \| `process` \| `blend` | — | ADR 0044 |
 

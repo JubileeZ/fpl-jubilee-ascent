@@ -22,7 +22,9 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Component-model-ideas Queue run (2026-09-30):** explore-candidate Queue mode complete across all 29 queue rows in `idea_queue.csv`. ATK-05 club × DEF xG prior dev +0.504 2/3 P 0.955, confirm 2024-25 +0.080 2/3 P 0.619 → Champion `club_def_prior_challenger` (ADR 0051). 3 Candidates in catalog confirm-fail (ATK-04, DEF-02, MIN-07). MIN-07 unblocked by adding `kickoff_time` to Feature Contract; dev PASS (+0.063 2/3 P 0.967), confirm FAIL (-0.105 0/3 P 0.000) → Dead (`schedule_congestion_challenger`). Open levers re-tested against Champion CDP: DEF-01 Poisson GC and ATK-02 club assist mass failed dev → Dead. Dual-Vector ratios shrunk → Dead (superseded by ADR 0040). Candidate Ledger Open pool empty; all 29 queue ideas resolved. Note `docs/research/component-model-ideas/component-model-ideas.md`.
 
-**Next leads:** 2026-27 GW6+ = post-promotion check for `club_def_prior_challenger` (ADR 0047). Rechecked 2026-09-29: GW5 last finished, GW6 deadline 2026-10-10 → status stays provisional. Deferred eval work: constrained valid-XI regret, White/SPA across variants.
+**Eval upgrade 2026-10-01 (ADR 0054):** Promotion gate primary upgraded from unconstrained `top_11_regret` to `formation_xi_regret` (closed-form scan across 8 legal formations: 1 GKP, 3–5 DEF, 2–5 MID, 1–3 FWD); Captaincy Regret guardrail added (tol +0.15 pts/GW); MAE and Signed Bias guardrails evaluated on Playable Pool (xp ≥ 2.0 or mins ≥ 30).
+
+**Next leads:** 2026-27 GW6+ = post-promotion check for `club_def_prior_challenger` (ADR 0047). Rechecked 2026-09-29: GW5 last finished, GW6 deadline 2026-10-10 → status stays provisional. Deferred eval work: White/SPA across variants.
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 

@@ -276,3 +276,69 @@ def test_metrics_by_season_window_scores_blend_column() -> None:
     # errors (5-6)=-1, (6-5)=1 → mae 1.0; realized mae would be 2.5
     assert abs(float(windows["combined"]["mae"]) - 1.0) < 1e-9
     assert windows["combined"]["eval_target"] == "blended_points"
+
+
+def test_formation_xi_regret_prioritized_over_top_11() -> None:
+    metrics = {
+        "valid_rank_gameweeks": 10,
+        "formation_xi_regret": 1.25,
+        "top_11_regret": 2.50,
+        "mae": 3.0,
+    }
+    assert primary_metric_name(metrics) == "decision_regret"
+    assert primary_metric_value(metrics) == 1.25
+
+
+def test_captaincy_guardrail_fails_when_exceeding_tolerance() -> None:
+    from backtesting.promotion import CAPTAIN_REGRET_ABS_TOL
+
+    champ_metrics = _metrics(mae=2.0, bias=0.1)
+    champ_metrics["captain_regret"] = 1.0
+
+    # Within tolerance (+0.15) passes
+    cand_ok = _metrics(mae=1.8, bias=0.1)
+    cand_ok["captain_regret"] = 1.0 + CAPTAIN_REGRET_ABS_TOL
+    g_champ = guardrail_metrics(champ_metrics)
+    g_ok = guardrail_metrics(cand_ok)
+    assert metrics_meet_guardrails(g_ok, g_champ)
+
+    # Beyond tolerance fails
+    cand_fail = _metrics(mae=1.8, bias=0.1)
+    cand_fail["captain_regret"] = 1.0 + CAPTAIN_REGRET_ABS_TOL + 0.05
+    g_fail = guardrail_metrics(cand_fail)
+    assert not metrics_meet_guardrails(g_fail, g_champ)
+
+
+def test_playable_pool_metrics_and_guardrail() -> None:
+    from backtesting.promotion import compute_playable_pool_metrics
+
+    # 4 players:
+    # 1: starter projected 5.0 vs actual 4.0 (playable by xp)
+    # 2: reserve projected 1.0, 0 mins, actual 0.0 (not playable)
+    # 3: sub projected 1.5, played 45 mins, actual 2.0 (playable by minutes)
+    # 4: reserve projected 0.5, 0 mins, actual 0.0 (not playable)
+    champ_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 1, "projected_points": 1.0, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 3, "gameweek": 1, "projected_points": 1.5, "actual_points": 2.0, "actual_minutes": 45},
+            {"player_id": 4, "gameweek": 1, "projected_points": 0.5, "actual_points": 0.0, "actual_minutes": 0},
+        ]
+    )
+    cand_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 4.5, "actual_points": 4.0},
+            {"player_id": 2, "gameweek": 1, "projected_points": 0.0, "actual_points": 0.0},
+            {"player_id": 3, "gameweek": 1, "projected_points": 1.8, "actual_points": 2.0},
+            {"player_id": 4, "gameweek": 1, "projected_points": 0.0, "actual_points": 0.0},
+        ]
+    )
+    champ_m, cand_m = compute_playable_pool_metrics(champ_df, cand_df, target_column="actual_points")
+    # Playable pool has only players 1 and 3 (2 players, not 4)
+    # Champ errors: (5.0-4.0)=1.0, (1.5-2.0)=-0.5. MAE = 0.75, Bias = 0.25
+    # Cand errors: (4.5-4.0)=0.5, (1.8-2.0)=-0.2. MAE = 0.35, Bias = 0.15
+    assert abs(champ_m["mae"] - 0.75) < 1e-6
+    assert abs(cand_m["mae"] - 0.35) < 1e-6
+    assert abs(champ_m["bias"] - 0.25) < 1e-6
+    assert abs(cand_m["bias"] - 0.15) < 1e-6
+

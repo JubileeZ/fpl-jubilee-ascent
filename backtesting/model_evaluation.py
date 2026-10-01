@@ -10,10 +10,11 @@ from typing import Any
 
 import pandas as pd
 
-from backtesting.metrics import top_k_regret_by_gameweek
+from backtesting.metrics import formation_xi_regret_by_gameweek
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
     PromotionVerdict,
+    compute_playable_pool_metrics,
     evaluate_historical_promotion_gate,
     metrics_by_season_window,
     primary_metric_name,
@@ -71,12 +72,24 @@ def compare_to_reference(
         if target != primary_target
     }
     champion_windows = metrics_by_season_window(reference.df_eval, target_column=primary_target)
+    candidate_windows = metrics_by_season_window(candidate.df_eval, target_column=primary_target)
+
+    champ_playable, cand_playable = compute_playable_pool_metrics(
+        reference.df_eval, candidate.df_eval, target_column=primary_target
+    )
+    if champ_playable:
+        champion_windows["combined"]["playable_mae"] = champ_playable["mae"]
+        champion_windows["combined"]["playable_bias"] = champ_playable["bias"]
+    if cand_playable:
+        candidate_windows["combined"]["playable_mae"] = cand_playable["mae"]
+        candidate_windows["combined"]["playable_bias"] = cand_playable["bias"]
+
     gw_deltas = None
     if primary_metric_name(champion_windows["combined"]) == "decision_regret":
         paired = pd.concat(
             [
-                top_k_regret_by_gameweek(reference.df_eval, target_column=primary_target).rename("champion"),
-                top_k_regret_by_gameweek(candidate.df_eval, target_column=primary_target).rename("candidate"),
+                formation_xi_regret_by_gameweek(reference.df_eval, target_column=primary_target).rename("champion"),
+                formation_xi_regret_by_gameweek(candidate.df_eval, target_column=primary_target).rename("candidate"),
             ],
             axis=1,
             join="inner",
@@ -84,7 +97,7 @@ def compare_to_reference(
         gw_deltas = (paired["champion"] - paired["candidate"]).tolist()
     return evaluate_historical_promotion_gate(
         champion_windows,
-        metrics_by_season_window(candidate.df_eval, target_column=primary_target),
+        candidate_windows,
         eval_target=primary_target,
         reference_windows=reference_windows or None,
         gw_primary_deltas=gw_deltas,

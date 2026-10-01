@@ -85,3 +85,42 @@ def test_component_ledger_reconciliation_rejects_residuals():
 
     with pytest.raises(ValueError, match="Predicted component ledger"):
         evaluate_predictions(pd.DataFrame([row]))
+
+
+def test_best_legal_xi_and_formation_stats() -> None:
+    from backtesting.metrics import best_legal_xi, _formation_xi_stats, formation_xi_regret_by_gameweek
+
+    # Create a full squad with 2 GKP, 5 DEF, 5 MID, 3 FWD (total 15 players)
+    players = []
+    # 2 GKPs
+    players.append({"player_id": 1, "gameweek": 1, "position_id": 1, "projected_points": 5.0, "actual_points": 6.0})
+    players.append({"player_id": 2, "gameweek": 1, "position_id": 1, "projected_points": 3.0, "actual_points": 2.0})
+    # 5 DEFs
+    for i in range(1, 6):
+        players.append({"player_id": 10 + i, "gameweek": 1, "position_id": 2, "projected_points": 4.0 + i * 0.1, "actual_points": 3.0})
+    # 5 MIDs
+    for i in range(1, 6):
+        players.append({"player_id": 20 + i, "gameweek": 1, "position_id": 3, "projected_points": 6.0 + i * 0.5, "actual_points": 5.0 + i * 1.0})
+    # 3 FWDs
+    for i in range(1, 4):
+        players.append({"player_id": 30 + i, "gameweek": 1, "position_id": 4, "projected_points": 7.0 + i * 1.0, "actual_points": 4.0 + i * 2.0})
+
+    df = pd.DataFrame(players)
+    best_xi = best_legal_xi(df, "projected_points")
+    assert len(best_xi) == 11
+    # Check valid formation constraints: 1 GKP, 3-5 DEF, 2-5 MID, 1-3 FWD
+    pos_counts = best_xi["position_id"].value_counts().to_dict()
+    assert pos_counts[1] == 1
+    assert 3 <= pos_counts[2] <= 5
+    assert 2 <= pos_counts[3] <= 5
+    assert 1 <= pos_counts[4] <= 3
+
+    overlap, regret, cap_regret = _formation_xi_stats(df, target_column="actual_points")
+    assert 0.0 <= overlap <= 1.0
+    assert regret >= 0.0
+    assert cap_regret >= 0.0
+
+    gw_series = formation_xi_regret_by_gameweek(df, target_column="actual_points")
+    assert len(gw_series) == 1
+    assert gw_series.iloc[0] == regret
+

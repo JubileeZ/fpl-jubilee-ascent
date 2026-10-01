@@ -24,6 +24,94 @@ _LEDGER_COMPONENTS = (
 )
 
 
+_POS_GKP = 1
+_POS_DEF = 2
+_POS_MID = 3
+_POS_FWD = 4
+
+_LEGAL_FORMATIONS = (
+    (3, 5, 2),
+    (3, 4, 3),
+    (4, 4, 2),
+    (4, 3, 3),
+    (4, 5, 1),
+    (5, 3, 2),
+    (5, 4, 1),
+    (5, 2, 3),
+)
+
+
+def best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
+    """Select the best legal 11-player lineup maximizing sum(sort_col).
+
+    A legal formation requires 1 GKP (pos 1), and (d, m, f) outfield players
+    where d in [3, 5], m in [2, 5], f in [1, 3] and d + m + f == 10.
+    If position_id is missing or insufficient players exist, returns top 11 by sort_col.
+    """
+    if "position_id" not in group.columns or len(group) < 11:
+        return group.nlargest(min(11, len(group)), sort_col)
+
+    gkp = group[group["position_id"] == _POS_GKP].nlargest(1, sort_col)
+    defs = group[group["position_id"] == _POS_DEF].nlargest(5, sort_col)
+    mids = group[group["position_id"] == _POS_MID].nlargest(5, sort_col)
+    fwds = group[group["position_id"] == _POS_FWD].nlargest(3, sort_col)
+
+    if len(gkp) < 1 or len(defs) < 3 or len(mids) < 2 or len(fwds) < 1:
+        return group.nlargest(min(11, len(group)), sort_col)
+
+    best_xi: pd.DataFrame | None = None
+    best_score = float("-inf")
+    for d, m, f in _LEGAL_FORMATIONS:
+        if len(defs) >= d and len(mids) >= m and len(fwds) >= f:
+            candidate = pd.concat([gkp, defs.iloc[:d], mids.iloc[:m], fwds.iloc[:f]])
+            score = float(candidate[sort_col].sum())
+            if score > best_score:
+                best_score = score
+                best_xi = candidate
+
+    return best_xi if best_xi is not None else group.nlargest(min(11, len(group)), sort_col)
+
+
+def _formation_xi_stats(
+    group: pd.DataFrame, *, target_column: str = "actual_points"
+) -> tuple[float, float, float]:
+    """Return (overlap, regret, captain_regret) for formation-constrained legal XI."""
+    if len(group) == 0:
+        return 0.0, 0.0, 0.0
+    predicted_xi = best_legal_xi(group, "projected_points")
+    actual_xi = best_legal_xi(group, target_column)
+    predicted_ids = set(predicted_xi["player_id"])
+    actual_ids = set(actual_xi["player_id"])
+    count = max(len(predicted_xi), 1)
+    overlap = len(predicted_ids & actual_ids) / count
+    regret = float(actual_xi[target_column].sum() - predicted_xi[target_column].sum())
+
+    if len(predicted_xi) > 0:
+        pred_cap = predicted_xi.nlargest(1, "projected_points")
+        max_target = predicted_xi[target_column].max()
+        cap_target = pred_cap[target_column].iloc[0]
+        captain_regret = float(max_target - cap_target)
+    else:
+        captain_regret = 0.0
+
+    return overlap, regret, captain_regret
+
+
+def formation_xi_regret_by_gameweek(
+    df_eval: pd.DataFrame, *, target_column: str = "actual_points"
+) -> pd.Series:
+    """Per-GW formation-constrained legal XI regret, indexed by gameweek."""
+    if "position_id" not in df_eval.columns:
+        return top_k_regret_by_gameweek(df_eval, 11, target_column=target_column)
+    return pd.Series(
+        {
+            gw: _formation_xi_stats(group, target_column=target_column)[1]
+            for gw, group in df_eval.groupby("gameweek")
+        },
+        dtype=float,
+    )
+
+
 def _top_k_stats(group: pd.DataFrame, k: int, *, target_column: str = "actual_points") -> tuple[float, float]:
     count = min(k, len(group))
     if count == 0:
@@ -192,5 +280,19 @@ def evaluate_predictions(
                 regrets.append(regret)
         metrics[f"top_{k}_overlap"] = float(np.mean(overlaps)) if overlaps else None
         metrics[f"top_{k}_regret"] = float(np.mean(regrets)) if regrets else None
+
+    if "position_id" in df_eval.columns:
+        f_overlaps: list[float] = []
+        f_regrets: list[float] = []
+        f_cap_regrets: list[float] = []
+        for _, group in df_eval.groupby("gameweek"):
+            if len(group) > 0:
+                overlap, regret, cap_regret = _formation_xi_stats(group, target_column=target_column)
+                f_overlaps.append(overlap)
+                f_regrets.append(regret)
+                f_cap_regrets.append(cap_regret)
+        metrics["formation_xi_overlap"] = float(np.mean(f_overlaps)) if f_overlaps else None
+        metrics["formation_xi_regret"] = float(np.mean(f_regrets)) if f_regrets else None
+        metrics["captain_regret"] = float(np.mean(f_cap_regrets)) if f_cap_regrets else None
 
     return metrics

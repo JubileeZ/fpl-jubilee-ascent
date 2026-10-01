@@ -28,6 +28,9 @@ BOOTSTRAP_BLOCK_GWS = 3
 GUARDRAIL_REL_TOL = 0.01
 BIAS_ABS_TOL = 0.01
 SPEARMAN_ABS_TOL = 0.005
+CAPTAIN_REGRET_ABS_TOL = 0.15
+PLAYABLE_XP_THRESHOLD = 2.0
+PLAYABLE_MINUTES_THRESHOLD = 30.0
 
 
 @dataclass(frozen=True)
@@ -35,6 +38,9 @@ class GuardrailMetrics:
     xmins_mae: float
     xp_bias: float
     rank_correlation: float
+    captain_regret: float | None = None
+    playable_mae: float | None = None
+    playable_bias: float | None = None
 
 
 @dataclass(frozen=True)
@@ -65,7 +71,9 @@ def block_bootstrap_win_probability(
 
 
 def _regret_is_informative(metrics: dict[str, Any]) -> bool:
-    return bool(metrics.get("valid_rank_gameweeks")) and metrics.get("top_11_regret") is not None
+    return bool(metrics.get("valid_rank_gameweeks")) and (
+        metrics.get("formation_xi_regret") is not None or metrics.get("top_11_regret") is not None
+    )
 
 
 def primary_metric_name(metrics: dict[str, Any]) -> str:
@@ -74,6 +82,8 @@ def primary_metric_name(metrics: dict[str, Any]) -> str:
 
 def primary_metric_value(metrics: dict[str, Any]) -> float:
     if _regret_is_informative(metrics):
+        if metrics.get("formation_xi_regret") is not None:
+            return float(metrics["formation_xi_regret"])
         return float(metrics["top_11_regret"])
     return float(metrics["mae"])
 
@@ -81,19 +91,74 @@ def primary_metric_value(metrics: dict[str, Any]) -> float:
 def guardrail_metrics(metrics: dict[str, Any]) -> GuardrailMetrics:
     minutes = metrics.get("minutes_forecast_metrics") or {}
     spearman = metrics.get("spearman")
+    cap_regret = metrics.get("captain_regret")
+    playable_mae = metrics.get("playable_mae")
+    playable_bias = metrics.get("playable_bias")
     return GuardrailMetrics(
         xmins_mae=float(minutes.get("mae", float("inf"))),
         xp_bias=abs(float(metrics["bias"])),
         rank_correlation=float(spearman if spearman is not None else -1.0),
+        captain_regret=float(cap_regret) if cap_regret is not None else None,
+        playable_mae=float(playable_mae) if playable_mae is not None else None,
+        playable_bias=abs(float(playable_bias)) if playable_bias is not None else None,
     )
 
 
 def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetrics) -> bool:
-    return (
-        candidate.xmins_mae <= champion.xmins_mae * (1.0 + GUARDRAIL_REL_TOL)
-        and candidate.xp_bias <= champion.xp_bias + BIAS_ABS_TOL
-        and candidate.rank_correlation >= champion.rank_correlation - SPEARMAN_ABS_TOL
+    meets_xmins = candidate.xmins_mae <= champion.xmins_mae * (1.0 + GUARDRAIL_REL_TOL)
+    meets_bias = candidate.xp_bias <= champion.xp_bias + BIAS_ABS_TOL
+    meets_rank = candidate.rank_correlation >= champion.rank_correlation - SPEARMAN_ABS_TOL
+
+    meets_captain = True
+    if candidate.captain_regret is not None and champion.captain_regret is not None:
+        meets_captain = candidate.captain_regret <= champion.captain_regret + CAPTAIN_REGRET_ABS_TOL
+
+    meets_playable = True
+    if candidate.playable_mae is not None and champion.playable_mae is not None:
+        meets_playable = candidate.playable_mae <= champion.playable_mae * (1.0 + GUARDRAIL_REL_TOL)
+    if candidate.playable_bias is not None and champion.playable_bias is not None:
+        meets_playable = meets_playable and (candidate.playable_bias <= champion.playable_bias + BIAS_ABS_TOL)
+
+    return meets_xmins and meets_bias and meets_rank and meets_captain and meets_playable
+
+
+def compute_playable_pool_metrics(
+    champion_df: pd.DataFrame,
+    candidate_df: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+    xp_threshold: float = PLAYABLE_XP_THRESHOLD,
+    minutes_threshold: float = PLAYABLE_MINUTES_THRESHOLD,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Compute MAE and bias over the playable pool (xp >= 2.0 or minutes >= 30)."""
+    cols = ["gameweek", "player_id", "projected_points", target_column]
+    if "actual_minutes" in champion_df.columns:
+        cols.append("actual_minutes")
+    champ_sub = champion_df[cols].rename(columns={"projected_points": "champ_xp"})
+    cand_sub = candidate_df[["gameweek", "player_id", "projected_points"]].rename(
+        columns={"projected_points": "cand_xp"}
     )
+    merged = pd.merge(champ_sub, cand_sub, on=["gameweek", "player_id"], how="inner")
+    if merged.empty:
+        return {}, {}
+    minutes = (
+        merged["actual_minutes"]
+        if "actual_minutes" in merged.columns
+        else pd.Series(0.0, index=merged.index)
+    )
+    playable = (
+        (merged["champ_xp"] >= xp_threshold)
+        | (merged["cand_xp"] >= xp_threshold)
+        | (minutes >= minutes_threshold)
+    )
+    subset = merged[playable]
+    if subset.empty:
+        return {}, {}
+    champ_err = subset["champ_xp"] - subset[target_column]
+    cand_err = subset["cand_xp"] - subset[target_column]
+    champ_metrics = {"mae": float(champ_err.abs().mean()), "bias": float(champ_err.mean())}
+    cand_metrics = {"mae": float(cand_err.abs().mean()), "bias": float(cand_err.mean())}
+    return champ_metrics, cand_metrics
 
 
 def segment_metrics(
@@ -146,10 +211,9 @@ def evaluate_historical_promotion_gate(
     combined_delta = champion_primary - candidate_primary
     min_effect = MIN_EFFECT_SHARE * max(champion_primary, 0.0)
     bootstrap_p = None if gw_primary_deltas is None else block_bootstrap_win_probability(gw_primary_deltas)
-    guardrails_passed = metrics_meet_guardrails(
-        guardrail_metrics(combined_candidate),
-        guardrail_metrics(combined_champion),
-    )
+    cand_g = guardrail_metrics(combined_candidate)
+    champ_g = guardrail_metrics(combined_champion)
+    guardrails_passed = metrics_meet_guardrails(cand_g, champ_g)
 
     segment_wins = 0
     for segment in _SEGMENT_NAMES:
@@ -171,6 +235,33 @@ def evaluate_historical_promotion_gate(
         reasons.append(f"won only {segment_wins}/3 seasonal segments")
     if not guardrails_passed:
         reasons.append("failed one or more Champion guardrails")
+        if (
+            cand_g.captain_regret is not None
+            and champ_g.captain_regret is not None
+            and cand_g.captain_regret > champ_g.captain_regret + CAPTAIN_REGRET_ABS_TOL
+        ):
+            reasons.append(
+                f"regressed Captaincy Regret guardrail "
+                f"({cand_g.captain_regret:.3f} vs {champ_g.captain_regret:.3f} + {CAPTAIN_REGRET_ABS_TOL:.2f})"
+            )
+        if (
+            cand_g.playable_mae is not None
+            and champ_g.playable_mae is not None
+            and cand_g.playable_mae > champ_g.playable_mae * (1.0 + GUARDRAIL_REL_TOL)
+        ):
+            reasons.append(
+                f"regressed Playable Pool MAE guardrail "
+                f"({cand_g.playable_mae:.4f} vs {champ_g.playable_mae:.4f})"
+            )
+        if (
+            cand_g.playable_bias is not None
+            and champ_g.playable_bias is not None
+            and cand_g.playable_bias > champ_g.playable_bias + BIAS_ABS_TOL
+        ):
+            reasons.append(
+                f"regressed Playable Pool Bias guardrail "
+                f"({cand_g.playable_bias:.4f} vs {champ_g.playable_bias:.4f})"
+            )
     if reference_windows:
         for target in _REFERENCE_TARGETS:
             pair = reference_windows.get(target)
