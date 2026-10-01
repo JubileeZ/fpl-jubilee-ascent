@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "champion": "club_def_prior_challenger",
+  "champion": "def_xg_shrink_challenger",
   "candidates": [
-    "learned_start_challenger",
-    "multi_feature_assist_challenger"
+    "club_def_prior_challenger",
+    "learned_start_challenger"
   ],
   "promotion_status": "provisional"
 }

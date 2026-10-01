@@ -1,0 +1,5 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-10-01,dev,2025-26,,def_xg_shrink_challenger,club_def_prior_challenger,1-38,True,0.7928947368421149,0.0,3,0.94435,True,,registered
+2026-10-01,dev,2025-26,,schedule_congestion_challenger,club_def_prior_challenger,1-38,False,0.11368421052631561,0.0,1,0.6232,True,won only 1/3 seasonal segments,registered
+2026-10-01,dev,2025-26,,cs_exposure_challenger,club_def_prior_challenger,1-38,True,0.38289473684208986,0.0,2,0.90125,True,,registered
+2026-10-01,dev,2025-26,,asymmetric_finishing_challenger,club_def_prior_challenger,1-38,True,0.10276315789474211,0.0,2,0.6436,True,,registered

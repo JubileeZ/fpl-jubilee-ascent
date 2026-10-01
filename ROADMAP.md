@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-No active map. Champion `club_def_prior_challenger` (ADR 0051, provisional), promoted 2026-09-29 over `learned_start_challenger` via two-season gate (ADR 0049) from explore-candidate Queue run (`docs/research/component-model-ideas/idea_queue.csv`, all 29 rows done: 1 promoted, 3 confirm-fail, 25 failed/dead; all open levers resolved). Pending: 2026-27 GW6+ post-promotion check.
+No active map. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD
