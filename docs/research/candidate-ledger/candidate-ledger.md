@@ -120,6 +120,8 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Club-coherent assist mass (club-fixture factor (1-w)+w*rho*club goals/club assists; rho as-of league assists/goals; w 0.5) | smoke `atk_02_*` (5) | CDP | dev 2025-26 FAIL vs Champion CDP: all negative −0.33 … −1.20 0-1/3 boot P ≤ 0.330; best `atk_02_w05_real` −0.334; MAE guardrail fail | 2026-09-30 | 2027-09-30 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `smoke_results.csv` |
 | Dual-Vector ratios shrunk toward 1.0 | untried | — | superseded by shipped ADR 0040 (Calibrated Matchup Share); multiplicative scaling failed easy-bias cap (+0.681 vs neutral +0.221) and Jensen CS inflation | 2026-09-30 | 2027-09-30 | [archive note](../../archive/dual-vector-official-xg-2025-26/dual-vector-official-xg-2025-26.md) |
 | Schedule-congestion start shift (logit shift -0.2 on learned p_start for fixtures <3.5 days after previous kickoff) | `schedule_congestion_challenger` (smoke `min_07_shift_m02_raw`) | CDP | dev 2025-26 PASS +0.063 2/3 boot P 0.967; confirm 2024-25 FAIL −0.105 0/3 boot P 0.000 | 2026-09-30 | 2027-09-30 | [component-model-ideas](../component-model-ideas/component-model-ideas.md) `candidate_gate.csv` |
+| Club starting mass conservation (sum p_start=11) and vacancy redistribution (capacity-capped and formation-constrained) | smoke `pos_cap_*` (3), `form_slot_*` (3) | CDP | all negative −3.14 … −4.13 0/3 boot P ≤ 0.022; Playable Pool Bias exploded 0.65-0.70 vs 0.42; Captaincy Regret regressed 5.26-5.58 vs 4.69 | 2026-10-01 | 2027-10-01 | [club-starting-mass-redistribution](../club-starting-mass-redistribution/club-starting-mass-redistribution.md) `smoke_results.csv` |
+
 
 ## Open (next-lever pool; not proven dead)
 

@@ -26,7 +26,10 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Formation eval retest & promotion 2026-10-01 (ADR 0055):** Past dev winners re-screened under ADR 0054 legal formation XI eval. `def_xg_shrink_challenger` (ATK-04, DEF xG K=2400) dev PASS +0.793 3/3 P 0.944, confirm 2024-25 PASS +0.594 2/3 P 0.863 → Champion `def_xg_shrink_challenger` (ADR 0055, provisional). `cs_exposure_challenger` confirm FAIL (-0.216), `asymmetric_finishing_challenger` confirm FAIL (-0.155), `schedule_congestion_challenger` dev FAIL (+0.114, 1/3 segs). Note `docs/research/formation-eval-retest/formation-eval-retest.md`.
 
+**Club starting mass redistribution search 2026-10-01:** Scoped explore-candidate evaluated 6 variants across 2 lanes (`pos_cap`, `form_slot`) enforcing club 11-player start conservation ($\sum_{\text{club}} p_{\text{start}} = 11.0$) and vacancy reallocation from sidelined regular starters. All 6 variants failed dev gate (−3.14 to −4.13 combined regret delta, 0/3 segs, boot P ≤ 0.022); Playable Pool Bias exploded (0.65–0.70 vs 0.42); Captaincy Regret regressed (5.26–5.58 vs 4.69). Root cause: single-DNP suppression penalizes rested elite assets; per-club 11.0 constraint deflates elite rotating squads (Man City/Chelsea ~12.5 starting mass) while inflating unplayable budget players. Lever logged Dead (`revisit_after = 2027-10-01`). Note `docs/research/club-starting-mass-redistribution/club-starting-mass-redistribution.md`.
+
 **Next leads:** 2026-27 GW6+ = post-promotion check for `def_xg_shrink_challenger` (ADR 0047). GW5 last finished, GW6 deadline 2026-10-10 → status stays provisional. Deferred eval work: White/SPA across variants.
+
 
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 

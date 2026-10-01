@@ -247,6 +247,19 @@ _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only 
 Exponential decay of multi-week learned start probabilities toward baseline Champion state over planning horizon steps ($h \ge 1$, decay $\gamma = 0.5$). Single-step target gameweek predictions ($h=0$) bit-for-bit identical to Model Champion. Preserves exact total starting mass across all gameweeks. ADR 0053.
 _Avoid_: Frozen multi-week DNP, unconstrained horizon broadcast, altering single-step backtests
 
+**Club Starting Mass Conservation**:
+Exact physical constraint requiring sum of starting probabilities across all active players in a Club for a given Fixture to equal 11.0 ($\sum_{i \in \text{Club}} p_{\text{start}, i} = 11.0$). Prevents squad-wide start inflation and ensures zero-sum minutes accounting.
+_Avoid_: Unconstrained club starts, league-wide only mass scaling, per-player independent thresholds
+
+**Vacancy Redistribution**:
+Mechanism reallocating start probability deficit ($\Delta p_{\text{start}}$) of an absent regular starter to eligible club squad-mates subject to individual capacity caps ($p_{\text{start}} \le 0.95$) and tactical formation constraints (1 GKP, 3–5 DEF, 2–5 MID, 1–3 FWD). Backup skill rates shrunk toward club-position mean to prevent cameo rate explosion.
+_Avoid_: Naive equal-split redistribution, unconstrained bench inflation, pairwise incumbent displacement (min_04)
+
+**Horizon Start Recovery**:
+Multi-week restoration of a sidelined regular starter's $p_{\text{start}}$ back toward their historical baseline over horizon steps $h \ge 1$ via geometric decay ($\lambda = 0.5$), symmetrically unwinding vacancy redistribution on stand-ins.
+_Avoid_: Step-function instant return, frozen indefinite absence, uncoordinated teammate minutes
+
+
 
 **Availability Snapshot**:
 A time-stamped record of Player availability captured before a Gameweek deadline. Used to evaluate Availability and xMins without future-information leakage. Deadline replay after Live Season Pin git work; not the mutating pin.
