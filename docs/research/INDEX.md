@@ -43,6 +43,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ## Active Research Index
 
+- **DDP and autosub probability formulation (2026-10-02)**: [Note](ddp-autosub-formulation/ddp-autosub-formulation.md) (Mathematical formulation of Dynamic Disruption Probability, bench weight horizon scaling, Poisson-Binomial autosub, and Highs MILP formulation; Wayfinder ticket #136)
 - **Candidate Ledger (tried / untried levers)**: [Ledger](candidate-ledger/candidate-ledger.md) (Shipped / Dead with `Revisit after` / Open next-lever pool)
 - **Face-value Challenger (Champion 2026-09-28)**: [Note](face-value-challenger/face-value-challenger.md) · [Gate](face-value-challenger/face_value_gate_summary.csv) `combined_delta` / `boot_p_gt0` · [Smoke lanes](face-value-challenger/smoke_lane_results.csv) `combined_delta` (face-value xG/xA + minute-pooled finishing + start shrink; 3/3 segs; ADR 0045) · [Point-in-time re-gate](face-value-challenger/point_in_time_regate.csv) `combined_delta` / `boot_p_gt0` (ADR 0046: FAIL, regret tie, accuracy win)
 - **Multi-feature event rate (2026-09-28)**: [Note](multi-feature-event-rate/multi-feature-event-rate.md) · [Gate](multi-feature-event-rate/candidate_gate_summary.csv) `combined_delta` / `boot_p_gt0` · [Smoke](multi-feature-event-rate/smoke_results.csv) `combined_delta` · [Confirmation](multi-feature-event-rate/confirmation_gate_summary.csv) `boot_p_gt0` (GLM assist rate dev PASS, 2024-25 P 0.896 passes 0.60 bar → Champion, ADR 0048; passes 0.60 bar both seasons, ADR 0049; goals/GC/stack levers Dead)

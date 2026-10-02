@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**No active map.** Champion `def_xg_shrink_challenger` (ADR 0055, 2026-10-01, provisional) — see Formation eval retest below. Prior Champion `club_def_prior_challenger` (ADR 0051, 2026-09-29) — see Component-model-ideas Queue run below. Prior Champion `learned_start_challenger` (ADR 0050, 2026-09-28).
+**Active map:** [#135 · [Wayfinder Map] Unified Solio-Style Decision Tree Planner Rebuild](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/135). Frontier = [#137 Scaffold React + Vite frontend pipeline and retire legacy Strategy Plan tab](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/137). #136 closed (`docs/research/ddp-autosub-formulation/ddp-autosub-formulation.md`). Champion `def_xg_shrink_challenger` (ADR 0055, 2026-10-01, provisional) — see Formation eval retest below. Prior Champion `club_def_prior_challenger` (ADR 0051, 2026-09-29) — see Component-model-ideas Queue run below. Prior Champion `learned_start_challenger` (ADR 0050, 2026-09-28).
 
 **Slate:** Champion `def_xg_shrink_challenger` (provisional); Candidates `club_def_prior_challenger`, `learned_start_challenger` (former Champions). `multi_feature_assist_challenger` → Catalog (2026-10-01). `face_value_challenger`, `hold_chase_challenger`, `defence_link_challenger`, `bonus_arm_challenger` → Catalog.
 
