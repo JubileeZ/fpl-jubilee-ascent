@@ -73,6 +73,7 @@ docs/          # Durable project documentation and decision records
 - Live research topic = `docs/research/<topic-slug>/` (note, runners, and companion CSV/HTML in that folder).
 - Archive a topic by moving the whole folder to `docs/archive/<topic-slug>/`. Companions travel with it.
 - `data/archive/` = season ingest (`YYYY-YY`) only. `data/reports/` = solver/tool outputs. Session scratch = `.tmp/agent/` (delete before finish; exception: `.tmp/agent/explore-candidate/` = resume state, kept until explore-candidate Exit (a)/(b)).
+- Research boundary: Research topics (`docs/research/`) strictly bounded to scoring models, projection math, statistical evaluation, and optimization/strategy. UI, UX, and frontend dashboard architecture are product/engineering specs, never research topics in `docs/research/`.
 - Metric documentation: every custom or domain metric in the note with Definition/Formula, Direction (Higher $\uparrow$ / Lower $\downarrow$), Ideal Benchmark.
 - Research figures are caches of named companion CSV cells. Topic runner writes the companion in the topic folder, then regenerates note caches. Agent Prompts name artifact path + column (e.g. `gw1-6_wc4_summary.csv` `total_6gw_xp`), not a numeric snapshot.
 

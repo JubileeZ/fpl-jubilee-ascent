@@ -494,7 +494,7 @@ Unordered set of 1–5 Players scored as one bundle: sum Price, each Gameweek Pr
 _Avoid_: combo, package, alternative 15, Differentials Ranking (retired), solver squad, Plan this Mix, same Player in both Mixes, Mix order, Re-solve from Mix, live Mix panel, Component Profile as Mix
 
 **Effective Ownership**:
-Retired from product. Was Top-10k Overall captain-adjusted ownership via Official standings + entry picks crawl on Refresh. Crawl unreliable; Differentials Ranking removed with it. Research notes on Official path remain under `docs/research/wayfinder-transfer-plan-spec/`. Not overall `selected_by_percent`.
+Retired from product. Was Top-10k Overall captain-adjusted ownership via Official standings + entry picks crawl on Refresh. Crawl unreliable; Differentials Ranking removed with it. Research notes on Official path remain under `docs/archive/wayfinder-transfer-plan-spec/`. Not overall `selected_by_percent`.
 _Avoid_: selected_by_percent as EO, shipping Top-10k EO product, pinning 10k picks
 
 **Differentials Ranking**:

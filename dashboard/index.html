@@ -7,244 +7,589 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
-  <div class="app-container" data-view="explorer">
-    <header class="navbar">
-      <div class="brand">
-        <span class="logo-icon">⚽</span>
-        <div class="brand-text">
-          <h1>FPL Jubilee Ascent<span class="brand-dot">.</span></h1>
-          <span class="subtitle" id="view-subtitle">Explorer</span>
+  <div class="workspace-shell">
+    <aside class="sidebar" id="app-sidebar" aria-label="Product navigation">
+      <div class="sidebar-brand">
+        <div class="brand-identity">
+          <span class="logo-icon">⚽</span>
+          <div class="brand-text">
+            <h2>Jubilee Ascent<span class="brand-dot">.</span></h2>
+            <span class="sidebar-season">Season 2026-27</span>
+          </div>
         </div>
-        <nav class="nav-tabs" aria-label="Product surfaces">
-          <button type="button" id="tab-explorer" class="active">Explorer</button>
-          <button type="button" id="tab-plan">Transfer Plan</button>
-        </nav>
+        <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">◀</button>
       </div>
 
-      <div class="header-controls">
-        <div class="control-group not-plan">
-          <label for="horizonStart">Horizon begins</label>
-          <select id="horizonStart" class="select-input"></select>
-        </div>
-        <div class="control-group not-plan">
-          <label for="horizonEnd">Horizon to</label>
-          <select id="horizonEnd" class="select-input"></select>
-        </div>
-        <div class="control-group not-plan">
-          <label for="primaryModelSelect">Primary Model:</label>
-          <select id="primaryModelSelect" class="select-input">
-            <option value="">Champion Model</option>
-          </select>
-        </div>
-        <div class="control-group plan-only">
-          <label>Plan Start</label>
-          <span class="stat-value" id="plan-start">-</span>
-        </div>
-        <div class="control-group plan-only">
-          <label for="plan-horizon">Horizon</label>
-          <select id="plan-horizon" class="select-input"></select>
-        </div>
-        <div class="control-group">
-          <button type="button" id="btn-refresh" class="btn btn-primary">Refresh</button>
-        </div>
-        <div class="control-group not-plan">
-          <button type="button" id="btn-dream-team" class="btn">Solve Dream Team</button>
-        </div>
-        <div class="control-group plan-only">
-          <button type="button" id="btn-transfer-plan" class="btn btn-primary">Solve scenarios</button>
-        </div>
-      </div>
-    </header>
-    <p id="refresh-status" class="explorer-meta"></p>
-    <p id="champion-trust" class="explorer-meta"></p>
+      <nav class="sidebar-nav" aria-label="Product surfaces">
+        <button type="button" id="tab-explorer" class="nav-item active" data-view="explorer">Explorer</button>
+        <button type="button" id="tab-plan" class="nav-item" data-view="plan">Transfer Plan</button>
+        <button type="button" id="tab-strategy" class="nav-item" data-view="strategy">Strategy Solver</button>
+        <button type="button" id="tab-research" class="nav-item" data-view="research">Research</button>
+        <button type="button" id="tab-methodology" class="nav-item" data-view="methodology">Model Methodology</button>
+      </nav>
 
-    <section class="squad-section not-plan" id="squad-board">
-      <div id="squad-board-empty" class="card squad-empty" hidden>
-        No User Squad.
-        <button type="button" class="btn btn-primary" id="squad-empty-refresh">Refresh</button>
-      </div>
-      <div id="squad-board-live" hidden>
-        <div class="card squad-summary-card">
-          <div class="summary-stat">
-            <span class="stat-label">ITB</span>
-            <span class="stat-value text-accent" id="squad-itb">-</span>
-          </div>
-          <div class="summary-divider"></div>
-          <div class="summary-stat">
-            <span class="stat-label">Free Transfer Bank</span>
-            <span class="stat-value" id="squad-ft">-</span>
-          </div>
-          <div class="summary-divider"></div>
-          <div class="summary-stat">
-            <span class="stat-label">Hit warning</span>
-            <span class="stat-value" id="squad-hits">0</span>
-          </div>
-          <button type="button" class="btn" id="squad-reset">Reset</button>
-          <button type="button" class="btn" id="squad-reload">Reload</button>
+      <div class="sidebar-footer">
+        <div class="sidebar-meta-row">
+          <span class="meta-label">Champion</span>
+          <span class="meta-val text-accent" id="sidebar-champion">-</span>
         </div>
-        <p id="rule-breach-banner" class="validation-banner invalid" hidden></p>
-        <p id="squad-drop-reason" class="explorer-meta"></p>
-        <p id="official-c-hint" class="explorer-meta"></p>
-        <div class="squad-board-layout">
-          <div class="pitch-container">
-            <div class="pitch-grass">
-              <div class="pitch-lines" aria-hidden="true">
-                <div class="penalty-box top"></div>
-                <div class="center-line"></div>
-                <div class="center-circle"></div>
-                <div class="penalty-box bottom"></div>
-              </div>
-              <div class="pitch-layout" id="squad-pitch"></div>
-            </div>
-            <div class="bench-tray">
-              <div class="bench-header">
-                <span class="bench-title">Bench</span>
-                <span class="bench-sub">Drag or Tab then Enter to swap / sub</span>
-              </div>
-              <div class="bench-slots" id="squad-bench"></div>
+        <div class="sidebar-meta-row">
+          <span class="meta-label">Status</span>
+          <span class="meta-val text-muted" id="sidebar-status">Live</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace-main">
+      <div class="app-container" data-view="explorer">
+        <header class="navbar">
+          <div class="brand">
+            <div class="brand-text">
+              <h1 id="view-title">Explorer</h1>
+              <span class="subtitle" id="view-subtitle">Player pool & What-If squad board</span>
             </div>
           </div>
-          <div class="card squad-strip-card">
-            <p class="title">Squad xP</p>
+
+          <div class="header-controls">
+            <div class="control-group not-plan">
+              <label for="horizonStart">Horizon begins</label>
+              <select id="horizonStart" class="select-input"></select>
+            </div>
+            <div class="control-group not-plan">
+              <label for="horizonEnd">Horizon to</label>
+              <select id="horizonEnd" class="select-input"></select>
+            </div>
+            <div class="control-group not-plan">
+              <label for="primaryModelSelect">Primary Model:</label>
+              <select id="primaryModelSelect" class="select-input">
+                <option value="">Champion Model</option>
+              </select>
+            </div>
+            <div class="control-group plan-only">
+              <label>Plan Start</label>
+              <span class="stat-value" id="plan-start">-</span>
+            </div>
+            <div class="control-group plan-only">
+              <label for="plan-horizon">Horizon</label>
+              <select id="plan-horizon" class="select-input"></select>
+            </div>
+            <div class="control-group">
+              <button type="button" id="btn-refresh" class="btn btn-primary">Refresh</button>
+            </div>
+            <div class="control-group not-plan">
+              <button type="button" id="btn-dream-team" class="btn">Solve Dream Team</button>
+            </div>
+            <div class="control-group plan-only">
+              <button type="button" id="btn-transfer-plan" class="btn btn-primary">Solve scenarios</button>
+            </div>
+          </div>
+        </header>
+        <p id="refresh-status" class="explorer-meta"></p>
+        <p id="champion-trust" class="explorer-meta"></p>
+
+        <!-- Squad Board & Pitch (Explorer only) -->
+        <section class="squad-section not-plan" id="squad-board">
+          <div id="squad-board-empty" class="card squad-empty" hidden>
+            No User Squad.
+            <button type="button" class="btn btn-primary" id="squad-empty-refresh">Refresh</button>
+          </div>
+          <div id="squad-board-live" hidden>
+            <div class="card squad-summary-card">
+              <div class="summary-stat">
+                <span class="stat-label">ITB</span>
+                <span class="stat-value text-accent" id="squad-itb">-</span>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-stat">
+                <span class="stat-label">Free Transfer Bank</span>
+                <span class="stat-value" id="squad-ft">-</span>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-stat">
+                <span class="stat-label">Hit warning</span>
+                <span class="stat-value" id="squad-hits">0</span>
+              </div>
+              <button type="button" class="btn" id="squad-reset">Reset</button>
+              <button type="button" class="btn" id="squad-reload">Reload</button>
+            </div>
+            <p id="rule-breach-banner" class="validation-banner invalid" hidden></p>
+            <p id="squad-drop-reason" class="explorer-meta"></p>
+            <p id="official-c-hint" class="explorer-meta"></p>
+            <div class="squad-board-layout">
+              <div class="pitch-container">
+                <div class="pitch-grass">
+                  <div class="pitch-lines" aria-hidden="true">
+                    <div class="penalty-box top"></div>
+                    <div class="center-line"></div>
+                    <div class="center-circle"></div>
+                    <div class="penalty-box bottom"></div>
+                  </div>
+                  <div class="pitch-layout" id="squad-pitch"></div>
+                </div>
+                <div class="bench-tray">
+                  <div class="bench-header">
+                    <span class="bench-title">Bench</span>
+                    <span class="bench-sub">Drag or Tab then Enter to swap / sub</span>
+                  </div>
+                  <div class="bench-slots" id="squad-bench"></div>
+                </div>
+              </div>
+              <div class="card squad-strip-card">
+                <p class="title">Squad xP</p>
+                <div class="explorer-table-wrap">
+                  <table class="data-table" id="squad-xp-strip">
+                    <thead id="squad-xp-head"></thead>
+                    <tbody id="squad-xp-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="card" id="component-profile-card">
+              <p class="title">Squad components</p>
+              <div class="explorer-table-wrap">
+                <table class="data-table" id="component-profile">
+                  <thead id="component-profile-head"></thead>
+                  <tbody id="component-profile-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Explorer Root (Explorer only) -->
+        <section class="explorer-root not-plan" id="explorer-root">
+          <div class="card explorer-toolbar">
+            <div class="group">
+              <label class="title">Y-axis</label>
+              <div class="checks">
+                <label><input type="radio" name="y-metric" value="per_gameweek" checked> xP per Gameweek</label>
+                <label><input type="radio" name="y-metric" value="rate_per_90"> Projected Rate</label>
+              </div>
+            </div>
+            <div class="group">
+              <label class="title">Position</label>
+              <div class="checks" id="explorer-pos-checks"></div>
+            </div>
+            <div class="group">
+              <label class="title">Club</label>
+              <div id="explorer-club" class="club-multi"></div>
+            </div>
+            <div class="group">
+              <label class="title">Price</label>
+              <div class="range-row">
+                <input type="number" id="explorer-price-min" step="0.5">
+                <span>–</span>
+                <input type="number" id="explorer-price-max" step="0.5">
+              </div>
+            </div>
+            <div class="group">
+              <label class="title">Avg minutes floor</label>
+              <div class="range-row">
+                <input type="range" id="explorer-xmins-floor" min="0" max="90" step="1" value="0">
+                <span id="explorer-xmins-floor-val">0</span>
+              </div>
+            </div>
+            <div class="group">
+              <label class="title">Search</label>
+              <input type="search" id="explorer-search" placeholder="Player, club…" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <p id="explorer-meta" class="explorer-meta"></p>
+          <p id="explorer-legends" class="explorer-meta">
+            <strong>Total</strong> = horizon xP · <strong>/GW</strong> = xP per Gameweek · <strong>/90</strong> = Projected Rate ·
+            <strong>xMins</strong> = marker size · <strong>Δ£</strong> = observed since last Refresh · <strong>Dream</strong> = Dream Team overlay.
+          </p>
+          <p id="explorer-loading" class="explorer-state" hidden>Loading projections…</p>
+          <p id="explorer-error" class="explorer-state explorer-state-error" hidden></p>
+          <p id="explorer-empty" class="explorer-state" hidden>No players match these filters.</p>
+          <div id="explorer-table-wrap" class="explorer-table-wrap">
+            <table class="data-table explorer-table">
+              <thead>
+                <tr id="explorer-thead-row">
+                  <th data-sort="rank">#</th>
+                  <th data-sort="name">Player</th>
+                  <th data-sort="club">Club</th>
+                  <th data-sort="pos">Pos</th>
+                  <th data-sort="price">Price</th>
+                  <th data-sort="delta">Δ£</th>
+                  <th data-sort="own">Own%</th>
+                  <th data-sort="total">Total</th>
+                  <th data-sort="per_gameweek">/GW</th>
+                  <!-- per-GW columns inserted by renderHead before /90 -->
+                  <th data-sort="rate_per_90">/90</th>
+                  <th data-sort="avg_minutes">xMins</th>
+                </tr>
+              </thead>
+              <tbody id="explorer-table"></tbody>
+            </table>
+          </div>
+          <div class="explorer-charts">
+            <div id="chart-ownership" class="explorer-chart"></div>
+            <div id="chart-price" class="explorer-chart"></div>
+          </div>
+          <div class="card" id="player-component-card">
+            <p class="title">Player components (selected horizon)</p>
+            <p id="player-component-name" class="explorer-meta">Select a player in the table, on a chart, or on the pitch.</p>
             <div class="explorer-table-wrap">
-              <table class="data-table" id="squad-xp-strip">
-                <thead id="squad-xp-head"></thead>
-                <tbody id="squad-xp-body"></tbody>
+              <table class="data-table" id="player-component">
+                <thead id="player-component-head"></thead>
+                <tbody id="player-component-body"></tbody>
               </table>
             </div>
           </div>
-        </div>
-        <div class="card" id="component-profile-card">
-          <p class="title">Squad components</p>
-          <div class="explorer-table-wrap">
-            <table class="data-table" id="component-profile">
-              <thead id="component-profile-head"></thead>
-              <tbody id="component-profile-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <section class="explorer-root not-plan" id="explorer-root">
-      <div class="card explorer-toolbar">
-        <div class="group">
-          <label class="title">Y-axis</label>
-          <div class="checks">
-            <label><input type="radio" name="y-metric" value="per_gameweek" checked> xP per Gameweek</label>
-            <label><input type="radio" name="y-metric" value="rate_per_90"> Projected Rate</label>
+        <!-- Transfer Plan Root (Plan only) -->
+        <section class="plan-root" id="plan-root" hidden>
+          <p class="explorer-meta">Dream Team and Squad What-If live on Explorer only. Selected plan is read-only. Does not load into Squad What-If. Live plans stop within 1% of the Solver Objective; a proven plan shows no extra line.</p>
+          <p id="plan-stale-banner" class="explorer-meta text-danger" hidden>Scenarios from before last Refresh. Solve again for current projections.</p>
+          <p id="plan-champion-trust" class="explorer-meta"></p>
+          <div class="card plan-toolbar">
+            <div>
+              <p class="title">Booked Chip</p>
+              <p class="plan-hint">Pin an Available Chip to one Gameweek. At most one chip per week.</p>
+              <div id="booked-chips" class="plan-chip-calendar"></div>
+            </div>
+            <div>
+              <p class="title">Enabled Chip</p>
+              <p class="plan-hint">Solver places once in the Chip Set. Default none enabled.</p>
+              <div id="enabled-chips" class="plan-enabled-chips"></div>
+            </div>
           </div>
-        </div>
-        <div class="group">
-          <label class="title">Position</label>
-          <div class="checks" id="explorer-pos-checks"></div>
-        </div>
-        <div class="group">
-          <label class="title">Club</label>
-          <div id="explorer-club" class="club-multi"></div>
-        </div>
-        <div class="group">
-          <label class="title">Price</label>
-          <div class="range-row">
-            <input type="number" id="explorer-price-min" step="0.5">
-            <span>–</span>
-            <input type="number" id="explorer-price-max" step="0.5">
-          </div>
-        </div>
-        <div class="group">
-          <label class="title">Avg minutes floor</label>
-          <div class="range-row">
-            <input type="range" id="explorer-xmins-floor" min="0" max="90" step="1" value="0">
-            <span id="explorer-xmins-floor-val">0</span>
-          </div>
-        </div>
-        <div class="group">
-          <label class="title">Search</label>
-          <input type="search" id="explorer-search" placeholder="Player, club…" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-      <p id="explorer-meta" class="explorer-meta"></p>
-      <p id="explorer-legends" class="explorer-meta">
-        <strong>Total</strong> = horizon xP · <strong>/GW</strong> = xP per Gameweek · <strong>/90</strong> = Projected Rate ·
-        <strong>xMins</strong> = marker size · <strong>Δ£</strong> = observed since last Refresh · <strong>Dream</strong> = Dream Team overlay.
-      </p>
-      <p id="explorer-loading" class="explorer-state" hidden>Loading projections…</p>
-      <p id="explorer-error" class="explorer-state explorer-state-error" hidden></p>
-      <p id="explorer-empty" class="explorer-state" hidden>No players match these filters.</p>
-      <div id="explorer-table-wrap" class="explorer-table-wrap">
-        <table class="data-table explorer-table">
-          <thead>
-            <tr id="explorer-thead-row">
-              <th data-sort="rank">#</th>
-              <th data-sort="name">Player</th>
-              <th data-sort="club">Club</th>
-              <th data-sort="pos">Pos</th>
-              <th data-sort="price">Price</th>
-              <th data-sort="delta">Δ£</th>
-              <th data-sort="own">Own%</th>
-              <th data-sort="total">Total</th>
-              <th data-sort="per_gameweek">/GW</th>
-              <!-- per-GW columns inserted by renderHead before /90 -->
-              <th data-sort="rate_per_90">/90</th>
-              <th data-sort="avg_minutes">xMins</th>
-            </tr>
-          </thead>
-          <tbody id="explorer-table"></tbody>
-        </table>
-      </div>
-      <div class="explorer-charts">
-        <div id="chart-ownership" class="explorer-chart"></div>
-        <div id="chart-price" class="explorer-chart"></div>
-      </div>
-      <div class="card" id="player-component-card">
-        <p class="title">Player components (selected horizon)</p>
-        <p id="player-component-name" class="explorer-meta">Select a player in the table, on a chart, or on the pitch.</p>
-        <div class="explorer-table-wrap">
-          <table class="data-table" id="player-component">
-            <thead id="player-component-head"></thead>
-            <tbody id="player-component-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+          <section id="plan-scenarios" class="scenario-row"></section>
+          <section class="card" id="plan-detail">
+            <div id="plan-warning-banner" class="plan-warning-banner" hidden></div>
+            <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
+            <div id="plan-ledger" class="ledger"></div>
+            <h3 class="plan-subhead" id="plan-weeks-subhead">Expected GW Score by week. Click a GW to inspect (rank = sum)</h3>
+            <div id="plan-weeks" class="week-strip"></div>
+            <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best (Plan Start)</p>
+            <h3 class="plan-subhead" id="plan-xi-subhead">Plan XI · select a week (C = plan captain)</h3>
+            <div id="plan-pitch" class="mini-pitch"></div>
+            <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">-</span></p>
+            <p class="explorer-meta" id="plan-objective-note" hidden></p>
+          </section>
+        </section>
 
-    <section class="plan-root" id="plan-root" hidden>
-      <p class="explorer-meta">Dream Team and Squad What-If live on Explorer only. Selected plan is read-only. Does not load into Squad What-If. Live plans stop within 1% of the Solver Objective; a proven plan shows no extra line.</p>
-      <p id="plan-stale-banner" class="explorer-meta text-danger" hidden>Scenarios from before last Refresh. Solve again for current projections.</p>
-      <p id="plan-champion-trust" class="explorer-meta"></p>
-      <div class="card plan-toolbar">
-        <div>
-          <p class="title">Booked Chip</p>
-          <p class="plan-hint">Pin an Available Chip to one Gameweek. At most one chip per week.</p>
-          <div id="booked-chips" class="plan-chip-calendar"></div>
-        </div>
-        <div>
-          <p class="title">Enabled Chip</p>
-          <p class="plan-hint">Solver places once in the Chip Set. Default none enabled.</p>
-          <div id="enabled-chips" class="plan-enabled-chips"></div>
-        </div>
+        <!-- Strategy Solver Root (Strategy only) -->
+        <section class="strategy-root" id="strategy-root" hidden>
+          <div class="card strategy-header-card">
+            <div class="strategy-header-top">
+              <div>
+                <p class="title">Strategy Solver Studio</p>
+                <p class="explorer-meta">Formulate custom MILP solves with hard constraints (roster locks, bans, club caps) and soft tilts (horizon decay, bench utility, bank valuations).</p>
+              </div>
+              <div class="strategy-actions">
+                <button type="button" id="btn-strategy-solve" class="btn btn-primary">Run Strategy Solve</button>
+              </div>
+            </div>
+            <div class="strategy-quick-controls">
+              <div class="control-group">
+                <label for="strategy-target-gw">Target GW</label>
+                <select id="strategy-target-gw" class="select-input"></select>
+              </div>
+              <div class="control-group">
+                <label for="strategy-horizon">Horizon</label>
+                <select id="strategy-horizon" class="select-input">
+                  <option value="1">1 GW</option>
+                  <option value="2">2 GWs</option>
+                  <option value="3">3 GWs</option>
+                  <option value="4">4 GWs</option>
+                  <option value="5" selected>5 GWs</option>
+                  <option value="6">6 GWs</option>
+                  <option value="8">8 GWs</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="strategy-model">Model</label>
+                <select id="strategy-model" class="select-input">
+                  <option value="">Champion Model</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label><input type="checkbox" id="strategy-preseason"> Blank / Preseason Squad</label>
+              </div>
+            </div>
+            <p id="strategy-status" class="explorer-meta"></p>
+          </div>
+
+          <div class="strategy-grid">
+            <!-- Hard Constraints Card -->
+            <div class="card strategy-col">
+              <p class="title">Hard Constraints (Feasibility)</p>
+              <p class="plan-hint">Rigid mathematical bounds the MILP must satisfy.</p>
+
+              <div class="form-group">
+                <label for="strategy-locked">Locked Players (IDs or Names)</label>
+                <input type="text" id="strategy-locked" class="text-input" placeholder="e.g. Haaland, Salah or 10, 15 (always kept)">
+              </div>
+
+              <div class="form-group">
+                <label for="strategy-banned">Banned Players (IDs or Names)</label>
+                <input type="text" id="strategy-banned" class="text-input" placeholder="e.g. Palmer, Saka or 42, 58 (never picked)">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="strategy-max-defs">Max DEFs from 1 Club</label>
+                  <select id="strategy-max-defs" class="select-input">
+                    <option value="3" selected>3 (Standard)</option>
+                    <option value="2">2 (Conservative)</option>
+                    <option value="1">1 (Single clean sheet risk)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="strategy-opposing">Anti-Cannibalization</label>
+                  <select id="strategy-opposing" class="select-input">
+                    <option value="none" selected>None (Standard)</option>
+                    <option value="hard">Hard Ban (No attacker vs defender)</option>
+                    <option value="penalty">Soft Penalty (-0.5 pts)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="strategy-hit-limit">Total Hit Limit</label>
+                  <input type="number" id="strategy-hit-limit" class="text-input" min="0" max="10" placeholder="No limit">
+                </div>
+                <div class="form-group">
+                  <label for="strategy-weekly-hit-limit">Weekly Hit Limit</label>
+                  <input type="number" id="strategy-weekly-hit-limit" class="text-input" min="0" max="4" placeholder="No limit">
+                </div>
+                <div class="form-group">
+                  <label for="strategy-itb-buffer">Min ITB Buffer (£m)</label>
+                  <input type="number" id="strategy-itb-buffer" class="text-input" min="0" step="0.1" value="0.0">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label><input type="checkbox" id="strategy-double-def"> Force Double Defense Pick (0 or ≥2 starters from same team)</label>
+              </div>
+
+              <div class="form-group">
+                <label class="title">Chip Scheduling</label>
+                <div class="chip-select-row">
+                  <label>WC: <select id="strategy-chip-wc" class="select-input"><option value="">None</option></select></label>
+                  <label>FH: <select id="strategy-chip-fh" class="select-input"><option value="">None</option></select></label>
+                  <label>BB: <select id="strategy-chip-bb" class="select-input"><option value="">None</option></select></label>
+                  <label>TC: <select id="strategy-chip-tc" class="select-input"><option value="">None</option></select></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Soft Tilts Card -->
+            <div class="card strategy-col">
+              <p class="title">Soft Tilts & Weights (Objective)</p>
+              <p class="plan-hint">Trade-off parameters steering solver decision preferences.</p>
+
+              <div class="form-group">
+                <div class="slider-label-row">
+                  <label for="strategy-decay">Horizon Decay Base: <strong id="strategy-decay-val">0.85</strong></label>
+                  <span class="plan-hint">Lower = near-term bias; Higher = fixture planner</span>
+                </div>
+                <input type="range" id="strategy-decay" min="0.70" max="1.00" step="0.01" value="0.85" class="range-input">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="strategy-ft-val">Banked FT Value (pts/FT)</label>
+                  <input type="number" id="strategy-ft-val" class="text-input" min="0" step="0.1" value="1.5">
+                </div>
+                <div class="form-group">
+                  <label for="strategy-itb-val">In-The-Bank Value (pts/£m)</label>
+                  <input type="number" id="strategy-itb-val" class="text-input" min="0" step="0.01" value="0.08">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="strategy-bench-w1">Bench Slot 1 Weight</label>
+                  <input type="number" id="strategy-bench-w1" class="text-input" min="0" max="1" step="0.01" value="0.21">
+                </div>
+                <div class="form-group">
+                  <label for="strategy-bench-w2">Bench Slot 2 Weight</label>
+                  <input type="number" id="strategy-bench-w2" class="text-input" min="0" max="1" step="0.01" value="0.06">
+                </div>
+              </div>
+
+              <div class="card help-card">
+                <p class="help-title">💡 Formulation Tips</p>
+                <p class="help-text"><strong>Decay 0.85</strong> discounts Gameweek +1 by 15%, accounting for rotation risk and information obsolescence.</p>
+                <p class="help-text"><strong>FT Value 1.5</strong> prevents lateral transfers with small theoretical edges so you keep flexible double transfers.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Strategy Results Card -->
+          <div class="card strategy-results-card" id="strategy-results-card" hidden>
+            <div class="strategy-results-header">
+              <div>
+                <p class="title">Strategy Solution Plan</p>
+                <div class="strategy-stats-row">
+                  <span class="stat-badge">Objective: <strong id="strategy-obj-val">-</strong></span>
+                  <span class="stat-badge">Total xP: <strong id="strategy-xp-val">-</strong></span>
+                  <span class="stat-badge">Model: <strong id="strategy-model-val">-</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="explorer-table-wrap">
+              <table class="data-table" id="strategy-ledger-table">
+                <thead>
+                  <tr>
+                    <th>GW</th>
+                    <th>Transfers In</th>
+                    <th>Transfers Out</th>
+                    <th>Hits</th>
+                    <th>Chips</th>
+                    <th>Bank (ITB)</th>
+                    <th>FT Bank</th>
+                  </tr>
+                </thead>
+                <tbody id="strategy-ledger-body"></tbody>
+              </table>
+            </div>
+            <div class="strategy-weeks-container" id="strategy-weeks-container"></div>
+          </div>
+        </section>
+
+        <!-- Research Root (Research only) -->
+        <section class="research-root" id="research-root" hidden>
+          <div class="research-layout">
+            <div class="research-sidebar-col">
+              <div class="card research-search-card">
+                <input type="search" id="research-search" class="text-input" placeholder="Search research topics…" autocomplete="off">
+              </div>
+              <div class="research-topics-list" id="research-topics-list"></div>
+            </div>
+            <div class="research-main-col">
+              <div class="card research-content-card">
+                <div class="research-content-header">
+                  <div>
+                    <h2 id="research-detail-title">Select a research topic</h2>
+                    <p class="explorer-meta" id="research-detail-meta">Browse evidence notes, gate scorecards, and companion datasets from docs/research/.</p>
+                  </div>
+                  <span class="badge" id="research-detail-status" hidden>Active</span>
+                </div>
+                <div class="research-csv-section" id="research-csv-section" hidden>
+                  <p class="title">Companion CSV Tables</p>
+                  <div class="research-csv-tabs" id="research-csv-tabs"></div>
+                  <div class="explorer-table-wrap" id="research-csv-wrap">
+                    <table class="data-table" id="research-csv-table">
+                      <thead id="research-csv-head"></thead>
+                      <tbody id="research-csv-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="research-note-body markdown-body" id="research-note-body"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Model Methodology Root (Methodology only) -->
+        <section class="methodology-root" id="methodology-root" hidden>
+          <div class="card methodology-banner">
+            <div>
+              <p class="title">Model Projection Methodology & Pipeline</p>
+              <p class="explorer-meta">How raw FPL statistics, expected minutes, and matchup matrices calculate projected points for every player.</p>
+            </div>
+            <div class="methodology-champ-pill">
+              <span>Active Champion:</span>
+              <strong id="methodology-champion">-</strong>
+            </div>
+          </div>
+
+          <div class="methodology-pipeline-grid">
+            <div class="card pipeline-card">
+              <span class="pipeline-step">Layer 1</span>
+              <h3>Minutes & Availability</h3>
+              <p class="pipeline-summary">Stochastic start probability estimation with DNP suppression.</p>
+              <div class="formula-box">xMins = P(start) · E[mins|start] + P(sub) · E[mins|sub]</div>
+              <p class="pipeline-detail">Models starting security using trailing start windows (ADR 0035), rolling minutes history, press conferences, and official status news.</p>
+            </div>
+
+            <div class="card pipeline-card">
+              <span class="pipeline-step">Layer 2</span>
+              <h3>Rates & Shrinkage</h3>
+              <p class="pipeline-summary">Per-90 event rates with defensive xG empirical shrinkage.</p>
+              <div class="formula-box">Rate = (Σ Stat + K · Mean) / (Σ Mins + K)</div>
+              <p class="pipeline-detail">Champion applies pseudo-minutes shrinkage (K=2400 for DEF xG per ADR 0055). Poisson clean sheet rate is derived from opponent expected goals.</p>
+            </div>
+
+            <div class="card pipeline-card">
+              <span class="pipeline-step">Layer 3</span>
+              <h3>Matchup Scaling</h3>
+              <p class="pipeline-summary">Opponent difficulty via Modified FDR and Matchup Share.</p>
+              <div class="formula-box">Scaled Rate = Base Rate · Matchup Share(club, opp)</div>
+              <p class="pipeline-detail">Uses Modified FDR difficulty ratings and Calibrated Matchup Share (ADR 0040) to scale clean sheet and attacking returns by opposition quality.</p>
+            </div>
+
+            <div class="card pipeline-card">
+              <span class="pipeline-step">Layer 4</span>
+              <h3>Scoring Matrix</h3>
+              <p class="pipeline-summary">Exact deconstruction across 8 rulebook components.</p>
+              <div class="formula-box">Total xP = Σ(Minutes, Goals, Assists, CS, GC, Defcon, Saves, Bonus)</div>
+              <p class="pipeline-detail">Position-specific scoring weights (DEF goal 6 pts, MID goal 5 pts, FWD goal 4 pts) guarantee mathematical traceability.</p>
+            </div>
+          </div>
+
+          <div class="methodology-interactive-grid">
+            <!-- Player Inspector -->
+            <div class="card methodology-col">
+              <p class="title">Player Projection Inspector</p>
+              <p class="plan-hint">Inspect how any active player's expected score is computed.</p>
+              <div class="form-group">
+                <label for="methodology-player-select">Select Player</label>
+                <select id="methodology-player-select" class="select-input"></select>
+              </div>
+              <div id="methodology-player-display"></div>
+            </div>
+
+            <!-- Candidate Idea Generator -->
+            <div class="card methodology-col">
+              <p class="title">Candidate Idea Generator</p>
+              <p class="plan-hint">Draft hypotheses for evaluation under the Candidate Ledger protocol.</p>
+
+              <div class="form-group">
+                <label for="idea-lever">Lever Category</label>
+                <select id="idea-lever" class="select-input">
+                  <option value="MIN">Minutes / Availability (MIN)</option>
+                  <option value="ATK">Attacking Rates / xG / xA (ATK)</option>
+                  <option value="DEF">Defensive Rates / Clean Sheet / Poisson (DEF)</option>
+                  <option value="FIX">Fixture Difficulty / Matchup Share (FIX)</option>
+                  <option value="SHR">Shrinkage / Bayesian Priors (SHR)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="idea-hypothesis">Hypothesis Description</label>
+                <input type="text" id="idea-hypothesis" class="text-input" placeholder="e.g. Shrink mid-tier midfielder assist rates toward team mean...">
+              </div>
+
+              <div class="form-group">
+                <label for="idea-target">Target Metric / Rationale</label>
+                <input type="text" id="idea-target" class="text-input" placeholder="e.g. formation_xi_regret reduction on 2025-26 dev segment">
+              </div>
+
+              <button type="button" id="btn-generate-idea" class="btn btn-primary">Generate Proposal Prompt</button>
+
+              <div class="idea-output-wrap" id="idea-output-wrap" hidden>
+                <p class="plan-hint">explore-candidate prompt draft:</p>
+                <textarea id="idea-output" class="text-area" rows="4" readonly></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-      <section id="plan-scenarios" class="scenario-row"></section>
-      <section class="card" id="plan-detail">
-        <div id="plan-warning-banner" class="plan-warning-banner" hidden></div>
-        <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
-        <div id="plan-ledger" class="ledger"></div>
-        <h3 class="plan-subhead" id="plan-weeks-subhead">Expected GW Score by week. Click a GW to inspect (rank = sum)</h3>
-        <div id="plan-weeks" class="week-strip"></div>
-        <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best (Plan Start)</p>
-        <h3 class="plan-subhead" id="plan-xi-subhead">Plan XI · select a week (C = plan captain)</h3>
-        <div id="plan-pitch" class="mini-pitch"></div>
-        <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">-</span></p>
-        <p class="explorer-meta" id="plan-objective-note" hidden></p>
-      </section>
-    </section>
+    </main>
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=24"></script>
+  <script src="app.js?v=25"></script>
   <script src="explorer.js?v=21"></script>
   <script src="squad.js?v=5"></script>
   <script src="plan.js?v=6"></script>

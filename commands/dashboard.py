@@ -8,7 +8,10 @@ import socketserver
 import sys
 import threading
 import time
+from urllib.parse import parse_qs
 import webbrowser
+
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -22,6 +25,7 @@ from commands.export_dashboard import (
     run_dashboard_export,
 )
 from commands.dream_team import execute_dream_team
+from commands.solve import execute_transfer_plan
 from commands.transfer_plan_scenarios import (
     SCENARIOS_PATH,
     UserSquadRequired,
@@ -31,9 +35,9 @@ from commands.transfer_plan_scenarios import (
 from commands import refresh_data
 from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
-from models import get_default_model_name
+from models import get_default_model_name, list_model_names
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
-from solver.utils import DEFAULT_PLANNING_HORIZON
+from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -53,6 +57,13 @@ _dream_state: dict[str, object] = {
 }
 _plan_lock = threading.Lock()
 _plan_state: dict[str, object] = {
+    "status": "idle",
+    "error": None,
+    "detail": None,
+    "payload": None,
+}
+_strategy_lock = threading.Lock()
+_strategy_state: dict[str, object] = {
     "status": "idle",
     "error": None,
     "detail": None,
@@ -321,6 +332,22 @@ def run_transfer_plan_job(
         _set_plan_state(status="error", error=str(exc), detail="Solve failed.", payload=None)
 
 
+def _active_job_conflict() -> tuple[int, dict[str, object]] | None:
+    if refresh_status()["status"] == "running":
+        return 409, {
+            "status": "error",
+            "error": "Refresh is running. Wait for it to finish.",
+            "detail": "Refresh is running. Wait for it to finish.",
+        }
+    if dream_team_status()["status"] == "running":
+        return 409, {
+            "status": "error",
+            "error": "Dream Team Solve is running. Wait for it to finish.",
+            "detail": "Dream Team Solve is running. Wait for it to finish.",
+        }
+    return None
+
+
 def start_transfer_plan(
     *,
     target_gw: int,
@@ -330,17 +357,14 @@ def start_transfer_plan(
     force_keep: list[dict[str, object]] | None = None,
 ) -> tuple[int, dict[str, object]]:
     with _job_lock:
-        if refresh_status()["status"] == "running":
+        conflict = _active_job_conflict()
+        if conflict:
+            return conflict
+        if strategy_solve_status()["status"] == "running":
             return 409, {
                 "status": "error",
-                "error": "Refresh is running. Wait for it to finish.",
-                "detail": "Refresh is running. Wait for it to finish.",
-            }
-        if dream_team_status()["status"] == "running":
-            return 409, {
-                "status": "error",
-                "error": "Dream Team Solve is running. Wait for it to finish.",
-                "detail": "Dream Team Solve is running. Wait for it to finish.",
+                "error": "Strategy Solve is running. Wait for it to finish.",
+                "detail": "Strategy Solve is running. Wait for it to finish.",
             }
         with _plan_lock:
             if _plan_state["status"] == "running":
@@ -440,10 +464,276 @@ def _dream_team_args(body: dict[str, object] | None) -> tuple[str, int, int]:
     return model_name, int(gws[0]), horizon
 
 
+def strategy_solve_status() -> dict[str, object]:
+    with _strategy_lock:
+        return dict(_strategy_state)
+
+
+def _set_strategy_state(
+    *,
+    status: str,
+    error: str | None = None,
+    detail: str | None = None,
+    payload: dict[str, object] | None = None,
+) -> None:
+    with _strategy_lock:
+        _strategy_state["status"] = status
+        _strategy_state["error"] = error
+        _strategy_state["detail"] = detail
+        if payload is not None or status != "running":
+            _strategy_state["payload"] = payload
+
+
+def _resolve_player_ids(values: object, processed_dir: Path) -> list[int]:
+    if not values:
+        return []
+    raw_list: list[str | int]
+    if isinstance(values, str):
+        raw_list = [v.strip() for v in values.split(",") if v.strip()]
+    elif isinstance(values, list):
+        raw_list = values
+    else:
+        return []
+
+    name_to_id: dict[str, int] = {}
+    players_path = processed_dir / "players.parquet"
+    if players_path.exists():
+        try:
+            df = pd.read_parquet(players_path)
+            if "id" in df.columns:
+                for _, row in df.iterrows():
+                    pid = int(row["id"])
+                    if "web_name" in row and pd.notna(row["web_name"]):
+                        name_to_id[str(row["web_name"]).strip().lower()] = pid
+                    if "second_name" in row and pd.notna(row["second_name"]):
+                        name_to_id[str(row["second_name"]).strip().lower()] = pid
+                    if "first_name" in row and "second_name" in row and pd.notna(row["first_name"]) and pd.notna(row["second_name"]):
+                        name_to_id[f"{row['first_name']} {row['second_name']}".strip().lower()] = pid
+        except Exception as exc:
+            logger.warning("Could not build player name lookup: %s", exc)
+
+    resolved: list[int] = []
+    for item in raw_list:
+        if isinstance(item, int):
+            resolved.append(item)
+        elif isinstance(item, str):
+            item_clean = item.strip()
+            if item_clean.isdigit():
+                resolved.append(int(item_clean))
+            else:
+                match_id = name_to_id.get(item_clean.lower())
+                if match_id is not None:
+                    resolved.append(match_id)
+                else:
+                    logger.warning("Unknown player name or ID: '%s'", item_clean)
+    return resolved
+
+
+def run_strategy_solve_job(*, options: dict[str, object], target_gw: int = 1) -> None:
+    try:
+        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+        solution_path = PROJECT_ROOT / "data" / "strategy_solution.json"
+
+        solver_opts = load_settings()
+        solver_opts.update(options)
+        if "datasource" not in solver_opts or not solver_opts["datasource"]:
+            solver_opts["datasource"] = get_default_model_name()
+
+        horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
+        solver_opts["horizon"] = horizon
+
+        for chip in ("use_wc", "use_bb", "use_fh", "use_tc"):
+            if chip in solver_opts:
+                val = solver_opts[chip]
+                if isinstance(val, (int, str)):
+                    try:
+                        iv = int(val)
+                        solver_opts[chip] = [iv] if iv > 0 else []
+                    except (ValueError, TypeError):
+                        solver_opts[chip] = []
+
+        for key in ("locked", "banned"):
+            if key in solver_opts:
+                solver_opts[key] = _resolve_player_ids(solver_opts[key], processed_dir)
+
+        plan = execute_transfer_plan(
+            solver_opts,
+            processed_dir=processed_dir,
+            target_gw=target_gw,
+            solution_path=solution_path,
+        )
+        _set_strategy_state(status="ok", error=None, detail="Strategy solve ready.", payload=plan)
+    except FileNotFoundError:
+        msg = (
+            "Squad picks not found. Run Refresh with credentials, "
+            "or check 'Preseason / Blank Squad' to solve without a loaded squad."
+        )
+        _set_strategy_state(status="error", error=msg, detail=msg, payload=None)
+    except Exception as exc:
+        logger.exception("Strategy Solve failed")
+        _set_strategy_state(status="error", error=str(exc), detail=f"Solve failed: {exc}", payload=None)
+
+
+def start_strategy_solve(*, options: dict[str, object], target_gw: int = 1) -> tuple[int, dict[str, object]]:
+    with _job_lock:
+        conflict = _active_job_conflict()
+        if conflict:
+            return conflict
+        if transfer_plan_status()["status"] == "running":
+            return 409, {
+                "status": "error",
+                "error": "Transfer Plan Solve is running. Wait for it to finish.",
+                "detail": "Transfer Plan Solve is running. Wait for it to finish.",
+            }
+        with _strategy_lock:
+            if _strategy_state["status"] == "running":
+                return 202, dict(_strategy_state)
+            _strategy_state["status"] = "running"
+            _strategy_state["error"] = None
+            _strategy_state["detail"] = "Starting Strategy Solve…"
+            _strategy_state["payload"] = None
+    threading.Thread(
+        target=run_strategy_solve_job,
+        kwargs={"options": options, "target_gw": target_gw},
+        daemon=True,
+    ).start()
+    return 202, strategy_solve_status()
+
+
+def get_research_topics() -> list[dict[str, object]]:
+    research_dir = PROJECT_ROOT / "docs" / "research"
+    if not research_dir.exists():
+        return []
+    topics = []
+    for item in sorted(research_dir.iterdir()):
+        if not item.is_dir() or item.name in ("template", ".tmp"):
+            continue
+        md_files = list(item.glob("*.md"))
+        if not md_files:
+            continue
+        main_md = item / f"{item.name}.md"
+        if not main_md.exists():
+            main_md = md_files[0]
+        title = item.name.replace("-", " ").title()
+        status = "Active"
+        try:
+            content = main_md.read_text(encoding="utf-8")
+            for line in content.splitlines()[:25]:
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                elif "**Status**:" in line:
+                    status = line.split("**Status**:", 1)[1].strip()
+        except Exception:
+            pass
+        csv_files = [f.name for f in item.glob("*.csv")]
+        topics.append({
+            "slug": item.name,
+            "title": title,
+            "status": status,
+            "file": main_md.name,
+            "csv_count": len(csv_files),
+            "csv_files": csv_files,
+        })
+    return topics
+
+
+def get_research_topic_detail(slug: str) -> dict[str, object]:
+    topic_dir = PROJECT_ROOT / "docs" / "research" / slug
+    if not topic_dir.exists() or not topic_dir.is_dir():
+        return {"error": f"Topic '{slug}' not found"}
+    md_files = list(topic_dir.glob("*.md"))
+    if not md_files:
+        return {"error": "No markdown file in topic"}
+    main_md = topic_dir / f"{slug}.md"
+    if not main_md.exists():
+        main_md = md_files[0]
+    content = main_md.read_text(encoding="utf-8")
+
+    companions: dict[str, object] = {}
+    for csv_path in sorted(topic_dir.glob("*.csv")):
+        try:
+            full_df = pd.read_csv(csv_path)
+            total_rows = len(full_df)
+            df = full_df.head(100)
+            companions[csv_path.name] = {
+                "columns": list(df.columns),
+                "rows": df.fillna("").values.tolist(),
+                "total_rows": total_rows,
+            }
+        except Exception as exc:
+            logger.warning("Failed to read CSV %s: %s", csv_path, exc)
+
+    return {
+        "slug": slug,
+        "filename": main_md.name,
+        "content": content,
+        "companions": companions,
+    }
+
+
+def get_model_methodology() -> dict[str, object]:
+    champion = get_default_model_name()
+    comparison_slate = [m for m in list_model_names() if m != champion]
+
+    ledger_path = PROJECT_ROOT / "docs" / "research" / "candidate-ledger" / "candidate_ledger.csv"
+    shipped_levers: list[str] = []
+    dead_levers: list[str] = []
+    if ledger_path.exists():
+        try:
+            df = pd.read_csv(ledger_path)
+            if "status" in df.columns and "lever" in df.columns:
+                shipped_levers = df[df["status"] == "shipped"]["lever"].dropna().unique().tolist()
+                dead_levers = df[df["status"] == "dead"]["lever"].dropna().unique().tolist()
+        except Exception as exc:
+            logger.warning("Could not read candidate ledger: %s", exc)
+
+    return {
+        "champion": champion,
+        "pipeline_layers": [
+            {
+                "layer": 1,
+                "name": "Minutes & Availability",
+                "summary": "Stochastic start and sub probability estimation with DNP suppression.",
+                "formula": "xMins = p_start * E[mins|start] + p_sub * E[mins|sub] - dnp_penalty",
+                "details": "Models player appearance rates using trailing start windows (ADR 0035), rolling minutes, news status, and official chance-of-playing flags.",
+            },
+            {
+                "layer": 2,
+                "name": "Rates & Shrinkage",
+                "summary": "Per-90 event rate regression with defensive xG empirical shrinkage.",
+                "formula": "shrunk_rate = (sum_stat + K * mean) / (sum_mins + K)",
+                "details": f"Champion '{champion}' applies pseudo-minutes shrinkage (K=2400 for DEF xG per ADR 0055). Poisson clean sheet rate is derived from expected goals conceded.",
+            },
+            {
+                "layer": 3,
+                "name": "Matchup & Fixture Multipliers",
+                "summary": "Opponent strength scaling via Modified FDR and Calibrated Matchup Share.",
+                "formula": "scaled_rate = base_rate * matchup_share(club, opp)",
+                "details": "Uses Modified FDR (difficulty rating 1.0-5.0) and Calibrated Matchup Share (ADR 0040) to dynamically adjust clean sheet and attacking probabilities.",
+            },
+            {
+                "layer": 4,
+                "name": "Scoring Matrix & Component Deconstruction",
+                "summary": "Translates scaled rates into 8 distinct FPL scoring components.",
+                "formula": "Total xP = xp_mins + xp_goals + xp_assists + xp_cs - xp_gc + xp_defcon + xp_saves + xp_bonus",
+                "details": "Guarantees exact traceability across position-specific rules (e.g. DEF goal = 6 pts, MID goal = 5 pts, FWD goal = 4 pts).",
+            },
+        ],
+        "candidate_ledger_summary": {
+            "policy": "Hard Rule: Dead levers can never be retried before revisit_after (1 year). Log all attempts in candidate_ledger.csv.",
+            "champion": champion,
+            "slate": comparison_slate,
+            "shipped_count": len(shipped_levers),
+            "dead_count": len(dead_levers),
+        },
+    }
+
+
 def handle_dashboard_api(
     method: str,
     path: str,
     body: dict[str, object] | None = None,
+    query_string: str = "",
 ) -> tuple[int, dict[str, object]]:
     if path == "/api/champion" and method == "GET":
         return 200, {"champion": get_default_model_name()}
@@ -478,6 +768,21 @@ def handle_dashboard_api(
                 enabled_chips=enabled,
                 force_keep=force_keep,
             )
+    if path == "/api/strategy-solve":
+        if method == "GET":
+            return 200, strategy_solve_status()
+        if method == "POST":
+            opts = body or {}
+            target_gw = int(opts.get("target_gw") or 1)
+            return start_strategy_solve(options=opts, target_gw=target_gw)
+    if path == "/api/research/topics" and method == "GET":
+        return 200, {"topics": get_research_topics()}
+    if path == "/api/research/topic" and method == "GET":
+        query = parse_qs(query_string)
+        slug = query.get("slug", [""])[0]
+        return 200, get_research_topic_detail(slug)
+    if path == "/api/methodology" and method == "GET":
+        return 200, get_model_methodology()
     return 404, {"error": "Not found"}
 
 
@@ -519,8 +824,9 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         api_path = self._api_path()
+        query_string = self.path.split("?", 1)[1] if "?" in self.path else ""
         if api_path.startswith("/api/"):
-            status, payload = handle_dashboard_api("GET", api_path, None)
+            status, payload = handle_dashboard_api("GET", api_path, None, query_string=query_string)
             if status == 404:
                 self.send_error(404, "Not found")
                 return

@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from typing import Any
 import pandas as pd
 import pytest
 
@@ -690,5 +691,58 @@ def test_dashboard_dataset_includes_fixtures_availability_and_champion_trust(tmp
     assert dataset["meta"]["champion_trust"]["champion"]
     assert dataset["meta"]["transfer_plan_available_chips"]
     assert "transfer_plan" not in dataset
+
+
+def test_handle_dashboard_api_strategy_solve(monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    captured = {}
+
+    def fake_start_strategy(*, options: dict[str, Any], target_gw: int = 1) -> tuple[int, dict[str, Any]]:
+        captured["options"] = options
+        captured["target_gw"] = target_gw
+        return 202, {"status": "running", "detail": "Starting Strategy Solve…"}
+
+    monkeypatch.setattr(dash, "start_strategy_solve", fake_start_strategy)
+
+    # GET
+    status, payload = dash.handle_dashboard_api("GET", "/api/strategy-solve")
+    assert status == 200
+    assert "status" in payload
+
+    # POST
+    status, payload = dash.handle_dashboard_api(
+        "POST", "/api/strategy-solve", {"target_gw": 2, "locked": "10,15", "decay_base": 0.82}
+    )
+    assert status == 202
+    assert captured["target_gw"] == 2
+    assert captured["options"]["locked"] == "10,15"
+
+
+def test_handle_dashboard_api_research_and_methodology() -> None:
+    from commands import dashboard as dash
+
+    # GET research topics
+    status, payload = dash.handle_dashboard_api("GET", "/api/research/topics")
+    assert status == 200
+    assert "topics" in payload
+    assert len(payload["topics"]) > 0
+    assert any(t["slug"] == "formation-eval-retest" for t in payload["topics"])
+
+    # GET research topic detail
+    status, payload = dash.handle_dashboard_api(
+        "GET", "/api/research/topic", query_string="slug=formation-eval-retest"
+    )
+    assert status == 200
+    assert payload["slug"] == "formation-eval-retest"
+    assert "content" in payload
+    assert "companions" in payload
+
+    # GET methodology
+    status, payload = dash.handle_dashboard_api("GET", "/api/methodology")
+    assert status == 200
+    assert payload["champion"]
+    assert len(payload["pipeline_layers"]) == 4
+
 
 
