@@ -745,4 +745,43 @@ def test_handle_dashboard_api_research_and_methodology() -> None:
     assert len(payload["pipeline_layers"]) == 4
 
 
+def test_handle_dashboard_api_user_plans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    test_file = tmp_path / "user_plans.json"
+    monkeypatch.setattr(dash, "USER_PLANS_PATH", test_file)
+
+    # 1. GET when file does not exist -> initializes default plans
+    status, payload = dash.handle_dashboard_api("GET", "/api/user-plans")
+    assert status == 200
+    assert "plans" in payload
+    assert len(payload["plans"]) >= 1
+    assert payload["plans"][0]["id"] == "plan-primary"
+    assert test_file.exists()
+
+    # 2. POST to update user plans
+    updated = {
+        "plans": [
+            {
+                "id": "plan-custom",
+                "name": "Custom Test Plan",
+                "startGameweek": 6,
+                "horizonGameweeks": 4,
+                "nodes": {},
+            }
+        ],
+        "activePlanId": "plan-custom",
+    }
+    status, post_res = dash.handle_dashboard_api("POST", "/api/user-plans", updated)
+    assert status == 200
+    assert post_res.get("status") == "ok"
+
+    # 3. GET should now return updated
+    status, get_res = dash.handle_dashboard_api("GET", "/api/user-plans")
+    assert status == 200
+    assert get_res["activePlanId"] == "plan-custom"
+    assert get_res["plans"][0]["name"] == "Custom Test Plan"
+
+
+
 

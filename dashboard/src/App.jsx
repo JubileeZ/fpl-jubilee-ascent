@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DecisionTreeCanvas from './components/DecisionTreeCanvas';
 
 export default function DecisionPlannerApp() {
   const [activeTab, setActiveTab] = useState('projections');
@@ -8,53 +9,12 @@ export default function DecisionPlannerApp() {
 
   return (
     <div className="decision-planner-container">
-      {/* Top Action Bar */}
-      <header className="planner-action-bar">
-        <div className="action-bar-left">
-          <button type="button" className="btn btn-action" title="Create new scenario branch">
-            <span>+</span> Create Branch
-          </button>
-          <button type="button" className="btn btn-action" title="Duplicate selected branch">
-            Duplicate
-          </button>
-          <button type="button" className="btn btn-action btn-danger-action" title="Delete selected branch">
-            Delete
-          </button>
-          <button type="button" className="btn btn-action" title="Configure scenario settings">
-            Configure
-          </button>
-        </div>
-
-        <div className="action-bar-right">
-          <label className="horizon-label" htmlFor="planner-horizon-select">
-            Lookahead:
-            <select
-              id="planner-horizon-select"
-              className="select-input select-horizon"
-              value={horizon}
-              onChange={(e) => setHorizon(Number(e.target.value))}
-            >
-              {[3, 4, 5, 6, 8, 10, 12, 15].map((gws) => (
-                <option key={gws} value={gws}>
-                  {gws} GWs
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </header>
-
       {/* Main Dual-Viewport Workspace */}
       <div className="planner-split-workspace">
         {/* Left Viewport: Decision Tree Canvas & Pitch Overlay */}
-        <section className="planner-canvas-viewport" aria-label="Decision Tree Canvas">
-          <div className="tree-canvas-placeholder" id="decision-tree-canvas-mount">
-            <div className="canvas-watermark">
-              <span className="watermark-title">Decision Tree Canvas</span>
-              <p className="watermark-desc">
-                Branching scenario decision tree powered by React Flow. Select a node to inspect squad, test transfers, or branch paths.
-              </p>
-            </div>
+        <section className="planner-canvas-viewport" aria-label="Decision Tree Canvas" style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+          <div style={{ flex: 1, height: '100%', width: '100%', position: 'relative', overflow: 'hidden' }}>
+            <DecisionTreeCanvas />
           </div>
 
           {/* Bottom-Left Pitch Overlay */}

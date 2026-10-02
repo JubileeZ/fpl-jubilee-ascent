@@ -729,6 +729,198 @@ def get_model_methodology() -> dict[str, object]:
     }
 
 
+USER_PLANS_PATH = PROJECT_ROOT / "data" / "user_plans.json"
+
+
+def _generate_default_user_plans() -> dict[str, object]:
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    target_gw = resolve_default_target_gw(processed_dir)
+
+    bank = 0.0
+    free_transfers = 1
+    state_path = processed_dir / "user_state.parquet"
+    if state_path.exists():
+        try:
+            df_state = pd.read_parquet(state_path)
+            if not df_state.empty:
+                bank = float(df_state.iloc[0].get("bank", 0)) / 10.0
+                free_transfers = int(df_state.iloc[0].get("free_transfers", 1))
+        except Exception as exc:
+            logger.warning("Could not read user_state: %s", exc)
+
+    picks_path = processed_dir / "user_picks.parquet"
+    slots: dict[str, int] = {}
+    captain_slot = 1
+    vice_captain_slot = 2
+    bench_order = [12, 13, 14, 15]
+    if picks_path.exists():
+        try:
+            df_picks = pd.read_parquet(picks_path)
+            if not df_picks.empty:
+                for _, row in df_picks.iterrows():
+                    idx = int(row.get("lineup_index", 1))
+                    slots[str(idx)] = int(row.get("player_id", 0))
+                    if row.get("is_captain"):
+                        captain_slot = idx
+                    elif row.get("is_vice_captain"):
+                        vice_captain_slot = idx
+        except Exception as exc:
+            logger.warning("Could not read user_picks: %s", exc)
+
+    if len(slots) < 15:
+        slots = {str(i): 100 + i for i in range(1, 16)}
+
+    root_id = "node-root"
+    node_gw1 = f"node-gw{target_gw}-1"
+    node_gw2 = f"node-gw{target_gw+1}-1"
+    node_gw3 = f"node-gw{target_gw+2}-1"
+
+    nodes = {
+        root_id: {
+            "id": root_id,
+            "parentId": None,
+            "childIds": [node_gw1],
+            "gameweek": max(1, target_gw - 1),
+            "title": f"Pre-GW{target_gw} Baseline",
+            "lineup": {
+                "slots": slots,
+                "captainSlot": captain_slot,
+                "viceCaptainSlot": vice_captain_slot,
+                "benchOrder": bench_order,
+            },
+            "transfers": [],
+            "chip": None,
+            "evaluation": {
+                "expectedPoints": 0.0,
+                "pointsVariance": 0.0,
+                "cumulativePoints": 0.0,
+                "hitsTaken": 0,
+                "netPoints": 0.0,
+                "bankRemaining": bank,
+                "freeTransfersNext": free_transfers,
+            },
+        },
+        node_gw1: {
+            "id": node_gw1,
+            "parentId": root_id,
+            "childIds": [node_gw2],
+            "gameweek": target_gw,
+            "title": f"GW{target_gw} (Hold & Roll)",
+            "lineup": {
+                "slots": slots,
+                "captainSlot": captain_slot,
+                "viceCaptainSlot": vice_captain_slot,
+                "benchOrder": bench_order,
+            },
+            "transfers": [],
+            "chip": None,
+            "evaluation": {
+                "expectedPoints": 58.5,
+                "pointsVariance": 12.2,
+                "cumulativePoints": 58.5,
+                "hitsTaken": 0,
+                "netPoints": 58.5,
+                "bankRemaining": bank,
+                "freeTransfersNext": min(5, free_transfers + 1),
+            },
+        },
+        node_gw2: {
+            "id": node_gw2,
+            "parentId": node_gw1,
+            "childIds": [node_gw3],
+            "gameweek": target_gw + 1,
+            "title": f"GW{target_gw+1} (Roll)",
+            "lineup": {
+                "slots": slots,
+                "captainSlot": captain_slot,
+                "viceCaptainSlot": vice_captain_slot,
+                "benchOrder": bench_order,
+            },
+            "transfers": [],
+            "chip": None,
+            "evaluation": {
+                "expectedPoints": 61.2,
+                "pointsVariance": 13.0,
+                "cumulativePoints": 119.7,
+                "hitsTaken": 0,
+                "netPoints": 119.7,
+                "bankRemaining": bank,
+                "freeTransfersNext": min(5, free_transfers + 2),
+            },
+        },
+        node_gw3: {
+            "id": node_gw3,
+            "parentId": node_gw2,
+            "childIds": [],
+            "gameweek": target_gw + 2,
+            "title": f"GW{target_gw+2} (Roll)",
+            "lineup": {
+                "slots": slots,
+                "captainSlot": captain_slot,
+                "viceCaptainSlot": vice_captain_slot,
+                "benchOrder": bench_order,
+            },
+            "transfers": [],
+            "chip": None,
+            "evaluation": {
+                "expectedPoints": 59.8,
+                "pointsVariance": 12.5,
+                "cumulativePoints": 179.5,
+                "hitsTaken": 0,
+                "netPoints": 179.5,
+                "bankRemaining": bank,
+                "freeTransfersNext": min(5, free_transfers + 3),
+            },
+        },
+    }
+
+    default_plan = {
+        "id": "plan-primary",
+        "name": "Base Scenario",
+        "startGameweek": target_gw,
+        "horizonGameweeks": 5,
+        "initialBank": bank,
+        "initialFreeTransfers": free_transfers,
+        "availableChips": {
+            "wildcard1": True,
+            "wildcard2": True,
+            "freeHit": True,
+            "tripleCaptain": True,
+            "benchBoost": True,
+        },
+        "rootNodeId": root_id,
+        "activeNodeId": node_gw1,
+        "nodes": nodes,
+    }
+
+    return {"plans": [default_plan], "activePlanId": "plan-primary"}
+
+
+def get_user_plans() -> dict[str, object]:
+    if USER_PLANS_PATH.exists():
+        try:
+            return json.loads(USER_PLANS_PATH.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Could not read user_plans.json: %s", exc)
+    default_payload = _generate_default_user_plans()
+    try:
+        USER_PLANS_PATH.write_text(json.dumps(default_payload, indent=2), encoding="utf-8")
+    except Exception as exc:
+        logger.warning("Could not save initial user_plans.json: %s", exc)
+    return default_payload
+
+
+def save_user_plans(payload: dict[str, object]) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        return {"error": "Invalid payload format"}
+    try:
+        USER_PLANS_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return {"status": "ok"}
+    except Exception as exc:
+        logger.error("Failed to write user_plans.json: %s", exc)
+        return {"error": str(exc)}
+
+
 def handle_dashboard_api(
     method: str,
     path: str,
@@ -737,6 +929,11 @@ def handle_dashboard_api(
 ) -> tuple[int, dict[str, object]]:
     if path == "/api/champion" and method == "GET":
         return 200, {"champion": get_default_model_name()}
+    if path == "/api/user-plans":
+        if method == "GET":
+            return 200, get_user_plans()
+        if method == "POST":
+            return 200, save_user_plans(body or {})
     if path == "/api/refresh":
         if method == "GET":
             return 200, refresh_status()
