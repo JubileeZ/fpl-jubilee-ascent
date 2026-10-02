@@ -3,6 +3,8 @@ import DecisionTreeCanvas from './components/DecisionTreeCanvas';
 import SquadPitchDrawer from './components/SquadPitchDrawer';
 import TransferReplacementDrawer from './components/TransferReplacementDrawer';
 
+import PlansEvaluationSuite from './components/PlansEvaluationSuite';
+
 export default function DecisionPlannerApp() {
   const [activeTab, setActiveTab] = useState('projections');
   const [replacementDrawer, setReplacementDrawer] = useState({
@@ -38,7 +40,7 @@ export default function DecisionPlannerApp() {
         </section>
 
         {/* Right Viewport: Tabbed Analytics & Optimizer Panel */}
-        <section className="planner-analytics-viewport" aria-label="Analytics & Optimizer Panel">
+        <section className="planner-analytics-viewport" aria-label="Analytics & Optimizer Panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <nav className="analytics-tabs-nav" role="tablist">
             <button
               type="button"
@@ -78,46 +80,40 @@ export default function DecisionPlannerApp() {
             </button>
           </nav>
 
-          <div className="analytics-tab-content">
+          <div className="analytics-tab-content" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'projections' && (
-              <div className="tab-pane projections-pane">
+              <div className="tab-pane projections-pane" style={{ padding: '16px' }}>
                 <div className="pane-header">
                   <h3>Player Expected Points</h3>
                   <span className="pane-subtitle">Multi-gameweek projections from Model Champion</span>
                 </div>
                 <p className="pane-hint">
-                  Heatmap-shaded projection matrix with custom belief overrides. (Wired in Ticket #138).
+                  Explore player pool in the left Explorer tab or test candidate transfers via the pitch replacement drawer.
                 </p>
               </div>
             )}
 
             {activeTab === 'optimise' && (
-              <div className="tab-pane optimise-pane">
+              <div className="tab-pane optimise-pane" style={{ padding: '16px' }}>
                 <div className="pane-header">
                   <h3>MILP Branch Optimizer</h3>
                   <span className="pane-subtitle">Highs solver tuning & stochastic risk dials</span>
                 </div>
-                <div className="preset-selector-row">
-                  <span className="preset-chip active">Default (50% DDP)</span>
-                  <span className="preset-chip">Safe (75% DDP)</span>
-                  <span className="preset-chip">High Risk (25% DDP)</span>
-                  <span className="preset-chip">Optimistic (0% DDP)</span>
+                <div className="preset-selector-row" style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
+                  <span className="preset-chip active" style={{ background: '#1e2538', color: '#38bdf8', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Default (50% DDP)</span>
+                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Safe (75% DDP)</span>
+                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>High Risk (25% DDP)</span>
+                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Optimistic (0% DDP)</span>
                 </div>
                 <p className="pane-hint">
-                  Disruption probability, transfer hit penalties, and natural-language constraint rules. (Wired in Ticket #141).
+                  Click "⚡ Optimize Branch" on the decision tree toolbar to run MILP branch generation with chosen DDP preset.
                 </p>
               </div>
             )}
 
             {activeTab === 'plans' && (
-              <div className="tab-pane plans-pane">
-                <div className="pane-header">
-                  <h3>Multi-Plan Comparison</h3>
-                  <span className="pane-subtitle">Side-by-side scenario evaluation & Efficient Frontier</span>
-                </div>
-                <p className="pane-hint">
-                  Gaussian probability distribution curves, scatter plots (Expected Points vs Risk), and EO swing analysis. (Wired in Ticket #142).
-                </p>
+              <div className="tab-pane plans-pane" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <PlansEvaluationSuite />
               </div>
             )}
 
