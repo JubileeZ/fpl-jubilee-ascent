@@ -1,12 +1,12 @@
 (function () {
   const POS_ORDER = ["G", "D", "M", "F"];
   const POS_LABEL = { G: "GKP", D: "DEF", M: "MID", F: "FWD" };
-  const POS_COLORS = { G: "#eab308", D: "#3b82f6", M: "#10b981", F: "#ef4444" };
+  const POS_COLORS = { G: "#eab308", D: "#38bdf8", M: "#10b981", F: "#f43f5e" };
   const PLOT_LAYOUT = {
     margin: { t: 40, r: 16, b: 48, l: 56 },
-    paper_bgcolor: "#111827",
-    plot_bgcolor: "#0b1220",
-    font: { color: "#f8fafc", family: "IBM Plex Sans, sans-serif", size: 11 },
+    paper_bgcolor: "#121520",
+    plot_bgcolor: "#0a0b10",
+    font: { color: "#f8fafc", family: "Inter, system-ui, sans-serif", size: 11 },
     legend: { orientation: "h", y: 1.08, x: 0, font: { size: 10 } },
     hovermode: "closest",
   };
@@ -231,7 +231,7 @@
   function markerLineColor(playerId) {
     if (dreamTeamIds.has(playerId)) return "#fbbf24";
     if (playerId === selectedPlayerId) return "#fff";
-    return "#334155";
+    return "#1e2538";
   }
 
   function traces(visible, axisX) {
@@ -321,13 +321,13 @@
     const yTitle = yAxisTitle();
     const ownLayout = {
       ...PLOT_LAYOUT,
-      xaxis: { title: "Ownership %", gridcolor: "#1e293b", zeroline: false },
-      yaxis: { title: yTitle, gridcolor: "#1e293b", zeroline: false },
+      xaxis: { title: "Ownership %", gridcolor: "#1e2538", zeroline: false },
+      yaxis: { title: yTitle, gridcolor: "#1e2538", zeroline: false },
     };
     const priceLayout = {
       ...PLOT_LAYOUT,
-      xaxis: { title: "Price (£m)", gridcolor: "#1e293b", zeroline: false },
-      yaxis: { title: yTitle, gridcolor: "#1e293b", zeroline: false },
+      xaxis: { title: "Price (£m)", gridcolor: "#1e2538", zeroline: false },
+      yaxis: { title: yTitle, gridcolor: "#1e2538", zeroline: false },
     };
     Plotly.react("chart-ownership", traces(visible, "own"), ownLayout, {
       responsive: true,
