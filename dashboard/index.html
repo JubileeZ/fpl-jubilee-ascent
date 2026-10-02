@@ -6,8 +6,8 @@
   <title>FPL Jubilee Ascent - Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <div class="app-container" data-view="explorer">
@@ -41,7 +41,7 @@
         </div>
         <div class="control-group plan-only">
           <label>Plan Start</label>
-          <span class="stat-value" id="plan-start">—</span>
+          <span class="stat-value" id="plan-start">-</span>
         </div>
         <div class="control-group plan-only">
           <label for="plan-horizon">Horizon</label>
@@ -70,12 +70,12 @@
         <div class="card squad-summary-card">
           <div class="summary-stat">
             <span class="stat-label">ITB</span>
-            <span class="stat-value text-accent" id="squad-itb">—</span>
+            <span class="stat-value text-accent" id="squad-itb">-</span>
           </div>
           <div class="summary-divider"></div>
           <div class="summary-stat">
             <span class="stat-label">Free Transfer Bank</span>
-            <span class="stat-value" id="squad-ft">—</span>
+            <span class="stat-value" id="squad-ft">-</span>
           </div>
           <div class="summary-divider"></div>
           <div class="summary-stat">
@@ -102,7 +102,7 @@
             <div class="bench-tray">
               <div class="bench-header">
                 <span class="bench-title">Bench</span>
-                <span class="bench-sub">Drag to the pitch to sub</span>
+                <span class="bench-sub">Drag or Tab then Enter to swap / sub</span>
               </div>
               <div class="bench-slots" id="squad-bench"></div>
             </div>
@@ -171,6 +171,9 @@
         <strong>Total</strong> = horizon xP · <strong>/GW</strong> = xP per Gameweek · <strong>/90</strong> = Projected Rate ·
         <strong>xMins</strong> = marker size · <strong>Δ£</strong> = observed since last Refresh · <strong>Dream</strong> = Dream Team overlay.
       </p>
+      <p id="explorer-loading" class="explorer-state" hidden>Loading projections…</p>
+      <p id="explorer-error" class="explorer-state explorer-state-error" hidden></p>
+      <p id="explorer-empty" class="explorer-state" hidden>No players match these filters.</p>
       <div id="explorer-table-wrap" class="explorer-table-wrap">
         <table class="data-table explorer-table">
           <thead>
@@ -210,7 +213,7 @@
 
     <section class="plan-root" id="plan-root" hidden>
       <p class="explorer-meta">Dream Team and Squad What-If live on Explorer only. Selected plan is read-only. Does not load into Squad What-If. Live plans stop within 1% of the Solver Objective; a proven plan shows no extra line.</p>
-      <p id="plan-stale-banner" class="explorer-meta text-danger" hidden>Scenarios from before last Refresh — Solve again for current projections.</p>
+      <p id="plan-stale-banner" class="explorer-meta text-danger" hidden>Scenarios from before last Refresh. Solve again for current projections.</p>
       <p id="plan-champion-trust" class="explorer-meta"></p>
       <div class="card plan-toolbar">
         <div>
@@ -229,21 +232,21 @@
         <div id="plan-warning-banner" class="plan-warning-banner" hidden></div>
         <div class="readonly-banner">Selected plan is read-only. Does not load into Squad What-If.</div>
         <div id="plan-ledger" class="ledger"></div>
-        <h3 class="plan-subhead" id="plan-weeks-subhead">Expected GW Score by week — click a GW to inspect (rank = sum)</h3>
+        <h3 class="plan-subhead" id="plan-weeks-subhead">Expected GW Score by week. Click a GW to inspect (rank = sum)</h3>
         <div id="plan-weeks" class="week-strip"></div>
         <p id="plan-auto-captain" class="explorer-meta">Auto Captain · Auto Vice-Captain · Next-best (Plan Start)</p>
         <h3 class="plan-subhead" id="plan-xi-subhead">Plan XI · select a week (C = plan captain)</h3>
         <div id="plan-pitch" class="mini-pitch"></div>
-        <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">—</span></p>
+        <p class="explorer-meta">Solver Objective (not rank): <span id="plan-objective">-</span></p>
         <p class="explorer-meta" id="plan-objective-note" hidden></p>
       </section>
     </section>
   </div>
 
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <script src="app.js?v=23"></script>
-  <script src="explorer.js?v=20"></script>
-  <script src="squad.js?v=4"></script>
-  <script src="plan.js?v=5"></script>
+  <script src="app.js?v=24"></script>
+  <script src="explorer.js?v=21"></script>
+  <script src="squad.js?v=5"></script>
+  <script src="plan.js?v=6"></script>
 </body>
 </html>

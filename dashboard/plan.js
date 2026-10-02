@@ -26,7 +26,7 @@
     const label = STATUS_LABEL[status] || status.toUpperCase();
     const chanceTxt = (chance != null && chance !== "") ? ` ${chance}%` : "";
     const title = escapeHtml(p.news || `${label}${chanceTxt}`);
-    return ` <span class="status-badge status-${status}" title="${title}">⚠️ ${label}${chanceTxt}</span>`;
+    return ` <span class="status-badge status-${status}" title="${title}">${label}${chanceTxt}</span>`;
   }
 
   function players() {
@@ -238,7 +238,7 @@
       cards.push(`<div class="scenario-card" aria-busy="true">
           <div class="rank">Solving…</div>
           <h3>${label}</h3>
-          <div class="score">—</div>
+          <div class="score">-</div>
           <div class="meta">Arm in progress</div>
         </div>`);
     });
@@ -274,14 +274,14 @@
       if (ledger) ledger.innerHTML = "";
       if (weeksEl) weeksEl.innerHTML = "";
       if (pitch) pitch.innerHTML = "";
-      if (obj) obj.textContent = "—";
+      if (obj) obj.textContent = "-";
       if (noteEl) {
         noteEl.textContent = "";
         noteEl.hidden = true;
       }
       if (autoEl) autoEl.textContent = "Auto Captain · Auto Vice-Captain · Next-best (Plan Start)";
       if (xiHead) xiHead.textContent = "Plan XI · select a week (C = plan captain)";
-      if (stripHead) stripHead.textContent = "Expected GW Score by week — click a GW to inspect";
+      if (stripHead) stripHead.textContent = "Expected GW Score by week. Click a GW to inspect";
       return;
     }
     const weeks = (scenario.plan && scenario.plan.weeks) || [];
@@ -298,7 +298,7 @@
       const p = byId(row.id);
       const name = p ? p.name : playerName(row.id);
       if (protectedIds.has(Number(row.id))) {
-        warnings.push(`⚠️ <strong>Sell Alert:</strong> Plan sells <strong>${escapeHtml(name)}</strong> who missed only 1 match after regular starts. If this was a 1-match rest, consider <strong>[🔒 Keep]</strong> or the <strong>Conservative</strong> scenario.`);
+        warnings.push(`<strong>Sell alert:</strong> Plan sells <strong>${escapeHtml(name)}</strong> who missed only 1 match after regular starts. If this was a 1-match rest, consider <strong>[Keep]</strong> or the <strong>Conservative</strong> scenario.`);
       }
     });
 
@@ -309,7 +309,7 @@
         const chance = p.chance;
         const label = STATUS_LABEL[status] || status.toUpperCase();
         const chanceTxt = (chance != null && chance !== "") ? ` (${chance}%)` : "";
-        warnings.push(`⚠️ <strong>Buy Alert:</strong> Plan buys <strong>${escapeHtml(p.name)}</strong> with active ${label}${chanceTxt} flag.`);
+        warnings.push(`<strong>Buy alert:</strong> Plan buys <strong>${escapeHtml(p.name)}</strong> with active ${label}${chanceTxt} flag.`);
       }
     });
 
@@ -334,7 +334,7 @@
       const name = p ? p.name : playerName(row.id);
       const badge = playerBadgeHtml(p);
       const isLocked = forceKeepIds.has(Number(row.id));
-      const lockBtn = `<button type="button" class="btn-lock${isLocked ? " locked" : ""}" data-lock-id="${row.id}" title="${isLocked ? "Unlock player" : "Force keep in squad"}">${isLocked ? "🔒 Kept" : "🔒 Keep"}</button>`;
+      const lockBtn = `<button type="button" class="btn-lock${isLocked ? " locked" : ""}" data-lock-id="${row.id}" title="${isLocked ? "Unlock player" : "Force keep in squad"}">${isLocked ? "Kept" : "Keep"}</button>`;
       return `<span class="sell">− ${escapeHtml(name)}${badge}${lockBtn}</span>`;
     });
 
@@ -380,12 +380,12 @@
       });
     }
     if (stripHead) {
-      stripHead.textContent = "Expected GW Score by week — click a GW to inspect (rank = sum)";
+      stripHead.textContent = "Expected GW Score by week. Click a GW to inspect (rank = sum)";
     }
     if (xiHead) {
       xiHead.textContent = `Plan XI · ${gwLabel}${isStart ? " · Plan Start" : ""} (C = plan captain)`;
     }
-    if (obj) obj.textContent = scenario.solver_objective == null ? "—" : Number(scenario.solver_objective).toFixed(1);
+    if (obj) obj.textContent = scenario.solver_objective == null ? "-" : Number(scenario.solver_objective).toFixed(1);
     const note = objectiveNote(scenario);
     if (noteEl) {
       noteEl.textContent = note;
@@ -394,10 +394,10 @@
     const auto = (scenario.plan && scenario.plan.auto_captain) || {};
     const next = (auto.next_best || [])
       .map((row) => `${playerName(row.id)} (${Number(row.xp || 0).toFixed(1)})`)
-      .join(", ") || "—";
+      .join(", ") || "-";
     const startGw = start.gw;
-    const cap = auto.auto_captain_id ? `${playerName(auto.auto_captain_id)} (${xpOf(auto.auto_captain_id, startGw)})` : "—";
-    const vice = auto.auto_vice_id ? `${playerName(auto.auto_vice_id)} (${xpOf(auto.auto_vice_id, startGw)})` : "—";
+    const cap = auto.auto_captain_id ? `${playerName(auto.auto_captain_id)} (${xpOf(auto.auto_captain_id, startGw)})` : "-";
+    const vice = auto.auto_vice_id ? `${playerName(auto.auto_vice_id)} (${xpOf(auto.auto_vice_id, startGw)})` : "-";
     if (autoEl) {
       autoEl.textContent = `Auto Captain ${cap} · Auto Vice-Captain ${vice} · Next-best ${next} (Plan Start GW${startGw})`;
     }

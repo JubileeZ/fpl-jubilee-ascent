@@ -119,7 +119,7 @@ def test_transfer_plan_surface_script_ranks_scenarios() -> None:
     assert "selectedGw" in plan
     assert "resetTransferPlanSelection" in plan
     assert "resetTransferPlanSelection" in app
-    assert "click a GW" in html
+    assert "Click a GW" in html
     assert "read-only" in html.lower() or "read-only" in plan.lower()
     assert "Does not load into Squad What-If" in html
     assert "Signed Bias" not in app
@@ -128,6 +128,10 @@ def test_transfer_plan_surface_script_ranks_scenarios() -> None:
     assert "Champion Trust:" in app
     assert 'promotion_status === "provisional"' in app
     assert "(Plan Start)" in plan or "Plan Start" in plan
+    assert 'id="explorer-loading"' in html
+    assert 'id="explorer-empty"' in html
+    assert "keyboardPickIndex" in Path("dashboard/squad.js").read_text(encoding="utf-8")
+    assert "focus-visible" in Path("dashboard/styles.css").read_text(encoding="utf-8")
 
 
 def test_squad_board_sits_before_charts() -> None:

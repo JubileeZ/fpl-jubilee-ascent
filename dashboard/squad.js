@@ -25,6 +25,7 @@
   let whatIf = [];
   let dropReason = "";
   let bound = false;
+  let keyboardPickIndex = null;
 
   function players() {
     return ctx && ctx.getPlayers ? ctx.getPlayers() : [];
@@ -212,7 +213,7 @@
     const vice = autoVice(whatIf, gw);
     const role = cap && cap.id === p.id ? "C" : vice && vice.id === p.id ? "VC" : "";
     const xp = xminXp(p, gw);
-    return `<article class="player-card" draggable="true" data-from="board" data-player-id="${p.id}" data-pos="${p.pos}" data-lineup-index="${slot.lineup_index}">
+    return `<article class="player-card${keyboardPickIndex === slot.lineup_index ? " keyboard-pick" : ""}" draggable="true" tabindex="0" role="button" aria-pressed="${keyboardPickIndex === slot.lineup_index ? "true" : "false"}" aria-label="${p.name}, ${POS_LABEL[p.pos] || p.pos}, lineup ${slot.lineup_index}. Enter to pick or swap." data-from="board" data-player-id="${p.id}" data-pos="${p.pos}" data-lineup-index="${slot.lineup_index}">
       <div class="card-header-bar">
         <span class="pos-tag ${p.pos}">${POS_LABEL[p.pos] || p.pos}</span>
         ${role ? `<span class="role-badge ${role === "C" ? "active-c" : "active-vc"}">${role}</span>` : ""}
@@ -221,6 +222,31 @@
       <div class="card-team-price">${p.team} · £${Number(p.price).toFixed(1)}m</div>
       <div class="card-xp">${xp.toFixed(1)}</div>
     </article>`;
+  }
+
+  function clearKeyboardPick() {
+    keyboardPickIndex = null;
+  }
+
+  function activateCardSwap(card) {
+    const targetIndex = Number(card.dataset.lineupIndex);
+    if (!Number.isFinite(targetIndex)) return;
+    if (keyboardPickIndex == null) {
+      keyboardPickIndex = targetIndex;
+      dropReason = "Keyboard pick set. Focus another card and press Enter to swap, or Escape to cancel.";
+      render();
+      return;
+    }
+    if (keyboardPickIndex === targetIndex) {
+      clearKeyboardPick();
+      dropReason = "";
+      render();
+      return;
+    }
+    swapLineups(keyboardPickIndex, targetIndex);
+    clearKeyboardPick();
+    dropReason = "";
+    render();
   }
 
   function bindBoardDnD(root) {
@@ -249,7 +275,19 @@
         const targetIndex = Number(card.dataset.lineupIndex);
         if (payload.from === "pool") replaceSlot(targetIndex, Number(payload.id));
         else if (payload.from === "board") swapLineups(Number(payload.lineup_index), targetIndex);
+        clearKeyboardPick();
         render();
+      });
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activateCardSwap(card);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          clearKeyboardPick();
+          dropReason = "";
+          render();
+        }
       });
     });
   }
@@ -317,7 +355,7 @@
     const ftEl = document.getElementById("squad-ft");
     const hitsEl = document.getElementById("squad-hits");
     if (itbEl) itbEl.textContent = `£${itb.toFixed(1)}m`;
-    if (ftEl) ftEl.textContent = String(meta().free_transfers ?? "—");
+    if (ftEl) ftEl.textContent = String(meta().free_transfers ?? "-");
     if (hitsEl) {
       hitsEl.textContent = hitN ? `Hit warning: ${hitN}` : "0";
       hitsEl.classList.toggle("text-danger", hitN > 0);
@@ -405,6 +443,26 @@
         id, pos: p.pos, from: "pool",
       }));
       e.dataTransfer.effectAllowed = "move";
+    });
+    document.getElementById("explorer-table")?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const tr = e.target.closest("tr[data-player-id]");
+      if (!tr) return;
+      e.preventDefault();
+      const id = Number(tr.dataset.playerId);
+      if (typeof window.setExplorerSelectedPlayer === "function") {
+        window.setExplorerSelectedPlayer(id);
+      }
+      if (keyboardPickIndex != null) {
+        replaceSlot(keyboardPickIndex, id);
+        clearKeyboardPick();
+        dropReason = "";
+        render();
+        return;
+      }
+      dropReason = "Player selected. Focus a pitch/bench card and press Enter to replace that slot, or pick a card first then press Enter on a table row.";
+      const dropEl = document.getElementById("squad-drop-reason");
+      if (dropEl) dropEl.textContent = dropReason;
     });
   }
 

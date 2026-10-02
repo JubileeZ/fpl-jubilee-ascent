@@ -6,7 +6,7 @@
     margin: { t: 40, r: 16, b: 48, l: 56 },
     paper_bgcolor: "#111827",
     plot_bgcolor: "#0b1220",
-    font: { color: "#f8fafc", family: "Inter, sans-serif", size: 11 },
+    font: { color: "#f8fafc", family: "IBM Plex Sans, sans-serif", size: 11 },
     legend: { orientation: "h", y: 1.08, x: 0, font: { size: 10 } },
     hovermode: "closest",
   };
@@ -253,10 +253,10 @@
           row.player.team,
           row.slice.total,
           row.slice.per_gameweek,
-          row.slice.rate_per_90 == null ? "—" : Number(row.slice.rate_per_90).toFixed(2),
+          row.slice.rate_per_90 == null ? "-" : Number(row.slice.rate_per_90).toFixed(2),
           row.slice.avg_minutes,
           row.player.status || "",
-          row.player.chance == null ? "—" : `${row.player.chance}%`,
+          row.player.chance == null ? "-" : `${row.player.chance}%`,
           row.player.news || "",
         ]),
         marker: {
@@ -387,27 +387,27 @@
         const dream = dreamTeamIds.has(p.id) ? " dream" : "";
         const badges = `${p.owned ? ' <span class="owned-badge">Owned</span>' : ""}${dreamTeamIds.has(p.id) ? ' <span class="dream-badge">Dream</span>' : ""}`;
         const news = p.news ? String(p.news).replace(/"/g, "&quot;") : "";
-        const chance = p.chance == null ? "—" : `${p.chance}%`;
+        const chance = p.chance == null ? "-" : `${p.chance}%`;
         const gwCells = gws.map((gw) => {
           const rowGw = gwProjection(p, gw);
           const fx = rowGw.fixture_label ? `<div class="gw-fixture">${rowGw.fixture_label}</div>` : "";
           return `<td>${Number(s.perGw[gw] || 0).toFixed(2)}${fx}</td>`;
         }).join("");
-        return `<tr class="${selected}${owned}${dream}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true">
+        return `<tr class="${selected}${owned}${dream}" data-player-id="${p.id}" data-pos="${p.pos}" draggable="true" tabindex="0">
           <td>${row.rank}</td>
           <td${news ? ` title="${news}"` : ""}>${p.name}${badges}</td>
           <td>${p.team}</td>
           <td>${POS_LABEL[p.pos] || p.pos}</td>
-          <td>${p.status || "—"}</td>
+          <td>${p.status || "-"}</td>
           <td>${chance}</td>
-          <td class="news-cell" title="${news}">${news || "—"}</td>
+          <td class="news-cell" title="${news}">${news || "-"}</td>
           <td>${Number(p.price).toFixed(1)}</td>
-          <td>${p.change_since_refresh == null || Number.isNaN(Number(p.change_since_refresh)) ? "—" : (Number(p.change_since_refresh) > 0 ? "+" : "") + Number(p.change_since_refresh).toFixed(1)}</td>
+          <td>${p.change_since_refresh == null || Number.isNaN(Number(p.change_since_refresh)) ? "-" : (Number(p.change_since_refresh) > 0 ? "+" : "") + Number(p.change_since_refresh).toFixed(1)}</td>
           <td>${Number(p.ownership_pct || 0).toFixed(1)}</td>
           <td>${Number(s.total).toFixed(2)}</td>
           <td>${Number(s.per_gameweek).toFixed(2)}</td>
           ${gwCells}
-          <td>${s.rate_per_90 == null ? "—" : Number(s.rate_per_90).toFixed(2)}</td>
+          <td>${s.rate_per_90 == null ? "-" : Number(s.rate_per_90).toFixed(2)}</td>
           <td>${Number(s.avg_minutes).toFixed(1)}</td>
         </tr>`;
       })
@@ -471,6 +471,23 @@
     }).join("");
   }
 
+  function setExplorerStates({ loading = false, error = "", empty = false } = {}) {
+    const loadingEl = document.getElementById("explorer-loading");
+    const errorEl = document.getElementById("explorer-error");
+    const emptyEl = document.getElementById("explorer-empty");
+    const wrap = document.getElementById("explorer-table-wrap");
+    const charts = document.querySelector(".explorer-charts");
+    if (loadingEl) loadingEl.hidden = !loading;
+    if (errorEl) {
+      errorEl.hidden = !error;
+      errorEl.textContent = error || "";
+    }
+    if (emptyEl) emptyEl.hidden = !empty || loading || Boolean(error);
+    const hideData = loading || Boolean(error);
+    if (wrap) wrap.hidden = hideData;
+    if (charts) charts.hidden = hideData || empty;
+  }
+
   function render() {
     if (!ctx) return;
     bindControls();
@@ -478,13 +495,57 @@
     renderHead();
     const { rows, visible, tableRows } = rankedRows();
     const gws = viewGws();
-    const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "—";
-    document.getElementById("explorer-meta").textContent =
-      `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
-    renderCharts(visible);
-    renderTable(tableRows);
+    const span = gws.length ? `GW${gws[0]}–GW${gws[gws.length - 1]}` : "-";
+    const metaEl = document.getElementById("explorer-meta");
+    if (metaEl) {
+      metaEl.textContent =
+        `Planning Horizon ${span} · chart ${visible.length} / table ${tableRows.length} / ${rows.length}`;
+    }
+    const noPlayers = rows.length === 0;
+    const filteredOut = !noPlayers && tableRows.length === 0;
+    setExplorerStates({
+      loading: false,
+      error: "",
+      empty: noPlayers || filteredOut,
+    });
+    if (emptyElNeedsCopy(noPlayers, filteredOut)) {
+      const emptyEl = document.getElementById("explorer-empty");
+      if (emptyEl) {
+        emptyEl.textContent = noPlayers
+          ? "No projection rows loaded. Click Refresh to ingest and project."
+          : "No players match these filters.";
+      }
+    }
+    if (!(noPlayers || filteredOut)) {
+      renderCharts(visible);
+      renderTable(tableRows);
+    } else {
+      const body = document.getElementById("explorer-table");
+      if (body) body.innerHTML = "";
+      ["chart-ownership", "chart-price"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && typeof Plotly !== "undefined") Plotly.purge(el);
+      });
+    }
     renderPlayerComponents();
   }
+
+  function emptyElNeedsCopy(noPlayers, filteredOut) {
+    return noPlayers || filteredOut;
+  }
+
+  window.setExplorerLoading = function (loading) {
+    if (loading) {
+      setExplorerStates({ loading: true, error: "", empty: false });
+      return;
+    }
+    if (ctx) render();
+    else setExplorerStates({ loading: false });
+  };
+
+  window.setExplorerError = function (message) {
+    setExplorerStates({ loading: false, error: message || "Explorer failed to load.", empty: false });
+  };
 
   window.initOwnershipExplorer = function (context) {
     ctx = context;

@@ -383,6 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
     beginJob();
     if (window.clearDreamTeam) window.clearDreamTeam();
     setRefreshStatus("Starting Refresh…");
+    if (typeof window.setExplorerLoading === "function") window.setExplorerLoading(true);
     try {
       const post = await fetch("/api/refresh", {
         method: "POST",
@@ -398,13 +399,16 @@ document.addEventListener("DOMContentLoaded", () => {
       applyDataset(data);
       const planLoad = await loadTransferPlanStatus();
       if (planLoad === "stale") {
-        setRefreshStatus("Charts updated. Scenarios stale — Solve again.");
+        setRefreshStatus("Charts updated. Scenarios stale. Solve again.");
       } else if (planLoad !== "running") {
         setRefreshStatus("Charts updated.");
       }
     } catch (err) {
       console.error(err);
       setRefreshStatus(err.message || String(err));
+      if (typeof window.setExplorerError === "function") {
+        window.setExplorerError(err.message || String(err));
+      }
     } finally {
       endJob();
     }
@@ -537,7 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return "running";
       }
       if (state.payload && state.payload.meta && state.payload.meta.stale) {
-        setRefreshStatus("Scenarios stale after Refresh — Solve again for current projections.");
+        setRefreshStatus("Scenarios stale after Refresh. Solve again for current projections.");
         return "stale";
       }
       return "idle";
@@ -628,12 +632,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const missingChampion = await liveChampionMissing();
       if (missingChampion) {
-        setRefreshStatus(`Champion is now ${missingChampion} — click Refresh to project it.`);
+        setRefreshStatus(`Champion is now ${missingChampion}. Click Refresh to project it.`);
       }
     } catch (err) {
       console.error(err);
       applyDataset({ meta: {}, players: [] });
       setRefreshStatus(err.message || "Click Refresh to pull FPL data and project.");
+      if (typeof window.setExplorerError === "function") {
+        window.setExplorerError(err.message || "Failed to load dashboard.json.");
+      }
     }
   }
 
