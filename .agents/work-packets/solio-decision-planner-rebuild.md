@@ -8,17 +8,22 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `docs/research/ddp-autosub-formulation/ddp-autosub-formulation.md`, `docs/research/INDEX.md`, `docs/agents/current-state.md`
-- **Decisions:** Unified Solio Decision Tree Planner replaces Transfer Plan & Strategy tabs; React + React Flow + Vite frontend; Hybrid client-server xP calculation.
+- **Files:** `dashboard/package.json`, `dashboard/vite.config.js`, `dashboard/src/`, `commands/dashboard.py`, `dashboard/index.html`, `dashboard/app.js`, `dashboard/styles.css`
+- **Decisions:** Unified Solio Decision Tree Planner replaces Transfer Plan & Strategy tabs; React 19 + @xyflow/react + Vite frontend pipeline; static script copying to dist.
 - **Blocked:** None
-- **Next:** Claim and resolve #137 (Scaffold React + Vite frontend pipeline and retire legacy Strategy Plan tab).
+- **Next:** Close #137 and resolve #138 (Build React Flow Decision-Tree Canvas and multi-scenario state store).
 
 ## Todo
 - [x] Settle rebuild destination and architecture via breadth-first grilling
 - [x] Create Wayfinder Map #135 and tickets #136-#142 on GitHub
 - [x] Research DDP and autosub probability math (#136)
 - [x] Close #136 and link research note in INDEX
-- [ ] Claim #137 and scaffold React + Vite pipeline
+- [x] Claim and complete #137 (Scaffold React + Vite pipeline and retire legacy Strategy tab)
+- [ ] Claim #138: Build React Flow Decision-Tree Canvas and multi-scenario state store
+- [ ] Claim #139: Build Interactive Squad Pitch Drawer and Lineup Scrubber
+- [ ] Claim #140: Build In-Pitch Transfer Replacement Drawer with Delta xP
+- [ ] Claim #141: Implement Python Highs MILP API endpoint for multi-gameweek branch optimization & DDP presets
+- [ ] Claim #142: Build Multi-Scenario Plans Suite & Evaluation Scatter/Distribution view
 
 ## Blockers / Notes
 - None

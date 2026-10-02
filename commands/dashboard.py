@@ -791,7 +791,8 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def __init__(self, *args, directory=None, **kwargs):
         if directory is None:
-            directory = str(PROJECT_ROOT / "dashboard")
+            dist_index = PROJECT_ROOT / "dashboard" / "dist" / "index.html"
+            directory = str(PROJECT_ROOT / "dashboard" / "dist") if dist_index.exists() else str(PROJECT_ROOT / "dashboard")
         super().__init__(*args, directory=directory, **kwargs)
 
     def end_headers(self):
@@ -832,6 +833,16 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
             self._send_json(status, payload)
             return
+        if api_path == "/dashboard_data.json":
+            json_path = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
+            if json_path.exists():
+                data = json_path.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
         super().do_GET()
 
     def do_POST(self) -> None:
@@ -848,7 +859,8 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def start_server(port: int = 8000, open_browser: bool = True) -> None:
-    dashboard_dir = PROJECT_ROOT / "dashboard"
+    dist_dir = PROJECT_ROOT / "dashboard" / "dist"
+    dashboard_dir = dist_dir if (dist_dir / "index.html").exists() else PROJECT_ROOT / "dashboard"
     if not dashboard_dir.exists():
         logger.error(f"Dashboard folder {dashboard_dir} does not exist.")
         sys.exit(1)

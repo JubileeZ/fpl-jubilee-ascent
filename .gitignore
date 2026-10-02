@@ -22,6 +22,12 @@ __pycache__/
 .idea/
 .tmp/
 
+# Frontend builds & dependencies
+node_modules/
+dist/
+dashboard/node_modules/
+dashboard/dist/
+
 # FPL transient data
 data/raw/
 data/processed/

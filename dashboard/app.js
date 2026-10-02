@@ -514,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (researchRoot) researchRoot.hidden = view !== "research";
     if (methodologyRoot) methodologyRoot.hidden = view !== "methodology";
 
-    const views = ["explorer", "plan", "strategy", "research", "methodology"];
+    const views = ["explorer", "plan", "research", "methodology"];
     views.forEach((v) => {
       const tab = document.getElementById(`tab-${v}`);
       if (tab) tab.classList.toggle("active", view === v);
@@ -525,8 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const titles = {
       explorer: ["Explorer", "Player pool & What-If squad board"],
-      plan: ["Transfer Plan", "Scenario planning & transfer ledger"],
-      strategy: ["Strategy Solver Studio", "Custom MILP constraints & soft parameter tilts"],
+      plan: ["Decision Planner", "Multi-scenario decision graph & transfer tree"],
       research: ["Research Explorer", "Evidence notes, evaluation gates & companion data"],
       methodology: ["Model Methodology", "Projection pipeline layers & hypothesis generator"],
     };
@@ -543,7 +542,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    if (view === "strategy") initStrategyControls();
     if (view === "research") loadResearchTopics();
     if (view === "methodology") loadMethodology();
   }
@@ -553,7 +551,6 @@ document.addEventListener("DOMContentLoaded", () => {
     tabsBound = true;
     document.getElementById("tab-explorer")?.addEventListener("click", () => setView("explorer"));
     document.getElementById("tab-plan")?.addEventListener("click", () => setView("plan"));
-    document.getElementById("tab-strategy")?.addEventListener("click", () => setView("strategy"));
     document.getElementById("tab-research")?.addEventListener("click", () => setView("research"));
     document.getElementById("tab-methodology")?.addEventListener("click", () => setView("methodology"));
 
