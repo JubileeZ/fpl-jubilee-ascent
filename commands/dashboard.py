@@ -8,7 +8,9 @@ import socketserver
 import sys
 import threading
 import time
+from typing import Any
 from urllib.parse import parse_qs
+import uuid
 import webbrowser
 
 import pandas as pd
@@ -600,6 +602,218 @@ def start_strategy_solve(*, options: dict[str, object], target_gw: int = 1) -> t
     return 202, strategy_solve_status()
 
 
+_solve_lock = threading.Lock()
+_solve_state: dict[str, object] = {
+    "status": "idle",
+    "error": None,
+    "detail": None,
+    "payload": None,
+}
+
+
+def solve_status() -> dict[str, object]:
+    with _solve_lock:
+        return dict(_solve_state)
+
+
+def _set_solve_state(
+    *,
+    status: str,
+    error: str | None = None,
+    detail: str | None = None,
+    payload: dict[str, object] | None = None,
+) -> None:
+    with _solve_lock:
+        _solve_state["status"] = status
+        _solve_state["error"] = error
+        _solve_state["detail"] = detail
+        if payload is not None or status != "running":
+            _solve_state["payload"] = payload
+
+
+DDP_PRESETS: dict[str, dict[str, float]] = {
+    "optimistic": {"decay_base": 1.00, "bench_weight": 0.03, "hit_cost": 4.0},
+    "safe": {"decay_base": 0.75, "bench_weight": 0.20, "hit_cost": 4.5},
+    "default": {"decay_base": 0.85, "bench_weight": 0.10, "hit_cost": 4.0},
+    "high_risk": {"decay_base": 0.92, "bench_weight": 0.05, "hit_cost": 3.5},
+}
+
+
+def _build_branch_nodes_from_plan(
+    plan: dict[str, Any],
+    parent_node_id: str,
+    target_gw: int,
+) -> dict[str, Any]:
+    weeks = plan.get("weeks") or []
+    nodes: dict[str, Any] = {}
+    prev_id = parent_node_id
+    cum_xp = 0.0
+
+    for i, w in enumerate(weeks):
+        gw = int(w.get("gw", target_gw + i))
+        node_id = f"node-gw{gw}-opt-{uuid.uuid4().hex[:5]}"
+        xp = float(w.get("xp", 0.0) or 0.0)
+        hits = int(w.get("hits", 0) or 0)
+        cum_xp += xp
+        net_xp = cum_xp - (hits * 4)
+        itb = float(w.get("itb", 0) or 0) / 10.0
+        ft = int(w.get("ft", 1) or 1)
+        chip = w.get("chip")
+
+        buys = w.get("buys") or []
+        sells = w.get("sells") or []
+        transfers = []
+        for b_item, s_item in zip(buys, sells, strict=False):
+            b_id = b_item.get("element") if isinstance(b_item, dict) else b_item
+            s_id = s_item.get("element") if isinstance(s_item, dict) else s_item
+            b_name = b_item.get("web_name", f"P#{b_id}") if isinstance(b_item, dict) else f"P#{b_id}"
+            s_name = s_item.get("web_name", f"P#{s_id}") if isinstance(s_item, dict) else f"P#{s_id}"
+            transfers.append({
+                "slot": 1,
+                "playerOutId": s_id,
+                "playerOutName": s_name,
+                "playerInId": b_id,
+                "playerInName": b_name,
+                "purchasePrice": 5.0,
+                "sellingPrice": 5.0,
+            })
+
+        lineup_items = w.get("lineup") or []
+        bench_items = w.get("bench") or []
+        slots: dict[str, int] = {}
+        idx = 1
+        for item in lineup_items:
+            pid = item.get("element") if isinstance(item, dict) else item
+            try:
+                slots[str(idx)] = int(pid)
+                idx += 1
+            except (ValueError, TypeError):
+                pass
+        for item in bench_items:
+            pid = item.get("element") if isinstance(item, dict) else item
+            try:
+                slots[str(idx)] = int(pid)
+                idx += 1
+            except (ValueError, TypeError):
+                pass
+
+        node = {
+            "id": node_id,
+            "parentId": prev_id,
+            "childIds": [],
+            "gameweek": gw,
+            "title": f"GW{gw} (MILP Optimal)",
+            "lineup": {
+                "slots": slots,
+                "captainSlot": 1,
+                "viceCaptainSlot": 2,
+                "benchOrder": [12, 13, 14, 15],
+            },
+            "transfers": transfers,
+            "chip": chip,
+            "evaluation": {
+                "expectedPoints": round(xp, 1),
+                "pointsVariance": round(10.0 + i * 0.8, 1),
+                "cumulativePoints": round(cum_xp, 1),
+                "hitsTaken": hits,
+                "netPoints": round(net_xp, 1),
+                "bankRemaining": round(itb, 1),
+                "freeTransfersNext": ft,
+            },
+        }
+        nodes[node_id] = node
+        prev_id = node_id
+
+    node_ids = list(nodes.keys())
+    for j in range(len(node_ids) - 1):
+        nodes[node_ids[j]]["childIds"] = [node_ids[j + 1]]
+
+    return {
+        "nodes": nodes,
+        "rootChildId": node_ids[0] if node_ids else None,
+        "leafNodeId": node_ids[-1] if node_ids else None,
+        "parentNodeId": parent_node_id,
+    }
+
+
+def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, target_gw: int = 1) -> None:
+    try:
+        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+        solution_path = PROJECT_ROOT / "data" / "branch_solution.json"
+
+        solver_opts = load_settings()
+        solver_opts.update(options)
+
+        preset_key = str(solver_opts.get("preset", "default")).lower().replace(" ", "_").replace("-", "_")
+        preset_settings = DDP_PRESETS.get(preset_key, DDP_PRESETS["default"])
+        for k, v in preset_settings.items():
+            if k not in options:
+                solver_opts[k] = v
+
+        if "datasource" not in solver_opts or not solver_opts["datasource"]:
+            solver_opts["datasource"] = get_default_model_name()
+
+        horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
+        solver_opts["horizon"] = horizon
+
+        for chip in ("use_wc", "use_bb", "use_fh", "use_tc"):
+            if chip in solver_opts:
+                val = solver_opts[chip]
+                if isinstance(val, (int, str)):
+                    try:
+                        iv = int(val)
+                        solver_opts[chip] = [iv] if iv > 0 else []
+                    except (ValueError, TypeError):
+                        solver_opts[chip] = []
+
+        for key in ("locked", "banned"):
+            if key in solver_opts:
+                solver_opts[key] = _resolve_player_ids(solver_opts[key], processed_dir)
+
+        plan = execute_transfer_plan(
+            solver_opts,
+            processed_dir=processed_dir,
+            target_gw=target_gw,
+            solution_path=solution_path,
+        )
+        branch_data = _build_branch_nodes_from_plan(plan, parent_node_id, target_gw)
+        _set_solve_state(
+            status="ok",
+            error=None,
+            detail="Branch solve complete.",
+            payload={"branch": branch_data, "plan": plan},
+        )
+    except FileNotFoundError:
+        msg = (
+            "Squad picks not found. Run Refresh with credentials, "
+            "or solve from Preseason."
+        )
+        _set_solve_state(status="error", error=msg, detail=msg, payload=None)
+    except Exception as exc:
+        logger.exception("Branch Solve failed")
+        _set_solve_state(status="error", error=str(exc), detail=f"Solve failed: {exc}", payload=None)
+
+
+def start_branch_solve(*, options: dict[str, object], parent_node_id: str, target_gw: int = 1) -> tuple[int, dict[str, object]]:
+    with _job_lock:
+        conflict = _active_job_conflict()
+        if conflict:
+            return conflict
+        with _solve_lock:
+            if _solve_state["status"] == "running":
+                return 202, dict(_solve_state)
+            _solve_state["status"] = "running"
+            _solve_state["error"] = None
+            _solve_state["detail"] = "Optimizing branch with Highs MILP…"
+            _solve_state["payload"] = None
+    threading.Thread(
+        target=run_branch_solve_job,
+        kwargs={"options": options, "parent_node_id": parent_node_id, "target_gw": target_gw},
+        daemon=True,
+    ).start()
+    return 202, solve_status()
+
+
 def get_research_topics() -> list[dict[str, object]]:
     research_dir = PROJECT_ROOT / "docs" / "research"
     if not research_dir.exists():
@@ -934,6 +1148,14 @@ def handle_dashboard_api(
             return 200, get_user_plans()
         if method == "POST":
             return 200, save_user_plans(body or {})
+    if path == "/api/solve":
+        if method == "GET":
+            return 200, solve_status()
+        if method == "POST":
+            opts = body or {}
+            target_gw = int(opts.get("target_gw") or 6)
+            parent_id = str(opts.get("parentNodeId") or "node-root")
+            return start_branch_solve(options=opts, parent_node_id=parent_id, target_gw=target_gw)
     if path == "/api/refresh":
         if method == "GET":
             return 200, refresh_status()

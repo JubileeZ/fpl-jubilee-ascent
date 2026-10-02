@@ -8,10 +8,10 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `dashboard/src/components/TransferReplacementDrawer.jsx`, `dashboard/src/components/SquadPitchDrawer.jsx`, `dashboard/src/App.jsx`
-- **Decisions:** In-pitch Transfer Replacement Drawer computing multi-GW lookahead Delta Sum xP, filtering by position and budget, and applying immediate transfers and hit penalties to the active scenario decision node.
+- **Files:** `commands/dashboard.py`, `dashboard/src/components/DecisionTreeCanvas.jsx`, `tests/test_dashboard.py`
+- **Decisions:** Python Highs MILP endpoint `/api/solve` (GET/POST) with DDP preset mappings (Safe 75%, Default 50%, Optimistic 0%, High Risk 25%), asynchronous worker, decision branch format serialization, and React canvas trigger integration.
 - **Blocked:** None
-- **Next:** Close #140 and resolve #141 (Expose Python MILP solver HTTP API for branch optimization and presets).
+- **Next:** Close #141 and resolve #142 (Build Plans Evaluation Suite: Efficient Frontier, Gaussian Distribution & Swing Analysis).
 
 ## Todo
 - [x] Settle rebuild destination and architecture via breadth-first grilling
@@ -22,7 +22,7 @@
 - [x] Claim and complete #138: Build React Flow Decision-Tree Canvas and multi-scenario state store
 - [x] Claim and complete #139: Build Interactive Squad Pitch Drawer and Lineup Scrubber
 - [x] Claim and complete #140: Build In-Pitch Transfer Replacement Drawer with Delta xP
-- [ ] Claim #141: Implement Python Highs MILP API endpoint for multi-gameweek branch optimization & DDP presets
+- [x] Claim and complete #141: Implement Python Highs MILP API endpoint for multi-gameweek branch optimization & DDP presets
 - [ ] Claim #142: Build Multi-Scenario Plans Suite & Evaluation Scatter/Distribution view
 
 ## Blockers / Notes

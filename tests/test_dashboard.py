@@ -783,5 +783,39 @@ def test_handle_dashboard_api_user_plans(tmp_path: Path, monkeypatch: pytest.Mon
     assert get_res["plans"][0]["name"] == "Custom Test Plan"
 
 
+def test_handle_dashboard_api_solve(monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    captured: dict[str, Any] = {}
+
+    def fake_start_branch(*, options: dict[str, Any], parent_node_id: str, target_gw: int = 1) -> tuple[int, dict[str, Any]]:
+        captured["options"] = options
+        captured["parent_node_id"] = parent_node_id
+        captured["target_gw"] = target_gw
+        return 202, {"status": "running", "detail": "Optimizing branch with Highs MILP…"}
+
+    monkeypatch.setattr(dash, "start_branch_solve", fake_start_branch)
+
+    # 1. GET /api/solve
+    status, payload = dash.handle_dashboard_api("GET", "/api/solve")
+    assert status == 200
+    assert "status" in payload
+
+    # 2. POST /api/solve
+    body = {
+        "parentNodeId": "node-root",
+        "target_gw": 6,
+        "preset": "safe",
+        "horizon": 4,
+    }
+    status, post_res = dash.handle_dashboard_api("POST", "/api/solve", body)
+    assert status == 202
+    assert post_res["status"] == "running"
+    assert captured["parent_node_id"] == "node-root"
+    assert captured["target_gw"] == 6
+    assert captured["options"]["preset"] == "safe"
+
+
+
 
 

@@ -23,6 +23,64 @@ const nodeTypes = {
 
 export default function DecisionTreeCanvas() {
   const { plans, activePlan, activePlanId, activeNodeId, isSaving, isLoading, actions } = usePlanStore();
+  const [ddpPreset, setDdpPreset] = React.useState('default');
+  const [isSolving, setIsSolving] = React.useState(false);
+
+  const handleOptimizeBranch = async () => {
+    if (!activePlan || isSolving) return;
+    const parentId = activeNodeId || activePlan.rootNodeId;
+    const parentNode = activePlan.nodes[parentId];
+    const targetGw = parentNode ? parentNode.gameweek + 1 : 6;
+
+    setIsSolving(true);
+    try {
+      const res = await fetch('/api/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parentNodeId: parentId,
+          target_gw: targetGw,
+          preset: ddpPreset,
+          horizon: 4,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // Poll until finished
+      let attempts = 0;
+      while (attempts < 60) {
+        await new Promise((r) => setTimeout(r, 600));
+        attempts++;
+        const pollRes = await fetch('/api/solve');
+        if (pollRes.ok) {
+          const pollData = await pollRes.json();
+          if (pollData.status === 'ok' && pollData.payload?.branch) {
+            const branch = pollData.payload.branch;
+            if (branch.nodes && branch.rootChildId) {
+              const updatedParent = {
+                ...parentNode,
+                childIds: [...(parentNode.childIds || []), branch.rootChildId],
+              };
+              planActions.updateNode(parentId, { childIds: updatedParent.childIds });
+              for (const [nid, nodeObj] of Object.entries(branch.nodes)) {
+                planActions.updateNode(nid, nodeObj);
+              }
+              planActions.setActiveNode(branch.rootChildId);
+            }
+            break;
+          } else if (pollData.status === 'error') {
+            alert(`Optimization error: ${pollData.error || 'Failed'}`);
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to optimize branch:', err);
+      alert(`Could not start optimization: ${err.message}`);
+    } finally {
+      setIsSolving(false);
+    }
+  };
 
   // Convert hierarchical plan scenario into React Flow layout (x, y)
   const { flowNodes, flowEdges } = useMemo(() => {
@@ -240,6 +298,55 @@ export default function DecisionTreeCanvas() {
 
         {/* Plan Actions & Sync status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* DDP Solver Preset Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label htmlFor="ddp-preset-select" style={{ fontSize: '11px', color: '#94a3b8' }}>
+              DDP:
+            </label>
+            <select
+              id="ddp-preset-select"
+              value={ddpPreset}
+              onChange={(e) => setDdpPreset(e.target.value)}
+              style={{
+                background: '#0a0b10',
+                border: '1px solid #1e2538',
+                borderRadius: '5px',
+                color: '#38bdf8',
+                fontSize: '11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                padding: '4px 8px',
+                outline: 'none',
+              }}
+            >
+              <option value="safe">Safe (75% DDP)</option>
+              <option value="default">Default (50% DDP)</option>
+              <option value="optimistic">Optimistic (0% DDP)</option>
+              <option value="high_risk">High Risk (25% DDP)</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            disabled={isSolving}
+            onClick={handleOptimizeBranch}
+            style={{
+              background: isSolving ? '#1e2538' : 'rgba(56, 189, 248, 0.15)',
+              color: isSolving ? '#64748b' : '#38bdf8',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: isSolving ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Solve branch path from active node using Highs MILP"
+          >
+            <span>{isSolving ? '⏳ Optimizing...' : '⚡ Optimize Branch'}</span>
+          </button>
+
           <div style={{ fontSize: '12px', color: '#64748b', fontFamily: "'JetBrains Mono', monospace" }}>
             {isSaving ? (
               <span style={{ color: '#f59e0b' }}>● Saving...</span>
