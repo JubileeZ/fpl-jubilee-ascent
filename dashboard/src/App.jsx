@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import DecisionTreeCanvas from './components/DecisionTreeCanvas';
 import SquadPitchDrawer from './components/SquadPitchDrawer';
+import TransferReplacementDrawer from './components/TransferReplacementDrawer';
 
 export default function DecisionPlannerApp() {
   const [activeTab, setActiveTab] = useState('projections');
+  const [replacementDrawer, setReplacementDrawer] = useState({
+    isOpen: false,
+    slot: null,
+    player: null,
+  });
 
   return (
     <div className="decision-planner-container">
@@ -16,7 +22,19 @@ export default function DecisionPlannerApp() {
           </div>
 
           {/* Bottom-Left Pitch Overlay */}
-          <SquadPitchDrawer />
+          <SquadPitchDrawer
+            onOpenReplacementDrawer={(slot, player) =>
+              setReplacementDrawer({ isOpen: true, slot, player })
+            }
+          />
+
+          {/* Transfer Replacement Drawer */}
+          <TransferReplacementDrawer
+            isOpen={replacementDrawer.isOpen}
+            onClose={() => setReplacementDrawer({ isOpen: false, slot: null, player: null })}
+            replacedSlot={replacementDrawer.slot}
+            replacedPlayer={replacementDrawer.player}
+          />
         </section>
 
         {/* Right Viewport: Tabbed Analytics & Optimizer Panel */}

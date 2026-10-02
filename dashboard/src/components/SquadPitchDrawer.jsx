@@ -527,16 +527,39 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
                         {item.fixture}
                       </div>
 
-                      {/* xP Pill */}
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          fontFamily: "'JetBrains Mono', monospace",
-                          color: item.isCaptain ? '#38bdf8' : '#cbd5e1',
-                        }}
-                      >
-                        {finalXp.toFixed(1)}
+                      {/* xP Pill & Replace Action */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            color: item.isCaptain ? '#38bdf8' : '#cbd5e1',
+                          }}
+                        >
+                          {finalXp.toFixed(1)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onOpenReplacementDrawer) {
+                              onOpenReplacementDrawer(item.slot, item.player);
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(56, 189, 248, 0.1)',
+                            border: '1px solid rgba(56, 189, 248, 0.25)',
+                            color: '#38bdf8',
+                            borderRadius: '3px',
+                            padding: '0 3px',
+                            fontSize: '9px',
+                            cursor: 'pointer',
+                          }}
+                          title="Transfer replace player"
+                        >
+                          ⇄
+                        </button>
                       </div>
                     </div>
                   );
@@ -619,8 +642,31 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
                   >
                     {item.player.name || item.player.web_name || `P#${item.player.id}`}
                   </div>
-                  <div style={{ fontSize: '10px', fontFamily: "'JetBrains Mono', monospace", color: '#64748b' }}>
-                    {item.xp.toFixed(1)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ fontSize: '10px', fontFamily: "'JetBrains Mono', monospace", color: '#64748b' }}>
+                      {item.xp.toFixed(1)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenReplacementDrawer) {
+                          onOpenReplacementDrawer(item.slot, item.player);
+                        }
+                      }}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.1)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        color: '#38bdf8',
+                        borderRadius: '3px',
+                        padding: '0 3px',
+                        fontSize: '9px',
+                        cursor: 'pointer',
+                      }}
+                      title="Transfer replace player"
+                    >
+                      ⇄
+                    </button>
                   </div>
                 </div>
               );

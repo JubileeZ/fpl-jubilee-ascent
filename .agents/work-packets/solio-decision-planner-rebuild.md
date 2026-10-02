@@ -8,10 +8,10 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `dashboard/src/components/SquadPitchDrawer.jsx`, `dashboard/src/App.jsx`, `dashboard/src/store/usePlanStore.js`
-- **Decisions:** Interactive bottom-left tactical grass squad pitch drawer with minimizable/expandable state, positional row grouping (GKP, DEF, MID, FWD), official FDR fixture pills, captaincy/vice-captaincy toggles, formation-validated substitutions, and GW scrubber.
+- **Files:** `dashboard/src/components/TransferReplacementDrawer.jsx`, `dashboard/src/components/SquadPitchDrawer.jsx`, `dashboard/src/App.jsx`
+- **Decisions:** In-pitch Transfer Replacement Drawer computing multi-GW lookahead Delta Sum xP, filtering by position and budget, and applying immediate transfers and hit penalties to the active scenario decision node.
 - **Blocked:** None
-- **Next:** Close #139 and resolve #140 (Build in-pitch Transfer Replacement Drawer with Δ Sum horizon xP).
+- **Next:** Close #140 and resolve #141 (Expose Python MILP solver HTTP API for branch optimization and presets).
 
 ## Todo
 - [x] Settle rebuild destination and architecture via breadth-first grilling
@@ -21,7 +21,7 @@
 - [x] Claim and complete #137 (Scaffold React + Vite pipeline and retire legacy Strategy tab)
 - [x] Claim and complete #138: Build React Flow Decision-Tree Canvas and multi-scenario state store
 - [x] Claim and complete #139: Build Interactive Squad Pitch Drawer and Lineup Scrubber
-- [ ] Claim #140: Build In-Pitch Transfer Replacement Drawer with Delta xP
+- [x] Claim and complete #140: Build In-Pitch Transfer Replacement Drawer with Delta xP
 - [ ] Claim #141: Implement Python Highs MILP API endpoint for multi-gameweek branch optimization & DDP presets
 - [ ] Claim #142: Build Multi-Scenario Plans Suite & Evaluation Scatter/Distribution view
 
