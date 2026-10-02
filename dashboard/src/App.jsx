@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import DecisionTreeCanvas from './components/DecisionTreeCanvas';
+import SquadPitchDrawer from './components/SquadPitchDrawer';
 
 export default function DecisionPlannerApp() {
   const [activeTab, setActiveTab] = useState('projections');
-  const [horizon, setHorizon] = useState(8);
-  const [selectedGw, setSelectedGw] = useState(6);
-  const [pitchExpanded, setPitchExpanded] = useState(false);
 
   return (
     <div className="decision-planner-container">
@@ -18,65 +16,7 @@ export default function DecisionPlannerApp() {
           </div>
 
           {/* Bottom-Left Pitch Overlay */}
-          <aside className={`planner-pitch-drawer ${pitchExpanded ? 'expanded' : 'docked'}`}>
-            <div className="pitch-drawer-header">
-              <div className="pitch-stepper">
-                <button
-                  type="button"
-                  className="btn-stepper"
-                  onClick={() => setSelectedGw((gw) => Math.max(1, gw - 1))}
-                  title="Previous Gameweek"
-                >
-                  ◀
-                </button>
-                <span className="current-gw-badge">GW {selectedGw}</span>
-                <button
-                  type="button"
-                  className="btn-stepper"
-                  onClick={() => setSelectedGw((gw) => Math.min(38, gw + 1))}
-                  title="Next Gameweek"
-                >
-                  ▶
-                </button>
-              </div>
-
-              <div className="pitch-drawer-actions">
-                <button
-                  type="button"
-                  className="btn-drawer-toggle"
-                  onClick={() => setPitchExpanded(!pitchExpanded)}
-                  title={pitchExpanded ? 'Dock Pitch' : 'Expand Pitch'}
-                >
-                  {pitchExpanded ? '▼ Dock' : '▲ Expand'}
-                </button>
-              </div>
-            </div>
-
-            <div className="pitch-drawer-body">
-              <div className="pitch-squad-grid" id="planner-squad-pitch-mount">
-                {/* 15 Player formation mounted in Ticket #139 */}
-                <div className="pitch-placeholder-note">
-                  Interactive Squad Pitch (11 Starters + 4 Bench) · Click a player to swap or open replacement candidate drawer.
-                </div>
-              </div>
-
-              {/* Points Distribution Gaussian Summary */}
-              <div className="pitch-distribution-summary">
-                <div className="dist-metric">
-                  <span className="metric-label">Mean</span>
-                  <span className="metric-value">60.9 pts</span>
-                </div>
-                <div className="dist-metric">
-                  <span className="metric-label">Crowd Avg</span>
-                  <span className="metric-value text-muted">53.2 pts</span>
-                </div>
-                <div className="dist-metric">
-                  <span className="metric-label">60+ pts</span>
-                  <span className="metric-value text-accent">52.5%</span>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <SquadPitchDrawer />
         </section>
 
         {/* Right Viewport: Tabbed Analytics & Optimizer Panel */}

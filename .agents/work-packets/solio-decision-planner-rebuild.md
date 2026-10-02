@@ -8,10 +8,10 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `dashboard/src/store/usePlanStore.js`, `dashboard/src/components/DecisionTreeCanvas.jsx`, `dashboard/src/components/nodes/RootNode.jsx`, `dashboard/src/components/nodes/PlanNode.jsx`, `dashboard/src/components/nodes/EvaluationNode.jsx`, `dashboard/src/App.jsx`, `commands/dashboard.py`, `tests/test_dashboard.py`
-- **Decisions:** DecisionTreeCanvas with React Flow custom nodes (Root, Plan, Evaluation) and horizontal auto-layout; multi-scenario store with branch branching/duplication/deletion; local JSON persistence via `/api/user-plans`.
+- **Files:** `dashboard/src/components/SquadPitchDrawer.jsx`, `dashboard/src/App.jsx`, `dashboard/src/store/usePlanStore.js`
+- **Decisions:** Interactive bottom-left tactical grass squad pitch drawer with minimizable/expandable state, positional row grouping (GKP, DEF, MID, FWD), official FDR fixture pills, captaincy/vice-captaincy toggles, formation-validated substitutions, and GW scrubber.
 - **Blocked:** None
-- **Next:** Close #138 and resolve #139 (Build interactive bottom-left Squad Pitch with gameweek scrubber).
+- **Next:** Close #139 and resolve #140 (Build in-pitch Transfer Replacement Drawer with Δ Sum horizon xP).
 
 ## Todo
 - [x] Settle rebuild destination and architecture via breadth-first grilling
@@ -20,7 +20,7 @@
 - [x] Close #136 and link research note in INDEX
 - [x] Claim and complete #137 (Scaffold React + Vite pipeline and retire legacy Strategy tab)
 - [x] Claim and complete #138: Build React Flow Decision-Tree Canvas and multi-scenario state store
-- [ ] Claim #139: Build Interactive Squad Pitch Drawer and Lineup Scrubber
+- [x] Claim and complete #139: Build Interactive Squad Pitch Drawer and Lineup Scrubber
 - [ ] Claim #140: Build In-Pitch Transfer Replacement Drawer with Delta xP
 - [ ] Claim #141: Implement Python Highs MILP API endpoint for multi-gameweek branch optimization & DDP presets
 - [ ] Claim #142: Build Multi-Scenario Plans Suite & Evaluation Scatter/Distribution view
