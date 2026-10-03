@@ -1,6 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
   Controls,
   MiniMap,
@@ -21,10 +23,12 @@ const nodeTypes = {
   evaluationNode: EvaluationNode,
 };
 
-export default function DecisionTreeCanvas() {
+function DecisionTreeFlow() {
   const { plans, activePlan, activePlanId, activeNodeId, isSaving, isLoading, actions } = usePlanStore();
-  const [ddpPreset, setDdpPreset] = React.useState('default');
-  const [isSolving, setIsSolving] = React.useState(false);
+  const [ddpPreset, setDdpPreset] = useState('default');
+  const [isSolving, setIsSolving] = useState(false);
+  const containerRef = useRef(null);
+  const { fitView } = useReactFlow();
 
   const handleOptimizeBranch = async () => {
     if (!activePlan || isSolving) return;
@@ -197,10 +201,49 @@ export default function DecisionTreeCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
 
   // Sync state changes from memo
-  React.useEffect(() => {
+  useEffect(() => {
     setNodes(flowNodes);
     setEdges(flowEdges);
   }, [flowNodes, flowEdges, setNodes, setEdges]);
+
+  // Auto-fit view when nodes change or on initial render
+  useEffect(() => {
+    if (nodes.length > 0) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.35, duration: 300 });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [nodes.length, activePlanId, fitView]);
+
+  // Re-fit view on tab activation or window resize
+  useEffect(() => {
+    const handleActivated = () => {
+      setTimeout(() => {
+        fitView({ padding: 0.35, duration: 300 });
+      }, 100);
+    };
+    window.addEventListener('planTabActivated', handleActivated);
+    window.addEventListener('resize', handleActivated);
+    return () => {
+      window.removeEventListener('planTabActivated', handleActivated);
+      window.removeEventListener('resize', handleActivated);
+    };
+  }, [fitView]);
+
+  // Re-fit view when container size changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 100 && entry.contentRect.height > 100) {
+          fitView({ padding: 0.35, duration: 250 });
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [fitView]);
 
   const handleCreatePlan = () => {
     const name = prompt('Enter new scenario name:', `Scenario ${plans.length + 1}`);
@@ -237,16 +280,18 @@ export default function DecisionTreeCanvas() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 18px',
+          flexWrap: 'wrap',
+          gap: '8px',
+          padding: '8px 14px',
           background: '#121520',
           borderBottom: '1px solid #1e2538',
           zIndex: 10,
         }}
       >
         {/* Scenario Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto' }}>
-          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8', fontWeight: 600, marginRight: '4px' }}>
-            Scenarios:
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8', fontWeight: 600 }}>
+            Scenario:
           </span>
           {plans.map((p) => {
             const isActive = p.id === activePlanId;
@@ -260,7 +305,7 @@ export default function DecisionTreeCanvas() {
                   color: isActive ? '#38bdf8' : '#94a3b8',
                   border: isActive ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
                   borderRadius: '6px',
-                  padding: '6px 12px',
+                  padding: '5px 10px',
                   fontSize: '12px',
                   fontWeight: isActive ? 600 : 400,
                   cursor: 'pointer',
@@ -283,8 +328,8 @@ export default function DecisionTreeCanvas() {
               color: '#64748b',
               border: '1px dashed #334155',
               borderRadius: '6px',
-              padding: '6px 10px',
-              fontSize: '12px',
+              padding: '5px 8px',
+              fontSize: '11px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -292,14 +337,14 @@ export default function DecisionTreeCanvas() {
             }}
             title="Create new scenario"
           >
-            + New Plan
+            + New
           </button>
         </div>
 
         {/* Plan Actions & Sync status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {/* DDP Solver Preset Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <label htmlFor="ddp-preset-select" style={{ fontSize: '11px', color: '#94a3b8' }}>
               DDP:
             </label>
@@ -314,14 +359,14 @@ export default function DecisionTreeCanvas() {
                 color: '#38bdf8',
                 fontSize: '11px',
                 fontFamily: "'JetBrains Mono', monospace",
-                padding: '4px 8px',
+                padding: '4px 6px',
                 outline: 'none',
               }}
             >
-              <option value="safe">Safe (75% DDP)</option>
-              <option value="default">Default (50% DDP)</option>
-              <option value="optimistic">Optimistic (0% DDP)</option>
-              <option value="high_risk">High Risk (25% DDP)</option>
+              <option value="safe">Safe (75%)</option>
+              <option value="default">Default (50%)</option>
+              <option value="optimistic">Optimistic (0%)</option>
+              <option value="high_risk">High Risk (25%)</option>
             </select>
           </div>
 
@@ -334,22 +379,42 @@ export default function DecisionTreeCanvas() {
               color: isSolving ? '#64748b' : '#38bdf8',
               border: '1px solid rgba(56, 189, 248, 0.35)',
               borderRadius: '6px',
-              padding: '6px 12px',
-              fontSize: '12px',
+              padding: '5px 10px',
+              fontSize: '11px',
               fontWeight: 600,
               cursor: isSolving ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '4px',
             }}
             title="Solve branch path from active node using Highs MILP"
           >
-            <span>{isSolving ? '⏳ Optimizing...' : '⚡ Optimize Branch'}</span>
+            <span>{isSolving ? '⏳ Optimizing...' : '⚡ Optimize'}</span>
           </button>
 
-          <div style={{ fontSize: '12px', color: '#64748b', fontFamily: "'JetBrains Mono', monospace" }}>
+          <button
+            type="button"
+            onClick={() => fitView({ padding: 0.25, duration: 300 })}
+            style={{
+              background: '#1a202e',
+              border: '1px solid #2d3748',
+              color: '#cbd5e1',
+              borderRadius: '6px',
+              padding: '5px 8px',
+              fontSize: '11px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Reset view and center all decision tree nodes"
+          >
+            ⛶ Center
+          </button>
+
+          <div style={{ fontSize: '11px', color: '#64748b', fontFamily: "'JetBrains Mono', monospace" }}>
             {isSaving ? (
-              <span style={{ color: '#f59e0b' }}>● Saving...</span>
+              <span style={{ color: '#f59e0b' }}>● Saving</span>
             ) : (
               <span style={{ color: '#10b981' }}>✓ Synced</span>
             )}
@@ -363,13 +428,13 @@ export default function DecisionTreeCanvas() {
               color: '#cbd5e1',
               border: '1px solid #2d3748',
               borderRadius: '6px',
-              padding: '6px 10px',
-              fontSize: '12px',
+              padding: '5px 8px',
+              fontSize: '11px',
               cursor: 'pointer',
             }}
             title="Duplicate selected scenario"
           >
-            Duplicate Plan
+            Duplicate
           </button>
 
           <button
@@ -380,19 +445,19 @@ export default function DecisionTreeCanvas() {
               color: '#f43f5e',
               border: '1px solid rgba(244, 63, 94, 0.25)',
               borderRadius: '6px',
-              padding: '6px 10px',
-              fontSize: '12px',
+              padding: '5px 8px',
+              fontSize: '11px',
               cursor: 'pointer',
             }}
             title="Delete selected scenario"
           >
-            Delete Plan
+            Delete
           </button>
         </div>
       </div>
 
       {/* Main Flow Canvas */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -400,34 +465,49 @@ export default function DecisionTreeCanvas() {
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={{ padding: 0.35 }}
           minZoom={0.2}
           maxZoom={1.5}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
           proOptions={{ hideAttribution: true }}
         >
           <Background color="#1e2538" gap={20} size={1} />
           <Controls
+            position="bottom-right"
             style={{
               background: '#121520',
               border: '1px solid #1e2538',
               borderRadius: '8px',
               color: '#f8fafc',
+              margin: '12px',
             }}
           />
           <MiniMap
+            position="top-right"
             nodeColor={(n) => {
               if (n.type === 'rootNode') return '#38bdf8';
               if (n.type === 'evaluationNode') return '#10b981';
               return '#64748b';
             }}
             style={{
-              background: '#0a0b10',
+              background: 'rgba(10, 11, 16, 0.85)',
+              backdropFilter: 'blur(8px)',
               border: '1px solid #1e2538',
               borderRadius: '8px',
+              margin: '12px',
+              width: 120,
+              height: 80,
             }}
           />
         </ReactFlow>
       </div>
     </div>
+  );
+}
+
+export default function DecisionTreeCanvas() {
+  return (
+    <ReactFlowProvider>
+      <DecisionTreeFlow />
+    </ReactFlowProvider>
   );
 }

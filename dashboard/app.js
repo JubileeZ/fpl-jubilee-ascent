@@ -514,6 +514,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (researchRoot) researchRoot.hidden = view !== "research";
     if (methodologyRoot) methodologyRoot.hidden = view !== "methodology";
 
+    if (view === "plan") {
+      window.dispatchEvent(new CustomEvent("planTabActivated"));
+      window.dispatchEvent(new Event("resize"));
+    }
+
     const views = ["explorer", "plan", "research", "methodology"];
     views.forEach((v) => {
       const tab = document.getElementById(`tab-${v}`);

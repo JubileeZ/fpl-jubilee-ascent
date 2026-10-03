@@ -14,6 +14,16 @@ function isValidFormation(startersPosCount) {
   );
 }
 
+export function normalizePos(pos) {
+  if (!pos) return 'MID';
+  const p = String(pos).toUpperCase();
+  if (p === 'G' || p === 'GKP' || p === 'GK') return 'GKP';
+  if (p === 'D' || p === 'DEF') return 'DEF';
+  if (p === 'M' || p === 'MID') return 'MID';
+  if (p === 'F' || p === 'FWD') return 'FWD';
+  return p;
+}
+
 export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
   const { activeNode, activePlan } = usePlanStore();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -65,10 +75,15 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
     const list = [];
     for (let slot = 1; slot <= 15; slot++) {
       const pid = slots[slot] || slots[String(slot)];
-      const player = playersData[pid] || {
+      const rawPlayer = playersData[pid];
+      const defaultPos = slot === 1 || slot === 12 ? 'GKP' : slot <= 5 ? 'DEF' : slot <= 10 ? 'MID' : 'FWD';
+      const player = rawPlayer ? {
+        ...rawPlayer,
+        pos: normalizePos(rawPlayer.pos),
+      } : {
         id: pid,
         name: `Player #${pid}`,
-        pos: slot === 1 || slot === 12 ? 'GKP' : slot <= 5 ? 'DEF' : slot <= 10 ? 'MID' : 'FWD',
+        pos: defaultPos,
         price: 5.0,
       };
 
@@ -98,10 +113,10 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
 
   const startersByPos = useMemo(() => {
     return {
-      GKP: starters.filter((p) => p.player.pos === 'GKP'),
-      DEF: starters.filter((p) => p.player.pos === 'DEF'),
-      MID: starters.filter((p) => p.player.pos === 'MID'),
-      FWD: starters.filter((p) => p.player.pos === 'FWD'),
+      GKP: starters.filter((p) => normalizePos(p.player.pos) === 'GKP'),
+      DEF: starters.filter((p) => normalizePos(p.player.pos) === 'DEF'),
+      MID: starters.filter((p) => normalizePos(p.player.pos) === 'MID'),
+      FWD: starters.filter((p) => normalizePos(p.player.pos) === 'FWD'),
     };
   }, [starters]);
 
@@ -247,13 +262,11 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
 
   return (
     <div
-      className={`planner-pitch-drawer ${isExpanded ? 'pitch-expanded' : 'pitch-docked'}`}
+      className={`planner-pitch-drawer ${isExpanded ? 'expanded' : 'docked'}`}
       style={{
         position: 'absolute',
         bottom: 0,
         left: 0,
-        width: isExpanded ? '520px' : '420px',
-        maxHeight: isExpanded ? '85vh' : '440px',
         background: '#0d111c',
         borderTop: '1.5px solid #1e2538',
         borderRight: '1.5px solid #1e2538',
@@ -618,7 +631,7 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
                         width: '18px',
                         height: '18px',
                         borderRadius: '50%',
-                        background: posColor[item.player.pos],
+                        background: posColor[normalizePos(item.player.pos)] || '#38bdf8',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

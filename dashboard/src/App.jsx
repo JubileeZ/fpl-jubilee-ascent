@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import DecisionTreeCanvas from './components/DecisionTreeCanvas';
 import SquadPitchDrawer from './components/SquadPitchDrawer';
 import TransferReplacementDrawer from './components/TransferReplacementDrawer';
-
+import SquadProjectionsTable from './components/SquadProjectionsTable';
+import SquadFixturesTable from './components/SquadFixturesTable';
 import PlansEvaluationSuite from './components/PlansEvaluationSuite';
+import { usePlanStore } from './store/usePlanStore';
 
 export default function DecisionPlannerApp() {
   const [activeTab, setActiveTab] = useState('projections');
@@ -12,6 +14,8 @@ export default function DecisionPlannerApp() {
     slot: null,
     player: null,
   });
+
+  const { activeNode, activePlan } = usePlanStore();
 
   return (
     <div className="decision-planner-container">
@@ -82,32 +86,68 @@ export default function DecisionPlannerApp() {
 
           <div className="analytics-tab-content" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'projections' && (
-              <div className="tab-pane projections-pane" style={{ padding: '16px' }}>
-                <div className="pane-header">
-                  <h3>Player Expected Points</h3>
-                  <span className="pane-subtitle">Multi-gameweek projections from Model Champion</span>
-                </div>
-                <p className="pane-hint">
-                  Explore player pool in the left Explorer tab or test candidate transfers via the pitch replacement drawer.
-                </p>
-              </div>
+              <SquadProjectionsTable
+                onSelectPlayer={(slot, player) =>
+                  setReplacementDrawer({ isOpen: true, slot, player })
+                }
+              />
             )}
 
             {activeTab === 'optimise' && (
-              <div className="tab-pane optimise-pane" style={{ padding: '16px' }}>
-                <div className="pane-header">
-                  <h3>MILP Branch Optimizer</h3>
-                  <span className="pane-subtitle">Highs solver tuning & stochastic risk dials</span>
+              <div className="tab-pane optimise-pane" style={{ padding: '16px', overflowY: 'auto' }}>
+                <div className="pane-header" style={{ marginBottom: '14px' }}>
+                  <h3 style={{ fontSize: '15px', color: '#f8fafc', fontWeight: 700, margin: 0 }}>MILP Branch Optimizer</h3>
+                  <span className="pane-subtitle" style={{ fontSize: '11px', color: '#94a3b8' }}>
+                    Stochastic Highs solver tuning · Dynamic Disruption Probability (DDP)
+                  </span>
                 </div>
-                <div className="preset-selector-row" style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
-                  <span className="preset-chip active" style={{ background: '#1e2538', color: '#38bdf8', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Default (50% DDP)</span>
-                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Safe (75% DDP)</span>
-                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>High Risk (25% DDP)</span>
-                  <span className="preset-chip" style={{ background: '#121520', border: '1px solid #1e2538', padding: '6px 10px', borderRadius: '6px', fontSize: '12px' }}>Optimistic (0% DDP)</span>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ background: '#0d111c', border: '1px solid #1e2538', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>
+                      Active Branch Node: <span style={{ color: '#38bdf8' }}>{activeNode?.title || 'GW6 (Start)'}</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                      Optimization executes downstream from this decision state. Transfers and captaincy lock in prior gameweeks.
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0d111c', border: '1px solid #1e2538', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+                      DDP Formulation Presets
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div style={{ background: '#121520', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '6px', padding: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8' }}>Default (50% DDP)</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>decay=0.85 · bench_wt=0.10</div>
+                      </div>
+                      <div style={{ background: '#121520', border: '1px solid #1e2538', borderRadius: '6px', padding: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#10b981' }}>Safe (75% DDP)</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>decay=0.75 · bench_wt=0.20</div>
+                      </div>
+                      <div style={{ background: '#121520', border: '1px solid #1e2538', borderRadius: '6px', padding: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b' }}>High Risk (25% DDP)</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>decay=0.92 · bench_wt=0.05</div>
+                      </div>
+                      <div style={{ background: '#121520', border: '1px solid #1e2538', borderRadius: '6px', padding: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#a855f7' }}>Optimistic (0% DDP)</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>decay=1.00 · bench_wt=0.03</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0d111c', border: '1px solid #1e2538', borderRadius: '8px', padding: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '4px' }}>
+                      Objective Formulation
+                    </div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: '#38bdf8', background: '#06080e', padding: '8px', borderRadius: '5px' }}>
+                      max Σ [ w_t · (xP_start + p_sub · xP_bench) - 4 · Hits + 0.1 · ITB ]
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', lineHeight: 1.4 }}>
+                      Uses Highs interior-point & simplex branch-and-bound solver with sub-1% optimality proof.
+                    </p>
+                  </div>
                 </div>
-                <p className="pane-hint">
-                  Click "⚡ Optimize Branch" on the decision tree toolbar to run MILP branch generation with chosen DDP preset.
-                </p>
               </div>
             )}
 
@@ -117,15 +157,7 @@ export default function DecisionPlannerApp() {
               </div>
             )}
 
-            {activeTab === 'fixtures' && (
-              <div className="tab-pane fixtures-pane">
-                <div className="pane-header">
-                  <h3>Fixture Ticker</h3>
-                  <span className="pane-subtitle">Modified FDR and matchup difficulty matrix</span>
-                </div>
-                <p className="pane-hint">Club strength and defensive difficulty ratings across the planning horizon.</p>
-              </div>
-            )}
+            {activeTab === 'fixtures' && <SquadFixturesTable />}
           </div>
         </section>
       </div>

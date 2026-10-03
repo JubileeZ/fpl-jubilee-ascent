@@ -1,6 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { usePlanStore, planActions } from '../store/usePlanStore';
 
+function normalizePos(pos) {
+  if (!pos) return 'MID';
+  const p = String(pos).toUpperCase();
+  if (p === 'G' || p === 'GKP' || p === 'GK') return 'GKP';
+  if (p === 'D' || p === 'DEF') return 'DEF';
+  if (p === 'M' || p === 'MID') return 'MID';
+  if (p === 'F' || p === 'FWD') return 'FWD';
+  return p;
+}
+
 export default function TransferReplacementDrawer({
   isOpen,
   onClose,
@@ -10,22 +20,44 @@ export default function TransferReplacementDrawer({
   const { activeNode, activePlan } = usePlanStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [affordableOnly, setAffordableOnly] = useState(true);
-  const [selectedPos, setSelectedPos] = useState(replacedPlayer?.pos || 'ALL');
+  const [selectedPos, setSelectedPos] = useState(replacedPlayer?.pos ? normalizePos(replacedPlayer.pos) : 'ALL');
 
   // Reset or initialize filters when replaced player changes
   React.useEffect(() => {
     if (replacedPlayer?.pos) {
-      setSelectedPos(replacedPlayer.pos);
+      setSelectedPos(normalizePos(replacedPlayer.pos));
     }
   }, [replacedPlayer?.id, replacedPlayer?.pos]);
 
-  const allPlayers = window.dashboardData?.players || [];
+function parsePrice(val) {
+  if (val == null) return 5.0;
+  const n = Number(val);
+  return n > 25 ? n / 10 : n;
+}
+
+  const [allPlayers, setAllPlayers] = useState(() => window.dashboardData?.players || []);
+
+  React.useEffect(() => {
+    if (window.dashboardData?.players && allPlayers.length > 0) return;
+    if (window.dashboardData?.players) {
+      setAllPlayers(window.dashboardData.players);
+      return;
+    }
+    fetch('/dashboard_data.json')
+      .then((r) => r.json())
+      .then((d) => {
+        window.dashboardData = d;
+        setAllPlayers(d.players || []);
+      })
+      .catch(console.error);
+  }, []);
+
   const currentGw = activeNode?.gameweek || activePlan?.startGameweek || 6;
   const horizon = activePlan?.horizonGameweeks || 5;
   const endGw = currentGw + horizon - 1;
 
   const currentBank = activeNode?.evaluation?.bankRemaining ?? activePlan?.initialBank ?? 0.0;
-  const sellingPrice = replacedPlayer?.selling_price ? replacedPlayer.selling_price / 10 : replacedPlayer?.price || 5.0;
+  const sellingPrice = parsePrice(replacedPlayer?.selling_price ?? replacedPlayer?.price);
   const maxAffordablePrice = Number((sellingPrice + currentBank).toFixed(1));
 
   // Calculate sum of xP across lookahead horizon for replaced player
@@ -59,7 +91,7 @@ export default function TransferReplacementDrawer({
       if (p.id === replacedPlayer.id || currentSquadIds.has(p.id)) continue;
 
       // Position filter
-      if (selectedPos !== 'ALL' && p.pos !== selectedPos) continue;
+      if (selectedPos !== 'ALL' && normalizePos(p.pos) !== normalizePos(selectedPos)) continue;
 
       // Search query
       if (searchQuery) {
@@ -72,7 +104,7 @@ export default function TransferReplacementDrawer({
       }
 
       // Budget filter
-      const price = p.price || 5.0;
+      const price = parsePrice(p.price);
       const isAffordable = price <= maxAffordablePrice + 0.001;
       if (affordableOnly && !isAffordable) continue;
 

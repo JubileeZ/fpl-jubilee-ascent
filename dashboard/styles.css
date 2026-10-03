@@ -2298,13 +2298,13 @@ body {
 }
 
 .planner-pitch-drawer.docked {
-  width: 320px;
-  height: 240px;
+  width: 440px;
+  height: 490px;
 }
 
 .planner-pitch-drawer.expanded {
-  width: 540px;
-  height: 480px;
+  width: 580px;
+  height: 580px;
 }
 
 .pitch-drawer-header {
@@ -2518,3 +2518,37 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* React Flow Dark Obsidian Overrides */
+.react-flow__controls {
+  background: #121520 !important;
+  border: 1px solid #1e2538 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+}
+
+.react-flow__controls-button {
+  background: #121520 !important;
+  border: none !important;
+  border-bottom: 1px solid #1e2538 !important;
+  fill: #f8fafc !important;
+  color: #f8fafc !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #1e2538 !important;
+  fill: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
