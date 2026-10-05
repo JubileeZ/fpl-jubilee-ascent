@@ -1116,11 +1116,17 @@ def build_features(
             df_feat["appearance_probability"].fillna(1.0) * 100.0,
         )
 
-    if has_point_in_time_snapshot and "status" in df_feat.columns:
-        unavailable_statuses = {"u", "n"}
-        df_feat["chance_of_playing"] = df_feat["chance_of_playing"].where(
-            ~df_feat["status"].isin(unavailable_statuses), 0.0
-        )
+    if "status" in df_feat.columns:
+        if has_point_in_time_snapshot:
+            unavailable_statuses = {"u", "n"}
+            df_feat["chance_of_playing"] = df_feat["chance_of_playing"].where(
+                ~df_feat["status"].isin(unavailable_statuses), 0.0
+            )
+        elif as_of_gw is None:
+            unavailable_statuses = {"u", "n", "i", "s"}
+            df_feat["chance_of_playing"] = df_feat["chance_of_playing"].where(
+                ~df_feat["status"].isin(unavailable_statuses), 0.0
+            )
 
     df_feat["is_immediate_next_gw"] = df_feat["gameweek_id"].eq(target_gw)
     df_feat["has_availability_snapshot"] = has_point_in_time_snapshot

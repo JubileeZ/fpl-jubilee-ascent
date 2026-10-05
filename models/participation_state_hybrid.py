@@ -83,7 +83,15 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
             is_immediate = bool(row.get("is_immediate_next_gw", False))
             has_snapshot = bool(row.get("has_availability_snapshot", False))
             chance = _number(row, "chance_of_playing", 100.0)
-            if is_immediate and has_snapshot and chance <= 0.0:
+            status = str(row.get("status", "")).lower()
+
+            # Hard DNP for immediate next GW:
+            # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
+            # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
+            if is_immediate and (
+                (has_snapshot and chance <= 0.0)
+                or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
+            ):
                 p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
 
             start_minutes = self._conditional_minutes(row, "start", 78.0)

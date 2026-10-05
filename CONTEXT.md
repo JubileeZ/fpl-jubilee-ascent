@@ -433,6 +433,22 @@ _Avoid_: xP, score, total_xp, research total_6gw_xp, Explorer Total column
 A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per paid transfer (solver `hit_cost` default). Live Transfer Plan allows Hits (`weekly_hit_limit` 1). Distinct from spending banked Free Transfers.
 _Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion Signed Bias vs Realized Points
 
+**Decision Tree Planner**:
+Visual branching scenario graph (React Flow canvas) replacing legacy linear strategy solvers. Allows creating multi-gameweek transfer decision paths from a root User Squad baseline, manually swapping players on an interactive tactical pitch drawer, and optimizing forward branches via Highs MILP. Distinct from linear Transfer Plan Surface.
+_Avoid_: Solio clone, legacy Strategy Solver, linear-only transfer plan
+
+**Plan Node**:
+A discrete scenario state in the Decision Tree Planner representing a specific Gameweek lineup (15 players, captain, vice-captain), transfers in/out, remaining bank, available free transfers, and evaluation metrics (cumulative net xP, hits taken). Child nodes inherit the parent node's squad and bank state.
+_Avoid_: leaf-only planning, resetting squad on each branch
+
+**Branch Solve**:
+An on-demand Highs MILP optimization starting from a specific parent Plan Node's squad, bank, and free transfer state over a forward horizon, generating child Plan Nodes along that decision path. Scored by the Model Champion under the chosen Risk Preset.
+_Avoid_: re-solving from live squad on mid-tree nodes, linear baseline solve
+
+**Risk Preset**:
+A named configuration of MILP optimization hyperparameters balancing immediate floor vs multi-gameweek upside: Safe (`decay_base: 0.75, bench_weight: 0.20, hit_cost: 4.5, weekly_hit_limit: 0`), Default (`decay_base: 0.85, bench_weight: 0.10, hit_cost: 4.0, weekly_hit_limit: 1`), Optimistic (`decay_base: 1.00, bench_weight: 0.03, hit_cost: 4.0, weekly_hit_limit: 1`), and High Risk (`decay_base: 0.92, bench_weight: 0.05, hit_cost: 3.5, weekly_hit_limit: 2`). Formerly DDP Preset.
+_Avoid_: DDP, unconstrained hit limit in Safe mode
+
 **Champion Signed Bias**:
 Mean of `projected_points − actual_points` vs Realized Points for the Model Champion. Gate companion: `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` `signed_bias`. Positive = overprediction. Not FPL `ep_*`. Process Points is a separate research eval target (`--eval_target process`), not this gate.
 _Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate, Process Points as the ADR 0033 gate

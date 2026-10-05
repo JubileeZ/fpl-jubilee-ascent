@@ -538,8 +538,7 @@ def run_strategy_solve_job(*, options: dict[str, object], target_gw: int = 1) ->
 
         solver_opts = load_settings()
         solver_opts.update(options)
-        if "datasource" not in solver_opts or not solver_opts["datasource"]:
-            solver_opts["datasource"] = get_default_model_name()
+        solver_opts["datasource"] = options.get("datasource") or get_default_model_name()
 
         horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
         solver_opts["horizon"] = horizon
@@ -553,6 +552,14 @@ def run_strategy_solve_job(*, options: dict[str, object], target_gw: int = 1) ->
                         solver_opts[chip] = [iv] if iv > 0 else []
                     except (ValueError, TypeError):
                         solver_opts[chip] = []
+                elif isinstance(val, list):
+                    clean_list = []
+                    for item in val:
+                        try:
+                            clean_list.append(int(item))
+                        except (ValueError, TypeError):
+                            pass
+                    solver_opts[chip] = clean_list
 
         for key in ("locked", "banned"):
             if key in solver_opts:
@@ -631,12 +638,13 @@ def _set_solve_state(
             _solve_state["payload"] = payload
 
 
-DDP_PRESETS: dict[str, dict[str, float]] = {
-    "optimistic": {"decay_base": 1.00, "bench_weight": 0.03, "hit_cost": 4.0},
-    "safe": {"decay_base": 0.75, "bench_weight": 0.20, "hit_cost": 4.5},
-    "default": {"decay_base": 0.85, "bench_weight": 0.10, "hit_cost": 4.0},
-    "high_risk": {"decay_base": 0.92, "bench_weight": 0.05, "hit_cost": 3.5},
+RISK_PRESETS: dict[str, dict[str, Any]] = {
+    "optimistic": {"decay_base": 1.00, "bench_weight": 0.03, "hit_cost": 4.0, "weekly_hit_limit": 1},
+    "safe": {"decay_base": 0.75, "bench_weight": 0.20, "hit_cost": 4.5, "weekly_hit_limit": 0},
+    "default": {"decay_base": 0.85, "bench_weight": 0.10, "hit_cost": 4.0, "weekly_hit_limit": 1},
+    "high_risk": {"decay_base": 0.92, "bench_weight": 0.05, "hit_cost": 3.5, "weekly_hit_limit": 2},
 }
+DDP_PRESETS = RISK_PRESETS  # alias for backwards compatibility
 
 
 def _build_branch_nodes_from_plan(
@@ -648,6 +656,7 @@ def _build_branch_nodes_from_plan(
     nodes: dict[str, Any] = {}
     prev_id = parent_node_id
     cum_xp = 0.0
+    hit_cost = float(plan.get("meta", {}).get("hit_cost", 4.0) or 4.0)
 
     for i, w in enumerate(weeks):
         gw = int(w.get("gw", target_gw + i))
@@ -655,19 +664,19 @@ def _build_branch_nodes_from_plan(
         xp = float(w.get("xp", 0.0) or 0.0)
         hits = int(w.get("hits", 0) or 0)
         cum_xp += xp
-        net_xp = cum_xp - (hits * 4)
-        itb = float(w.get("itb", 0) or 0) / 10.0
+        net_xp = cum_xp - (hits * hit_cost)
+        itb = round(float(w.get("itb", 0.0) or 0.0), 1)
         ft = int(w.get("ft", 1) or 1)
         chip = w.get("chip")
 
-        buys = w.get("buys") or []
-        sells = w.get("sells") or []
+        buys = w.get("buy") or w.get("buys") or []
+        sells = w.get("sell") or w.get("sells") or []
         transfers = []
         for b_item, s_item in zip(buys, sells, strict=False):
-            b_id = b_item.get("element") if isinstance(b_item, dict) else b_item
-            s_id = s_item.get("element") if isinstance(s_item, dict) else s_item
-            b_name = b_item.get("web_name", f"P#{b_id}") if isinstance(b_item, dict) else f"P#{b_id}"
-            s_name = s_item.get("web_name", f"P#{s_id}") if isinstance(s_item, dict) else f"P#{s_id}"
+            b_id = b_item.get("id") if isinstance(b_item, dict) and "id" in b_item else (b_item.get("element") if isinstance(b_item, dict) else b_item)
+            s_id = s_item.get("id") if isinstance(s_item, dict) and "id" in s_item else (s_item.get("element") if isinstance(s_item, dict) else s_item)
+            b_name = b_item.get("name") if isinstance(b_item, dict) and "name" in b_item else (b_item.get("web_name", f"P#{b_id}") if isinstance(b_item, dict) else f"P#{b_id}")
+            s_name = s_item.get("name") if isinstance(s_item, dict) and "name" in s_item else (s_item.get("web_name", f"P#{s_id}") if isinstance(s_item, dict) else f"P#{s_id}")
             transfers.append({
                 "slot": 1,
                 "playerOutId": s_id,
@@ -678,8 +687,8 @@ def _build_branch_nodes_from_plan(
                 "sellingPrice": 5.0,
             })
 
-        lineup_items = w.get("lineup") or []
-        bench_items = w.get("bench") or []
+        lineup_items = w.get("lineup_ids") or w.get("lineup") or []
+        bench_items = w.get("bench_ids") or w.get("bench") or []
         slots: dict[str, int] = {}
         idx = 1
         for item in lineup_items:
@@ -697,6 +706,16 @@ def _build_branch_nodes_from_plan(
             except (ValueError, TypeError):
                 pass
 
+        captain_id = w.get("captain_id")
+        vice_id = w.get("vice_id")
+        captain_slot = 1
+        vice_captain_slot = 2
+        for s_str, pid in slots.items():
+            if captain_id is not None and pid == captain_id:
+                captain_slot = int(s_str)
+            elif vice_id is not None and pid == vice_id:
+                vice_captain_slot = int(s_str)
+
         node = {
             "id": node_id,
             "parentId": prev_id,
@@ -705,19 +724,19 @@ def _build_branch_nodes_from_plan(
             "title": f"GW{gw} (MILP Optimal)",
             "lineup": {
                 "slots": slots,
-                "captainSlot": 1,
-                "viceCaptainSlot": 2,
+                "captainSlot": captain_slot,
+                "viceCaptainSlot": vice_captain_slot,
                 "benchOrder": [12, 13, 14, 15],
             },
             "transfers": transfers,
             "chip": chip,
             "evaluation": {
                 "expectedPoints": round(xp, 1),
-                "pointsVariance": round(10.0 + i * 0.8, 1),
+                "pointsVariance": 0.0,
                 "cumulativePoints": round(cum_xp, 1),
                 "hitsTaken": hits,
                 "netPoints": round(net_xp, 1),
-                "bankRemaining": round(itb, 1),
+                "bankRemaining": itb,
                 "freeTransfersNext": ft,
             },
         }
@@ -750,8 +769,7 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
             if k not in options:
                 solver_opts[k] = v
 
-        if "datasource" not in solver_opts or not solver_opts["datasource"]:
-            solver_opts["datasource"] = get_default_model_name()
+        solver_opts["datasource"] = options.get("datasource") or get_default_model_name()
 
         horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
         solver_opts["horizon"] = horizon
@@ -765,6 +783,14 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
                         solver_opts[chip] = [iv] if iv > 0 else []
                     except (ValueError, TypeError):
                         solver_opts[chip] = []
+                elif isinstance(val, list):
+                    clean_list = []
+                    for item in val:
+                        try:
+                            clean_list.append(int(item))
+                        except (ValueError, TypeError):
+                            pass
+                    solver_opts[chip] = clean_list
 
         for key in ("locked", "banned"):
             if key in solver_opts:
@@ -984,6 +1010,41 @@ def _generate_default_user_plans() -> dict[str, object]:
     if len(slots) < 15:
         slots = {str(i): 100 + i for i in range(1, 16)}
 
+    # Dynamically compute expected points from dashboard projections if available
+    xp_lookup: dict[int, dict[int, float]] = {}
+    json_path = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
+    if json_path.exists():
+        try:
+            d_data = json.loads(json_path.read_text(encoding="utf-8"))
+            for p in d_data.get("players", []):
+                pid = p.get("id")
+                if pid:
+                    proj = p.get("projections", {})
+                    m = {}
+                    for k, v in proj.items():
+                        if k.startswith("gw") and isinstance(v, dict):
+                            try:
+                                gw_num = int(k[2:])
+                                m[gw_num] = float(v.get("total_xp", 0.0) or 0.0)
+                            except (ValueError, TypeError):
+                                pass
+                    xp_lookup[int(pid)] = m
+        except Exception as exc:
+            logger.warning("Could not read dashboard_data.json for baseline projections: %s", exc)
+
+    def compute_lineup_xp(gw: int) -> float:
+        tot = sum(xp_lookup.get(slots.get(str(s), 0), {}).get(gw, 4.0) for s in range(1, 12))
+        cap = xp_lookup.get(slots.get(str(captain_slot), 0), {}).get(gw, 4.0)
+        return round(tot + cap, 1)
+
+    xp_gw1 = compute_lineup_xp(target_gw)
+    xp_gw2 = compute_lineup_xp(target_gw + 1)
+    xp_gw3 = compute_lineup_xp(target_gw + 2)
+
+    cum1 = xp_gw1
+    cum2 = round(cum1 + xp_gw2, 1)
+    cum3 = round(cum2 + xp_gw3, 1)
+
     root_id = "node-root"
     node_gw1 = f"node-gw{target_gw}-1"
     node_gw2 = f"node-gw{target_gw+1}-1"
@@ -1029,11 +1090,11 @@ def _generate_default_user_plans() -> dict[str, object]:
             "transfers": [],
             "chip": None,
             "evaluation": {
-                "expectedPoints": 58.5,
-                "pointsVariance": 12.2,
-                "cumulativePoints": 58.5,
+                "expectedPoints": xp_gw1,
+                "pointsVariance": 0.0,
+                "cumulativePoints": cum1,
                 "hitsTaken": 0,
-                "netPoints": 58.5,
+                "netPoints": cum1,
                 "bankRemaining": bank,
                 "freeTransfersNext": min(5, free_transfers + 1),
             },
@@ -1053,11 +1114,11 @@ def _generate_default_user_plans() -> dict[str, object]:
             "transfers": [],
             "chip": None,
             "evaluation": {
-                "expectedPoints": 61.2,
-                "pointsVariance": 13.0,
-                "cumulativePoints": 119.7,
+                "expectedPoints": xp_gw2,
+                "pointsVariance": 0.0,
+                "cumulativePoints": cum2,
                 "hitsTaken": 0,
-                "netPoints": 119.7,
+                "netPoints": cum2,
                 "bankRemaining": bank,
                 "freeTransfersNext": min(5, free_transfers + 2),
             },
@@ -1077,11 +1138,11 @@ def _generate_default_user_plans() -> dict[str, object]:
             "transfers": [],
             "chip": None,
             "evaluation": {
-                "expectedPoints": 59.8,
-                "pointsVariance": 12.5,
-                "cumulativePoints": 179.5,
+                "expectedPoints": xp_gw3,
+                "pointsVariance": 0.0,
+                "cumulativePoints": cum3,
                 "hitsTaken": 0,
-                "netPoints": 179.5,
+                "netPoints": cum3,
                 "bankRemaining": bank,
                 "freeTransfersNext": min(5, free_transfers + 3),
             },

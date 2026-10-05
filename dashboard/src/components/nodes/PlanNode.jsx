@@ -81,7 +81,7 @@ function PlanNode({ id, data, selected }) {
           {chip && (
             <span
               style={{
-                background: chipColors[chip] || '#38bdf8',
+                background: chipColors[chip] || chipColors[String(chip).toUpperCase()] || '#38bdf8',
                 color: '#0a0b10',
                 padding: '2px 6px',
                 borderRadius: '4px',
@@ -90,7 +90,7 @@ function PlanNode({ id, data, selected }) {
                 letterSpacing: '0.04em',
               }}
             >
-              {chip}
+              {String(chip).toUpperCase()}
             </span>
           )}
         </div>
@@ -108,6 +108,64 @@ function PlanNode({ id, data, selected }) {
           </span>
           <span style={{ fontSize: '11px', color: '#94a3b8' }}>pts</span>
         </div>
+      </div>
+
+      {/* Chip Booking Selector */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          marginBottom: '8px',
+          background: '#0a0b10',
+          padding: '2px 5px',
+          borderRadius: '5px',
+          border: '1px solid #1a202e',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginRight: '2px' }}>Chip:</span>
+        {[
+          { id: null, label: 'None' },
+          { id: 'WC', label: 'WC', color: '#10b981' },
+          { id: 'FH', label: 'FH', color: '#f59e0b' },
+          { id: 'BB', label: 'BB', color: '#a855f7' },
+          { id: 'TC', label: 'TC', color: '#38bdf8' },
+        ].map((c) => {
+          const isChipSelected = (node.chip ? String(node.chip).toUpperCase() : null) === c.id;
+          return (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => {
+                const nextChip = isChipSelected ? null : c.id;
+                const isFreeChip = nextChip === 'WC' || nextChip === 'FH';
+                const nextHits = isFreeChip ? 0 : node.evaluation?.hitsTaken ?? 0;
+                planActions.updateNode(id, {
+                  chip: nextChip,
+                  evaluation: {
+                    ...node.evaluation,
+                    hitsTaken: nextHits,
+                  },
+                }, true);
+              }}
+              style={{
+                background: isChipSelected ? (c.color ? `${c.color}25` : '#1e2538') : 'transparent',
+                color: isChipSelected ? (c.color || '#38bdf8') : '#64748b',
+                border: isChipSelected ? `1px solid ${c.color || '#38bdf8'}` : '1px solid transparent',
+                borderRadius: '3px',
+                padding: '1px 5px',
+                fontSize: '10px',
+                fontWeight: isChipSelected ? 700 : 500,
+                cursor: 'pointer',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+              title={c.id ? `Book ${c.label} for GW${node.gameweek}` : 'No chip'}
+            >
+              {c.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Transfers Summary */}

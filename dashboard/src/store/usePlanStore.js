@@ -321,7 +321,7 @@ export const planActions = {
     queueSave();
   },
 
-  updateNode(nodeId, updates) {
+  updateNode(nodeId, updates, propagateDownstream = false) {
     const activePlan = globalState.plans.find((p) => p.id === globalState.activePlanId);
     if (!activePlan) return;
     const node = activePlan.nodes[nodeId];
@@ -329,6 +329,46 @@ export const planActions = {
 
     const updatedNode = { ...node, ...updates };
     const updatedNodes = { ...activePlan.nodes, [nodeId]: updatedNode };
+
+    if (propagateDownstream && node.childIds && node.childIds.length > 0) {
+      const queue = [...node.childIds];
+      while (queue.length > 0) {
+        const cid = queue.shift();
+        const child = updatedNodes[cid];
+        if (!child) continue;
+        const parent = updatedNodes[child.parentId];
+        if (!parent) continue;
+
+        const parentBank = parent.evaluation?.bankRemaining ?? activePlan.initialBank ?? 0.0;
+        const parentFt = parent.evaluation?.freeTransfersNext ?? 1;
+        const childTransfers = child.transfers || [];
+
+        // If child has no manual transfers, inherit parent lineup
+        const inheritLineup = childTransfers.length === 0;
+        const nextSlots = inheritLineup && parent.lineup?.slots ? { ...parent.lineup.slots } : child.lineup?.slots;
+
+        const isFreeChip = child.chip === 'WC' || child.chip === 'FH' || child.chip === 'wildcard' || child.chip === 'freehit';
+        const childHits = isFreeChip ? 0 : Math.max(0, childTransfers.length - parentFt);
+        const childRemFt = isFreeChip ? 1 : Math.max(0, parentFt - childTransfers.length);
+        const childFtNext = isFreeChip ? 1 : Math.min(5, childRemFt + 1);
+
+        updatedNodes[cid] = {
+          ...child,
+          lineup: nextSlots ? { ...child.lineup, slots: nextSlots } : child.lineup,
+          evaluation: {
+            ...child.evaluation,
+            bankRemaining: parentBank,
+            hitsTaken: childHits,
+            freeTransfersNext: childFtNext,
+          },
+        };
+
+        if (child.childIds && child.childIds.length > 0) {
+          queue.push(...child.childIds);
+        }
+      }
+    }
+
     const updatedPlan = { ...activePlan, nodes: updatedNodes };
     const updatedPlans = globalState.plans.map((p) => (p.id === activePlan.id ? updatedPlan : p));
 

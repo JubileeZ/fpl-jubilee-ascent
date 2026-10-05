@@ -816,6 +816,140 @@ def test_handle_dashboard_api_solve(monkeypatch: pytest.MonkeyPatch) -> None:
     assert captured["options"]["preset"] == "safe"
 
 
+def test_build_branch_nodes_from_plan_key_mapping():
+    from commands import dashboard as dash
+
+    plan = {
+        "meta": {"hit_cost": 4.0},
+        "weeks": [
+            {
+                "gw": 6,
+                "xp": 58.5,
+                "hits": 1,
+                "itb": 1.2,
+                "ft": 1,
+                "chip": None,
+                "buy": [{"id": 229, "name": "Tarkowski"}],
+                "sell": [{"id": 31, "name": "Konsa"}],
+                "lineup_ids": [109, 173, 277, 229, 453, 368, 40, 154, 12, 249, 411],
+                "bench_ids": [496, 464, 8, 113],
+                "captain_id": 411,
+                "vice_id": 12,
+            },
+            {
+                "gw": 7,
+                "xp": 62.0,
+                "hits": 0,
+                "itb": 0.5,
+                "ft": 1,
+                "chip": "WC",
+                "buy": [],
+                "sell": [],
+                "lineup_ids": [109, 173, 277, 229, 453, 368, 40, 154, 12, 249, 411],
+                "bench_ids": [496, 464, 8, 113],
+                "captain_id": 12,
+                "vice_id": 411,
+            },
+        ],
+    }
+
+    branch = dash._build_branch_nodes_from_plan(plan, "node-root", target_gw=6)
+    assert branch["parentNodeId"] == "node-root"
+    nodes = branch["nodes"]
+    assert len(nodes) == 2
+
+    gw6_node = nodes[branch["rootChildId"]]
+    assert gw6_node["gameweek"] == 6
+    assert len(gw6_node["lineup"]["slots"]) == 15
+    assert gw6_node["lineup"]["slots"]["1"] == 109
+    assert gw6_node["lineup"]["slots"]["11"] == 411
+    # Captain (411) should be mapped to slot 11
+    assert gw6_node["lineup"]["captainSlot"] == 11
+    # Vice (12) should be mapped to slot 9
+    assert gw6_node["lineup"]["viceCaptainSlot"] == 9
+
+    # Transfers
+    assert len(gw6_node["transfers"]) == 1
+    tr = gw6_node["transfers"][0]
+    assert tr["playerInId"] == 229
+    assert tr["playerInName"] == "Tarkowski"
+    assert tr["playerOutId"] == 31
+    assert tr["playerOutName"] == "Konsa"
+
+    # Evaluation
+    assert gw6_node["evaluation"]["bankRemaining"] == 1.2
+    assert gw6_node["evaluation"]["hitsTaken"] == 1
+    assert gw6_node["evaluation"]["netPoints"] == 58.5 - 4.0
+    assert gw6_node["evaluation"]["freeTransfersNext"] == 1
+
+    # GW7 node links
+    gw7_node_id = gw6_node["childIds"][0]
+    gw7_node = nodes[gw7_node_id]
+    assert gw7_node["gameweek"] == 7
+    assert gw7_node["chip"] == "WC"
+    assert gw7_node["evaluation"]["bankRemaining"] == 0.5
+    assert gw7_node["lineup"]["captainSlot"] == 9
+    assert gw7_node["lineup"]["viceCaptainSlot"] == 11
 
 
+def test_build_my_data_from_parent_state():
+    from commands.solve import build_my_data_from_parent_state
 
+    parent_state = {
+        "lineup": {
+            "slots": {
+                "1": 109, "2": 173, "3": 277, "4": 229, "5": 453,
+                "6": 368, "7": 40, "8": 154, "9": 12, "10": 249,
+                "11": 411, "12": 496, "13": 464, "14": 8, "15": 113,
+            }
+        },
+        "evaluation": {
+            "bankRemaining": 1.5,
+            "freeTransfersNext": 3,
+        },
+    }
+
+    processed_dir = Path(__file__).resolve().parents[1] / "data" / "processed"
+    my_data = build_my_data_from_parent_state(parent_state, processed_dir)
+
+    assert my_data["transfers"]["bank"] == 15
+    assert my_data["transfers"]["limit"] == 3
+    assert len(my_data["picks"]) == 15
+    element_ids = [p["element"] for p in my_data["picks"]]
+    assert 411 in element_ids
+    assert 229 in element_ids
+    assert 249 in element_ids
+
+
+def test_deterministic_evaluation_metrics_and_dynamic_baseline():
+    from commands.dashboard import _build_branch_nodes_from_plan, _generate_default_user_plans
+
+    # 1. Verify _build_branch_nodes_from_plan sets pointsVariance to 0.0 (no arbitrary 10 + i * 0.8)
+    plan = {
+        "meta": {"hit_cost": 4.0},
+        "weeks": [
+            {
+                "gw": 6,
+                "xp": 55.4,
+                "hits": 0,
+                "itb": 1.2,
+                "ft": 1,
+                "lineup_ids": [10, 20, 30],
+                "bench_ids": [40],
+            }
+        ],
+    }
+    nodes_data = _build_branch_nodes_from_plan(plan, "parent-1", 6)
+    node = list(nodes_data["nodes"].values())[0]
+    assert node["evaluation"]["pointsVariance"] == 0.0
+    assert node["evaluation"]["expectedPoints"] == 55.4
+
+    # 2. Verify _generate_default_user_plans computes dynamic expectedPoints and pointsVariance == 0.0
+    default_payload = _generate_default_user_plans()
+    assert "plans" in default_payload
+    plan0 = default_payload["plans"][0]
+    for n in plan0["nodes"].values():
+        assert n["evaluation"]["pointsVariance"] == 0.0
+        # Check that nodes are not hardcoded to the old fictional 58.5 / 61.2 / 59.8
+        if n["id"] == f"node-gw{n['gameweek']}-1" and n["evaluation"]["expectedPoints"] > 0:
+            assert n["evaluation"]["expectedPoints"] != 58.5

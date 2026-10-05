@@ -1031,6 +1031,13 @@ def solve_multi_period_fpl(data, options):
                         }
                     )
 
+        if not picks:
+            status_str = solver_stop.get("solver_model_status", "Infeasible")
+            raise ValueError(
+                f"MILP solver found no feasible transfer plan matching constraints (status: {status_str}). "
+                "Check transfer limits, budget, and banned/locked player constraints."
+            )
+
         picks_df = pd.DataFrame(picks).sort_values(by=["week", "lineup", "type", "xP"], ascending=[True, False, True, True])
         total_xp = val(sum_((lineup[p, w] + captain[p, w]) * points_player_week[p, w] for p in players for w in gws))
 

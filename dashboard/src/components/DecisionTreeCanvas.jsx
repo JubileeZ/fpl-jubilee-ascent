@@ -38,6 +38,22 @@ function DecisionTreeFlow() {
 
     setIsSolving(true);
     try {
+      // Collect booked chips across the active plan
+      const bookedChips = {
+        use_wc: [],
+        use_bb: [],
+        use_fh: [],
+        use_tc: [],
+      };
+      Object.values(activePlan.nodes || {}).forEach((n) => {
+        if (!n.chip || !n.gameweek) return;
+        const c = String(n.chip).toUpperCase();
+        if (c === 'WC' || c === 'WILDCARD') bookedChips.use_wc.push(n.gameweek);
+        else if (c === 'BB' || c === 'BENCH_BOOST' || c === 'BENCHBOOST') bookedChips.use_bb.push(n.gameweek);
+        else if (c === 'FH' || c === 'FREE_HIT' || c === 'FREEHIT') bookedChips.use_fh.push(n.gameweek);
+        else if (c === 'TC' || c === 'TRIPLE_CAPTAIN' || c === 'TRIPLECAPTAIN') bookedChips.use_tc.push(n.gameweek);
+      });
+
       const res = await fetch('/api/solve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,6 +62,16 @@ function DecisionTreeFlow() {
           target_gw: targetGw,
           preset: ddpPreset,
           horizon: 4,
+          use_wc: bookedChips.use_wc,
+          use_bb: bookedChips.use_bb,
+          use_fh: bookedChips.use_fh,
+          use_tc: bookedChips.use_tc,
+          parentNode: parentNode ? {
+            lineup: parentNode.lineup,
+            evaluation: parentNode.evaluation,
+            gameweek: parentNode.gameweek,
+            chip: parentNode.chip,
+          } : null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

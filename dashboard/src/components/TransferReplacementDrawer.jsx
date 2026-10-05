@@ -178,16 +178,26 @@ function parsePrice(val) {
 
     // Compute economics
     const newBank = Number((currentBank - candidate.deltaCost).toFixed(1));
-    const freeTransfers = activeNode.evaluation?.freeTransfersNext ?? 1;
-    const hitsTaken = Math.max(0, updatedTransfers.length - freeTransfers);
+    const parentNode = activeNode?.parentId && activePlan?.nodes ? activePlan.nodes[activeNode.parentId] : null;
+    const availFt = parentNode ? (parentNode.evaluation?.freeTransfersNext ?? 1) : (activePlan?.initialFreeTransfers ?? 1);
+    const isFreeChip = activeNode?.chip === 'WC' || activeNode?.chip === 'FH' || activeNode?.chip === 'wildcard' || activeNode?.chip === 'freehit';
+    const hitsTaken = isFreeChip ? 0 : Math.max(0, updatedTransfers.length - availFt);
+    const remFt = isFreeChip ? 1 : Math.max(0, availFt - updatedTransfers.length);
+    const freeTransfersNext = isFreeChip ? 1 : Math.min(5, remFt + 1);
 
     // Recalculate GW expected points
     let gwTotalXp = 0;
-    for (let s = 1; s <= 11; s++) {
+    const isTripleCaptain = activeNode?.chip === 'TC' || activeNode?.chip === 'triplecaptain';
+    const isBenchBoost = activeNode?.chip === 'BB' || activeNode?.chip === 'benchboost';
+    const maxSlot = isBenchBoost ? 15 : 11;
+    for (let s = 1; s <= maxSlot; s++) {
       const pid = newSlots[s] || newSlots[String(s)];
       const pl = allPlayers.find((p) => p.id === pid) || {};
       const xp = pl.projections?.[`gw${currentGw}`]?.total_xp ?? 4.0;
-      const multiplier = s === activeNode.lineup?.captainSlot ? 2 : 1;
+      let multiplier = 1;
+      if (s === activeNode.lineup?.captainSlot) {
+        multiplier = isTripleCaptain ? 3 : 2;
+      }
       gwTotalXp += xp * multiplier;
     }
 
@@ -205,8 +215,9 @@ function parsePrice(val) {
         netPoints,
         bankRemaining: newBank,
         hitsTaken,
+        freeTransfersNext,
       },
-    });
+    }, true);
 
     onClose();
   };

@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-No active map. Map #135 (Unified Solio-Style Decision Tree Planner Rebuild) completed; Issues #136-#142 closed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
+No active map. Map #143 (Decision Tree Planner & Solve Engine Hardening) completed; Issues #144-#149 closed. Prior Map #135 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD

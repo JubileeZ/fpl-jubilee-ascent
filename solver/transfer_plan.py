@@ -74,7 +74,7 @@ def serialize_transfer_plan(
     booked_chips: dict[str, list[int]] | None = None,
 ) -> dict[str, Any]:
     picks = solution.get("picks")
-    if not isinstance(picks, pd.DataFrame) or picks.empty:
+    if not isinstance(picks, pd.DataFrame) or picks.empty or "week" not in picks.columns:
         weeks: list[dict[str, Any]] = []
     else:
         weeks = _weeks_from_picks(picks, solution.get("statistics") or {})

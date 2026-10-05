@@ -4,6 +4,7 @@ import logging
 import sys
 import pandas as pd
 from pathlib import Path
+from typing import Any
 
 # Set up path to include root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -227,6 +228,10 @@ def execute_transfer_plan(
     if options.get("preseason", False):
         logger.info(f"Solving for Preseason starting from GW {target_gw}...")
         my_data = {"picks": [], "chips": [], "transfers": {"limit": None, "cost": 4, "bank": 1000, "value": 0}}
+    elif options.get("parent_state") or options.get("parentNode"):
+        logger.info(f"Loading squad picks and state from parent node for GW {target_gw}...")
+        parent_data = options.get("parent_state") or options.get("parentNode")
+        my_data = build_my_data_from_parent_state(parent_data, processed_dir)
     else:
         logger.info("Loading current squad picks and state from processed Parquet...")
         my_data = build_my_data_from_parquet(processed_dir)
@@ -343,6 +348,105 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
             "made": 0
         }
     }
+
+
+def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir: Path) -> dict:
+    """Builds my_data dictionary using a parent decision node's accumulated squad and bank state."""
+    players_path = processed_dir / "players.parquet"
+    picks_path = processed_dir / "user_picks.parquet"
+    chips_path = processed_dir / "user_chips.parquet"
+
+    if not players_path.exists():
+        raise FileNotFoundError(f"Players Parquet not found in {processed_dir}")
+
+    df_players = pd.read_parquet(players_path)
+    player_pos_map = df_players.set_index("id")["position_id"].to_dict()
+    player_cost_map = (
+        df_players.set_index("id")["now_cost"].to_dict()
+        if "now_cost" in df_players.columns
+        else {}
+    )
+
+    live_sell_map: dict[int, int] = {}
+    if picks_path.exists():
+        try:
+            df_picks = pd.read_parquet(picks_path)
+            for _, r in df_picks.iterrows():
+                live_sell_map[int(r["player_id"])] = int(r["selling_price"])
+        except Exception:
+            pass
+
+    # Extract player IDs from parent node lineup slots
+    raw_slots = (parent_state.get("lineup") or {}).get("slots") or parent_state.get("slots")
+    slot_pids: list[int] = []
+    if isinstance(raw_slots, dict):
+        for pid in raw_slots.values():
+            try:
+                slot_pids.append(int(pid))
+            except (ValueError, TypeError):
+                pass
+    elif isinstance(raw_slots, list):
+        for pid in raw_slots:
+            try:
+                slot_pids.append(int(pid))
+            except (ValueError, TypeError):
+                pass
+
+    if len(slot_pids) < 15:
+        logger.warning(
+            f"Parent state had {len(slot_pids)} players (<15); falling back to live parquet squad."
+        )
+        return build_my_data_from_parquet(processed_dir)
+
+    picks_list = []
+    for pid in slot_pids[:15]:
+        cost = player_cost_map.get(pid, 50)
+        sell_price = live_sell_map.get(pid, cost)
+        picks_list.append({
+            "element": pid,
+            "purchase_price": cost,
+            "selling_price": sell_price,
+            "element_type": player_pos_map.get(pid, 3),
+        })
+
+    eval_data = parent_state.get("evaluation") or {}
+    bank_millions = float(
+        eval_data.get("bankRemaining")
+        or parent_state.get("bankRemaining")
+        or parent_state.get("bank")
+        or 0.0
+    )
+    bank_tenths = max(0, int(round(bank_millions * 10)))
+    free_transfers = int(
+        eval_data.get("freeTransfersNext")
+        or parent_state.get("freeTransfersNext")
+        or parent_state.get("ft")
+        or 1
+    )
+    free_transfers = max(1, min(5, free_transfers))
+
+    chips: list[dict[str, object]] = []
+    if chips_path.exists():
+        try:
+            df_chips = pd.read_parquet(chips_path)
+            for _, chip_row in df_chips.iterrows():
+                name = str(chip_row.get("name") or chip_row.get("chip") or "")
+                status = str(chip_row.get("status") or "")
+                chips.append({"name": name, "status": status, "status_for_entry": status})
+        except Exception:
+            pass
+
+    return {
+        "chips": chips,
+        "picks": picks_list,
+        "team_id": 1,
+        "transfers": {
+            "bank": bank_tenths,
+            "limit": free_transfers,
+            "made": 0,
+        },
+    }
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the FPL MILP optimization solver.")

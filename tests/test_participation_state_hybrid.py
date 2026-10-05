@@ -94,6 +94,59 @@ def test_later_fixture_does_not_reuse_immediate_zero_chance():
     assert result["projected_minutes"] > 0.0
 
 
+def test_operational_zero_chance_forces_dnp_without_snapshot():
+    result = ParticipationStateHybridModel().predict(
+        pd.DataFrame([
+            _row(
+                chance_of_playing=0.0,
+                has_availability_snapshot=False,
+                is_immediate_next_gw=True,
+            )
+        ]),
+        horizon=1,
+    ).iloc[0]
+
+    assert result["p_dnp"] == 1.0
+    assert result["projected_minutes"] == 0.0
+    assert result["projected_points"] == 0.0
+
+
+def test_operational_status_injured_or_suspended_forces_dnp():
+    for status in ["i", "s", "u", "n"]:
+        result = ParticipationStateHybridModel().predict(
+            pd.DataFrame([
+                _row(
+                    chance_of_playing=100.0,
+                    status=status,
+                    has_availability_snapshot=False,
+                    is_immediate_next_gw=True,
+                )
+            ]),
+            horizon=1,
+        ).iloc[0]
+
+        assert result["p_dnp"] == 1.0
+        assert result["projected_minutes"] == 0.0
+        assert result["projected_points"] == 0.0
+
+
+def test_operational_later_fixture_does_not_force_dnp_for_status():
+    result = ParticipationStateHybridModel().predict(
+        pd.DataFrame([
+            _row(
+                chance_of_playing=100.0,
+                status="i",
+                has_availability_snapshot=False,
+                is_immediate_next_gw=False,
+            )
+        ]),
+        horizon=1,
+    ).iloc[0]
+
+    assert result["projected_minutes"] > 0.0
+
+
+
 def _full_start(**overrides: object) -> dict[str, object]:
     return _row(
         p_dnp=0.0,
