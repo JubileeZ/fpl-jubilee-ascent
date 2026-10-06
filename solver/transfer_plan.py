@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-LIVE_SOLVER_REL_GAP = 0.01
+LIVE_SOLVER_REL_GAP = 0.0
 PROVEN_SOLVER_REL_GAP = 1e-4
 WITHIN_ONE_PERCENT = "Within 1% of the best Solver Objective."
 
@@ -27,7 +27,7 @@ def solver_objective_stop_note(
         return None
     target = float(target_gap)
     if gap <= target + 1e-12:
-        if abs(target - LIVE_SOLVER_REL_GAP) < 1e-12:
+        if abs(target - 0.01) < 1e-12:
             return WITHIN_ONE_PERCENT
         shown = f"{target * 100:.1f}".rstrip("0").rstrip(".")
         return f"Within {shown}% of the best Solver Objective."

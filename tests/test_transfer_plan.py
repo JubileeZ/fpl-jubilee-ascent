@@ -176,18 +176,19 @@ def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:
     assert plan["weeks"][0]["chip"] == "BB"
 
 
-def test_execute_transfer_plan_stops_within_one_percent_unless_gap_is_set(tmp_path: Path) -> None:
+def test_execute_transfer_plan_defaults_to_zero_gap_unless_set(tmp_path: Path) -> None:
     seen: dict[str, float] = {}
 
     def _solve(_data: object, options: dict[str, object]) -> list[dict[str, object]]:
         seen["gap"] = float(options["gap"])  # type: ignore[arg-type]
+        rel_gap = float(options["gap"])
         return [{
             "picks": _picks(),
             "total_xp": 15.0,
             "score": 14.2,
             "statistics": {},
             "summary": "",
-            "solver_rel_gap": 0.008,
+            "solver_rel_gap": rel_gap,
             "solver_gap_target": options["gap"],
             "solver_model_status": "Optimal",
             "solver_time_limit_secs": 1200,
@@ -209,17 +210,18 @@ def test_execute_transfer_plan_stops_within_one_percent_unless_gap_is_set(tmp_pa
         plan = execute_transfer_plan(
             options, processed_dir=tmp_path, target_gw=1, solution_path=tmp_path / "solution.json"
         )
-    assert seen["gap"] == 0.01
-    assert plan["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
+    assert seen["gap"] == 0.0
+    assert "solver_objective_note" not in plan["meta"]
 
-    options["gap"] = 0.05
+    options["gap"] = 0.01
     with patch("commands.solve.pad_solver_csv_horizon"), patch(
         "commands.solve.prep_data", return_value={}
     ), patch("commands.solve.solve_multi_period_fpl", side_effect=_solve):
-        execute_transfer_plan(
+        plan_one_pct = execute_transfer_plan(
             options, processed_dir=tmp_path, target_gw=1, solution_path=tmp_path / "override.json"
         )
-    assert seen["gap"] == 0.05
+    assert seen["gap"] == 0.01
+    assert plan_one_pct["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
 
 
 def test_dashboard_transfer_plan_options_force_champion() -> None:

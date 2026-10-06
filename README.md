@@ -160,7 +160,7 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.solve --horizon 10
 ```
 
-Live Transfer Plans (dashboard **Solve scenarios** and `commands.solve`) stop when the Solver Objective is within **1%** of the best possible value ([ADR 0043](docs/adr/0043-transfer-plan-solver-gap.md)). The 20-minute clock is a backstop and still returns the best plan found. An unproven plan shows “Within 1% of the best Solver Objective.” (or “Stopped at 20 min, …% from the best Solver Objective.”). A proven plan shows no extra line. Two solves can pick different legal plans inside that 1% band; `--gap 0` forces a full proof. Dream Team and Transfer Plan Walk-Forward stay on a full proof.
+Live Transfer Plans (dashboard **Solve scenarios** and `commands.solve`) default to exact mathematical proof with zero gap (`gap=0.0`, [ADR 0057](docs/adr/0057-zero-gap-digest-caching-3-arm-transfer-plan.md), superseding ADR 0043). To eliminate redundant re-solves, solutions are cached with a deterministic input digest and load instantly when data is unchanged. `commands.solve` executes all 3 arms (Optimal, No Hit, Conservative) concurrently by default; pass `--single` for single-plan execution or `--force` to bypass the cache. The 20-minute clock remains the safety backstop.
 
 **No Hit solver** (disallows paid transfer hits; free transfers only, matching ADR 0042 No Hit arm):
 

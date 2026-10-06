@@ -1,0 +1,9 @@
+# Zero-Gap Default and Deterministic Digest Caching for 3-Arm Transfer Plans
+
+Default MILP solver relative gap across live Transfer Plans (`commands.solve`, `commands.transfer_plan_scenarios`, and `/api/solve`) transitions from 1% (`gap=0.01`) to exact mathematical optimality (`gap=0.0`). The 20-minute HiGHS execution clock (`secs=1200`) remains the failsafe backstop. To prevent redundant computation when underlying inputs remain identical, a deterministic SHA-256 digest hashes operational input parquet files (`players.parquet`, `user_picks.parquet`, `user_state.parquet`) along with target gameweek, horizon, chip bookings, and champion model. If the digest matches the cached payload in `data/transfer_plan_scenarios.json`, the solution is instantly served with zero re-solve delay. CLI `commands.solve` and Decision Tree Planner `/api/solve` default to solving all 3 canonical arms (**Optimal**, **No Hit**, and **Conservative**) concurrently, streaming progressive results as each arm completes.
+
+**Status:** Accepted. Supersedes ADR 0043.
+
+**Considered:** Retaining 1% gap with caching (rejected: user requested exact 0% proof by default); caching solely on gameweek deadlines (rejected: misses squad edits or injury status updates); keeping CLI as single-arm only (rejected: breaks alignment with the 3-arm Transfer Plan surface and ADR 0053).
+
+**Consequences:** `LIVE_SOLVER_REL_GAP` set to `0.0`. `commands/transfer_plan_scenarios.py` stores `data_digest` in `meta` and bypasses execution on cache hit unless `--force` is passed. `commands/solve.py` executes all 3 arms by default, streams completed arms to stdout, mirrors the Rank 1 arm to `data/solution.json`, and supports `--single` for legacy single-plan execution. `/api/solve` in `commands/dashboard.py` and `DecisionTreeCanvas.jsx` support multi-arm branch generation.

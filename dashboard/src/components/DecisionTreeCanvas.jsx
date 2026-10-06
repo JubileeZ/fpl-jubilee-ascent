@@ -27,16 +27,19 @@ function DecisionTreeFlow() {
   const { plans, activePlan, activePlanId, activeNodeId, isSaving, isLoading, actions } = usePlanStore();
   const [ddpPreset, setDdpPreset] = useState('default');
   const [isSolving, setIsSolving] = useState(false);
+  const [solvingDetail, setSolvingDetail] = useState('');
   const containerRef = useRef(null);
   const { fitView } = useReactFlow();
 
-  const handleOptimizeBranch = async () => {
+  const handleOptimizeBranch = async (opts = {}) => {
     if (!activePlan || isSolving) return;
     const parentId = activeNodeId || activePlan.rootNodeId;
     const parentNode = activePlan.nodes[parentId];
     const targetGw = parentNode ? parentNode.gameweek + 1 : 6;
+    const solve3Arms = Boolean(opts.solve3Arms);
 
     setIsSolving(true);
+    setSolvingDetail('');
     try {
       // Collect booked chips across the active plan
       const bookedChips = {
@@ -61,6 +64,7 @@ function DecisionTreeFlow() {
           parentNodeId: parentId,
           target_gw: targetGw,
           preset: ddpPreset,
+          solve_3_arms: solve3Arms,
           horizon: 4,
           use_wc: bookedChips.use_wc,
           use_bb: bookedChips.use_bb,
@@ -78,25 +82,33 @@ function DecisionTreeFlow() {
 
       // Poll until finished
       let attempts = 0;
+      let lastMountedCount = 0;
       while (attempts < 60) {
         await new Promise((r) => setTimeout(r, 600));
         attempts++;
         const pollRes = await fetch('/api/solve');
         if (pollRes.ok) {
           const pollData = await pollRes.json();
-          if (pollData.status === 'ok' && pollData.payload?.branch) {
+          if (pollData.detail) {
+            setSolvingDetail(pollData.detail);
+          }
+          if (pollData.payload?.branch) {
             const branch = pollData.payload.branch;
-            if (branch.nodes && branch.rootChildId) {
-              const updatedParent = {
-                ...parentNode,
-                childIds: [...(parentNode.childIds || []), branch.rootChildId],
-              };
-              planActions.updateNode(parentId, { childIds: updatedParent.childIds });
+            const newChildIds = branch.rootChildIds && branch.rootChildIds.length
+              ? branch.rootChildIds
+              : (branch.rootChildId ? [branch.rootChildId] : []);
+            if (branch.nodes && newChildIds.length > lastMountedCount) {
+              lastMountedCount = newChildIds.length;
+              const currentParent = (usePlanStore.getState().activePlan?.nodes || {})[parentId] || parentNode;
+              const combinedChildIds = Array.from(new Set([...(currentParent.childIds || []), ...newChildIds]));
+              planActions.updateNode(parentId, { childIds: combinedChildIds });
               for (const [nid, nodeObj] of Object.entries(branch.nodes)) {
                 planActions.updateNode(nid, nodeObj);
               }
-              planActions.setActiveNode(branch.rootChildId);
+              planActions.setActiveNode(newChildIds[0]);
             }
+          }
+          if (pollData.status === 'ok') {
             break;
           } else if (pollData.status === 'error') {
             alert(`Optimization error: ${pollData.error || 'Failed'}`);
@@ -109,6 +121,7 @@ function DecisionTreeFlow() {
       alert(`Could not start optimization: ${err.message}`);
     } finally {
       setIsSolving(false);
+      setSolvingDetail('');
     }
   };
 
@@ -399,7 +412,29 @@ function DecisionTreeFlow() {
           <button
             type="button"
             disabled={isSolving}
-            onClick={handleOptimizeBranch}
+            onClick={() => handleOptimizeBranch({ solve3Arms: true })}
+            style={{
+              background: isSolving ? '#1e2538' : 'rgba(16, 185, 129, 0.15)',
+              color: isSolving ? '#64748b' : '#10b981',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '6px',
+              padding: '5px 10px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: isSolving ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Solve all 3 canonical arms (Optimal, No Hit, Conservative) sequentially with live progress from active node"
+          >
+            <span>{isSolving ? (solvingDetail ? `⏳ ${solvingDetail}` : '⏳ Solving…') : '⚡ Solve 3 Arms'}</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isSolving}
+            onClick={() => handleOptimizeBranch()}
             style={{
               background: isSolving ? '#1e2538' : 'rgba(56, 189, 248, 0.15)',
               color: isSolving ? '#64748b' : '#38bdf8',

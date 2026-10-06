@@ -55,7 +55,7 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 | Dashboard | `dashboard/`, `commands/dashboard.py`, `DESIGN.md` | Explorer + Decision Tree Planner + Research Reader + Model Methodology via collapsible left sidebar. `http://127.0.0.1:8000`. IPv4 bind. Solio-style branching Decision Tree Planner (React Flow canvas, interactive 15-player tactical squad pitch drawer with formation validation, in-pitch transfer replacement drawer with $\Delta\text{ Sum}$ xP, Highs MILP `/api/solve` with Safe/Default/Optimistic/High Risk DDP presets, and Plans Evaluation Suite with Efficient Frontier scatter and Gaussian probability curves). Explorer and Research retained intact. `DESIGN.md` Inter typography + 44px tap targets. |
 | README | `README.md` | How to use + CLI |
 | Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
-| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; live Transfer Plan gap 1% (ADR 0043); Dream Team and Walk-Forward stay gap 0 |
+| Solver | `solver/` | open-fpl-solver `2ff829f` highspy; live Transfer Plan default gap 0% with deterministic digest caching (ADR 0057, superseding ADR 0043); Dream Team and Walk-Forward stay gap 0 |
 | Research | `docs/research/`, `docs/archive/` | Live INDEX + topics. `data/archive/` = Season Archive pins |
 
 ## What does NOT exist yet (do not assume)

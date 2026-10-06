@@ -24,6 +24,8 @@ configure_utf8_stdio()
 
 from commands.export_dashboard import (
     PROJECT_ROOT,
+    load_owned_picks,
+    load_user_state,
     run_dashboard_export,
 )
 from commands.dream_team import execute_dream_team
@@ -185,6 +187,32 @@ def run_refresh_job(
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
         _set_refresh_state(status="ok", error=None, detail="Charts updated.")
+
+        processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+        payload = _loaded_scenarios()
+        if payload and isinstance(payload.get("meta"), dict):
+            cached_digest = payload["meta"].get("data_digest")
+            if cached_digest:
+                from solver.scenarios import compute_scenarios_digest
+                from commands.transfer_plan_scenarios import write_scenarios_payload
+                target_gw = int(payload["meta"].get("target_gw", 1))
+                h = int(payload["meta"].get("horizon", horizon))
+                champ = str(payload["meta"].get("champion", get_default_model_name()))
+                new_digest = compute_scenarios_digest(
+                    processed_dir=processed_dir,
+                    target_gw=target_gw,
+                    horizon=h,
+                    champion=champ,
+                )
+                if new_digest == cached_digest:
+                    payload["meta"]["stale"] = False
+                    write_scenarios_payload(SCENARIOS_PATH, payload)
+                    _set_plan_state(
+                        status="ok",
+                        error=None,
+                        detail="Transfer Plan Scenarios up-to-date (data unchanged).",
+                        payload=payload,
+                    )
     except Exception as exc:
         logger.exception("Dashboard Refresh failed")
         _set_refresh_state(status="error", error=str(exc), detail="Refresh failed.")
@@ -651,6 +679,7 @@ def _build_branch_nodes_from_plan(
     plan: dict[str, Any],
     parent_node_id: str,
     target_gw: int,
+    arm_label: str = "MILP Optimal",
 ) -> dict[str, Any]:
     weeks = plan.get("weeks") or []
     nodes: dict[str, Any] = {}
@@ -721,7 +750,7 @@ def _build_branch_nodes_from_plan(
             "parentId": prev_id,
             "childIds": [],
             "gameweek": gw,
-            "title": f"GW{gw} (MILP Optimal)",
+            "title": f"GW{gw} ({arm_label})",
             "lineup": {
                 "slots": slots,
                 "captainSlot": captain_slot,
@@ -750,6 +779,7 @@ def _build_branch_nodes_from_plan(
     return {
         "nodes": nodes,
         "rootChildId": node_ids[0] if node_ids else None,
+        "rootChildIds": [node_ids[0]] if node_ids else [],
         "leafNodeId": node_ids[-1] if node_ids else None,
         "parentNodeId": parent_node_id,
     }
@@ -795,6 +825,98 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
         for key in ("locked", "banned"):
             if key in solver_opts:
                 solver_opts[key] = _resolve_player_ids(solver_opts[key], processed_dir)
+
+        if options.get("solve_3_arms"):
+            from solver.scenarios import (
+                ARM_CONSERVATIVE,
+                ARM_NAMES,
+                ARM_NO_HIT,
+                ARM_OPTIMAL,
+                apply_scenario_arm,
+                find_protected_one_match_missed_starters,
+                find_unowned_flagged_players,
+            )
+            players_path = processed_dir / "players.parquet"
+            perf_path = processed_dir / "player_performances.parquet"
+            players_df = pd.read_parquet(players_path) if players_path.exists() else pd.DataFrame()
+            perf_df = pd.read_parquet(perf_path) if perf_path.exists() else pd.DataFrame()
+            try:
+                owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
+                _itb, free_transfers = load_user_state(processed_dir)
+                unowned_flagged = find_unowned_flagged_players(players_df, owned_ids)
+                protected_starters = find_protected_one_match_missed_starters(perf_df, owned_ids)
+            except Exception:
+                unowned_flagged = []
+                protected_starters = []
+                free_transfers = 1
+
+            arms = (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+            merged_nodes: dict[str, Any] = {}
+            root_child_ids: list[str] = []
+            best_plan = None
+
+            for i, arm in enumerate(arms):
+                _set_solve_state(
+                    status="running",
+                    detail=f"Solving arm {i+1}/3: {ARM_NAMES[arm]}…",
+                )
+                arm_opts = dict(solver_opts)
+                arm_opts = apply_scenario_arm(
+                    arm_opts,
+                    arm,
+                    start_gw=target_gw,
+                    free_transfer_bank=free_transfers,
+                    banned_next_gw=unowned_flagged,
+                    locked_next_gw=protected_starters,
+                )
+                arm_path = PROJECT_ROOT / "data" / f".branch_{arm}.json"
+                try:
+                    plan = execute_transfer_plan(
+                        arm_opts,
+                        processed_dir=processed_dir,
+                        target_gw=target_gw,
+                        solution_path=arm_path,
+                    )
+                finally:
+                    if arm_path.exists():
+                        arm_path.unlink()
+                if best_plan is None:
+                    best_plan = plan
+                arm_branch = _build_branch_nodes_from_plan(
+                    plan, parent_node_id, target_gw, arm_label=ARM_NAMES[arm]
+                )
+                merged_nodes.update(arm_branch["nodes"])
+                if arm_branch["rootChildId"]:
+                    root_child_ids.append(arm_branch["rootChildId"])
+                _set_solve_state(
+                    status="running",
+                    detail=f"Solved {i+1}/3 arms ({ARM_NAMES[arm]})…",
+                    payload={
+                        "branch": {
+                            "nodes": dict(merged_nodes),
+                            "rootChildId": root_child_ids[0] if root_child_ids else None,
+                            "rootChildIds": list(root_child_ids),
+                            "parentNodeId": parent_node_id,
+                        },
+                        "plan": best_plan,
+                    },
+                )
+
+            _set_solve_state(
+                status="ok",
+                error=None,
+                detail="3-Arm branch solve complete.",
+                payload={
+                    "branch": {
+                        "nodes": merged_nodes,
+                        "rootChildId": root_child_ids[0] if root_child_ids else None,
+                        "rootChildIds": root_child_ids,
+                        "parentNodeId": parent_node_id,
+                    },
+                    "plan": best_plan,
+                },
+            )
+            return
 
         plan = execute_transfer_plan(
             solver_opts,

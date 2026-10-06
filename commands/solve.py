@@ -477,9 +477,19 @@ def main() -> None:
     parser.add_argument(
         "--gap",
         type=float,
-        help="Relative Solver Objective gap (live default 0.01; 0 = full proof)",
+        help="Relative Solver Objective gap (default 0.0 = full proof)",
     )
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
+    parser.add_argument(
+        "--single",
+        action="store_true",
+        help="Solve a single transfer plan instead of the 3 canonical arms",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-solve even if input digest matches cache",
+    )
     parser.add_argument("--target_gw", type=int, help="Target Gameweek to start optimization from")
     args, unknown = parser.parse_known_args()
     
@@ -513,6 +523,8 @@ def main() -> None:
         options["hit_cost"] = args.hit_cost
     if args.gap is not None:
         options["gap"] = args.gap
+    else:
+        options["gap"] = LIVE_SOLVER_REL_GAP
 
         
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
@@ -527,33 +539,97 @@ def main() -> None:
         
     options["override_next_gw"] = target_gw
 
-    try:
-        plan = execute_transfer_plan(
-            options,
-            processed_dir=processed_dir,
-            target_gw=target_gw,
-            solution_path=PROJECT_ROOT / "data" / "solution.json",
-        )
-    except ValueError as exc:
-        logger.error(f"Invalid chip configuration: {exc}")
-        sys.exit(1)
-    except FileNotFoundError as e:
-        logger.error(e)
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Failed to prepare or solve Transfer Plan: {e}")
-        sys.exit(1)
+    if options.get("preseason", False) or args.single:
+        try:
+            plan = execute_transfer_plan(
+                options,
+                processed_dir=processed_dir,
+                target_gw=target_gw,
+                solution_path=PROJECT_ROOT / "data" / "solution.json",
+            )
+        except ValueError as exc:
+            logger.error(f"Invalid chip configuration: {exc}")
+            sys.exit(1)
+        except FileNotFoundError as e:
+            logger.error(e)
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Failed to prepare or solve Transfer Plan: {e}")
+            sys.exit(1)
 
-    logger.info("Solver run complete!")
-    note = (plan.get("meta") or {}).get("solver_objective_note")
-    if note:
-        print(note)
-    if plan.get("summary"):
-        print("\n" + "="*50)
-        print("RECOMMENDED SQUAD & TRANSFER PLAN")
-        print("="*50)
-        print(plan["summary"])
-        print("="*50 + "\n")
+        logger.info("Solver run complete!")
+        note = (plan.get("meta") or {}).get("solver_objective_note")
+        if note:
+            print(note)
+        if plan.get("summary"):
+            print("\n" + "="*50)
+            print("RECOMMENDED SQUAD & TRANSFER PLAN")
+            print("="*50)
+            print(plan["summary"])
+            print("="*50 + "\n")
+    else:
+        from commands.transfer_plan_scenarios import UserSquadRequired, execute_transfer_plan_scenarios
+
+        def on_progress(partial: dict[str, Any]) -> None:
+            meta = partial.get("meta") or {}
+            done = len(meta.get("completed_arms") or [])
+            total = len(meta.get("arms") or [])
+            scenarios = partial.get("scenarios") or []
+            if scenarios:
+                latest = scenarios[-1]
+                print(
+                    f"[{done}/{total}] Solved {latest.get('name', 'Arm')} · "
+                    f"Σ Expected GW Score: {float(latest.get('horizon_egs') or 0.0):.1f}"
+                )
+
+        try:
+            payload = execute_transfer_plan_scenarios(
+                processed_dir=processed_dir,
+                target_gw=target_gw,
+                horizon=options["horizon"],
+                force=args.force,
+                gap=options["gap"],
+                on_progress=on_progress,
+            )
+        except UserSquadRequired as exc:
+            logger.warning(f"{exc}")
+            print(f"\n{exc}\nRun with --preseason for a blank squad, or refresh with FPL credentials.\n")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Failed to execute 3-arm Transfer Plan: {e}")
+            sys.exit(1)
+
+        from_cache = payload.get("from_cache", False)
+        if from_cache:
+            digest_str = str(payload.get("meta", {}).get("data_digest", ""))[:8]
+            print(f"Loaded cached 3-arm Transfer Plan (proven gap 0.0, digest: {digest_str}).")
+
+        scenarios = payload.get("scenarios") or []
+        print("\n" + "=" * 50)
+        print("TRANSFER PLAN SCENARIOS (3 ARMS RANKED)")
+        print("=" * 50)
+        for s in scenarios:
+            name = str(s.get("name"))
+            rank = s.get("rank")
+            score = float(s.get("horizon_egs") or 0.0)
+            plan_obj = s.get("plan") or {}
+            weeks = plan_obj.get("weeks") or []
+            w1 = weeks[0] if weeks else {}
+            buys = [b.get("name") for b in (w1.get("buy") or []) if isinstance(b, dict)]
+            sells = [b.get("name") for b in (w1.get("sell") or []) if isinstance(b, dict)]
+            moves = f"+{', '.join(buys)} / -{', '.join(sells)}" if buys or sells else "Roll FT"
+            print(f"Rank {rank}: {name:<14} | Σ EGS: {score:5.1f} | Hits: {w1.get('hits', 0)} | Start: {moves}")
+        print("=" * 50 + "\n")
+
+        if scenarios:
+            top_plan = scenarios[0].get("plan") or {}
+            if top_plan.get("summary"):
+                print("=" * 50)
+                print(f"RECOMMENDED SQUAD & PLAN ({scenarios[0].get('name', 'Rank 1')})")
+                print("=" * 50)
+                print(top_plan["summary"])
+                print("=" * 50 + "\n")
+
 
 if __name__ == "__main__":
     main()

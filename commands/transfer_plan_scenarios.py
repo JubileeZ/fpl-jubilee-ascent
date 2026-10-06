@@ -18,11 +18,13 @@ from solver.scenarios import (
     ARM_NAMES,
     annotate_plan_with_egs,
     apply_scenario_arm,
+    compute_scenarios_digest,
     feasible_scenario_arms,
     find_protected_one_match_missed_starters,
     find_unowned_flagged_players,
     rank_scenarios,
 )
+from solver.transfer_plan import LIVE_SOLVER_REL_GAP
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS_PATH = PROJECT_ROOT / "data" / "transfer_plan_scenarios.json"
@@ -84,6 +86,7 @@ def build_scenarios_payload(
     stale: bool = False,
     unowned_flagged: list[int] | None = None,
     protected_starters: list[int] | None = None,
+    data_digest: str | None = None,
 ) -> dict[str, Any]:
     completed = [str(row["id"]) for row in rows]
     pending = [arm for arm in arms if arm not in set(completed)]
@@ -101,6 +104,7 @@ def build_scenarios_payload(
             "pending_arms": pending,
             "unowned_flagged": unowned_flagged or [],
             "protected_starters": protected_starters or [],
+            "data_digest": data_digest,
         },
         "scenarios": ranked,
     }
@@ -111,7 +115,7 @@ def execute_transfer_plan_scenarios(
     processed_dir: Path,
     target_gw: int,
     horizon: int,
-    dataset: dict[str, Any],
+    dataset: dict[str, Any] | None = None,
     booked_chips: dict[str, list[int]] | None = None,
     enabled_chips: list[dict[str, object]] | None = None,
     available: list[dict[str, object]] | None = None,
@@ -120,6 +124,8 @@ def execute_transfer_plan_scenarios(
     scenarios_path: Path = SCENARIOS_PATH,
     solution_path: Path = SOLUTION_PATH,
     on_progress: ProgressCallback | None = None,
+    force: bool = False,
+    gap: float = LIVE_SOLVER_REL_GAP,
 ) -> dict[str, Any]:
     owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
     if not owned_ids:
@@ -128,6 +134,50 @@ def execute_transfer_plan_scenarios(
         )
     _itb, free_transfers = load_user_state(processed_dir)
     horizon = clamp_planning_horizon(horizon)
+
+    champion = get_default_model_name()
+    digest = compute_scenarios_digest(
+        processed_dir=processed_dir,
+        target_gw=target_gw,
+        horizon=horizon,
+        champion=champion,
+        booked_chips=booked_chips,
+        enabled_chips=enabled_chips,
+        force_keep=force_keep,
+        gap=gap,
+    )
+    if not force:
+        cached = load_scenarios_payload(scenarios_path)
+        if (
+            cached is not None
+            and isinstance(cached.get("meta"), dict)
+            and cached["meta"].get("data_digest") == digest
+            and cached["meta"].get("status") == "ok"
+            and cached.get("scenarios")
+            and not cached["meta"].get("stale", False)
+        ):
+            if on_progress is not None:
+                on_progress(cached)
+            if cached.get("scenarios"):
+                solution_path.parent.mkdir(parents=True, exist_ok=True)
+                solution_path.write_text(
+                    json.dumps(cached["scenarios"][0]["plan"], indent=2),
+                    encoding="utf-8",
+                )
+            result = dict(cached)
+            result["from_cache"] = True
+            return result
+
+    if dataset is None:
+        dashboard_json = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
+        if dashboard_json.exists():
+            try:
+                dataset = json.loads(dashboard_json.read_text(encoding="utf-8"))
+            except Exception:
+                dataset = {"players": []}
+        else:
+            dataset = {"players": []}
+
     gws = planning_gameweeks(target_gw, horizon)
     chips = booked_chips or {"use_wc": [], "use_bb": [], "use_fh": [], "use_tc": []}
     user_chips = load_user_chips(processed_dir)
@@ -163,6 +213,7 @@ def execute_transfer_plan_scenarios(
                 stale=False,
                 unowned_flagged=unowned_flagged,
                 protected_starters=protected_starters,
+                data_digest=digest,
             )
             write_scenarios_payload(scenarios_path, payload)
             if status == "ok" and payload["scenarios"]:
@@ -186,6 +237,8 @@ def execute_transfer_plan_scenarios(
                 locked_next_gw=protected_starters,
             )
         )
+        if "gap" not in options:
+            options["gap"] = gap
         arm_path = scenarios_path.parent / f".arm_{arm}.json"
         try:
             plan = execute_plan(

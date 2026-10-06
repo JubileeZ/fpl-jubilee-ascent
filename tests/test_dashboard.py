@@ -953,3 +953,50 @@ def test_deterministic_evaluation_metrics_and_dynamic_baseline():
         # Check that nodes are not hardcoded to the old fictional 58.5 / 61.2 / 59.8
         if n["id"] == f"node-gw{n['gameweek']}-1" and n["evaluation"]["expectedPoints"] > 0:
             assert n["evaluation"]["expectedPoints"] != 58.5
+
+
+def test_run_branch_solve_job_3_arms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from commands import dashboard as dash
+
+    solved_arms: list[dict] = []
+
+    def fake_execute(options: dict, **kwargs: object) -> dict:
+        solved_arms.append(dict(options))
+        return {
+            "meta": {"hit_cost": 4.0},
+            "weeks": [
+                {
+                    "gw": 6,
+                    "xp": 50.0,
+                    "hits": 0,
+                    "itb": 0.5,
+                    "ft": 1,
+                    "lineup_ids": [10],
+                    "bench_ids": [],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(dash, "execute_transfer_plan", fake_execute)
+    monkeypatch.setattr(dash, "resolve_operational_processed_dir", lambda _root: tmp_path)
+    pd.DataFrame([{"id": 10, "status": "a"}]).to_parquet(tmp_path / "players.parquet")
+    pd.DataFrame([{"player_id": 10, "gameweek_id": 1, "minutes": 90, "starts": 1}]).to_parquet(tmp_path / "player_performances.parquet")
+    pd.DataFrame([{"player_id": 10, "is_captain": True, "lineup_index": 11}]).to_parquet(tmp_path / "user_picks.parquet")
+    pd.DataFrame([{"free_transfers": 1, "bank": 0.0}]).to_parquet(tmp_path / "user_state.parquet")
+
+    dash.run_branch_solve_job(
+        options={"solve_3_arms": True},
+        parent_node_id="parent-node",
+        target_gw=6,
+    )
+
+    state = dash.solve_status()
+    assert state["status"] == "ok"
+    assert len(solved_arms) == 3
+    branch = state["payload"]["branch"]
+    assert len(branch["rootChildIds"]) == 3
+    assert len(branch["nodes"]) == 3
+    titles = [n["title"] for n in branch["nodes"].values()]
+    assert any("Optimal" in t for t in titles)
+    assert any("No Hit" in t for t in titles)
+    assert any("Conservative" in t for t in titles)

@@ -214,3 +214,64 @@ def test_solve_cli_model_champion_string_uses_champion() -> None:
         main()
     assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 
+
+def test_solve_cli_defaults_to_3_arm_scenarios(capsys: pytest.CaptureFixture[str]) -> None:
+    fake_scenarios_payload = {
+        "meta": {"status": "ok", "arms": ["optimal", "no_hit", "conservative"], "data_digest": "abcdef12"},
+        "scenarios": [
+            {
+                "id": "optimal",
+                "name": "Optimal",
+                "rank": 1,
+                "horizon_egs": 38.5,
+                "plan": {
+                    "summary": "Haaland (C) GW6",
+                    "weeks": [{"gw": 6, "hits": 0, "buy": [{"name": "Saka"}], "sell": [{"name": "Eze"}]}],
+                },
+            },
+            {
+                "id": "no_hit",
+                "name": "No Hit",
+                "rank": 2,
+                "horizon_egs": 37.0,
+                "plan": {"summary": "", "weeks": [{"gw": 6, "hits": 0, "buy": [], "sell": []}]},
+            },
+            {
+                "id": "conservative",
+                "name": "Conservative",
+                "rank": 3,
+                "horizon_egs": 36.2,
+                "plan": {"summary": "", "weeks": [{"gw": 6, "hits": 0, "buy": [], "sell": []}]},
+            },
+        ],
+    }
+
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
+         patch("commands.transfer_plan_scenarios.execute_transfer_plan_scenarios", return_value=fake_scenarios_payload) as mock_scenarios, \
+         patch("sys.argv", ["commands.solve", "--target_gw", "6"]):
+        main()
+        mock_scenarios.assert_called_once()
+
+    captured = capsys.readouterr().out
+    assert "TRANSFER PLAN SCENARIOS (3 ARMS RANKED)" in captured
+    assert "Rank 1: Optimal" in captured
+    assert "Rank 2: No Hit" in captured
+    assert "Rank 3: Conservative" in captured
+    assert "Haaland (C) GW6" in captured
+
+
+def test_solve_cli_single_flag_runs_single_plan(capsys: pytest.CaptureFixture[str]) -> None:
+    plan = {
+        "meta": {"solver_objective": 12.0},
+        "summary": "Single plan summary",
+    }
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
+         patch("commands.solve.execute_transfer_plan", return_value=plan) as mock_single, \
+         patch("sys.argv", ["commands.solve", "--single", "--target_gw", "6"]):
+        main()
+        mock_single.assert_called_once()
+
+    captured = capsys.readouterr().out
+    assert "Single plan summary" in captured
+    assert "TRANSFER PLAN SCENARIOS" not in captured
+

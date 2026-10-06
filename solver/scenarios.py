@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import pandas as pd
@@ -195,3 +198,41 @@ def annotate_plan_with_egs(
         "next_best": [],
     }
     return annotated
+
+
+def compute_scenarios_digest(
+    *,
+    processed_dir: Path,
+    target_gw: int,
+    horizon: int,
+    champion: str,
+    booked_chips: Mapping[str, Sequence[int]] | None = None,
+    enabled_chips: Sequence[Mapping[str, object]] | None = None,
+    force_keep: Sequence[Mapping[str, object]] | None = None,
+    gap: float = 0.0,
+) -> str:
+    """Deterministic SHA-256 fingerprint of inputs for cache avoidance (ADR 0057)."""
+    hasher = hashlib.sha256()
+    for filename in ("user_picks.parquet", "user_state.parquet", "players.parquet"):
+        p = processed_dir / filename
+        if p.exists():
+            hasher.update(p.read_bytes())
+        else:
+            hasher.update(b"missing")
+    params = {
+        "target_gw": int(target_gw),
+        "horizon": int(horizon),
+        "champion": str(champion),
+        "booked_chips": {k: sorted(v) for k, v in (booked_chips or {}).items()},
+        "enabled_chips": sorted(
+            [dict(x) for x in (enabled_chips or [])],
+            key=lambda d: (str(d.get("chip")), int(d.get("chip_set") or 0)),
+        ),
+        "force_keep": sorted(
+            [dict(x) for x in (force_keep or [])],
+            key=lambda d: (int(d.get("player_id") or 0), int(d.get("gw") or 0)),
+        ),
+        "gap": float(gap),
+    }
+    hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+    return hasher.hexdigest()
