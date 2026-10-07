@@ -768,6 +768,26 @@ def _build_branch_nodes_from_plan(
                 "bankRemaining": itb,
                 "freeTransfersNext": ft,
             },
+            "solverRecommendation": {
+                "lineup": {
+                    "slots": dict(slots),
+                    "captainSlot": captain_slot,
+                    "viceCaptainSlot": vice_captain_slot,
+                    "benchOrder": [12, 13, 14, 15],
+                },
+                "transfers": list(transfers),
+                "chip": chip,
+                "evaluation": {
+                    "expectedPoints": round(xp, 1),
+                    "pointsVariance": 0.0,
+                    "cumulativePoints": round(cum_xp, 1),
+                    "hitsTaken": hits,
+                    "netPoints": round(net_xp, 1),
+                    "bankRemaining": itb,
+                    "freeTransfersNext": ft,
+                },
+            },
+            "isCustom": False,
         }
         nodes[node_id] = node
         prev_id = node_id
@@ -822,6 +842,11 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
                             pass
                     solver_opts[chip] = clean_list
 
+        horizon_end = target_gw + horizon - 1
+        for chip in ("use_wc", "use_bb", "use_fh", "use_tc"):
+            if chip in solver_opts and isinstance(solver_opts[chip], list):
+                solver_opts[chip] = [gw for gw in solver_opts[chip] if target_gw <= gw <= horizon_end]
+
         for key in ("locked", "banned"):
             if key in solver_opts:
                 solver_opts[key] = _resolve_player_ids(solver_opts[key], processed_dir)
@@ -843,6 +868,14 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
             try:
                 owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
                 _itb, free_transfers = load_user_state(processed_dir)
+                parent_data = options.get("parentNode") or options.get("parent_state")
+                if isinstance(parent_data, dict):
+                    parent_eval = parent_data.get("evaluation") or {}
+                    if "freeTransfersNext" in parent_eval:
+                        free_transfers = int(parent_eval["freeTransfersNext"])
+                    parent_slots = (parent_data.get("lineup") or {}).get("slots")
+                    if isinstance(parent_slots, dict) and len(parent_slots) == 15:
+                        owned_ids = [int(v) for v in parent_slots.values() if v]
                 unowned_flagged = find_unowned_flagged_players(players_df, owned_ids)
                 protected_starters = find_protected_one_match_missed_starters(perf_df, owned_ids)
             except Exception:
@@ -869,7 +902,7 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
                     banned_next_gw=unowned_flagged,
                     locked_next_gw=protected_starters,
                 )
-                arm_path = PROJECT_ROOT / "data" / f".branch_{arm}.json"
+                arm_path = PROJECT_ROOT / "data" / f".branch_{arm}_{uuid.uuid4().hex[:6]}.json"
                 try:
                     plan = execute_transfer_plan(
                         arm_opts,
@@ -1154,128 +1187,251 @@ def _generate_default_user_plans() -> dict[str, object]:
         except Exception as exc:
             logger.warning("Could not read dashboard_data.json for baseline projections: %s", exc)
 
-    def compute_lineup_xp(gw: int) -> float:
-        tot = sum(xp_lookup.get(slots.get(str(s), 0), {}).get(gw, 4.0) for s in range(1, 12))
-        cap = xp_lookup.get(slots.get(str(captain_slot), 0), {}).get(gw, 4.0)
-        return round(tot + cap, 1)
+    players_path = processed_dir / "players.parquet"
+    pos_map: dict[int, str] = {}
+    if players_path.exists():
+        try:
+            df_pl = pd.read_parquet(players_path)
+            pos_code = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
+            for _, r in df_pl.iterrows():
+                pos_map[int(r["id"])] = pos_code.get(int(r["position_id"]), "MID")
+        except Exception:
+            pass
 
-    xp_gw1 = compute_lineup_xp(target_gw)
-    xp_gw2 = compute_lineup_xp(target_gw + 1)
-    xp_gw3 = compute_lineup_xp(target_gw + 2)
+    def optimize_squad_for_gw(gw: int) -> tuple[dict[str, int], int, int, list[int], float]:
+        """Selects highest legal xP starting XI, orders bench by xP, and sets captain/vice based on score."""
+        all_pids = [slots[str(i)] for i in range(1, 16) if str(i) in slots]
+        squad_items = []
+        for pid in all_pids:
+            pos = pos_map.get(pid, "MID")
+            xp = xp_lookup.get(pid, {}).get(gw, 4.0)
+            squad_items.append({"id": pid, "pos": pos, "xp": xp})
 
-    cum1 = xp_gw1
-    cum2 = round(cum1 + xp_gw2, 1)
-    cum3 = round(cum2 + xp_gw3, 1)
+        gkps = sorted([p for p in squad_items if p["pos"] == "GKP"], key=lambda x: x["xp"], reverse=True)
+        defs = sorted([p for p in squad_items if p["pos"] == "DEF"], key=lambda x: x["xp"], reverse=True)
+        mids = sorted([p for p in squad_items if p["pos"] == "MID"], key=lambda x: x["xp"], reverse=True)
+        fwds = sorted([p for p in squad_items if p["pos"] == "FWD"], key=lambda x: x["xp"], reverse=True)
 
+        if not gkps or len(defs) < 3 or len(mids) < 2 or not fwds:
+            tot = sum(xp_lookup.get(slots.get(str(s), 0), {}).get(gw, 4.0) for s in range(1, 12))
+            cap = xp_lookup.get(slots.get(str(captain_slot), 0), {}).get(gw, 4.0)
+            return dict(slots), captain_slot, vice_captain_slot, list(bench_order), round(tot + cap, 1)
+
+        legal_shapes = [
+            (3, 4, 3), (3, 5, 2), (4, 3, 3), (4, 4, 2), (4, 5, 1), (5, 2, 3), (5, 3, 2), (5, 4, 1)
+        ]
+
+        best_score = -1.0
+        best_starters: list[dict[str, Any]] = []
+        best_bench: list[dict[str, Any]] = []
+
+        for req_defs, req_mids, req_fwds in legal_shapes:
+            if len(defs) < req_defs or len(mids) < req_mids or len(fwds) < req_fwds:
+                continue
+            st_def = defs[:req_defs]
+            st_mid = mids[:req_mids]
+            st_fwd = fwds[:req_fwds]
+            score = gkps[0]["xp"] + sum(p["xp"] for p in st_def) + sum(p["xp"] for p in st_mid) + sum(p["xp"] for p in st_fwd)
+            if score > best_score:
+                best_score = score
+                bench_outfield = sorted(defs[req_defs:] + mids[req_mids:] + fwds[req_fwds:], key=lambda x: x["xp"], reverse=True)
+                best_starters = [gkps[0]] + st_def + st_mid + st_fwd
+                best_bench = ([gkps[1]] if len(gkps) > 1 else []) + bench_outfield
+
+        gw_slots: dict[str, int] = {}
+        for idx, p in enumerate(best_starters, start=1):
+            gw_slots[str(idx)] = p["id"]
+        for idx, p in enumerate(best_bench, start=12):
+            gw_slots[str(idx)] = p["id"]
+
+        sorted_starters = sorted(enumerate(best_starters, start=1), key=lambda x: x[1]["xp"], reverse=True)
+        c_slot = sorted_starters[0][0] if len(sorted_starters) > 0 else 1
+        v_slot = sorted_starters[1][0] if len(sorted_starters) > 1 else (2 if c_slot != 2 else 1)
+
+        cap_bonus = sorted_starters[0][1]["xp"] if len(sorted_starters) > 0 else 4.0
+        tot_xp = round(best_score + cap_bonus, 1)
+        return gw_slots, c_slot, v_slot, [12, 13, 14, 15], tot_xp
+
+    horizon = 5
+    nodes: dict[str, Any] = {}
+    cum_xp = 0.0
     root_id = "node-root"
-    node_gw1 = f"node-gw{target_gw}-1"
-    node_gw2 = f"node-gw{target_gw+1}-1"
-    node_gw3 = f"node-gw{target_gw+2}-1"
 
-    nodes = {
-        root_id: {
-            "id": root_id,
-            "parentId": None,
-            "childIds": [node_gw1],
-            "gameweek": max(1, target_gw - 1),
-            "title": f"Pre-GW{target_gw} Baseline",
-            "lineup": {
-                "slots": slots,
-                "captainSlot": captain_slot,
-                "viceCaptainSlot": vice_captain_slot,
-                "benchOrder": bench_order,
-            },
-            "transfers": [],
-            "chip": None,
-            "evaluation": {
-                "expectedPoints": 0.0,
-                "pointsVariance": 0.0,
-                "cumulativePoints": 0.0,
-                "hitsTaken": 0,
-                "netPoints": 0.0,
-                "bankRemaining": bank,
-                "freeTransfersNext": free_transfers,
-            },
+    # Root Node: Current Pre-Deadline User Squad
+    nodes[root_id] = {
+        "id": root_id,
+        "parentId": None,
+        "childIds": [],
+        "gameweek": max(1, target_gw - 1),
+        "title": "Current Squad",
+        "lineup": {
+            "slots": slots,
+            "captainSlot": captain_slot,
+            "viceCaptainSlot": vice_captain_slot,
+            "benchOrder": bench_order,
         },
-        node_gw1: {
-            "id": node_gw1,
-            "parentId": root_id,
-            "childIds": [node_gw2],
-            "gameweek": target_gw,
-            "title": f"GW{target_gw} (Hold & Roll)",
-            "lineup": {
-                "slots": slots,
-                "captainSlot": captain_slot,
-                "viceCaptainSlot": vice_captain_slot,
-                "benchOrder": bench_order,
-            },
-            "transfers": [],
-            "chip": None,
-            "evaluation": {
-                "expectedPoints": xp_gw1,
-                "pointsVariance": 0.0,
-                "cumulativePoints": cum1,
-                "hitsTaken": 0,
-                "netPoints": cum1,
-                "bankRemaining": bank,
-                "freeTransfersNext": min(5, free_transfers + 1),
-            },
+        "transfers": [],
+        "chip": None,
+        "evaluation": {
+            "expectedPoints": 0.0,
+            "pointsVariance": 0.0,
+            "cumulativePoints": 0.0,
+            "hitsTaken": 0,
+            "netPoints": 0.0,
+            "bankRemaining": bank,
+            "freeTransfersNext": free_transfers,
         },
-        node_gw2: {
-            "id": node_gw2,
-            "parentId": node_gw1,
-            "childIds": [node_gw3],
-            "gameweek": target_gw + 1,
-            "title": f"GW{target_gw+1} (Roll)",
-            "lineup": {
-                "slots": slots,
-                "captainSlot": captain_slot,
-                "viceCaptainSlot": vice_captain_slot,
-                "benchOrder": bench_order,
-            },
-            "transfers": [],
-            "chip": None,
-            "evaluation": {
-                "expectedPoints": xp_gw2,
-                "pointsVariance": 0.0,
-                "cumulativePoints": cum2,
-                "hitsTaken": 0,
-                "netPoints": cum2,
-                "bankRemaining": bank,
-                "freeTransfersNext": min(5, free_transfers + 2),
-            },
-        },
-        node_gw3: {
-            "id": node_gw3,
-            "parentId": node_gw2,
-            "childIds": [],
-            "gameweek": target_gw + 2,
-            "title": f"GW{target_gw+2} (Roll)",
-            "lineup": {
-                "slots": slots,
-                "captainSlot": captain_slot,
-                "viceCaptainSlot": vice_captain_slot,
-                "benchOrder": bench_order,
-            },
-            "transfers": [],
-            "chip": None,
-            "evaluation": {
-                "expectedPoints": xp_gw3,
-                "pointsVariance": 0.0,
-                "cumulativePoints": cum3,
-                "hitsTaken": 0,
-                "netPoints": cum3,
-                "bankRemaining": bank,
-                "freeTransfersNext": min(5, free_transfers + 3),
-            },
-        },
+        "solverRecommendation": None,
+        "isCustom": False,
     }
+
+    first_node_id = None
+    scenarios_path = PROJECT_ROOT / "data" / "transfer_plan_scenarios.json"
+    if scenarios_path.exists():
+        try:
+            sc_data = json.loads(scenarios_path.read_text(encoding="utf-8"))
+            sc_list = sc_data.get("scenarios") or []
+            if sc_list and isinstance(sc_list, list):
+                optimal_plan = sc_list[0].get("plan")
+                if optimal_plan and optimal_plan.get("weeks"):
+                    branch = _build_branch_nodes_from_plan(
+                        optimal_plan, root_id, target_gw, arm_label="MILP Optimal"
+                    )
+                    b_nodes = branch.get("nodes") or {}
+                    if b_nodes:
+                        nodes.update(b_nodes)
+                        first_node_id = branch.get("rootChildId")
+                        if first_node_id:
+                            nodes[root_id]["childIds"] = [first_node_id]
+
+                        # Extend chain if scenario has fewer weeks than horizon
+                        leaf_id = first_node_id
+                        while leaf_id and nodes.get(leaf_id, {}).get("childIds"):
+                            leaf_id = nodes[leaf_id]["childIds"][0]
+                        last_gw = nodes[leaf_id]["gameweek"] if leaf_id and leaf_id in nodes else target_gw - 1
+                        curr_prev_id = leaf_id
+                        for step_gw in range(last_gw + 1, target_gw + horizon):
+                            ext_id = f"node-gw{step_gw}-1"
+                            ext_slots, ext_c, ext_v, ext_b, ext_xp = optimize_squad_for_gw(step_gw)
+                            prev_node = nodes[curr_prev_id]
+                            prev_eval = prev_node.get("evaluation") or {}
+                            ext_cum = round(float(prev_eval.get("cumulativePoints", 0.0)) + ext_xp, 1)
+                            ext_ft = min(5, int(prev_eval.get("freeTransfersNext", 1)) + 1)
+                            ext_node = {
+                                "id": ext_id,
+                                "parentId": curr_prev_id,
+                                "childIds": [],
+                                "gameweek": step_gw,
+                                "title": f"GW{step_gw} (Roll)",
+                                "lineup": {
+                                    "slots": ext_slots,
+                                    "captainSlot": ext_c,
+                                    "viceCaptainSlot": ext_v,
+                                    "benchOrder": ext_b,
+                                },
+                                "transfers": [],
+                                "chip": None,
+                                "evaluation": {
+                                    "expectedPoints": ext_xp,
+                                    "pointsVariance": 0.0,
+                                    "cumulativePoints": ext_cum,
+                                    "hitsTaken": 0,
+                                    "netPoints": ext_cum,
+                                    "bankRemaining": prev_eval.get("bankRemaining", bank),
+                                    "freeTransfersNext": ext_ft,
+                                },
+                                "solverRecommendation": {
+                                    "lineup": {
+                                        "slots": dict(ext_slots),
+                                        "captainSlot": ext_c,
+                                        "viceCaptainSlot": ext_v,
+                                        "benchOrder": list(ext_b),
+                                    },
+                                    "transfers": [],
+                                    "chip": None,
+                                    "evaluation": {
+                                        "expectedPoints": ext_xp,
+                                        "pointsVariance": 0.0,
+                                        "cumulativePoints": ext_cum,
+                                        "hitsTaken": 0,
+                                        "netPoints": ext_cum,
+                                        "bankRemaining": prev_eval.get("bankRemaining", bank),
+                                        "freeTransfersNext": ext_ft,
+                                    },
+                                },
+                                "isCustom": False,
+                            }
+                            nodes[ext_id] = ext_node
+                            nodes[curr_prev_id]["childIds"] = [ext_id]
+                            curr_prev_id = ext_id
+        except Exception as exc:
+            logger.warning("Could not populate default plan from scenarios: %s", exc)
+
+    if len(nodes) <= 1:
+        prev_id = root_id
+        for step in range(horizon):
+            gw = target_gw + step
+            node_id = f"node-gw{gw}-1"
+            if first_node_id is None:
+                first_node_id = node_id
+
+            gw_slots, c_slot, v_slot, b_order, xp = optimize_squad_for_gw(gw)
+            cum_xp = round(cum_xp + xp, 1)
+            ft_next = min(5, free_transfers + step + 1)
+
+            node = {
+                "id": node_id,
+                "parentId": prev_id,
+                "childIds": [],
+                "gameweek": gw,
+                "title": f"GW{gw} (Hold & Roll)" if step == 0 else f"GW{gw} (Roll)",
+                "lineup": {
+                    "slots": gw_slots,
+                    "captainSlot": c_slot,
+                    "viceCaptainSlot": v_slot,
+                    "benchOrder": b_order,
+                },
+                "transfers": [],
+                "chip": None,
+                "evaluation": {
+                    "expectedPoints": xp,
+                    "pointsVariance": 0.0,
+                    "cumulativePoints": cum_xp,
+                    "hitsTaken": 0,
+                    "netPoints": cum_xp,
+                    "bankRemaining": bank,
+                    "freeTransfersNext": ft_next,
+                },
+                "solverRecommendation": {
+                    "lineup": {
+                        "slots": dict(gw_slots),
+                        "captainSlot": c_slot,
+                        "viceCaptainSlot": v_slot,
+                        "benchOrder": list(b_order),
+                    },
+                    "transfers": [],
+                    "chip": None,
+                    "evaluation": {
+                        "expectedPoints": xp,
+                        "pointsVariance": 0.0,
+                        "cumulativePoints": cum_xp,
+                        "hitsTaken": 0,
+                        "netPoints": cum_xp,
+                        "bankRemaining": bank,
+                        "freeTransfersNext": ft_next,
+                    },
+                },
+                "isCustom": False,
+            }
+            nodes[node_id] = node
+            nodes[prev_id]["childIds"] = [node_id]
+            prev_id = node_id
 
     default_plan = {
         "id": "plan-primary",
         "name": "Base Scenario",
         "startGameweek": target_gw,
-        "horizonGameweeks": 5,
+        "horizonGameweeks": horizon,
         "initialBank": bank,
         "initialFreeTransfers": free_transfers,
         "availableChips": {
@@ -1286,7 +1442,7 @@ def _generate_default_user_plans() -> dict[str, object]:
             "benchBoost": True,
         },
         "rootNodeId": root_id,
-        "activeNodeId": node_gw1,
+        "activeNodeId": first_node_id or root_id,
         "nodes": nodes,
     }
 
@@ -1296,7 +1452,21 @@ def _generate_default_user_plans() -> dict[str, object]:
 def get_user_plans() -> dict[str, object]:
     if USER_PLANS_PATH.exists():
         try:
-            return json.loads(USER_PLANS_PATH.read_text(encoding="utf-8"))
+            data = json.loads(USER_PLANS_PATH.read_text(encoding="utf-8"))
+            modified = False
+            for plan in data.get("plans", []):
+                for nid, node in plan.get("nodes", {}).items():
+                    if not node.get("solverRecommendation") and nid != plan.get("rootNodeId"):
+                        node["solverRecommendation"] = {
+                            "lineup": dict(node.get("lineup") or {}),
+                            "transfers": list(node.get("transfers") or []),
+                            "chip": node.get("chip"),
+                            "evaluation": dict(node.get("evaluation") or {}),
+                        }
+                        modified = True
+            if modified:
+                USER_PLANS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            return data
         except Exception as exc:
             logger.warning("Could not read user_plans.json: %s", exc)
     default_payload = _generate_default_user_plans()

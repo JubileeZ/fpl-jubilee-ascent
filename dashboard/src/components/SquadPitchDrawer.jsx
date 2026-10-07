@@ -27,6 +27,7 @@ export function normalizePos(pos) {
 export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
   const { activeNode, activePlan } = usePlanStore();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [selectedGw, setSelectedGw] = useState(6);
   const [playersData, setPlayersData] = useState({});
   const [swapSourceSlot, setSwapSourceSlot] = useState(null);
@@ -262,11 +263,14 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
 
   return (
     <div
-      className={`planner-pitch-drawer ${isExpanded ? 'expanded' : 'docked'}`}
+      className={`planner-pitch-drawer ${isMinimized ? 'minimized' : isExpanded ? 'expanded' : 'docked'}`}
       style={{
         position: 'absolute',
         bottom: 0,
         left: 0,
+        width: isMinimized ? '340px' : isExpanded ? '580px' : '440px',
+        height: isMinimized ? '40px' : isExpanded ? '580px' : '490px',
+        overflow: 'hidden',
         background: '#0d111c',
         borderTop: '1.5px solid #1e2538',
         borderRight: '1.5px solid #1e2538',
@@ -286,7 +290,7 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
           justifyContent: 'space-between',
           padding: '8px 14px',
           background: '#121520',
-          borderBottom: '1px solid #1e2538',
+          borderBottom: isMinimized ? 'none' : '1px solid #1e2538',
           borderTopRightRadius: '12px',
         }}
       >
@@ -348,26 +352,69 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
               Select swap player...
             </span>
           )}
+          {activeNode?.isCustom && activeNode?.solverRecommendation && (
+            <button
+              type="button"
+              onClick={() => planActions.resetNodeToSolver(activeNode.id)}
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                color: '#f59e0b',
+                borderRadius: '5px',
+                padding: '4px 8px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              title="Reset squad and transfers to solver recommendation"
+            >
+              ↩ Reset to Solver
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              if (isMinimized) setIsMinimized(false);
+              else setIsExpanded(!isExpanded);
+            }}
+            disabled={isMinimized}
             style={{
               background: '#1a202e',
               border: '1px solid #2d3748',
-              color: '#cbd5e1',
+              color: isMinimized ? '#475569' : '#cbd5e1',
               borderRadius: '5px',
               padding: '4px 10px',
               fontSize: '11px',
-              cursor: 'pointer',
+              cursor: isMinimized ? 'not-allowed' : 'pointer',
             }}
             title={isExpanded ? 'Dock pitch drawer' : 'Expand pitch drawer'}
           >
             {isExpanded ? '▼ Dock' : '▲ Expand'}
           </button>
+          <button
+            type="button"
+            onClick={() => setIsMinimized(!isMinimized)}
+            style={{
+              background: '#1a202e',
+              border: '1px solid #2d3748',
+              color: isMinimized ? '#38bdf8' : '#cbd5e1',
+              borderRadius: '5px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              cursor: 'pointer',
+            }}
+            title={isMinimized ? 'Open pitch view' : 'Minimize pitch view to inspect canvas'}
+          >
+            {isMinimized ? '▲ Pitch' : '▬ Min'}
+          </button>
         </div>
       </div>
 
       {/* Pitch Surface Area */}
+      {!isMinimized && (
       <div
         style={{
           flex: 1,
@@ -687,6 +734,7 @@ export default function SquadPitchDrawer({ onOpenReplacementDrawer }) {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 // In-memory singleton state
 let globalState = {
@@ -49,6 +49,10 @@ function queueSave() {
 }
 
 export const planActions = {
+  getState() {
+    return globalState;
+  },
+
   async init() {
     try {
       globalState = { ...globalState, isLoading: true, error: null };
@@ -69,6 +73,13 @@ export const planActions = {
         isLoading: false,
       };
       emitChange();
+
+      // Dispatch event to sync external controls (like header select)
+      if (activePlan?.horizonGameweeks) {
+        window.dispatchEvent(
+          new CustomEvent('planHorizonChanged', { detail: { horizon: activePlan.horizonGameweeks } })
+        );
+      }
     } catch (err) {
       console.error('Failed to load user plans:', err);
       globalState = { ...globalState, isLoading: false, error: err.message };
@@ -86,6 +97,12 @@ export const planActions = {
     };
     emitChange();
     queueSave();
+
+    if (plan.horizonGameweeks) {
+      window.dispatchEvent(
+        new CustomEvent('planHorizonChanged', { detail: { horizon: plan.horizonGameweeks } })
+      );
+    }
   },
 
   setActiveNode(nodeId) {
@@ -97,57 +114,252 @@ export const planActions = {
     emitChange();
   },
 
+  setHorizon(horizon) {
+    const activePlan = globalState.plans.find((p) => p.id === globalState.activePlanId);
+    if (!activePlan) return;
+    const clampedHorizon = Math.max(1, Math.min(10, Number(horizon) || 5));
+    if (activePlan.horizonGameweeks === clampedHorizon) return;
+
+    const startGw = activePlan.startGameweek || 6;
+    const oldHorizonEnd = startGw + (activePlan.horizonGameweeks || 5) - 1;
+    const newHorizonEnd = startGw + clampedHorizon - 1;
+
+    let updatedNodes = { ...activePlan.nodes };
+
+    if (newHorizonEnd < oldHorizonEnd) {
+      // Prune nodes beyond newHorizonEnd
+      const toRemove = new Set();
+      Object.values(updatedNodes).forEach((n) => {
+        if (n.gameweek > newHorizonEnd && n.parentId) {
+          toRemove.add(n.id);
+        }
+      });
+      const filtered = {};
+      Object.entries(updatedNodes).forEach(([id, n]) => {
+        if (!toRemove.has(id)) {
+          filtered[id] = {
+            ...n,
+            childIds: (n.childIds || []).filter((cid) => !toRemove.has(cid)),
+          };
+        }
+      });
+      updatedNodes = filtered;
+    } else if (newHorizonEnd > oldHorizonEnd) {
+      // Extend every branch ending at a leaf whose gameweek < newHorizonEnd
+      const rootId = activePlan.rootNodeId || 'node-root';
+      const leafIds = Object.keys(updatedNodes).filter((id) => {
+        const n = updatedNodes[id];
+        return id !== rootId && (!n.childIds || n.childIds.length === 0);
+      });
+
+      for (const leafId of leafIds) {
+        let currentParentId = leafId;
+        let currentParent = updatedNodes[currentParentId];
+        if (!currentParent) continue;
+
+        for (let gw = currentParent.gameweek + 1; gw <= newHorizonEnd; gw++) {
+          const newId = `node-gw${gw}-${Math.random().toString(36).slice(2, 7)}`;
+          const prevEval = currentParent.evaluation || {};
+          const bank = prevEval.bankRemaining ?? activePlan.initialBank ?? 0.0;
+          const prevFt = prevEval.freeTransfersNext ?? 1;
+
+          const evalObj = {
+            expectedPoints: prevEval.expectedPoints || 55.0,
+            pointsVariance: 0.0,
+            cumulativePoints: (prevEval.cumulativePoints || 0) + (prevEval.expectedPoints || 55.0),
+            hitsTaken: 0,
+            netPoints: (prevEval.netPoints || 0) + (prevEval.expectedPoints || 55.0),
+            bankRemaining: bank,
+            freeTransfersNext: Math.min(5, prevFt + 1),
+          };
+
+          const newNode = {
+            id: newId,
+            parentId: currentParentId,
+            childIds: [],
+            gameweek: gw,
+            title: `GW${gw} (Roll)`,
+            lineup: JSON.parse(JSON.stringify(currentParent.lineup)),
+            transfers: [],
+            chip: null,
+            evaluation: evalObj,
+            solverRecommendation: {
+              lineup: JSON.parse(JSON.stringify(currentParent.lineup || {})),
+              transfers: [],
+              chip: null,
+              evaluation: { ...evalObj },
+            },
+            isCustom: false,
+          };
+
+          updatedNodes[currentParentId] = {
+            ...updatedNodes[currentParentId],
+            childIds: [...(updatedNodes[currentParentId].childIds || []), newId],
+          };
+          updatedNodes[newId] = newNode;
+          currentParentId = newId;
+          currentParent = newNode;
+        }
+      }
+    }
+
+    const nextActiveId = updatedNodes[globalState.activeNodeId]
+      ? globalState.activeNodeId
+      : activePlan.rootNodeId;
+
+    const updatedPlan = {
+      ...activePlan,
+      horizonGameweeks: clampedHorizon,
+      nodes: updatedNodes,
+      activeNodeId: nextActiveId,
+    };
+
+    const updatedPlans = globalState.plans.map((p) => (p.id === activePlan.id ? updatedPlan : p));
+    globalState = { ...globalState, plans: updatedPlans, activeNodeId: nextActiveId };
+    emitChange();
+    queueSave();
+
+    window.dispatchEvent(
+      new CustomEvent('planHorizonChanged', { detail: { horizon: clampedHorizon } })
+    );
+  },
+
   addBranch(parentNodeId) {
     const activePlan = globalState.plans.find((p) => p.id === globalState.activePlanId);
     if (!activePlan) return;
     const parentNode = activePlan.nodes[parentNodeId];
     if (!parentNode) return;
 
-    const nextGw = parentNode.gameweek + 1;
-    const newId = `node-gw${nextGw}-${Math.random().toString(36).slice(2, 7)}`;
-    const prevEval = parentNode.evaluation || {};
-    const bank = prevEval.bankRemaining ?? activePlan.initialBank ?? 0.0;
-    const prevFt = prevEval.freeTransfersNext ?? 1;
+    const startGw = activePlan.startGameweek || 6;
+    const horizonEnd = startGw + (activePlan.horizonGameweeks || 5) - 1;
+    const nextGw = parentNode.id === activePlan.rootNodeId ? startGw : parentNode.gameweek + 1;
+    if (nextGw > horizonEnd) return;
 
-    const newNode = {
-      id: newId,
-      parentId: parentNodeId,
-      childIds: [],
-      gameweek: nextGw,
-      title: `GW${nextGw} Branch`,
-      lineup: JSON.parse(JSON.stringify(parentNode.lineup)),
-      transfers: [],
-      chip: null,
-      evaluation: {
-        expectedPoints: 57.0,
-        pointsVariance: 11.5,
-        cumulativePoints: (prevEval.cumulativePoints || 0) + 57.0,
+    let updatedNodes = { ...activePlan.nodes };
+    let prevId = parentNodeId;
+    let prevNode = parentNode;
+    let firstNewId = null;
+
+    // Create a full straight-line branch chain from nextGw through horizonEnd
+    for (let gw = nextGw; gw <= horizonEnd; gw++) {
+      const newId = `node-gw${gw}-${Math.random().toString(36).slice(2, 7)}`;
+      if (!firstNewId) firstNewId = newId;
+
+      const prevEval = prevNode.evaluation || {};
+      const bank = prevEval.bankRemaining ?? activePlan.initialBank ?? 0.0;
+      const prevFt = prevEval.freeTransfersNext ?? 1;
+
+      const evalObj = {
+        expectedPoints: prevEval.expectedPoints || 55.0,
+        pointsVariance: 0.0,
+        cumulativePoints: (prevEval.cumulativePoints || 0) + (prevEval.expectedPoints || 55.0),
         hitsTaken: 0,
-        netPoints: (prevEval.netPoints || 0) + 57.0,
+        netPoints: (prevEval.netPoints || 0) + (prevEval.expectedPoints || 55.0),
         bankRemaining: bank,
         freeTransfersNext: Math.min(5, prevFt + 1),
-      },
-    };
+      };
 
-    const updatedParent = {
-      ...parentNode,
-      childIds: [...(parentNode.childIds || []), newId],
-    };
+      const newNode = {
+        id: newId,
+        parentId: prevId,
+        childIds: [],
+        gameweek: gw,
+        title: gw === nextGw ? `GW${gw} (Branch)` : `GW${gw} (Roll)`,
+        lineup: JSON.parse(JSON.stringify(prevNode.lineup)),
+        transfers: [],
+        chip: null,
+        evaluation: evalObj,
+        solverRecommendation: {
+          lineup: JSON.parse(JSON.stringify(prevNode.lineup || {})),
+          transfers: [],
+          chip: null,
+          evaluation: { ...evalObj },
+        },
+        isCustom: false,
+      };
 
-    const updatedNodes = {
-      ...activePlan.nodes,
-      [parentNodeId]: updatedParent,
-      [newId]: newNode,
-    };
+      updatedNodes[prevId] = {
+        ...updatedNodes[prevId],
+        childIds: [...(updatedNodes[prevId].childIds || []), newId],
+      };
+      updatedNodes[newId] = newNode;
+      prevId = newId;
+      prevNode = newNode;
+    }
 
     const updatedPlan = {
       ...activePlan,
       nodes: updatedNodes,
-      activeNodeId: newId,
+      activeNodeId: firstNewId || parentNodeId,
     };
 
     const updatedPlans = globalState.plans.map((p) => (p.id === activePlan.id ? updatedPlan : p));
-    globalState = { ...globalState, plans: updatedPlans, activeNodeId: newId };
+    globalState = { ...globalState, plans: updatedPlans, activeNodeId: firstNewId || parentNodeId };
+    emitChange();
+    queueSave();
+  },
+
+  resetNodeToSolver(nodeId) {
+    const activePlan = globalState.plans.find((p) => p.id === globalState.activePlanId);
+    if (!activePlan) return;
+    const node = activePlan.nodes[nodeId];
+    if (!node || !node.solverRecommendation) return;
+
+    const rec = node.solverRecommendation;
+    const updatedNode = {
+      ...node,
+      lineup: JSON.parse(JSON.stringify(rec.lineup)),
+      transfers: JSON.parse(JSON.stringify(rec.transfers || [])),
+      chip: rec.chip,
+      evaluation: JSON.parse(JSON.stringify(rec.evaluation || node.evaluation)),
+      isCustom: false,
+    };
+
+    this.updateNode(nodeId, updatedNode, true);
+  },
+
+  applyBranchSolve(parentId, branchData) {
+    const activePlan = globalState.plans.find((p) => p.id === globalState.activePlanId);
+    if (!activePlan || !branchData) return;
+    const parentNode = activePlan.nodes[parentId];
+    if (!parentNode) return;
+
+    const incomingNodes = branchData.nodes || {};
+    const rootChildIds = branchData.rootChildIds || (branchData.rootChildId ? [branchData.rootChildId] : []);
+    if (Object.keys(incomingNodes).length === 0) return;
+
+    let updatedNodes = { ...activePlan.nodes };
+
+    // Update parent childIds
+    const combinedChildIds = Array.from(new Set([...(parentNode.childIds || []), ...rootChildIds]));
+    updatedNodes[parentId] = {
+      ...parentNode,
+      childIds: combinedChildIds,
+    };
+
+    // Merge incoming nodes
+    for (const [nid, nodeObj] of Object.entries(incomingNodes)) {
+      updatedNodes[nid] = {
+        ...nodeObj,
+        solverRecommendation: nodeObj.solverRecommendation || {
+          lineup: JSON.parse(JSON.stringify(nodeObj.lineup || {})),
+          transfers: JSON.parse(JSON.stringify(nodeObj.transfers || [])),
+          chip: nodeObj.chip || null,
+          evaluation: JSON.parse(JSON.stringify(nodeObj.evaluation || {})),
+        },
+        isCustom: false,
+      };
+    }
+
+    const firstActive = rootChildIds[0] || parentId;
+    const updatedPlan = {
+      ...activePlan,
+      nodes: updatedNodes,
+      activeNodeId: firstActive,
+    };
+
+    const updatedPlans = globalState.plans.map((p) => (p.id === activePlan.id ? updatedPlan : p));
+    globalState = { ...globalState, plans: updatedPlans, activeNodeId: firstActive };
     emitChange();
     queueSave();
   },
@@ -327,7 +539,28 @@ export const planActions = {
     const node = activePlan.nodes[nodeId];
     if (!node) return;
 
-    const updatedNode = { ...node, ...updates };
+    // Detect if manual changes were made (transfers/lineup/chip altered)
+    let isCustom = updates.isCustom;
+    if (isCustom === undefined) {
+      if (updates.lineup !== undefined || updates.transfers !== undefined || updates.chip !== undefined) {
+        isCustom = true;
+      } else {
+        isCustom = node.isCustom ?? false;
+      }
+    }
+
+    // Preserve baseline recommendation if node doesn't already have one
+    let solverRec = updates.solverRecommendation !== undefined ? updates.solverRecommendation : node.solverRecommendation;
+    if (!solverRec && isCustom) {
+      solverRec = {
+        lineup: JSON.parse(JSON.stringify(node.lineup || {})),
+        transfers: JSON.parse(JSON.stringify(node.transfers || [])),
+        chip: node.chip || null,
+        evaluation: JSON.parse(JSON.stringify(node.evaluation || {})),
+      };
+    }
+
+    const updatedNode = { ...node, ...updates, isCustom, solverRecommendation: solverRec };
     const updatedNodes = { ...activePlan.nodes, [nodeId]: updatedNode };
 
     if (propagateDownstream && node.childIds && node.childIds.length > 0) {
@@ -403,3 +636,5 @@ export function usePlanStore() {
     actions: planActions,
   };
 }
+
+usePlanStore.getState = () => globalState;

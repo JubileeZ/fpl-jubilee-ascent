@@ -31,25 +31,59 @@ function DecisionTreeFlow() {
   const containerRef = useRef(null);
   const { fitView } = useReactFlow();
 
-  const handleOptimizeBranch = async (opts = {}) => {
-    if (!activePlan || isSolving) return;
-    const parentId = activeNodeId || activePlan.rootNodeId;
-    const parentNode = activePlan.nodes[parentId];
-    const targetGw = parentNode ? parentNode.gameweek + 1 : 6;
+  // Listen for external horizon changes (e.g. from header #plan-horizon select)
+  useEffect(() => {
+    const handleHorizonEvent = (e) => {
+      const h = Number(e.detail?.horizon);
+      if (h && h >= 1 && h <= 10) {
+        actions.setHorizon(h);
+      }
+    };
+    window.addEventListener('planHorizonChanged', handleHorizonEvent);
+    return () => window.removeEventListener('planHorizonChanged', handleHorizonEvent);
+  }, [actions]);
+
+  // Per-node solve execution
+  const handleOptimizeFromNode = useCallback(async (targetNodeId, opts = {}) => {
+    const state = usePlanStore.getState();
+    const curPlan = state.plans.find((p) => p.id === state.activePlanId);
+    if (!curPlan || isSolving) return;
+
+    const rootId = curPlan.rootNodeId || 'node-root';
+    const targetNode = curPlan.nodes[targetNodeId];
+    if (!targetNode) return;
+
+    const startGw = curPlan.startGameweek || 6;
+    const horizon = curPlan.horizonGameweeks || 5;
+    const horizonEnd = startGw + horizon - 1;
+
+    let parentNodeId = targetNode.parentId || rootId;
+    let parentNode = curPlan.nodes[parentNodeId];
+    let targetGw = targetNode.gameweek;
+
+    if (targetNodeId === rootId) {
+      targetGw = startGw;
+      parentNodeId = rootId;
+      parentNode = curPlan.nodes[rootId];
+    }
+
+    const remainingHorizon = Math.max(1, horizonEnd - targetGw + 1);
     const solve3Arms = Boolean(opts.solve3Arms);
 
     setIsSolving(true);
-    setSolvingDetail('');
+    setSolvingDetail(`Optimizing from GW${targetGw} to GW${horizonEnd}…`);
+
     try {
-      // Collect booked chips across the active plan
       const bookedChips = {
         use_wc: [],
         use_bb: [],
         use_fh: [],
         use_tc: [],
       };
-      Object.values(activePlan.nodes || {}).forEach((n) => {
+      Object.values(curPlan.nodes || {}).forEach((n) => {
         if (!n.chip || !n.gameweek) return;
+        // Only include chips within the active optimization horizon
+        if (n.gameweek < targetGw || n.gameweek > horizonEnd) return;
         const c = String(n.chip).toUpperCase();
         if (c === 'WC' || c === 'WILDCARD') bookedChips.use_wc.push(n.gameweek);
         else if (c === 'BB' || c === 'BENCH_BOOST' || c === 'BENCHBOOST') bookedChips.use_bb.push(n.gameweek);
@@ -61,11 +95,11 @@ function DecisionTreeFlow() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          parentNodeId: parentId,
+          parentNodeId,
           target_gw: targetGw,
           preset: ddpPreset,
           solve_3_arms: solve3Arms,
-          horizon: 4,
+          horizon: remainingHorizon,
           use_wc: bookedChips.use_wc,
           use_bb: bookedChips.use_bb,
           use_fh: bookedChips.use_fh,
@@ -80,32 +114,63 @@ function DecisionTreeFlow() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Poll until finished
       let attempts = 0;
-      let lastMountedCount = 0;
       while (attempts < 60) {
         await new Promise((r) => setTimeout(r, 600));
         attempts++;
         const pollRes = await fetch('/api/solve');
         if (pollRes.ok) {
           const pollData = await pollRes.json();
-          if (pollData.detail) {
-            setSolvingDetail(pollData.detail);
-          }
+          if (pollData.detail) setSolvingDetail(pollData.detail);
+
           if (pollData.payload?.branch) {
             const branch = pollData.payload.branch;
-            const newChildIds = branch.rootChildIds && branch.rootChildIds.length
-              ? branch.rootChildIds
-              : (branch.rootChildId ? [branch.rootChildId] : []);
-            if (branch.nodes && newChildIds.length > lastMountedCount) {
-              lastMountedCount = newChildIds.length;
-              const currentParent = (usePlanStore.getState().activePlan?.nodes || {})[parentId] || parentNode;
-              const combinedChildIds = Array.from(new Set([...(currentParent.childIds || []), ...newChildIds]));
-              planActions.updateNode(parentId, { childIds: combinedChildIds });
-              for (const [nid, nodeObj] of Object.entries(branch.nodes)) {
-                planActions.updateNode(nid, nodeObj);
+            if (branch.nodes && Object.keys(branch.nodes).length > 0) {
+              const livePlan = usePlanStore.getState().activePlan;
+              if (livePlan) {
+                if (solve3Arms) {
+                  planActions.applyBranchSolve(parentNodeId, branch);
+                } else {
+                  // Direct straight-line lane update: find path from targetNode down to horizonEnd
+                  let existingPath = [];
+                  let curr = targetNodeId !== rootId
+                    ? livePlan.nodes[targetNodeId]
+                    : (livePlan.nodes[rootId]?.childIds?.[0] ? livePlan.nodes[livePlan.nodes[rootId].childIds[0]] : null);
+                  while (curr) {
+                    existingPath.push(curr.id);
+                    if (curr.childIds && curr.childIds.length > 0) {
+                      curr = livePlan.nodes[curr.childIds[0]];
+                    } else {
+                      break;
+                    }
+                  }
+
+                  const incomingNodeList = Object.values(branch.nodes);
+                  if (existingPath.length > 0 && incomingNodeList.length <= existingPath.length) {
+                    // Update nodes in-place along this exact straight branch
+                    for (let idx = 0; idx < incomingNodeList.length; idx++) {
+                      const existId = existingPath[idx];
+                      const inc = incomingNodeList[idx];
+                      planActions.updateNode(existId, {
+                        title: inc.title,
+                        lineup: inc.lineup,
+                        transfers: inc.transfers,
+                        chip: inc.chip,
+                        evaluation: inc.evaluation,
+                        solverRecommendation: inc.solverRecommendation || {
+                          lineup: inc.lineup,
+                          transfers: inc.transfers,
+                          chip: inc.chip,
+                          evaluation: inc.evaluation,
+                        },
+                        isCustom: false,
+                      });
+                    }
+                  } else {
+                    planActions.applyBranchSolve(parentNodeId, branch);
+                  }
+                }
               }
-              planActions.setActiveNode(newChildIds[0]);
             }
           }
           if (pollData.status === 'ok') {
@@ -123,49 +188,53 @@ function DecisionTreeFlow() {
       setIsSolving(false);
       setSolvingDetail('');
     }
-  };
+  }, [activePlan, ddpPreset, isSolving]);
 
-  // Convert hierarchical plan scenario into React Flow layout (x, y)
+  // Expose on window for external triggers
+  useEffect(() => {
+    window.solveFromPlanNode = (nodeId, opts) => handleOptimizeFromNode(nodeId, opts);
+    return () => {
+      delete window.solveFromPlanNode;
+    };
+  }, [handleOptimizeFromNode]);
+
+  // Strict horizontal straight-line matrix layout
   const { flowNodes, flowEdges } = useMemo(() => {
     if (!activePlan || !activePlan.nodes) {
       return { flowNodes: [], flowEdges: [] };
     }
 
     const startGw = activePlan.startGameweek || 6;
+    const horizon = activePlan.horizonGameweeks || 5;
+    const horizonEnd = startGw + horizon - 1;
     const nodes = [];
     const edges = [];
 
-    // Layout calculation: traverse from root
     const rootId = activePlan.rootNodeId || 'node-root';
     const rootNode = activePlan.nodes[rootId];
+    if (!rootNode) return { flowNodes: [], flowEdges: [] };
 
-    // Compute Y positions per leaf to distribute tree cleanly
-    const yTracker = { current: 100 };
+    let nextRow = 0;
+    const nodePositions = new Map();
 
-    function layoutSubtree(nodeId, depth) {
+    function layoutBranch(nodeId, row) {
       const node = activePlan.nodes[nodeId];
-      if (!node) return null;
+      if (!node) return;
 
-      const children = node.childIds || [];
-      const xPos = 40 + depth * 320;
+      const isRoot = node.id === rootId;
+      const col = isRoot ? 0 : Math.max(1, node.gameweek - startGw + 1);
+      const xPos = 40 + col * 320;
+      const yPos = 80 + row * 220;
+
+      nodePositions.set(node.id, { x: xPos, y: yPos });
+
+      const children = (node.childIds || []).filter((cid) => {
+        const childNode = activePlan.nodes[cid];
+        return childNode && childNode.gameweek <= horizonEnd;
+      });
 
       if (children.length === 0) {
-        // Leaf node
-        const yPos = yTracker.current;
-        yTracker.current += 190;
-
-        const isRoot = node.id === rootId;
-        nodes.push({
-          id: node.id,
-          type: isRoot ? 'rootNode' : 'planNode',
-          position: { x: xPos, y: yPos },
-          data: {
-            node,
-            isActive: node.id === activeNodeId,
-          },
-        });
-
-        // If it's a leaf planNode, add EvaluationNode at the end
+        // Leaf reached
         if (!isRoot) {
           const evalId = `eval-${node.id}`;
           nodes.push({
@@ -174,7 +243,7 @@ function DecisionTreeFlow() {
             position: { x: xPos + 320, y: yPos },
             data: {
               evaluation: node.evaluation || {},
-              isTopBranch: false,
+              isTopBranch: row === 0,
             },
           });
 
@@ -186,60 +255,67 @@ function DecisionTreeFlow() {
             style: { stroke: '#10b981', strokeWidth: 2 },
           });
         }
-
-        return yPos;
+        return;
       }
 
-      // Internal node: layout children first
-      const childYPositions = [];
-      for (const cid of children) {
-        const cY = layoutSubtree(cid, depth + 1);
-        if (cY !== null) {
-          childYPositions.push(cY);
-          edges.push({
-            id: `edge-${node.id}-${cid}`,
-            source: node.id,
-            target: cid,
-            style: { stroke: '#38bdf8', strokeWidth: 2 },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#38bdf8',
-            },
-          });
-        }
-      }
-
-      // Center this node vertically among its children
-      const yPos =
-        childYPositions.length > 0
-          ? childYPositions.reduce((a, b) => a + b, 0) / childYPositions.length
-          : yTracker.current;
-
-      const isRoot = node.id === rootId;
-      nodes.push({
-        id: node.id,
-        type: isRoot ? 'rootNode' : 'planNode',
-        position: { x: xPos, y: yPos },
-        data: {
-          node,
-          isActive: node.id === activeNodeId,
+      // First child continues along the exact same row (straight horizontal line)
+      layoutBranch(children[0], row);
+      edges.push({
+        id: `edge-${node.id}-${children[0]}`,
+        source: node.id,
+        target: children[0],
+        style: { stroke: '#38bdf8', strokeWidth: 2 },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#38bdf8',
         },
       });
 
-      return yPos;
+      // Split branches drop into separate row lanes below and extend straight horizontally
+      for (let i = 1; i < children.length; i++) {
+        nextRow += 1;
+        const splitRow = nextRow;
+        layoutBranch(children[i], splitRow);
+        edges.push({
+          id: `edge-${node.id}-${children[i]}`,
+          source: node.id,
+          target: children[i],
+          style: { stroke: '#f59e0b', strokeWidth: 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#f59e0b',
+          },
+        });
+      }
     }
 
-    if (rootNode) {
-      layoutSubtree(rootId, 0);
+    layoutBranch(rootId, 0);
+
+    for (const [nid, pos] of nodePositions.entries()) {
+      const nodeObj = activePlan.nodes[nid];
+      if (!nodeObj) continue;
+      const isRoot = nid === rootId;
+      nodes.push({
+        id: nid,
+        type: isRoot ? 'rootNode' : 'planNode',
+        position: pos,
+        data: {
+          node: nodeObj,
+          isActive: nid === activeNodeId,
+          startGameweek: startGw,
+          horizonGameweeks: horizon,
+          onSolve: () => handleOptimizeFromNode(nid),
+          onResetToSolver: () => planActions.resetNodeToSolver(nid),
+        },
+      });
     }
 
     return { flowNodes: nodes, flowEdges: edges };
-  }, [activePlan, activeNodeId]);
+  }, [activePlan, activeNodeId, handleOptimizeFromNode]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
 
-  // Sync state changes from memo
   useEffect(() => {
     setNodes(flowNodes);
     setEdges(flowEdges);
@@ -255,7 +331,6 @@ function DecisionTreeFlow() {
     }
   }, [nodes.length, activePlanId, fitView]);
 
-  // Re-fit view on tab activation or window resize
   useEffect(() => {
     const handleActivated = () => {
       setTimeout(() => {
@@ -270,7 +345,6 @@ function DecisionTreeFlow() {
     };
   }, [fitView]);
 
-  // Re-fit view when container size changes
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -310,6 +384,8 @@ function DecisionTreeFlow() {
       </div>
     );
   }
+
+  const currentHorizon = activePlan?.horizonGameweeks || 5;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: '#0a0b10' }}>
@@ -382,10 +458,39 @@ function DecisionTreeFlow() {
 
         {/* Plan Actions & Sync status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* DDP Solver Preset Selector */}
+          {/* Horizon Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <label htmlFor="planner-horizon-select" style={{ fontSize: '11px', color: '#94a3b8' }}>
+              Horizon:
+            </label>
+            <select
+              id="planner-horizon-select"
+              value={currentHorizon}
+              onChange={(e) => actions.setHorizon(Number(e.target.value))}
+              style={{
+                background: '#0a0b10',
+                border: '1px solid #1e2538',
+                borderRadius: '5px',
+                color: '#38bdf8',
+                fontSize: '11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                padding: '4px 6px',
+                outline: 'none',
+              }}
+              title="Planning Horizon length in gameweeks"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((h) => (
+                <option key={h} value={h}>
+                  {h} GWs
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Risk Preset Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <label htmlFor="ddp-preset-select" style={{ fontSize: '11px', color: '#94a3b8' }}>
-              DDP:
+              Risk:
             </label>
             <select
               id="ddp-preset-select"
@@ -402,17 +507,17 @@ function DecisionTreeFlow() {
                 outline: 'none',
               }}
             >
-              <option value="safe">Safe (75%)</option>
-              <option value="default">Default (50%)</option>
-              <option value="optimistic">Optimistic (0%)</option>
-              <option value="high_risk">High Risk (25%)</option>
+              <option value="safe">Safe (0 hits)</option>
+              <option value="default">Default (1 hit)</option>
+              <option value="optimistic">Optimistic (1 hit)</option>
+              <option value="high_risk">High Risk (2 hits)</option>
             </select>
           </div>
 
           <button
             type="button"
             disabled={isSolving}
-            onClick={() => handleOptimizeBranch({ solve3Arms: true })}
+            onClick={() => handleOptimizeFromNode(activeNodeId || activePlan?.rootNodeId, { solve3Arms: true })}
             style={{
               background: isSolving ? '#1e2538' : 'rgba(16, 185, 129, 0.15)',
               color: isSolving ? '#64748b' : '#10b981',
@@ -426,7 +531,7 @@ function DecisionTreeFlow() {
               alignItems: 'center',
               gap: '4px',
             }}
-            title="Solve all 3 canonical arms (Optimal, No Hit, Conservative) sequentially with live progress from active node"
+            title="Solve all 3 canonical arms (Optimal, No Hit, Conservative) sequentially from active node"
           >
             <span>{isSolving ? (solvingDetail ? `⏳ ${solvingDetail}` : '⏳ Solving…') : '⚡ Solve 3 Arms'}</span>
           </button>
@@ -434,7 +539,7 @@ function DecisionTreeFlow() {
           <button
             type="button"
             disabled={isSolving}
-            onClick={() => handleOptimizeBranch()}
+            onClick={() => handleOptimizeFromNode(activeNodeId || activePlan?.rootNodeId)}
             style={{
               background: isSolving ? '#1e2538' : 'rgba(56, 189, 248, 0.15)',
               color: isSolving ? '#64748b' : '#38bdf8',
@@ -448,7 +553,7 @@ function DecisionTreeFlow() {
               alignItems: 'center',
               gap: '4px',
             }}
-            title="Solve branch path from active node using Highs MILP"
+            title="Optimize branch path from active box through Horizon End"
           >
             <span>{isSolving ? '⏳ Optimizing...' : '⚡ Optimize'}</span>
           </button>
@@ -517,7 +622,7 @@ function DecisionTreeFlow() {
         </div>
       </div>
 
-      {/* Main Flow Canvas */}
+      {/* Main Flow Canvas with locked nodes */}
       <div ref={containerRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
         <ReactFlow
           nodes={nodes}
@@ -525,6 +630,9 @@ function DecisionTreeFlow() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={true}
           fitView
           fitViewOptions={{ padding: 0.35 }}
           minZoom={0.2}

@@ -434,16 +434,16 @@ A paid transfer beyond the Free Transfer Bank. Official cost is 4 points per pai
 _Avoid_: minus, treating any transfer as a Hit, forbidding live Hits as the default, treating a Hit recommendation as xP overprediction without Champion Signed Bias vs Realized Points
 
 **Decision Tree Planner**:
-Visual branching scenario graph (React Flow canvas) replacing legacy linear strategy solvers. Allows creating multi-gameweek transfer decision paths from a root User Squad baseline, manually swapping players on an interactive tactical pitch drawer, and optimizing forward branches via Highs MILP. Distinct from linear Transfer Plan Surface.
-_Avoid_: Solio clone, legacy Strategy Solver, linear-only transfer plan
+Visual branching scenario graph (React Flow canvas) with strict horizontal straight-line matrix layout (columns = Gameweeks, rows = branch lanes) replacing legacy linear strategy solvers. Canvas depth strictly locked to Planning Horizon. Allows creating multi-gameweek transfer decision paths from a pre-deadline Current User Squad origin, manually adjusting lineups on tactical pitch drawer, and optimizing forward branches via Highs MILP. Distinct from linear Transfer Plan Surface. ADR 0058.
+_Avoid_: Solio clone, legacy Strategy Solver, linear-only transfer plan, free-form dragging, staggered-Y diagonal branches
 
 **Plan Node**:
-A discrete scenario state in the Decision Tree Planner representing a specific Gameweek lineup (15 players, captain, vice-captain), transfers in/out, remaining bank, available free transfers, and evaluation metrics (cumulative net xP, hits taken). Child nodes inherit the parent node's squad and bank state.
-_Avoid_: leaf-only planning, resetting squad on each branch
+Discrete scenario state in Decision Tree Planner locked on straight-line grid representing specific Gameweek lineup (15 players, captain, vice-captain), transfers in/out, remaining bank, available free transfers, and evaluation metrics. Tracks dual state: `solverRecommendation` (cached MILP solution) and `lineup` (manual edits), with instant reset to solver. Child nodes inherit parent node squad and bank state. ADR 0058.
+_Avoid_: leaf-only planning, resetting squad on each branch, floating canvas coordinates
 
 **Branch Solve**:
-An on-demand Highs MILP optimization starting from a specific parent Plan Node's squad, bank, and free transfer state over a forward horizon, generating child Plan Nodes along that decision path. Scored by the Model Champion under the chosen Risk Preset.
-_Avoid_: re-solving from live squad on mid-tree nodes, linear baseline solve
+On-demand Highs MILP optimization starting from specific parent Plan Node squad, bank, and free transfer state over remaining horizon (Horizon End - Target GW + 1), generating or updating child Plan Nodes along that straight-line branch lane without mutating sibling branches. Scored by Model Champion under chosen Risk Preset. ADR 0058.
+_Avoid_: re-solving from live squad on mid-tree nodes, linear baseline solve, overwriting sibling branches
 
 **Risk Preset**:
 A named configuration of MILP optimization hyperparameters balancing immediate floor vs multi-gameweek upside: Safe (`decay_base: 0.75, bench_weight: 0.20, hit_cost: 4.5, weekly_hit_limit: 0`), Default (`decay_base: 0.85, bench_weight: 0.10, hit_cost: 4.0, weekly_hit_limit: 1`), Optimistic (`decay_base: 1.00, bench_weight: 0.03, hit_cost: 4.0, weekly_hit_limit: 1`), and High Risk (`decay_base: 0.92, bench_weight: 0.05, hit_cost: 3.5, weekly_hit_limit: 2`). Formerly DDP Preset.

@@ -24,12 +24,35 @@ function PlanNode({ id, data, selected }) {
     planActions.deleteBranch(id);
   };
 
+  const handleSolve = (e) => {
+    e.stopPropagation();
+    if (data.onSolve) {
+      data.onSolve();
+    } else if (window.solveFromPlanNode) {
+      window.solveFromPlanNode(id);
+    }
+  };
+
+  const handleResetToSolver = (e) => {
+    e.stopPropagation();
+    if (data.onResetToSolver) {
+      data.onResetToSolver();
+    } else {
+      planActions.resetNodeToSolver(id);
+    }
+  };
+
   const chipColors = {
     WC: '#10b981',
     FH: '#f59e0b',
     TC: '#38bdf8',
     BB: '#a855f7',
   };
+
+  const isCustom = Boolean(node.isCustom);
+  const captainPid = node.lineup?.slots?.[String(node.lineup?.captainSlot || 1)] || node.lineup?.slots?.[node.lineup?.captainSlot || 1];
+  const capPlayer = window.dashboardData?.players?.find((p) => p.id === captainPid);
+  const captainName = capPlayer?.web_name || capPlayer?.name || null;
 
   return (
     <div
@@ -62,7 +85,7 @@ function PlanNode({ id, data, selected }) {
         }}
       />
 
-      {/* Header: Gameweek & Chip */}
+      {/* Header: Gameweek & Status Badges */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span
@@ -78,6 +101,23 @@ function PlanNode({ id, data, selected }) {
           >
             GW{node.gameweek}
           </span>
+
+          <span
+            style={{
+              background: isCustom ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+              color: isCustom ? '#f59e0b' : '#10b981',
+              border: `1px solid ${isCustom ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+              padding: '1px 5px',
+              borderRadius: '4px',
+              fontSize: '10px',
+              fontWeight: 700,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+            title={isCustom ? 'User edited squad' : 'Solver recommended squad'}
+          >
+            {isCustom ? '✏️ Custom' : '⚡ Solver'}
+          </span>
+
           {chip && (
             <span
               style={{
@@ -91,6 +131,24 @@ function PlanNode({ id, data, selected }) {
               }}
             >
               {String(chip).toUpperCase()}
+            </span>
+          )}
+
+          {captainName && (
+            <span
+              style={{
+                background: 'rgba(56, 189, 248, 0.12)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                padding: '1px 5px',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+              title={`Captain: ${captainName}`}
+            >
+              (C) {captainName}
             </span>
           )}
         </div>
@@ -141,17 +199,22 @@ function PlanNode({ id, data, selected }) {
                 const nextChip = isChipSelected ? null : c.id;
                 const isFreeChip = nextChip === 'WC' || nextChip === 'FH';
                 const nextHits = isFreeChip ? 0 : node.evaluation?.hitsTaken ?? 0;
-                planActions.updateNode(id, {
-                  chip: nextChip,
-                  evaluation: {
-                    ...node.evaluation,
-                    hitsTaken: nextHits,
+                planActions.updateNode(
+                  id,
+                  {
+                    chip: nextChip,
+                    evaluation: {
+                      ...node.evaluation,
+                      hitsTaken: nextHits,
+                    },
+                    isCustom: true,
                   },
-                }, true);
+                  true
+                );
               }}
               style={{
                 background: isChipSelected ? (c.color ? `${c.color}25` : '#1e2538') : 'transparent',
-                color: isChipSelected ? (c.color || '#38bdf8') : '#64748b',
+                color: isChipSelected ? c.color || '#38bdf8' : '#64748b',
                 border: isChipSelected ? `1px solid ${c.color || '#38bdf8'}` : '1px solid transparent',
                 borderRadius: '3px',
                 padding: '1px 5px',
@@ -219,7 +282,9 @@ function PlanNode({ id, data, selected }) {
       >
         <span>£{(evalData.bankRemaining ?? 0.0).toFixed(1)}m · {evalData.freeTransfersNext ?? 1} FT</span>
         {evalData.hitsTaken > 0 ? (
-          <span style={{ color: '#f43f5e', fontWeight: 600 }}>-{evalData.hitsTaken * 4} pts hit</span>
+          <span style={{ color: '#f43f5e', fontWeight: 600 }}>
+            Cum: {(evalData.cumulativePoints ?? 0.0).toFixed(1)} (-{evalData.hitsTaken * 4})
+          </span>
         ) : (
           <span style={{ color: '#64748b' }}>Cum: {(evalData.cumulativePoints ?? 0.0).toFixed(1)}</span>
         )}
@@ -229,34 +294,60 @@ function PlanNode({ id, data, selected }) {
       <div
         style={{
           display: 'flex',
-          gap: '6px',
+          gap: '4px',
           borderTop: '1px solid #1e2538',
           paddingTop: '8px',
+          flexWrap: 'wrap',
         }}
       >
         <button
           type="button"
-          onClick={handleAddChild}
+          onClick={handleSolve}
           style={{
-            flex: 2,
-            background: 'rgba(56, 189, 248, 0.12)',
+            flex: 1,
+            minWidth: '56px',
+            background: 'rgba(56, 189, 248, 0.15)',
             color: '#38bdf8',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
             borderRadius: '5px',
-            padding: '4px 8px',
+            padding: '4px 6px',
             fontSize: '11px',
             fontWeight: 600,
             cursor: 'pointer',
           }}
-          title="Add next GW decision step"
+          title="Solve from this box to Horizon End"
         >
-          + Branch
+          ⚡ Solve
         </button>
+
+        {isCustom && node.solverRecommendation && (
+          <button
+            type="button"
+            onClick={handleResetToSolver}
+            style={{
+              flex: 1,
+              minWidth: '60px',
+              background: 'rgba(245, 158, 11, 0.15)',
+              color: '#f59e0b',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: '5px',
+              padding: '4px 6px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            title="Reset squad and transfers to solver recommendation"
+          >
+            ↩ Revert
+          </button>
+        )}
+
         <button
           type="button"
-          onClick={handleDuplicate}
+          onClick={handleAddChild}
           style={{
             flex: 1,
+            minWidth: '50px',
             background: '#1a202e',
             color: '#cbd5e1',
             border: '1px solid #2d3748',
@@ -265,15 +356,15 @@ function PlanNode({ id, data, selected }) {
             fontSize: '11px',
             cursor: 'pointer',
           }}
-          title="Duplicate this branch"
+          title="Split into new decision branch starting at next GW"
         >
-          Copy
+          + Split
         </button>
+
         <button
           type="button"
           onClick={handleDelete}
           style={{
-            flex: 1,
             background: 'rgba(244, 63, 94, 0.1)',
             color: '#f43f5e',
             border: '1px solid rgba(244, 63, 94, 0.25)',

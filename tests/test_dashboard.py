@@ -1000,3 +1000,66 @@ def test_run_branch_solve_job_3_arms(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert any("Optimal" in t for t in titles)
     assert any("No Hit" in t for t in titles)
     assert any("Conservative" in t for t in titles)
+
+
+def test_default_user_plans_full_horizon_straight_chain() -> None:
+    from commands.dashboard import _generate_default_user_plans
+
+    payload = _generate_default_user_plans()
+    assert len(payload["plans"]) == 1
+    plan = payload["plans"][0]
+    horizon = plan["horizonGameweeks"]
+    assert horizon == 5
+
+    nodes = plan["nodes"]
+    root = nodes["node-root"]
+    assert root["title"] == "Current Squad"
+    assert len(root["childIds"]) == 1
+
+    # Verify straight-line sequence across full horizon
+    curr_id = root["childIds"][0]
+    chain = []
+    while curr_id:
+        node = nodes[curr_id]
+        chain.append(node)
+        assert "solverRecommendation" in node
+        assert node["isCustom"] is False
+        if node["childIds"]:
+            assert len(node["childIds"]) == 1
+            curr_id = node["childIds"][0]
+        else:
+            break
+
+    assert len(chain) == horizon
+    assert [n["gameweek"] for n in chain] == [6, 7, 8, 9, 10]
+
+
+def test_build_branch_nodes_stores_solver_recommendation() -> None:
+    from commands.dashboard import _build_branch_nodes_from_plan
+
+    plan = {
+        "meta": {"hit_cost": 4.0},
+        "weeks": [
+            {
+                "gw": 6,
+                "xp": 62.5,
+                "hits": 0,
+                "itb": 1.2,
+                "ft": 2,
+                "lineup_ids": [10, 20],
+                "bench_ids": [30],
+                "buy": [{"id": 20, "name": "Saka"}],
+                "sell": [{"id": 15, "name": "Palmer"}],
+            }
+        ],
+    }
+
+    branch = _build_branch_nodes_from_plan(plan, "node-root", target_gw=6, arm_label="Optimal")
+    node = list(branch["nodes"].values())[0]
+    assert node["isCustom"] is False
+    assert node["solverRecommendation"] is not None
+    assert node["solverRecommendation"]["lineup"]["slots"]["1"] == 10
+    assert node["solverRecommendation"]["lineup"]["slots"]["2"] == 20
+    assert len(node["solverRecommendation"]["transfers"]) == 1
+    assert node["solverRecommendation"]["transfers"][0]["playerInName"] == "Saka"
+

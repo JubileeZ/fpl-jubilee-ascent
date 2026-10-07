@@ -1169,9 +1169,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setupTransferPlan() {
     const btn = document.getElementById("btn-transfer-plan");
+    const horizonSel = document.getElementById("plan-horizon");
+
+    if (horizonSel && !horizonSel.__bound) {
+      horizonSel.__bound = true;
+      if (horizonSel.options.length === 0) {
+        for (let h = 1; h <= 10; h++) {
+          const opt = document.createElement("option");
+          opt.value = String(h);
+          opt.textContent = `${h} GWs`;
+          if (h === 5) opt.selected = true;
+          horizonSel.appendChild(opt);
+        }
+      }
+      horizonSel.addEventListener("change", () => {
+        const val = Number(horizonSel.value) || 5;
+        window.dispatchEvent(new CustomEvent("planHorizonChanged", { detail: { horizon: val } }));
+      });
+    }
+
+    window.addEventListener("planHorizonChanged", (e) => {
+      const h = Number(e.detail?.horizon);
+      if (horizonSel && h) {
+        horizonSel.value = String(h);
+      }
+    });
+
     if (!btn || planBound) return;
     planBound = true;
-    btn.addEventListener("click", solveTransferPlan);
+    btn.addEventListener("click", () => {
+      if (window.solveFromPlanNode) {
+        window.solveFromPlanNode("node-root", { solve3Arms: true });
+        setView("plan");
+      } else {
+        solveTransferPlan();
+      }
+    });
   }
 
   async function init() {
