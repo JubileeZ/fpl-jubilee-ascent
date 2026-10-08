@@ -67,7 +67,7 @@ def test_bench_captain_scenario_confirmation_and_horizon(tmp_path: Path, monkeyp
     assert app.session_state["planner"].state["scenario"] == "no_hit"
     app.number_input(key="horizon-end").set_value(8).run()
     assert app.session_state["planner"].state["end"] == 8
-    app.selectbox(key="chip-6").set_value("bb").run()
+    app.selectbox(key="chip-6-None").set_value("bb").run()
     assert app.session_state["planner"].week(6)["chip"] == "bb"
     assert not app.exception
 
@@ -93,3 +93,22 @@ def test_completed_solver_job_applies_after_browser_reopen(tmp_path: Path, monke
     assert not app.exception
     assert app.session_state["planner"].recommendation_valid()
     assert any("Solver recommendation ready" in message.value for message in app.info)
+
+
+def test_solver_chip_updates_existing_widget_without_manual_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = dataset()
+    data["meta"]["transfer_plan_available_chips"] = [{"chip": "bb", "gws": [6]}]
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=20).run()
+    assert app.selectbox(key="chip-6-None").value is None
+    planner = app.session_state["planner"]
+    planner.accept_recommendations({"optimal": {"weeks": [{"gw": 6, "chip": "bb", "buy": [], "sell": []}]}},
+                                  planner.snapshot(), planner.data_digest)
+    app.run()
+    assert not app.exception
+    assert app.selectbox(key="chip-6-bb").value == "bb"
+    assert planner.state["chips"] == {}

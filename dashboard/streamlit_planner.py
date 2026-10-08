@@ -40,13 +40,13 @@ def edit(planner: Planner, store: PlanStore, action: Callable[[], None]) -> None
 def confirm_reset(planner: Planner, store: PlanStore, scenario: str | None = None) -> None:
     scenario = st.session_state.get("reset_scenario", scenario)
     planner = st.session_state["planner"]
-    st.write(f"Use {ARM_NAMES[scenario or planner.state['scenario']]} and replace manual transfers and lineup overrides with its solver recommendation or an unsolved hold draft.")
+    st.write(f"Use {ARM_NAMES[scenario or planner.state['scenario']]} and replace manual transfers, chip bookings, and lineup overrides with its solver recommendation or an unsolved hold draft.")
     if st.button("Replace edits", key="confirm-reset", type="primary"):
         planner.reset(scenario)
         st.session_state.pop("reset_scenario", None)
         save(planner, store)
         st.rerun()
-    if st.button("Keep my edits", key="cancel-reset"):
+    if st.button("Keep my edits", key="cancel-reset", shortcut="Esc"):
         st.session_state.pop("reset_scenario", None)
         st.rerun()
 
@@ -59,7 +59,7 @@ def confirm_new_plan(dataset: dict[str, Any], store: PlanStore) -> None:
         st.session_state.pop("selected_player", None)
         st.session_state.pop("replacement", None)
         st.rerun()
-    if st.button("Keep saved draft", key="cancel-new"):
+    if st.button("Keep saved draft", key="cancel-new", shortcut="Esc"):
         st.session_state.pop("new_plan_confirmation", None)
         st.rerun()
 
@@ -184,7 +184,7 @@ def replacement_panel(planner: Planner, store: PlanStore, gw: int, outgoing: int
                 st.error(str(exc))
     if outgoing in planner.week(gw)["vacancies"] and st.button("Undo sale", key="undo-sale"):
         edit(planner, store, lambda: planner.undo_sale(gw, outgoing))
-    if st.button("Close replacement search", key="close-search"):
+    if st.button("Close replacement search", key="close-search", shortcut=None if st.session_state.get("reset_scenario") or st.session_state.get("new_plan_confirmation") else "Esc"):
         st.session_state.pop("replacement", None)
         st.rerun()
 
@@ -247,7 +247,7 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
             st.dataframe([{"Component": key, "xP": value} for key, value in components.items()], hide_index=True)
         else:
             st.caption("Projection components unavailable for this model.")
-    if st.button("Close player details", key="close-details"):
+    if st.button("Close player details", key="close-details", shortcut=None if st.session_state.get("reset_scenario") or st.session_state.get("new_plan_confirmation") else "Esc"):
         st.session_state.pop("selected_player", None)
         st.rerun()
 
@@ -363,7 +363,7 @@ def main() -> None:
             chips = [row["chip"] for row in dataset.get("meta", {}).get("transfer_plan_available_chips", []) if gw in row["gws"]]
             options = [None, *dict.fromkeys(chips)]
             chip = st.selectbox("Booked chip", options, index=options.index(week["chip"]) if week["chip"] in options else 0,
-                                format_func=lambda value: {None: "None", "wc": "Wildcard", "bb": "Bench Boost", "fh": "Free Hit", "tc": "Triple Captain"}[value], key=f"chip-{gw}")
+                                format_func=lambda value: {None: "None", "wc": "Wildcard", "bb": "Bench Boost", "fh": "Free Hit", "tc": "Triple Captain"}[value], key=f"chip-{gw}-{week['chip']}")
             if chip != week["chip"]:
                 edit(planner, store, lambda: planner.set_chip(gw, chip))
         with detail, st.container(key="details"):

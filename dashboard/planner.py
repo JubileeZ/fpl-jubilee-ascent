@@ -88,7 +88,7 @@ class Planner:
             if scenario not in ARM_NAMES:
                 raise ValueError("Unknown scenario.")
             self.state["scenario"] = scenario
-        self.state.update(edits={}, overrides={})
+        self.state.update(edits={}, overrides={}, chips={})
         self.state["revision"] += 1
 
     def accept_recommendations(self, plans: dict[str, Any], snapshot: str, data_digest: str) -> bool:
@@ -103,6 +103,8 @@ class Planner:
                     "start": self.state["start"], "end": self.state["end"],
                     "snapshot": snapshot, "applicable": applicable,
                     "revision": self.state["revision"],
+                    "edits_digest": digest(self.state["edits"]),
+                    "chips_digest": digest(self.state["chips"]),
                 }
         return applicable
 
@@ -116,9 +118,13 @@ class Planner:
             return {}
         return {int(week["gw"]): week for week in self.state["recommendations"][self.state["scenario"]]["plan"]["weeks"]}
 
+    def _recommendation_matches_transfers(self) -> bool:
+        rec = self.state["recommendations"].get(self.state["scenario"], {})
+        return (rec.get("edits_digest") == digest(self.state["edits"]) and rec.get("chips_digest") == digest(self.state["chips"])) if "edits_digest" in rec else rec.get("revision") == self.state["revision"]
+
     def _touch_transfers(self, gw: int) -> list[dict[str, int | None]]:
         key = str(gw)
-        if key not in self.state["edits"]:
+        if key not in self.state["edits"] or (self.recommendation_valid() and self._recommendation_matches_transfers()):
             current = self.week(gw)
             self.state["edits"][key] = copy.deepcopy(current["transfers"])
             if current["chip"]:
@@ -177,6 +183,7 @@ class Planner:
             raise ValueError("Chip unavailable in selected Gameweek.")
         if chip and any(week["chip"] == chip and week["gw"] != gw and chip_set_for_gw(week["gw"]) == chip_set_for_gw(gw) for week in self.weeks()):
             raise ValueError("Chip already booked in another Gameweek.")
+        self._touch_transfers(gw)
         self.state["chips"][str(gw)] = chip
         self.state["revision"] += 1
 
@@ -241,8 +248,8 @@ class Planner:
         bank = float(self.state["base_bank"])
         free_transfers = int(self.state["base_ft"])
         recommendation = self._recommendation_weeks()
-        first_edit = min((int(key) for key in self.state["edits"]), default=39)
-        rec_revision = self.state["recommendations"].get(self.state["scenario"], {}).get("revision", -1)
+        first_edit = min((int(key) for key in self.state["edits"] | self.state["chips"]), default=39)
+        transfers_match = self._recommendation_matches_transfers()
         result = []
         pending_sales: set[int] = set()
         for gw in range(self.state["start"], self.state["end"] + 1):
@@ -250,8 +257,8 @@ class Planner:
             rec_week = recommendation.get(gw, {})
             if rec_week.get("chip"):
                 rec_week = {**rec_week, "chip": normalize_chip_key(rec_week["chip"])}
-            stale_week = gw > first_edit and rec_revision != self.state["revision"]
-            if str(gw) in self.state["edits"]:
+            stale_week = gw > first_edit and not transfers_match
+            if str(gw) in self.state["edits"] and (not rec_week or not transfers_match or stale_week):
                 moves = copy.deepcopy(self.state["edits"][str(gw)])
             elif rec_week and not stale_week:
                 sells = [int(row["id"]) for row in rec_week.get("sell", [])]

@@ -80,9 +80,11 @@ Official references: [Python support](https://docs.streamlit.io/knowledge-base/u
 - PASS: local document links resolve; `git diff --check` clean.
 - PASS: intended text pairings ≥5.11:1; filled-button label 5.57:1; focus ≥4.31:1; control boundary ≥3.33:1. Verified with installed antislop-human WCAG checker.
 - PASS: design direction + typography/spacing/motion purposes stated; no fabricated Player data or new visual assets.
-- PASS: 14 targeted tests; real HiGHS with injected fixtures preserves manual transfer, bench, captain, vice; Streamlit AppTest exercises click/details/sell/add/reload, scenario confirmation/cancel, horizon/chip changes, completed-job recovery. No external HTTP in tests.
+- PASS: 17 targeted tests; real HiGHS with injected fixtures preserves manual transfer, bench, captain, vice; Streamlit AppTest exercises click/details/sell/add/reload, scenario confirmation/cancel, horizon/chip changes, completed-job recovery, solver-chip synchronization. Multiweek regression preserves optimized additions + explicit future choices after lineup edits. No external HTTP in tests.
 - PASS: planner Pyright checks; local Streamlit server launched on port 8501.
-- PASS: repository suite 533 tests; Ruff; delivery gate 123 checks. Existing research-path test required temporary directory outside `.tmp`.
+- PASS: repository suite 536 tests; Ruff; Pyright; delivery gate 115 checks after finished packet deletion. Existing research-path test required temporary directory outside `.tmp`. Latest multiweek refinements rechecked through all 17 planner tests.
 - PASS: desktop browser renders cached User Squad; Player click shows stats, projections, selling price, ownership/lineup actions. Player labels wrap to avoid clipping.
-- Pending: final responsive/keyboard/zoom browser checks + two-axis code review.
+- PASS: rendered 390px layout has no horizontal overflow; caption opacity corrected; neutral button borders use tested token; header Refresh fully visible. Enter opens Player details; Escape dismisses details and retains Player-button focus. No browser console errors observed.
+- REVIEW: Standards found missing Escape/focus behavior; native Escape shortcut added, focus limitation documented. Spec found hidden optimized moves, widget chip overwrite, retained chip overrides on Reset; repaired with regression coverage. Follow-up multiweek invalidation regression repaired.
+- Unverified: actual 200% browser zoom; in-app browser zoom shortcut had no effect. Narrow viewport reflow verified; no claim of browser zoom equivalence.
 - Unverified: Linux image build + hosting capacity; Docker/WSL unavailable. Deployment preparation files supplied; no publishing performed.

@@ -268,7 +268,7 @@ requires-dist = [
     { name = "playwright", specifier = ">=1.61.0" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "scipy", specifier = ">=1.15.0" },
-    { name = "streamlit", specifier = ">=1.55,<2" },
+    { name = "streamlit", specifier = ">=1.65,<2" },
     { name = "tabulate", specifier = ">=0.10.0" },
     { name = "tenacity", specifier = ">=9.1.4" },
 ]

@@ -59,7 +59,7 @@ System font stack: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`. 
 - Real football pitch markings establish Starting Shape; player labels remain readable on white pitch.
 - Desktop: pitch and details beside each other within 1440px content limit.
 - Narrow screens: controls wrap; details move below pitch; bench remains separate; transfer rows stack.
-- Touch targets: minimum 44px; keyboard reachability + visible focus; Escape closes dismissible panels and returns focus.
+- Touch targets: minimum 44px; keyboard reachability + visible focus; Escape closes dismissible panels or cancels confirmation. Native Streamlit reruns do not guarantee focus returns to originating Player; Tab resumes navigation.
 - Text at 200% zoom reflows; dialogs/search avoid clipped content.
 - Loading, empty, stale, incomplete, infeasible, and error states name cause + next action.
 

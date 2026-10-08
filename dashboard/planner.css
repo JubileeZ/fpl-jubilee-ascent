@@ -7,13 +7,14 @@
   --planner-border: #86868b;
 }
 .stApp { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-.stMainBlockContainer { max-width: 1440px; padding-top: 2rem; }
+.stMainBlockContainer { max-width: 1440px; padding-top: 4rem; }
 h1 { font-size: 2.1rem !important; font-weight: 600 !important; letter-spacing: -.02em; }
 h2, h3 { font-weight: 600 !important; }
 p, label { line-height: 1.47; }
-[data-testid="stCaptionContainer"] { color: var(--planner-muted); }
+[data-testid="stCaptionContainer"] { color: var(--planner-muted); opacity: 1; }
 button { min-height: 44px; border-radius: 8px !important; }
 button[kind="primary"] { border-radius: 9999px !important; }
+button[kind="secondary"]:not(:disabled) { border-color: var(--planner-border) !important; }
 button:focus-visible, input:focus-visible, [role="combobox"]:focus-visible {
   outline: 2px solid var(--planner-focus) !important; outline-offset: 3px;
 }
@@ -28,7 +29,7 @@ button:focus-visible, input:focus-visible, [role="combobox"]:focus-visible {
 .st-key-pitch button, .st-key-bench button { width: 100%; font-variant-numeric: tabular-nums; }
 .st-key-pitch button p, .st-key-bench button p { white-space: normal; overflow: visible; text-overflow: clip; }
 @media (max-width: 800px) {
-  .stMainBlockContainer { padding: 1rem; }
+  .stMainBlockContainer { padding: 4rem 1rem 1rem; }
   [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
   .st-key-workspace [data-testid="stColumn"] { min-width: 100%; }
   .st-key-pitch [data-testid="stColumn"], .st-key-bench [data-testid="stColumn"] { min-width: 44%; }

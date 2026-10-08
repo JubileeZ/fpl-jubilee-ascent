@@ -70,3 +70,37 @@ def test_changed_input_retains_recommendation_without_overwriting_draft() -> Non
                                                snapshot, planner.data_digest)
     assert planner.week(6)["vacancies"] == [7]
     assert not planner.recommendation_valid()
+
+
+def test_optimized_moves_display_alongside_manual_choices() -> None:
+    data = dataset()
+    data["players"].append({**data["players"][-1], "id": 17, "name": "Player 17", "team_id": 3})
+    planner = Planner(data)
+    planner.sell(6, 7)
+    planner.buy(6, 7, 16)
+    planner.sell(7, 16)
+    planner.buy(7, 16, 7)
+    plan = {"weeks": [{"gw": 6, "sell": [{"id": 7}, {"id": 3}], "buy": [{"id": 16}, {"id": 17}]},
+                      {"gw": 7, "sell": [{"id": 16}], "buy": [{"id": 7}]}]}
+    assert planner.accept_recommendations({"optimal": plan}, planner.snapshot(), planner.data_digest)
+    week = planner.week(6)
+    assert week["transfers"] == [{"out": 7, "in": 16}, {"out": 3, "in": 17}]
+    assert 17 in week["squad_ids"] and week["complete"]
+    planner.override(6, "captain", 14)
+    assert 17 in planner.week(6)["squad_ids"]
+    assert planner.week(7)["transfers"] == [{"out": 16, "in": 7}]
+    planner.sell(6, 17)
+    assert planner.week(6)["transfers"] == [{"out": 7, "in": 16}, {"out": 3, "in": None}]
+    assert planner.week(7)["transfers"] == [{"out": 16, "in": 7}]
+
+
+def test_reset_restores_solver_chip() -> None:
+    data = dataset()
+    data["meta"]["transfer_plan_available_chips"] = [{"chip": "bb", "gws": [6]}]
+    planner = Planner(data)
+    planner.set_chip(6, "bb")
+    planner.accept_recommendations({"optimal": {"weeks": [{"gw": 6, "chip": None, "buy": [], "sell": []}]}},
+                                  planner.snapshot(), planner.data_digest)
+    planner.reset()
+    assert planner.week(6)["chip"] is None
+    assert planner.state["chips"] == {}
