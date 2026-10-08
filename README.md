@@ -1,5 +1,10 @@
 # FPL-Jubilee-Ascent
 
+### Streamlit Transfer Planner
+
+`uv sync --locked` then `uv run python -m commands.streamlit_planner` → `http://127.0.0.1:8501`.
+Single editable Gameweek plan; click Player for stats/projections, Sell or Bench separately, fill replacement slots, automatically select legal XI. Generate plan / Optimize remaining transfers use existing Optimal / No Hit / Conservative solver policies. Drafts and completed results saved locally. Deployment prepared, not published; see [launch and deployment guide](docs/product/streamlit-planner-deployment.md). Existing dashboard/Explorer remains available through `commands.dashboard`.
+
 FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Explorer plus Transfer Plan Surface.
 
 ## Requirements

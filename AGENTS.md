@@ -39,6 +39,7 @@ docs/          # Durable project documentation and decision records
 | Command | What it does |
 |---------|-------------|
 | `uv run ruff check .` | Lint codebase |
+| `uv run python -m commands.streamlit_planner` | Streamlit editable Transfer Planner @ `http://127.0.0.1:8501`; player details, sell/bench, auto legal XI, saved drafts + solver jobs. Deployment preparation: `docs/product/streamlit-planner-deployment.md`; single manager/process; no deployment performed |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |

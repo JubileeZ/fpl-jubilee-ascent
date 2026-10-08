@@ -633,6 +633,16 @@ def solve_multi_period_fpl(data, options):
         m.addConstr(squad[player_id, gw] <= use_fh[gw])
         m.addConstr(squad_fh[player_id, gw] <= 1 - use_fh[gw])
 
+    for option, variable, value in (
+        ("force_bench_gws", lineup, 0),
+        ("force_captain_gws", captain, 1),
+        ("force_vice_gws", vicecap, 1),
+    ):
+        for player_id, gw in options.get(option) or []:
+            if player_id not in players or gw not in gws:
+                raise ValueError(f"Lineup override Player {player_id} GW{gw} is outside solver pool/horizon")
+            m.addConstr(variable[player_id, gw] == value)
+
     if options.get("no_future_transfer", None):
         print("OC - No Future Tr")
         m.addConstr(sum_(transfer_in[p, w] for p in players for w in gws if w > next_gw and w not in options.get("use_wc", [])) == 0)

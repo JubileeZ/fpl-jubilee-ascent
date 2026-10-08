@@ -35,6 +35,8 @@ data/reports/
 data/session_token.json
 data/*.csv
 data/*.json
+data/planner/
+.streamlit/secrets.toml
 dashboard/*.json
 
 # But do NOT ignore archived seasons

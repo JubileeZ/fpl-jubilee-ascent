@@ -8,6 +8,10 @@ FPL analytics and optimization engine for a single user. Ingests live FPL API da
 The user's specific 15-player Fantasy Premier League squad. Keyed by `entry_id`. Not a Season Archive or Live Season Pin object.
 _Avoid_: Manager team, FPL team, team, manager_id, committing picks or `me.json` to git
 
+**Transfer Plan Draft**:
+Editable proposed transfer sequence across Gameweeks; may contain pending sales and replacement vacancies. Distinct from live User Squad and solver-generated Transfer Plan recommendation; incomplete draft is not an executable 15-player squad.
+_Avoid_: User Squad (for incomplete proposal), solver recommendation (for manual or unsolved draft)
+
 **Club**:
 A real-world Premier League club (e.g. Arsenal, Liverpool). Keyed by `team_id` or `club_id`. Maps to `team` in the FPL API.
 _Avoid_: Team (in domain model context)

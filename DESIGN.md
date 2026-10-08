@@ -1,57 +1,70 @@
-# DESIGN.md: FPL Jubilee Ascent
+# FPL Jubilee Ascent Design
 
-Antigravity theme specification for antislop R-37.
+Apple utility/configurator direction, replacing Antigravity styling. Reference: user-supplied `DESIGN-apple.md`; palette, typography, restrained controls adapted to weekly FPL planning. Implemented 2026-10-08 in Streamlit Transfer Planner; existing React dashboard retained.
 
-## Product
+## Product and Scope
 
-Local FPL score projection + transfer MILP dashboard. Surfaces: Explorer (projections, Squad What-If pitch) and Transfer Plan (scenario arms). Single manager, weekly deadline use.
+Single-manager projection + transfer planning workspace. First implementation target: Streamlit Transfer Planner, prepared for later private deployment. Existing Explorer and other dashboard surfaces retained during migration. Product behavior: [planner spec](docs/product/streamlit-transfer-planner.md).
 
-## Audience
+## Character
 
-One power user (repo owner) at a desktop, operating a high-precision FPL optimization workstation.
-
-## Personality
-
-Antigravity mission control: deep space obsidian canvas, precision hairline wireframes, high-legibility data grids, and focused cosmic accents. Calm, authoritative developer tool rather than flashy SaaS marketing.
-
-## Palette
-
-- Core Canvas: Deep space obsidian `#0a0b10`, elevated card `#121520`, hover state `#1a202e`
-- Borders: Crisp hairline slate `#1e2538`
-- Primary Accent: Electric cyan / cosmic sky `#38bdf8` (active tabs, primary CTA, solver actions)
-- Secondary Accent: Cosmic indigo `#6366f1` (subtle secondary focus and badges)
-- Text: Crisp white `#f8fafc`, muted slate `#94a3b8`
-- Pitch Domain: Tactical dark pitch (`#081717` to `#050f14`) with subtle hairline markings (`rgba(56, 189, 248, 0.15)`)
-- Position Markers (domain tokens):
-  - GKP: Tactical gold `#eab308`
-  - DEF: Cyan `#38bdf8`
-  - MID: Emerald `#10b981`
-  - FWD: Coral rose `#f43f5e`
-- Forbidden: Gratuitous full-screen purple blur or glowing background blobs without purpose
-
-## Typography
-
-- UI & Controls: **Inter**, system sans-serif (`400`, `500`, `600`, `700`). Reason: crisp grotesque letterforms engineered for high legibility in dense toolbars and data-dense ops consoles.
-- Tabular & Metrics: **JetBrains Mono** for numeric columns and metrics (xP, cost, SV, ownership). Reason: fixed-width tabular numeral alignment essential for comparing projection tables and decimal ratings.
-- Brand Wordmark: Clean, solid light text (weight 700) with a subtle cyan dot accent marker.
-
-## Theme
-
-**Dark only.** Justification: Night ops, high-contrast numeric legibility, and native command-center aesthetic.
-
-## Motif
-
-Tactical data terminal: flat cards with razor-thin borders, clean pill status indicators where functional, and a tactical pitch matrix for squad views.
-
-## Dial
+Calm, readable, direct. Squad and transfer decisions carry emphasis. Apple store utility surfaces guide layout; compact workspace density keeps selected Gameweek, Starting XI, bench, and transfers close together.
 
 `ENERGY 1 / RHYTHM 2 / MOTION 1`
 
-- Energy 1: Linear workspace chrome, zero hero marketing fluff
-- Rhythm 2: Clear logical sections: Explorer filters -> table -> charts; Plan chips -> scenarios -> pitch
-- Motion 1: Micro-interactions on hover and focus rings; zero gratuitous scroll animations
+- Energy: quiet chrome; blue reserved for actions and selection.
+- Rhythm: spacious section boundaries; compact player and transfer rows.
+- Motion: brief pressed-state feedback; respect reduced-motion preference.
 
-## Layout Notes
+## Tokens
 
-- Mobile: Reflow toolbar and table stacks, minimum 44px tap targets on primary buttons
-- Data cards: Functional containers with strict hierarchy and zero decorative padding bloat
+- `canvas`: `#ffffff`; pitch, player details, utility surfaces.
+- `background`: `#f5f5f7`; page and bench grouping.
+- `ink`: `#1d1d1f`; body, headings, numerical values.
+- `muted`: `#333333`; supporting text. Reference's faint grey text excluded from small text on off-white surfaces.
+- `action`: `#0066cc`; primary actions, links, selected controls.
+- `focus`: `#0071e3`; visible keyboard outline with offset.
+- `divider`: `#e0e0e0`; decorative section separation.
+- `control-border`: `#86868b`; input/control boundaries requiring non-text contrast.
+- `on-action`: `#ffffff`; filled blue button labels.
+- Spacing: 4 / 8 / 12 / 17 / 24 / 32 / 48px; section gaps 24–32px; player rows 8–12px.
+- Radius: utility controls 8px; grouped containers 18px; primary CTA and search capsule 9999px.
+- Elevation: flat workspace; use borders and spacing to distinguish surfaces.
+
+## Typography
+
+System font stack: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`. Apple platforms use native system typography; Windows/Linux retain native fallback. No bundled font required.
+
+- Page title: 28–34px, weight 600; modest negative letter spacing.
+- Section heading: 21px, weight 600.
+- Body: 17px, weight 400, line-height 1.47.
+- Labels and compact rows: 14px, weight 400 or 600, line-height at least 1.43.
+- Values: tabular numerals within system font; aligned units and decimal columns.
+
+## Planner Composition
+
+- Header: product name; data freshness; Refresh action.
+- Plan controls: horizon, selected Gameweek, Optimal / No Hit / Conservative selector.
+- Primary workspace: selected-week pitch + bench; adjacent player details or replacement search.
+- Transfer summary: outgoing/incoming players, provisional or confirmed plan costs, Expected GW Score, recommendation provenance.
+- Solver actions: Generate plan, Optimize remaining transfers, Reset to solver; explicit running/error state near action.
+- Player click: details. Separate Sell from selected Gameweek, Bench this week, Replace actions.
+- Empty replacement slots: bench area, labelled Position + Add player. Vacancies remain visible when Starting XI incomplete.
+- Status: readable Draft / Needs recalculation / Solver recommendation labels. Text carries meaning; colour supplements selection only.
+
+## Controls and Responsive Behavior
+
+- Filled blue primary action; neutral secondary controls; explicit labels for destructive draft edits.
+- Selected scenario/Player: blue outline plus text/state accessible to assistive technology.
+- Real football pitch markings establish Starting Shape; player labels remain readable on white pitch.
+- Desktop: pitch and details beside each other within 1440px content limit.
+- Narrow screens: controls wrap; details move below pitch; bench remains separate; transfer rows stack.
+- Touch targets: minimum 44px; keyboard reachability + visible focus; Escape closes dismissible panels and returns focus.
+- Text at 200% zoom reflows; dialogs/search avoid clipped content.
+- Loading, empty, stale, incomplete, infeasible, and error states name cause + next action.
+
+## Content and Verification
+
+Display actual player data and projections only. Missing values labelled unavailable; vacant slots have no fabricated Player, Price, or xP. Icons only for meaningful controls; product name supplies wordmark. No new photography, logo, or avatar assets required.
+
+Before UI delivery: verify text contrast ≥4.5:1, large text and control/focus boundaries ≥3:1; exercise keyboard, mobile, 200% zoom, all data states, player actions, and solver result recovery. Design-doc review does not establish implemented UI compliance.

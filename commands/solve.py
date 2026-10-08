@@ -417,13 +417,8 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
         or 0.0
     )
     bank_tenths = max(0, int(round(bank_millions * 10)))
-    free_transfers = int(
-        eval_data.get("freeTransfersNext")
-        or parent_state.get("freeTransfersNext")
-        or parent_state.get("ft")
-        or 1
-    )
-    free_transfers = max(1, min(5, free_transfers))
+    free_transfers = int(eval_data.get("freeTransfersNext", parent_state.get("freeTransfersNext", parent_state.get("ft", 1))))
+    free_transfers = max(0, min(5, free_transfers))
 
     chips: list[dict[str, object]] = []
     if chips_path.exists():
