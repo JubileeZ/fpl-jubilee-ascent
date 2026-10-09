@@ -190,8 +190,8 @@ def replacement_panel(planner: Planner, store: PlanStore, gw: int, outgoing: int
                 st.error(str(exc))
     if outgoing in planner.week(gw)["vacancies"] and st.button("Undo sale", key="undo-sale"):
         edit(planner, store, lambda: planner.undo_sale(gw, outgoing))
-    if st.button("Close replacement search", key="close-search", shortcut=None if st.session_state.get("reset_scenario") or st.session_state.get("new_plan_confirmation") else "Esc"):
-        st.session_state.pop("replacement", None)
+    if st.button("Close replacement search", key="close-search"):
+        close_inspection()
         st.rerun()
 
 
@@ -253,9 +253,20 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
             st.dataframe([{"Component": key, "xP": value} for key, value in components.items()], hide_index=True)
         else:
             st.caption("Projection components unavailable for this model.")
-    if st.button("Close player details", key="close-details", shortcut=None if st.session_state.get("reset_scenario") or st.session_state.get("new_plan_confirmation") else "Esc"):
-        st.session_state.pop("selected_player", None)
-        st.rerun()
+
+
+def close_inspection() -> None:
+    st.session_state.pop("selected_player", None)
+    st.session_state.pop("replacement", None)
+
+
+@st.dialog("Player inspection", width="large", on_dismiss=close_inspection)
+def player_inspection(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: int) -> None:
+    with st.container(key="player-inspection"):
+        if st.button("Back to squad", key="close-details"):
+            close_inspection()
+            st.rerun()
+        details_panel(planner, store, paths, gw)
 
 
 def load_planner(paths: PlannerPaths, store: PlanStore) -> Planner:
@@ -279,12 +290,13 @@ def load_planner(paths: PlannerPaths, store: PlanStore) -> Planner:
 def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     planner = st.session_state["planner"]
     dataset = planner.dataset
-    title, refresh = st.columns([5, 1])
-    title.title("Transfer Planner")
-    title.caption("Inspect Players, plan transfers, and select a legal XI.")
     busy = jobs.active() is not None
-    if refresh.button("Refresh", key="refresh-data", disabled=busy, width="stretch"):
-        begin_job(planner, store, jobs, paths, refresh=True)
+    with st.container(key="planner-heading", horizontal=True, vertical_alignment="center"):
+        with st.container():
+            st.title("Transfer Planner")
+            st.caption("Inspect Players, plan transfers, and select a legal XI.")
+        if st.button("Refresh", key="refresh-data", disabled=busy):
+            begin_job(planner, store, jobs, paths, refresh=True)
     if st.session_state.get("save_error"):
         st.error(st.session_state["save_error"])
         if st.session_state.get("stale_browser") and st.button("Reload latest draft", key="reload-draft"):
@@ -357,8 +369,7 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
         with st.container(border=True):
             confirm_reset(planner, store)
     with st.container(key="workspace"):
-        board, detail = st.columns([3, 2], gap="large")
-        with board:
+        with st.container(key="squad-board"):
             pitch(planner, gw, week)
             st.subheader("Transfers")
             if not week["transfers"]:
@@ -377,5 +388,5 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
                                 format_func=lambda value: {None: "None", "wc": "Wildcard", "bb": "Bench Boost", "fh": "Free Hit", "tc": "Triple Captain"}[value], key=f"chip-{gw}-{week['chip']}")
             if chip != week["chip"]:
                 edit(planner, store, lambda: planner.set_chip(gw, chip))
-        with detail, st.container(key="details"):
-            details_panel(planner, store, paths, gw)
+    if st.session_state.get("selected_player") is not None or st.session_state.get("replacement") is not None:
+        player_inspection(planner, store, paths, gw)

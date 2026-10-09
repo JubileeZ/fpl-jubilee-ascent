@@ -47,7 +47,7 @@ System font stack: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`. 
 
 - Header: product name; data freshness; Refresh action.
 - Plan controls: horizon, selected Gameweek, Optimal / No Hit / Conservative selector.
-- Primary workspace: selected-week pitch + bench; adjacent player details or replacement search.
+- Primary workspace: selected-week pitch + bench; focused player inspection/replacement dialog.
 - Transfer summary: outgoing/incoming players, provisional or confirmed plan costs, Expected GW Score, recommendation provenance.
 - Solver actions: Generate plan, Optimize remaining transfers, Reset to solver; explicit running/error state near action.
 - Player click: details. Separate Sell from selected Gameweek, Bench this week, Replace actions.
@@ -59,8 +59,13 @@ System font stack: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`. 
 - Filled blue primary action; neutral secondary controls; explicit labels for destructive draft edits.
 - Selected scenario/Player: blue outline plus text/state accessible to assistive technology.
 - Real football pitch markings establish Starting Shape; player labels remain readable on white pitch.
-- Desktop: pitch and details beside each other within 1440px content limit.
-- Narrow screens: controls wrap; details move below pitch; bench remains separate; transfer rows stack.
+- Content-first responsive workspace: compact outer padding; navigation initially collapsed; sections respond to available content width, including sidebar changes.
+- Squad: full available width within 1440px content limit; position groups + separate bench; readable player columns wrap down to one.
+- Player inspection: native focused dialog with Close/Back to squad; same interaction across widths; background squad retains scroll position.
+- Controls: intrinsic wrapping with readable minimum widths; complete labels; vertical scroll preferred over shrinking text or targets.
+- Explorer: charts stack when available width insufficient; Player, Position, Price, projection first in table; extra columns scroll within table.
+- Research and methodology: prose and code formulas wrap; long tables and rendered KaTeX equations retain local scroll.
+- Responsive acceptance: 320, 390, 768, 870, 1024, 1440px; sidebar open/closed; actual 200% zoom; preserved selections/edits. [Spec](docs/product/dashboard-responsive-layout.md).
 - Touch targets: minimum 44px; keyboard reachability + visible focus; Escape closes dismissible panels or cancels confirmation. Native Streamlit reruns do not guarantee focus returns to originating Player; Tab resumes navigation.
 - Text at 200% zoom reflows; dialogs/search avoid clipped content.
 - Loading, empty, stale, incomplete, infeasible, and error states name cause + next action.

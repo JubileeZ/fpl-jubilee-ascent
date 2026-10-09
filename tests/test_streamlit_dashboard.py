@@ -163,3 +163,45 @@ def test_what_if_transfer_hits_apply_once_at_horizon_start() -> None:
     charged = compare_squads(data, "Champion", (6, 7), squad)
     assert charged[0]["What-If Expected"] == free[0]["What-If Expected"] - 4
     assert charged[1]["What-If Expected"] == free[1]["What-If Expected"]
+
+
+def test_player_inspection_opens_focused_dialog_and_returns_to_squad(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    before = app.session_state["planner"].snapshot()
+    app.button(key="player-7").click().run()
+    assert not app.exception
+    assert len(app.get("dialog")) == 1
+    app.button(key="close-details").click().run()
+    assert not app.exception
+    assert not app.get("dialog")
+    assert app.session_state["planner"].snapshot() == before
+    app.button(key="player-7").click().run()
+    app.button(key="sell-player").click().run()
+    assert not app.exception
+    assert not app.get("dialog")
+    assert app.session_state["planner"].week(6)["vacancies"] == [7]
+
+
+def test_explorer_player_dialog_preserves_what_if_and_transfer_draft(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    before = app.session_state["planner"].snapshot()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
+    squad = list(app.session_state["explorer-squad"].ids)
+    app.button(key="explorer-squad-7").click().run()
+    assert not app.exception
+    assert len(app.get("dialog")) == 1
+    app.button(key="close-explorer-details").click().run()
+    assert not app.exception
+    assert not app.get("dialog")
+    assert app.session_state["explorer-squad"].ids == squad
+    assert app.session_state["planner"].snapshot() == before

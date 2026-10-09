@@ -89,6 +89,35 @@ def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], p
             st.dataframe(history, hide_index=True)
 
 
+def close_explorer_inspection() -> None:
+    st.session_state.pop("explorer-inspection", None)
+
+
+@st.dialog("Player inspection", width="large", on_dismiss=close_explorer_inspection)
+def explorer_inspection(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths) -> None:
+    with st.container(key="player-inspection"):
+        if st.button("Back to Explorer", key="close-explorer-details"):
+            close_explorer_inspection()
+            st.rerun()
+        explorer_details(player, model, gws, paths)
+
+
+def select_explorer_player(key: str, ids: list[int] | None = None) -> None:
+    selection = st.session_state[key]["selection"]
+    if ids is not None and selection["rows"]:
+        st.session_state["explorer-player"] = ids[selection["rows"][-1]]
+    elif ids is None and selection["points"]:
+        st.session_state["explorer-player"] = int(selection["points"][-1]["customdata"][0])
+    else:
+        return
+    st.session_state["explorer-inspection"] = True
+
+
+@st.cache_data(show_spinner="Comparing projected squads…", max_entries=32)
+def squad_comparison(dataset: dict[str, Any], model: str, gws: tuple[int, ...], squad: ExplorerSquad) -> list[dict[str, Any]]:
+    return compare_squads(dataset, model, gws, squad)
+
+
 def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
     players = {int(player["id"]): player for player in dataset["players"]}
     source = digest(dataset)
@@ -145,12 +174,14 @@ def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
                 group = [pid for pid in ids if players[pid]["pos_id"] == pos]
                 if not group:
                     continue
+                st.caption(POSITION_NAMES[pos])
                 for column, pid in zip(st.columns(len(group)), group, strict=True):
                     with column:
                         cell = projections(players[pid], model).get(f"gw{gws[0]}", {})
                         label = f"{float(cell['total_xp']):.1f} xP" if cell.get("total_xp") is not None else "Projection unavailable"
                         if st.button(f"{name(pid)} · {label}", key=f"explorer-squad-{pid}", width="stretch"):
                             st.session_state["explorer-player"] = pid
+                            st.session_state["explorer-inspection"] = True
                             st.rerun()
                         st.caption(f"{players[pid].get('team', '')} · {POSITION_NAMES[pos]}")
     outfield = [pid for pid in bench if players[pid]["pos_id"] != 1]
@@ -168,7 +199,7 @@ def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
             if str(key).startswith("whatif-"):
                 st.session_state.pop(key, None)
         st.rerun()
-    scores = compare_squads(dataset, model, gws, squad)
+    scores = squad_comparison(dataset, model, gws, squad)
     st.dataframe(scores, hide_index=True, width="stretch")
     with st.expander("Squad fixtures and projection components"):
         st.dataframe([{"Player": name(pid), "Role": "Starter" if pid in squad.lineup else "Bench", **{f"GW{gw}": projections(players[pid], model).get(f"gw{gw}", {}).get("fixture_label", "Unavailable") for gw in gws}} for pid in squad.ids], hide_index=True)
@@ -222,22 +253,21 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         row["Dream Team"] = row["ID"] in dream_ids
     if rows:
         frame = pd.DataFrame(rows).sort_values("xP", ascending=False).reset_index(drop=True)
-        charts = st.columns(2)
-        for column, axis in zip(charts, ("Ownership %", "Price"), strict=True):
-            with column:
-                figure = px.scatter(frame, x=axis, y=metric, color="Position", symbol="Squad", hover_name="Player", custom_data=["ID"], hover_data=["Club", "xP", "xMins / GW", "Dream Team"], color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#9c3b00"])
-                figure.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=25, b=20), font=dict(family="Segoe UI, sans-serif", color="#1d1d1f"))
-                event = st.plotly_chart(figure, width="stretch", key=f"chart-{axis}", on_select="rerun", selection_mode="points")
-                if event.selection.points:
-                    st.session_state["explorer-player"] = int(event.selection.points[-1]["customdata"][0])
+        with st.container(key="explorer-charts"):
+            charts = st.columns(2)
+            for column, axis in zip(charts, ("Ownership %", "Price"), strict=True):
+                with column:
+                    figure = px.scatter(frame, x=axis, y=metric, color="Position", symbol="Squad", hover_name="Player", custom_data=["ID"], hover_data=["Club", "xP", "xMins / GW", "Dream Team"], color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#9c3b00"])
+                    figure.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=25, b=20), font=dict(family="Segoe UI, sans-serif", color="#1d1d1f"))
+                    st.plotly_chart(figure, width="stretch", key=f"chart-{axis}", on_select=lambda key=f"chart-{axis}": select_explorer_player(key), selection_mode="points")
         visible = frame.drop(columns=list(COMPONENT_KEYS))
-        event = st.dataframe(visible, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row", key="explorer-table")
-        if event.selection.rows:
-            st.session_state["explorer-player"] = int(frame.iloc[event.selection.rows[0]]["ID"])
+        essential = ["Player", "Position", "Price", "xP", "xP / GW", "Club"]
+        st.dataframe(visible, column_order=[*essential, *(name for name in visible.columns if name not in essential)], hide_index=True, width="stretch", on_select=lambda: select_explorer_player("explorer-table", frame["ID"].tolist()), selection_mode="single-row", key="explorer-table")
         st.download_button("Download filtered Players", visible.to_csv(index=False), "explorer-players.csv", "text/csv")
         pid = st.selectbox("Inspect Player", frame["ID"].tolist(), format_func=lambda pid: next(player["name"] for player in dataset["players"] if player["id"] == pid), index=frame["ID"].tolist().index(st.session_state["explorer-player"]) if st.session_state.get("explorer-player") in frame["ID"].tolist() else 0, key=f"explorer-inspect-{st.session_state.get('explorer-player')}")
-        with st.container(key="explorer-details"):
-            explorer_details(next(player for player in dataset["players"] if player["id"] == pid), model, gws, paths)
+        if st.button("View player details", key="explorer-view-details"):
+            st.session_state["explorer-player"] = pid
+            st.session_state["explorer-inspection"] = True
     else:
         st.info("No Players match these filters. Widen price, minutes, or search.")
     st.divider()
@@ -248,6 +278,10 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         st.caption(f"Dream Team · {result.get('model')} · GW{result.get('horizon_start')} + {result.get('horizon')} weeks · budget £{result.get('budget')}m")
         st.write(", ".join(player["name"] for player in dataset["players"] if player["id"] in result.get("player_ids", [])))
     what_if(dataset, model, gws)
+    if st.session_state.get("explorer-inspection"):
+        player = next((player for player in dataset["players"] if player["id"] == st.session_state.get("explorer-player")), None)
+        if player is not None:
+            explorer_inspection(player, model, gws, paths)
 
 
 def research() -> None:
@@ -261,6 +295,7 @@ def research() -> None:
     by_slug = {str(topic["slug"]): topic for topic in topics}
     slug = st.selectbox("Topic", list(by_slug), format_func=lambda value: str(by_slug[value]["title"]), key="research-topic")
     detail = get_research_topic_detail(slug)
+    st.caption(str(by_slug[slug]["title"]))
     st.caption(str(by_slug[slug]["status"]))
     st.download_button("Download note", str(detail["content"]), str(detail["filename"]), "text/markdown")
     st.markdown(str(detail["content"]))
@@ -281,7 +316,7 @@ def methodology() -> None:
     for layer in data["pipeline_layers"]:
         with st.expander(f"{layer['layer']}. {layer['name']}", expanded=True):
             st.write(layer["summary"])
-            st.code(layer["formula"], language=None)
+            st.code(layer["formula"], language=None, wrap_lines=True)
             st.write(layer["details"])
     ledger = data["candidate_ledger_summary"]
     st.subheader("Candidate policy")
@@ -349,7 +384,7 @@ def advanced_solver(paths: PlannerPaths, jobs: PlannerJobs) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="FPL Jubilee Ascent", layout="wide")
+    st.set_page_config(page_title="FPL Jubilee Ascent", layout="wide", initial_sidebar_state="collapsed")
     st.html(Path(__file__).with_name("planner.css"))
     paths = PlannerPaths.configured()
     store, jobs = PlanStore(paths.storage / "draft.json"), PlannerJobs(paths.storage / "jobs")
@@ -369,15 +404,16 @@ def main() -> None:
         backup = PROJECT_ROOT / "data/user_plans.json"
         if backup.exists():
             st.download_button("Download legacy plan backup", backup.read_bytes(), "user_plans.json", "application/json")
-    shared_job_status(paths, jobs)
-    streamlit_planner.job_status(paths, store, jobs)
-    if page == "Transfer Planner":
-        streamlit_planner.main(paths, store, jobs)
-    elif page == "Explorer":
-        explorer(paths, jobs)
-    elif page == "Research":
-        research()
-    else:
-        methodology()
-    if page in ("Transfer Planner", "Explorer"):
-        advanced_solver(paths, jobs)
+    with st.container(key="dashboard-content"):
+        shared_job_status(paths, jobs)
+        streamlit_planner.job_status(paths, store, jobs)
+        if page == "Transfer Planner":
+            streamlit_planner.main(paths, store, jobs)
+        elif page == "Explorer":
+            explorer(paths, jobs)
+        elif page == "Research":
+            research()
+        else:
+            methodology()
+        if page in ("Transfer Planner", "Explorer"):
+            advanced_solver(paths, jobs)
