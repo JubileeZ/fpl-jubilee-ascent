@@ -6,10 +6,11 @@
     "labels": [
       "wayfinder:map"
     ],
-    "body": "## Destination\n\nAgree manager-facing dashboard UX specification from blind persona click-through: confident deadline decisions, interpretable comparisons, deliberate scouting handoff and chip experiments. Complete when observed questions resolved into reviewable behavior decisions; implementation follows separately.\n\n## Notes\n\n2026-10-09 desktop UI-only audit; no application source inspection by personas. Deadline and strategy agents direct; scout commands relayed by root because scout browser unavailable. Evidence archived locally in anti-slop/audit-002-2026-10-09.md; reproducible observations included in each child. Antislop After; preserve DESIGN.md. Consult Wayfinder, antislop core/UI/human/copy, grilling and domain-modeling as relevant. P1/P2/P3 denote user-impact triage. Open children are decision questions, not automatically approved changes. No real FPL submission or live refresh.\n\n## Decisions so far\n\nNone. Audit observations are evidence, not resolved product decisions.\n\n## Not yet specified\n\n- Responsive, full keyboard, screen-reader and 200% zoom experience after chosen workflows.\n- Performance and failure recovery under a single isolated session; intermediate reruns excluded from bug claims.\n- Detailed rollout order and implementation scope after decisions.\n- One-off view-preference save warning; reproduce before diagnosing.\n\n## Out of scope\n\nScoring-model changes, Champion/Candidate research, solver correctness claims, official FPL transfers, deployment, new model training, cosmetic redesign without decision evidence.\n",
+    "body": "## Destination\n\nAgree manager-facing dashboard UX specification from blind persona click-through: confident deadline decisions, interpretable comparisons, deliberate scouting handoff and chip experiments. Complete when observed questions resolved into reviewable behavior decisions; implementation follows separately.\n\n## Notes\n\n2026-10-09 desktop UI-only audit; no application source inspection by personas. Deadline and strategy agents direct; scout commands relayed by root because scout browser unavailable. Evidence archived locally in anti-slop/audit-002-2026-10-09.md; reproducible observations included in each child. Antislop After; preserve DESIGN.md. Consult Wayfinder, antislop core/UI/human/copy, grilling and domain-modeling as relevant. P1/P2/P3 denote user-impact triage. Open children are decision questions, not automatically approved changes. No real FPL submission or live refresh.\n\n## Decisions so far\n\n- [[P1] What must a manager see before acting at the deadline?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151#issuecomment-6079926122): implemented proposal accepted; closure requested by user.\n- [[P1] How should managers compare transfer policies with rolling a transfer?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152#issuecomment-6079926850): implemented proposal accepted; closure requested by user.\n- [[P2] How should policy preview differ from adopting a saved draft?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153#issuecomment-6079927584): implemented proposal accepted; closure requested by user.\n- [[P2] How should player availability and fixture difficulty be presented?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154#issuecomment-6079928362): implemented proposal accepted; closure requested by user.\n- [[P2] How should scouting comparisons lead into a transfer draft?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155#issuecomment-6079929101): implemented proposal accepted; closure requested by user.\n- [[P2] What validation belongs before submitting a chip experiment?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156#issuecomment-6079929779): implemented proposal accepted; closure requested by user.\n- [[P2] What explanations make advanced strategy inputs usable?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157#issuecomment-6079930487): implemented proposal accepted; closure requested by user.\n- [[P3] Should advanced experiment settings survive reload?](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158#issuecomment-6079931246): implemented proposal accepted; closure requested by user.\n\n## Deferred follow-up\n\nFull keyboard, screen-reader and 200% zoom verification; broader performance/failure recovery and deployment remain separate follow-up. User accepted implementation and requested ticket closure on 2026-10-09.\n\n## Out of scope\n\nScoring-model changes, Champion/Candidate research, solver correctness claims, official FPL transfers, deployment, new model training, cosmetic redesign without decision evidence.\n\n\n## Implementation status, 2026-10-09\n\nUser invoked implement after audit publication. Eight implementation proposals now exist in current local branch; evidence posted on each child. Human workflow decisions remain open; no decision resolution or closure inferred. Spec: docs/product/dashboard-usability/implementation.md. Follow-up: anti-slop/audit-002-2026-10-09-followup.md. No deployment or official FPL action.\n\n## Completion, 2026-10-09\n\nAll eight implementation proposals accepted for closure by user; all child tickets verified closed. Commit 08fe026. Accessibility gaps remain documented as deferred; no deployment claimed.",
     "number": 150,
     "id": 5775630698,
-    "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150"
+    "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150",
+    "state": "closed"
   },
   "tickets": [
     {
@@ -25,7 +26,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151#issuecomment-6079735278",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151#issuecomment-6079926122",
+      "state": "closed"
     },
     {
       "key": "policy_comparison",
@@ -40,7 +43,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152#issuecomment-6079735647",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152#issuecomment-6079926850",
+      "state": "closed"
     },
     {
       "key": "policy_preview",
@@ -55,7 +60,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153#issuecomment-6079735985",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153#issuecomment-6079927584",
+      "state": "closed"
     },
     {
       "key": "player_clarity",
@@ -70,7 +77,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154#issuecomment-6079736302",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154#issuecomment-6079928362",
+      "state": "closed"
     },
     {
       "key": "scout_handoff",
@@ -85,7 +94,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155#issuecomment-6079736656",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155#issuecomment-6079929101",
+      "state": "closed"
     },
     {
       "key": "chip_preflight",
@@ -100,7 +111,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156#issuecomment-6079737106",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156#issuecomment-6079929779",
+      "state": "closed"
     },
     {
       "key": "strategy_guidance",
@@ -115,7 +128,9 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157#issuecomment-6079737471",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157#issuecomment-6079930487",
+      "state": "closed"
     },
     {
       "key": "advanced_recovery",
@@ -130,9 +145,12 @@
       "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158",
       "parent_verified": true,
       "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158#issuecomment-6079737816",
-      "implementation_status": "implemented_pending_human_workflow_review"
+      "implementation_status": "completed_user_accepted",
+      "resolution_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158#issuecomment-6079931246",
+      "state": "closed"
     }
   ],
   "verified_at": "2026-10-09T09:06:39.8225929Z",
-  "implementation_verified_at": "2026-10-09T11:13:15.2080520+00:00"
+  "implementation_verified_at": "2026-10-09T18:13:15.208052+07:00",
+  "closed_verified_at": "2026-10-09T11:26:42.9917844Z"
 }

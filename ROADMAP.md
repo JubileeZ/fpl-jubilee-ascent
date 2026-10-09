@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Active map: [First-time manager dashboard usability](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150); eight usability proposals implemented, verified and recorded for human workflow review. Spec: `docs/product/dashboard-usability/implementation.md`. Prior Map #143 (Decision Tree Planner & Solve Engine Hardening) completed; Issues #144-#149 closed. Prior Map #135 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
+Active map: none. [First-time manager dashboard usability](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150) completed; eight usability proposals implemented, verified and accepted for closure by user, 2026-10-09. Spec: `docs/product/dashboard-usability/implementation.md`. Prior Map #143 (Decision Tree Planner & Solve Engine Hardening) completed; Issues #144-#149 closed. Prior Map #135 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD

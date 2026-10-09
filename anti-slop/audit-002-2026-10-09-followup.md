@@ -34,4 +34,4 @@ Initial findings: two, repaired. Same-Gameweek purchase replacement amends origi
 
 Changed flows clicked in isolated preview; existing interaction tests exercise prior controls. Functional hierarchy retained; no decorative treatments or invented product claims. Existing contrast/focus/tap-target CSS retained. Phone overflow checked; native keyboard Enter used for horizon inputs. Full keyboard/screen-reader/200% zoom coverage not claimed.
 
-Implementation artifact: `docs/product/dashboard-usability/implementation.md`. [First-time manager dashboard usability](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150) remains canonical tracking map; implementation proposals recorded for human workflow review.
+Implementation artifact: `docs/product/dashboard-usability/implementation.md`. [First-time manager dashboard usability](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150) completed on explicit user acceptance, 2026-10-09; all eight tickets and map verified closed. Accessibility gaps above remain deferred.
