@@ -19,13 +19,13 @@ button:focus-visible, input:focus-visible, [role="combobox"]:focus-visible {
   outline: 2px solid var(--planner-focus) !important; outline-offset: 3px;
 }
 [data-baseweb="input"], [data-baseweb="select"] > div { border-color: var(--planner-border); }
-.st-key-pitch {
+.st-key-pitch, .st-key-explorer-pitch {
   background-color: #ffffff; border-radius: 18px; padding: 1rem; border: 1px solid #e0e0e0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23e0e0e0' stroke-width='1'%3E%3Crect x='20' y='20' width='560' height='560'/%3E%3Cpath d='M20 300H580M180 20V110H420V20M180 580V490H420V580'/%3E%3Ccircle cx='300' cy='300' r='55'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 100% 100%;
 }
-.st-key-bench { background: var(--planner-background); border-radius: 18px; padding: 1rem; }
-.st-key-details { background: var(--planner-background); border-radius: 18px; padding: 1.25rem; }
+.st-key-bench, .st-key-explorer-bench { background: var(--planner-background); border-radius: 18px; padding: 1rem; }
+.st-key-details, .st-key-explorer-details { background: var(--planner-background); border-radius: 18px; padding: 1.25rem; }
 .st-key-pitch button, .st-key-bench button { width: 100%; font-variant-numeric: tabular-nums; }
 .st-key-pitch button p, .st-key-bench button p { white-space: normal; overflow: visible; text-overflow: clip; }
 @media (max-width: 800px) {

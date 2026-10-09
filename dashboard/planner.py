@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import os
+import threading
 from collections import Counter
 from pathlib import Path
 from typing import Any, cast
@@ -25,6 +26,8 @@ def digest(value: Any) -> str:
 
 
 class PlanStore:
+    _lock = threading.RLock()
+
     def __init__(self, path: Path) -> None:
         self.path = path
 
@@ -36,7 +39,13 @@ class PlanStore:
             raise ValueError("Saved plan must be a JSON object. Preserve file and restore a valid backup.")
         return state
 
-    def save(self, state: dict[str, Any]) -> None:
+    def save(self, state: dict[str, Any], *, expected_digest: str | None = None) -> None:
+        with self._lock:
+            if expected_digest is not None and digest(self.load()) != expected_digest:
+                raise ValueError("Another browser saved a newer draft. Reload the latest draft before editing again.")
+            self._write(state)
+
+    def _write(self, state: dict[str, Any]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
         try:

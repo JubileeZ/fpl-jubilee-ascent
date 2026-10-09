@@ -1,9 +1,9 @@
 # FPL-Jubilee-Ascent
 
-### Streamlit Transfer Planner
+### Streamlit Dashboard
 
-`uv sync --locked` then `uv run python -m commands.streamlit_planner` → `http://127.0.0.1:8501`.
-Single editable Gameweek plan; click Player for stats/projections, Sell or Bench separately, fill replacement slots, automatically select legal XI. Generate plan / Optimize remaining transfers use existing Optimal / No Hit / Conservative solver policies. Drafts and completed results saved locally. Deployment prepared, not published; see [launch and deployment guide](docs/product/streamlit-planner-deployment.md). Existing dashboard/Explorer remains available through `commands.dashboard`.
+`uv sync --locked` then `uv run python -m commands.dashboard` → `http://127.0.0.1:8000`.
+One Apple-style Streamlit workspace: Transfer Planner, Explorer, Research, Model Methodology. Single editable Gameweek plan; click Player for stats/projections, Sell or Bench separately, fill replacement slots, automatically select legal XI. Generate plan / Optimize remaining transfers use Optimal / No Hit / Conservative solver policies. Drafts/results saved locally; stale browser writes rejected. Explorer What-If and advanced solver results stay separate. Alternate `commands.streamlit_planner` launches same app on port 8501. No Windows admin access required with existing environment: `.venv/Scripts/python.exe -m commands.dashboard`. Deployment prepared, not published; see [launch guide](docs/product/streamlit-planner-deployment.md).
 
 FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Explorer plus Transfer Plan Surface.
 
@@ -45,7 +45,7 @@ uv run python -m commands.dashboard
 
 4. Visit `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`).
 5. Click **Refresh** (ingest live FPL + project Primary / Champion).
-6. Open the **Transfer Plan** tab → **Solve scenarios** (ranks Optimal / No Hit by horizon Σ Expected GW Score).
+6. Open **Transfer Planner** → **Generate plan**; inspect Optimal / No Hit / Conservative recommendations by Gameweek. Edit Player transfers or lineup; optimize remaining transfers when ready.
 
 You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
 

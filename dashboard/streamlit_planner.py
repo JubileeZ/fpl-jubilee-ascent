@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
-from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
-from dashboard.planner import POSITION_NAMES, Planner, PlanStore
+from dashboard.planner import POSITION_NAMES, Planner, PlanStore, digest
 from dashboard.planner_jobs import PlannerJobs
 from dashboard.planner_service import (PlannerPaths, import_cached_recommendations, load_dataset,
                                        make_solve_request, player_history, refresh_request,
@@ -20,9 +19,14 @@ from solver.scenarios import ARM_NAMES
 def save(planner: Planner, store: PlanStore) -> bool:
     st.session_state["planner"] = planner
     try:
-        store.save(planner.state)
+        store.save(planner.state, expected_digest=st.session_state.get("draft_digest", digest(store.load())))
+        st.session_state["draft_digest"] = digest(planner.state)
         st.session_state["save_error"] = None
         return True
+    except ValueError as exc:
+        st.session_state["save_error"] = str(exc)
+        st.session_state["stale_browser"] = True
+        return False
     except OSError:
         st.session_state["save_error"] = "Draft not saved. Check writable storage and retry saving before closing browser."
         return False
@@ -99,6 +103,8 @@ def job_status(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None
 
 def begin_job(planner: Planner, store: PlanStore, jobs: PlannerJobs, paths: PlannerPaths, refresh: bool = False) -> None:
     try:
+        if not save(planner, store):
+            return
         request = {"kind": "refresh"} if refresh else make_solve_request(planner, paths)
         worker = (lambda payload: refresh_request(payload, paths)) if refresh else (lambda payload: solve_request(payload, paths))
         job_id = jobs.start(request, worker)
@@ -252,36 +258,41 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
         st.rerun()
 
 
-def main() -> None:
-    st.set_page_config(page_title="FPL Transfer Planner", layout="wide")
-    st.html(Path(__file__).with_name("planner.css"))
-    paths = PlannerPaths.configured()
-    store = PlanStore(paths.storage / "draft.json")
-    jobs = PlannerJobs(paths.storage / "jobs")
+def load_planner(paths: PlannerPaths, store: PlanStore) -> Planner:
     try:
         dataset = load_dataset(paths)
         previous = st.session_state.get("planner")
-        planner = Planner(dataset, previous.state if previous else store.load())
+        saved = store.load() if previous is None else None
+        if previous is None:
+            st.session_state["draft_digest"] = digest(saved)
+        planner = Planner(dataset, previous.state if previous else saved)
         if import_cached_recommendations(planner, paths):
             save(planner, store)
         st.session_state["planner"] = planner
+        return planner
     except (ValueError, OSError) as exc:
         st.error(f"Cannot open saved plan/projections: {exc}")
         st.stop()
+        raise
+
+
+def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
+    planner = st.session_state["planner"]
+    dataset = planner.dataset
     title, refresh = st.columns([5, 1])
     title.title("Transfer Planner")
     title.caption("Inspect Players, plan transfers, and select a legal XI.")
-    job_id = planner.state.get("job_id")
-    try:
-        busy = bool(job_id and jobs.status(job_id)["status"] == "running")
-    except (ValueError, OSError):
-        busy = False
+    busy = jobs.active() is not None
     if refresh.button("Refresh", key="refresh-data", disabled=busy, width="stretch"):
         begin_job(planner, store, jobs, paths, refresh=True)
-    job_status(paths, store, jobs)
     if st.session_state.get("save_error"):
         st.error(st.session_state["save_error"])
-        if st.button("Retry saving draft", key="retry-save"):
+        if st.session_state.get("stale_browser") and st.button("Reload latest draft", key="reload-draft"):
+            st.session_state.pop("planner", None)
+            st.session_state.pop("stale_browser", None)
+            st.session_state.pop("save_error", None)
+            st.rerun()
+        if not st.session_state.get("stale_browser") and st.button("Retry saving draft", key="retry-save"):
             save(planner, store)
             st.rerun()
     if st.session_state.get("job_notice"):

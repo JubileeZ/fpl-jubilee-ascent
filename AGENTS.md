@@ -39,11 +39,11 @@ docs/          # Durable project documentation and decision records
 | Command | What it does |
 |---------|-------------|
 | `uv run ruff check .` | Lint codebase |
-| `uv run python -m commands.streamlit_planner` | Streamlit editable Transfer Planner @ `http://127.0.0.1:8501`; player details, sell/bench, auto legal XI, saved drafts + solver jobs. Deployment preparation: `docs/product/streamlit-planner-deployment.md`; single manager/process; no deployment performed |
+| `uv run python -m commands.streamlit_planner` | Alternate launcher for complete Streamlit dashboard @ `http://127.0.0.1:8501`; same app as `commands.dashboard`. Deployment preparation: `docs/product/streamlit-planner-deployment.md`; single manager/process; no deployment performed |
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
-| `uv run python -m commands.dashboard` | Serve Explorer + Transfer Plan Surface @ `http://127.0.0.1:8000`. Open projects Primary if JSON stale. Refresh = ingest+Primary project. Explorer: Solve Dream Team. Transfer Plan tab: Solve scenarios (Optimal/No Hit/Conservative → `data/transfer_plan_scenarios.json`). Live plans default to proven 0% gap with digest caching (ADR 0057, superseding ADR 0043). Jobs exclusive |
+| `uv run python -m commands.dashboard` | Complete Streamlit dashboard @ `http://127.0.0.1:8000`: Transfer Planner, Explorer, Research, Model Methodology. Open projects Primary if JSON stale. Editable planner + persisted scenarios/jobs; Explorer What-If separate; Dream Team + advanced strategy results isolated. Shared heavy-job queue. Apple utility design (ADR 0060). Proven 0% solver gap + caching (ADR 0057) |
 | `uv run python -m commands.solve` | CLI 3-arm Transfer Plan MILP (Optimal/No Hit/Conservative) → `data/transfer_plan_scenarios.json` and Rank 1 mirror → `data/solution.json`. Default proven gap 0.0 with deterministic digest caching; `--single` for single-plan; `--force` to re-solve |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |

@@ -45,7 +45,7 @@ class PlannerJobs:
                 if re.fullmatch(r"[a-f0-9]{32}", path.stem):
                     previous = self.status(path.stem)
                     if previous["status"] == "running":
-                        raise ValueError("A planner job is already running. Wait for it to finish.")
+                        raise ValueError("A dashboard job is already running. Wait for it to finish.")
                     if (request.get("kind") == "solve" and previous["status"] == "finished"
                             and previous["request"].get("snapshot") == request.get("snapshot")
                             and previous["request"].get("source_digest") == request.get("source_digest")
@@ -71,6 +71,24 @@ class PlannerJobs:
             self._threads[str(store.path)] = thread
             thread.start()
             return job_id
+
+    def active(self) -> dict[str, Any] | None:
+        with self._lock:
+            for path in self.directory.glob("*.json"):
+                if re.fullmatch(r"[a-f0-9]{32}", path.stem):
+                    job = self.status(path.stem)
+                    if job["status"] == "running":
+                        return job
+        return None
+
+    def latest(self, kind: str, *, status: str | None = None) -> dict[str, Any] | None:
+        paths = sorted(self.directory.glob("*.json"), key=lambda path: path.stat().st_mtime_ns, reverse=True)
+        for path in paths:
+            if re.fullmatch(r"[a-f0-9]{32}", path.stem):
+                job = self.status(path.stem)
+                if job["request"].get("kind") == kind and (status is None or job["status"] == status):
+                    return job
+        return None
 
     def wait(self, job_id: str, timeout: float) -> dict[str, Any]:
         thread = self._threads.get(str(self._store(job_id).path))

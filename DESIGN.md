@@ -1,10 +1,12 @@
 # FPL Jubilee Ascent Design
 
-Apple utility/configurator direction, replacing Antigravity styling. Reference: user-supplied `DESIGN-apple.md`; palette, typography, restrained controls adapted to weekly FPL planning. Implemented 2026-10-08 in Streamlit Transfer Planner; existing React dashboard retained.
+Apple utility/configurator direction, replacing Antigravity styling. Reference: user-supplied `DESIGN-apple.md`; palette, typography, restrained controls adapted to weekly FPL planning. Canonical Streamlit dashboard: Transfer Planner, Explorer, Research, Model Methodology.
 
 ## Product and Scope
 
-Single-manager projection + transfer planning workspace. First implementation target: Streamlit Transfer Planner, prepared for later private deployment. Existing Explorer and other dashboard surfaces retained during migration. Product behavior: [planner spec](docs/product/streamlit-transfer-planner.md).
+Single-manager projection + transfer planning workspace. One native Streamlit dashboard, prepared for later private deployment. All four surfaces share navigation, theme, job coordination. Product behavior: [planner spec](docs/product/streamlit-transfer-planner.md).
+
+Dashboard integration agreed 2026-10-09: normal dashboard command opens same complete Streamlit app. Native Explorer selection/replacement/swap controls; persistent transfer draft/results; isolated What-If and advanced results. Scope: [integration spec](docs/product/dashboard-planner-integration.md).
 
 ## Character
 

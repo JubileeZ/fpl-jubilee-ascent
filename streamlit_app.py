@@ -1,3 +1,3 @@
-from dashboard.streamlit_planner import main
+from dashboard.streamlit_dashboard import main
 
 main()

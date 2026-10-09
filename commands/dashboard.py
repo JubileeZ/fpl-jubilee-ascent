@@ -4,14 +4,11 @@ import http.server
 import json
 import logging
 from pathlib import Path
-import socketserver
 import sys
 import threading
-import time
 from typing import Any
 from urllib.parse import parse_qs
 import uuid
-import webbrowser
 
 import pandas as pd
 
@@ -29,6 +26,7 @@ from commands.export_dashboard import (
     run_dashboard_export,
 )
 from commands.dream_team import execute_dream_team
+from dashboard.content import get_model_methodology, get_research_topic_detail, get_research_topics
 from commands.solve import execute_transfer_plan
 from commands.transfer_plan_scenarios import (
     SCENARIOS_PATH,
@@ -39,7 +37,7 @@ from commands.transfer_plan_scenarios import (
 from commands import refresh_data
 from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
-from models import get_default_model_name, list_model_names
+from models import get_default_model_name
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
@@ -995,135 +993,6 @@ def start_branch_solve(*, options: dict[str, object], parent_node_id: str, targe
     return 202, solve_status()
 
 
-def get_research_topics() -> list[dict[str, object]]:
-    research_dir = PROJECT_ROOT / "docs" / "research"
-    if not research_dir.exists():
-        return []
-    topics = []
-    for item in sorted(research_dir.iterdir()):
-        if not item.is_dir() or item.name in ("template", ".tmp"):
-            continue
-        md_files = list(item.glob("*.md"))
-        if not md_files:
-            continue
-        main_md = item / f"{item.name}.md"
-        if not main_md.exists():
-            main_md = md_files[0]
-        title = item.name.replace("-", " ").title()
-        status = "Active"
-        try:
-            content = main_md.read_text(encoding="utf-8")
-            for line in content.splitlines()[:25]:
-                if line.startswith("# "):
-                    title = line[2:].strip()
-                elif "**Status**:" in line:
-                    status = line.split("**Status**:", 1)[1].strip()
-        except Exception:
-            pass
-        csv_files = [f.name for f in item.glob("*.csv")]
-        topics.append({
-            "slug": item.name,
-            "title": title,
-            "status": status,
-            "file": main_md.name,
-            "csv_count": len(csv_files),
-            "csv_files": csv_files,
-        })
-    return topics
-
-
-def get_research_topic_detail(slug: str) -> dict[str, object]:
-    topic_dir = PROJECT_ROOT / "docs" / "research" / slug
-    if not topic_dir.exists() or not topic_dir.is_dir():
-        return {"error": f"Topic '{slug}' not found"}
-    md_files = list(topic_dir.glob("*.md"))
-    if not md_files:
-        return {"error": "No markdown file in topic"}
-    main_md = topic_dir / f"{slug}.md"
-    if not main_md.exists():
-        main_md = md_files[0]
-    content = main_md.read_text(encoding="utf-8")
-
-    companions: dict[str, object] = {}
-    for csv_path in sorted(topic_dir.glob("*.csv")):
-        try:
-            full_df = pd.read_csv(csv_path)
-            total_rows = len(full_df)
-            df = full_df.head(100)
-            companions[csv_path.name] = {
-                "columns": list(df.columns),
-                "rows": df.fillna("").values.tolist(),
-                "total_rows": total_rows,
-            }
-        except Exception as exc:
-            logger.warning("Failed to read CSV %s: %s", csv_path, exc)
-
-    return {
-        "slug": slug,
-        "filename": main_md.name,
-        "content": content,
-        "companions": companions,
-    }
-
-
-def get_model_methodology() -> dict[str, object]:
-    champion = get_default_model_name()
-    comparison_slate = [m for m in list_model_names() if m != champion]
-
-    ledger_path = PROJECT_ROOT / "docs" / "research" / "candidate-ledger" / "candidate_ledger.csv"
-    shipped_levers: list[str] = []
-    dead_levers: list[str] = []
-    if ledger_path.exists():
-        try:
-            df = pd.read_csv(ledger_path)
-            if "status" in df.columns and "lever" in df.columns:
-                shipped_levers = df[df["status"] == "shipped"]["lever"].dropna().unique().tolist()
-                dead_levers = df[df["status"] == "dead"]["lever"].dropna().unique().tolist()
-        except Exception as exc:
-            logger.warning("Could not read candidate ledger: %s", exc)
-
-    return {
-        "champion": champion,
-        "pipeline_layers": [
-            {
-                "layer": 1,
-                "name": "Minutes & Availability",
-                "summary": "Stochastic start and sub probability estimation with DNP suppression.",
-                "formula": "xMins = p_start * E[mins|start] + p_sub * E[mins|sub] - dnp_penalty",
-                "details": "Models player appearance rates using trailing start windows (ADR 0035), rolling minutes, news status, and official chance-of-playing flags.",
-            },
-            {
-                "layer": 2,
-                "name": "Rates & Shrinkage",
-                "summary": "Per-90 event rate regression with defensive xG empirical shrinkage.",
-                "formula": "shrunk_rate = (sum_stat + K * mean) / (sum_mins + K)",
-                "details": f"Champion '{champion}' applies pseudo-minutes shrinkage (K=2400 for DEF xG per ADR 0055). Poisson clean sheet rate is derived from expected goals conceded.",
-            },
-            {
-                "layer": 3,
-                "name": "Matchup & Fixture Multipliers",
-                "summary": "Opponent strength scaling via Modified FDR and Calibrated Matchup Share.",
-                "formula": "scaled_rate = base_rate * matchup_share(club, opp)",
-                "details": "Uses Modified FDR (difficulty rating 1.0-5.0) and Calibrated Matchup Share (ADR 0040) to dynamically adjust clean sheet and attacking probabilities.",
-            },
-            {
-                "layer": 4,
-                "name": "Scoring Matrix & Component Deconstruction",
-                "summary": "Translates scaled rates into 8 distinct FPL scoring components.",
-                "formula": "Total xP = xp_mins + xp_goals + xp_assists + xp_cs - xp_gc + xp_defcon + xp_saves + xp_bonus",
-                "details": "Guarantees exact traceability across position-specific rules (e.g. DEF goal = 6 pts, MID goal = 5 pts, FWD goal = 4 pts).",
-            },
-        ],
-        "candidate_ledger_summary": {
-            "policy": "Hard Rule: Dead levers can never be retried before revisit_after (1 year). Log all attempts in candidate_ledger.csv.",
-            "champion": champion,
-            "slate": comparison_slate,
-            "shipped_count": len(shipped_levers),
-            "dead_count": len(dead_levers),
-        },
-    }
-
-
 USER_PLANS_PATH = PROJECT_ROOT / "data" / "user_plans.json"
 
 
@@ -1631,31 +1500,9 @@ class DashboardHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def start_server(port: int = 8000, open_browser: bool = True) -> None:
-    dist_dir = PROJECT_ROOT / "dashboard" / "dist"
-    dashboard_dir = dist_dir if (dist_dir / "index.html").exists() else PROJECT_ROOT / "dashboard"
-    if not dashboard_dir.exists():
-        logger.error(f"Dashboard folder {dashboard_dir} does not exist.")
-        sys.exit(1)
+    from commands.streamlit_planner import launch
 
-    def handler(*args, **kwargs):
-        return DashboardHTTPRequestHandler(*args, directory=str(dashboard_dir), **kwargs)
-
-    class ReusableTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-        allow_reuse_address = True
-        daemon_threads = True
-
-    try:
-        with ReusableTCPServer(("", port), handler) as httpd:
-            url = f"http://127.0.0.1:{port}"
-            logger.info(f"Dashboard web server running at {url}")
-            logger.info("Press Ctrl+C to stop the server.")
-            if open_browser:
-                threading.Thread(target=lambda: (time.sleep(0.5), webbrowser.open(url)), daemon=True).start()
-            httpd.serve_forever()
-    except KeyboardInterrupt:
-        logger.info("\nServer stopped.")
-    except Exception as e:
-        logger.error(f"Failed to start server on port {port}: {e}")
+    raise SystemExit(launch([f"--server.port={port}", f"--server.headless={str(not open_browser).lower()}"]))
 
 
 def main() -> None:
