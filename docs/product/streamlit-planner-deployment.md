@@ -2,6 +2,8 @@
 
 Status: complete local Streamlit dashboard; deployment deferred by user. Single manager, one application process. Transfer Planner, Explorer, Research, Model Methodology share same app. ADR 0060.
 
+Daily workflow: [dashboard usage guide](dashboard-usage.md). Window/sidebar behavior: [responsive layout](dashboard-responsive-layout.md).
+
 ## Local Launch
 
 ```powershell
@@ -10,6 +12,10 @@ uv run python -m commands.dashboard
 ```
 
 Open `http://127.0.0.1:8000`. Alternate launcher `uv run python -m commands.streamlit_planner` opens identical app on port 8501. `streamlit run streamlit_app.py` opens same complete dashboard. Existing local projections + User Squad load automatically. Missing data: configure `FPL_EMAIL` / `FPL_PASSWORD` in local `.env`, then Refresh. Solver button runs all three policies; active policy selects displayed recommendation. No real FPL transfer submission.
+
+Navigation initially collapsed: upper-left chevron opens workspace selector. Transfer Planner: Refresh → Horizon end → Generate plan → Scenario policy / Use selected scenario → Gameweek. Player click opens focused inspection; sell/replace, week-only bench/captain choices, and vacancy purchases autosave. Complete squad before Optimize remaining transfers. Tables scroll locally as window narrows; advanced controls remain expandable.
+
+Stop with Ctrl+C. Custom port: `uv run python -m commands.dashboard --port 8001`; suppress automatic browser opening: `--no-browser`. Run one launcher at a time. Browser authentication fallback needs installed Playwright Chromium; cached viewing requires no reinstall.
 
 Existing project environment needs no Windows Administrator access. Without global `uv`/Python, launch `.venv/Scripts/python.exe -m commands.dashboard` from repository. Container build can run later on separate Docker-enabled host; Docker installation on this device unnecessary.
 

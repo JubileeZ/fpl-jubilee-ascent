@@ -1,11 +1,19 @@
 # FPL-Jubilee-Ascent
 
-### Streamlit Dashboard
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product: one Streamlit dashboard with Transfer Planner, Explorer, Research, Model Methodology.
 
-`uv sync --locked` then `uv run python -m commands.dashboard` → `http://127.0.0.1:8000`.
-One Apple-style Streamlit workspace: Transfer Planner, Explorer, Research, Model Methodology. Single editable Gameweek plan; click Player for stats/projections, Sell or Bench separately, fill replacement slots, automatically select legal XI. Generate plan / Optimize remaining transfers use Optimal / No Hit / Conservative solver policies. Drafts/results saved locally; stale browser writes rejected. Explorer What-If and advanced solver results stay separate. Alternate `commands.streamlit_planner` launches same app on port 8501. No Windows admin access required with existing environment: `.venv/Scripts/python.exe -m commands.dashboard`. Deployment prepared, not published; see [launch guide](docs/product/streamlit-planner-deployment.md).
+## Start the dashboard
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product is the local dashboard: Explorer plus Transfer Plan Surface.
+```powershell
+uv sync --locked
+uv run python -m commands.dashboard
+```
+
+Open `http://127.0.0.1:8000`. Configure local `.env` credentials, click **Refresh**, then **Generate plan**. Click Player for stats/projections, sell or bench separately, fill replacement slots, and inspect automatically selected legal XI. Drafts/results saved locally; edits never submit transfers to FPL.
+
+Navigation starts collapsed; open upper-left chevron to switch workspace. Smaller windows stack controls, Player groups, and charts; inspection opens focused dialog; tables scroll locally.
+
+Read [dashboard usage guide](docs/product/dashboard-usage.md) for complete workflow and recovery steps; [launch/deployment guide](docs/product/streamlit-planner-deployment.md) for setup and storage. Alternate `commands.streamlit_planner` launches same app on port 8501. Existing Windows environment requires no Administrator access: `.venv/Scripts/python.exe -m commands.dashboard`. Deployment deferred.
 
 ## Requirements
 
@@ -17,16 +25,21 @@ FPL score projection and optimization engine. Ingests FPL API data, evaluates mo
 
 1. Install [uv](https://docs.astral.sh/uv/).
 2. Install dependencies:
-  ```bash
-   uv sync
-  ```
-3. Install Playwright Chromium binary (required for data refresh/auth):
-  ```bash
-   uv run playwright install chromium
-  ```
+
+    ```bash
+    uv sync --locked
+    ```
+
+3. Install Playwright Chromium when browser authentication fallback needed:
+
+    ```bash
+    uv run playwright install chromium
+    ```
+
 4. Setup environment variables. Copy `.env.example` to `.env` and fill:
-  - `FPL_EMAIL`: FPL account email (required for authenticated manager squad data)
-  - `FPL_PASSWORD`: FPL account password (required for authenticated manager squad data)
+
+    - `FPL_EMAIL`: FPL account email (required for authenticated manager squad data)
+    - `FPL_PASSWORD`: FPL account password (required for authenticated manager squad data)
 
 The complete locked dependency set is defined in [pyproject.toml](pyproject.toml)
 and [uv.lock](uv.lock).
@@ -35,8 +48,8 @@ and [uv.lock](uv.lock).
 
 ### Weekly loop (product path)
 
-1. Python 3.14 + `uv sync` (+ Playwright Chromium for auth ingest — see [Installation](#installation)).
-2. `.env`: `FPL_EMAIL` and `FPL_PASSWORD` for User Squad (required for Transfer Plan Scenarios).
+1. Python 3.14 + `uv sync --locked`; configure auth fallback as needed ([Installation](#installation)).
+2. Local `.env`: `FPL_EMAIL` and `FPL_PASSWORD` for authenticated User Squad.
 3. Open the dashboard:
 
 ```bash
@@ -44,16 +57,18 @@ uv run python -m commands.dashboard
 ```
 
 4. Visit `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`).
-5. Click **Refresh** (ingest live FPL + project Primary / Champion).
-6. Open **Transfer Planner** → **Generate plan**; inspect Optimal / No Hit / Conservative recommendations by Gameweek. Edit Player transfers or lineup; optimize remaining transfers when ready.
+5. In **Transfer Planner**, click **Refresh**; wait for live ingest and projections to finish.
+6. Set **Horizon end**, click **Generate plan**, wait for solver completion. Choose **Scenario policy**, then **Use selected scenario**; inspect Optimal / No Hit / Conservative by **Gameweek**.
+7. Click Player to inspect stats/projections. Sell or replace from selected week; bench/captain/vice overrides affect selected week. Click Position-labelled vacancy to add replacement. Complete squad, resolve conflicts, then **Optimize remaining transfers**.
+8. Read transfers, bank, Free Transfers, Hits, scores below squad. Draft autosaves; reload restores planner. Explorer What-If remains separate.
 
-You do not need `commands.refresh_data` or `commands.solve` for that weekly path. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. First load needs network access for the Plotly CDN. Stop with Ctrl+C.
+Dashboard runs refresh and solver jobs; separate CLI commands optional. Without authenticated squad, Explorer can inspect cached public projections; planner/What-If require squad ingestion. Refresh needs network access. Stop with Ctrl+C. [Full usage guide](docs/product/dashboard-usage.md).
 
 Projection model names (CLI identifiers): [docs/model_name.md](docs/model_name.md).
 
 ### CLI projections and advanced Transfer Plan
 
-The Model Champion is `config/model_selection.json` `champion` (currently `hold_chase_challenger`). Fixture xP scale on the Feature Contract: **Calibrated Matchup Share** when this-season Official club xG exists ([ADR 0040](docs/adr/0040-calibrated-matchup-share-shrinkage.md)); else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Dashboard Solve scenarios and `commands.solve` always use the Champion. Explorer Primary defaults to Champion; pass `--model` to project a different catalog name.
+Model Champion: `config/model_selection.json` `champion`. Fixture xP scale on Feature Contract: **Calibrated Matchup Share** when this-season Official club xG exists ([ADR 0040](docs/adr/0040-calibrated-matchup-share-shrinkage.md)); else Club Strength; else neutral ×1.0 ([ADR 0037](docs/adr/0037-fdr-fallback-multiplier-neutral.md)). Modified FDR is difficulty only. Planner solve and `commands.solve` use Champion. Explorer **Projection model** selects available exported model; `--model` projects another catalog name.
 
 ```bash
 uv run python -m commands.run_model --horizon 5
@@ -61,7 +76,7 @@ uv run python -m commands.solve --horizon 5
 uv run python -m commands.report --horizon 5
 ```
 
-`commands.solve` writes `data/solution.json`. Product ranking lives on Transfer Plan Surface (`data/transfer_plan_scenarios.json`). Use CLI for preseason draft and advanced flags:
+`commands.solve` writes `data/transfer_plan_scenarios.json`; Rank 1 mirrors to `data/solution.json`. Dashboard planner drafts/jobs live under `data/planner/`. Use CLI for preseason draft and advanced flags:
 
 ```bash
 uv run python -m commands.solve --preseason --xmin_lb 0
@@ -75,7 +90,7 @@ Full CLI recipes follow.
 - `features/`, `models/`, `projections/` — feature contracts, projection models, solver exports, Explorer slice metrics
 - `backtesting/` — walk-forward evaluation and decision-regret logic
 - `commands/` — runnable CLI entry points
-- `dashboard/` — Explorer and Transfer Plan Surface (`uv run python -m commands.dashboard`)
+- `dashboard/` — complete Streamlit dashboard (`uv run python -m commands.dashboard`)
 - `config/` — Model Champion selection
 - `solver/` — vendored MILP solver
 - `tests/` — automated checks
@@ -123,10 +138,7 @@ uv run python -m commands.run_model --champion --horizon 5
 uv run python -m commands.run_model calibrated_matchup_hybrid --horizon 5
 ```
 
-Champion is `config/model_selection.json` `champion`. Comparison Slate keeps
-`participation_state_hybrid` as the sole Model Candidate while snapshot-backed
-promotion validation continues. `metrics_component_hybrid` remains in the catalog
-only.
+Champion and Comparison Slate: `config/model_selection.json`; registered model names and catalog status: [docs/model_name.md](docs/model_name.md).
 
 The component seed/current-season blend can be tuned without editing code:
 
@@ -149,7 +161,7 @@ the projection run.
 
 ### 3. Generate Transfer Plan (Solve MILP)
 
-**Weekly path:** use the dashboard Transfer Plan tab → **Solve scenarios** (writes `data/transfer_plan_scenarios.json`; top arm also mirrors to `data/solution.json`). See [How to use](#how-to-use).
+**Weekly path:** dashboard **Transfer Planner** → **Generate plan**; inspect/edit recommendations by Gameweek. **Optimize remaining transfers** preserves explicit choices. Saved dashboard draft/results under `data/planner/`. See [dashboard usage guide](docs/product/dashboard-usage.md).
 
 **CLI** for preseason draft or advanced flags:
 
@@ -165,7 +177,7 @@ uv run python -m commands.solve --preseason --xmin_lb 0
 uv run python -m commands.solve --horizon 10
 ```
 
-Live Transfer Plans (dashboard **Solve scenarios** and `commands.solve`) default to exact mathematical proof with zero gap (`gap=0.0`, [ADR 0057](docs/adr/0057-zero-gap-digest-caching-3-arm-transfer-plan.md), superseding ADR 0043). To eliminate redundant re-solves, solutions are cached with a deterministic input digest and load instantly when data is unchanged. `commands.solve` executes all 3 arms (Optimal, No Hit, Conservative) concurrently by default; pass `--single` for single-plan execution or `--force` to bypass the cache. The 20-minute clock remains the safety backstop.
+Live Transfer Plans (dashboard **Generate plan** / **Optimize remaining transfers**, and `commands.solve`) default to exact mathematical proof with zero gap (`gap=0.0`, [ADR 0057](docs/adr/0057-zero-gap-digest-caching-3-arm-transfer-plan.md), superseding ADR 0043). Solver scenarios use deterministic input digest caching when inputs unchanged. `commands.solve` executes all 3 arms (Optimal, No Hit, Conservative) concurrently by default; pass `--single` for single-plan execution or `--force` to bypass cache. The 20-minute clock remains safety backstop.
 
 **No Hit solver** (disallows paid transfer hits; free transfers only, matching ADR 0042 No Hit arm):
 
@@ -299,64 +311,24 @@ The command writes `data/reports/decision_regret.csv` by default.
 
 ### 8. Open and use the Dashboard
 
-The local dashboard is Explorer plus Transfer Plan Surface (peer tabs). Happy path: **Refresh** → **Transfer Plan** → **Solve scenarios**. `commands.solve` remains the CLI writer for preseason / advanced flags (`data/solution.json`).
-
-**Open it**
-
 ```bash
 uv run python -m commands.dashboard
 ```
 
-The command starts `http://127.0.0.1:8000`. If processed tables are newer than `dashboard/dashboard_data.json` (or JSON is missing), it projects the Primary Model (Champion by default) from disk without calling the FPL API. If the window does not appear, visit that URL (prefer `127.0.0.1` over `localhost` on Windows). First load needs network access for the Plotly CDN. Stop the server with Ctrl+C.
+Open `http://127.0.0.1:8000`. Launcher projects from local processed tables when exported JSON missing/stale; **Refresh** explicitly ingests live data. Stop with Ctrl+C. Alternate `commands.streamlit_planner` launches identical app on port 8501. Run one launcher at a time against shared storage.
 
-Click **Refresh** in the header to ingest live FPL data, re-project the **Primary Model** currently selected, rewrite `dashboard/dashboard_data.json`, and update the charts without restarting the server. You do not need `commands.refresh_data` before opening the dashboard. Refresh pins Official FPL (not User Squad) into `data/archive/<season>/` and prints whether that Official hash changed; it does not git commit. Refresh, Dream Team Solve, and Transfer Plan Solve cannot run at the same time; those buttons disable until the running job finishes.
+Open upper-left navigation chevron; choose **Transfer Planner**, **Explorer**, **Research**, or **Model Methodology**. Close navigation for more content width. Layout adapts to available window/sidebar width; Player labels wrap, charts stack, tables keep local horizontal scroll.
 
-Click **Solve Dream Team** (Explorer only) to run MILP for a Dream Team overlay on the current Planning Horizon and Primary Model. Spend cap is ITB + Selling Prices, or £100.0m when there is no User Squad. Chart markers get a gold ring and the table shows a `Dream` badge. The 15 is session-only and clears if you change Horizon Start/End, Primary Model, or Refresh. It is not a Transfer Plan and does not load onto the Squad Board. The solver runs single-threaded so the same projections should yield the same 15 on different machines.
+- **Transfer Planner:** Generate plan; choose Scenario policy and Gameweek; click Player for inspection, Sell/Bench/Replace/captain actions. Vacancies appear under Bench and replacement slots. Add eligible replacement to recalculate legal XI/bench. Complete squad and resolve conflicts before Optimize remaining transfers. Draft autosaves; Reset to solver confirms replacement of manual choices.
+- **Explorer:** Projection model and independent horizon; filters apply to charts/table, including minimum minutes. Inspect chart/table selection or use Inspect Player + View player details. Squad What-If uses replacement, starter/bench, captain, and bench-order controls; session-only, separate from planner. Dream Team/advanced strategy results remain independent.
+- **Research:** search/select topic, read/download note, preview/download companion CSVs.
+- **Model Methodology:** Champion, pipeline layers/formulas, Candidate policy; draft/download research prompt without running experiment.
 
-Open the **Transfer Plan** tab and click **Solve scenarios** to rank Optimal / No Hit by horizon sum of Expected GW Score. Needs a User Squad from Refresh with `FPL_EMAIL` and `FPL_PASSWORD`. Without login, Explorer still works; Squad Board stays empty; Solve scenarios is blocked. Booked Chip and Enabled Chip live on this tab only. Plan XI is read-only and does not load into Squad What-If. Payload: `data/transfer_plan_scenarios.json` (not embedded in `dashboard_data.json`).
+[Complete usage and recovery guide](docs/product/dashboard-usage.md). [Launch/storage/deployment preparation](docs/product/streamlit-planner-deployment.md). [Responsive behavior and verification limits](docs/product/dashboard-responsive-layout.md).
 
-Projections, solver CSVs, and `dashboard_data.json` are local (gitignored). A git pull does not copy them. On project/export/solve resolve, Official tables in `data/processed` are healed from the Live Season Pin when they disagree (User Squad untouched; ADR 0036). After pull, open the dashboard or run export/`run_model`/`solve` — heal aligns Official tables automatically. Live Refresh at different times can still disagree because FPL data moved; Refresh advances both processed and pin.
+Local `.env`, User Squad, projections, solver exports, and drafts do not sync through git pull. Refresh regenerates live data/projections; disk projection/export/solve resolves Official tables from Live Season Pin when needed, leaving User Squad untouched (ADR 0036).
 
-Optional flags: `--export-only` writes JSON without serving (needs `data/processed`); `--no-browser` skips auto-open; `--port` changes the port; `--model` sets Primary; `--models` still exports a Comparison Slate. `--horizon` is Planning Horizon length (1–10, default 6) for `--export-only` only. Horizon Start / End in the page re-slice the Full-Season export.
-
-**Planning Horizon**
-
-Two dropdowns. **Horizon begins** is any unfinished Gameweek (live week allowed; finished weeks are not). **Horizon to** is the inclusive last Gameweek, at most nine weeks after Start (length 1–10), clipped at GW38. Default Start is the earliest unfinished Gameweek; default End is `min(Start+5, 38)`. Changing Start/End updates totals and charts immediately. It does not re-run the model.
-
-**Explorer**
-
-**Primary Model** selects which projection drives ranking, Squad Board, Component Profile, and Dream Team. Ranking is the Planning Horizon only — there is no Season Window or Score Mode in this view. **Champion Trust** in the header shows Champion name and provisional flag when promotion is provisional.
-
-**Squad Board** draws the User Squad (pitch + Squad xP strip + Squad components). Drag a pool player onto a slot for a same-Position Squad What-If transfer; drag on the pitch to sub XI ↔ bench. Header shows ITB, Free Transfer Bank, and Hit warning (not applied). Reset and Reload restore the owned 15. A Rule Breach (club cap, ITB, Starting Shape) is flagged; numbers still move. Auto Captain is the highest xMins-weighted xP in the XI that Gameweek.
-
-Below the board: toolbar filters, then the **rank table**, then ownership % and price scatter charts, then **Player components** for the selected player.
-
-The rank table shows **Total** (horizon xP) and **/GW** (xP per Gameweek = Total ÷ gameweeks), plus **/90** (Projected Rate), per-GW xP with fixture labels, status / chance / news, Δ£, Own%, and xMins. On-screen legend under the toolbar: Total · /GW · /90 · xMins · Δ£ · Dream.
-
-**Y-axis** is shared by both charts: **xP per Gameweek** (default) or **Projected Rate**. Charts sit under the table. Marker colour is position; marker size is average minutes. Click a marker to label that player and highlight the table row.
-
-**Filters**
-
-
-| Control           | Effect                                                                                                                  |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Position          | GKP / DEF / MID / FWD checkboxes; applies to charts and table                                                           |
-| Club              | Checkbox multi-select; none checked = all clubs. Label lists checked shorts as `ARS-BOU-BHA-MCI-NEW`. Charts and table. |
-| Price             | Min–max £m band; applies to charts and table                                                                            |
-| Avg minutes floor | Default 0. Hides low-minute players from **charts only**; the table still lists them                                    |
-| Search            | Player name or club; applies to charts and table                                                                        |
-
-
-The rank table is sorted by horizon **Total** descending by default. Click any
-column header to sort. Per-GW xP columns follow the Planning Horizon and include
-fixture labels. Rank `#`
-is the player's place by Total before table-only sort. The status line under the
-toolbar reports how many players are on the chart vs in the table vs in the
-full slice.
-
-**Transfer Plan Surface**
-
-Peer tab beside Explorer. **Plan Start** = upcoming open deadline (`is_next`). Horizon length 1–10 (default 6). **Solve scenarios** ranks Optimal / No Hit by undiscounted sum of Expected GW Score (always both arms). Solver Objective is secondary only. Click a week on the EGS strip to inspect that Gameweek’s buys/sells, Hits, and read-only plan XI (plan captain marked); default = Plan Start. Auto Captain / Auto Vice-Captain / next-best 1–2 XI stay on Plan Start. Booked Chip and Enabled Chip calendar on this tab only. Champion Trust echoed under the plan header. Does not load into Squad What-If.
+Launcher flags: `--no-browser`, `--port`; `--model`/`--models` select models when export occurs. `--export-only` writes JSON without serving; `--horizon` (1–10, default 6) and `--target_gw` select export window. Page horizon controls slice available exported projections; changing them does not rerun projection model.
 
 ### 9. Season Archiving
 

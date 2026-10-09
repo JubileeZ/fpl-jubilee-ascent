@@ -2,9 +2,11 @@
 
 Status: Q1–Q12 agreed, implementation authorized through `/implement`, 2026-10-08. Streamlit app implemented; deployment deferred. Visual direction: [DESIGN.md](../../DESIGN.md). Architecture decision: [ADR 0059](../adr/0059-streamlit-transfer-planner.md). Launch/deployment: [guide](streamlit-planner-deployment.md).
 
+Current usage: [dashboard guide](dashboard-usage.md). Subsequent [single-product integration](dashboard-planner-integration.md) replaces separate-interface approach; all four surfaces share same Streamlit app. [Responsive layout](dashboard-responsive-layout.md) replaces inline Player details with focused native dialog on all window sizes. Verification sections below retain original delivery evidence; latest checks in responsive spec.
+
 ## Scope
 
-Single editable plan across Gameweeks; Gameweek selector replaces branching canvas. Streamlit planner first; existing Explorer and other dashboard surfaces remain available. Prepare later private hosting; deployment deferred. Planning only: edits do not submit transfers to FPL.
+Single editable plan across Gameweeks; Gameweek selector replaces branching canvas. Transfer Planner, Explorer, Research, Model Methodology in one Streamlit dashboard. Prepare later private hosting; deployment deferred. Planning only: edits do not submit transfers to FPL.
 
 Retain existing projection models, solver policies, chip rules, Selling Price accounting, and executable Transfer Plan Start at upcoming open deadline. Existing horizon length bounds retained. Existing exact-gap default + 20-minute backstop retained (ADR 0057).
 

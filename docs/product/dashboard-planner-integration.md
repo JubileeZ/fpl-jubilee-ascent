@@ -2,6 +2,8 @@
 
 Status: implemented, 2026-10-09; Q1–Q12 + shared understanding agreed. One native Streamlit product. Existing planner behavior: [spec](streamlit-transfer-planner.md). Visual direction: [DESIGN.md](../../DESIGN.md).
 
+User workflow: [dashboard usage guide](dashboard-usage.md). Current layout: [responsive spec](dashboard-responsive-layout.md). Integration findings below describe pre-integration dashboard; delivery verification records original integration checkpoint.
+
 ## Agreed Scope
 
 - Normal entry point: `uv run python -m commands.dashboard`, default port 8000

@@ -2,6 +2,8 @@
 
 Status: implemented; checks complete except actual browser zoom. Q1–Q9 + shared understanding approved through `/implement`, 2026-10-09. Existing behavior: [integration](dashboard-planner-integration.md), [planner](streamlit-transfer-planner.md). Direction: [DESIGN.md](../../DESIGN.md).
 
+Daily workflow, navigation, inspection controls, recovery: [dashboard usage guide](dashboard-usage.md).
+
 ## Agreed Behavior
 
 - Four surfaces: Transfer Planner, Explorer, Research, Model Methodology
