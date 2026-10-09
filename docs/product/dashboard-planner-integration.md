@@ -1,6 +1,6 @@
 # Dashboard Planner Integration
 
-Status: accepted, 2026-10-09; Q1–Q12 + shared understanding agreed. One native Streamlit product. Implementation in progress. Existing planner behavior: [spec](streamlit-transfer-planner.md). Visual direction: [DESIGN.md](../../DESIGN.md).
+Status: implemented, 2026-10-09; Q1–Q12 + shared understanding agreed. One native Streamlit product. Existing planner behavior: [spec](streamlit-transfer-planner.md). Visual direction: [DESIGN.md](../../DESIGN.md).
 
 ## Agreed Scope
 
@@ -56,4 +56,16 @@ Status: accepted, 2026-10-09; Q1–Q12 + shared understanding agreed. One native
 
 ## Delivery Verification
 
-Pending final gate, browser checks, and two-axis review. Tests cover navigation/reopen, Player edits/recovery, stale-tab writes, shared job exclusion, independent What-If, legal swaps, selling-price accounting. No deployment performed.
+- 545 tests pass; Ruff + Pyright clean; delivery gate 123 pass
+- Regression coverage: navigation/reopen, Player edits/recovery, stale-tab writes, shared job exclusion, independent What-If, legal swaps, selling-price accounting, missing projections, move-object rendering, first-week-only Hits
+- Browser: all four surfaces render live data; desktop + 390px phone layout; keyboard Enter opens Player details; actual three-arm solver completes and displays recommendation/transfers
+- Contrast: action on white 5.57:1; muted on off-white 11.60:1; control border on white 3.62:1
+- Actual 200% browser zoom unverified; narrow viewport reflow verified. Linux image build + deployment deferred. No Administrator installation or system configuration changes
+
+### Standards Review
+
+Baseline `3253282`; integration emphasis `d6faa38..b4fefd8`. One P2 finding: missing projections coerced to zero. Repaired: preserve missing totals/minutes/components; explicit Unavailable state; incomplete What-If scores suppressed. Regression + reviewer follow-up confirm repair. No remaining findings.
+
+### Spec Review
+
+Three findings: P1 advanced transfer move dictionaries crashed renderer; P2 What-If Hits repeated across horizon; P2 double-defence control mislabeled and wrong default. Repaired move-name/ID rendering, first-week-only Hits, explicit forced-double-defence label/default unchecked. Regression + reviewer follow-up confirm repairs. No scope creep or remaining findings.

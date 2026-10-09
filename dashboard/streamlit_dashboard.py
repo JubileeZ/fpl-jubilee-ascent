@@ -12,14 +12,13 @@ import streamlit as st
 
 from dashboard.content import get_model_methodology, get_research_topic_detail, get_research_topics
 from dashboard.dashboard_jobs import run_tool
-from dashboard.explorer import ExplorerSquad, player_slice, projections
+from dashboard.explorer import ExplorerSquad, compare_squads, player_slice, projections
 from dashboard.planner import POSITION_NAMES, PlanStore, digest
 from dashboard.planner_jobs import PlannerJobs
 from dashboard.planner_service import PlannerPaths, PROJECT_ROOT, source_digest
 from dashboard import streamlit_planner
 from models import get_default_model_name
 from projections.explorer_slice import COMPONENT_KEYS
-from projections.expected_gw_score import expected_gw_score, player_gw_from_dashboard
 
 PAGES = ("Transfer Planner", "Explorer", "Research", "Model Methodology")
 
@@ -76,12 +75,15 @@ def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], p
     if player.get("news"):
         st.write(player["news"])
     rows = [{"GW": gw, "Fixture": cell.get("fixture_label", "Unavailable / blank"), "xP": cell.get("total_xp"),
-             "xMins": cell.get("xmins"), **{key: cell.get(key) for key in COMPONENT_KEYS}}
+             "xMins": cell.get("xmins"), "Projection": "Unavailable" if cell.get("total_xp") is None else "Available",
+             **{key: cell.get(key) for key in COMPONENT_KEYS}}
             for gw in gws for cell in [projections(player, model).get(f"gw{gw}", {})]]
     st.dataframe(rows, hide_index=True, width="stretch")
+    if any(row[key] is None for row in rows for key in COMPONENT_KEYS):
+        st.caption("Some projection components unavailable. Empty cells retain missing values.")
     with st.expander("Season stats and recent history"):
         stats = {key: player.get(key) for key in ("total_points", "minutes", "starts", "pts_per_start", "pts_per_90", "xg_per_90", "xa_per_90", "ict_per_90", "inf_per_90", "cre_per_90", "thr_per_90")}
-        st.dataframe([{"Stat": key.replace("_", " "), "Value": value} for key, value in stats.items()], hide_index=True)
+        st.dataframe([{"Stat": key.replace("_", " "), "Value": str(value) if value is not None else "Unavailable"} for key, value in stats.items()], hide_index=True)
         history = streamlit_planner.player_history(paths, int(player["id"]))
         if history:
             st.dataframe(history, hide_index=True)
@@ -106,7 +108,7 @@ def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
     left, right = st.columns(2)
     outgoing = left.selectbox("Replace Player", squad.ids, format_func=name, key="whatif-out")
     candidates = [pid for pid in players if pid not in squad.ids and players[pid]["pos_id"] == players[outgoing]["pos_id"]]
-    candidates.sort(key=lambda pid: -player_slice(players[pid], model, gws)["xP"])
+    candidates.sort(key=lambda pid: -(player_slice(players[pid], model, gws)["xP"] or 0))
     if st.session_state.get("whatif-in") not in candidates:
         st.session_state.pop("whatif-in", None)
     incoming = right.selectbox("With Player", candidates, format_func=name, key="whatif-in") if candidates else None
@@ -146,7 +148,8 @@ def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
                 for column, pid in zip(st.columns(len(group)), group, strict=True):
                     with column:
                         cell = projections(players[pid], model).get(f"gw{gws[0]}", {})
-                        if st.button(f"{name(pid)} · {float(cell.get('total_xp') or 0):.1f} xP", key=f"explorer-squad-{pid}", width="stretch"):
+                        label = f"{float(cell['total_xp']):.1f} xP" if cell.get("total_xp") is not None else "Projection unavailable"
+                        if st.button(f"{name(pid)} · {label}", key=f"explorer-squad-{pid}", width="stretch"):
                             st.session_state["explorer-player"] = pid
                             st.rerun()
                         st.caption(f"{players[pid].get('team', '')} · {POSITION_NAMES[pos]}")
@@ -165,19 +168,7 @@ def what_if(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
             if str(key).startswith("whatif-"):
                 st.session_state.pop(key, None)
         st.rerun()
-    projected = {**dataset, "players": [{**player, "projections": projections(player, model)} for player in dataset["players"]]}
-    lookup = player_gw_from_dashboard(projected)
-    baseline = ExplorerSquad.from_dataset(dataset, model, gws)
-    scores = []
-    for gw in gws:
-        values = {pid: value for (pid, week), value in lookup.items() if week == gw}
-        def score(selected: ExplorerSquad) -> float:
-            captain = selected.captain or max((pid for pid in selected.lineup if pid != selected.vice), key=lambda pid: float(projections(players[pid], model).get(f"gw{gw}", {}).get("total_xp") or 0))
-            vice = selected.vice or max((pid for pid in selected.lineup if pid != captain), key=lambda pid: float(projections(players[pid], model).get(f"gw{gw}", {}).get("total_xp") or 0))
-            return expected_gw_score(lineup_ids=selected.lineup, bench_ids=selected.bench_order, captain_id=captain, vice_id=vice, players=values, hits=hits if selected is squad else 0)
-        base_score, new_score = score(baseline), score(squad)
-        squad_xp = sum(float(projections(players[pid], model).get(f"gw{gw}", {}).get("total_xp") or 0) for pid in squad.ids)
-        scores.append({"GW": gw, "Squad xP": round(squad_xp, 2), "User Squad Expected": base_score, "What-If Expected": new_score, "Difference": round(new_score - base_score, 2)})
+    scores = compare_squads(dataset, model, gws, squad)
     st.dataframe(scores, hide_index=True, width="stretch")
     with st.expander("Squad fixtures and projection components"):
         st.dataframe([{"Player": name(pid), "Role": "Starter" if pid in squad.lineup else "Bench", **{f"GW{gw}": projections(players[pid], model).get(f"gw{gw}", {}).get("fixture_label", "Unavailable") for gw in gws}} for pid in squad.ids], hide_index=True)
@@ -220,7 +211,7 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         row = player_slice(player, model, gws, assume_ninety)
         if player["pos_id"] not in selected_positions or (selected_clubs and row["Club"] not in selected_clubs):
             continue
-        if not price[0] <= row["Price"] <= price[1] or row["xMins / GW"] < minimum_minutes or query.casefold() not in f"{row['Player']} {row['Club']}".casefold():
+        if not price[0] <= row["Price"] <= price[1] or (minimum_minutes > 0 and (row["xMins / GW"] is None or row["xMins / GW"] < minimum_minutes)) or query.casefold() not in f"{row['Player']} {row['Club']}".casefold():
             continue
         row["Squad"] = "User Squad" if player["id"] in owned else "Unowned"
         rows.append(row)
@@ -321,7 +312,7 @@ def advanced_solver(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         banned = st.multiselect("Banned Players", list(names), format_func=lambda pid: names[pid], key="strategy-banned")
         a, b, c = st.columns(3)
         max_def = a.number_input("Max defenders per Club", 1, 3, 3)
-        double_def = b.checkbox("Allow double defence", value=True)
+        double_def = b.checkbox("Force double defence (zero or at least two GKP/DEF starters per Club)", value=False)
         opposing = c.selectbox("Opposing starters", ("Allow", "Penalty", "Block"))
         a, b, c = st.columns(3)
         hit_limit = a.number_input("Total hit limit", 0, 30, 5)
@@ -349,8 +340,10 @@ def advanced_solver(paths: PlannerPaths, jobs: PlannerJobs) -> None:
                 start_tool({"kind": "strategy", "start": start, "options": options}, paths, jobs)
         if job := tool_result("strategy", paths, jobs):
             result = job["result"]["payload"]
+            def move_name(move: dict[str, Any]) -> str:
+                return str(move.get("name") or names.get(int(move["id"]), str(move["id"])))
             for week in result.get("weeks", []):
-                st.write(f"**GW{week['gw']}** · sell {', '.join(names.get(pid, str(pid)) for pid in week.get('sell', [])) or 'None'} · add {', '.join(names.get(pid, str(pid)) for pid in week.get('buy', [])) or 'None'}")
+                st.write(f"**GW{week['gw']}** · sell {', '.join(move_name(move) for move in week.get('sell', [])) or 'None'} · add {', '.join(move_name(move) for move in week.get('buy', [])) or 'None'}")
             with st.expander("Full strategy result"):
                 st.json(result)
 

@@ -8,7 +8,8 @@ from streamlit.testing.v1 import AppTest
 
 from dashboard.planner import PlanStore, digest
 from dashboard.planner_jobs import PlannerJobs
-from dashboard.explorer import ExplorerSquad
+from dashboard.explorer import ExplorerSquad, compare_squads, player_slice
+from dashboard.planner_service import PlannerPaths, source_digest
 from test_streamlit_planner import dataset
 
 
@@ -119,3 +120,46 @@ def test_what_if_legal_swap_and_selling_price_preserve_saved_ownership() -> None
     squad.replace(7, 16, players)
     assert squad.bank(players, 2) == 1.5
     assert data["meta"]["owned_squad_ids"] == list(range(1, 16))
+
+
+def test_explorer_preserves_missing_projection_and_component_values() -> None:
+    player = dataset()["players"][0]
+    player["projections"].pop("gw11")
+    result = player_slice(player, "Champion", tuple(range(6, 12)))
+    assert result["xP"] is None
+    assert result["xMins / GW"] is None
+    assert result["Projection"] == "Unavailable"
+    player["projections"]["gw11"] = {"total_xp": 0, "xmins": 0}
+    result = player_slice(player, "Champion", tuple(range(6, 12)))
+    assert result["xP"] == 5
+    assert result["xp_goals"] is None
+
+
+def test_advanced_result_renders_solver_move_objects_without_changing_draft(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    paths = PlannerPaths(data_path, tmp_path / "processed", tmp_path / "storage")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(paths.dataset))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(paths.storage))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(paths.processed))
+    jobs = PlannerJobs(paths.storage / "jobs")
+    job_id = jobs.start({"kind": "strategy", "source_digest": source_digest(paths)}, lambda request: {
+        "payload": {"weeks": [{"gw": 6, "sell": [{"id": 7, "name": "Player 7"}], "buy": [{"id": 16, "name": "Player 16"}]}]}, "stale": False})
+    jobs.wait(job_id, 5)
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    assert not app.exception
+    assert any("sell Player 7 · add Player 16" in message.value for message in app.markdown)
+    assert not app.session_state["planner"].state["edits"]
+    assert not next(control.value for control in app.checkbox if control.label.startswith("Force double defence"))
+
+
+def test_what_if_transfer_hits_apply_once_at_horizon_start() -> None:
+    data = dataset()
+    players = {player["id"]: player for player in data["players"]}
+    squad = ExplorerSquad.from_dataset(data, "Champion", (6, 7))
+    squad.replace(7, 16, players)
+    free = compare_squads(data, "Champion", (6, 7), squad)
+    data["meta"]["free_transfers"] = 0
+    charged = compare_squads(data, "Champion", (6, 7), squad)
+    assert charged[0]["What-If Expected"] == free[0]["What-If Expected"] - 4
+    assert charged[1]["What-If Expected"] == free[1]["What-If Expected"]
