@@ -31,6 +31,7 @@ Status: implemented; checks complete except actual browser zoom. Q1–Q9 + share
 
 ## Delivery Evidence
 
+- Implementation checkpoint: `1477730`; completed Work Packet removed in documentation checkpoint; local commits only
 - Full suite: 547 passed; pre-existing constant-input correlation warning
 - Ruff + Pyright clean; delivery gate 123 passed
 - New regressions: focused planner inspection/close/sell; focused Explorer inspection/close preserves What-If + saved draft
