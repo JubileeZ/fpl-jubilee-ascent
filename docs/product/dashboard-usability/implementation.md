@@ -15,4 +15,6 @@ Source: [First-time manager dashboard usability](https://github.com/JubileeZ/fpl
 
 ## Verification
 
-Public boundaries: Planner, PlanStore, Streamlit AppTest (pending user agreement). Browser click-through of changed controls; existing solver/model behavior retained. Full suite once at delivery; targeted tests/types during implementation. Review against start commit, standards and spec separate.
+New test boundaries proposed: Planner, PlanStore, Streamlit AppTest; no response, no new tests written. Existing full suite 547 passed; affected tests 23 passed after review repairs. Dashboard types and Ruff clean; exporter 29 pre-existing type diagnostics unchanged. Browser click-through, 390px overflow check, isolated copied draft. Standards three initial findings and Spec two initial findings repaired; both rechecks clean. Review fixed staged snapshot against b19c9d1 before implementation commit. Actual 200% zoom/screen-reader traversal unverified.
+
+Appearance-aware comparison opt-in and cached; expensive enumeration deferred until requested. Legacy export timestamps unavailable; new exports include deadline, projection generation and oldest relevant input-file update. Input-file age explicitly distinct from upstream freshness.

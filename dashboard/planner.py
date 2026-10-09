@@ -160,6 +160,14 @@ class Planner:
         if incoming not in self.candidates(gw, outgoing):
             raise ValueError("Replacement violates Position, budget, uniqueness, or Club limit.")
         moves = self._touch_transfers(gw)
+        purchase = next((move for move in moves if move["in"] == outgoing), None)
+        if purchase is not None:
+            if purchase["out"] == incoming:
+                moves.remove(purchase)
+            else:
+                purchase["in"] = incoming
+            self.state["revision"] += 1
+            return
         move = next((move for move in moves if move["out"] == outgoing), None)
         if move is None:
             moves.append({"out": outgoing, "in": incoming})
@@ -341,6 +349,35 @@ class Planner:
 
     def week(self, gw: int) -> dict[str, Any]:
         return next(week for week in self.weeks() if week["gw"] == gw)
+
+    def policy_preview(self, scenario: str | None) -> Planner | None:
+        preview = Planner(self.dataset, self.state)
+        preview.reset(scenario)
+        if scenario is None:
+            preview.state["recommendations"] = {}
+        elif not preview.recommendation_valid():
+            return None
+        return preview
+
+    def comparison(self, *, include_expected: bool = False) -> list[dict[str, Any]]:
+        rows = []
+        for label, plan in [("Active draft", self), *[(name, self.policy_preview(arm)) for arm, name in ARM_NAMES.items()],
+                            ("Roll · no transfers", self.policy_preview(None))]:
+            available = bool(plan and (label in ("Active draft", "Roll · no transfers") or
+                                      set(plan._recommendation_weeks()) == set(range(self.state["start"], self.state["end"] + 1))))
+            weeks = plan.weeks() if available and plan else []
+            usable = bool(weeks and all(week["complete"] and not week["needs_recalculation"] for week in weeks))
+            scores = [plan.expected_score(week["gw"]) for week in weeks] if include_expected and usable and plan else []
+            rows.append({"Plan": label, "Status": "Available" if usable else "Unavailable · regenerate/review inputs",
+                         "First GW lineup after hits": weeks[0]["projected_points"] if usable else None,
+                         "Horizon lineup after hits": round(sum(week["projected_points"] for week in weeks), 2) if usable else None,
+                         **({"First GW Expected": round(scores[0], 2) if scores and scores[0] is not None else None,
+                             "Horizon Expected": round(sum(score for score in scores if score is not None), 2) if scores and all(score is not None for score in scores) else None} if include_expected else {}),
+                         "Transfers": sum(len(week["transfers"]) for week in weeks) if usable else None,
+                         "Hit cost (points)": sum(4 * week["hits"] for week in weeks) if usable else None,
+                         "Final bank (£m)": weeks[-1]["bank"] if usable else None,
+                         "Next free transfers": weeks[-1]["next_ft"] if usable else None})
+        return rows
 
     def candidates(self, gw: int, outgoing: int) -> list[int]:
         week = self.week(gw)

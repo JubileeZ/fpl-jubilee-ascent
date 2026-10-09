@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime, timezone
 import json
 from typing import Any
 
@@ -14,6 +15,7 @@ from dashboard.planner_service import (PlannerPaths, import_cached_recommendatio
                                        make_solve_request, player_history, refresh_request,
                                        solve_request, source_digest)
 from solver.scenarios import ARM_NAMES
+from dashboard.presentation import availability, data_age, fixture, utc_time
 
 
 def save(planner: Planner, store: PlanStore) -> bool:
@@ -130,6 +132,10 @@ def player_button(planner: Planner, pid: int, gw: int, week: dict[str, Any]) -> 
         st.session_state.pop("replacement", None)
         st.rerun()
     st.caption(f"{player.get('team', '')} · {player.get('pos', '')} · £{float(player['price']):.1f}m")
+    if player.get("status", "a") != "a" or (player.get("chance") is not None and player["chance"] < 100):
+        st.caption(availability(player))
+        if player.get("news"):
+            st.caption(player["news"])
 
 
 def pitch(planner: Planner, gw: int, week: dict[str, Any]) -> None:
@@ -215,7 +221,7 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
     st.write(f"Purchase Price: £{player['price']:.1f}m")
     if player.get("selling_price") is not None and pid in planner.state["base_ids"]:
         st.write(f"Selling Price: £{player['selling_price']:.1f}m")
-    st.write(f"Availability: {player.get('status', 'unavailable')}" + (f" · {player['chance']}%" if player.get("chance") is not None else ""))
+    st.write(availability(player))
     if player.get("news"):
         st.write(player["news"])
     owned = pid in planner.week(gw)["squad_ids"]
@@ -236,11 +242,12 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
             planner.override(gw, "captain", None)
             edit(planner, store, lambda: planner.override(gw, "vice", None))
     st.write("Upcoming projections")
-    rows = [{"GW": week_id, "Fixture": cell.get("fixture_label") or "Unavailable / blank",
+    rows = [{"GW": week_id, "Fixture": fixture(cell), "Adjusted difficulty": cell.get("difficulty"),
              "xP": cell.get("total_xp"), "xMins": cell.get("xmins")}
             for week_id in range(gw, planner.state["end"] + 1)
             for cell in [player.get("projections", {}).get(f"gw{week_id}", {})]]
     st.dataframe(rows, hide_index=True, width="stretch")
+    st.caption("Adjusted difficulty: official 1–5, home −0.25 / away +0.25; lower is easier. Double Gameweeks show mean difficulty.")
     with st.expander("Recent points and minutes"):
         history = player_history(paths, pid)
         if history:
@@ -285,6 +292,51 @@ def load_planner(paths: PlannerPaths, store: PlanStore) -> Planner:
         st.error(f"Cannot open saved plan/projections: {exc}")
         st.stop()
         raise
+
+
+def scout_transfer_review(planner: Planner, store: PlanStore, gw: int) -> None:
+    incoming = st.session_state.get("scout-transfer")
+    if incoming is None:
+        return
+    player = planner.players.get(incoming)
+    with st.container(border=True):
+        st.subheader("Review scouted transfer")
+        if player is None:
+            st.warning("Scouted Player unavailable in current data. Choose another Player in Explorer.")
+        else:
+            st.write(f"Prepare {player['name']} · {availability(player)} · £{player['price']:.1f}m for GW{gw}.")
+            st.caption("Uses Transfer Planner projections and policy. Explorer model, horizon and What-If changes stay separate. Nothing saved until you apply.")
+            options = [pid for pid in [*planner.week(gw)["squad_ids"], *planner.week(gw)["vacancies"]]
+                       if pid in planner.players and planner.players[pid]["pos_id"] == player["pos_id"] and pid != incoming]
+            if options:
+                outgoing = st.selectbox("Outgoing Player", options, format_func=lambda pid: planner.players[pid]["name"], key=f"scout-outgoing-{incoming}-{gw}")
+                assert outgoing is not None
+                eligible = incoming in planner.candidates(gw, outgoing)
+                if eligible:
+                    preview = Planner(planner.dataset, planner.state)
+                    preview.buy(gw, outgoing, incoming)
+                    week = preview.week(gw)
+                    st.write(f"Sell {planner.players[outgoing]['name']} · Add {player['name']} · Bank £{week['bank']:.1f}m · Hit cost −{week['hits'] * 4} points")
+                    for conflict in week["conflicts"]:
+                        st.warning(conflict)
+                    st.caption("Later recommendations may need recalculation after this transfer.")
+                    if st.button("Apply transfer to saved draft", key="scout-apply", disabled=not week["complete"] or planner.stale):
+                        planner.buy(gw, outgoing, incoming)
+                        if save(planner, store):
+                            st.session_state.pop("scout-transfer", None)
+                        st.rerun()
+                else:
+                    st.warning("Replacement unavailable under current ownership, Position, bank, Club limit or Conservative availability policy. Choose another outgoing Player or review policy.")
+            else:
+                st.warning("No outgoing Player of this Position available.")
+        if st.button("Cancel prepared transfer", key="scout-cancel"):
+            st.session_state.pop("scout-transfer", None)
+            st.rerun()
+
+
+@st.cache_data(show_spinner="Comparing appearance-aware outcomes across the horizon…", max_entries=16)
+def policy_comparison(dataset: dict[str, Any], state: dict[str, Any], include_expected: bool) -> list[dict[str, Any]]:
+    return Planner(dataset, state).comparison(include_expected=include_expected)
 
 
 def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
@@ -333,10 +385,18 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
                                     value=planner.state["end"], step=1, key="horizon-end")
     if end != planner.state["end"]:
         edit(planner, store, lambda: planner.change_horizon(planner.state["start"], end))
-    scenario = controls[2].selectbox("Scenario policy", list(ARM_NAMES), index=list(ARM_NAMES).index(planner.state["scenario"]),
+    scenario = controls[2].selectbox("Preview policy", list(ARM_NAMES), index=list(ARM_NAMES).index(planner.state["scenario"]),
                                     format_func=lambda arm: ARM_NAMES[arm], key="scenario-policy")
-    if scenario != planner.state["scenario"] and controls[2].button("Use selected scenario", key="switch-scenario"):
-        if planner.state["edits"] or planner.state["overrides"]:
+    controls[2].caption(f"Active saved policy: {ARM_NAMES[planner.state['scenario']]}")
+    if scenario != planner.state["scenario"]:
+        preview = planner.policy_preview(scenario)
+        controls[2].caption(f"Previewing {ARM_NAMES[scenario]}; saved draft unchanged.")
+        if preview and preview.week(planner.state["start"])["complete"]:
+            controls[2].write(f"First GW lineup after hits: {preview.week(planner.state['start'])['projected_points']:.2f}")
+        else:
+            controls[2].caption("Recommendation unavailable for this horizon. Adoption creates an unsolved hold draft.")
+    if scenario != planner.state["scenario"] and controls[2].button("Adopt preview policy", key="switch-scenario"):
+        if planner.state["edits"] or planner.state["overrides"] or planner.state["chips"]:
             st.session_state["reset_scenario"] = scenario
             st.rerun()
         else:
@@ -351,12 +411,40 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     week = planner.week(gw)
     label = "Needs recalculation" if week["needs_recalculation"] else "Draft" if planner.state["edits"] or planner.state["overrides"] else "Solver recommendation" if week["has_recommendation"] else "Unsolved hold draft"
     st.write(f"**{ARM_NAMES[planner.state['scenario']]} · GW{gw} · {label}**")
+    deadline = utc_time(dataset.get("meta", {}).get("transfer_plan_deadline"))
+    st.caption(f"GW{planner.state['start']} deadline: {deadline:%d %b %Y, %H:%M UTC}" if deadline else "Deadline time unavailable; refresh before acting.")
+    st.caption(data_age(dataset.get("meta", {}).get("projection_generated_at")))
+    inputs_updated = utc_time(dataset.get("meta", {}).get("inputs_updated_at"))
+    st.caption(f"Oldest Player/User Squad/Gameweek input file update: {inputs_updated:%d %b %Y, %H:%M UTC}. File age may differ from upstream freshness." if inputs_updated else "Input data age unavailable; refresh before acting.")
+    if deadline:
+        if deadline <= datetime.now(timezone.utc):
+            st.warning("Displayed deadline has passed. Refresh before preparing transfers.")
+    with st.container(key="decision-summary"):
+        st.write(f"**{'Ready to review' if week['complete'] and not week['needs_recalculation'] else 'Needs attention'}** · Active {ARM_NAMES[planner.state['scenario']]} · GW{gw}")
+        captain = planner.players.get(week["captain_id"], {}).get("name", "Unselected")
+        vice = planner.players.get(week["vice_id"], {}).get("name", "Unselected")
+        st.write(f"Captain: {captain} · Vice-captain: {vice}")
+        st.write(f"Transfers: {len(week['transfers'])} · Hit cost: −{4 * week['hits']} points · Bank: £{week['bank']:.1f}m · Free Transfers: {week['ft']}")
+        st.write(f"Lineup projection after hits: {week['projected_points']:.2f}" if week["complete"] else "Lineup projection unavailable until conflicts resolved.")
+    comparison = st.expander("Compare policies and rolling a transfer", key="policy-comparison", on_change="rerun")
+    if comparison.open:
+        with comparison:
+            st.caption(f"GW{planner.state['start']}–{planner.state['end']}. Read-only comparison; no draft changes.")
+            include_expected = st.checkbox("Include Expected GW Score", key="comparison-expected", help="Enumerates appearance and autosub outcomes for every plan/week. May take several minutes; results are cached until draft or data changes.")
+            st.dataframe(policy_comparison(dataset, planner.state, include_expected), hide_index=True, width="stretch")
+            if not include_expected:
+                st.caption("Lineup comparison ready. Include Expected GW Score to calculate appearance-aware first-week and horizon totals.")
+            st.caption("Roll keeps your current User Squad, books no chips, and selects a legal XI/captain each week. Free Transfers accumulate to five.")
+            st.caption("Lineup points sum starting projections plus captain and chip points, minus hits. Expected GW Score also models appearances, substitutes and vice-captain fallback.")
+            st.caption("Optimal permits one hit per week; No Hit permits none. Conservative also avoids flagged incoming Players and protects established starters after one missed match.")
+            st.caption("Solver objective weights future weeks, bench, retained Free Transfers and bank. It differs from these unweighted totals; a lower first-week score may improve later weeks.")
     active_result = planner.state["recommendations"].get(planner.state["scenario"], {})
     stop_note = active_result.get("plan", {}).get("meta", {}).get("solver_objective_note")
     if stop_note:
         st.caption(stop_note)
     for conflict in dict.fromkeys(week["conflicts"]):
         st.warning(conflict)
+    scout_transfer_review(planner, store, gw)
     actions = st.columns(3)
     if actions[0].button("Generate plan", key="generate-plan", type="primary", disabled=busy or planner.stale or not all(row["complete"] for row in planner.weeks())):
         begin_job(planner, store, jobs, paths)

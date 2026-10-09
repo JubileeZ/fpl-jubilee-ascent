@@ -58,7 +58,7 @@ uv run python -m commands.dashboard
 
 4. Visit `http://127.0.0.1:8000` (prefer `127.0.0.1` over `localhost`).
 5. In **Transfer Planner**, click **Refresh**; wait for live ingest and projections to finish.
-6. Set **Horizon end**, click **Generate plan**, wait for solver completion. Choose **Scenario policy**, then **Use selected scenario**; inspect Optimal / No Hit / Conservative by **Gameweek**.
+6. Set **Horizon end**, click **Generate plan**, wait for solver completion. Choose **Preview policy**, then **Adopt preview policy**; compare Optimal / No Hit / Conservative and rolling before adoption.
 7. Click Player to inspect stats/projections. Sell or replace from selected week; bench/captain/vice overrides affect selected week. Click Position-labelled vacancy to add replacement. Complete squad, resolve conflicts, then **Optimize remaining transfers**.
 8. Read transfers, bank, Free Transfers, Hits, scores below squad. Draft autosaves; reload restores planner. Explorer What-If remains separate.
 
@@ -319,7 +319,7 @@ Open `http://127.0.0.1:8000`. Launcher projects from local processed tables when
 
 Open upper-left navigation chevron; choose **Transfer Planner**, **Explorer**, **Research**, or **Model Methodology**. Close navigation for more content width. Layout adapts to available window/sidebar width; Player labels wrap, charts stack, tables keep local horizontal scroll.
 
-- **Transfer Planner:** Generate plan; choose Scenario policy and Gameweek; click Player for inspection, Sell/Bench/Replace/captain actions. Vacancies appear under Bench and replacement slots. Add eligible replacement to recalculate legal XI/bench. Complete squad and resolve conflicts before Optimize remaining transfers. Draft autosaves; Reset to solver confirms replacement of manual choices.
+- **Transfer Planner:** Read deadline/data-age summary; Generate plan, Preview policy, compare with rolling, then Adopt preview policy. Choose Gameweek; click Player for inspection, Sell/Bench/Replace/captain actions. Fill vacancies with eligible replacements; resolve conflicts before Optimize remaining transfers. Draft autosaves; Reset to solver confirms replacement of manual choices.
 - **Explorer:** Projection model and independent horizon; filters apply to charts/table, including minimum minutes. Inspect chart/table selection or use Inspect Player + View player details. Squad What-If uses replacement, starter/bench, captain, and bench-order controls; session-only, separate from planner. Dream Team/advanced strategy results remain independent.
 - **Research:** search/select topic, read/download note, preview/download companion CSVs.
 - **Model Methodology:** Champion, pipeline layers/formulas, Candidate policy; draft/download research prompt without running experiment.

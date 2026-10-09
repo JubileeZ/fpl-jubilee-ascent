@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional
@@ -518,6 +519,11 @@ def build_dashboard_dataset(
     _ = solution_path
     plan_start = resolve_default_target_gw(processed_dir)
     plan_gws = planning_gameweeks(plan_start, MAX_PLANNING_HORIZON)
+    gameweeks_path = processed_dir / "gameweeks.parquet"
+    gameweeks = pd.read_parquet(gameweeks_path) if gameweeks_path.exists() else pd.DataFrame()
+    deadline = gameweeks.loc[gameweeks["id"] == plan_start, "deadline_time"] if {"id", "deadline_time"}.issubset(gameweeks.columns) else pd.Series(dtype=object)
+    input_files = [processed_dir / name for name in ("players.parquet", "user_picks.parquet", "gameweeks.parquet")]
+    inputs_updated_at = datetime.fromtimestamp(min(path.stat().st_mtime for path in input_files), timezone.utc).isoformat() if all(path.exists() for path in input_files) else None
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -539,6 +545,9 @@ def build_dashboard_dataset(
             "itb": itb,
             "free_transfers": free_transfers,
             "transfer_plan_start": plan_start,
+            "transfer_plan_deadline": str(deadline.iloc[0]) if len(deadline) and pd.notna(deadline.iloc[0]) else None,
+            "projection_generated_at": datetime.now(timezone.utc).isoformat(),
+            "inputs_updated_at": inputs_updated_at,
             "transfer_plan_available_chips": available_chips(plan_gws, user_chips),
             "champion_trust": load_champion_trust(),
         },

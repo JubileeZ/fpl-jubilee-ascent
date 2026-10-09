@@ -36,7 +36,7 @@ Layouts checked at 320–1440px with navigation open/closed. Actual 200% browser
 1. Confirm refreshed User Squad and projections loaded.
 2. Set **Horizon end**. Start fixed at upcoming open deadline; horizon 1–10 Gameweeks, ending no later than GW38.
 3. Click **Generate plan**. Wait for job status to finish; other heavy jobs wait until active job completes.
-4. Choose **Scenario policy**: Optimal, No Hit, Conservative; click **Use selected scenario** to apply selection. Confirm **Replace edits** when replacing manual choices, or cancel.
+4. Choose **Preview policy**: Optimal, No Hit, Conservative. **Active saved policy** remains unchanged during preview. Click **Adopt preview policy** to apply; confirm **Replace edits** when replacing manual transfers, chip bookings or lineup choices, or keep edits.
 5. Choose **Gameweek** to inspect Starting XI, bench, transfers, bank, Free Transfers, Hits, and projected scores.
 
 Solver runs three policies. Displayed policy selects recommendation to inspect. **Unsolved hold draft** means current squad baseline without solver recommendation. **Solver recommendation** means applicable solver result. **Draft** indicates manual choices. **Needs recalculation** identifies dependent recommendations invalidated by edits.
@@ -46,6 +46,10 @@ Projected lineup points after Hits and Expected GW Score differ: Expected GW Sco
 ## Inspect and edit Players
 
 Click Player on Starting XI or bench to open inspection dialog. Selected-week projected points/minutes appear first, followed by prices, availability, upcoming fixtures/projections, recent history, and projection components when available.
+
+Initial planner summary shows deadline in UTC, projection export age, oldest input-file update, captain/vice, transfers, hit cost and bank. Legacy exports show unavailable metadata; refresh before acting. Input-file age cannot prove upstream freshness. Flagged Players show availability/news on squad cards. Adjusted difficulty uses official 1–5 plus home −0.25 / away +0.25; lower easier, double-week mean.
+
+Open **Compare policies and rolling a transfer** for same-horizon lineup totals after hits, transfers, final bank and retained Free Transfers. Roll keeps User Squad unchanged, books no chips and selects legal XI/captain each week. **Include Expected GW Score** calculates appearance/autosub outcomes; may take several minutes, cached until draft/data changes. Solver objective also weights future weeks, bench, bank and retained transfers; first-week sacrifice may improve later outcomes.
 
 - **Sell from GW…** removes ownership from selected week onward. Position-labelled replacement slot appears under **Bench and replacement slots**.
 - **Bench this week** retains ownership and excludes Player from selected-week Starting XI. **Clear bench override** restores automatic selection.
@@ -79,6 +83,8 @@ Use **Filters**: Positions, Clubs, Find Player, Price range, Minimum xMins / GW.
 
 Charts compare ownership/price with selected projection measure. Select chart point or table row to inspect Player; alternatively choose **Inspect Player** and click **View player details**. Table starts with Player, Position, Price, xP, xP / GW, Club; additional columns available through local scroll. **Download filtered Players** exports current filtered table.
 
+**Compare Players** selects up to two targets over same Explorer horizon. Inspector **Add to comparison** also builds shortlist. **Prepare in Transfer Planner** carries chosen target into review; select Gameweek and **Outgoing Player**, review bank/hits, then **Apply transfer to saved draft** or cancel. Planner projections/policy govern eligibility. Preparation saves no transfer and starts no solver job.
+
 **Squad What-If** starts from User Squad independently of saved planner:
 
 1. Choose **Replace Player** and **With Player**; click **Replace in What-If**.
@@ -88,6 +94,8 @@ Charts compare ownership/price with selected projection measure. Select chart po
 5. Inspect bank, transfers, Hits, and comparison scores. **Reset What-If to User Squad** restores baseline. New browser session or changed dataset resets What-If.
 
 **Solve Dream Team** produces independent squad result using Explorer model/horizon. Does not replace saved transfer draft or What-If squad. **Advanced strategy solve**, available under Planner and Explorer, runs separate experiment; retained results/downloads do not overwrite planner.
+
+Advanced help explains horizon, decay, objective values and bench weights. Fixed chip bookings require different Gameweeks; inline errors disable **Run advanced solve** and saving until resolved. Locked/Banned lists cannot overlap. Start/horizon changes clear out-of-window bookings with notice. **Save advanced settings** persists current valid setup separately from draft; **Reload saved advanced settings** discards unsaved input changes; **Download advanced settings** preserves current inputs. Unsaved changes remain browser-session only. Concurrent saves rejected; reload latest settings before saving again.
 
 ## Research and Model Methodology
 

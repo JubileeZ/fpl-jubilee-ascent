@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import math
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +13,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard.content import get_model_methodology, get_research_topic_detail, get_research_topics
-from dashboard.dashboard_jobs import run_tool
+from dashboard.dashboard_jobs import run_tool, strategy_errors
 from dashboard.explorer import ExplorerSquad, compare_squads, player_slice, projections
 from dashboard.planner import POSITION_NAMES, PlanStore, digest
 from dashboard.planner_jobs import PlannerJobs
@@ -19,6 +21,7 @@ from dashboard.planner_service import PlannerPaths, PROJECT_ROOT, source_digest
 from dashboard import streamlit_planner
 from models import get_default_model_name
 from projections.explorer_slice import COMPONENT_KEYS
+from dashboard.presentation import availability, fixture
 
 PAGES = ("Transfer Planner", "Explorer", "Research", "Model Methodology")
 
@@ -71,22 +74,55 @@ def tool_result(kind: str, paths: PlannerPaths, jobs: PlannerJobs) -> dict[str, 
 def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths) -> None:
     st.subheader(player.get("full_name") or player["name"])
     st.caption(f"{player.get('team_full', player.get('team', ''))} · {POSITION_NAMES[player['pos_id']]} · £{player['price']:.1f}m")
-    st.write(f"Availability: {player.get('status', 'Unavailable')}" + (f" · {player['chance']}%" if player.get("chance") is not None else ""))
+    st.write(availability(player))
     if player.get("news"):
         st.write(player["news"])
-    rows = [{"GW": gw, "Fixture": cell.get("fixture_label", "Unavailable / blank"), "xP": cell.get("total_xp"),
-             "xMins": cell.get("xmins"), "Projection": "Unavailable" if cell.get("total_xp") is None else "Available",
-             **{key: cell.get(key) for key in COMPONENT_KEYS}}
+    rows = [{"GW": gw, "Fixture": fixture(cell), "Adjusted difficulty": cell.get("difficulty"), "xP": cell.get("total_xp"),
+             "xMins": cell.get("xmins"), "Projection": "Unavailable" if cell.get("total_xp") is None else "Available"}
             for gw in gws for cell in [projections(player, model).get(f"gw{gw}", {})]]
     st.dataframe(rows, hide_index=True, width="stretch")
-    if any(row[key] is None for row in rows for key in COMPONENT_KEYS):
-        st.caption("Some projection components unavailable. Empty cells retain missing values.")
+    st.caption("Adjusted difficulty: official 1–5, home −0.25 / away +0.25; lower is easier. Double Gameweeks show mean difficulty.")
+    with st.expander("Projection components"):
+        st.dataframe([{"GW": gw, **{key.removeprefix("xp_").replace("_", " ").capitalize(): projections(player, model).get(f"gw{gw}", {}).get(key) for key in COMPONENT_KEYS}} for gw in gws], hide_index=True, width="stretch")
+        st.caption("Empty cells indicate unavailable components.")
     with st.expander("Season stats and recent history"):
         stats = {key: player.get(key) for key in ("total_points", "minutes", "starts", "pts_per_start", "pts_per_90", "xg_per_90", "xa_per_90", "ict_per_90", "inf_per_90", "cre_per_90", "thr_per_90")}
         st.dataframe([{"Stat": key.replace("_", " "), "Value": str(value) if value is not None else "Unavailable"} for key, value in stats.items()], hide_index=True)
         history = streamlit_planner.player_history(paths, int(player["id"]))
         if history:
             st.dataframe(history, hide_index=True)
+    shortlist = st.session_state.get("scout-shortlist", [])
+    if st.button("Add to comparison", key="scout-add", disabled=player["id"] in shortlist or len(shortlist) >= 2):
+        st.session_state["scout-shortlist"] = [*shortlist, player["id"]]
+        st.session_state.pop("scout-compare", None)
+        st.rerun()
+    st.button("Prepare in Transfer Planner", key="scout-prepare-details", on_click=prepare_transfer, args=(int(player["id"]),))
+
+
+def prepare_transfer(incoming: int) -> None:
+    st.session_state["scout-transfer"] = incoming
+    st.session_state["dashboard-page"] = "Transfer Planner"
+    close_explorer_inspection()
+
+
+def scouting_comparison(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
+    players = {int(player["id"]): player for player in dataset["players"]}
+    labels = {pid: f"{player['name']} · {player.get('team') or 'Club unavailable'}" for pid, player in players.items()}
+    repeated = {label for label, count in Counter(labels.values()).items() if count > 1}
+    labels = {pid: f"{label} · Player {pid}" if label in repeated else label for pid, label in labels.items()}
+    st.subheader("Player comparison")
+    st.caption(f"{model} · GW{gws[0]}–{gws[-1]}. Select up to two Players; missing projections remain unavailable.")
+    ids = st.multiselect("Compare Players", list(players), default=[pid for pid in st.session_state.get("scout-shortlist", []) if pid in players],
+                        format_func=lambda pid: labels[pid], max_selections=2, key="scout-compare")
+    st.session_state["scout-shortlist"] = ids
+    if not ids:
+        return
+    st.dataframe([{**{key: value for key, value in player_slice(players[pid], model, gws).items() if key in ("Player", "Club", "Position", "Price", "xP", "xP / GW", "xMins / GW", "Projection")},
+                   "Availability": availability(players[pid]), "News": players[pid].get("news") or "None supplied"} for pid in ids], hide_index=True, width="stretch")
+    st.dataframe([{"GW": gw, **{labels[pid]: f"{fixture(cell)} · xP {cell['total_xp'] if cell.get('total_xp') is not None else 'Unavailable'}"
+                                for pid in ids for cell in [projections(players[pid], model).get(f"gw{gw}", {})]}} for gw in gws], hide_index=True, width="stretch")
+    incoming = st.selectbox("Player to prepare", ids, format_func=lambda pid: labels[pid], key="scout-incoming")
+    st.button("Prepare in Transfer Planner", key="scout-prepare", on_click=prepare_transfer, args=(incoming,))
 
 
 def close_explorer_inspection() -> None:
@@ -236,6 +272,7 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         minimum_minutes = minutes.slider("Minimum xMins / GW", 0, 180, 0, key="explorer-minutes")
         metric = metrics.radio("Chart points", ("xP / GW", "xP / 90"), horizontal=True, key="explorer-metric")
         assume_ninety = st.checkbox("Assume 90 minutes per projected match (view only)", key="explorer-ninety")
+    scouting_comparison(dataset, model, gws)
     owned = set(meta.get("owned_squad_ids", []))
     rows = []
     for player in dataset["players"]:
@@ -333,46 +370,123 @@ def methodology() -> None:
             st.download_button("Download research prompt", prompt, "model-research-prompt.txt", "text/plain")
 
 
+def valid_strategy_settings(inputs: dict[str, Any]) -> bool:
+    ranges = {"start": (1, 38), "horizon": (1, 10), "max_def": (1, 3), "hit_limit": (0, 30), "weekly_hit": (0, 15),
+              "buffer": (0, 20), "decay": (0, 1), "ft_value": (0, 10), "itb_value": (0, 10), "bench_one": (0, 1), "bench_two": (0, 1)}
+    for key, (low, high) in ranges.items():
+        if key in inputs and (type(inputs[key]) not in (int, float) or not math.isfinite(inputs[key]) or not low <= inputs[key] <= high):
+            return False
+    if any(key in inputs and type(inputs[key]) is not int for key in ("start", "horizon", "max_def", "hit_limit", "weekly_hit")):
+        return False
+    if inputs.get("start", 1) + inputs.get("horizon", 1) > 39:
+        return False
+    if any(key in inputs and type(inputs[key]) is not bool for key in ("preseason", "double_def")):
+        return False
+    if "model" in inputs and not isinstance(inputs["model"], str):
+        return False
+    if inputs.get("opposing", "Allow") not in ("Allow", "Penalty", "Block"):
+        return False
+    for key in ("locked", "banned"):
+        if not isinstance(inputs.get(key, []), list) or any(type(pid) is not int for pid in inputs.get(key, [])):
+            return False
+    bookings = inputs.get("bookings", {})
+    return isinstance(bookings, dict) and all(gw is None or (type(gw) is int and 1 <= gw <= 38) for gw in bookings.values())
+
+
 def advanced_solver(paths: PlannerPaths, jobs: PlannerJobs) -> None:
     with st.expander("Advanced strategy solve"):
         st.caption("Independent solver experiment. Its result stays separate from your saved transfer draft.")
         planner = st.session_state["planner"]
-        model = st.selectbox("Strategy model", planner.dataset.get("meta", {}).get("models") or [get_default_model_name()], key="strategy-model")
+        settings_store = PlanStore(paths.storage / "strategy-settings.json")
+        if "strategy-inputs" not in st.session_state:
+            try:
+                saved = settings_store.load()
+                saved_digest = digest(saved)
+                if saved is not None and not valid_strategy_settings(saved):
+                    st.error("Saved strategy settings contain invalid values. Download a copy, then use defaults and review before saving a replacement.")
+                    st.download_button("Download invalid saved settings", json.dumps(saved, indent=2), "strategy-settings-invalid.json", "application/json", key="strategy-invalid-download")
+                    if not st.button("Use default advanced settings", key="strategy-defaults"):
+                        return
+                st.session_state["strategy-inputs"] = dict(saved or {})
+                if saved is not None and not valid_strategy_settings(saved):
+                    st.session_state["strategy-inputs"] = {}
+                for key in ("buffer", "decay", "ft_value", "itb_value", "bench_one", "bench_two"):
+                    if key in st.session_state["strategy-inputs"]:
+                        st.session_state["strategy-inputs"][key] = float(st.session_state["strategy-inputs"][key])
+                st.session_state["strategy-saved"] = saved
+                st.session_state["strategy-settings-digest"] = saved_digest
+            except (ValueError, OSError):
+                st.error("Saved strategy settings unavailable. Preserve the settings file and restore a valid backup.")
+                return
+        inputs = st.session_state["strategy-inputs"]
+        models = planner.dataset.get("meta", {}).get("models") or [get_default_model_name()]
+        model = st.selectbox("Strategy model", models, index=models.index(inputs.get("model")) if inputs.get("model") in models else 0, key="strategy-model")
         columns = st.columns(3)
-        start = columns[0].number_input("Strategy start GW", 1, 38, planner.state["start"], key="strategy-start")
-        horizon = columns[1].number_input("Strategy horizon", 1, min(10, 39 - start), min(6, 39 - start), key=f"strategy-horizon-{start}")
-        preseason = columns[2].checkbox("Preseason / blank squad", key="strategy-preseason")
+        start = columns[0].number_input("Strategy start GW", 1, 38, inputs.get("start", planner.state["start"]), key="strategy-start")
+        horizon = columns[1].number_input("Strategy horizon", 1, min(10, 39 - start), min(inputs.get("horizon", 6), 39 - start), key=f"strategy-horizon-{start}", help="Inclusive number of Gameweeks, including the start. Start GW6 and horizon 3 means GW6–8.")
+        st.caption(f"Strategy window: GW{start}–{start + horizon - 1} ({horizon} Gameweeks).")
+        preseason = columns[2].checkbox("Preseason / blank squad", value=inputs.get("preseason", False), key="strategy-preseason")
         names = {int(player["id"]): player["name"] for player in planner.dataset["players"]}
-        locked = st.multiselect("Locked Players", list(names), format_func=lambda pid: names[pid], key="strategy-locked")
-        banned = st.multiselect("Banned Players", list(names), format_func=lambda pid: names[pid], key="strategy-banned")
+        locked = st.multiselect("Locked Players", list(names), default=[pid for pid in inputs.get("locked", []) if pid in names], format_func=lambda pid: names[pid], key="strategy-locked")
+        banned = st.multiselect("Banned Players", list(names), default=[pid for pid in inputs.get("banned", []) if pid in names], format_func=lambda pid: names[pid], key="strategy-banned")
         a, b, c = st.columns(3)
-        max_def = a.number_input("Max defenders per Club", 1, 3, 3)
-        double_def = b.checkbox("Force double defence (zero or at least two GKP/DEF starters per Club)", value=False)
-        opposing = c.selectbox("Opposing starters", ("Allow", "Penalty", "Block"))
+        max_def = a.number_input("Max defenders per Club", 1, 3, inputs.get("max_def", 3), key="strategy-max-def")
+        double_def = b.checkbox("Force double defence (zero or at least two GKP/DEF starters per Club)", value=inputs.get("double_def", False), key="strategy-double-def")
+        opposing = c.selectbox("Opposing starters", ("Allow", "Penalty", "Block"), index=("Allow", "Penalty", "Block").index(inputs.get("opposing", "Allow")), key="strategy-opposing", help="Allow accepts opposing starters; Penalty reduces their objective value; Block disallows the pairing.")
         a, b, c = st.columns(3)
-        hit_limit = a.number_input("Total hit limit", 0, 30, 5)
-        weekly_hit = b.number_input("Weekly hit limit", 0, 15, 1)
-        buffer = c.number_input("Bank buffer (£m)", 0.0, 20.0, 0.0, step=0.1)
+        hit_limit = a.number_input("Total hit limit", 0, 30, inputs.get("hit_limit", 5), key="strategy-hit-limit", help="Number of paid transfers across the horizon; each costs four points. Zero disallows hits.")
+        weekly_hit = b.number_input("Weekly hit limit", 0, 15, inputs.get("weekly_hit", 1), key="strategy-weekly-hit", help="Maximum paid transfers in each Gameweek, in addition to Free Transfers.")
+        buffer = c.number_input("Bank buffer (£m)", 0.0, 20.0, inputs.get("buffer", 0.0), step=0.1, key="strategy-buffer", help="Minimum bank in Gameweeks with transfers, in £m. Hold weeks may carry less.")
         a, b, c = st.columns(3)
-        decay = a.number_input("Gameweek decay", 0.0, 1.0, 0.85, step=0.01)
-        ft_value = b.number_input("Free Transfer value", 0.0, 10.0, 1.5, step=0.1)
-        itb_value = c.number_input("Bank value", 0.0, 10.0, 0.08, step=0.01)
+        decay = a.number_input("Gameweek decay", 0.0, 1.0, inputs.get("decay", 0.85), step=0.01, key="strategy-decay", help="Future-week objective multiplier. 0.85 weights consecutive weeks 1.00, 0.85, 0.72; 1.00 gives equal weight.")
+        ft_value = b.number_input("Free Transfer value", 0.0, 10.0, inputs.get("ft_value", 1.5), step=0.1, key="strategy-ft-value", help="Objective points assigned to retaining a Free Transfer. This preference adds no official FPL points.")
+        itb_value = c.number_input("Bank value", 0.0, 10.0, inputs.get("itb_value", 0.08), step=0.01, key="strategy-itb-value", help="Objective points per £1m retained in the bank. Adds no official FPL points.")
         a, b = st.columns(2)
-        bench_one = a.number_input("First bench weight", 0.0, 1.0, 0.21, step=0.01)
-        bench_two = b.number_input("Second bench weight", 0.0, 1.0, 0.06, step=0.01)
+        bench_one = a.number_input("First bench weight", 0.0, 1.0, inputs.get("bench_one", 0.21), step=0.01, key="strategy-bench-one", help="Objective fraction of first substitute projection: 0.21 counts 21%. Actual FPL scoring still follows autosub rules.")
+        bench_two = b.number_input("Second bench weight", 0.0, 1.0, inputs.get("bench_two", 0.06), step=0.01, key="strategy-bench-two", help="Objective fraction of second substitute projection: 0.06 counts 6%.")
         chips = {}
+        bookings = {}
         for column, (chip, label) in zip(st.columns(4), (("wc", "Wildcard"), ("fh", "Free Hit"), ("bb", "Bench Boost"), ("tc", "Triple Captain")), strict=True):
-            gw = column.selectbox(label, [None, *range(start, start + horizon)], format_func=lambda value: "Unbooked" if value is None else f"GW{value}", key=f"strategy-chip-{chip}-{start}-{horizon}")
+            choices = [None, *range(start, start + horizon)]
+            previous = inputs.get("bookings", {}).get(chip)
+            if previous is not None and previous not in choices:
+                st.warning(f"{label} GW{previous} outside new horizon; booking cleared. Review before saving.")
+            gw = column.selectbox(label, choices, index=choices.index(previous) if previous in choices else 0, format_func=lambda value: "Unbooked" if value is None else f"GW{value}", key=f"strategy-chip-{chip}-{start}-{horizon}")
             chips[f"use_{chip}"] = [gw] if gw is not None else []
-        if st.button("Run advanced solve", key="strategy-solve", disabled=jobs.active() is not None):
-            if set(locked) & set(banned):
-                st.error("A Player cannot be both locked and banned.")
-            else:
-                options = {"datasource": model, "horizon": horizon, "preseason": preseason, "locked": locked, "banned": banned,
+            bookings[chip] = gw
+        inputs = {"model": model, "start": start, "horizon": horizon, "preseason": preseason, "locked": locked, "banned": banned,
+                  "max_def": max_def, "double_def": double_def, "opposing": opposing, "hit_limit": hit_limit, "weekly_hit": weekly_hit,
+                  "buffer": buffer, "decay": decay, "ft_value": ft_value, "itb_value": itb_value, "bench_one": bench_one, "bench_two": bench_two, "bookings": bookings}
+        st.session_state["strategy-inputs"] = inputs
+        options = {"datasource": model, "horizon": horizon, "preseason": preseason, "locked": locked, "banned": banned,
                            "max_defenders_per_team": max_def, "double_defense_pick": double_def, "no_opposing_play": {"Allow": False, "Penalty": "penalty", "Block": True}[opposing],
                            "hit_limit": hit_limit, "weekly_hit_limit": weekly_hit, "transfer_itb_buffer": buffer, "decay_base": decay,
                            "ft_value": ft_value, "itb_value": itb_value, "bench_weights": {0: 0.03, 1: bench_one, 2: bench_two, 3: 0.002}, **chips}
-                start_tool({"kind": "strategy", "start": start, "options": options}, paths, jobs)
+        errors = strategy_errors(start, options, names)
+        for error in errors:
+            st.error(error)
+        st.caption("Saved advanced settings restore after reload. Changes remain in this browser until you save them.")
+        st.caption("Saved settings match current inputs." if inputs == st.session_state.get("strategy-saved") else "Unsaved changes.")
+        if st.session_state.get("strategy-save-error"):
+            st.error(st.session_state["strategy-save-error"])
+        if st.button("Save advanced settings", key="strategy-save", disabled=bool(errors)):
+            try:
+                settings_store.save(inputs, expected_digest=st.session_state["strategy-settings-digest"])
+                st.session_state["strategy-settings-digest"] = digest(inputs)
+                st.session_state["strategy-saved"] = inputs
+                st.session_state.pop("strategy-save-error", None)
+                st.rerun()
+            except (ValueError, OSError) as exc:
+                st.session_state["strategy-save-error"] = f"Settings not saved: {exc} Reload latest saved settings or download current inputs before closing."
+                st.rerun()
+        if st.button("Reload saved advanced settings", key="strategy-reload"):
+            for key in list(st.session_state):
+                if str(key).startswith("strategy-"):
+                    st.session_state.pop(key, None)
+            st.rerun()
+        st.download_button("Download advanced settings", json.dumps(inputs, indent=2), "strategy-settings.json", "application/json", key="strategy-download")
+        if st.button("Run advanced solve", key="strategy-solve", disabled=jobs.active() is not None or bool(errors)):
+            start_tool({"kind": "strategy", "start": start, "options": options}, paths, jobs)
         if job := tool_result("strategy", paths, jobs):
             result = job["result"]["payload"]
             def move_name(move: dict[str, Any]) -> str:
@@ -399,7 +513,9 @@ def main() -> None:
         try:
             preferences.save({"page": page})
         except OSError:
-            st.caption("View preference could not be saved.")
+            st.caption("Workspace choice not saved. Reload may open your previous workspace. Restore writable storage, then retry.")
+            if st.button("Retry saving view", key="retry-view-save"):
+                st.rerun()
         st.caption("One squad. One transfer plan.")
         backup = PROJECT_ROOT / "data/user_plans.json"
         if backup.exists():

@@ -1,0 +1,138 @@
+{
+  "repository": "JubileeZ/fpl-jubilee-ascent",
+  "publication_status": "published_verified",
+  "map": {
+    "title": "[Wayfinder Map] First-time manager dashboard usability",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "body": "## Destination\n\nAgree manager-facing dashboard UX specification from blind persona click-through: confident deadline decisions, interpretable comparisons, deliberate scouting handoff and chip experiments. Complete when observed questions resolved into reviewable behavior decisions; implementation follows separately.\n\n## Notes\n\n2026-10-09 desktop UI-only audit; no application source inspection by personas. Deadline and strategy agents direct; scout commands relayed by root because scout browser unavailable. Evidence archived locally in anti-slop/audit-002-2026-10-09.md; reproducible observations included in each child. Antislop After; preserve DESIGN.md. Consult Wayfinder, antislop core/UI/human/copy, grilling and domain-modeling as relevant. P1/P2/P3 denote user-impact triage. Open children are decision questions, not automatically approved changes. No real FPL submission or live refresh.\n\n## Decisions so far\n\nNone. Audit observations are evidence, not resolved product decisions.\n\n## Not yet specified\n\n- Responsive, full keyboard, screen-reader and 200% zoom experience after chosen workflows.\n- Performance and failure recovery under a single isolated session; intermediate reruns excluded from bug claims.\n- Detailed rollout order and implementation scope after decisions.\n- One-off view-preference save warning; reproduce before diagnosing.\n\n## Out of scope\n\nScoring-model changes, Champion/Candidate research, solver correctness claims, official FPL transfers, deployment, new model training, cosmetic redesign without decision evidence.\n",
+    "number": 150,
+    "id": 5775630698,
+    "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/150"
+  },
+  "tickets": [
+    {
+      "key": "deadline_summary",
+      "title": "[P1] What must a manager see before acting at the deadline?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nWhich compact planner summary establishes deadline readiness and next action without scrolling through the whole squad?\n\n## Observed evidence\n\nDeadline reviewer: only Start: GW6 · upcoming deadline; costs and both score metrics below XI and bench. No absolute deadline/timezone/last-refresh metadata visible in inspected planner.\n\n## Proposed adjustment for discussion\n\nPrototype compact decision summary containing deadline/timezone, data age, active policy, captain/vice, transfers, hit cost, bank and lineup readiness. Preserve full squad inspection.\n\n## Decision acceptance\n\nFirst-time manager can state upcoming deadline, data age, active plan and costs from initial planner view. Metadata has explicit unavailable/stale states.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 151,
+      "id": 5775630986,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/151#issuecomment-6079735278",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "policy_comparison",
+      "title": "[P1] How should managers compare transfer policies with rolling a transfer?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nWhich shared metrics and horizon explain Optimal, No Hit and Conservative against a no-transfer baseline?\n\n## Observed evidence\n\nGW6 Optimal: lineup after hits 53.93 / Expected GW Score 59.41, hit minus 4. No Hit 55.98 / 61.43. Conservative 54.28 / 59.12. No horizon benefit or hold baseline visible in inspected planner. Lower immediate score does not prove solver bug.\n\n## Proposed adjustment for discussion\n\nAgree same-horizon comparison, no-transfer baseline and readable justification for hit or sacrifice this week. Explain difference between Expected GW Score, lineup projection and optimization objective.\n\n## Decision acceptance\n\nManager can compare all three policies and hold baseline without replacing current draft; decisions state horizon, costs, transfer count and metric definitions.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 152,
+      "id": 5775631133,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/152#issuecomment-6079735647",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "policy_preview",
+      "title": "[P2] How should policy preview differ from adopting a saved draft?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow can a manager preview another policy while knowing exactly which plan is active and when edits will be replaced?\n\n## Observed evidence\n\nDeadline and strategist independently selected No Hit while active headline remained Optimal; Use selected scenario applies it in second step. Controls work; pending state explanation unclear.\n\n## Proposed adjustment for discussion\n\nPrototype active/pending labels, comparison preview and explicit adoption with manual-edit safeguard.\n\n## Decision acceptance\n\nSelecting policy never implies active-plan change; current and preview labels remain distinguishable through reruns; adoption and discard/recovery paths clear.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 153,
+      "id": 5775631297,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/153#issuecomment-6079735985",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "player_clarity",
+      "title": "[P2] How should player availability and fixture difficulty be presented?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nWhat plain-language risk and fixture summary helps a first-time manager interpret projections without internal identifiers?\n\n## Observed evidence\n\nHaaland and Mbeumo: Availability:a; Gibbs-White:a ·100%; João Pedro:d ·75%, Knee injury - 75% chance of playing inside inspector. Fixture TOT(H)1.75 merges unexplained decimal into fixture. Visible xp_* table headers.\n\n## Proposed adjustment for discussion\n\nPrototype translated availability, concise card-level injury risk, separately labelled difficulty with meaning/direction and expandable component explanation.\n\n## Decision acceptance\n\nManager can explain availability, injury information and fixture difficulty; missing data distinguished from fit/zero; technical component names optional.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 154,
+      "id": 5775631474,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/154#issuecomment-6079736302",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "scout_handoff",
+      "title": "[P2] How should scouting comparisons lead into a transfer draft?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should manager compare two targets then intentionally prepare selected target in Transfer Planner while keeping Explorer What-If separate?\n\n## Observed evidence\n\nScout-directed root clicks: MID budget £8, inspect Mbeumo then Gibbs-White, Back to Explorer, Transfer Planner. Dialogs close correctly; no compare/shortlist/handoff in tested path. Planner loads saved recommendation without target. Scout browser unavailable, relayed workflow disclosed.\n\n## Proposed adjustment for discussion\n\nPrototype side-by-side shortlist and explicit prepare-in-planner action with outgoing-player choice and draft review. Preserve isolation of What-If and official squad.\n\n## Decision acceptance\n\nTwo candidates share same horizon and definitions; chosen target carries into reviewed draft preparation without implicit save, solver run or official submission.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 155,
+      "id": 5775631608,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/155#issuecomment-6079736656",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "chip_preflight",
+      "title": "[P2] What validation belongs before submitting a chip experiment?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nHow should advanced strategy distinguish a legal fixed chip schedule from alternative chip dates, and warn before submission?\n\n## Observed evidence\n\nStrategist selected Wildcard GW8 and Bench Boost GW8 simultaneously; no inline warning; Run advanced solve available. No solve submitted, so backend handling unknown. Start GW6 / horizon 3 correctly restricts choices to GW6-8.\n\n## Proposed adjustment for discussion\n\nDecide immediate validation/exclusion of occupied date, warning placement, legal alternatives and whether action blocks submission.\n\n## Decision acceptance\n\nConflict visible beside affected controls before solve; manager can distinguish fixed schedule from alternative experiments. Verify backend errors later without asserting current solver accepts conflicts.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 156,
+      "id": 5775631778,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/156#issuecomment-6079737106",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "strategy_guidance",
+      "title": "[P2] What explanations make advanced strategy inputs usable?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nWhich plain-language presets, units and examples let manager tune future weeks, hits, bank and bench rationally?\n\n## Observed evidence\n\nVisible defaults: decay 0.85, Free Transfer value 1.50, Bank value 0.08, bench weights 0.21 / 0.06. No visible examples/units. Methodology covers projections, not Conservative/policy weights; wildcard research search empty.\n\n## Proposed adjustment for discussion\n\nPrototype control-specific examples and consequences, plain policy definitions, sensible presets and contextual guidance.\n\n## Decision acceptance\n\nManager can explain horizon 3 means GW6-8, decay, bank/free-transfer value and bench influence before changing inputs; projected outcomes remain separate from scoring-model explanations.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 157,
+      "id": 5775631941,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/157#issuecomment-6079737471",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    },
+    {
+      "key": "advanced_recovery",
+      "title": "[P3] Should advanced experiment settings survive reload?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nWhich advanced inputs persist, and what recovery or explicit session-only warning should accompany reload and concurrent-draft protection?\n\n## Observed evidence\n\nWC/BB GW8 reset to Unbooked after reload; saved draft recovered. Separate-experiment caption does not disclose input lifetime. View preference could not be saved observed once; not independently reproduced. Concurrent draft guard worked.\n\n## Proposed adjustment for discussion\n\nDecide session-only disclosure versus persistent/exportable experiment setup, save feedback and recovery. Investigate one-off warning only if reproduced.\n\n## Decision acceptance\n\nDocument lifetime beside setup; reload behavior matches decision; user sees meaningful recovery after failed preference write; concurrent guard preserved.\n\nUI-only audit: 2026-10-09; anti-slop/audit-002-2026-10-09.md. No application source reviewed; no fix or new solve performed. Resolve through named Wayfinder workflow, record resolution comment, close child and append pointer to map.",
+      "blocked_by": [],
+      "number": 158,
+      "id": 5775632108,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158",
+      "parent_verified": true,
+      "implementation_comment_url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/158#issuecomment-6079737816",
+      "implementation_status": "implemented_pending_human_workflow_review"
+    }
+  ],
+  "verified_at": "2026-10-09T09:06:39.8225929Z",
+  "implementation_verified_at": "2026-10-09T11:13:15.2080520+00:00"
+}
