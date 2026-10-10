@@ -465,20 +465,45 @@ def main() -> None:
         "--no_hit",
         "--no-hit",
         action="store_true",
-        help="Disallow points hits across the horizon (sets weekly_hit_limit=0)",
+        default=True,
+        help="Disallow points hits across the horizon (default: True, weekly_hit_limit=0)",
+    )
+    parser.add_argument(
+        "--allow_hits",
+        "--allow-hits",
+        action="store_true",
+        default=False,
+        help="Allow points hits across the horizon (sets weekly_hit_limit=1 unless --hit-limit specified)",
+    )
+    parser.add_argument(
+        "--hit_limit",
+        "--hit-limit",
+        "--weekly_hit_limit",
+        "--weekly-hit-limit",
+        type=int,
+        default=None,
+        help="Maximum allowed hits per gameweek",
     )
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
     parser.add_argument(
         "--gap",
         type=float,
+        default=0.0,
         help="Relative Solver Objective gap (default 0.0 = full proof)",
     )
     parser.add_argument("--preseason", action="store_true", help="Solve for a blank preseason squad selection")
     parser.add_argument(
         "--single",
         action="store_true",
-        help="Solve a single transfer plan instead of the 3 canonical arms",
+        default=True,
+        help="Solve a single transfer plan (default: True)",
+    )
+    parser.add_argument(
+        "--scenarios",
+        action="store_true",
+        default=False,
+        help="Solve all 3 canonical arms (Optimal, No Hit, Conservative) instead of a single arm",
     )
     parser.add_argument(
         "--force",
@@ -508,20 +533,22 @@ def main() -> None:
     except ValueError as exc:
         parser.error(str(exc))
 
-    if args.no_hit:
+    # Default policy: No-hit (weekly_hit_limit = 0) and gap 0.0
+    if args.hit_limit is not None:
+        options["weekly_hit_limit"] = args.hit_limit
+    elif args.allow_hits:
+        options["weekly_hit_limit"] = 1
+    else:
         options["weekly_hit_limit"] = 0
+
     if args.preseason:
         options["preseason"] = True
     if args.decay_base is not None:
         options["decay_base"] = args.decay_base
     if args.hit_cost is not None:
         options["hit_cost"] = args.hit_cost
-    if args.gap is not None:
-        options["gap"] = args.gap
-    else:
-        options["gap"] = LIVE_SOLVER_REL_GAP
+    options["gap"] = args.gap if args.gap is not None else 0.0
 
-        
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
 
     # Load target gameweek from processed parquet
@@ -534,7 +561,7 @@ def main() -> None:
         
     options["override_next_gw"] = target_gw
 
-    if options.get("preseason", False) or args.single:
+    if not args.scenarios:
         try:
             plan = execute_transfer_plan(
                 options,

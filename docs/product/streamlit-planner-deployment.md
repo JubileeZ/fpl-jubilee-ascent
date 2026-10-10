@@ -1,8 +1,14 @@
-# Streamlit Dashboard Launch and Deployment Preparation
+# Streamlit Dashboard Launch and Deployment Guide
 
-Status: complete local Streamlit dashboard; deployment deferred by user. Single manager, one application process. Transfer Planner, Explorer, Research, Model Methodology share same app. ADR 0060.
+Status: decoupled public analytics dashboard + local CLI transfer solver. Single manager, one web application process. Explorer (with Watchlist & Dream Team), Research, Model Methodology share public web app. Transfer optimization exclusively CLI. ADR 0060.
 
 Daily workflow: [dashboard usage guide](dashboard-usage.md). Window/sidebar behavior: [responsive layout](dashboard-responsive-layout.md).
+
+## Architecture Decoupling
+
+- **Web Dashboard (`streamlit_app.py`):** Public analytics surface. Zero credentials required. Zero manager squad/ITB/chip leakage. Available on Streamlit Community Cloud without `.env`.
+- **CLI Transfer Solver (`commands.solve`):** Private optimization engine. Runs locally where `.env` credentials live. Default: single-arm no-hit MILP (`weekly_hit_limit=0`, gap 0.0). Writes `data/solution.json`.
+- **Public Data Export (`commands.export_dashboard`):** Defaults to impersonal dataset (`with_squad=False`). Personal squad embedded only when explicitly requested via `--with-squad`.
 
 ## Local Launch
 
@@ -11,39 +17,47 @@ uv sync --locked
 uv run python -m commands.dashboard
 ```
 
-Open `http://127.0.0.1:8000`. Alternate launcher `uv run python -m commands.streamlit_planner` opens identical app on port 8501. `streamlit run streamlit_app.py` opens same complete dashboard. Existing local projections + User Squad load automatically. Missing data: configure `FPL_EMAIL` / `FPL_PASSWORD` in local `.env`, then Refresh. Solver button runs all three policies; active policy selects displayed recommendation. No real FPL transfer submission.
+Open `http://127.0.0.1:8000`. Alternate launcher `uv run python -m commands.streamlit_planner` opens identical app on port 8501. `streamlit run streamlit_app.py` opens same dashboard. Public player projections load from `dashboard/dashboard_data.json`.
 
-Navigation initially collapsed: upper-left chevron opens workspace selector. Transfer Planner: Refresh → Horizon end → Generate plan → Scenario policy / Use selected scenario → Gameweek. Player click opens focused inspection; sell/replace, week-only bench/captain choices, and vacancy purchases autosave. Complete squad before Optimize remaining transfers. Tables scroll locally as window narrows; advanced controls remain expandable.
+Navigation: upper-left chevron opens sidebar workspace selector.
+- **Explorer:** Player table, scatter charts, filtering, player inspection modal with Watchlist toggle, interactive Watchlist table (up to 15 players, FDR/fixture breakdown, CSV export), Dream Team MILP solve.
+- **Research:** Live research topic reader and note downloader.
+- **Model Methodology:** Mathematical documentation, component weights, scoring formulas.
 
-Stop with Ctrl+C. Custom port: `uv run python -m commands.dashboard --port 8001`; suppress automatic browser opening: `--no-browser`. Run one launcher at a time. Browser authentication fallback needs installed Playwright Chromium; cached viewing requires no reinstall.
+Stop with Ctrl+C. Custom port: `uv run python -m commands.dashboard --port 8001`; suppress browser opening: `--no-browser`.
 
-Existing project environment needs no Windows Administrator access. Without global `uv`/Python, launch `.venv/Scripts/python.exe -m commands.dashboard` from repository. Container build can run later on separate Docker-enabled host; Docker installation on this device unnecessary.
+## CLI Transfer Solver
 
-## Configuration
+Run transfer planning locally:
 
-- `FPL_PLANNER_STORAGE`: draft, navigation preference, job records/results; default `data/planner`. Writable persistent directory required.
-- `FPL_PLANNER_DATASET`: projection JSON; default `dashboard/dashboard_data.json`.
-- `FPL_PLANNER_PROCESSED_DIR`: optional processed data directory for read/solve. Live Refresh targets repository data; clear override to use Refresh.
-- Solver projection CSV + settings remain under repository `data/`; Refresh regenerates Champion CSV. Mount whole `data/` for durable operational data.
-- Credentials: environment/host secret configuration; `.env` for local use. Root-level Streamlit secrets supported by Streamlit environment integration. Secrets file excluded from git/image.
-- Run one app process for single manager; all heavy jobs share exclusive queue. Multiple browser tabs supported: stale draft writes rejected with reload action. Multiple workers/managers require coordinated durable jobs/storage before enabling them. Run one launcher at a time against shared storage.
-- Explorer What-If browser-session state; reset on new session. Dream Team + advanced results persisted separately; no implicit planner replacement.
+```bash
+# Default: single arm, no-hit (weekly_hit_limit=0), gap 0.0
+uv run python -m commands.solve
 
-## Container Preparation
+# Allow hits (e.g., up to 1 hit per week)
+uv run python -m commands.solve --allow-hits --hit-limit 1
 
-`Dockerfile` installs locked Python 3.14 runtime dependencies and Playwright Chromium for auth fallback. `.dockerignore` excludes private operational data, credentials, session token, drafts, and local caches. Official season archives + code included. Image build not verified on current Windows host: Docker/WSL unavailable.
-
-When deployment requested, validate locally on Docker-enabled host:
-
-```sh
-docker build -t fpl-dashboard .
-docker run --rm -p 127.0.0.1:8501:8501 --env-file .env -v fpl-planner-data:/app/data fpl-dashboard
+# Run all 3 arms (Optimal, No Hit, Conservative) into transfer_plan_scenarios.json
+uv run python -m commands.solve --scenarios
 ```
 
-Named volume persists drafts, solver jobs/results, auth cache, and processed data. Browser restart restores draft; process restart marks unfinished job interrupted. Completed results remain available. For remote access, deploy behind authenticated private hosting; configure host access before exposing service. Hosting provider + durable volume choice deferred.
+## Streamlit Community Cloud Deployment
 
-## Streamlit Community Cloud Option
+Entrypoint: `streamlit_app.py`. Python runtime: `>=3.12` (configured in `pyproject.toml`).
 
-Entrypoint: `streamlit_app.py`; dependency source: `uv.lock` ([supported dependency files](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies)). Target Python 3.14; confirm host version support before selecting it. Configure app as private + credentials through host secrets. Streamlit Cloud local filesystem not durable across redeployment; current file-backed app requires storage adaptation before relying on saved plans there. Playwright Chromium installation and actual MILP memory/runtime require host validation. Prepared Docker path uses same app + persistent volume; Linux image build unverified on current host.
+### Steps for Free Cloud Hosting:
+1. Connect GitHub repository to Streamlit Community Cloud.
+2. Select main branch, `streamlit_app.py` as main file path.
+3. Deploy. No private credentials needed.
+4. Optional secrets in Streamlit Cloud Dashboard (Settings → Secrets):
+   - `ADMIN_KEY`: Password to gate public data refresh in web sidebar.
+   - `GITHUB_TOKEN`: Fine-grained personal access token with Contents: Read & write permission.
+   - `GITHUB_REPOSITORY`: `owner/repo-name`.
+   When `ADMIN_KEY`, `GITHUB_TOKEN`, and `GITHUB_REPOSITORY` are configured, authorized admin can trigger "Refresh Public Data" in sidebar, which refreshes official FPL data and commits updated `dashboard/dashboard_data.json` directly back to GitHub repository.
 
-Sources: [Cloud deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy), [dependencies](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies), [private sharing](https://docs.streamlit.io/deploy/streamlit-community-cloud/share-your-app), [Docker](https://docs.streamlit.io/deploy/tutorials/docker).
+## Configuration & Storage
+
+- `FPL_PLANNER_STORAGE`: Drafts, preferences, job records; default `data/planner`.
+- `FPL_PLANNER_DATASET`: Projection JSON; default `dashboard/dashboard_data.json`.
+- `ADMIN_KEY`: Optional admin authorization key for triggering public data refresh.
+- `GITHUB_TOKEN` / `GITHUB_REPOSITORY`: Optional GitHub API token/repository for persisting refreshed dataset back to git repo.

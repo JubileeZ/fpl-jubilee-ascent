@@ -300,6 +300,7 @@ def build_dashboard_dataset(
     horizon: int,
     solution_path: Optional[Path] = None,
     default_model_name: Optional[str] = None,
+    with_squad: bool = False,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
     horizon = clamp_planning_horizon(horizon)
@@ -319,10 +320,14 @@ def build_dashboard_dataset(
     model_names = list(model_preds_map.keys())
     primary_model_name = default_model_name if default_model_name in model_preds_map else model_names[0]
 
-    owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = load_owned_picks(
-        processed_dir
-    )
-    itb, free_transfers = load_user_state(processed_dir)
+    if with_squad:
+        owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = load_owned_picks(
+            processed_dir
+        )
+        itb, free_transfers = load_user_state(processed_dir)
+    else:
+        owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = [], None, None, {}
+        itb, free_transfers = 0.0, 1
 
     unfinished_gws = unfinished_gameweeks(processed_dir)
     horizon_start = int(target_gw)
@@ -515,7 +520,7 @@ def build_dashboard_dataset(
         }
         players_data.append(player_dict)
 
-    user_chips = load_user_chips(processed_dir)
+    user_chips = load_user_chips(processed_dir) if with_squad else []
     _ = solution_path
     plan_start = resolve_default_target_gw(processed_dir)
     plan_gws = planning_gameweeks(plan_start, MAX_PLANNING_HORIZON)
@@ -570,6 +575,7 @@ def run_dashboard_export(
     target_gw: int | None = None,
     model_names: list[str] | None = None,
     output_path: Path | None = None,
+    with_squad: bool = False,
 ) -> Path:
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     if not (processed_dir / "players.parquet").exists():
@@ -610,6 +616,7 @@ def run_dashboard_export(
         target_gw,
         horizon,
         default_model_name=default_model,
+        with_squad=with_squad,
     )
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
@@ -648,6 +655,13 @@ def main() -> None:
         default=PROJECT_ROOT / "data" / "dashboard_data.json",
         help="JSON output path",
     )
+    parser.add_argument(
+        "--with-squad",
+        "--with_squad",
+        action="store_true",
+        default=False,
+        help="Include personal User Squad picks in exported dataset (default: False)",
+    )
     args = parser.parse_args()
 
     run_dashboard_export(
@@ -656,6 +670,7 @@ def main() -> None:
         target_gw=args.target_gw,
         model_names=args.models,
         output_path=args.output,
+        with_squad=args.with_squad,
     )
 
 

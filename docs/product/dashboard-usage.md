@@ -1,6 +1,6 @@
 # Using the Dashboard
 
-One Streamlit application: Transfer Planner, Explorer, Research, Model Methodology. Local planning only; dashboard edits never submit transfers to FPL. Hosting deferred. [Launch and deployment preparation](streamlit-planner-deployment.md).
+One Streamlit application: Explorer (with Watchlist & Dream Team), Research, Model Methodology. Public scouting and analytics; no credentials required. Transfer planning runs exclusively via CLI (`uv run python -m commands.solve`). [Launch and deployment preparation](streamlit-planner-deployment.md).
 
 ## Start locally
 
@@ -19,13 +19,11 @@ Open `http://127.0.0.1:8000`. Keep terminal running; Ctrl+C stops application. W
 
 Existing environment requires no Administrator access. Alternate `uv run python -m commands.streamlit_planner` opens same application on port 8501. Run one launcher at a time against shared storage. `--no-browser` prevents automatic browser opening; `--port 8001` selects another dashboard port.
 
-Fresh setup: copy `.env.example` to local `.env`; configure `FPL_EMAIL` and `FPL_PASSWORD` for authenticated User Squad ingestion. Browser authentication fallback requires installed Playwright Chromium (`uv run playwright install chromium`). Existing cached data works without reinstalling dependencies or browser runtime.
-
-Open Transfer Planner and click **Refresh** to ingest current FPL data and rebuild projections. Wait for job completion. Without authenticated User Squad, Explorer can inspect available public projections; planner and Squad What-If require squad ingestion. Refresh needs network access; viewing cached data does not trigger live ingestion.
+Explorer displays public projections and player statistics. Data refresh is available in the sidebar (gated by optional Admin Key). Transfer plan optimization is performed via CLI.
 
 ## Navigate and resize
 
-Navigation starts collapsed. Open with upper-left chevron; choose workspace; close with sidebar chevron to recover content width. First visit opens Transfer Planner; later visits restore last workspace.
+Navigation starts collapsed. Open with upper-left chevron; choose workspace; close with sidebar chevron to recover content width. First visit opens Explorer; later visits restore last workspace.
 
 Narrow windows stack controls, Player groups, and charts. Scroll vertically; tables and long equations scroll within their own area. Advanced controls remain in expanders. Player dialogs use **Back to squad** or **Back to Explorer**, close button, or Escape. Tab moves focus; Enter activates focused buttons.
 

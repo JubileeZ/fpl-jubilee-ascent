@@ -43,8 +43,8 @@ docs/          # Durable project documentation and decision records
 | `uv run pytest` | Run test suite |
 | `bash tests/verify.sh` | Run delivery gate check |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
-| `uv run python -m commands.dashboard` | Complete Streamlit dashboard @ `http://127.0.0.1:8000`: Transfer Planner, Explorer, Research, Model Methodology. Open projects Primary if JSON stale. Editable planner + persisted scenarios/jobs; Explorer What-If separate; Dream Team + advanced strategy results isolated. Shared heavy-job queue. Apple utility design (ADR 0060). Proven 0% solver gap + caching (ADR 0057) |
-| `uv run python -m commands.solve` | CLI 3-arm Transfer Plan MILP (Optimal/No Hit/Conservative) → `data/transfer_plan_scenarios.json` and Rank 1 mirror → `data/solution.json`. Default proven gap 0.0 with deterministic digest caching; `--single` for single-plan; `--force` to re-solve |
+| `uv run python -m commands.dashboard` | Streamlit dashboard @ `http://127.0.0.1:8000`: Explorer (Watchlist & Dream Team), Research, Model Methodology. Public deployment ready without credentials. Shared heavy-job queue. Apple utility design (ADR 0060). |
+| `uv run python -m commands.solve` | CLI Transfer Plan MILP → `data/solution.json`. Default single-arm no-hit (weekly_hit_limit=0) gap 0.0 with deterministic digest caching; `--scenarios` for 3 arms; `--allow-hits` to permit hits; `--force` to re-solve |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-vaastav-dir <csv-dir>` | Frozen reconstruct of 2024-25 Season Archive only |
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |

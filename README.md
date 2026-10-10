@@ -1,6 +1,6 @@
 # FPL-Jubilee-Ascent
 
-FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product: one Streamlit dashboard with Transfer Planner, Explorer, Research, Model Methodology.
+FPL score projection and optimization engine. Ingests FPL API data, evaluates models via backtesting, generates transfer plans via MILP. Weekly product: Streamlit analytics dashboard with Explorer (Watchlist & Dream Team), Research, and Model Methodology; transfer plan optimization via CLI.
 
 ## Start the dashboard
 
@@ -9,15 +9,15 @@ uv sync --locked
 uv run python -m commands.dashboard
 ```
 
-Open `http://127.0.0.1:8000`. Configure local `.env` credentials, click **Refresh**, then **Generate plan**. Click Player for stats/projections, sell or bench separately, fill replacement slots, and inspect automatically selected legal XI. Drafts/results saved locally; edits never submit transfers to FPL.
+Open `http://127.0.0.1:8000`. Public analytics load immediately. Search and filter players in Explorer, track transfer targets in your interactive Watchlist, and run Dream Team optimization. Transfer planning runs privately via CLI (`uv run python -m commands.solve`).
 
 Navigation starts collapsed; open upper-left chevron to switch workspace. Smaller windows stack controls, Player groups, and charts; inspection opens focused dialog; tables scroll locally.
 
-Read [dashboard usage guide](docs/product/dashboard-usage.md) for complete workflow and recovery steps; [launch/deployment guide](docs/product/streamlit-planner-deployment.md) for setup and storage. Alternate `commands.streamlit_planner` launches same app on port 8501. Existing Windows environment requires no Administrator access: `.venv/Scripts/python.exe -m commands.dashboard`. Deployment deferred.
+Read [dashboard usage guide](docs/product/dashboard-usage.md) for complete workflow; [launch/deployment guide](docs/product/streamlit-planner-deployment.md) for Streamlit Community Cloud setup. Alternate `commands.streamlit_planner` launches same app on port 8501.
 
 ## Requirements
 
-- Python >= 3.14
+- Python >= 3.12
 - [uv](https://docs.astral.sh/uv/) for dependency and command management
 - Playwright Chromium only when browser-based FPL authentication is needed
 
@@ -76,7 +76,7 @@ uv run python -m commands.solve --horizon 5
 uv run python -m commands.report --horizon 5
 ```
 
-`commands.solve` writes `data/transfer_plan_scenarios.json`; Rank 1 mirrors to `data/solution.json`. Dashboard planner drafts/jobs live under `data/planner/`. Use CLI for preseason draft and advanced flags:
+`commands.solve` defaults to a single-arm no-hit MILP (`weekly_hit_limit=0`, gap 0.0) and writes to `data/solution.json`. Add `--scenarios` to solve all 3 scenario arms (Optimal, No Hit, Conservative) into `data/transfer_plan_scenarios.json`; add `--allow-hits` to permit transfer hits. Use CLI for preseason draft and advanced flags:
 
 ```bash
 uv run python -m commands.solve --preseason --xmin_lb 0

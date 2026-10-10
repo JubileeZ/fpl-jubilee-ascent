@@ -430,12 +430,17 @@ def test_build_dashboard_dataset_embeds_owned_squad_from_user_picks(tmp_path: Pa
          "xp_goals": 0.5, "xp_assists": 0.4, "xp_clean_sheet": 0.0, "xp_defcon": 0.0, "xp_bonus": 0.0},
     ])
     dataset = build_dashboard_dataset(
-        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path
+        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path, with_squad=True
     )
     assert dataset["meta"]["owned_squad_ids"] == [10, 20]
     assert dataset["meta"]["owned_captain_id"] == 20
     assert dataset["meta"]["owned_vice_captain_id"] == 10
     assert "prefilled_squad_ids" not in dataset["meta"]
+
+    impersonal = build_dashboard_dataset(
+        processed_dir, predictions, target_gw=1, horizon=5, solution_path=sol_path
+    )
+    assert impersonal["meta"]["owned_squad_ids"] == []
 
 
 def test_dashboard_contract_includes_itb_selling_price_and_event_components(tmp_path: Path) -> None:
@@ -485,7 +490,7 @@ def test_dashboard_contract_includes_itb_selling_price_and_event_components(tmp_
          "xp_minutes": 2.0, "xp_goals": 0.5, "xp_assists": 0.4, "xp_clean_sheet": 0.1,
          "xp_conceded": 0.0, "xp_defcon": 0.2, "xp_saves": 0.0, "xp_bonus": 0.3},
     ])
-    dataset = build_dashboard_dataset(processed_dir, predictions, target_gw=1, horizon=1)
+    dataset = build_dashboard_dataset(processed_dir, predictions, target_gw=1, horizon=1, with_squad=True)
     assert dataset["meta"]["itb"] == 0.5
     assert dataset["meta"]["free_transfers"] == 2
     haaland = next(p for p in dataset["players"] if p["id"] == 10)

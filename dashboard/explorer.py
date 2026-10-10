@@ -131,3 +131,33 @@ def compare_squads(dataset: dict[str, Any], model: str, gws: tuple[int, ...], sq
                      "Squad xP": squad_xp, "User Squad Expected": base_score, "What-If Expected": new_score,
                      "Difference": round(new_score - base_score, 2) if base_score is not None and new_score is not None else None})
     return rows
+
+
+def watchlist_rows(dataset: dict[str, Any], model: str, gws: tuple[int, ...], watchlist_ids: list[int]) -> list[dict[str, Any]]:
+    players = {int(p["id"]): p for p in dataset.get("players", [])}
+    rows = []
+    for pid in watchlist_ids:
+        player = players.get(pid)
+        if not player:
+            continue
+        base = player_slice(player, model, gws)
+        row = {
+            "ID": pid,
+            "Player": player["name"],
+            "Club": player.get("team", ""),
+            "Position": player.get("pos", ""),
+            "Price": f"£{float(player['price']):.1f}m",
+            "xP": round(base["xP"], 1) if base["xP"] is not None else None,
+            "xP / GW": round(base["xP / GW"], 2) if base["xP / GW"] is not None else None,
+            "xMins / GW": round(base["xMins / GW"], 1) if base["xMins / GW"] is not None else None,
+        }
+        for gw in gws:
+            cell = projections(player, model).get(f"gw{gw}", {})
+            fix_text = cell.get("fixture_label") or cell.get("opponent", "-")
+            xp_cell = f"{float(cell['total_xp']):.1f}" if cell.get("total_xp") is not None else "-"
+            diff = cell.get("difficulty")
+            diff_str = f" [FDR {diff:.1f}]" if diff is not None else ""
+            row[f"GW{gw}"] = f"{fix_text} ({xp_cell} xP{diff_str})"
+        rows.append(row)
+    return rows
+

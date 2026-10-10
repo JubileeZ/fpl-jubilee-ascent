@@ -215,7 +215,26 @@ def test_solve_cli_model_champion_string_uses_champion() -> None:
     assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 
 
-def test_solve_cli_defaults_to_3_arm_scenarios(capsys: pytest.CaptureFixture[str]) -> None:
+def test_solve_cli_defaults_to_single_arm_no_hit_gap_zero(capsys: pytest.CaptureFixture[str]) -> None:
+    plan = {
+        "meta": {"solver_objective": 12.0},
+        "summary": "Single plan summary (no-hit, gap 0.0)",
+    }
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
+         patch("commands.solve.execute_transfer_plan", return_value=plan) as mock_single, \
+         patch("sys.argv", ["commands.solve", "--target_gw", "6"]):
+        main()
+        mock_single.assert_called_once()
+        options_passed = mock_single.call_args.args[0]
+        assert options_passed["weekly_hit_limit"] == 0
+        assert options_passed["gap"] == 0.0
+
+    captured = capsys.readouterr().out
+    assert "Single plan summary (no-hit, gap 0.0)" in captured
+    assert "TRANSFER PLAN SCENARIOS" not in captured
+
+
+def test_solve_cli_scenarios_flag_runs_3_arm_scenarios(capsys: pytest.CaptureFixture[str]) -> None:
     fake_scenarios_payload = {
         "meta": {"status": "ok", "arms": ["optimal", "no_hit", "conservative"], "data_digest": "abcdef12"},
         "scenarios": [
@@ -248,7 +267,7 @@ def test_solve_cli_defaults_to_3_arm_scenarios(capsys: pytest.CaptureFixture[str
 
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
          patch("commands.transfer_plan_scenarios.execute_transfer_plan_scenarios", return_value=fake_scenarios_payload) as mock_scenarios, \
-         patch("sys.argv", ["commands.solve", "--target_gw", "6"]):
+         patch("sys.argv", ["commands.solve", "--scenarios", "--target_gw", "6"]):
         main()
         mock_scenarios.assert_called_once()
 
