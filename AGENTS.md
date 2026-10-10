@@ -129,7 +129,7 @@ JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`
 ## Harness Safety
 
 - Safety-hook deny: explain block; give exact manual command/content; leave hook unchanged (do not execute blocked action). Never emit multi-line heredocs (`cat << 'EOF'`); use single-line commands or write payload to temporary scratch files.
-- Work Packets only in `.agents/`: `.agents/work-packets/` contains only `*.md` Work Packets. Code files, scripts, or executables in `.agents/` strictly forbidden.
+- Work Packets only in `.agents/`: `.agents/work-packets/` contains only `*.md` Work Packets; code files, scripts, or executables in `work-packets/` strictly forbidden. Project skills under `.agents/skills/` may contain skill assets and scripts.
 
 ---
 

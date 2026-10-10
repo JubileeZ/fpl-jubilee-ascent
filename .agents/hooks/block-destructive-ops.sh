@@ -27,15 +27,15 @@ fi
 
 # 1. Protect hooks and .agents configuration from being modified via file writing tools
 if [[ "$tool_name" =~ ^(write_to_file|replace_file_content|multi_replace_file_content|write_file|edit_file)$ ]]; then
-  # Deny direct modifications to hook scripts or configurations
-  if [[ "$target_file" =~ (hooks\.json|hooks/|\.cursor/hooks) ]]; then
+  # Deny direct modifications to hook scripts or configurations in active repository
+  if ! [[ "$target_file" =~ (^|/)templates/ ]] && [[ "$target_file" =~ (hooks\.json|\.agents/hooks/|\.cursor/hooks) ]]; then
     printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
     exit 0
   fi
-  # Whitelist strictly .agents/work-packets/*.md and .agents/handoff-pointer under .agents/
-  if [[ "$target_file" =~ \.agents ]]; then
-    if ! [[ "$target_file" =~ (^|/)\.agents/(work-packets/[a-zA-Z0-9_.-]+\.md|handoff-pointer)$ ]]; then
-      printf '{"decision":"deny","reason":"Modifying safety-gate configuration or non-packet files in .agents is not allowed. Only .agents/work-packets/*.md and .agents/handoff-pointer may be edited by agents."}\n'
+  # Whitelist strictly .agents/work-packets/*.md, .agents/handoff-pointer, and .agents/skills/ under .agents/
+  if ! [[ "$target_file" =~ (^|/)templates/ ]] && [[ "$target_file" =~ (^|/)\.agents/ ]]; then
+    if ! [[ "$target_file" =~ (^|/)\.agents/(work-packets/[a-zA-Z0-9_.-]+\.md|handoff-pointer|skills/.*|rules/.*)$ ]]; then
+      printf '{"decision":"deny","reason":"Modifying safety-gate configuration or non-whitelisted files in .agents is not allowed. Only .agents/work-packets/*.md, .agents/handoff-pointer, and .agents/skills/ may be edited by agents."}\n'
       exit 0
     fi
   fi
@@ -56,18 +56,18 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
   fi
 
   # Block modifying safety hooks, hook configs, or .cursor hooks
-  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])((rm|mv|cp|sed|echo|tee|chmod|write|overwrite|touch)[[:space:]]+|>|>>|git[[:space:]]+(checkout|reset|clean|revert)[[:space:]]+).*(hooks\.json|hooks/|\.cursor)'; then
+  if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])((rm|mv|cp|sed|echo|tee|chmod|write|overwrite|touch)[[:space:]]+|>|>>|git[[:space:]]+(checkout|reset|clean|revert)[[:space:]]+).*(hooks\.json|\.agents/hooks|\.cursor/hooks)'; then
     printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
     exit 0
   fi
 
-  # Block modifying .agents generally, unless strictly targeting .agents/work-packets/*.md or .agents/handoff-pointer
+  # Block modifying .agents generally, unless strictly targeting work-packets, handoff-pointer, or skills
   if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])((rm|mv|cp|sed|echo|tee|chmod|write|overwrite|touch)[[:space:]]+|>|>>|git[[:space:]]+(checkout|reset|clean|revert)[[:space:]]+).*\.agents'; then
-    if printf '%s' "$cmd" | grep -qE 'rm[[:space:]]+.*(-[a-zA-Z]*[rR]|--recursive).*\.agents'; then
+    if printf '%s' "$cmd" | grep -qE 'rm[[:space:]]+.*(-[a-zA-Z]*[rR]|--recursive)[[:space:]]+.*(^|[[:space:]]|/)(\.agents|\.agents/)[[:space:]]*($|[;&|])'; then
       printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
       exit 0
     fi
-    stripped=$(printf '%s' "$cmd" | sed -E 's/\.agents\/(work-packets\/[a-zA-Z0-9_.-]+\.md|handoff-pointer)//g')
+    stripped=$(printf '%s' "$cmd" | sed -E 's/templates\/[a-zA-Z0-9_./-]*\.agents[a-zA-Z0-9_./-]*//g' | sed -E 's/\.agents\/(work-packets\/[a-zA-Z0-9_.-]+\.md|handoff-pointer|skills\/[a-zA-Z0-9_./-]+)//g')
     if printf '%s' "$stripped" | grep -q '\.agents'; then
       printf '{"decision":"deny","reason":"Modifying safety-gate configuration or hooks is not allowed. Apply edits to these files manually if needed."}\n'
       exit 0
