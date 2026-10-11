@@ -27,12 +27,16 @@ def player_slice(player: dict[str, Any], model: str, gws: tuple[int, ...], assum
     metrics = aggregate_slice(scores, gws)
     points_available = all(cell.get("total_xp") is not None for cell in cells)
     minutes_available = all(cell.get("xmins") is not None for cell in cells)
+    goals_available = all(cell.get("xp_goals") is not None for cell in cells)
+    assists_available = all(cell.get("xp_assists") is not None for cell in cells)
+    gi_available = goals_available and assists_available
     return {"ID": int(player["id"]), "Player": player["name"], "Club": player.get("team", "Unavailable"),
             "Position": player.get("pos", ""), "Price": float(player["price"]),
             "Ownership %": player.get("ownership_pct"), "Projection": "Available" if points_available and minutes_available else "Unavailable",
             "xP": metrics.total if points_available else None, "xP / GW": metrics.per_gameweek if points_available else None,
             "xP / 90": metrics.rate_per_90 if points_available and minutes_available else None,
             "xMins / GW": metrics.avg_minutes if minutes_available else None,
+            "xp_gi": round(metrics.xp_goals + metrics.xp_assists, 2) if gi_available else None,
             **{key: getattr(metrics, key) if all(cell.get(key) is not None for cell in cells) else None for key in COMPONENT_KEYS}}
 
 

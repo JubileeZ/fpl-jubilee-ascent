@@ -264,3 +264,99 @@ def test_player_history_enhanced_columns(tmp_path: Path) -> None:
     assert history[0]["pts_per_90"] == 10.0
 
 
+def test_explorer_player_slice_computes_xp_gi() -> None:
+    data = dataset()
+    p = data["players"][0]
+    for gw in range(6, 12):
+        p["projections"][f"gw{gw}"] = {
+            "total_xp": 5.0,
+            "xmins": 90.0,
+            "xp_goals": 2.0,
+            "xp_assists": 1.5,
+            "xp_clean_sheet": 0.0,
+        }
+    row = player_slice(p, "Champion", tuple(range(6, 12)))
+    assert row["xp_goals"] == 12.0
+    assert row["xp_assists"] == 9.0
+    assert row["xp_gi"] == 21.0
+
+
+def test_explorer_table_view_presets_and_hidden_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = dataset()
+    for p in data["players"]:
+        for gw in range(6, 12):
+            p["projections"][f"gw{gw}"] = {
+                "total_xp": 4.0,
+                "xmins": 85.0,
+                "xp_goals": 1.0,
+                "xp_assists": 0.5,
+                "xp_clean_sheet": 1.0,
+                "xp_defcon": 0.5,
+            }
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    assert not app.exception
+
+    # Check segmented control exists
+    preset_ctrl = app.segmented_control(key="explorer-table-preset")
+    assert preset_ctrl is not None
+    assert preset_ctrl.value == "Overview"
+
+    # Check dataframe columns in Overview
+    df = next(d for d in app.dataframe if d.key == "explorer-table")
+    cols = df.value.columns.tolist()
+    assert "ID" not in cols
+    assert "Bubble Size" not in cols
+    assert "Player" in cols
+    assert "xP GI" in cols
+    assert "xP CS" in cols
+
+    # Switch to Attacking view preset
+    preset_ctrl.set_value("Attacking").run()
+    assert not app.exception
+    df_atk = next(d for d in app.dataframe if d.key == "explorer-table")
+    atk_cols = df_atk.value.columns.tolist()
+    assert "ID" not in atk_cols
+    assert "xP GI" in atk_cols
+    assert "xP Goals" in atk_cols
+    assert "xP Assists" in atk_cols
+    assert "xP CS" not in atk_cols
+
+    # Switch to Defensive view preset
+    preset_ctrl.set_value("Defensive").run()
+    assert not app.exception
+    df_def = next(d for d in app.dataframe if d.key == "explorer-table")
+    def_cols = df_def.value.columns.tolist()
+    assert "ID" not in def_cols
+    assert "xP CS" in def_cols
+    assert "xP DefCon" in def_cols
+    assert "xP Goals" not in def_cols
+
+
+def test_explorer_action_bar_inspect_trigger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    assert not app.exception
+
+    # Select player 7
+    app.session_state["explorer-player"] = 7
+    app.run()
+    assert not app.exception
+    # Action bar inspect button appears and clicking it opens the dialog
+    btn = next(b for b in app.button if b.key == "explorer-inspect-btn")
+    assert btn is not None
+    btn.click().run()
+    assert not app.exception
+    assert app.session_state["explorer-inspection"] is True
+    assert len(app.get("dialog")) == 1
+
+
+

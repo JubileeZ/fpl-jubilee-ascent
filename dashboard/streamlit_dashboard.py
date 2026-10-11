@@ -436,7 +436,6 @@ def select_explorer_player(key: str, ids: list[int] | None = None) -> None:
         st.session_state["explorer-player"] = int(selection["points"][-1]["customdata"][0])
     else:
         return
-    st.session_state["explorer-inspection"] = True
 
 
 def render_watchlist(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
@@ -581,14 +580,92 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
                     )
             if scale_bubble:
                 st.caption("Bubble size indicates expected minutes per Gameweek (xMins / GW). Larger bubbles represent higher projected minutes.")
-        visible = frame.drop(columns=[col for col in list(COMPONENT_KEYS) + ["Bubble Size"] if col in frame.columns])
-        essential = ["Player", "Position", "Price", "xP", "xP / GW", "Club"]
-        st.dataframe(visible, column_order=[*essential, *(name for name in visible.columns if name not in essential)], hide_index=True, width="stretch", on_select=lambda: select_explorer_player("explorer-table", frame["ID"].tolist()), selection_mode="single-row", key="explorer-table")
+        rename_map = {
+            "xp_gi": "xP GI",
+            "xp_goals": "xP Goals",
+            "xp_assists": "xP Assists",
+            "xp_clean_sheet": "xP CS",
+            "xp_defcon": "xP DefCon",
+            "xp_conceded": "xP Conceded",
+            "xp_saves": "xP Saves",
+            "xp_bonus": "xP Bonus",
+        }
+        for src, dst in rename_map.items():
+            if src in frame.columns:
+                frame[dst] = frame[src]
+        table_view = st.segmented_control(
+            "Table view",
+            ["Overview", "Attacking", "Defensive", "All Components"],
+            default="Overview",
+            key="explorer-table-preset",
+            label_visibility="collapsed",
+        ) or "Overview"
+        preset_cols = {
+            "Overview": ["Player", "Club", "Position", "Price", "xP", "xP / GW", "xP GI", "xP CS", "xMins / GW", "Ownership %"],
+            "Attacking": ["Player", "Club", "Position", "Price", "xP", "xP GI", "xP Goals", "xP Assists", "xMins / GW", "Ownership %"],
+            "Defensive": ["Player", "Club", "Position", "Price", "xP", "xP CS", "xP DefCon", "xP Conceded", "xMins / GW", "Ownership %"],
+            "All Components": ["Player", "Club", "Position", "Price", "xP", "xP / GW", "xP GI", "xP Goals", "xP Assists", "xP CS", "xP DefCon", "xP Conceded", "xP Saves", "xP Bonus", "xMins / GW", "Ownership %"],
+        }
+        cols_for_view = list(preset_cols.get(table_view, preset_cols["Overview"]))
+        if has_user_squad and "Squad" in frame.columns and "Squad" not in cols_for_view:
+            cols_for_view.insert(3, "Squad")
+        if "Dream Team" in frame.columns and "Dream Team" not in cols_for_view:
+            cols_for_view.append("Dream Team")
+        visible_cols = [c for c in cols_for_view if c in frame.columns]
+        visible = frame[visible_cols]
+        selected_pid = st.session_state.get("explorer-player")
+        selected_player = next((p for p in dataset["players"] if p["id"] == selected_pid), None) if selected_pid else None
+        with st.container(key="explorer-action-bar"):
+            bar_cols = st.columns([3, 1, 1], vertical_alignment="center")
+            if selected_player:
+                p_name = selected_player["name"]
+                p_club = selected_player.get("team", "")
+                p_pos = selected_player.get("pos", "")
+                p_price = float(selected_player.get("price", 0.0))
+                p_slice = player_slice(selected_player, model, gws)
+                xp_disp = f"{p_slice['xP']:.1f}" if p_slice.get("xP") is not None else "—"
+                bar_cols[0].markdown(f"**Selected:** {p_name} ({p_club} · {p_pos} · £{p_price:.1f}m) · **xP:** {xp_disp}")
+                if bar_cols[1].button("🔍 Inspect Details", key="explorer-inspect-btn", type="primary"):
+                    st.session_state["explorer-player"] = selected_pid
+                    st.session_state["explorer-inspection"] = True
+                    st.rerun()
+                wl = st.session_state.get("watchlist", [])
+                is_wl = selected_pid in wl
+                wl_label = "⭐ Remove" if is_wl else "⭐ Watchlist"
+                if bar_cols[2].button(wl_label, key="explorer-bar-watchlist"):
+                    if is_wl:
+                        st.session_state["watchlist"] = [i for i in wl if i != selected_pid]
+                    else:
+                        st.session_state["watchlist"] = [*wl, selected_pid]
+                    st.rerun()
+            else:
+                bar_cols[0].caption("💡 Select any player row in the table below to inspect details or manage watchlist.")
+        column_config = {
+            "Price": st.column_config.NumberColumn("Price", format="£%.1fm"),
+            "xP": st.column_config.NumberColumn("xP", format="%.2f"),
+            "xP / GW": st.column_config.NumberColumn("xP / GW", format="%.2f"),
+            "xP / 90": st.column_config.NumberColumn("xP / 90", format="%.2f"),
+            "xP GI": st.column_config.NumberColumn("xP GI", format="%.2f", help="Projected points from goal involvement (goals + assists)"),
+            "xP Goals": st.column_config.NumberColumn("xP Goals", format="%.2f", help="Projected points from goals scored"),
+            "xP Assists": st.column_config.NumberColumn("xP Assists", format="%.2f", help="Projected points from assists"),
+            "xP CS": st.column_config.NumberColumn("xP CS", format="%.2f", help="Projected points from clean sheets"),
+            "xP DefCon": st.column_config.NumberColumn("xP DefCon", format="%.2f", help="Projected points from defensive contributions"),
+            "xP Conceded": st.column_config.NumberColumn("xP Conceded", format="%.2f", help="Projected deductions from goals conceded"),
+            "xP Saves": st.column_config.NumberColumn("xP Saves", format="%.2f", help="Projected points from saves (GKP)"),
+            "xP Bonus": st.column_config.NumberColumn("xP Bonus", format="%.2f", help="Projected bonus points"),
+            "xMins / GW": st.column_config.NumberColumn("xMins / GW", format="%.1f"),
+            "Ownership %": st.column_config.NumberColumn("Ownership %", format="%.1f%%"),
+        }
+        st.dataframe(
+            visible,
+            column_config=column_config,
+            hide_index=True,
+            width="stretch",
+            on_select=lambda: select_explorer_player("explorer-table", frame["ID"].tolist()),
+            selection_mode="single-row",
+            key="explorer-table",
+        )
         st.download_button("Download filtered Players", visible.to_csv(index=False), "explorer-players.csv", "text/csv")
-        pid = st.selectbox("Inspect Player", frame["ID"].tolist(), format_func=lambda pid: next(player["name"] for player in dataset["players"] if player["id"] == pid), index=frame["ID"].tolist().index(st.session_state["explorer-player"]) if st.session_state.get("explorer-player") in frame["ID"].tolist() else 0, key=f"explorer-inspect-{st.session_state.get('explorer-player')}")
-        if st.button("View player details", key="explorer-view-details"):
-            st.session_state["explorer-player"] = pid
-            st.session_state["explorer-inspection"] = True
     else:
         st.info("No Players match these filters. Widen price, minutes, or search.")
     st.divider()
