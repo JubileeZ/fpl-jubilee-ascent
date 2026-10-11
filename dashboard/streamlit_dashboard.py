@@ -20,10 +20,12 @@ from dashboard.planner import POSITION_NAMES, PlanStore
 from dashboard.planner_jobs import PlannerJobs
 from dashboard.planner_service import PlannerPaths, PROJECT_ROOT, load_dataset, player_history, source_digest
 from models import get_default_model_name
+from models.scoring_matrix import Position, _CLEAN_SHEET_POINTS, _GOAL_POINTS
 from projections.explorer_slice import COMPONENT_KEYS
 from dashboard.presentation import availability, fixture
 
 PAGES = ("Explorer", "Research", "Model Methodology")
+POS_ID_TO_CODE: dict[int, Position] = {1: "GK", 2: "D", 3: "M", 4: "F"}
 
 
 def start_tool(request: dict[str, Any], paths: PlannerPaths, jobs: PlannerJobs) -> None:
@@ -71,26 +73,297 @@ def tool_result(kind: str, paths: PlannerPaths, jobs: PlannerJobs) -> dict[str, 
     return job
 
 
-def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths) -> None:
+def format_rate_delta(pred: float | None, actual: float | None, baseline_label: str, fallback_label: str = "Model projection") -> str:
+    if pred is not None and actual is not None and actual > 0.05:
+        delta_pct = (pred - actual) / actual * 100.0
+        return f"{delta_pct:+.0f}% vs season {baseline_label}"
+    return fallback_label
+
+
+def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths, dataset: dict[str, Any] | None = None) -> None:
     st.subheader(player.get("full_name") or player["name"])
-    st.caption(f"{player.get('team_full', player.get('team', ''))} · {POSITION_NAMES[player['pos_id']]} · £{player['price']:.1f}m")
-    st.write(availability(player))
-    if player.get("news"):
-        st.write(player["news"])
+    pos_name = POSITION_NAMES.get(player.get("pos_id"), player.get("pos", ""))
+    price_val = float(player.get("price", 0.0))
+    st.caption(f"{player.get('team_full', player.get('team', ''))} · {pos_name} · £{price_val:.1f}m")
+
+    avail_text = availability(player)
+    chance = player.get("chance")
+    if chance is not None and int(chance) < 100:
+        st.warning(f"⚠️ Availability: {avail_text} — {player.get('news') or 'Reported doubt'}")
+    else:
+        st.write(avail_text)
+        if player.get("news"):
+            st.write(player["news"])
+
+    cells = [projections(player, model).get(f"gw{gw}", {}) for gw in gws]
+    total_xp = sum(float(cell.get("total_xp") or 0) for cell in cells) if any(cell.get("total_xp") is not None for cell in cells) else None
+    total_xmins = sum(float(cell.get("xmins") or 0) for cell in cells) if any(cell.get("xmins") is not None for cell in cells) else None
+    avg_xmins = (total_xmins / len(gws)) if total_xmins is not None and len(gws) > 0 else None
+    xp_per_m = (total_xp / price_val) if (total_xp is not None and price_val > 0) else None
+
+    rank = None
+    pos_total = None
+    pos_avg_efficiency = None
+    top_peer = None
+    if dataset and "players" in dataset:
+        pos_players = [p for p in dataset["players"] if p.get("pos_id") == player.get("pos_id")]
+        pos_total = len(pos_players)
+
+        def calculate_player_xp(target_player: dict[str, Any]) -> float:
+            target_cells = [projections(target_player, model).get(f"gw{gw}", {}) for gw in gws]
+            return sum(float(c.get("total_xp") or 0) for c in target_cells)
+
+        sorted_pos = sorted(pos_players, key=calculate_player_xp, reverse=True)
+        rank = next((i + 1 for i, p in enumerate(sorted_pos) if p["id"] == player["id"]), None)
+        valid_eff = [calculate_player_xp(p) / float(p["price"]) for p in pos_players if float(p.get("price", 0)) > 0 and calculate_player_xp(p) > 0]
+        if valid_eff:
+            pos_avg_efficiency = sum(valid_eff) / len(valid_eff)
+
+        bracket_peers = [p for p in sorted_pos if p["id"] != player["id"] and abs(float(p.get("price", 0)) - price_val) <= 0.6]
+        if not bracket_peers:
+            bracket_peers = [p for p in sorted_pos if p["id"] != player["id"] and abs(float(p.get("price", 0)) - price_val) <= 1.1]
+        if not bracket_peers:
+            bracket_peers = sorted([p for p in sorted_pos if p["id"] != player["id"]], key=lambda p: abs(float(p.get("price", 0)) - price_val))
+        top_peer = bracket_peers[0] if bracket_peers else None
+
+    st.markdown("#### Selection Verdict")
+    col_xp, col_mins, col_value, col_rank = st.columns(4)
+    with col_xp:
+        st.metric(
+            "Projected xP",
+            f"{total_xp:.1f}" if total_xp is not None else "N/A",
+            f"{total_xp / len(gws):.2f} / GW" if total_xp is not None and gws else None,
+        )
+    with col_mins:
+        participation_pct = (avg_xmins / 90.0 * 100.0) if avg_xmins is not None else None
+        st.metric(
+            "xMins",
+            f"{avg_xmins:.0f}m / GW" if avg_xmins is not None else "N/A",
+            f"{participation_pct:.0f}% participation" if participation_pct is not None else None,
+            delta_color="off",
+        )
+    with col_value:
+        diff_str = f"vs {pos_avg_efficiency:.2f} avg" if pos_avg_efficiency is not None else None
+        st.metric(
+            "xP / £m",
+            f"{xp_per_m:.2f}" if xp_per_m is not None else "N/A",
+            diff_str,
+            delta_color="normal" if pos_avg_efficiency is not None and xp_per_m is not None and xp_per_m >= pos_avg_efficiency else "inverse",
+        )
+    with col_rank:
+        st.metric(
+            "Position Rank",
+            f"#{rank} of {pos_total}" if rank and pos_total else "—",
+            f"{pos_name} by xP",
+            delta_color="off",
+        )
+
+    verdict_badges = []
+    if rank == 1:
+        verdict_badges.append("🏆 #1 at Position")
+    elif rank is not None and rank <= 3:
+        verdict_badges.append(f"⭐ Top 3 {pos_name}")
+
+    if pos_avg_efficiency is not None and xp_per_m is not None:
+        if xp_per_m >= pos_avg_efficiency * 1.15:
+            verdict_badges.append("💎 High Value Efficiency")
+        elif xp_per_m < pos_avg_efficiency * 0.85:
+            verdict_badges.append("⚠️ Low Value Efficiency")
+
+    if avg_xmins is not None:
+        if avg_xmins >= 75.0:
+            verdict_badges.append("🟢 High Minutes Reliability")
+        elif avg_xmins >= 50.0:
+            verdict_badges.append("🟡 Moderate Minutes Reliability")
+        else:
+            verdict_badges.append("🔴 Low Minutes Reliability")
+
+    chance = player.get("chance")
+    if chance is not None and int(chance) < 100:
+        verdict_badges.append(f"⚠️ Availability Risk ({chance}%)")
+
+    if verdict_badges:
+        st.caption(" · ".join(f"**{b}**" for b in verdict_badges))
+
+    if top_peer:
+        peer_xp = calculate_player_xp(top_peer)
+        peer_name = top_peer.get("full_name") or top_peer["name"]
+        peer_club = top_peer.get("team_full") or top_peer.get("team", "")
+        peer_price = float(top_peer.get("price", 0))
+        col_peer_text, col_peer_btn = st.columns([3, 2])
+        with col_peer_text:
+            st.caption(f"Top alternative at £{price_val:.1f}m: **{peer_name}** ({peer_club} · £{peer_price:.1f}m · {peer_xp:.1f} xP)")
+        with col_peer_btn:
+            if st.button(f"⚡ Compare with {top_peer['name']}", key="details-compare-peer"):
+                st.session_state["scout-shortlist"] = [player["id"], top_peer["id"]]
+                st.session_state.pop("scout-compare", None)
+                close_explorer_inspection()
+                st.rerun()
+
+
+    st.markdown("#### Projected Point Components & Rate Reality Check")
+    comp_sums = {
+        "Appearance": sum(float(cell.get("xp_minutes") or 0) for cell in cells),
+        "Goals": sum(float(cell.get("xp_goals") or 0) for cell in cells),
+        "Assists": sum(float(cell.get("xp_assists") or 0) for cell in cells),
+        "Clean Sheet": sum(float(cell.get("xp_clean_sheet") or 0) for cell in cells),
+        "Bonus": sum(float(cell.get("xp_bonus") or 0) for cell in cells),
+        "Def / Other": sum(float(cell.get("xp_saves") or 0) + float(cell.get("xp_defcon") or 0) + float(cell.get("xp_conceded") or 0) for cell in cells),
+    }
+
+    total_positive = sum(max(0.0, v) for v in comp_sums.values())
+    bar_rows = []
+    if total_positive > 0:
+        for k, v in comp_sums.items():
+            if v > 0.05:
+                share_pct = round((v / total_positive) * 100.0, 1)
+                bar_rows.append({"Component": k, "Points": round(v, 2), "Share %": share_pct})
+    if bar_rows:
+        df_comp = pd.DataFrame(bar_rows)
+        fig_comp = px.bar(
+            df_comp,
+            x="Share %",
+            y=["Point Distribution"] * len(df_comp),
+            color="Component",
+            orientation="h",
+            height=130,
+            hover_data={"Share %": ":.1f", "Points": ":.2f"},
+            color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#d97706", "#dc2626", "#475569"],
+        )
+        fig_comp.update_layout(
+            template="plotly_white",
+            margin=dict(l=10, r=10, t=10, b=10),
+            yaxis=dict(visible=False),
+            xaxis_title="Horizon Point Distribution (%)",
+            xaxis=dict(ticksuffix="%"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            font=dict(family="Segoe UI, sans-serif"),
+        )
+        st.plotly_chart(fig_comp, width="stretch", config={"displayModeBar": False}, key="details-comp-bar")
+
+    reality_rows = []
+    pos_code: Position = POS_ID_TO_CODE.get(player.get("pos_id", 0), "M")
+    goal_mult = float(_GOAL_POINTS.get(pos_code, 4))
+    pred_xg_90 = (comp_sums["Goals"] / goal_mult) / (total_xmins / 90.0) if total_xmins and total_xmins > 0 else None
+    actual_xg_90 = float(player.get("xg_per_90")) if player.get("xg_per_90") is not None else None
+    if comp_sums["Goals"] > 0 or actual_xg_90 is not None:
+        reality_rows.append({
+            "Component": "Goals",
+            "Projected Total": f"{comp_sums['Goals']:.2f} xP",
+            "Projected Rate": f"{pred_xg_90:.2f} xG/90" if pred_xg_90 is not None else "—",
+            "Season Actual Rate": f"{actual_xg_90:.2f} xG/90" if actual_xg_90 is not None else "—",
+            "Reality Check": format_rate_delta(pred_xg_90, actual_xg_90, "xG"),
+        })
+
+    pred_xa_90 = (comp_sums["Assists"] / 3.0) / (total_xmins / 90.0) if total_xmins and total_xmins > 0 else None
+    actual_xa_90 = float(player.get("xa_per_90")) if player.get("xa_per_90") is not None else None
+    if comp_sums["Assists"] > 0 or actual_xa_90 is not None:
+        reality_rows.append({
+            "Component": "Assists",
+            "Projected Total": f"{comp_sums['Assists']:.2f} xP",
+            "Projected Rate": f"{pred_xa_90:.2f} xA/90" if pred_xa_90 is not None else "—",
+            "Season Actual Rate": f"{actual_xa_90:.2f} xA/90" if actual_xa_90 is not None else "—",
+            "Reality Check": format_rate_delta(pred_xa_90, actual_xa_90, "xA"),
+        })
+
+    cs_mult = float(_CLEAN_SHEET_POINTS.get(pos_code, 0))
+    if cs_mult > 0 and (comp_sums["Clean Sheet"] > 0 or pos_code in ("GK", "D")):
+        pred_cs_90 = (comp_sums["Clean Sheet"] / cs_mult) / (total_xmins / 90.0) if total_xmins and total_xmins > 0 else None
+        actual_cs_90 = (float(player["clean_sheets"]) / (float(player["minutes"]) / 90.0)) if (player.get("clean_sheets") is not None and player.get("minutes") and float(player["minutes"]) > 0) else None
+        reality_rows.append({
+            "Component": "Clean Sheets",
+            "Projected Total": f"{comp_sums['Clean Sheet']:.2f} xP",
+            "Projected Rate": f"{pred_cs_90:.2f} CS/90" if pred_cs_90 is not None else "—",
+            "Season Actual Rate": f"{actual_cs_90:.2f} CS/90" if actual_cs_90 is not None else "—",
+            "Reality Check": format_rate_delta(pred_cs_90, actual_cs_90, "CS", fallback_label="Defensive matchup projection"),
+        })
+
+    finished_count = len((dataset.get("meta") or {}).get("finished_gameweeks", [])) if dataset else 0
+    actual_mins_gw = (float(player.get("minutes", 0)) / finished_count) if finished_count > 0 else None
+    season_mins_per_start = float(player.get("minutes", 0)) / max(1, int(player.get("starts", 0))) if player.get("starts") else None
+    reality_rows.append({
+        "Component": "Appearance",
+        "Projected Total": f"{comp_sums['Appearance']:.2f} xP",
+        "Projected Rate": f"{avg_xmins:.0f} mins / GW" if avg_xmins is not None else "—",
+        "Season Actual Rate": f"{actual_mins_gw:.0f} mins / GW" if actual_mins_gw is not None else (f"{season_mins_per_start:.0f} mins / start" if season_mins_per_start else "—"),
+        "Reality Check": format_rate_delta(avg_xmins, actual_mins_gw, "mins/GW") if actual_mins_gw is not None else (f"{participation_pct:.0f}% participation share" if participation_pct is not None else "—"),
+    })
+
+    if comp_sums["Bonus"] > 0:
+        pred_bonus_90 = (comp_sums["Bonus"] / (total_xmins / 90.0)) if total_xmins and total_xmins > 0 else None
+        actual_bonus_90 = (float(player["bonus"]) / (float(player["minutes"]) / 90.0)) if (player.get("bonus") is not None and player.get("minutes") and float(player["minutes"]) > 0) else None
+        reality_rows.append({
+            "Component": "Bonus",
+            "Projected Total": f"{comp_sums['Bonus']:.2f} xP",
+            "Projected Rate": f"{pred_bonus_90:.2f} bonus/90" if pred_bonus_90 is not None else "—",
+            "Season Actual Rate": f"{actual_bonus_90:.2f} bonus/90" if actual_bonus_90 is not None else "—",
+            "Reality Check": "BPS expected share",
+        })
+
+    if comp_sums["Def / Other"] > 0:
+        reality_rows.append({
+            "Component": "Def / Other",
+            "Projected Total": f"{comp_sums['Def / Other']:.2f} xP",
+            "Projected Rate": "—",
+            "Season Actual Rate": "—",
+            "Reality Check": "Saves & defensive contribution",
+        })
+
+    if total_xp is not None:
+        pred_rate_90 = (total_xp / (total_xmins / 90.0)) if total_xmins and total_xmins > 0 else None
+        actual_pts_90 = float(player.get("pts_per_90")) if player.get("pts_per_90") is not None else None
+        reality_rows.append({
+            "Component": "Total",
+            "Projected Total": f"{total_xp:.2f} xP",
+            "Projected Rate": f"{pred_rate_90:.2f} pts/90" if pred_rate_90 is not None else "—",
+            "Season Actual Rate": f"{actual_pts_90:.2f} pts/90" if actual_pts_90 is not None else "—",
+            "Reality Check": format_rate_delta(pred_rate_90, actual_pts_90, "pts/90", fallback_label="Overall expected point rate"),
+        })
+
+    st.dataframe(reality_rows, hide_index=True, width="stretch")
+
+
+    st.markdown("#### Gameweek Fixtures & Projections")
     rows = [{"GW": gw, "Fixture": fixture(cell), "Adjusted difficulty": cell.get("difficulty"), "xP": cell.get("total_xp"),
              "xMins": cell.get("xmins"), "Projection": "Unavailable" if cell.get("total_xp") is None else "Available"}
             for gw in gws for cell in [projections(player, model).get(f"gw{gw}", {})]]
     st.dataframe(rows, hide_index=True, width="stretch")
     st.caption("Adjusted difficulty: official 1–5, home −0.25 / away +0.25; lower is easier. Double Gameweeks show mean difficulty.")
-    with st.expander("Projection components"):
+
+    with st.expander("Detailed component projections by Gameweek"):
         st.dataframe([{"GW": gw, **{key.removeprefix("xp_").replace("_", " ").capitalize(): projections(player, model).get(f"gw{gw}", {}).get(key) for key in COMPONENT_KEYS}} for gw in gws], hide_index=True, width="stretch")
         st.caption("Empty cells indicate unavailable components.")
+
     with st.expander("Season stats and recent history"):
         stats = {key: player.get(key) for key in ("total_points", "minutes", "starts", "pts_per_start", "pts_per_90", "xg_per_90", "xa_per_90", "ict_per_90", "inf_per_90", "cre_per_90", "thr_per_90")}
-        st.dataframe([{"Stat": key.replace("_", " "), "Value": str(value) if value is not None else "Unavailable"} for key, value in stats.items()], hide_index=True)
-        history = player_history(paths, int(player["id"]))
-        if history:
-            st.dataframe(history, hide_index=True)
+        st.dataframe([{"Stat": key.replace("_", " ").upper() if key in ("ict_per_90", "inf_per_90", "cre_per_90", "thr_per_90") else key.replace("_", " ").capitalize(),
+                       "Value": str(value) if value is not None else "Unavailable"} for key, value in stats.items()], hide_index=True)
+        raw_history = player_history(paths, int(player["id"]))
+        if raw_history:
+            recent_pts = [float(h.get("total_points") or 0) for h in raw_history]
+            recent_mins = [float(h.get("minutes") or 0) for h in raw_history]
+            if recent_pts:
+                form_avg = sum(recent_pts) / len(recent_pts)
+                form_mins = sum(recent_mins) / len(recent_mins)
+                st.caption(f"Recent Form: **{form_avg:.1f} pts / GW** ({form_mins:.0f} mins avg across last {len(recent_pts)} fixtures)")
+            history_rows = []
+            for h in raw_history:
+                row_fmt: dict[str, Any] = {"GW": h.get("gameweek_id"), "Pts": h.get("total_points"), "Mins": h.get("minutes")}
+                if "pts_per_90" in h:
+                    row_fmt["Pts/90"] = f"{float(h['pts_per_90']):.2f}"
+                if "goals_scored" in h:
+                    row_fmt["Goals"] = h.get("goals_scored")
+                if "assists" in h:
+                    row_fmt["Assists"] = h.get("assists")
+                if "expected_goals" in h and h.get("expected_goals") is not None:
+                    row_fmt["xG"] = f"{float(h['expected_goals']):.2f}"
+                if "expected_assists" in h and h.get("expected_assists") is not None:
+                    row_fmt["xA"] = f"{float(h['expected_assists']):.2f}"
+                if "bonus" in h:
+                    row_fmt["Bonus"] = h.get("bonus")
+                history_rows.append(row_fmt)
+            st.dataframe(history_rows, hide_index=True, width="stretch")
+
     shortlist = st.session_state.get("scout-shortlist", [])
     col_a, col_b = st.columns(2)
     with col_a:
@@ -109,6 +382,7 @@ def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], p
                     watchlist.append(player["id"])
             st.session_state["watchlist"] = watchlist
             st.rerun()
+
 
 
 def scouting_comparison(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
@@ -145,12 +419,13 @@ def close_explorer_inspection() -> None:
 
 
 @st.dialog("Player inspection", width="large", on_dismiss=close_explorer_inspection)
-def explorer_inspection(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths) -> None:
+def explorer_inspection(player: dict[str, Any], model: str, gws: tuple[int, ...], paths: PlannerPaths, dataset: dict[str, Any] | None = None) -> None:
     with st.container(key="player-inspection"):
         if st.button("Back to Explorer", key="close-explorer-details"):
             close_explorer_inspection()
             st.rerun()
-        explorer_details(player, model, gws, paths)
+        explorer_details(player, model, gws, paths, dataset=dataset)
+
 
 
 def select_explorer_player(key: str, ids: list[int] | None = None) -> None:
@@ -247,12 +522,12 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         price = prices.slider("Price range (£m)", 0.0, max(maximum, 1.0), (0.0, maximum), step=0.1, key="explorer-price")
         minimum_minutes = minutes.slider("Minimum xMins / GW", 0, 180, 0, key="explorer-minutes")
         metric = metrics.radio("Chart points", ("xP / GW", "xP / 90"), horizontal=True, key="explorer-metric")
-        assume_ninety = st.checkbox("Assume 90 minutes per projected match (view only)", key="explorer-ninety")
+        scale_bubble = st.checkbox("Scale bubble size by xMins / GW", value=True, key="explorer-bubble-scale")
     scouting_comparison(dataset, model, gws)
     owned = set(meta.get("owned_squad_ids", []))
     rows = []
     for player in dataset["players"]:
-        row = player_slice(player, model, gws, assume_ninety)
+        row = player_slice(player, model, gws)
         if player["pos_id"] not in selected_positions or (selected_clubs and row["Club"] not in selected_clubs):
             continue
         if not price[0] <= row["Price"] <= price[1] or (minimum_minutes > 0 and (row["xMins / GW"] is None or row["xMins / GW"] < minimum_minutes)) or query.casefold() not in f"{row['Player']} {row['Club']}".casefold():
@@ -266,18 +541,47 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         row["Dream Team"] = row["ID"] in dream_ids
     if rows:
         frame = pd.DataFrame(rows).sort_values("xP", ascending=False).reset_index(drop=True)
+        if scale_bubble:
+            frame["Bubble Size"] = frame["xMins / GW"].apply(
+                lambda val: max(15.0, min(float(val), 180.0)) if val is not None and float(val) > 0 else 15.0
+            )
         has_user_squad = bool(owned)
         with st.container(key="explorer-charts"):
             charts = st.columns(2)
             for column, axis in zip(charts, ("Ownership %", "Price"), strict=True):
                 with column:
-                    if has_user_squad:
-                        figure = px.scatter(frame, x=axis, y=metric, color="Position", symbol="Squad", hover_name="Player", custom_data=["ID"], hover_data=["Club", "xP", "xMins / GW", "Dream Team"], color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#9c3b00"])
-                    else:
-                        figure = px.scatter(frame, x=axis, y=metric, color="Position", hover_name="Player", custom_data=["ID"], hover_data=["Club", "xP", "xMins / GW", "Dream Team"], color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#9c3b00"])
-                    figure.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=25, b=20), font=dict(family="Segoe UI, sans-serif", color="#1d1d1f"))
-                    st.plotly_chart(figure, width="stretch", key=f"chart-{axis}", on_select=lambda key=f"chart-{axis}": select_explorer_player(key), selection_mode="points")
-        visible = frame.drop(columns=list(COMPONENT_KEYS))
+                    size_col = "Bubble Size" if scale_bubble else None
+                    hover_fields = {"Club": True, "xP": True, "xMins / GW": True, "Dream Team": True}
+                    if scale_bubble:
+                        hover_fields["Bubble Size"] = False
+                    figure = px.scatter(
+                        frame,
+                        x=axis,
+                        y=metric,
+                        color="Position",
+                        symbol="Squad" if has_user_squad else None,
+                        size=size_col,
+                        size_max=18 if scale_bubble else None,
+                        hover_name="Player",
+                        custom_data=["ID"],
+                        hover_data=hover_fields,
+                        color_discrete_sequence=["#0066cc", "#5856d6", "#146c43", "#9c3b00"],
+                    )
+                    figure.update_layout(
+                        template="plotly_white",
+                        margin=dict(l=20, r=20, t=25, b=20),
+                        font=dict(family="Segoe UI, sans-serif", color="#1d1d1f"),
+                    )
+                    st.plotly_chart(
+                        figure,
+                        width="stretch",
+                        key=f"chart-{axis}",
+                        on_select=lambda key=f"chart-{axis}": select_explorer_player(key),
+                        selection_mode="points",
+                    )
+            if scale_bubble:
+                st.caption("Bubble size indicates expected minutes per Gameweek (xMins / GW). Larger bubbles represent higher projected minutes.")
+        visible = frame.drop(columns=[col for col in list(COMPONENT_KEYS) + ["Bubble Size"] if col in frame.columns])
         essential = ["Player", "Position", "Price", "xP", "xP / GW", "Club"]
         st.dataframe(visible, column_order=[*essential, *(name for name in visible.columns if name not in essential)], hide_index=True, width="stretch", on_select=lambda: select_explorer_player("explorer-table", frame["ID"].tolist()), selection_mode="single-row", key="explorer-table")
         st.download_button("Download filtered Players", visible.to_csv(index=False), "explorer-players.csv", "text/csv")
@@ -298,7 +602,7 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
     if st.session_state.get("explorer-inspection"):
         player = next((player for player in dataset["players"] if player["id"] == st.session_state.get("explorer-player")), None)
         if player is not None:
-            explorer_inspection(player, model, gws, paths)
+            explorer_inspection(player, model, gws, paths, dataset=dataset)
 
 
 def research() -> None:

@@ -186,3 +186,81 @@ def test_explorer_player_dialog_and_close(tmp_path: Path, monkeypatch: pytest.Mo
     app.button(key="close-explorer-details").click().run()
     assert not app.exception
     assert not app.get("dialog")
+
+
+def test_explorer_bubble_scale_toggle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    assert not app.exception
+    checkbox = app.checkbox(key="explorer-bubble-scale")
+    assert checkbox.value is True
+    checkbox.set_value(False).run()
+    assert not app.exception
+    assert checkbox.value is False
+
+
+def test_explorer_inspection_shows_verdict_and_components(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = dataset()
+    for gw_key in data["players"][6]["projections"]:
+        data["players"][6]["projections"][gw_key].update({
+            "xp_minutes": 1.8,
+            "xp_goals": 2.5,
+            "xp_assists": 1.2,
+            "xp_clean_sheet": 0.0,
+            "xp_bonus": 0.9,
+        })
+    data["players"][6]["xg_per_90"] = 0.45
+    data["players"][6]["xa_per_90"] = 0.20
+    data["players"][6]["pts_per_90"] = 6.2
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.session_state["explorer-player"] = 7
+    app.session_state["explorer-inspection"] = True
+    app.run()
+    assert not app.exception
+    assert len(app.get("dialog")) == 1
+    assert any("Selection Verdict" in m.value for m in app.markdown)
+    assert any("Projected Point Components" in m.value for m in app.markdown)
+    # Ensure retired role heuristics are not used
+    assert not any("Regular starter" in m.value for m in app.markdown)
+    assert not any("Rotation risk" in m.value for m in app.markdown)
+    assert any("Component" in df.value.columns for df in app.dataframe)
+    # Ensure compare peer button appears
+    assert any(b.key == "details-compare-peer" for b in app.button)
+
+
+def test_player_history_enhanced_columns(tmp_path: Path) -> None:
+    import pandas as pd
+    from dashboard.planner_service import PlannerPaths, player_history
+
+    processed = tmp_path / "processed"
+    processed.mkdir(parents=True)
+    df = pd.DataFrame([{
+        "player_id": 99,
+        "gameweek_id": 1,
+        "total_points": 10,
+        "minutes": 90,
+        "goals_scored": 1,
+        "assists": 1,
+        "expected_goals": 0.75,
+        "expected_assists": 0.40,
+        "bonus": 3,
+    }])
+    df.to_parquet(processed / "player_performances.parquet")
+    paths = PlannerPaths(dataset=tmp_path / "dataset.json", processed=processed, storage=tmp_path / "storage")
+    history = player_history(paths, 99)
+    assert len(history) == 1
+    assert history[0]["goals_scored"] == 1
+    assert history[0]["assists"] == 1
+    assert history[0]["expected_goals"] == 0.75
+    assert history[0]["pts_per_90"] == 10.0
+
+

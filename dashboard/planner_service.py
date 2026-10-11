@@ -189,7 +189,15 @@ def player_history(paths: PlannerPaths, player_id: int) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     data = pd.read_parquet(path)
-    columns = [column for column in ("gameweek_id", "total_points", "minutes") if column in data.columns]
+    desired = ("gameweek_id", "total_points", "minutes", "goals_scored", "assists", "expected_goals", "expected_assists", "bonus")
+    columns = [column for column in desired if column in data.columns]
     if "player_id" not in data.columns or not columns:
         return []
-    return data.loc[data["player_id"] == player_id, columns].sort_values(columns[0], ascending=False).head(6).to_dict("records")
+    records = data.loc[data["player_id"] == player_id, columns].sort_values(columns[0], ascending=False).head(6).to_dict("records")
+    for record in records:
+        mins = float(record.get("minutes") or 0)
+        pts = float(record.get("total_points") or 0)
+        record["pts_per_90"] = round((pts / (mins / 90.0)), 2) if mins > 0 else 0.0
+    return records
+
+
