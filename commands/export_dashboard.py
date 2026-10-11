@@ -588,17 +588,19 @@ def run_dashboard_export(
     names = projection_model_names(model_name, model_names)
     default_model = resolve_model_or_champion(model_name) if model_name else names[0]
     horizon = clamp_planning_horizon(horizon)
-    if target_gw is None:
-        target_gw = resolve_horizon_start(processed_dir)
+    earliest_unfinished = resolve_horizon_start(processed_dir)
+    default_target = resolve_default_target_gw(processed_dir)
+    target_start = target_gw if target_gw is not None else default_target
+    feature_start = min(earliest_unfinished, target_start)
 
-    remaining_horizon = SEASON_END_GW - target_gw + 1
+    remaining_horizon = SEASON_END_GW - feature_start + 1
     logger.info(
-        f"Generating projections GW{target_gw}–{SEASON_END_GW}; "
-        f"Planning Horizon {horizon} from GW{target_gw}"
+        f"Generating projections GW{feature_start}–{SEASON_END_GW}; "
+        f"Planning Horizon {horizon} from GW{target_start}"
     )
     df_feat = build_features(
         processed_dir,
-        target_gw,
+        feature_start,
         horizon=remaining_horizon,
         history_before_gw=SEASON_END_GW + 1,
     )
@@ -611,13 +613,13 @@ def run_dashboard_export(
         logger.info(f"Generating projections using model '{m_name}'...")
         model = get_model(m_name)
         if hasattr(model, "fit") and df_perf is not None:
-            model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+            model.fit(df_perf[df_perf["gameweek_id"] < feature_start])
         model_preds[m_name] = model.predict(df_feat, remaining_horizon)
 
     dataset = build_dashboard_dataset(
         processed_dir,
         model_preds,
-        target_gw,
+        target_start,
         horizon,
         default_model_name=default_model,
         with_squad=with_squad,

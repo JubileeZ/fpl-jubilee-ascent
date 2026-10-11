@@ -1164,7 +1164,10 @@ def _generate_default_user_plans() -> dict[str, object]:
                 optimal_plan = sc_list[0].get("plan")
                 if optimal_plan and optimal_plan.get("weeks"):
                     plan_for_horizon = dict(optimal_plan)
-                    plan_for_horizon["weeks"] = [w for w in optimal_plan.get("weeks", []) if int(w.get("gw", 0)) < target_gw + horizon]
+                    plan_for_horizon["weeks"] = [
+                        w for w in optimal_plan.get("weeks", [])
+                        if target_gw <= int(w.get("gw", 0)) < target_gw + horizon
+                    ]
                     branch = _build_branch_nodes_from_plan(
                         plan_for_horizon, root_id, target_gw, arm_label="MILP Optimal"
                     )

@@ -1036,7 +1036,7 @@ def test_default_user_plans_full_horizon_straight_chain() -> None:
             break
 
     assert len(chain) == horizon
-    assert [n["gameweek"] for n in chain] == [6, 7, 8, 9, 10]
+    assert [n["gameweek"] for n in chain] == list(range(plan["startGameweek"], plan["startGameweek"] + horizon))
 
 
 def test_build_branch_nodes_stores_solver_recommendation() -> None:

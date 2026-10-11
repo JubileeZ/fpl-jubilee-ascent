@@ -359,4 +359,15 @@ def test_explorer_action_bar_inspect_trigger(tmp_path: Path, monkeypatch: pytest
     assert len(app.get("dialog")) == 1
 
 
-
+def test_explorer_horizon_start_defaults_to_upcoming_deadline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = dataset()
+    data["meta"]["unfinished_gameweeks"] = [6, 7, 8, 9, 10, 11]
+    data["meta"]["transfer_plan_start"] = 7
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    assert not app.exception
+    assert app.selectbox(key="explorer-start").value == 7

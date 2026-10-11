@@ -504,7 +504,9 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
     models = meta.get("models") or [meta.get("default_model") or get_default_model_name()]
     model = controls[0].selectbox("Projection model", models, key="explorer-model")
     starts = meta.get("unfinished_gameweeks") or meta.get("gw_ids") or [int(meta.get("transfer_plan_start", 1))]
-    start = controls[1].selectbox("Horizon start", starts, format_func=lambda gw: f"GW{gw}", key="explorer-start")
+    default_start = int(meta.get("transfer_plan_start") or meta.get("horizon_start") or starts[0])
+    default_index = starts.index(default_start) if default_start in starts else 0
+    start = controls[1].selectbox("Horizon start", starts, index=default_index, format_func=lambda gw: f"GW{gw}", key="explorer-start")
     end = controls[2].selectbox("Horizon end", list(range(start, min(start + 9, 38) + 1)), index=min(5, 38 - start), format_func=lambda gw: f"GW{gw}", key=f"explorer-end-{start}")
     gws = tuple(range(start, end + 1))
     trust = meta.get("champion_trust", {})
