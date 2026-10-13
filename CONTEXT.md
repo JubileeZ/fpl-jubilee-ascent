@@ -465,6 +465,15 @@ _Avoid_: position-weighted blend, Process-only primary, calibrating live xP from
 Additive attribution of Official Realized Points squared error to one Event Component: $\mathrm{mean}(e_c\cdot e)/\mathrm{mean}(e^2)$. Primary ranking object for which Event Component to improve next. Not Historical Promotion Gate primary. Companion: `docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`. Canon: `docs/research/INDEX.md` Eval canon.
 _Avoid_: component MAE as the gap rank, Blended/Process component ledgers as primary, Extended Process Points
 
+**Oracle Minutes Screen**:
+Exploratory offline evaluation conditioning projection models on actual match minutes played (`external_xmins = actual_minutes`) to isolate component projection fidelity from minutes prediction noise. Pre-screening sieve before the Historical Promotion Gate; not an operational scoring mode or promotion primary.
+_Avoid_: live oracle minutes, operational xMins replacement, treating oracle MAE as the promotion gate primary
+
+**Unseeded Starter Adaptation**:
+Dynamic relaxation of prior pseudo-minute shrinkage weights ($K$) for players lacking a prior-season archive seed once starting pitch tenure is established in the current season.
+_Avoid_: manual player overrides, bypassing position priors before tenure evidence, unconstrained rate extrapolation
+
+
 **Cross-Gameweek Dispersion**:
 Mean over a player pool of per-player sample Gameweek-to-Gameweek SD within a window, reported with median as skew check. Companion: `docs/research/xp-cross-gw-dispersion/dispersion_summary.csv` `mean_SD`. Expectation should swing less than actuals, not equal them.
 _Avoid_: score movement, pooled SD across player levels, SD of weekly means, ranking 6-GW live against 38-GW archive
