@@ -22,6 +22,58 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+def generate_model_projections(
+    model_name: str,
+    target_gw: int,
+    horizon: int,
+    *,
+    xmins_override: Path | str | None = None,
+    output_name: str | None = None,
+    processed_dir: Path | None = None,
+    **feature_kwargs,
+) -> Path:
+    """Generate model predictions and export solver-ready projections CSV."""
+    root = PROJECT_ROOT
+    if processed_dir is None:
+        processed_dir = resolve_operational_processed_dir(root)
+    if not (processed_dir / "players.parquet").exists():
+        raise FileNotFoundError("No processed data found. Please run 'python -m commands.refresh_data' first.")
+
+    kwargs = dict(feature_kwargs)
+    if xmins_override is not None:
+        path = Path(xmins_override)
+        kwargs["xmins_override"] = path if path.is_absolute() else root / path
+
+    logger.info(f"Building features for {model_name} (horizon {horizon}, GW{target_gw})...")
+    df_feat = build_features(
+        processed_dir,
+        target_gw,
+        horizon=horizon,
+        history_before_gw=SEASON_END_GW + 1,
+        **kwargs,
+    )
+
+    resolved_model = resolve_model_or_champion(model_name)
+    logger.info(f"Loading model '{resolved_model}'...")
+    model = get_model(resolved_model)
+    perf_path = processed_dir / "player_performances.parquet"
+    if hasattr(model, "fit") and perf_path.exists():
+        df_perf = pd.read_parquet(perf_path)
+        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+
+    logger.info("Generating predictions...")
+    df_proj = assert_projection_contract(model.predict(df_feat, horizon))
+
+    output_stem = output_name or resolved_model
+    output_csv = root / "data" / f"{output_stem}.csv"
+    logger.info(f"Exporting projections to {output_csv}...")
+    df_players = pd.read_parquet(processed_dir / "players.parquet")
+    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
+    export_projections(df_proj, df_players, df_clubs, output_csv)
+    logger.info("Projections successfully generated!")
+    return output_csv
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run a scoring model to generate score projections.")
     parser.add_argument(
@@ -44,6 +96,22 @@ def main():
         help="Explicitly run the active Champion model",
     )
     parser.add_argument("--horizon", type=int, default=5, help="Number of gameweeks to predict ahead")
+    parser.add_argument(
+        "--xmins_override",
+        "--xmins-override",
+        type=Path,
+        default=None,
+        dest="xmins_override",
+        help="Optional CSV of external player xMins predictions",
+    )
+    parser.add_argument(
+        "--output_name",
+        "--output-name",
+        type=str,
+        default=None,
+        dest="output_name",
+        help="Optional custom stem for data/<stem>.csv export",
+    )
 
     parser.add_argument(
         "--blend_start_appearances",
@@ -83,17 +151,15 @@ def main():
         logger.error("No processed data found. Please run 'python -m commands.refresh_data' first.")
         sys.exit(1)
         
-    # Load target gameweek from processed parquet
     target_gw = (
         args.target_gw
         if args.target_gw is not None
         else resolve_default_target_gw(processed_dir)
     )
         
-    logger.info(f"Generating projections starting from target Gameweek {target_gw}...")
-    
-    # 1. Build fixture-level features for the complete planning horizon
-    logger.info("Building features...")
+    raw_model = None if args.champion else (args.model_flag or args.model)
+    model_name = resolve_model_or_champion(raw_model)
+
     availability_overrides = args.availability_overrides
     if not availability_overrides.is_absolute():
         availability_overrides = PROJECT_ROOT / availability_overrides
@@ -108,41 +174,20 @@ def main():
         }.items()
         if value is not None
     }
-    df_feat = build_features(
-        processed_dir,
-        target_gw,
-        horizon=args.horizon,
-        history_before_gw=SEASON_END_GW + 1,
-        **feature_kwargs,
-    )
-    
-    # 2. Instantiate and run model
-    raw_model = None if args.champion else (args.model_flag or args.model)
-    model_name = resolve_model_or_champion(raw_model)
 
-    logger.info(f"Loading model '{model_name}'...")
     try:
-        model = get_model(model_name)
-    except Exception as e:
-        logger.error(e)
+        generate_model_projections(
+            model_name=model_name,
+            target_gw=target_gw,
+            horizon=args.horizon,
+            xmins_override=args.xmins_override,
+            output_name=args.output_name,
+            processed_dir=processed_dir,
+            **feature_kwargs,
+        )
+    except Exception as exc:
+        logger.error(exc)
         sys.exit(1)
-        
-    perf_path = processed_dir / "player_performances.parquet"
-    if hasattr(model, "fit") and perf_path.exists():
-        df_perf = pd.read_parquet(perf_path)
-        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
-
-    logger.info("Generating predictions...")
-    df_proj = assert_projection_contract(model.predict(df_feat, args.horizon))
-    
-    # 3. Export to CSV
-    output_csv = PROJECT_ROOT / "data" / f"{model_name}.csv"
-    logger.info(f"Exporting projections to {output_csv}...")
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
-    export_projections(df_proj, df_players, df_clubs, output_csv)
-    
-    logger.info("Projections successfully generated!")
 
 if __name__ == "__main__":
     main()

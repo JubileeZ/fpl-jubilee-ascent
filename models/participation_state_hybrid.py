@@ -16,6 +16,34 @@ from models.metrics_component_hybrid import (
 )
 
 
+def target_to_states(xmins: float) -> tuple[float, float, float, float, float]:
+    """Convert external xmins into (p_start, p_sub_in, p_dnp, start_minutes, sub_minutes)."""
+    if xmins <= 0.0:
+        return 0.0, 0.0, 1.0, 0.0, 0.0
+    if xmins >= 70.0:
+        start_mins = min(90.0, max(75.0, xmins / 0.98))
+        p_start = min(0.99, xmins / start_mins)
+        p_sub = 0.0
+        p_dnp = max(0.0, 1.0 - p_start)
+        sub_mins = 18.0
+        return p_start, p_sub, p_dnp, start_mins, sub_mins
+    elif xmins > 18.0:
+        start_mins = 78.0
+        sub_mins = 18.0
+        p_start = max(0.0, (xmins - 12.0) / (78.0 - 12.0))
+        rem = max(0.0, xmins - p_start * start_mins)
+        p_sub = min(0.8, rem / sub_mins)
+        p_dnp = max(0.0, 1.0 - p_start - p_sub)
+        return p_start, p_sub, p_dnp, start_mins, sub_mins
+    else:
+        start_mins = 78.0
+        sub_mins = 18.0
+        p_start = 0.0
+        p_sub = min(1.0, xmins / sub_mins)
+        p_dnp = max(0.0, 1.0 - p_sub)
+        return p_start, p_sub, p_dnp, start_mins, sub_mins
+
+
 class ParticipationStateHybridModel(MetricsComponentHybridModel):
     """Project fixture outcomes through mutually exclusive participation states."""
 
@@ -79,38 +107,46 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
                 })
                 continue
 
-            p_dnp, p_start, p_sub_in = self._state_probabilities(row)
-            is_immediate = bool(row.get("is_immediate_next_gw", False))
-            has_snapshot = bool(row.get("has_availability_snapshot", False))
-            chance = _number(row, "chance_of_playing", 100.0)
-            status = str(row.get("status", "")).lower()
+            ext_mins = row.get("external_xmins")
+            if ext_mins is not None and pd.notna(ext_mins):
+                target_mins = max(0.0, float(ext_mins))
+                p_start, p_sub_in, p_dnp, start_minutes, sub_minutes = target_to_states(target_mins)
+                p60_start = min(1.0, max(0.0, (start_minutes - 45.0) / 30.0))
+                p60_sub = min(1.0, max(0.0, (sub_minutes - 45.0) / 30.0))
+                expected_minutes = target_mins
+            else:
+                p_dnp, p_start, p_sub_in = self._state_probabilities(row)
+                is_immediate = bool(row.get("is_immediate_next_gw", False))
+                has_snapshot = bool(row.get("has_availability_snapshot", False))
+                chance = _number(row, "chance_of_playing", 100.0)
+                status = str(row.get("status", "")).lower()
 
-            # Hard DNP for immediate next GW:
-            # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
-            # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
-            if is_immediate and (
-                (has_snapshot and chance <= 0.0)
-                or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
-            ):
-                p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
+                # Hard DNP for immediate next GW:
+                # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
+                # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
+                if is_immediate and (
+                    (has_snapshot and chance <= 0.0)
+                    or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
+                ):
+                    p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
 
-            start_minutes = self._conditional_minutes(row, "start", 78.0)
-            sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
-            p60_start = min(
-                1.0,
-                max(0.0, _number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0)),
-            )
-            p60_sub = min(
-                1.0,
-                max(0.0, _number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0)),
-            )
+                start_minutes = self._conditional_minutes(row, "start", 78.0)
+                sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
+                p60_start = min(
+                    1.0,
+                    max(0.0, _number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0)),
+                )
+                p60_sub = min(
+                    1.0,
+                    max(0.0, _number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0)),
+                )
 
-            raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
-            expected_minutes = cap_projected_minutes(row, raw_minutes)
-            if raw_minutes > 0 and expected_minutes < raw_minutes:
-                scale = expected_minutes / raw_minutes
-                start_minutes *= scale
-                sub_minutes *= scale
+                raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
+                expected_minutes = cap_projected_minutes(row, raw_minutes)
+                if raw_minutes > 0 and expected_minutes < raw_minutes:
+                    scale = expected_minutes / raw_minutes
+                    start_minutes *= scale
+                    sub_minutes *= scale
 
             position = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
             start_events = self._project_event_components(

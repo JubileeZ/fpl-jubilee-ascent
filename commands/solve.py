@@ -511,6 +511,14 @@ def main() -> None:
         help="Force re-solve even if input digest matches cache",
     )
     parser.add_argument("--target_gw", type=int, help="Target Gameweek to start optimization from")
+    parser.add_argument(
+        "--xmins_override",
+        "--xmins-override",
+        type=Path,
+        default=None,
+        dest="xmins_override",
+        help="Optional CSV of external player xMins predictions to project and solve against",
+    )
     args, unknown = parser.parse_known_args()
     
     # 1. Load configuration settings
@@ -560,6 +568,26 @@ def main() -> None:
         target_gw = resolve_default_target_gw(processed_dir)
         
     options["override_next_gw"] = target_gw
+
+    if args.xmins_override is not None:
+        from commands.run_model import generate_model_projections
+
+        base_model = str(options["datasource"])
+        datasource_stem = f"{base_model}_external_xmins"
+        logger.info(
+            "Generating projections using external xMins from %s for datasource '%s'...",
+            args.xmins_override,
+            datasource_stem,
+        )
+        generate_model_projections(
+            model_name=base_model,
+            target_gw=target_gw,
+            horizon=options["horizon"],
+            xmins_override=args.xmins_override,
+            output_name=datasource_stem,
+            processed_dir=processed_dir,
+        )
+        options["datasource"] = datasource_stem
 
     if not args.scenarios:
         try:

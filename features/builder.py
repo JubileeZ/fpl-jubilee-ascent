@@ -697,6 +697,31 @@ def _compute_position_price_priors(df_perf: pd.DataFrame, df_players: pd.DataFra
         }
     return priors_by_band, priors_by_position
 
+
+def load_xmins_override(csv_path: Path | str, planning_gws: list[int]) -> dict[tuple[int, int], float]:
+    """Parse external xMins CSV into (player_id, gameweek_id) -> float map."""
+    path = Path(csv_path)
+    if not path.exists():
+        raise FileNotFoundError(f"xMins override file not found: {path}")
+    df = pd.read_csv(path)
+    id_col = "ID" if "ID" in df.columns else ("id" if "id" in df.columns else "player_id")
+    if id_col not in df.columns:
+        raise ValueError(f"xMins override CSV missing 'ID' column: {path}")
+    df[id_col] = pd.to_numeric(df[id_col], errors="coerce")
+    valid_df = df.dropna(subset=[id_col])
+    out: dict[tuple[int, int], float] = {}
+    for gw in planning_gws:
+        cols = [f"{gw}_xMins", f"{gw}_xmins", f"{gw}_mins", f"{gw}_Mins"]
+        matching = [c for c in cols if c in valid_df.columns]
+        if not matching:
+            continue
+        col = matching[0]
+        vals = pd.to_numeric(valid_df[col], errors="coerce").fillna(0.0)
+        for pid, val in zip(valid_df[id_col].astype(int), vals):
+            out[(pid, int(gw))] = float(val)
+    return out
+
+
 def build_features(
     processed_dir: Path,
     target_gw: int,
@@ -708,6 +733,7 @@ def build_features(
     blend_start_appearances: int = BLEND_START_APPEARANCES,
     blend_full_appearances: int = BLEND_FULL_APPEARANCES,
     availability_overrides: Path | None = None,
+    xmins_override: Path | str | None = None,
     availability_snapshot_root: Path | None = None,
     season: str | None = None,
     expected_role_season: str | None = None,
@@ -1132,4 +1158,9 @@ def build_features(
     df_feat["has_availability_snapshot"] = has_point_in_time_snapshot
     df_feat["availability_snapshot_id"] = snapshot_id
     df_feat["xmins_cap"] = float("nan")
+    if xmins_override is not None:
+        planning_gws = sorted(df_feat["gameweek_id"].unique().tolist())
+        xmins_map = load_xmins_override(xmins_override, planning_gws)
+        player_gws = list(zip(df_feat["player_id"].astype(int), df_feat["gameweek_id"].astype(int)))
+        df_feat["external_xmins"] = [xmins_map.get(key, 0.0) for key in player_gws]
     return assert_feature_contract(df_feat)
