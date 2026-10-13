@@ -72,6 +72,29 @@ def test_process_directory_skips_summaries_for_players_not_in_bootstrap(tmp_path
     assert df_perf["player_id"].tolist() == [1]
 
 
+def test_process_directory_sorts_player_summaries_deterministically(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    input_dir.mkdir()
+    bootstrap = {
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "Gameweek 1", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [
+            {"id": pid, "code": pid, "web_name": f"P{pid}", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}
+            for pid in (10, 2, 100, 1)
+        ],
+    }
+    (input_dir / "bootstrap_static.json").write_text(json.dumps(bootstrap))
+    for pid in (10, 2, 100, 1):
+        history = [{"element": pid, "fixture": 1, "round": 1, "opponent_team": 2, "minutes": 90, "total_points": 2}]
+        (input_dir / f"element_summary_{pid}.json").write_text(json.dumps({"history": history}))
+
+    process_directory(input_dir, tmp_path / "processed")
+
+    df_perf = pd.read_parquet(tmp_path / "processed" / "player_performances.parquet")
+    assert df_perf["player_id"].tolist() == [1, 2, 10, 100]
+
+
+
 def test_process_directory_writes_user_chips(tmp_path: Path) -> None:
     input_dir = tmp_path / "raw"
     output_dir = tmp_path / "processed"

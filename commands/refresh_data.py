@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 import httpx
 from datetime import UTC, datetime
 from pathlib import Path
@@ -37,6 +38,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Refresh raw FPL data and update processed tables.")
     parser.add_argument("--season", type=str, default=LIVE_SEASON, help=f"FPL season (default: {LIVE_SEASON})")
     parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=20,
+        help="Concurrent player summary requests (default: 20)",
+    )
+    parser.add_argument(
         "--rebuild-roles",
         action="store_true",
         help="Ignored. Expected Role Rebuild is retired (ADR 0025).",
@@ -54,7 +61,8 @@ async def main(argv: list[str] | None = None) -> None:
     if args.rebuild_roles or args.keep_roles:
         logger.warning("Expected Role Rebuild is retired; --rebuild-roles / --keep-roles are ignored.")
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    limits = httpx.Limits(max_keepalive_connections=args.concurrency, max_connections=args.concurrency * 2)
+    async with httpx.AsyncClient(timeout=30.0, limits=limits) as client:
         logger.info("Fetching public bootstrap-static data...")
         bootstrap = await fetch_bootstrap_static(client, write_cache=True)
         
@@ -69,24 +77,33 @@ async def main(argv: list[str] | None = None) -> None:
         # Fetch element summaries for all active players
         elements = bootstrap.get("elements", [])
         player_ids = [player["id"] for player in elements]
-        logger.info(f"Fetching element summaries for all {len(player_ids)} players (concurrency limit = 5)...")
+        logger.info(
+            f"Fetching element summaries for all {len(player_ids)} players (concurrency limit = {args.concurrency})..."
+        )
         
-        semaphore_elements = asyncio.Semaphore(5)
+        semaphore_elements = asyncio.Semaphore(args.concurrency)
+        completed = 0
+        start_time = time.perf_counter()
         
-        async def fetch_summary(player_id):
+        async def fetch_summary(player_id: int) -> None:
+            nonlocal completed
             async with semaphore_elements:
                 try:
                     await fetch_element_summary(client, player_id, write_cache=True)
                 except Exception as e:
                     logger.error(f"Failed to fetch summary for player {player_id}: {e}")
-                    
-        # Gather in chunks to avoid overwhelming endpoints
-        chunk_size = 50
-        for i in range(0, len(player_ids), chunk_size):
-            chunk = player_ids[i:i + chunk_size]
-            await asyncio.gather(*(fetch_summary(pid) for pid in chunk))
-            logger.info(f"Progress: fetched {i + len(chunk)}/{len(player_ids)} player summaries.")
-            await asyncio.sleep(0.5)
+                finally:
+                    completed += 1
+                    if completed % 100 == 0 or completed == len(player_ids):
+                        logger.info(f"Progress: fetched {completed}/{len(player_ids)} player summaries.")
+
+        if player_ids:
+            await asyncio.gather(*(fetch_summary(pid) for pid in player_ids))
+            elapsed = time.perf_counter() - start_time
+            rate = len(player_ids) / elapsed if elapsed > 0 else 0.0
+            logger.info(
+                f"Fetched {len(player_ids)} player summaries in {elapsed:.1f}s ({rate:.1f} req/s)."
+            )
         
         # Check authentication to fetch user-specific squad details
         try:

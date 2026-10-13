@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import pytest
 
 from commands.snapshot_season import main, process_season_archive
 from features.expected_role_prior import LIVE_SEASON
@@ -211,3 +212,47 @@ def test_pin_refuses_frozen_completed_season(tmp_path: Path) -> None:
         assert frozen in str(exc)
     else:
         raise AssertionError("expected frozen Season Archive refusal")
+
+
+def test_cli_accepts_concurrency_argument(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "GW1", "deadline_time": "2025-08-15T17:30:00Z", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 99, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+    }), encoding="utf-8")
+    (raw / "fixtures_all.json").write_text("[]", encoding="utf-8")
+    archive_root = tmp_path / "archive"
+    assert main(["--season", "2024-25", "--from-raw-dir", str(raw), "--archive-root", str(archive_root), "--concurrency", "25"]) == 0
+
+    from unittest.mock import AsyncMock, patch
+    with patch("commands.snapshot_season.fetch_live_season_raw", AsyncMock()) as mock_fetch, \
+         patch("commands.snapshot_season.process_season_archive"):
+        assert main(["--season", "2025-26", "--archive-root", str(archive_root), "--concurrency", "15"]) == 0
+        mock_fetch.assert_called_once_with("2025-26", archive_root / "2025-26" / "raw", concurrency=15)
+
+
+
+@pytest.mark.asyncio
+async def test_fetch_live_season_raw_concurrency(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    from unittest.mock import AsyncMock, patch
+    from commands.snapshot_season import fetch_live_season_raw
+
+    raw = tmp_path / "raw"
+    mock_bootstrap = {
+        "elements": [{"id": i} for i in range(1, 105)],
+    }
+    with patch("commands.snapshot_season.fetch_bootstrap_static", AsyncMock(return_value=mock_bootstrap)), \
+         patch("commands.snapshot_season.fetch_gameweek_fixtures", AsyncMock(return_value=[])), \
+         patch("commands.snapshot_season.fetch_element_gameweek_live", AsyncMock(return_value={})), \
+         patch("commands.snapshot_season.fetch_element_summary", AsyncMock(return_value={})) as mock_summary, \
+         caplog.at_level("INFO"):
+        await fetch_live_season_raw("2025-26", raw, concurrency=15)
+
+    assert mock_summary.call_count == 104
+    assert "concurrency limit = 15" in caplog.text
+    assert "Progress: fetched 100/104" in caplog.text
+    assert "Progress: fetched 104/104" in caplog.text
+    assert "Fetched 104 player summaries in" in caplog.text
+

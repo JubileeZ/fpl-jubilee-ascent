@@ -75,3 +75,31 @@ async def test_refresh_data_logs_hash_and_does_not_invoke_git(caplog):
     assert "hash unchanged" in caplog.text
     assert "deadbeef" in caplog.text
     assert "Skip git commit" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_refresh_data_concurrency_and_milestones(caplog: pytest.LogCaptureFixture) -> None:
+    mock_bootstrap = {
+        "events": [{"id": 1, "is_current": True}],
+        "elements": [{"id": i, "web_name": f"P{i}"} for i in range(1, 205)],
+    }
+    pin = LiveSeasonPin(processed_dir=MagicMock(name="processed"), content_hash="beef", changed=False)
+    with patch("commands.refresh_data.fetch_bootstrap_static", AsyncMock(return_value=mock_bootstrap)), \
+         patch("commands.refresh_data.fetch_gameweek_fixtures", AsyncMock(return_value=[])), \
+         patch("commands.refresh_data.fetch_element_summary", AsyncMock(return_value={"history": []})) as mock_summary, \
+         patch("commands.refresh_data.get_jwt_token", AsyncMock(side_effect=Exception("No auth"))), \
+         patch("commands.refresh_data.process_directory"), \
+         patch("commands.refresh_data.append_price_snapshot"), \
+         patch("commands.refresh_data.prune_stale_element_summaries", return_value=0), \
+         patch("commands.refresh_data.pin_season_archive", return_value=pin), \
+         caplog.at_level("INFO"):
+        from commands.refresh_data import main
+        await main(["--concurrency", "25"])
+
+    assert mock_summary.call_count == 204
+    assert "concurrency limit = 25" in caplog.text
+    assert "Progress: fetched 100/204" in caplog.text
+    assert "Progress: fetched 200/204" in caplog.text
+    assert "Progress: fetched 204/204" in caplog.text
+    assert "Fetched 204 player summaries in" in caplog.text
+

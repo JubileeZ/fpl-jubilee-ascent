@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 
 import httpx
@@ -56,12 +57,13 @@ def save_archive_raw(raw_dir: Path, filename: str, data: object) -> None:
         json.dump(data, handle, indent=2)
 
 
-async def fetch_live_season_raw(season: str, raw_dir: Path) -> None:
+async def fetch_live_season_raw(season: str, raw_dir: Path, concurrency: int = 20) -> None:
     if season != LIVE_SNAPSHOT_SEASON:
         raise ValueError(
             f"Live FPL API cannot snapshot {season}; pass --from-raw-dir with that season's raw JSON."
         )
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    limits = httpx.Limits(max_keepalive_connections=concurrency, max_connections=concurrency * 2)
+    async with httpx.AsyncClient(timeout=30.0, limits=limits) as client:
         logger.info("Starting historical %s season raw snapshot...", season)
         bootstrap = await fetch_bootstrap_static(client, write_cache=False)
         save_archive_raw(raw_dir, "bootstrap_static.json", bootstrap)
@@ -80,27 +82,44 @@ async def fetch_live_season_raw(season: str, raw_dir: Path) -> None:
         await asyncio.gather(*(fetch_live(gw_id) for gw_id in range(1, 39)))
         elements = bootstrap.get("elements", [])
         player_ids = [player["id"] for player in elements]
-        semaphore_elements = asyncio.Semaphore(5)
+        logger.info(
+            "Fetching element summaries for all %s players (concurrency limit = %s)...",
+            len(player_ids),
+            concurrency,
+        )
+        semaphore_elements = asyncio.Semaphore(concurrency)
+        completed = 0
+        start_time = time.perf_counter()
 
         async def fetch_summary(player_id: int) -> None:
+            nonlocal completed
             async with semaphore_elements:
                 try:
                     data = await fetch_element_summary(client, player_id, write_cache=False)
                     save_archive_raw(raw_dir, f"element_summary_{player_id}.json", data)
                 except Exception as exc:
                     logger.error("Failed to fetch summary for player %s: %s", player_id, exc)
+                finally:
+                    completed += 1
+                    if completed % 100 == 0 or completed == len(player_ids):
+                        logger.info("Progress: fetched %s/%s player summaries.", completed, len(player_ids))
 
-        chunk_size = 50
-        for i in range(0, len(player_ids), chunk_size):
-            chunk = player_ids[i : i + chunk_size]
-            await asyncio.gather(*(fetch_summary(pid) for pid in chunk))
-            logger.info("Progress: fetched %s/%s player summaries.", i + len(chunk), len(player_ids))
-            await asyncio.sleep(0.5)
+        if player_ids:
+            await asyncio.gather(*(fetch_summary(pid) for pid in player_ids))
+            elapsed = time.perf_counter() - start_time
+            rate = len(player_ids) / elapsed if elapsed > 0 else 0.0
+            logger.info("Fetched %s player summaries in %.1fs (%.1f req/s).", len(player_ids), elapsed, rate)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Write a season archive under data/archive/<season>/")
     parser.add_argument("--season", default=LIVE_SNAPSHOT_SEASON, help="Season folder name, e.g. 2024-25")
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=20,
+        help="Concurrent player summary requests (default: 20)",
+    )
     parser.add_argument(
         "--from-raw-dir",
         type=Path,
@@ -143,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             f"Live FPL API cannot snapshot {args.season}; pass --from-raw-dir with that season's raw JSON."
         )
     raw_dir = archive_raw_dir(args.season, archive_root=args.archive_root)
-    asyncio.run(fetch_live_season_raw(args.season, raw_dir))
+    asyncio.run(fetch_live_season_raw(args.season, raw_dir, concurrency=args.concurrency))
     processed = process_season_archive(args.season, raw_dir, archive_root=args.archive_root)
     logger.info("Archived data processing complete: %s", processed)
     return 0
