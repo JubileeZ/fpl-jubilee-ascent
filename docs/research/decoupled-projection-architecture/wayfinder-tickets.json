@@ -1,0 +1,88 @@
+{
+  "repository": "JubileeZ/fpl-jubilee-ascent",
+  "publication_status": "published_verified",
+  "map": {
+    "title": "[Wayfinder Map] Decoupled Minutes & Event Architecture with Decomposed Event Challenger",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "number": 159,
+    "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159",
+    "state": "open",
+    "body": "## Destination\n\nDecouple minutes and event-rate modeling into independent modules ($M_{\\text{mins}}$ and $M_{\\text{events}}$) with dedicated validation gates (Tier 1 Minutes Gate, Tier 2 Oracle Event Gate, Tier 3 Integrated Gate), and evaluate `DecomposedEventChallengerModel` as the first candidate event rate engine. Complete when architectural interfaces, backtesting harnesses, and candidate implementation are locked into reviewable decisions and ready for execution.\n\n## Notes\n\nDomain: FPL score projection math, statistical backtesting, and model architecture.\nConsult Wayfinder, antislop, domain-modeling, and grilling.\nP1/P2/P3 denote priority/impact triage.\nOpen children are decision questions, not automatically approved changes.\nReference evidence and proposals stored in `docs/research/decoupled-projection-architecture/`.\n\n## Decisions so far\n\n<!-- the index: one line per closed ticket, enough to judge relevance, then zoom the link for the detail the ticket holds -->\n\n## Not yet specified\n\n- Specialized minutes model $M_{\\text{mins}}$ (manager rotation entropy, rest-interval fatigue decay, and continuous substitution hazard curves)\n- Live operational pipeline integration for weekly dashboard and transfer solve scenarios\n\n## Out of scope\n\n- Production deployment of unvalidated models\n- Breaking existing BaseModel or CLI solver contracts\n- Banned dead levers from Candidate Ledger (club 11-man mass conservation, in-season ridge G/A refits, unseeded defender K relaxation, raw Poisson multipliers)\n"
+  },
+  "tickets": [
+    {
+      "key": "core_interfaces_composite",
+      "title": "[P1] How should BaseMinutesModel, BaseEventRateModel, and CompositeProjectionModel be structured?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should the base interfaces (`BaseMinutesModel`, `BaseEventRateModel`, `CompositeProjectionModel`) be structured in `models/base.py` and `models/__init__.py` to decouple participation duration from per-minute event rates while preserving 100% backward compatibility for existing monoliths (`def_xg_shrink_challenger`, `learned_start_challenger`)?\n\n## Observed evidence & proposal\n\nCurrently, `BaseModel.predict()` couples minutes and rates inside one monolithic pass. The proposed refactor introduces:\n1. `MinutesPrediction` dataclass containing `p_dnp`, `p_start`, `p_sub_in`, `xmins_if_start`, `xmins_if_sub_in`, `projected_minutes`, and `p_60_plus`.\n2. `BaseMinutesModel` with `predict_minutes()` and `predict_states()`.\n3. `BaseEventRateModel` with `predict_rates(df_feat, minutes_pred, horizon)`.\n4. `CompositeProjectionModel(BaseModel)` that delegates to any minutes and event model pair, with deterministic overrides when `external_xmins` is present.\n5. Dynamic model spec resolution `composite:<minutes_key>:<event_key>` in `models.get_model()`.\n\n## Decision acceptance\n\n1. `CompositeProjectionModel` satisfies `assert_projection_contract` on all 13 additive components.\n2. Legacy models continue to inherit and execute `BaseModel.predict` unchanged.\n3. Model resolution `composite:learned_start:def_xg_shrink` instantiates and predicts without error.\n4. Ruff clean, all existing unit tests pass.\n",
+      "number": 160,
+      "id": 5848749137,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/160",
+      "state": "open"
+    },
+    {
+      "key": "oracle_walkforward_gate",
+      "title": "[P1] How should Oracle Minutes injection and Tier 2 Event Gate be wired into walkforward backtests?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should the walk-forward backtest runner in `backtesting/walkforward.py` and promotion gate in `backtesting/promotion.py` isolate per-minute event accuracy using actual match minutes, and what decision bounds define a Tier 2 pass?\n\n## Observed evidence & proposal\n\nIn the October 2026 diagnostic (`docs/research/multi-component-ladder/multi-component-ladder.md`), conditioning on actual minutes dropped playable pool bias from -1.11 to -0.08 pts and increased correlation by +52%.\nProposed implementation:\n1. Add `oracle_minutes: bool = False` to `WalkforwardConfig`.\n2. Add `_inject_oracle_minutes()` joining `df_perf` actual match minutes into `df_feat[\"external_xmins\"]` at `(player_id, gameweek_id, fixture_id)` granularity.\n3. Compute `oracle_formation_xi_regret` when `oracle_minutes=True`.\n4. Implement `evaluate_oracle_event_gate()` in `backtesting/promotion.py`: requires $\\Delta_{\\text{oracle}} > 0$, block bootstrap $P \\ge 0.60$, and signed bias bounded within $\\pm 0.10$ pts.\n\n## Decision acceptance\n\n1. Running walkforward backtest with `oracle_minutes=True` executes without data leakage.\n2. `evaluate_oracle_event_gate()` correctly issues pass/fail verdicts on Oracle Formation Regret and bias tolerance.\n3. Standard walkforward backtest (`oracle_minutes=False`) runs identically to master.\n",
+      "number": 161,
+      "id": 5848762028,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/161",
+      "state": "open"
+    },
+    {
+      "key": "standalone_minutes_gate",
+      "title": "[P2] How should the standalone Tier 1 Minutes Gate CLI and evaluation metrics operate?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nWhat CLI interface and statistical metrics should evaluate standalone Minutes Projection Models ($M_{\\text{mins}}$) against ground truth, and what thresholds govern the Tier 1 Minutes Gate?\n\n## Observed evidence & proposal\n\nCurrently, minutes errors are evaluated only as a secondary guardrail (`xmins_mae <= champ * 1.01`) during full-season point backtests. A dedicated standalone evaluator is needed to test rotation models independently.\nProposed implementation:\n1. Create `commands/evaluate_minutes.py` (`python -m commands.evaluate_minutes --model ... --champion ... --data-dir ...`).\n2. Primary metrics: Minutes MAE and RMSE on active players.\n3. Multiclass participation Brier score across `(p_dnp, p_start, p_sub_in)`.\n4. Starter discrimination: ROC-AUC, Precision, and Recall on capturing 60+ minute appearances.\n5. `evaluate_minutes_gate()`: Requires positive MAE delta, non-regressing Brier score, recall tolerance within $-0.005$, and circular block bootstrap $P \\ge 0.60$.\n\n## Decision acceptance\n\n1. CLI produces structured JSON metrics and comparative gate verdicts against Champion minutes.\n2. Brier score correctly handles 3-way participation states.\n3. Unit tests in `tests/test_decoupled_models.py` verify gate behavior on synthetic fixtures.\n",
+      "number": 162,
+      "id": 5848763068,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/162",
+      "state": "open"
+    },
+    {
+      "key": "decomposed_xg_aerial",
+      "title": "[P1] How should Open-Play vs. Set-Piece xG decomposition and Aerial Target Prior be regularized?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nHow should non-penalty expected goals be split into Open-Play ($xG_{\\text{OP}}$) and Set-Piece ($xG_{\\text{SP}}$) channels in `DecomposedEventChallengerModel`, and how do we prevent set-piece noise from violating the Candidate Ledger ban on unseeded defender relaxation?\n\n## Observed evidence & proposal\n\nThe Champion (`def_xg_shrink_challenger`) shrinks all defender $xG$ uniformly at $K=2400$, under-projecting offensive fullbacks and dominant aerial center-backs.\nProposed mechanism:\n1. Decompose historical $xG$ into $xG_{\\text{OP}}$ and $xG_{\\text{SP}}$ using threat/creativity ratios or explicit tags.\n2. Shrink $xG_{\\text{OP}}$ with $K_{\\text{DEF, OP}} = 1200$, $K_{\\text{ATK, OP}} = 360$.\n3. Gate defender set-piece shrinkage $K_{\\text{DEF, SP}} \\in [900, 2400]$ via an **Aerial Target Prior** $\\tau_i$ ($K_{\\tau} = 1800$), enforcing a hard floor of $K \\ge 900$ to avoid the optimizer's curse.\n4. Scale modalities by damped opponent concession multipliers ($\\psi_{\\text{opp}, \\text{OP}}, \\psi_{\\text{opp}, \\text{SP}}$), shrunk by $s_{\\text{mod}} = 0.35$ and hard-clipped to $[0.75, 1.30]$.\n\n## Decision acceptance\n\n1. Gated shrinkage floor ($K \\ge 900$) strictly prevents volatile defender spikes.\n2. Modality concession multipliers are mean-normalized so overall league bias remains zero-sum.\n3. No club-level DEF priors are stacked (respecting the Dead Lever ban).\n",
+      "number": 163,
+      "id": 5848764432,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/163",
+      "state": "open"
+    },
+    {
+      "key": "teammate_finishing_gk_saves",
+      "title": "[P2] How should LOO Teammate Finishing Multiplier and Shot-Volume GK Saves be calibrated?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nHow should teammate finishing skill modulate the Ridge Poisson assist GLM without overfitting, and how should opponent shot volume and shot danger calibrate goalkeeper saves?\n\n## Observed evidence & proposal\n\nIn-season Ridge G/A refits previously failed promotion due to chasing noisy assist hauls. Conversely, pure $xA$ ignores that passes to elite finishers (Haaland) convert at higher rates.\nProposed mechanism:\n1. Retain the stable Ridge Poisson $xA$ GLM ($\\lambda = 10.0$).\n2. Modulate assist rates by a leave-one-out (LOO) club finishing multiplier:\n   $$\\Phi_{\\text{club}(-i)} = \\text{clip}\\left(1 + \\frac{\\sum_{j \\ne i} \\omega_j (G_j - xG_j)}{\\sum_{j \\ne i} \\omega_j xG_j + 25.0}, 0.88, 1.15\\right)$$\n3. Goalkeeper save intensity $\\hat{r}_{\\text{saves}} = \\hat{s}_{i, 0} \\cdot \\text{clip}(V_{\\text{opp}}^{0.45} \\cdot D_{\\text{opp}}^{-0.25}, 0.70, 1.45)$, where $V_{\\text{opp}}$ is opponent shot volume (threat) and $D_{\\text{opp}}$ is shot danger ($xG/\\text{threat}$).\n\n## Decision acceptance\n\n1. Assist conversion multiplier is strictly leave-one-out and centered across the gameweek pool.\n2. Goalkeeper save adjustments correctly reward keepers facing perimeter-shooting teams while capping downside.\n3. Playable pool signed bias remains within $[-0.10, +0.10]$.\n",
+      "number": 164,
+      "id": 5848765558,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/164",
+      "state": "open"
+    },
+    {
+      "key": "verification_fixtures_parity",
+      "title": "[P2] What test fixtures and verification suite prove bit-for-bit backward compatibility?",
+      "labels": [
+        "wayfinder:task"
+      ],
+      "body": "## Question\n\nWhat test fixtures, integration assertions, and gate checks prove that decoupling minutes from event rates introduces zero regressions to legacy champions and existing dashboard/solve commands?\n\n## Observed evidence & proposal\n\nProposed test plan:\n1. Unit tests in `tests/test_decoupled_models.py` verifying:\n   - `CompositeProjectionModel` satisfies `ProjectionContract`.\n   - `states_from_external_minutes` produces deterministic participation states.\n   - Standalone minutes metrics calculation and gate verdict.\n   - `evaluate_oracle_event_gate` pass/fail evaluation.\n2. Bit-for-bit parity check between `CompositeProjectionModel(learned_start, def_xg_shrink)` and native `def_xg_shrink_challenger`.\n3. Validation commands:\n   - `uv run ruff check .`\n   - `uv run pytest tests/test_decoupled_models.py -q`\n   - `uv run pytest tests/ -k \"def_xg_shrink_challenger or learned_start_challenger or solve or dashboard\" -q`\n   - `bash tests/verify.sh`\n\n## Decision acceptance\n\n1. All new tests pass cleanly.\n2. Existing 547+ suite tests pass with 0 regressions.\n3. Delivery gate `bash tests/verify.sh` passes.\n",
+      "number": 165,
+      "id": 5848766720,
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/165",
+      "state": "open"
+    }
+  ]
+}
