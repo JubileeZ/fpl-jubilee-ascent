@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Decoupled Minutes & Event Architecture Demo</title>
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card-bg: #182230;
+      --border: #28364a;
+      --text: #e1e7f0;
+      --muted: #8b9bb4;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 2rem;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p.subtitle { color: var(--muted); font-size: 0.95rem; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #fff; }
+    
+    .stat-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--muted); }
+    .stat-value { font-family: var(--font-mono); font-weight: 500; }
+    .stat-value.highlight { color: #60a5fa; }
+    .stat-value.total { color: var(--success); font-weight: 700; font-size: 1.05rem; }
+
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .tab-btn {
+      background: none; border: none; color: var(--muted);
+      padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active { color: var(--text); border-color: var(--accent); font-weight: 600; }
+    
+    .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    button.action-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button.action-btn:hover { background: var(--accent-hover); }
+    button.action-btn.secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+    button.action-btn.secondary:hover { background: rgba(255,255,255,0.15); }
+    
+    .callout {
+      background: rgba(37, 99, 235, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: #93c5fd;
+      margin-top: 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      border-radius: 4px;
+      background: rgba(255,255,255,0.1);
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Decoupled Minutes & Event Architecture <span class="badge">PROTOTYPE</span></h1>
+    <p class="subtitle">
+      Demonstrating independent execution of <code>BaseMinutesModel</code> (participation states & durations)
+      and <code>BaseEventRateModel</code> (per-90 scoring), dynamically composed via <code>CompositeProjectionModel</code>.
+    </p>
+  </header>
+
+  <div class="tabs" id="scenario-tabs">
+    <button class="tab-btn active" onclick="switchScenario('starter')">Scenario 1: Elite Starter</button>
+    <button class="tab-btn" onclick="switchScenario('cameo')">Scenario 2: Rotation Cameo</button>
+    <button class="tab-btn" onclick="switchScenario('defender')">Scenario 3: Aerial Defender</button>
+    <button class="tab-btn" onclick="switchScenario('oracle')">Scenario 4: Oracle Minutes Injection</button>
+  </div>
+
+  <div id="scenario-desc" class="callout"></div>
+
+  <div class="grid" style="margin-top: 1.5rem;">
+    <!-- Minutes Model Panel -->
+    <div class="card">
+      <h2>1. BaseMinutesModel State (M_mins)</h2>
+      <div class="stat-row">
+        <span class="stat-label">Model Engine:</span>
+        <span class="stat-value highlight" id="m-engine">LearnedStartMinutesModel</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">P(Start):</span>
+        <span class="stat-value" id="m-pstart">0.90</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">P(Sub In):</span>
+        <span class="stat-value" id="m-psub">0.05</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">P(DNP):</span>
+        <span class="stat-value" id="m-pdnp">0.05</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">xMins if Start:</span>
+        <span class="stat-value" id="m-startmins">85.0 min</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">xMins if Sub:</span>
+        <span class="stat-value" id="m-submins">18.0 min</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">P(60+ Minutes):</span>
+        <span class="stat-value" id="m-p60">0.89</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Projected Minutes:</span>
+        <span class="stat-value highlight" id="m-expected">77.4 min</span>
+      </div>
+      
+      <div class="btn-group">
+        <button class="action-btn secondary" onclick="adjustMinutes(-10)">-10 Mins</button>
+        <button class="action-btn secondary" onclick="adjustMinutes(+10)">+10 Mins</button>
+        <button class="action-btn secondary" onclick="toggleBenchRisk()">Toggle Bench Risk</button>
+      </div>
+    </div>
+
+    <!-- Event Model Panel -->
+    <div class="card">
+      <h2>2. BaseEventRateModel State (M_events)</h2>
+      <div class="stat-row">
+        <span class="stat-label">Model Engine:</span>
+        <span class="stat-value highlight" id="e-engine">DefXgShrinkEventModel</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Position:</span>
+        <span class="stat-value" id="e-pos">Forward (FWD)</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">xG / 90 (shrunk):</span>
+        <span class="stat-value" id="e-xg90">0.75</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">xA / 90:</span>
+        <span class="stat-value" id="e-xa90">0.20</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Clean Sheet Prob (90'):</span>
+        <span class="stat-value" id="e-cs90">0.35</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">xBPS Baseline:</span>
+        <span class="stat-value" id="e-xbps">24.5</span>
+      </div>
+      
+      <div class="btn-group">
+        <button class="action-btn secondary" onclick="cyclePosition()">Cycle Position</button>
+        <button class="action-btn secondary" onclick="adjustRates(0.2)">+0.2 xG/90</button>
+        <button class="action-btn secondary" onclick="adjustRates(-0.2)">-0.2 xG/90</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Composite Result Card -->
+  <div class="card">
+    <h2>3. CompositeProjectionModel Output (13 Components)</h2>
+    <div class="stat-row">
+      <span class="stat-label">Composite Identifier:</span>
+      <span class="stat-value" id="c-name">composite:learned_start:def_xg_shrink</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Appearance Points (xp_minutes):</span>
+      <span class="stat-value" id="c-xpmin">1.94 pts</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Goals Expectancy (xp_goals):</span>
+      <span class="stat-value" id="c-xpgoal">2.58 pts</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Assists Expectancy (xp_assists):</span>
+      <span class="stat-value" id="c-xpassist">0.52 pts</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Clean Sheet Expectancy (xp_clean_sheet):</span>
+      <span class="stat-value" id="c-xpcs">0.00 pts</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Allocated Bonus (xp_bonus):</span>
+      <span class="stat-value" id="c-xpbonus">0.85 pts</span>
+    </div>
+    <div class="stat-row" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+      <span class="stat-label" style="font-weight: 600; color: #fff;">Total Projected Points (xP):</span>
+      <span class="stat-value total" id="c-total">5.89 pts</span>
+    </div>
+  </div>
+
+  <script>
+    // Pure logic state module
+    const state = {
+      scenario: 'starter',
+      minsEngine: 'LearnedStartMinutesModel',
+      eventEngine: 'DefXgShrinkEventModel',
+      pStart: 0.90,
+      pSub: 0.05,
+      pDnp: 0.05,
+      startMins: 85.0,
+      subMins: 18.0,
+      pos: 'FWD',
+      xg90: 0.75,
+      xa90: 0.20,
+      cs90: 0.35,
+      isOracle: false
+    };
+
+    const scenarios = {
+      starter: {
+        desc: "Regular 90-minute starter (e.g. Haaland). High P(Start), long duration, robust appearance bonus.",
+        pStart: 0.92, pSub: 0.04, pDnp: 0.04, startMins: 86.0, subMins: 18.0,
+        pos: 'FWD', xg90: 0.85, xa90: 0.15, cs90: 0.38, isOracle: false
+      },
+      cameo: {
+        desc: "Impact substitute / winger (e.g. rotation winger). Low P(Start), high P(Sub-in), duration ~18 minutes.",
+        pStart: 0.25, pSub: 0.60, pDnp: 0.15, startMins: 65.0, subMins: 22.0,
+        pos: 'MID', xg90: 0.35, xa90: 0.30, cs90: 0.30, isOracle: false
+      },
+      defender: {
+        desc: "Aerial threat center-back (e.g. Gabriel). DEF xG shrunk with K=2400 to prevent optimizer haul chasing, CS scaled by P(60+).",
+        pStart: 0.95, pSub: 0.01, pDnp: 0.04, startMins: 90.0, subMins: 10.0,
+        pos: 'DEF', xg90: 0.12, xa90: 0.05, cs90: 0.42, isOracle: false
+      },
+      oracle: {
+        desc: "Oracle Minutes Test (Tier 2 Event Gate). Ground truth minutes = 90.0 injected directly, bypassing minutes uncertainty to isolate event accuracy.",
+        pStart: 1.00, pSub: 0.00, pDnp: 0.00, startMins: 90.0, subMins: 0.0,
+        pos: 'MID', xg90: 0.50, xa90: 0.40, cs90: 0.40, isOracle: true
+      }
+    };
+
+    function render() {
+      // Calculate minutes
+      const p60_start = Math.min(1.0, Math.max(0.0, (state.startMins - 45.0) / 30.0));
+      const p60_sub = Math.min(1.0, Math.max(0.0, (state.subMins - 45.0) / 30.0));
+      const p60 = state.pStart * p60_start + state.pSub * p60_sub;
+      const expectedMins = state.pStart * state.startMins + state.pSub * state.subMins;
+
+      // Update minutes DOM
+      document.getElementById('m-pstart').innerText = state.pStart.toFixed(2);
+      document.getElementById('m-psub').innerText = state.pSub.toFixed(2);
+      document.getElementById('m-pdnp').innerText = state.pDnp.toFixed(2);
+      document.getElementById('m-startmins').innerText = state.startMins.toFixed(1) + ' min';
+      document.getElementById('m-submins').innerText = state.subMins.toFixed(1) + ' min';
+      document.getElementById('m-p60').innerText = p60.toFixed(2);
+      document.getElementById('m-expected').innerText = expectedMins.toFixed(1) + ' min';
+
+      // Update event DOM
+      document.getElementById('e-pos').innerText = state.pos;
+      document.getElementById('e-xg90').innerText = state.xg90.toFixed(2);
+      document.getElementById('e-xa90').innerText = state.xa90.toFixed(2);
+      document.getElementById('e-cs90').innerText = state.cs90.toFixed(2);
+
+      // Scoring Matrix calculation
+      const goalPts = state.pos === 'DEF' ? 6.0 : (state.pos === 'MID' ? 5.0 : 4.0);
+      const csPts = state.pos === 'DEF' ? 4.0 : (state.pos === 'MID' ? 1.0 : 0.0);
+
+      const xp_min = (state.pStart + state.pSub) * 1.0 + p60 * 1.0;
+      const expectedGoals = (state.xg90 * expectedMins) / 90.0;
+      const expectedAssists = (state.xa90 * expectedMins) / 90.0;
+      const xp_goals = expectedGoals * goalPts;
+      const xp_assists = expectedAssists * 3.0;
+      const xp_cs = state.pos === 'FWD' ? 0.0 : p60 * state.cs90 * csPts;
+      const xp_bonus = Math.min(2.0, (xp_goals + xp_assists) * 0.25 + (p60 > 0.5 ? 0.2 : 0.0));
+      const totalXp = xp_min + xp_goals + xp_assists + xp_cs + xp_bonus;
+
+      // Update composite DOM
+      document.getElementById('c-name').innerText = state.isOracle 
+        ? "composite:oracle_minutes:" + state.eventEngine
+        : "composite:learned_start:" + state.eventEngine;
+      document.getElementById('c-xpmin').innerText = xp_min.toFixed(2) + ' pts';
+      document.getElementById('c-xpgoal').innerText = xp_goals.toFixed(2) + ' pts';
+      document.getElementById('c-xpassist').innerText = xp_assists.toFixed(2) + ' pts';
+      document.getElementById('c-xpcs').innerText = xp_cs.toFixed(2) + ' pts';
+      document.getElementById('c-xpbonus').innerText = xp_bonus.toFixed(2) + ' pts';
+      document.getElementById('c-total').innerText = totalXp.toFixed(2) + ' pts';
+    }
+
+    function switchScenario(key) {
+      state.scenario = key;
+      Object.assign(state, scenarios[key]);
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('scenario-desc').innerText = scenarios[key].desc;
+      render();
+    }
+
+    function adjustMinutes(delta) {
+      state.startMins = Math.max(45.0, Math.min(90.0, state.startMins + delta));
+      render();
+    }
+
+    function toggleBenchRisk() {
+      if (state.pStart > 0.6) {
+        state.pStart = 0.35;
+        state.pSub = 0.45;
+        state.pDnp = 0.20;
+      } else {
+        state.pStart = 0.90;
+        state.pSub = 0.05;
+        state.pDnp = 0.05;
+      }
+      render();
+    }
+
+    function cyclePosition() {
+      const order = ['FWD', 'MID', 'DEF'];
+      const nextIdx = (order.indexOf(state.pos) + 1) % order.length;
+      state.pos = order[nextIdx];
+      render();
+    }
+
+    function adjustRates(delta) {
+      state.xg90 = Math.max(0.0, state.xg90 + delta);
+      render();
+    }
+
+    // Init
+    document.getElementById('scenario-desc').innerText = scenarios.starter.desc;
+    render();
+  </script>
+</body>
+</html>

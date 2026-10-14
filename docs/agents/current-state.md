@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Next work — start here
 
-**Decoupled Minutes & Event Architecture & Wayfinder Map #159, 2026-10-14:** Decoupled projection architecture separating Minutes ($M_{\text{mins}}$) and Event Rates ($M_{\text{events}}$) with 3-tier gating (Tier 1 Standalone Minutes Gate, Tier 2 Oracle Minutes Event Gate, Tier 3 Integrated Gate). Published Wayfinder Map #159 with 6 child issues (#160–#165); context docs and prompts in `docs/research/decoupled-projection-architecture/`; manifest `wayfinder-tickets.json`.
+**Decoupled Minutes & Event Architecture & Wayfinder Map #159, 2026-10-14:** Decoupled projection architecture separating Minutes ($M_{\text{mins}}$) and Event Rates ($M_{\text{events}}$) with 3-tier gating. Wayfinder Map #159 active: Issue #160 closed via HITL prototype verification (`MinutesPrediction` dataclass, `BaseMinutesModel`, `BaseEventRateModel`, `CompositeProjectionModel`, dynamic composite resolution). Prototype assets in `docs/research/decoupled-projection-architecture/`. Next frontier ticket: #161 (Oracle Minutes walkforward injection & Tier 2 gate).
 
 **Explorer Table Component Metrics & Inspection UX, 2026-10-11:** Curated Explorer table with sortable component metrics (`xP GI`, `xP Goals`, `xP Assists`, `xP CS`, `xP DefCon`, `xP Conceded`, `xP Saves`, `xP Bonus`) via segmented control view presets (Overview, Attacking, Defensive, All Components). Database `ID` and `Bubble Size` hidden from visible table columns. Top Action Bar above table header provides 1-click inspection details and watchlist management on row click without disruptive modal overlays; redundant 600-item dropdown removed. Persisted antislop `during` mode project preference in `AGENTS.md`. 17 suite tests in `test_streamlit_dashboard.py`, Ruff clean, delivery gate 131 pass.
 11: 
@@ -22,7 +22,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 21: 
 22: **Delivery checkpoint, 2026-10-08:** planner commits `38b0027` and `2516565` published on `origin/main`; progress and verification recorded in the product spec. Docker deployment remains deferred.
 23: 
-24: **Active map:** [Decoupled Minutes & Event Architecture with Decomposed Event Challenger #159](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159): 6 child issues open (#160–#165); specs in `docs/research/decoupled-projection-architecture/`. Prior map #150 closed.
+24: **Active map:** [Decoupled Minutes & Event Architecture with Decomposed Event Challenger #159](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159): Issue #160 closed, 5 child issues open (#161–#165); specs in `docs/research/decoupled-projection-architecture/`. Prior map #150 closed.
 25: 
 26: Champion `def_xg_shrink_challenger` (ADR 0055, 2026-10-01, provisional) — see Formation eval retest below. Prior Champion `club_def_prior_challenger` (ADR 0051, 2026-09-29) — see Component-model-ideas Queue run below. Prior Champion `learned_start_challenger` (ADR 0050, 2026-09-28).
 

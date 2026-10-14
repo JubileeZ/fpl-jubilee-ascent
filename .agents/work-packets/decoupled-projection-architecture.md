@@ -8,10 +8,10 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `docs/research/decoupled-projection-architecture/*`, `docs/agents/current-state.md`, `docs/research/INDEX.md`
-- **Decisions:** Decouple minutes and event modeling into $M_{\text{mins}}$ and $M_{\text{events}}$; implement 3-tier gating (Tier 1 Standalone Minutes Gate, Tier 2 Oracle Minutes Event Gate, Tier 3 Integrated Gate); chart Wayfinder Map #159 with 6 child issues (#160-#165).
+- **Files:** `docs/research/decoupled-projection-architecture/*`, `docs/agents/current-state.md`, `docs/research/INDEX.md`, `.agents/handoff-pointer`
+- **Decisions:** Decouple minutes and event modeling into $M_{\text{mins}}$ and $M_{\text{events}}$; implement 3-tier gating; chart Wayfinder Map #159; resolved #160 (MinutesPrediction dataclass, BaseMinutesModel, BaseEventRateModel, CompositeProjectionModel, dynamic composite spec resolution, Oracle minutes short-circuiting) via prototype verification.
 - **Blocked:** None
-- **Next:** Implement PR 1 (core interfaces & composite model adapter #160) and PR 2 (oracle minutes walkforward & Tier 2 gate #161).
+- **Next:** Wayfinder Ticket #161 (Oracle Minutes walkforward injection & Tier 2 Event Gate).
 
 ## Todo
 - [x] Document Champion model context and dead levers (`champion_model_context.md`)
@@ -19,11 +19,13 @@
 - [x] Formulate decoupled minutes vs event rate architecture proposal (`decoupled_minutes_event_proposal.md`)
 - [x] Prepare specialized agent prompts for external ideation (`agent_prompts_for_ideation.md`)
 - [x] Chart and publish Wayfinder Map #159 and 6 child decision issues (#160-#165)
-- [ ] Implement PR 1: Core interfaces & CompositeProjectionModel adapter (#160)
-- [ ] Implement PR 2: Oracle Minutes walkforward injection & Tier 2 gate (#161)
-- [ ] Implement PR 3: Standalone minutes evaluator CLI & Tier 1 gate (#162)
-- [ ] Implement PR 4: DecomposedEventChallengerModel candidate rate engine (#163, #164)
-- [ ] Verify test suite, bit-for-bit parity, and delivery gate (#165)
+- [x] Resolve Issue #160: Core interfaces & CompositeProjectionModel architecture (prototype verified, decisions locked)
+- [ ] Resolve Issue #161: Oracle Minutes walkforward injection & Tier 2 gate
+- [ ] Resolve Issue #162: Standalone minutes evaluator CLI & Tier 1 gate
+- [ ] Resolve Issue #163: Open-Play vs. Set-Piece xG decomposition and Aerial Target Prior
+- [ ] Resolve Issue #164: LOO Teammate Finishing Multiplier and Shot-Volume GK Saves
+- [ ] Resolve Issue #165: Test fixtures, backward compatibility verification, and delivery gate
 
 ## Blockers / Notes
-- None
+- Map #159 sub-issues: 1/6 (16%) resolved.
+
