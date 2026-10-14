@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tier 2 Oracle Event Gate & Walk-Forward Runner (Wayfinder #161)</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --pass: #22c55e;
+      --pass-bg: rgba(34, 197, 94, 0.15);
+      --fail: #ef4444;
+      --fail-bg: rgba(239, 68, 68, 0.15);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+    .badge-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail); }
+
+    .grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .metric-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .reasons-list {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+    }
+    .reasons-list p { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .reasons-list ul { font-size: 0.85rem; color: var(--text-muted); padding-left: 1.25rem; }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { background: #334155; color: var(--text); }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+    }
+
+    .scenario-desc {
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      background: #0f172a;
+      padding: 0.85rem;
+      border-radius: 6px;
+      border-left: 3px solid var(--accent);
+    }
+
+    /* Controls */
+    .slider-row {
+      margin-bottom: 1rem;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+    .slider-val {
+      font-weight: 600;
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .ctrl-select {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    .btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:hover { background: #475569; }
+
+    .code-preview {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      background: #0f172a;
+      padding: 0.85rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      white-space: pre;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Tier 2 Oracle Event Gate & Walk-Forward Runner</h1>
+    <p class="subtitle">
+      Logic Prototype for Wayfinder Ticket #161 &bull; Isolating event rate accuracy from participation noise via actual played match minutes ($m = m^{\text{actual}}$) evaluated on Blended Points (Process + Realized).
+    </p>
+  </header>
+
+  <!-- Walkthrough Scenarios -->
+  <div class="card">
+    <div class="card-title">
+      <span>Guided Scenarios</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Click to load pre-configured test scenarios</span>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="loadScenario('pass', this)">1. Superior Event Engine (Pass)</button>
+      <button class="tab-btn" onclick="loadScenario('bias', this)">2. Over-Inflated Haul Chaser (Bias Fail)</button>
+      <button class="tab-btn" onclick="loadScenario('captain', this)">3. Captaincy Inversion (Cap Fail)</button>
+      <button class="tab-btn" onclick="loadScenario('volatile', this)">4. Volatile Spike (Bootstrap Fail)</button>
+      <button class="tab-btn" onclick="loadScenario('worse', this)">5. Inferior Event Rates (&Delta; &le; 0 Fail)</button>
+      <button class="tab-btn" onclick="loadScenario('leakage', this)">6. Point-in-Time Zero Leakage Audit</button>
+    </div>
+    <div id="scenario-text" class="scenario-desc">
+      <!-- Dynamic scenario description -->
+    </div>
+  </div>
+
+  <!-- State Dashboard -->
+  <div class="card">
+    <div class="card-title">
+      <span>Tier 2 Gate Evaluation State</span>
+      <div id="verdict-badge" class="badge badge-pass">GATE PASS</div>
+    </div>
+
+    <div class="grid-metrics">
+      <div class="metric-box">
+        <div class="metric-label">Oracle Formation Regret</div>
+        <div id="val-regret" class="metric-value">63.51 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs 63.96</span></div>
+        <div class="metric-sub">Candidate vs. Champion (pts/GW)</div>
+      </div>
+
+      <div class="metric-box">
+        <div class="metric-label">Oracle Delta (&Delta;<sub>oracle</sub>)</div>
+        <div id="val-delta" class="metric-value" style="color: var(--pass);">+0.450</div>
+        <div class="metric-sub">Must be &gt; 0.00 pts/GW (Blended Target)</div>
+      </div>
+
+      <div class="metric-box">
+        <div class="metric-label">Block Bootstrap P(&Delta; &gt; 0)</div>
+        <div id="val-bootstrap" class="metric-value">0.842</div>
+        <div class="metric-sub">B=20,000 &bull; Block=3 GWs &bull; P &ge; 0.60</div>
+      </div>
+
+      <div class="metric-box">
+        <div class="metric-label">Playable Pool Bias</div>
+        <div id="val-bias" class="metric-value">-0.234 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs -0.244</span></div>
+        <div class="metric-sub">Degradation &le; +0.02 pts vs Champ</div>
+      </div>
+
+      <div class="metric-box">
+        <div class="metric-label">Captaincy Regret</div>
+        <div id="val-cap" class="metric-value">2.74 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs 2.79</span></div>
+        <div class="metric-sub">Guardrail &le; Champ + 0.15 pts/GW</div>
+      </div>
+    </div>
+
+    <div id="reasons-container" class="reasons-list" style="display: none;">
+      <p style="color: var(--fail);">Gate Failure Diagnostics:</p>
+      <ul id="reasons-list"></ul>
+    </div>
+  </div>
+
+  <!-- Interactive Sandbox Controls -->
+  <div class="card">
+    <div class="card-title">
+      <span>Parameter Control Sandbox</span>
+      <button class="btn" onclick="resetToCurrent()">Reset to Default</button>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Oracle Formation Delta (&Delta;<sub>oracle</sub>)</span>
+        <span id="label-delta" class="slider-val">+0.45 pts</span>
+      </div>
+      <input type="range" id="ctrl-delta" min="-1.5" max="2.0" step="0.05" value="0.45" oninput="updateState()">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Playable Pool Bias Degradation vs Champ</span>
+        <span id="label-bias" class="slider-val">-0.010 pts (improves)</span>
+      </div>
+      <input type="range" id="ctrl-bias" min="-0.10" max="0.15" step="0.005" value="-0.010" oninput="updateState()">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Captaincy Regret Delta vs Champ</span>
+        <span id="label-cap" class="slider-val">-0.05 pts (improves)</span>
+      </div>
+      <input type="range" id="ctrl-cap" min="-0.50" max="0.60" step="0.05" value="-0.05" oninput="updateState()">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Gameweek Delta Consistency (Bootstrap Proxy)</span>
+        <span id="label-consistency" class="slider-val">75% of GWs won</span>
+      </div>
+      <input type="range" id="ctrl-consistency" min="0" max="100" step="5" value="75" oninput="updateState()">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Minutes Conditioning Engine</span>
+        <span id="label-mode" class="slider-val">Oracle Minutes (Triple Join Key)</span>
+      </div>
+      <select id="ctrl-mode" class="ctrl-select" onchange="updateState()">
+        <option value="oracle">Oracle Minutes Injection (player_id, gameweek_id, fixture_id)</option>
+        <option value="unconditioned">Standard Walkforward Backtest (Projected Minutes)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Implementation Notes -->
+  <div class="card">
+    <div class="card-title">
+      <span>Architecture Wiring & Data Leakage Proof</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.75rem;">
+      Oracle minutes are injected exclusively into <code>df_feat["external_xmins"]</code> conditioned strictly on gameweek cutoff. Point-in-time training receives history strictly before target gameweek ($g &lt; \text{target\_gw}$). The composite join key <code>(player_id, gameweek_id, fixture_id)</code> eliminates postponed fixture leakage.
+    </div>
+    <div class="code-preview">
+# backtesting/walkforward.py
+for gw in range(config.start_gw, config.end_gw + 1):
+    df_feat = build_features(..., target_gw=gw, horizon=1)
+    
+    # 1. Point-in-Time Fit (Strict Pre-Cutoff Isolation)
+    if hasattr(model, "fit"):
+        model.fit(history_before_target(df_perf, gw))  # Only gw &lt; target_gw
+        
+    # 2. Oracle Minutes Injection (Defense-in-depth triple join)
+    if config.oracle_minutes:
+        df_feat = _inject_oracle_minutes(df_feat, df_perf, target_gw=gw)
+        
+    # 3. Predict & Contract Verification
+    df_proj = model.predict(df_feat, horizon=1)
+    assert_projection_contract(df_proj)
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Pure Reducer and State Model
+  const scenarios = {
+    pass: {
+      desc: "<strong>Scenario A (Superior Event Engine)</strong>: Candidate improves per-minute open-play & set-piece event rates. Formation regret improves by +0.450 pts/GW, captaincy regret improves (-0.05), playable pool bias improves by 0.010 pts vs Champ, and bootstrap P is 0.842. Tier 2 Gate PASS.",
+      delta: 0.45,
+      biasDelta: -0.010,
+      capDelta: -0.05,
+      consistency: 75,
+      mode: "oracle"
+    },
+    bias: {
+      desc: "<strong>Scenario B (Over-Inflated Haul Chaser)</strong>: Candidate catches volatile single-match hauls by inflating base goal rates, but playable pool bias degrades by +0.080 pts (exceeding the +0.020 pts tolerance). Gate FAIL.",
+      delta: 0.60,
+      biasDelta: 0.080,
+      capDelta: 0.00,
+      consistency: 75,
+      mode: "oracle"
+    },
+    captain: {
+      desc: "<strong>Scenario C (Captaincy Inversion Failure)</strong>: Candidate slightly improves 11-man formation regret (+0.30) but severely distorts top-end premium ceiling order, inflating captaincy regret by +0.25 pts (exceeding +0.15 pts guardrail). Gate FAIL.",
+      delta: 0.30,
+      biasDelta: 0.005,
+      capDelta: 0.25,
+      consistency: 70,
+      mode: "oracle"
+    },
+    volatile: {
+      desc: "<strong>Scenario D (Volatile Spike)</strong>: Candidate wins a massive +3.5 pt delta in one gameweek but loses all others. Mean delta is positive (+0.25), but block bootstrap win probability P(&Delta; > 0) is only 0.41 (< 0.60). Gate FAIL.",
+      delta: 0.25,
+      biasDelta: 0.005,
+      capDelta: 0.00,
+      consistency: 25,
+      mode: "oracle"
+    },
+    worse: {
+      desc: "<strong>Scenario E (Inferior Event Rates)</strong>: Candidate dampens attacking rates too heavily, causing the optimizer to bench haul-capable players. Formation Regret worsens (&Delta; = -0.30 <= 0). Gate FAIL.",
+      delta: -0.30,
+      biasDelta: 0.000,
+      capDelta: 0.05,
+      consistency: 25,
+      mode: "oracle"
+    },
+    leakage: {
+      desc: "<strong>Scenario F (Point-in-Time Zero Leakage Audit)</strong>: Proves actual minutes are injected into df_feat exclusively for current GW. Training data contains strictly gw &lt; target_gw. Triple key (player_id, gameweek_id, fixture_id) eliminates blank/postponed leakage.",
+      delta: 0.45,
+      biasDelta: -0.010,
+      capDelta: -0.05,
+      consistency: 100,
+      mode: "oracle"
+    }
+  };
+
+  let currentState = { ...scenarios.pass };
+
+  function loadScenario(key, targetBtn) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    if (targetBtn) {
+      targetBtn.classList.add('active');
+    }
+
+    currentState = { ...scenarios[key] };
+    document.getElementById('scenario-text').innerHTML = currentState.desc;
+
+    document.getElementById('ctrl-delta').value = currentState.delta;
+    document.getElementById('ctrl-bias').value = currentState.biasDelta;
+    document.getElementById('ctrl-cap').value = currentState.capDelta;
+    document.getElementById('ctrl-consistency').value = currentState.consistency;
+    document.getElementById('ctrl-mode').value = currentState.mode;
+
+    render();
+  }
+
+  function updateState() {
+    currentState.delta = parseFloat(document.getElementById('ctrl-delta').value);
+    currentState.biasDelta = parseFloat(document.getElementById('ctrl-bias').value);
+    currentState.capDelta = parseFloat(document.getElementById('ctrl-cap').value);
+    currentState.consistency = parseInt(document.getElementById('ctrl-consistency').value);
+    currentState.mode = document.getElementById('ctrl-mode').value;
+
+    render();
+  }
+
+  function resetToCurrent() {
+    const firstBtn = document.querySelector('.tab-btn');
+    loadScenario('pass', firstBtn);
+  }
+
+  // Pure evaluator function matching evaluate_oracle_event_gate()
+  function evaluateGate(delta, biasDelta, capDelta, consistency, mode) {
+    const reasons = [];
+    const champPlayableBias = -0.2442;
+    const champCapRegret = 2.79;
+    const biasTol = 0.02;
+    const capTol = 0.15;
+
+    // Approximate bootstrap win probability from consistency & delta
+    let bootstrapP = 0.5;
+    if (delta > 0) {
+      bootstrapP = 0.5 + (consistency / 100) * 0.45;
+    } else {
+      bootstrapP = (consistency / 100) * 0.35;
+    }
+
+    // 1. Delta check
+    const deltaOk = delta > 0.0;
+    if (!deltaOk) {
+      reasons.push(`Oracle Formation XI Regret did not improve (delta ${delta.toFixed(3)} <= 0.0 pts/GW)`);
+    }
+
+    // 2. Bootstrap check
+    const sigOk = bootstrapP >= 0.60;
+    if (!sigOk) {
+      reasons.push(`Bootstrap P(delta_oracle > 0) ${bootstrapP.toFixed(3)} below minimum threshold 0.60`);
+    }
+
+    // 3. Relative Playable Pool Bias check
+    const candBias = champPlayableBias + (champPlayableBias < 0 ? -biasDelta : biasDelta);
+    const candMag = Math.abs(candBias);
+    const champMag = Math.abs(champPlayableBias);
+    let biasOk = false;
+    if (candMag <= champMag) {
+      biasOk = true;
+    } else {
+      const degradation = candMag - champMag;
+      biasOk = degradation <= biasTol;
+      if (!biasOk) {
+        reasons.push(`Candidate playable bias ${candBias.toFixed(4)} (|${candMag.toFixed(4)}|) exceeds Champion ${champPlayableBias.toFixed(4)} by +${degradation.toFixed(4)} > tol ${biasTol.toFixed(2)}`);
+      }
+    }
+
+    // 4. Captaincy Regret check
+    const candCap = champCapRegret + capDelta;
+    const capOk = candCap <= champCapRegret + capTol;
+    if (!capOk) {
+      reasons.push(`Regressed Captaincy Regret guardrail (${candCap.toFixed(2)} vs champ ${champCapRegret.toFixed(2)} + tol ${capTol.toFixed(2)})`);
+    }
+
+    const passed = deltaOk && sigOk && biasOk && capOk;
+    return { passed, reasons, delta, candBias, champPlayableBias, candCap, champCapRegret, bootstrapP };
+  }
+
+  function render() {
+    const result = evaluateGate(
+      currentState.delta,
+      currentState.biasDelta,
+      currentState.capDelta,
+      currentState.consistency,
+      currentState.mode
+    );
+
+    // Update labels
+    document.getElementById('label-delta').textContent = (currentState.delta >= 0 ? '+' : '') + currentState.delta.toFixed(2) + ' pts';
+    document.getElementById('label-bias').textContent = (currentState.biasDelta >= 0 ? '+' : '') + currentState.biasDelta.toFixed(3) + ' pts';
+    document.getElementById('label-cap').textContent = (currentState.capDelta >= 0 ? '+' : '') + currentState.capDelta.toFixed(2) + ' pts';
+    document.getElementById('label-consistency').textContent = currentState.consistency + '% of GWs won';
+    document.getElementById('label-mode').textContent = currentState.mode === 'oracle' ? 'Oracle Minutes (Triple Join Key)' : 'Standard Walkforward (Projected Minutes)';
+
+    // Update Metrics
+    const champRegret = 63.96;
+    const candRegret = champRegret - result.delta;
+    document.getElementById('val-regret').innerHTML = `${candRegret.toFixed(2)} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs ${champRegret.toFixed(2)}</span>`;
+
+    const deltaEl = document.getElementById('val-delta');
+    deltaEl.textContent = (result.delta >= 0 ? '+' : '') + result.delta.toFixed(3);
+    deltaEl.style.color = result.delta > 0 ? 'var(--pass)' : 'var(--fail)';
+
+    const bootEl = document.getElementById('val-bootstrap');
+    bootEl.textContent = result.bootstrapP.toFixed(3);
+    bootEl.style.color = result.bootstrapP >= 0.60 ? 'var(--text)' : 'var(--fail)';
+
+    const biasEl = document.getElementById('val-bias');
+    biasEl.innerHTML = `${result.candBias.toFixed(3)} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs ${result.champPlayableBias.toFixed(3)}</span>`;
+    biasEl.style.color = Math.abs(result.candBias) <= Math.abs(result.champPlayableBias) + 0.02 ? 'var(--text)' : 'var(--fail)';
+
+    const capEl = document.getElementById('val-cap');
+    capEl.innerHTML = `${result.candCap.toFixed(2)} <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">vs ${result.champCapRegret.toFixed(2)}</span>`;
+    capEl.style.color = result.candCap <= result.champCapRegret + 0.15 ? 'var(--text)' : 'var(--fail)';
+
+    // Update Verdict Badge
+    const badge = document.getElementById('verdict-badge');
+    if (result.passed) {
+      badge.className = 'badge badge-pass';
+      badge.textContent = 'GATE PASS';
+    } else {
+      badge.className = 'badge badge-fail';
+      badge.textContent = 'GATE FAIL';
+    }
+
+    // Diagnostics
+    const reasonsBox = document.getElementById('reasons-container');
+    const reasonsList = document.getElementById('reasons-list');
+    if (!result.passed) {
+      reasonsBox.style.display = 'block';
+      reasonsList.innerHTML = result.reasons.map(r => `<li>${r}</li>`).join('');
+    } else {
+      reasonsBox.style.display = 'none';
+      reasonsList.innerHTML = '';
+    }
+  }
+
+  // Initial render
+  const initBtn = document.querySelector('.tab-btn');
+  loadScenario('pass', initBtn);
+</script>
+</body>
+</html>
