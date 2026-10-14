@@ -329,3 +329,118 @@ def test_run_minutes_walkforward_evaluation_live_subset(tmp_path: Path) -> None:
     assert verdict.candidate_metrics.sample_count > 0
     assert 0.0 <= verdict.candidate_metrics.brier_score <= 2.0
     assert 0.0 <= verdict.candidate_metrics.starter_auc <= 1.0
+
+
+# --- 7. Ticket #164: LOO Teammate Finishing & Shot-Volume GK Saves Tests ---
+
+def _load_prototype_event_challenger():
+    import importlib.util
+    import sys
+    path = Path("docs/research/decoupled-projection-architecture/prototype_event_challenger.py")
+    spec = importlib.util.spec_from_file_location("prototype_event_challenger", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["prototype_event_challenger"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_loo_finishing_multipliers_centering_and_clipping() -> None:
+    mod = _load_prototype_event_challenger()
+    compute_loo = mod.compute_loo_finishing_multipliers
+    config = mod.EventCalibrationConfig()
+
+    # Synthetic match history: Club 1 (clinical, G > xG), Club 2 (wasteful, G < xG)
+    rows = []
+    # Club 1: 5 matches, player 101 has 6 goals from 2.0 xG; player 102 has 1 goal from 1.0 xG
+    for gw in range(1, 6):
+        rows.append({"player_id": 101, "club_id": 1, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 1.2, "expected_goals": 0.4, "threat": 40.0, "saves": 0.0})
+        rows.append({"player_id": 102, "club_id": 1, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 0.2, "expected_goals": 0.2, "threat": 20.0, "saves": 0.0})
+        # Club 2: 5 matches, player 201 has 0 goals from 2.0 xG; player 202 has 0 goals from 1.0 xG
+        rows.append({"player_id": 201, "club_id": 2, "gameweek_id": gw, "fixture_id": 100 + gw, "minutes": 90.0, "goals_scored": 0.0, "expected_goals": 0.4, "threat": 30.0, "saves": 0.0})
+        rows.append({"player_id": 202, "club_id": 2, "gameweek_id": gw, "fixture_id": 100 + gw, "minutes": 90.0, "goals_scored": 0.0, "expected_goals": 0.2, "threat": 15.0, "saves": 0.0})
+
+    hist = pd.DataFrame(rows)
+    active_clubs = {101: 1, 102: 1, 201: 2, 202: 2}
+
+    mults = compute_loo(hist, target_gw=6, active_player_clubs=active_clubs, config=config)
+
+    # 1. Pool centering: mean multiplier on pool should be close to 1.00
+    mean_val = np.mean(list(mults.values()))
+    assert 0.98 <= mean_val <= 1.02
+
+    # 2. Hard clipping bounds [0.88, 1.15]
+    for val in mults.values():
+        assert 0.88 <= val <= 1.15
+
+    # 3. Teammate of high-conversion scorer (player 102) has higher multiplier than player in wasteful team (player 202)
+    assert mults[102] > mults[202]
+
+
+def test_loo_finishing_multipliers_strictly_leave_one_out() -> None:
+    mod = _load_prototype_event_challenger()
+    compute_loo = mod.compute_loo_finishing_multipliers
+    config = mod.EventCalibrationConfig()
+
+    rows = []
+    for gw in range(1, 6):
+        rows.append({"player_id": 1, "club_id": 10, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 1.0, "expected_goals": 1.0, "threat": 30.0, "saves": 0.0})
+        rows.append({"player_id": 2, "club_id": 10, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 1.0, "expected_goals": 1.0, "threat": 30.0, "saves": 0.0})
+
+    hist_base = pd.DataFrame(rows)
+    active_clubs = {1: 10, 2: 10}
+
+    mults_base = compute_loo(hist_base, target_gw=6, active_player_clubs=active_clubs, config=config)
+    assert mults_base[1] == pytest.approx(1.0, abs=1e-3)
+    assert mults_base[2] == pytest.approx(1.0, abs=1e-3)
+
+    # Surge player 1 goals: player 1 scores 10 extra goals
+    hist_surge = hist_base.copy()
+    hist_surge.loc[hist_surge["player_id"] == 1, "goals_scored"] += 2.0
+
+    mults_surge = compute_loo(hist_surge, target_gw=6, active_player_clubs=active_clubs, config=config)
+
+    # Player 2 (teammate) should receive an assist conversion boost
+    assert mults_surge[2] > mults_base[2]
+    # Player 1 should NOT be boosted by their own goals (uncentered raw is 1.0, and centered ratio drops relative to teammate)
+    assert mults_surge[1] <= mults_base[1]
+
+
+def test_loo_finishing_multipliers_cold_start() -> None:
+    mod = _load_prototype_event_challenger()
+    compute_loo = mod.compute_loo_finishing_multipliers
+    config = mod.EventCalibrationConfig(min_fixtures=3)
+
+    # Only 2 completed fixtures
+    rows = []
+    for gw in range(1, 3):
+        rows.append({"player_id": 1, "club_id": 10, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 5.0, "expected_goals": 0.5, "threat": 30.0, "saves": 0.0})
+        rows.append({"player_id": 2, "club_id": 10, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 0.0, "expected_goals": 0.5, "threat": 30.0, "saves": 0.0})
+
+    hist = pd.DataFrame(rows)
+    active_clubs = {1: 10, 2: 10}
+
+    mults = compute_loo(hist, target_gw=3, active_player_clubs=active_clubs, config=config)
+    assert mults[1] == pytest.approx(1.0)
+    assert mults[2] == pytest.approx(1.0)
+
+
+def test_opponent_save_multipliers() -> None:
+    mod = _load_prototype_event_challenger()
+    compute_saves = mod.compute_opponent_save_multipliers
+    config = mod.EventCalibrationConfig()
+
+    rows = []
+    # Club 1: Perimeter shooting (very high threat, low xG -> low danger)
+    # Club 2: Clinical/penetrative (normal threat, high xG -> high danger)
+    for gw in range(1, 6):
+        rows.append({"player_id": 1, "club_id": 1, "gameweek_id": gw, "fixture_id": gw, "minutes": 90.0, "goals_scored": 1.0, "expected_goals": 1.0, "threat": 300.0, "saves": 0.0})
+        rows.append({"player_id": 2, "club_id": 2, "gameweek_id": gw, "fixture_id": 100 + gw, "minutes": 90.0, "goals_scored": 2.0, "expected_goals": 2.5, "threat": 80.0, "saves": 0.0})
+
+    hist = pd.DataFrame(rows)
+    save_mults = compute_saves(hist, target_gw=6, config=config)
+
+    # Club 1 should have a higher save multiplier (rewards GK facing high threat / low danger)
+    assert save_mults[1] > save_mults[2]
+    # Bound check
+    assert 0.70 <= save_mults[1] <= 1.45
+    assert 0.70 <= save_mults[2] <= 1.45

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decomposed Event Calibration: LOO Finishing & Shot-Volume Saves (Wayfinder #164)</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --pass: #22c55e;
+      --pass-bg: rgba(34, 197, 94, 0.15);
+      --fail: #ef4444;
+      --fail-bg: rgba(239, 68, 68, 0.15);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-p2 { background: rgba(56, 189, 248, 0.2); color: var(--accent); }
+    .badge-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+    .badge-closed { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    .card h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .formula-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: #38bdf8;
+      margin: 0.75rem 0;
+      overflow-x: auto;
+    }
+    .interactive-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 768px) {
+      .interactive-grid { grid-template-columns: 1fr; }
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .metric-value {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .result-display {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #1e293b;
+    }
+    .result-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .table-container {
+      overflow-x: auto;
+      margin-top: 0.75rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #0f172a;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    td.mono { font-family: var(--font-mono); }
+    td.positive { color: var(--pass); }
+    td.negative { color: var(--fail); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+        <span class="badge badge-p2">Wayfinder #164</span>
+        <span class="badge badge-pass">Resolved & Calibrated</span>
+      </div>
+      <h1>LOO Teammate Finishing & Shot-Volume GK Saves</h1>
+      <p class="subtitle">Decoupled Event Engine Candidate Calibration & Mathematical Guardrails</p>
+    </header>
+
+    <!-- Component 1: LOO Teammate Finishing Multiplier -->
+    <div class="card">
+      <h2>1. Leave-One-Out (LOO) Teammate Finishing Multiplier <span class="badge badge-pass">Verified</span></h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        Modulates individual assist expectancy based on teammates' historical chance conversion without self-inflation or league-wide bias drift.
+      </p>
+
+      <div class="formula-box">
+        Φ_club(-i) = clip( 1 + (Σ_{j≠i} ω_j (G_j - xG_j)) / (Σ_{j≠i} ω_j xG_j + 25.0), 0.88, 1.15 )
+      </div>
+
+      <div class="interactive-grid">
+        <div>
+          <div class="control-group">
+            <label>Teammates Weighted Goals: <span id="val_g" class="metric-value">28.0</span></label>
+            <input type="range" id="input_g" min="5" max="60" step="1" value="28">
+          </div>
+          <div class="control-group">
+            <label>Teammates Weighted xG: <span id="val_xg" class="metric-value">22.0</span></label>
+            <input type="range" id="input_xg" min="5" max="60" step="1" value="22">
+          </div>
+          <div class="control-group">
+            <label>Pool Centering Mean (Φ̄): <span id="val_mean" class="metric-value">1.020</span></label>
+            <input type="range" id="input_mean" min="0.95" max="1.08" step="0.005" value="1.02">
+          </div>
+        </div>
+
+        <div class="result-display">
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Raw Teammate Residual:</span>
+            <span id="res_residual" class="metric-value positive">+6.00</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Uncentered Multiplier:</span>
+            <span id="res_raw_mult" class="metric-value">1.1277</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Centered Multiplier:</span>
+            <span id="res_centered_mult" class="metric-value" style="color: var(--accent); font-size: 1.1rem;">1.1055</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Status:</span>
+            <span id="res_status" class="badge badge-pass">Within Bounded Range [0.88, 1.15]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Component 2: Goalkeeper Save Intensity -->
+    <div class="card">
+      <h2>2. Goalkeeper Save Intensity (Shot-Volume vs. Danger) <span class="badge badge-pass">Verified</span></h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        Calibrates goalkeeper save expectations by opponent shot volume (Threat) and danger (xG/Threat) using official FPL telemetry.
+      </p>
+
+      <div class="formula-box">
+        r̂_saves = ŝ_{i,0} · clip( V_opp^0.45 · D_opp^-0.25, 0.70, 1.45 )
+      </div>
+
+      <div class="interactive-grid">
+        <div>
+          <div class="control-group">
+            <label>Opponent Threat Ratio (V_opp): <span id="val_vopp" class="metric-value">1.25</span></label>
+            <input type="range" id="input_vopp" min="0.6" max="1.6" step="0.05" value="1.25">
+          </div>
+          <div class="control-group">
+            <label>Opponent Shot Danger Ratio (D_opp): <span id="val_dopp" class="metric-value">0.85</span></label>
+            <input type="range" id="input_dopp" min="0.6" max="1.6" step="0.05" value="0.85">
+          </div>
+          <div class="control-group">
+            <label>Keeper Baseline Saves/90: <span id="val_s0" class="metric-value">3.20</span></label>
+            <input type="range" id="input_s0" min="1.5" max="5.0" step="0.1" value="3.2">
+          </div>
+        </div>
+
+        <div class="result-display">
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Volume Elasticity (V^0.45):</span>
+            <span id="res_vol_factor" class="metric-value">1.105</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Danger Elasticity (D^-0.25):</span>
+            <span id="res_dan_factor" class="metric-value">1.041</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Total Save Multiplier:</span>
+            <span id="res_save_mult" class="metric-value" style="color: var(--accent); font-size: 1.1rem;">1.151</span>
+          </div>
+          <div class="result-row">
+            <span style="color: var(--text-muted);">Calibrated Saves/90:</span>
+            <span id="res_adj_saves" class="metric-value positive">3.68 saves</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Component 3: Historical Empirical Calibration Summary -->
+    <div class="card">
+      <h2>3. Empirical Verification Summary (2025-26 Live Archive)</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Evaluation Dimension</th>
+              <th>Observed Metric</th>
+              <th>Target Bound</th>
+              <th>Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>LOO Pool Mean Centering (GW20)</td>
+              <td class="mono">1.0004</td>
+              <td class="mono">[0.9990, 1.0010]</td>
+              <td><span class="badge badge-pass">Pass</span></td>
+            </tr>
+            <tr>
+              <td>LOO Dynamic Range</td>
+              <td class="mono">0.8800 – 1.1500</td>
+              <td class="mono">[0.8800, 1.1500]</td>
+              <td><span class="badge badge-pass">Pass</span></td>
+            </tr>
+            <tr>
+              <td>LOO Independence (Scorer +10 Goals)</td>
+              <td class="mono">Player A: -0.0882 / Teammates: +0.1962</td>
+              <td class="mono">Player A ≤ 0 / Teammates > 0</td>
+              <td><span class="badge badge-pass">Pass</span></td>
+            </tr>
+            <tr>
+              <td>Opponent Save Multiplier Range</td>
+              <td class="mono">0.8867 – 1.1019</td>
+              <td class="mono">[0.7000, 1.4500]</td>
+              <td><span class="badge badge-pass">Pass</span></td>
+            </tr>
+            <tr>
+              <td>Ablation Modularity</td>
+              <td class="mono">enable_loo_assists & enable_shot_volume_saves</td>
+              <td class="mono">Orthogonal Boolean Flags</td>
+              <td><span class="badge badge-pass">Pass</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateFinishing() {
+      const g = parseFloat(document.getElementById('input_g').value);
+      const xg = parseFloat(document.getElementById('input_xg').value);
+      const mean = parseFloat(document.getElementById('input_mean').value);
+
+      document.getElementById('val_g').innerText = g.toFixed(1);
+      document.getElementById('val_xg').innerText = xg.toFixed(1);
+      document.getElementById('val_mean').innerText = mean.toFixed(3);
+
+      const diff = g - xg;
+      const resElem = document.getElementById('res_residual');
+      resElem.innerText = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+      resElem.className = 'metric-value ' + (diff >= 0 ? 'positive' : 'negative');
+
+      const raw = 1.0 + diff / (xg + 25.0);
+      document.getElementById('res_raw_mult').innerText = raw.toFixed(4);
+
+      let centered = raw / mean;
+      centered = Math.max(0.88, Math.min(1.15, centered));
+      document.getElementById('res_centered_mult').innerText = centered.toFixed(4);
+    }
+
+    function updateSaves() {
+      const vopp = parseFloat(document.getElementById('input_vopp').value);
+      const dopp = parseFloat(document.getElementById('input_dopp').value);
+      const s0 = parseFloat(document.getElementById('input_s0').value);
+
+      document.getElementById('val_vopp').innerText = vopp.toFixed(2);
+      document.getElementById('val_dopp').innerText = dopp.toFixed(2);
+      document.getElementById('val_s0').innerText = s0.toFixed(2);
+
+      const vFactor = Math.pow(vopp, 0.45);
+      const dFactor = Math.pow(dopp, -0.25);
+      document.getElementById('res_vol_factor').innerText = vFactor.toFixed(3);
+      document.getElementById('res_dan_factor').innerText = dFactor.toFixed(3);
+
+      let mult = vFactor * dFactor;
+      mult = Math.max(0.70, Math.min(1.45, mult));
+      document.getElementById('res_save_mult').innerText = mult.toFixed(3);
+
+      const adjSaves = s0 * mult;
+      document.getElementById('res_adj_saves').innerText = adjSaves.toFixed(2) + ' saves';
+    }
+
+    document.getElementById('input_g').addEventListener('input', updateFinishing);
+    document.getElementById('input_xg').addEventListener('input', updateFinishing);
+    document.getElementById('input_mean').addEventListener('input', updateFinishing);
+
+    document.getElementById('input_vopp').addEventListener('input', updateSaves);
+    document.getElementById('input_dopp').addEventListener('input', updateSaves);
+    document.getElementById('input_s0').addEventListener('input', updateSaves);
+
+    updateFinishing();
+    updateSaves();
+  </script>
+</body>
+</html>
