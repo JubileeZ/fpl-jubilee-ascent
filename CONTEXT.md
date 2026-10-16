@@ -161,11 +161,11 @@ A per-90-minutes estimate of how often a Player produces a given Event Component
 _Avoid_: Per-90 average, rate (ambiguous), Appearance Blend, in-season Prior-Season Seed rates
 
 **Underlying Actuals**:
-Realized football production and Opta metrics (Goals, Assists, GI, xG, xA, xGI, Clean Sheets, Goals Conceded, xGC, Defcon Hits, Saves) accumulated season-to-date over finished Gameweeks, expressed as counts, per-90 rates, and per-appearance rates. Distinct from forward-looking xP fantasy projections.
+Realized football production and Opta metrics (Goals, Assists, GI, xG, xA, xGI, Clean Sheets, Goals Conceded, xGC, Defcon Hits, Saves) accumulated season-to-date over finished Gameweeks as counts, per-90 rates, and per-appearance rates. Distinct from forward-looking xP fantasy projections.
 _Avoid_: Projected points, xP actuals, fantasy point actuals, horizon actuals
 
 **Goal Involvement (GI)**:
-Raw football event sum of actual goals scored plus actual assists ($\text{Goals} + \text{Assists}$) awarded to a Player. Distinct from fantasy points (`xP GI`).
+Raw football event sum of actual goals scored plus actual assists ($\text{Goals} + \text{Assists}$) for Player. Distinct from fantasy points (`xP GI`).
 _Avoid_: xP GI, Goal involvement points, fantasy GI
 
 **Expected Goal Involvement (xGI)**:
@@ -173,11 +173,11 @@ Raw statistical sum of Opta Expected Goals plus Expected Assists ($xG + xA$). Di
 _Avoid_: xP GI, Expected GI points
 
 **Defcon Hit Rate**:
-The proportion of a Player's appearances ($\text{minutes} > 0$) achieving the position-specific defensive contribution threshold ($\ge 10$ actions for DEF, $\ge 12$ for MID/FWD). Expressed as a percentage.
+Percentage of Player appearances ($\text{minutes} > 0$) reaching position-specific defensive contribution threshold ($\ge 10$ actions for DEF, $\ge 12$ for MID/FWD).
 _Avoid_: Defcon points, Defcon score, Defcon average
 
 **Clean Sheet Rate (CS Rate)**:
-The proportion of a Player's appearances ($\text{minutes} > 0$) resulting in an official FPL clean sheet. Expressed as a percentage.
+Percentage of Player appearances ($\text{minutes} > 0$) earning official FPL clean sheet.
 _Avoid_: Clean sheet points, CS odds
 
 **Appearance Probability**:

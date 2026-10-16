@@ -73,6 +73,7 @@ _GOAL_POINTS = {1: 10.0, 2: 6.0, 3: 5.0, 4: 4.0}
 _ASSIST_POINTS = 3.0
 _CLEAN_SHEET_POINTS = {1: 4.0, 2: 4.0, 3: 1.0, 4: 0.0}
 _DEFCON_POINTS = {1: 0.0, 2: 2.0, 3: 2.0, 4: 0.0}
+_DEFCON_THRESHOLDS: dict[int, int] = {2: 10, 3: 12, 4: 12}
 
 
 def _safe_float(val: Any, default: float = 0.0) -> float:
@@ -83,6 +84,10 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
         return default if math.isnan(res) or math.isinf(res) else res
     except (ValueError, TypeError):
         return default
+
+
+def _rate(val: float | int | None, denom: float | int | None, ndigits: int = 2) -> float | None:
+    return round(val / denom, ndigits) if val is not None and denom and denom > 0 else None
 
 
 def _clean_json_obj(obj: Any) -> Any:
@@ -293,7 +298,10 @@ def load_user_chips(processed_dir: Path) -> list[dict[str, Any]]:
     return df.to_dict(orient="records")
 
 
-def _load_player_actuals(processed_dir: Path) -> dict[int, dict[str, Any]]:
+def _load_player_actuals(
+    processed_dir: Path,
+    finished_gws: set[int] | None = None,
+) -> dict[int, dict[str, Any]]:
     perf_path = processed_dir / "player_performances.parquet"
     if not perf_path.exists():
         return {}
@@ -304,10 +312,27 @@ def _load_player_actuals(processed_dir: Path) -> dict[int, dict[str, Any]]:
     if perf_df.empty or "player_id" not in perf_df.columns:
         return {}
 
+    fixtures_path = processed_dir / "fixtures.parquet"
+    if "fixture_id" in perf_df.columns and fixtures_path.exists():
+        try:
+            df_fix = pd.read_parquet(fixtures_path)
+            if "id" in df_fix.columns and "finished" in df_fix.columns:
+                finished_by_id = df_fix.drop_duplicates("id").set_index("id")["finished"]
+                perf_df = perf_df[perf_df["fixture_id"].map(finished_by_id).ne(False)]
+        except Exception:
+            pass
+
+    if finished_gws and "gameweek_id" in perf_df.columns:
+        perf_df = perf_df[perf_df["gameweek_id"].isin(finished_gws)]
+
+    if perf_df.empty:
+        return {}
+
     actuals: dict[int, dict[str, Any]] = {}
     for pid, group in perf_df.groupby("player_id"):
         mins = float(group["minutes"].sum()) if "minutes" in group.columns else 0.0
-        apps = int((group["minutes"] > 0).sum()) if "minutes" in group.columns else 0
+        played = group[group["minutes"] > 0] if "minutes" in group.columns else group
+        apps = len(played) if "minutes" in group.columns else 0
         starts = int((group["starts"] > 0).sum()) if "starts" in group.columns else 0
         goals = int(group["goals_scored"].sum()) if "goals_scored" in group.columns else 0
         assists = int(group["assists"].sum()) if "assists" in group.columns else 0
@@ -317,7 +342,11 @@ def _load_player_actuals(processed_dir: Path) -> dict[int, dict[str, Any]]:
         xg = round(float(group["expected_goals"].astype(float).sum()), 2) if "expected_goals" in group.columns else 0.0
         xa = round(float(group["expected_assists"].astype(float).sum()), 2) if "expected_assists" in group.columns else 0.0
         xgc = round(float(group["expected_goals_conceded"].astype(float).sum()), 2) if "expected_goals_conceded" in group.columns else 0.0
-        defcons = group["defensive_contribution"].tolist() if "defensive_contribution" in group.columns else []
+        defcons = (
+            played["defensive_contribution"].tolist()
+            if "defensive_contribution" in played.columns
+            else None
+        )
 
         actuals[int(pid)] = {
             "minutes": mins,
@@ -391,7 +420,7 @@ def build_dashboard_dataset(
 
     gw_ids = sorted(all_gw_ids) if all_gw_ids else planning_gw_ids
     club_fixtures = load_club_gw_fixtures(processed_dir, club_map)
-    player_actuals = _load_player_actuals(processed_dir)
+    player_actuals = _load_player_actuals(processed_dir, finished_gws)
 
     players_data: List[Dict[str, Any]] = []
 
@@ -447,65 +476,38 @@ def build_dashboard_dataset(
             act_xg = round(xg, 2)
             act_xa = round(xa, 2)
             act_xgc = round(_safe_float(p.get("expected_goals_conceded")), 2)
-            defcons = []
+            defcons = None
 
         act_gi = act_goals + act_assists
         act_xgi = round(act_xg + act_xa, 2)
 
-        if pos_id == 2:
-            thresh = 10
-        elif pos_id in (3, 4):
-            thresh = 12
-        else:
-            thresh = None
-
-        if thresh is not None:
+        thresh = _DEFCON_THRESHOLDS.get(pos_id)
+        if thresh is not None and defcons is not None:
             defcon_hits = sum(1 for d in defcons if _safe_float(d) >= thresh)
-            defcon_hit_rate = round((defcon_hits / apps * 100.0), 1) if apps > 0 else None
+            defcon_hit_rate = _rate(defcon_hits * 100.0, apps, 1)
         else:
             defcon_hits = None
             defcon_hit_rate = None
 
         nineties = (act_mins / 90.0) if act_mins > 0 else None
-        if nineties is not None:
-            goals_per_90 = round(act_goals / nineties, 2)
-            assists_per_90 = round(act_assists / nineties, 2)
-            gi_per_90 = round(act_gi / nineties, 2)
-            xg_per_90 = round(act_xg / nineties, 2)
-            xa_per_90 = round(act_xa / nineties, 2)
-            xgi_per_90 = round(act_xgi / nineties, 2)
-            gc_per_90 = round(act_gc / nineties, 2)
-            xgc_per_90 = round(act_xgc / nineties, 2)
-            saves_per_90 = round(act_saves / nineties, 2) if act_saves is not None else None
-        else:
-            goals_per_90 = None
-            assists_per_90 = None
-            gi_per_90 = None
-            xg_per_90 = None
-            xa_per_90 = None
-            xgi_per_90 = None
-            gc_per_90 = None
-            xgc_per_90 = None
-            saves_per_90 = None
+        goals_per_90 = _rate(act_goals, nineties)
+        assists_per_90 = _rate(act_assists, nineties)
+        gi_per_90 = _rate(act_gi, nineties)
+        xg_per_90 = _rate(act_xg, nineties)
+        xa_per_90 = _rate(act_xa, nineties)
+        xgi_per_90 = _rate(act_xgi, nineties)
+        gc_per_90 = _rate(act_gc, nineties)
+        xgc_per_90 = _rate(act_xgc, nineties)
+        saves_per_90 = _rate(act_saves, nineties)
 
-        if apps > 0:
-            goals_per_app = round(act_goals / apps, 2)
-            assists_per_app = round(act_assists / apps, 2)
-            gi_per_app = round(act_gi / apps, 2)
-            xg_per_app = round(act_xg / apps, 2)
-            xa_per_app = round(act_xa / apps, 2)
-            xgi_per_app = round(act_xgi / apps, 2)
-            cs_rate = round((act_cs / apps * 100.0), 1)
-            saves_per_app = round(act_saves / apps, 2) if act_saves is not None else None
-        else:
-            goals_per_app = None
-            assists_per_app = None
-            gi_per_app = None
-            xg_per_app = None
-            xa_per_app = None
-            xgi_per_app = None
-            cs_rate = None
-            saves_per_app = None
+        goals_per_app = _rate(act_goals, apps)
+        assists_per_app = _rate(act_assists, apps)
+        gi_per_app = _rate(act_gi, apps)
+        xg_per_app = _rate(act_xg, apps)
+        xa_per_app = _rate(act_xa, apps)
+        xgi_per_app = _rate(act_xgi, apps)
+        cs_rate = _rate(act_cs * 100.0, apps, 1)
+        saves_per_app = _rate(act_saves, apps)
 
         g_pts_factor = _GOAL_POINTS.get(pos_id, 5.0)
         cs_pts_factor = _CLEAN_SHEET_POINTS.get(pos_id, 1.0)

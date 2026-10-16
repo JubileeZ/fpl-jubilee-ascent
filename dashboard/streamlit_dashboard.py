@@ -528,7 +528,7 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         )
         max_slider = max(90, ((max_actual_mins + 89) // 90) * 90)
         min_actual_mins = minutes.slider(
-            "Minimum Actual Season Mins", 0, max_slider, 0, step=45, key="explorer-actual-mins"
+            "Minimum actual season minutes", 0, max_slider, 0, step=45, key="explorer-actual-mins"
         )
         metric = metrics.radio("Chart points", ("xP / GW", "xP / 90"), horizontal=True, key="explorer-metric")
         scale_bubble = st.checkbox("Scale bubble size by xMins / GW", value=True, key="explorer-bubble-scale")
@@ -621,15 +621,16 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
             "Defensive": ["Player", "Club", "Position", "Price", "xP", "xP CS", "xP DefCon", "xP Conceded", "xMins / GW", "Ownership %"],
             "All Components": ["Player", "Club", "Position", "Price", "xP", "xP / GW", "xP GI", "xP Goals", "xP Assists", "xP CS", "xP DefCon", "xP Conceded", "xP Saves", "xP Bonus", "xMins / GW", "Ownership %"],
             "Underlying Attack": [
-                "Player", "Club", "Position", "Price", "Apps", "Starts", "Actual Mins",
+                "Player", "Club", "Position", "Price", "xP", "Apps", "Starts", "Actual Mins",
                 "Goals", "Goals / 90", "Goals / App",
                 "xG", "xG / 90", "xG / App",
                 "Assists", "Assists / 90", "Assists / App",
+                "xA", "xA / 90", "xA / App",
                 "GI", "GI / 90", "GI / App",
                 "xGI", "xGI / 90", "xGI / App",
             ],
             "Underlying Defence": [
-                "Player", "Club", "Position", "Price", "Apps", "Starts", "Actual Mins",
+                "Player", "Club", "Position", "Price", "xP", "Apps", "Starts", "Actual Mins",
                 "CS", "CS %",
                 "GC", "GC / 90",
                 "xGC", "xGC / 90",
@@ -689,24 +690,6 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
             "Apps": st.column_config.NumberColumn("Apps", format="%d", help="Total matches played with >0 minutes"),
             "Starts": st.column_config.NumberColumn("Starts", format="%d", help="Total starts in the Starting XI"),
             "Actual Mins": st.column_config.NumberColumn("Actual Mins", format="%dm", help="Total actual minutes played this season"),
-            "Goals": st.column_config.NumberColumn("Goals", format="%d", help="Actual goals scored"),
-            "Goals / 90": st.column_config.NumberColumn("Goals / 90", format="%.2f", help="Actual goals scored per 90 minutes"),
-            "Goals / App": st.column_config.NumberColumn("Goals / App", format="%.2f", help="Actual goals scored per match appearance"),
-            "Assists": st.column_config.NumberColumn("Assists", format="%d", help="Actual assists awarded"),
-            "Assists / 90": st.column_config.NumberColumn("Assists / 90", format="%.2f", help="Actual assists awarded per 90 minutes"),
-            "Assists / App": st.column_config.NumberColumn("Assists / App", format="%.2f", help="Actual assists awarded per match appearance"),
-            "GI": st.column_config.NumberColumn("GI", format="%d", help="Actual goal involvements (Goals + Assists)"),
-            "GI / 90": st.column_config.NumberColumn("GI / 90", format="%.2f", help="Actual goal involvements per 90 minutes"),
-            "GI / App": st.column_config.NumberColumn("GI / App", format="%.2f", help="Actual goal involvements per match appearance"),
-            "xG": st.column_config.NumberColumn("xG", format="%.2f", help="Opta Expected Goals"),
-            "xG / 90": st.column_config.NumberColumn("xG / 90", format="%.2f", help="Opta Expected Goals per 90 minutes"),
-            "xG / App": st.column_config.NumberColumn("xG / App", format="%.2f", help="Opta Expected Goals per match appearance"),
-            "xA": st.column_config.NumberColumn("xA", format="%.2f", help="Opta Expected Assists"),
-            "xA / 90": st.column_config.NumberColumn("xA / 90", format="%.2f", help="Opta Expected Assists per 90 minutes"),
-            "xA / App": st.column_config.NumberColumn("xA / App", format="%.2f", help="Opta Expected Assists per match appearance"),
-            "xGI": st.column_config.NumberColumn("xGI", format="%.2f", help="Opta Expected Goal Involvement (xG + xA)"),
-            "xGI / 90": st.column_config.NumberColumn("xGI / 90", format="%.2f", help="Opta Expected Goal Involvement per 90 minutes"),
-            "xGI / App": st.column_config.NumberColumn("xGI / App", format="%.2f", help="Opta Expected Goal Involvement per match appearance"),
             "CS": st.column_config.NumberColumn("CS", format="%d", help="Clean sheets kept"),
             "CS %": st.column_config.NumberColumn("CS %", format="%.1f%%", help="Clean sheet rate (CS / Apps)"),
             "GC": st.column_config.NumberColumn("GC", format="%d", help="Goals conceded while on pitch"),
@@ -715,10 +698,19 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
             "xGC / 90": st.column_config.NumberColumn("xGC / 90", format="%.2f", help="Opta Expected Goals Conceded per 90 minutes"),
             "Defcon Hits": st.column_config.NumberColumn("Defcon Hits", format="%d", help="Matches meeting defensive contribution threshold (DEF: 10, MID/FWD: 12)"),
             "Defcon %": st.column_config.NumberColumn("Defcon %", format="%.1f%%", help="Defcon hit rate (Defcon Hits / Apps)"),
-            "Saves": st.column_config.NumberColumn("Saves", format="%d", help="Goalkeeper saves"),
-            "Saves / 90": st.column_config.NumberColumn("Saves / 90", format="%.2f", help="Goalkeeper saves per 90 minutes"),
-            "Saves / App": st.column_config.NumberColumn("Saves / App", format="%.2f", help="Goalkeeper saves per match appearance"),
         }
+        for col, fmt, desc in (
+            ("Goals", "%d", "Actual goals scored"),
+            ("Assists", "%d", "Actual assists awarded"),
+            ("GI", "%d", "Actual goal involvements (Goals + Assists)"),
+            ("xG", "%.2f", "Opta Expected Goals"),
+            ("xA", "%.2f", "Opta Expected Assists"),
+            ("xGI", "%.2f", "Opta Expected Goal Involvement (xG + xA)"),
+            ("Saves", "%d", "Goalkeeper saves"),
+        ):
+            column_config[col] = st.column_config.NumberColumn(col, format=fmt, help=desc)
+            column_config[f"{col} / 90"] = st.column_config.NumberColumn(f"{col} / 90", format="%.2f", help=f"{desc} per 90 minutes")
+            column_config[f"{col} / App"] = st.column_config.NumberColumn(f"{col} / App", format="%.2f", help=f"{desc} per match appearance")
         st.dataframe(
             visible,
             column_config=column_config,

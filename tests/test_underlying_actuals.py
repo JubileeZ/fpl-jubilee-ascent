@@ -6,7 +6,7 @@ from commands.export_dashboard import build_dashboard_dataset
 from dashboard.explorer import player_slice
 
 
-def test_underlying_actuals_calculation(tmp_path: Path):
+def test_underlying_actuals_calculation(tmp_path: Path) -> None:
     processed_dir = tmp_path / "data" / "processed"
     processed_dir.mkdir(parents=True)
 
@@ -118,13 +118,14 @@ def test_underlying_actuals_calculation(tmp_path: Path):
     ])
     clubs_df.to_parquet(processed_dir / "clubs.parquet")
 
-    # 3. Mock gameweeks
-    gameweeks_df = pd.DataFrame([
-        {"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False},
-    ])
+    # 3. Mock gameweeks (GW1-6 finished, GW7 unfinished)
+    gameweeks_df = pd.DataFrame(
+        [{"id": gw, "name": f"Gameweek {gw}", "is_next": False, "finished": True} for gw in range(1, 7)]
+        + [{"id": 7, "name": "Gameweek 7", "is_next": True, "finished": False}]
+    )
     gameweeks_df.to_parquet(processed_dir / "gameweeks.parquet")
 
-    # 4. Mock player_performances (finished past fixtures)
+    # 4. Mock player_performances (finished past fixtures + 1 unfinished GW7 row that must be excluded)
     # Gabriel: 6 matches. Defcon actions: [4, 10, 7, 11, 9, 5] -> 2 hits (>=10).
     # Haaland: 5 matches of 90 mins each. Defcon actions: [2, 1, 3, 2, 0] -> 0 hits (threshold 12 for FWD).
     # Raya: 6 matches. Saves: 4 per match (total 24). Defcon not applicable.
@@ -221,6 +222,28 @@ def test_underlying_actuals_calculation(tmp_path: Path):
         "defensive_contribution": 0,
         "starts": 0,
     })
+    # Unfinished GW7 row for Haaland: must be excluded from cumulative actuals
+    perf_records.append({
+        "player_id": 1,
+        "fixture_id": 107,
+        "gameweek_id": 7,
+        "opponent_club_id": 2,
+        "was_home": True,
+        "kickoff_time": "2026-10-15T15:00:00Z",
+        "minutes": 90,
+        "total_points": 15,
+        "goals_scored": 3,
+        "assists": 1,
+        "clean_sheets": 1,
+        "goals_conceded": 0,
+        "saves": 0,
+        "expected_goals": 2.0,
+        "expected_assists": 0.5,
+        "expected_goal_involvements": 2.5,
+        "expected_goals_conceded": 0.2,
+        "defensive_contribution": 15,
+        "starts": 1,
+    })
 
     pd.DataFrame(perf_records).to_parquet(processed_dir / "player_performances.parquet")
 
@@ -306,7 +329,7 @@ def test_underlying_actuals_calculation(tmp_path: Path):
     assert z["saves_per_90"] is None
 
 
-def test_player_slice_underlying_fields(tmp_path: Path):
+def test_player_slice_underlying_fields() -> None:
     player = {
         "id": 1,
         "name": "Haaland",
@@ -378,7 +401,9 @@ def test_player_slice_underlying_fields(tmp_path: Path):
     assert row["Defcon %"] == 0.0
 
 
-def test_streamlit_explorer_underlying_presets_and_filter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_streamlit_explorer_underlying_presets_and_filter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import json
     from streamlit.testing.v1 import AppTest
     from test_streamlit_planner import dataset as base_dataset
@@ -429,19 +454,17 @@ def test_streamlit_explorer_underlying_presets_and_filter(tmp_path: Path, monkey
     seg.set_value("Underlying Attack").run()
     assert not app.exception
     df_widget = app.dataframe(key="explorer-table")
-    assert "Goals" in df_widget.value.columns
-    assert "xGI" in df_widget.value.columns
-    assert "GI / 90" in df_widget.value.columns
+    for col in ("xP", "Goals", "xG", "Assists", "xA", "xA / 90", "xA / App", "GI", "GI / 90", "xGI"):
+        assert col in df_widget.value.columns
 
     seg.set_value("Underlying Defence").run()
     assert not app.exception
     df_widget = app.dataframe(key="explorer-table")
-    assert "CS" in df_widget.value.columns
-    assert "CS %" in df_widget.value.columns
-    assert "Defcon Hits" in df_widget.value.columns
-    assert "Defcon %" in df_widget.value.columns
+    for col in ("xP", "CS", "CS %", "GC", "xGC", "Defcon Hits", "Defcon %"):
+        assert col in df_widget.value.columns
 
     mins_slider = app.slider(key="explorer-actual-mins")
     assert mins_slider.value == 0
     mins_slider.set_value(90).run()
     assert not app.exception
+
