@@ -744,6 +744,26 @@ _Avoid_: Set-piece goal threat, header xG
 Club-level goal differential between non-penalty dead-ball goals scored and conceded, driven by specialized set-piece coaching staff.
 _Avoid_: Set-piece differential, dead-ball swing
 
+**Performance Surface**:
+Peer dashboard workspace (`Performance`, default first page) tracking an entry's realized Gameweek rank, points trajectory, chip timing, and benchmark deltas across finished Gameweeks. Default landing view; prompts for Entry ID when unset.
+_Avoid_: Manager page, History tab, User Tracker, Team view
 
+**Entry History**:
+Realized per-Gameweek performance (points, total_points, overall_rank, rank, event_transfers_cost, points_on_bench, value, bank) and played chips fetched lazily from public `/entry/{entry_id}/history/`.
+_Avoid_: Manager history, user archive, season picks
 
+**Classic Mini-League**:
+Joined custom classic league (`league_type == "x"`) from `/entry/{entry_id}/`. Supplies current standings metrics and the searchable Top-50 manager list via a single `/leagues-classic/{league_id}/standings/` request without bulk-crawling member histories.
+_Avoid_: Mini-league, league, private league, H2H league
 
+**Comparison Managers**:
+Up to 5 rival entries selected on-demand from a Classic Mini-League Top-50 list or by manual Entry ID, whose Entry Histories are fetched one-by-one as selected.
+_Avoid_: Rival squad, competitors, benchmark managers
+
+**Global Gameweek Benchmark**:
+Official FPL per-Gameweek `average_entry_score`, `highest_score`, `ranked_count`, and `chip_plays` from `bootstrap-static` `events`, retained in `gameweeks.parquet` and `dashboard_data.json`.
+_Avoid_: Global mean, API benchmark, game average
+
+**Net Gameweek Points**:
+Realized Gameweek points minus `event_transfers_cost` (Hits). Used for benchmark deltas and chip timing differentials.
+_Avoid_: Raw points, gross score, match points

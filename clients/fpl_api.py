@@ -160,3 +160,21 @@ async def fetch_gameweek_picks(
     if write_cache:
         save_raw_cache(f"entry_{entry_id}_picks_gw_{gw_id}.json", data)
     return data
+
+
+async def fetch_classic_league_standings(
+    client: httpx.AsyncClient,
+    league_id: int,
+    page_standings: int = 1,
+    token: Optional[str] = None,
+    write_cache: bool = True,
+) -> dict[str, Any]:
+    """Fetch standings for a classic mini-league."""
+    url = f"{BASE_URL}/leagues-classic/{league_id}/standings/"
+    headers = {"x-api-authorization": f"Bearer {token}"} if token else None
+    params = {"page_standings": page_standings}
+    data = await _make_get_request(client, url, headers=headers, params=params)
+    if write_cache:
+        save_raw_cache(f"league_classic_{league_id}_standings_p{page_standings}.json", data)
+    return data
+

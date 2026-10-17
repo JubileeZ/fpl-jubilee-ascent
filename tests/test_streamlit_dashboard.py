@@ -32,14 +32,15 @@ def test_dashboard_navigation_remembers_view_and_omits_transfer_planner(tmp_path
     script = Path(__file__).resolve().parents[1] / "streamlit_app.py"
     app = AppTest.from_file(script, default_timeout=30).run()
     assert not app.exception
-    assert app.radio(key="dashboard-page").value == "Explorer"
+    assert app.radio(key="dashboard-page").value == "Performance"
     assert "Transfer Planner" not in app.radio(key="dashboard-page").options
-    for page in ("Research", "Model Methodology", "Explorer"):
+    for page in ("Explorer", "Research", "Model Methodology", "Performance"):
         app.radio(key="dashboard-page").set_value(page).run()
         assert not app.exception
     app.radio(key="dashboard-page").set_value("Research").run()
     restored = AppTest.from_file(script, default_timeout=30).run()
     assert restored.radio(key="dashboard-page").value == "Research"
+
 
 
 def test_explorer_watchlist_add_and_clear(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -49,6 +50,7 @@ def test_explorer_watchlist_add_and_clear(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
     assert app.session_state.get("watchlist", []) == []
     app.selectbox(key="watchlist-add-select").set_value(7).run()
@@ -67,6 +69,7 @@ def test_explorer_player_details_and_watchlist_toggle(tmp_path: Path, monkeypatc
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
     app.session_state["explorer-player"] = 7
     app.session_state["explorer-inspection"] = True
@@ -77,6 +80,7 @@ def test_explorer_player_details_and_watchlist_toggle(tmp_path: Path, monkeypatc
     assert 7 in app.session_state["watchlist"]
     app.button(key="details-toggle-watchlist").click().run()
     assert 7 not in app.session_state["watchlist"]
+
 
 
 def test_all_dashboard_job_kinds_share_one_exclusive_queue(tmp_path: Path) -> None:
@@ -178,6 +182,7 @@ def test_explorer_player_dialog_and_close(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     app.session_state["explorer-player"] = 7
     app.session_state["explorer-inspection"] = True
     app.run()
@@ -195,6 +200,7 @@ def test_explorer_bubble_scale_toggle(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
     checkbox = app.checkbox(key="explorer-bubble-scale")
     assert checkbox.value is True
@@ -222,6 +228,7 @@ def test_explorer_inspection_shows_verdict_and_components(tmp_path: Path, monkey
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     app.session_state["explorer-player"] = 7
     app.session_state["explorer-inspection"] = True
     app.run()
@@ -229,6 +236,7 @@ def test_explorer_inspection_shows_verdict_and_components(tmp_path: Path, monkey
     assert len(app.get("dialog")) == 1
     assert any("Selection Verdict" in m.value for m in app.markdown)
     assert any("Projected Point Components" in m.value for m in app.markdown)
+
     # Ensure retired role heuristics are not used
     assert not any("Regular starter" in m.value for m in app.markdown)
     assert not any("Rotation risk" in m.value for m in app.markdown)
@@ -299,6 +307,7 @@ def test_explorer_table_view_presets_and_hidden_id(tmp_path: Path, monkeypatch: 
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
 
     # Check segmented control exists
@@ -344,6 +353,7 @@ def test_explorer_action_bar_inspect_trigger(tmp_path: Path, monkeypatch: pytest
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
 
     # Select player 7
@@ -369,5 +379,7 @@ def test_explorer_horizon_start_defaults_to_upcoming_deadline(tmp_path: Path, mo
     monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
     monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
     app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
     assert app.selectbox(key="explorer-start").value == 7
+

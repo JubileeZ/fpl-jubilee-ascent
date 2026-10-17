@@ -35,7 +35,12 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `finished` (`bool`): Whether the GW has concluded.
     *   `is_current` (`bool`): Active gameweek flag.
     *   `is_next` (`bool`): Next planning target flag.
-*   **Discarded:** `release_time`, `average_entry_score`, `data_checked`, `highest_scoring_entry`, `deadline_time_epoch`, `deadline_time_game_offset`, `highest_score`, `is_previous`, `cup_leagues_created`, `h2h_ko_matches_created`, `can_enter`, `can_manage`, `released`, `ranked_count`, `overrides`, `chip_plays`, `most_selected`, `most_transferred_in`, `top_element`, `top_element_info`, `transfers_made`, `most_captained`, `most_vice_captained`.
+    *   `average_entry_score` (`int`, nullable): Global average points for the Gameweek.
+    *   `highest_score` (`int`, nullable): Highest individual score across all managers.
+    *   `chip_plays` (`json`/`str`, nullable): Serialized list of played chips and counts (`bboost`, `3xc`, `wildcard`, `freehit`).
+    *   `ranked_count` (`int`, nullable): Total active ranked entries in the Gameweek.
+*   **Discarded:** `release_time`, `data_checked`, `highest_scoring_entry`, `deadline_time_epoch`, `deadline_time_game_offset`, `is_previous`, `cup_leagues_created`, `h2h_ko_matches_created`, `can_enter`, `can_manage`, `released`, `overrides`, `most_selected`, `most_transferred_in`, `top_element`, `top_element_info`, `transfers_made`, `most_captained`, `most_vice_captained`.
+
 
 ---
 

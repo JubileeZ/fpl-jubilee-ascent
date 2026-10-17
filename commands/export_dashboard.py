@@ -693,6 +693,29 @@ def build_dashboard_dataset(
     deadline = gameweeks.loc[gameweeks["id"] == plan_start, "deadline_time"] if {"id", "deadline_time"}.issubset(gameweeks.columns) else pd.Series(dtype=object)
     input_files = [processed_dir / name for name in ("players.parquet", "user_picks.parquet", "gameweeks.parquet")]
     inputs_updated_at = datetime.fromtimestamp(min(path.stat().st_mtime for path in input_files), timezone.utc).isoformat() if all(path.exists() for path in input_files) else None
+
+    global_gw_benchmarks: dict[int, dict[str, Any]] = {}
+    if not gameweeks.empty and "id" in gameweeks.columns:
+        for _, grow in gameweeks.iterrows():
+            gid = int(grow["id"])
+            chip_plays_raw = grow.get("chip_plays")
+            if isinstance(chip_plays_raw, str):
+                try:
+                    chips_parsed = json.loads(chip_plays_raw)
+                except Exception:
+                    chips_parsed = []
+            elif isinstance(chip_plays_raw, list):
+                chips_parsed = chip_plays_raw
+            else:
+                chips_parsed = []
+            global_gw_benchmarks[gid] = {
+                "id": gid,
+                "average_entry_score": None if pd.isna(grow.get("average_entry_score")) else int(grow["average_entry_score"]),
+                "highest_score": None if pd.isna(grow.get("highest_score")) else int(grow["highest_score"]),
+                "ranked_count": None if pd.isna(grow.get("ranked_count")) else int(grow["ranked_count"]),
+                "chip_plays": chips_parsed,
+            }
+
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -719,10 +742,12 @@ def build_dashboard_dataset(
             "inputs_updated_at": inputs_updated_at,
             "transfer_plan_available_chips": available_chips(plan_gws, user_chips),
             "champion_trust": load_champion_trust(),
+            "global_gameweeks": global_gw_benchmarks,
         },
         "players": players_data,
     }
     return dataset
+
 
 
 def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:

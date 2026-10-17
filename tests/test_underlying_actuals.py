@@ -445,9 +445,11 @@ def test_streamlit_explorer_underlying_presets_and_filter(
 
     script = Path(__file__).resolve().parents[1] / "streamlit_app.py"
     app = AppTest.from_file(script, default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
 
     seg = app.segmented_control(key="explorer-table-preset")
+
     assert "Underlying Attack" in seg.options
     assert "Underlying Defence" in seg.options
 

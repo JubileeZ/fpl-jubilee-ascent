@@ -48,10 +48,18 @@ def process_directory(input_dir: Path, output_dir: Path):
     events = bootstrap.get("events", [])
     if events:
         df_gw = pd.DataFrame(events)
-        keep_gw_cols = ["id", "name", "deadline_time", "finished", "is_current", "is_next"]
-        df_gw = df_gw[[c for c in keep_gw_cols if c in df_gw.columns]]
+        keep_gw_cols = [
+            "id", "name", "deadline_time", "finished", "is_current", "is_next",
+            "average_entry_score", "highest_score", "chip_plays", "ranked_count"
+        ]
+        df_gw = df_gw[[c for c in keep_gw_cols if c in df_gw.columns]].copy()
+        if "chip_plays" in df_gw.columns:
+            df_gw["chip_plays"] = df_gw["chip_plays"].apply(
+                lambda x: json.dumps(x) if isinstance(x, list | dict) else x
+            )
         df_gw.to_parquet(output_dir / "gameweeks.parquet", index=False)
         logger.info(f"Processed {len(df_gw)} gameweeks -> gameweeks.parquet")
+
         
     # Determine current gameweek
     current_gw = next((e["id"] for e in events if e.get("is_current")), None)

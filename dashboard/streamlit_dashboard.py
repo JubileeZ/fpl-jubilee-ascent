@@ -23,9 +23,11 @@ from models import get_default_model_name
 from models.scoring_matrix import Position, _CLEAN_SHEET_POINTS, _GOAL_POINTS
 from projections.explorer_slice import COMPONENT_KEYS
 from dashboard.presentation import availability, fixture
+from dashboard.performance_view import performance_view
 
-PAGES = ("Explorer", "Research", "Model Methodology")
+PAGES = ("Performance", "Explorer", "Research", "Model Methodology")
 POS_ID_TO_CODE: dict[int, Position] = {1: "GK", 2: "D", 3: "M", 4: "F"}
+
 
 
 def start_tool(request: dict[str, Any], paths: PlannerPaths, jobs: PlannerJobs) -> None:
@@ -851,9 +853,12 @@ def main() -> None:
         st.header("FPL Jubilee Ascent")
         page = st.radio("Workspace", PAGES, key="dashboard-page")
         try:
-            preferences.save({"page": page})
+            saved_pref = preferences.load() or {}
+            saved_pref["page"] = page
+            preferences.save(saved_pref)
         except OSError:
             st.caption("Workspace choice not saved.")
+
         st.caption("Public FPL player & projection analytics.")
 
         with st.expander("Data Refresh"):
@@ -880,9 +885,12 @@ def main() -> None:
 
     with st.container(key="dashboard-content"):
         shared_job_status(paths, jobs)
-        if page == "Explorer":
+        if page == "Performance":
+            performance_view(paths)
+        elif page == "Explorer":
             explorer(paths, jobs)
         elif page == "Research":
             research()
         else:
             methodology()
+
