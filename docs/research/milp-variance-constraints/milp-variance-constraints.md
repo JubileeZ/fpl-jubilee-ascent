@@ -6,7 +6,7 @@
 **Status**: Active  
 **Purpose**: Quantitative justification for adding strategic variance-control constraints to deterministic Mixed-Integer Linear Program (MILP) solvers in FPL, counteracting the Optimizer's Curse, horizon overfitting, bimodal minutes risk, and tail-risk covariance.  
 **Scope**: Tactical and mathematical constraints on transfer planning, hits, minutes thresholds, defensive stack caps, bench coverage, and position-specific transfer friction.  
-**Related**: [ADR 0033](../../docs/adr/0033-transfer-plan-hits-until-champion-bias.md), [ADR 0020](../../docs/adr/0020-first-half-transfer-plan-walk-forward.md), [Candidate Ledger](../candidate-ledger/candidate-ledger.md), sibling repo `jubilee-solio-calibrate` ([Solio Solver Rules](https://github.com/JubileeZ/jubilee-solio-calibrate/blob/main/docs/research/solio-solver-rules-variance-constraints.md)).  
+**Related**: [ADR 0033](../../adr/0033-transfer-plan-hits-until-champion-bias.md), [ADR 0020](../../adr/0020-transfer-plan-walk-forward-first-half.md), [Candidate Ledger](../candidate-ledger/candidate-ledger.md), sibling repo `jubilee-solio-calibrate` ([Solio Solver Rules](file:///Users/jubilee/jubilee-solio-calibrate/docs/research/solio-solver-rules-variance-constraints.md)).  
 
 ---
 
