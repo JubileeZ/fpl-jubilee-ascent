@@ -71,11 +71,11 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
     *   `kickoff_time` (`datetime`).
     *   `home_club_id` (`int`): Reference to home Club (maps to `team_h`).
     *   `away_club_id` (`int`): Reference to away Club (maps to `team_a`).
-    *   `finished` (`bool`), `started` (`bool`).
+    *   `finished` (`bool`), `finished_provisional` (`bool`, optional), `started` (`bool`).
     *   `team_h_score` (`int`, nullable), `team_a_score` (`int`, nullable).
     *   `team_h_difficulty` (`int`), `team_a_difficulty` (`int`): Official Fixture Difficulty for the home/away club. Production models and FDR report derive Modified FDR (−0.25 home / +0.25 away); these columns stay the API ticks.
     *   `raw_stats` (`json`): Raw `'stats'` array containing goals/assists/bps details.
-*   **Discarded:** `code`, `finished_provisional`, `provisional_start_time`, `minutes`, `pulse_id`.
+*   **Discarded:** `code`, `provisional_start_time`, `minutes`, `pulse_id`.
 
 ---
 

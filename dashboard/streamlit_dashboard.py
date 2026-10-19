@@ -280,9 +280,12 @@ def explorer_details(player: dict[str, Any], model: str, gws: tuple[int, ...], p
             "Reality Check": format_rate_delta(pred_cs_90, actual_cs_90, "CS", fallback_label="Defensive matchup projection"),
         })
 
-    finished_count = len((dataset.get("meta") or {}).get("finished_gameweeks", [])) if dataset else 0
-    actual_mins_gw = (float(player.get("minutes", 0)) / finished_count) if finished_count > 0 else None
-    season_mins_per_start = float(player.get("minutes", 0)) / max(1, int(player.get("starts", 0))) if player.get("starts") else None
+    raw_cf = player.get("club_fixtures")
+    club_fixtures = int(raw_cf) if raw_cf is not None else (len((dataset.get("meta") or {}).get("finished_gameweeks", [])) if dataset else 0)
+    mins_val = float(player.get("actual_minutes") if player.get("actual_minutes") is not None else player.get("minutes", 0))
+    starts_val = int(player.get("actual_starts") if player.get("actual_starts") is not None else player.get("starts", 0))
+    actual_mins_gw = (mins_val / club_fixtures) if club_fixtures > 0 else None
+    season_mins_per_start = (mins_val / max(1, starts_val)) if starts_val > 0 else None
     reality_rows.append({
         "Component": "Appearance",
         "Projected Total": f"{comp_sums['Appearance']:.2f} xP",

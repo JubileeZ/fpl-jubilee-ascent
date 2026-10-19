@@ -189,6 +189,10 @@ def player_history(paths: PlannerPaths, player_id: int) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     data = pd.read_parquet(path)
+    fix_path = paths.processed / "fixtures.parquet"
+    if fix_path.exists():
+        from features.builder import completed_performance_rows
+        data = completed_performance_rows(data, pd.read_parquet(fix_path))
     desired = ("gameweek_id", "total_points", "minutes", "goals_scored", "assists", "expected_goals", "expected_assists", "bonus")
     columns = [column for column in desired if column in data.columns]
     if "player_id" not in data.columns or not columns:

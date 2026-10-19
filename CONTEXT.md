@@ -73,7 +73,7 @@ A per-player per-fixture expected points and minutes estimate. Canonical model o
 _Avoid_: fixture score
 
 **Club Fixture**:
-A finished Fixture while a Player is registered with the participating Club. Training denominator for Participation State and Event Rates. Excludes fixtures before a transfer-in or after a transfer-out. Missing history and Incomplete History Rows are not Club Fixtures and are not Did Not Play.
+Full-time Fixture (`finished=true` or `finished_provisional=true`) while Player registered with participating Club. Training denominator for Participation State and Event Rates; accumulation scope for Underlying Actuals. Excludes fixtures before transfer-in or after transfer-out. Missing history, unstarted fixtures, and in-play fixtures: Incomplete History Rows, not Club Fixtures, not Did Not Play.
 _Avoid_: Eligible game, season fixture, padded DNP, this-season fixture at a previous Club, live or future 0-minute history as DNP
 
 **Gameweek Projection**:
@@ -161,7 +161,7 @@ A per-90-minutes estimate of how often a Player produces a given Event Component
 _Avoid_: Per-90 average, rate (ambiguous), Appearance Blend, in-season Prior-Season Seed rates
 
 **Underlying Actuals**:
-Realized football production and Opta metrics (Goals, Assists, GI, xG, xA, xGI, Clean Sheets, Goals Conceded, xGC, Defcon Hits, Saves) accumulated season-to-date over finished Gameweeks as counts, per-90 rates, and per-appearance rates. Distinct from forward-looking xP fantasy projections.
+Realized football production and Opta metrics (Goals, Assists, GI, xG, xA, xGI, Clean Sheets, Goals Conceded, xGC, Defcon Hits, Saves) accumulated season-to-date over completed Club Fixtures as counts, per-90 rates, and per-appearance rates. Distinct from forward-looking xP fantasy projections.
 _Avoid_: Projected points, xP actuals, fantasy point actuals, horizon actuals
 
 **Goal Involvement (GI)**:
@@ -192,7 +192,7 @@ _Avoid_: Appearance Probability (only whether a Player features), lineup status,
 When the last \(K=3\) current-club Club Fixtures are Starts (any non-Start resets), Feature Contract blends that window's Participation State posterior with the full-tenure posterior at weight \(w=0.90\) toward the window. Data-only; not Expected Role.
 _Avoid_: Nailed Starter, Role prior, global prior-strength retune as this rule, Sub-in as still-nailed
 **Incomplete History Row**:
-An `element_summary` history row for a Fixture that is not finished. Not a Club Fixture. Not Did Not Play.
+`element_summary` history row for Fixture not at full-time (pre-kickoff or in-play). Not Club Fixture. Not Did Not Play.
 _Avoid_: Recorded DNP, Sunday not-yet-played as DNP, future 0-minute pad
 
 **Recorded DNP**:
@@ -200,7 +200,7 @@ A finished Club Fixture with zero minutes. Did Not Play in Participation State.
 _Avoid_: Incomplete History Row, missing history, padded DNP
 
 **This-Season Evidence**:
-At least one this-season finished `player_performances` history row in the Operational Dataset (`element_summary` history on a finished Fixture: minutes, starts, or Recorded DNP). Global: one finished row anywhere ends Cold-Start for every Player.
+>=1 this-season completed `player_performances` row in Operational Dataset (`element_summary` on completed Fixture: minutes, starts, or Recorded DNP). Global: single completed row ends Cold-Start for all Players.
 _Avoid_: GW1 deadline as the clock, per-player first appearance, fixture listed with no history row, Incomplete History Row as evidence, Expected Role, bootstrap season totals alone
 
 **Expected Role**:

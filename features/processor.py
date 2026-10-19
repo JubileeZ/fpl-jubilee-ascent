@@ -102,7 +102,7 @@ def process_directory(input_dir: Path, output_dir: Path):
         df_fix = df_fix.rename(columns={"event": "gameweek_id", "team_h": "home_club_id", "team_a": "away_club_id"})
         keep_fix_cols = [
             "id", "gameweek_id", "kickoff_time", "home_club_id", "away_club_id",
-            "finished", "started", "team_h_score", "team_a_score",
+            "finished", "finished_provisional", "started", "team_h_score", "team_a_score",
             "team_h_difficulty", "team_a_difficulty"
         ]
         df_fix_sub = df_fix[[c for c in keep_fix_cols if c in df_fix.columns]].copy()

@@ -185,7 +185,23 @@ def point_in_time_players(
     return out
 
 
-def _completed_performance_rows(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame) -> pd.DataFrame:
+def _bool_col(series: pd.Series) -> pd.Series:
+    if series.dtype == object:
+        return series.map(lambda value: value is True or value == 1 or value == "True")
+    return series.fillna(False).astype(bool)
+
+
+def _is_fixture_completed(df_fixtures: pd.DataFrame) -> pd.Series:
+    """Return boolean Series indicating if each fixture in df_fixtures has reached full-time."""
+    if df_fixtures.empty or "finished" not in df_fixtures.columns:
+        return pd.Series(False, index=df_fixtures.index, dtype=bool)
+    fin_mask = _bool_col(df_fixtures["finished"])
+    if "finished_provisional" in df_fixtures.columns:
+        return fin_mask | _bool_col(df_fixtures["finished_provisional"])
+    return fin_mask
+
+
+def completed_performance_rows(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame) -> pd.DataFrame:
     """Drop rows whose Fixture is known unfinished. Unknown fixture ids stay."""
     if (
         df_perf.empty
@@ -194,9 +210,25 @@ def _completed_performance_rows(df_perf: pd.DataFrame, df_fixtures: pd.DataFrame
         or "finished" not in df_fixtures.columns
     ):
         return df_perf
-    finished_by_id = df_fixtures.drop_duplicates("id").set_index("id")["finished"]
-    known_finished = df_perf["fixture_id"].map(finished_by_id)
+    dedup = df_fixtures.drop_duplicates("id")
+    completed_by_id = pd.Series(_is_fixture_completed(dedup).values, index=dedup["id"])
+    known_finished = df_perf["fixture_id"].map(completed_by_id)
     return df_perf[known_finished.ne(False)]
+
+
+_completed_performance_rows = completed_performance_rows
+
+
+def load_fit_history(processed_dir: Path, fallback_before_gw: int) -> pd.DataFrame | None:
+    """Return completed performance rows if fixtures exist, else rows before fallback_before_gw."""
+    perf_path = processed_dir / "player_performances.parquet"
+    if not perf_path.exists():
+        return None
+    df_perf = pd.read_parquet(perf_path)
+    fix_path = processed_dir / "fixtures.parquet"
+    if fix_path.exists():
+        return completed_performance_rows(df_perf, pd.read_parquet(fix_path))
+    return df_perf[df_perf["gameweek_id"] < fallback_before_gw]
 
 
 def history_before_target(
@@ -223,11 +255,7 @@ def history_before_target(
 def _finished_fixture_gameweeks(df_fixtures: pd.DataFrame) -> list[int]:
     if df_fixtures.empty or "finished" not in df_fixtures.columns or "gameweek_id" not in df_fixtures.columns:
         return []
-    finished = df_fixtures["finished"]
-    if finished.dtype == object:
-        mask = finished.map(lambda value: value is True or value == 1 or value == "True")
-    else:
-        mask = finished.fillna(False).astype(bool)
+    mask = _is_fixture_completed(df_fixtures)
     gameweeks = pd.to_numeric(df_fixtures.loc[mask, "gameweek_id"], errors="coerce").dropna()
     return [int(gw) for gw in gameweeks.unique()]
 
@@ -750,6 +778,7 @@ def build_features(
     matchup_shrink_att: float | None = None,
     matchup_shrink_def: float | None = None,
     matchup_attack_scale: str = "none",
+    immediate_next_gw: int | None = None,
 ) -> pd.DataFrame:
 
     """
@@ -1154,7 +1183,8 @@ def build_features(
                 ~df_feat["status"].isin(unavailable_statuses), 0.0
             )
 
-    df_feat["is_immediate_next_gw"] = df_feat["gameweek_id"].eq(target_gw)
+    immediate_gw = target_gw if immediate_next_gw is None else immediate_next_gw
+    df_feat["is_immediate_next_gw"] = df_feat["gameweek_id"].eq(immediate_gw)
     df_feat["has_availability_snapshot"] = has_point_in_time_snapshot
     df_feat["availability_snapshot_id"] = snapshot_id
     df_feat["xmins_cap"] = float("nan")

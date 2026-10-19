@@ -16,7 +16,13 @@ from clients.env_loader import configure_utf8_stdio, load_env
 load_env()
 configure_utf8_stdio()
 
-from features.builder import build_features, resolve_operational_processed_dir
+from features.builder import (
+    _attach_fixture_clubs,
+    build_features,
+    completed_performance_rows,
+    load_fit_history,
+    resolve_operational_processed_dir,
+)
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
 from models.selection import projection_model_names
 from projections.exporter import write_solver_projection_csvs
@@ -301,6 +307,7 @@ def load_user_chips(processed_dir: Path) -> list[dict[str, Any]]:
 def _load_player_actuals(
     processed_dir: Path,
     finished_gws: set[int] | None = None,
+    player_clubs: dict[int, int] | None = None,
 ) -> dict[int, dict[str, Any]]:
     perf_path = processed_dir / "player_performances.parquet"
     if not perf_path.exists():
@@ -316,13 +323,12 @@ def _load_player_actuals(
     if "fixture_id" in perf_df.columns and fixtures_path.exists():
         try:
             df_fix = pd.read_parquet(fixtures_path)
-            if "id" in df_fix.columns and "finished" in df_fix.columns:
-                finished_by_id = df_fix.drop_duplicates("id").set_index("id")["finished"]
-                perf_df = perf_df[perf_df["fixture_id"].map(finished_by_id).ne(False)]
+            perf_df = completed_performance_rows(perf_df, df_fix)
+            if player_clubs:
+                perf_df = _attach_fixture_clubs(perf_df, df_fix)
         except Exception:
             pass
-
-    if finished_gws and "gameweek_id" in perf_df.columns:
+    elif finished_gws and "gameweek_id" in perf_df.columns:
         perf_df = perf_df[perf_df["gameweek_id"].isin(finished_gws)]
 
     if perf_df.empty:
@@ -330,10 +336,18 @@ def _load_player_actuals(
 
     actuals: dict[int, dict[str, Any]] = {}
     for pid, group in perf_df.groupby("player_id"):
+        if player_clubs and pid in player_clubs and "club_id_at_fixture" in group.columns:
+            target_club = player_clubs[pid]
+            known_clubs = group["club_id_at_fixture"].notna()
+            if known_clubs.any():
+                group = group[~known_clubs | (group["club_id_at_fixture"] == target_club)]
+            if group.empty:
+                continue
         mins = float(group["minutes"].sum()) if "minutes" in group.columns else 0.0
         played = group[group["minutes"] > 0] if "minutes" in group.columns else group
         apps = len(played) if "minutes" in group.columns else 0
         starts = int((group["starts"] > 0).sum()) if "starts" in group.columns else 0
+        club_fixtures = len(group)
         goals = int(group["goals_scored"].sum()) if "goals_scored" in group.columns else 0
         assists = int(group["assists"].sum()) if "assists" in group.columns else 0
         cs = int(group["clean_sheets"].sum()) if "clean_sheets" in group.columns else 0
@@ -352,6 +366,7 @@ def _load_player_actuals(
             "minutes": mins,
             "apps": apps,
             "starts": starts,
+            "club_fixtures": club_fixtures,
             "goals": goals,
             "assists": assists,
             "cs": cs,
@@ -420,7 +435,12 @@ def build_dashboard_dataset(
 
     gw_ids = sorted(all_gw_ids) if all_gw_ids else planning_gw_ids
     club_fixtures = load_club_gw_fixtures(processed_dir, club_map)
-    player_actuals = _load_player_actuals(processed_dir, finished_gws)
+    player_clubs = (
+        players_df.set_index("id")["club_id"].dropna().astype(int).to_dict()
+        if "id" in players_df.columns and "club_id" in players_df.columns
+        else None
+    )
+    player_actuals = _load_player_actuals(processed_dir, finished_gws, player_clubs=player_clubs)
 
     players_data: List[Dict[str, Any]] = []
 
@@ -455,6 +475,7 @@ def build_dashboard_dataset(
             act_mins = int(act["minutes"])
             apps = int(act["apps"])
             act_starts = int(act["starts"])
+            act_club_fixtures = int(act.get("club_fixtures", apps))
             act_goals = int(act["goals"])
             act_assists = int(act["assists"])
             act_cs = int(act["cs"])
@@ -468,6 +489,7 @@ def build_dashboard_dataset(
             act_mins = int(mins)
             apps = int(starts) if starts > 0 else (1 if mins > 0 else 0)
             act_starts = int(starts)
+            act_club_fixtures = apps
             act_goals = int(_safe_float(p.get("goals_scored")))
             act_assists = int(_safe_float(p.get("assists")))
             act_cs = int(_safe_float(p.get("clean_sheets")))
@@ -641,6 +663,7 @@ def build_dashboard_dataset(
             "goals_scored": int(_safe_float(p.get("goals_scored"))),
             "assists": int(_safe_float(p.get("assists"))),
             "apps": apps,
+            "club_fixtures": act_club_fixtures,
             "actual_starts": act_starts,
             "actual_minutes": act_mins,
             "actual_goals": act_goals,
@@ -788,17 +811,17 @@ def run_dashboard_export(
         feature_start,
         horizon=remaining_horizon,
         history_before_gw=SEASON_END_GW + 1,
+        immediate_next_gw=target_start,
     )
 
     model_preds: Dict[str, pd.DataFrame] = {}
-    perf_path = processed_dir / "player_performances.parquet"
-    df_perf = pd.read_parquet(perf_path) if perf_path.exists() else None
+    fit_history = load_fit_history(processed_dir, feature_start)
 
     for m_name in names:
         logger.info(f"Generating projections using model '{m_name}'...")
         model = get_model(m_name)
-        if hasattr(model, "fit") and df_perf is not None:
-            model.fit(df_perf[df_perf["gameweek_id"] < feature_start])
+        if hasattr(model, "fit") and fit_history is not None:
+            model.fit(fit_history)
         model_preds[m_name] = model.predict(df_feat, remaining_horizon)
 
     dataset = build_dashboard_dataset(

@@ -12,7 +12,11 @@ load_env()
 configure_utf8_stdio()
 
 from models import get_model, resolve_model_or_champion
-from features.builder import build_features, resolve_operational_processed_dir
+from features.builder import (
+    build_features,
+    load_fit_history,
+    resolve_operational_processed_dir,
+)
 from features.contracts import assert_projection_contract
 from projections.exporter import export_projections
 from solver.planning import SEASON_END_GW, resolve_default_target_gw
@@ -56,10 +60,10 @@ def generate_model_projections(
     resolved_model = resolve_model_or_champion(model_name)
     logger.info(f"Loading model '{resolved_model}'...")
     model = get_model(resolved_model)
-    perf_path = processed_dir / "player_performances.parquet"
-    if hasattr(model, "fit") and perf_path.exists():
-        df_perf = pd.read_parquet(perf_path)
-        model.fit(df_perf[df_perf["gameweek_id"] < target_gw])
+    if hasattr(model, "fit"):
+        fit_history = load_fit_history(processed_dir, target_gw)
+        if fit_history is not None:
+            model.fit(fit_history)
 
     logger.info("Generating predictions...")
     df_proj = assert_projection_contract(model.predict(df_feat, horizon))
