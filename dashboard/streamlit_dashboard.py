@@ -505,9 +505,9 @@ def highlight_xp_cell(val: Any) -> str:
     if num >= 7.0:
         return "background-color: #15803d; color: #ffffff; font-weight: 600;"
     elif num >= 5.0:
-        return "background-color: rgba(34, 197, 94, 0.25); color: inherit; font-weight: 500;"
+        return "background-color: rgba(34, 197, 94, 0.25); font-weight: 500;"
     elif num >= 3.0:
-        return "background-color: rgba(34, 197, 94, 0.10); color: inherit;"
+        return "background-color: rgba(34, 197, 94, 0.10);"
     return ""
 
 

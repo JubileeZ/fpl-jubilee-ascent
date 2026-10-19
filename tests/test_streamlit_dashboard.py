@@ -3,6 +3,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -489,6 +490,54 @@ def test_watchlist_view_presets_and_schedule(tmp_path: Path, monkeypatch: pytest
     select_watchlist_player("watchlist-table", [7])
     assert st.session_state.get("explorer-player") == 7
     assert st.session_state.get("explorer-inspection") is True
+
+
+def test_highlight_xp_cell_styling_and_contrast() -> None:
+    from dashboard.streamlit_dashboard import apply_score_heatmap, highlight_xp_cell
+
+    # Tier 1: Haul tier (>= 7.0) requires dark green background and explicit white text
+    haul_style = highlight_xp_cell(8.2)
+    assert "background-color: #15803d" in haul_style
+    assert "color: #ffffff" in haul_style
+    assert "font-weight: 600" in haul_style
+
+    haul_str = highlight_xp_cell("SOU (H) · 7.5 xP")
+    assert "background-color: #15803d" in haul_str
+    assert "color: #ffffff" in haul_str
+
+    # Tier 2: Strong return tier (5.0 - 6.99) - must NOT set color (canvas rejects inherit)
+    strong_style = highlight_xp_cell(5.8)
+    assert "background-color: rgba(34, 197, 94, 0.25)" in strong_style
+    assert "font-weight: 500" in strong_style
+    assert not any(part.strip().startswith("color:") for part in strong_style.split(";") if part.strip())
+
+    strong_str = highlight_xp_cell("CRY (A) · 5.2 xP")
+    assert "background-color: rgba(34, 197, 94, 0.25)" in strong_str
+    assert not any(part.strip().startswith("color:") for part in strong_str.split(";") if part.strip())
+
+    # Tier 3: Moderate return tier (3.0 - 4.99) - must NOT set color (canvas rejects inherit)
+    mod_style = highlight_xp_cell(3.5)
+    assert "background-color: rgba(34, 197, 94, 0.10)" in mod_style
+    assert not any(part.strip().startswith("color:") for part in mod_style.split(";") if part.strip())
+
+    mod_str = highlight_xp_cell("BRE (H) · 4.0 xP")
+    assert "background-color: rgba(34, 197, 94, 0.10)" in mod_str
+    assert not any(part.strip().startswith("color:") for part in mod_str.split(";") if part.strip())
+
+    # Tier 4: Cameo / tough fixture (< 3.0) or invalid - blank style
+    assert highlight_xp_cell(2.1) == ""
+    assert highlight_xp_cell("MCI (A) · 1.8 xP") == ""
+    assert highlight_xp_cell(None) == ""
+    assert highlight_xp_cell("Unavailable") == ""
+
+    # apply_score_heatmap behavior
+    test_df = pd.DataFrame({"Player": ["Haaland", "Salah", "Eze", "Cameo"], "xP / GW": [8.5, 6.2, 4.1, 1.5]})
+    styler = apply_score_heatmap(test_df, ["xP / GW"])
+    assert hasattr(styler, "_compute")
+
+    empty_df = pd.DataFrame()
+    assert apply_score_heatmap(empty_df, ["xP / GW"]).empty
+
 
 
 
