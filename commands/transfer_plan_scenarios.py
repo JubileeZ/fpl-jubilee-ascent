@@ -7,12 +7,14 @@ import threading
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from commands.export_dashboard import load_owned_picks, load_user_chips, load_user_state
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
 from models import get_default_model_name
-from projections.expected_gw_score import player_gw_from_dashboard
+from models.participation_state_hybrid import target_to_states
+from projections.expected_gw_score import _POS_ID, PlayerGw, player_gw_from_dashboard
+from solver.paths import DATA_DIR
 from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
 from solver.scenarios import (
     ARM_NAMES,
@@ -20,8 +22,6 @@ from solver.scenarios import (
     apply_scenario_arm,
     compute_scenarios_digest,
     feasible_scenario_arms,
-    find_protected_one_match_missed_starters,
-    find_unowned_flagged_players,
     rank_scenarios,
 )
 from solver.transfer_plan import LIVE_SOLVER_REL_GAP
@@ -84,8 +84,6 @@ def build_scenarios_payload(
     free_transfers: int,
     status: str,
     stale: bool = False,
-    unowned_flagged: list[int] | None = None,
-    protected_starters: list[int] | None = None,
     data_digest: str | None = None,
 ) -> dict[str, Any]:
     completed = [str(row["id"]) for row in rows]
@@ -102,8 +100,6 @@ def build_scenarios_payload(
             "stale": bool(stale),
             "completed_arms": completed,
             "pending_arms": pending,
-            "unowned_flagged": unowned_flagged or [],
-            "protected_starters": protected_starters or [],
             "data_digest": data_digest,
         },
         "scenarios": ranked,
@@ -126,6 +122,9 @@ def execute_transfer_plan_scenarios(
     on_progress: ProgressCallback | None = None,
     force: bool = False,
     gap: float = LIVE_SOLVER_REL_GAP,
+    datasource: str | None = None,
+    xmins_override: Path | str | None = None,
+    strategic_options: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
     if not owned_ids:
@@ -135,7 +134,7 @@ def execute_transfer_plan_scenarios(
     _itb, free_transfers = load_user_state(processed_dir)
     horizon = clamp_planning_horizon(horizon)
 
-    champion = get_default_model_name()
+    champion = datasource or get_default_model_name()
     digest = compute_scenarios_digest(
         processed_dir=processed_dir,
         target_gw=target_gw,
@@ -145,6 +144,8 @@ def execute_transfer_plan_scenarios(
         enabled_chips=enabled_chips,
         force_keep=force_keep,
         gap=gap,
+        strategic_options=strategic_options,
+        xmins_override=xmins_override,
     )
     if not force:
         cached = load_scenarios_payload(scenarios_path)
@@ -189,14 +190,27 @@ def execute_transfer_plan_scenarios(
         target_gw=target_gw,
         force_keep=force_keep or [],
     )
-    players_path = processed_dir / "players.parquet"
-    perf_path = processed_dir / "player_performances.parquet"
-    players_df = pd.read_parquet(players_path) if players_path.exists() else pd.DataFrame()
-    perf_df = pd.read_parquet(perf_path) if perf_path.exists() else pd.DataFrame()
-    unowned_flagged = find_unowned_flagged_players(players_df, owned_ids)
-    protected_starters = find_protected_one_match_missed_starters(perf_df, owned_ids)
+    if datasource:
+        base["datasource"] = datasource
+    if strategic_options:
+        base["strategic_options"] = dict(strategic_options)
 
     lookup = player_gw_from_dashboard(dataset)
+    if datasource and (xmins_override is not None or not lookup or datasource != get_default_model_name()):
+        csv_path = DATA_DIR / f"{datasource}.csv"
+        if csv_path.exists():
+            csv_df = pd.read_csv(csv_path)
+            id_col = "ID" if "ID" in csv_df.columns else "id"
+            pos_col = "Pos" if "Pos" in csv_df.columns else "pos"
+            for _, r in csv_df.iterrows():
+                pid = int(r[id_col])
+                pos_id = _POS_ID.get(str(r.get(pos_col)), 3)
+                for gw in gws:
+                    pts = float(r.get(f"{gw}_Pts") or 0.0)
+                    xmins = float(r.get(f"{gw}_xMins") or 0.0)
+                    p_start, p_sub_in, _p_dnp, _sm, _subm = target_to_states(xmins)
+                    p_app = max(0.0, min(1.0, p_start + p_sub_in))
+                    lookup[(pid, gw)] = PlayerGw(player_id=pid, position_id=pos_id, xp=pts, p_appear=p_app)
     arms = feasible_scenario_arms(free_transfers)
     completed: dict[str, dict[str, Any]] = {}
     publish_lock = threading.Lock()
@@ -211,8 +225,6 @@ def execute_transfer_plan_scenarios(
                 free_transfers=free_transfers,
                 status=status,
                 stale=False,
-                unowned_flagged=unowned_flagged,
-                protected_starters=protected_starters,
                 data_digest=digest,
             )
             write_scenarios_payload(scenarios_path, payload)
@@ -233,8 +245,7 @@ def execute_transfer_plan_scenarios(
                 arm,
                 start_gw=target_gw,
                 free_transfer_bank=free_transfers,
-                banned_next_gw=unowned_flagged,
-                locked_next_gw=protected_starters,
+                strategic_options=strategic_options,
             )
         )
         if "gap" not in options:

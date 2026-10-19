@@ -1002,9 +1002,9 @@ def test_run_branch_solve_job_3_arms(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert len(branch["rootChildIds"]) == 3
     assert len(branch["nodes"]) == 3
     titles = [n["title"] for n in branch["nodes"].values()]
-    assert any("Optimal" in t for t in titles)
+    assert any("Strategic" in t for t in titles)
+    assert any("Unconstrained" in t for t in titles)
     assert any("No Hit" in t for t in titles)
-    assert any("Conservative" in t for t in titles)
 
 
 def test_default_user_plans_full_horizon_straight_chain() -> None:

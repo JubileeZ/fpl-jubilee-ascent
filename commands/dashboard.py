@@ -21,7 +21,6 @@ configure_utf8_stdio()
 
 from commands.export_dashboard import (
     PROJECT_ROOT,
-    load_owned_picks,
     load_user_state,
     run_dashboard_export,
 )
@@ -851,37 +850,23 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
 
         if options.get("solve_3_arms"):
             from solver.scenarios import (
-                ARM_CONSERVATIVE,
-                ARM_NAMES,
                 ARM_NO_HIT,
-                ARM_OPTIMAL,
+                ARM_STRATEGIC,
+                ARM_UNCONSTRAINED,
+                ARM_NAMES,
                 apply_scenario_arm,
-                find_protected_one_match_missed_starters,
-                find_unowned_flagged_players,
             )
-            players_path = processed_dir / "players.parquet"
-            perf_path = processed_dir / "player_performances.parquet"
-            players_df = pd.read_parquet(players_path) if players_path.exists() else pd.DataFrame()
-            perf_df = pd.read_parquet(perf_path) if perf_path.exists() else pd.DataFrame()
             try:
-                owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
                 _itb, free_transfers = load_user_state(processed_dir)
                 parent_data = options.get("parentNode") or options.get("parent_state")
                 if isinstance(parent_data, dict):
                     parent_eval = parent_data.get("evaluation") or {}
                     if "freeTransfersNext" in parent_eval:
                         free_transfers = int(parent_eval["freeTransfersNext"])
-                    parent_slots = (parent_data.get("lineup") or {}).get("slots")
-                    if isinstance(parent_slots, dict) and len(parent_slots) == 15:
-                        owned_ids = [int(v) for v in parent_slots.values() if v]
-                unowned_flagged = find_unowned_flagged_players(players_df, owned_ids)
-                protected_starters = find_protected_one_match_missed_starters(perf_df, owned_ids)
             except Exception:
-                unowned_flagged = []
-                protected_starters = []
                 free_transfers = 1
 
-            arms = (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+            arms = (ARM_STRATEGIC, ARM_UNCONSTRAINED, ARM_NO_HIT)
             merged_nodes: dict[str, Any] = {}
             root_child_ids: list[str] = []
             best_plan = None
@@ -897,8 +882,7 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
                     arm,
                     start_gw=target_gw,
                     free_transfer_bank=free_transfers,
-                    banned_next_gw=unowned_flagged,
-                    locked_next_gw=protected_starters,
+                    strategic_options=options.get("strategic_options"),
                 )
                 arm_path = PROJECT_ROOT / "data" / f".branch_{arm}_{uuid.uuid4().hex[:6]}.json"
                 try:
@@ -1169,7 +1153,10 @@ def _generate_default_user_plans() -> dict[str, object]:
                         if target_gw <= int(w.get("gw", 0)) < target_gw + horizon
                     ]
                     branch = _build_branch_nodes_from_plan(
-                        plan_for_horizon, root_id, target_gw, arm_label="MILP Optimal"
+                        plan_for_horizon,
+                        root_id,
+                        target_gw,
+                        arm_label=f"MILP {sc_list[0].get('name', 'Strategic')}",
                     )
                     b_nodes = branch.get("nodes") or {}
                     if b_nodes:

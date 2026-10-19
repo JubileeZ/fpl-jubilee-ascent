@@ -215,10 +215,12 @@ def test_solve_cli_model_champion_string_uses_champion() -> None:
     assert pad_mock.call_args.args[0].name == f"{get_default_model_name()}.csv"
 
 
-def test_solve_cli_defaults_to_single_arm_no_hit_gap_zero(capsys: pytest.CaptureFixture[str]) -> None:
+def test_solve_cli_defaults_to_single_arm_strategic_gap_zero(capsys: pytest.CaptureFixture[str]) -> None:
+    from solver.scenarios import DEFAULT_STRATEGIC_OPTIONS
+
     plan = {
         "meta": {"solver_objective": 12.0},
-        "summary": "Single plan summary (no-hit, gap 0.0)",
+        "summary": "Single plan summary (strategic, gap 0.0)",
     }
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
          patch("commands.solve.execute_transfer_plan", return_value=plan) as mock_single, \
@@ -226,21 +228,38 @@ def test_solve_cli_defaults_to_single_arm_no_hit_gap_zero(capsys: pytest.Capture
         main()
         mock_single.assert_called_once()
         options_passed = mock_single.call_args.args[0]
-        assert options_passed["weekly_hit_limit"] == 0
+        assert options_passed["weekly_hit_limit"] == 1
+        assert options_passed["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
         assert options_passed["gap"] == 0.0
 
     captured = capsys.readouterr().out
-    assert "Single plan summary (no-hit, gap 0.0)" in captured
+    assert "Single plan summary (strategic, gap 0.0)" in captured
     assert "TRANSFER PLAN SCENARIOS" not in captured
+
+
+def test_solve_cli_no_hit_flag_forces_no_hit(capsys: pytest.CaptureFixture[str]) -> None:
+    plan = {
+        "meta": {"solver_objective": 12.0},
+        "summary": "Single plan summary (no-hit, gap 0.0)",
+    }
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
+         patch("commands.solve.execute_transfer_plan", return_value=plan) as mock_single, \
+         patch("sys.argv", ["commands.solve", "--no-hit", "--target_gw", "6"]):
+        main()
+        mock_single.assert_called_once()
+        options_passed = mock_single.call_args.args[0]
+        assert options_passed["weekly_hit_limit"] == 0
+        assert options_passed.get("strategic_options") is None
+        assert options_passed["gap"] == 0.0
 
 
 def test_solve_cli_scenarios_flag_runs_3_arm_scenarios(capsys: pytest.CaptureFixture[str]) -> None:
     fake_scenarios_payload = {
-        "meta": {"status": "ok", "arms": ["optimal", "no_hit", "conservative"], "data_digest": "abcdef12"},
+        "meta": {"status": "ok", "arms": ["strategic", "unconstrained", "no_hit"], "data_digest": "abcdef12"},
         "scenarios": [
             {
-                "id": "optimal",
-                "name": "Optimal",
+                "id": "strategic",
+                "name": "Strategic",
                 "rank": 1,
                 "horizon_egs": 38.5,
                 "plan": {
@@ -249,15 +268,15 @@ def test_solve_cli_scenarios_flag_runs_3_arm_scenarios(capsys: pytest.CaptureFix
                 },
             },
             {
-                "id": "no_hit",
-                "name": "No Hit",
+                "id": "unconstrained",
+                "name": "Unconstrained",
                 "rank": 2,
                 "horizon_egs": 37.0,
                 "plan": {"summary": "", "weeks": [{"gw": 6, "hits": 0, "buy": [], "sell": []}]},
             },
             {
-                "id": "conservative",
-                "name": "Conservative",
+                "id": "no_hit",
+                "name": "No Hit",
                 "rank": 3,
                 "horizon_egs": 36.2,
                 "plan": {"summary": "", "weeks": [{"gw": 6, "hits": 0, "buy": [], "sell": []}]},
@@ -273,9 +292,9 @@ def test_solve_cli_scenarios_flag_runs_3_arm_scenarios(capsys: pytest.CaptureFix
 
     captured = capsys.readouterr().out
     assert "TRANSFER PLAN SCENARIOS (3 ARMS RANKED)" in captured
-    assert "Rank 1: Optimal" in captured
-    assert "Rank 2: No Hit" in captured
-    assert "Rank 3: Conservative" in captured
+    assert "Rank 1: Strategic" in captured
+    assert "Rank 2: Unconstrained" in captured
+    assert "Rank 3: No Hit" in captured
     assert "Haaland (C) GW6" in captured
 
 

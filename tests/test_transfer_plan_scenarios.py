@@ -3,23 +3,22 @@ import pytest
 
 from pathlib import Path
 from solver.scenarios import (
-    ARM_CONSERVATIVE,
     ARM_NO_HIT,
-    ARM_OPTIMAL,
+    ARM_STRATEGIC,
+    ARM_UNCONSTRAINED,
+    DEFAULT_STRATEGIC_OPTIONS,
     annotate_plan_with_egs,
     apply_scenario_arm,
     compute_scenarios_digest,
     feasible_scenario_arms,
-    find_protected_one_match_missed_starters,
-    find_unowned_flagged_players,
     rank_scenarios,
     scenario_arm_overrides,
 )
 from projections.expected_gw_score import PlayerGw
 
 
-def test_optimal_allows_live_hits_without_start_pin() -> None:
-    overrides = scenario_arm_overrides(ARM_OPTIMAL, start_gw=5, free_transfer_bank=0)
+def test_unconstrained_allows_live_hits_without_start_pin() -> None:
+    overrides = scenario_arm_overrides(ARM_UNCONSTRAINED, start_gw=5, free_transfer_bank=0)
     assert "num_transfers" not in overrides
     assert "no_transfer_gws" not in overrides
     assert overrides["weekly_hit_limit"] == 1
@@ -34,82 +33,45 @@ def test_no_hit_forbids_hits_for_whole_horizon() -> None:
     assert overrides["hit_cost"] == 4.0
 
 
-def test_conservative_forbids_hits_and_applies_bans_locks() -> None:
-    overrides = scenario_arm_overrides(ARM_CONSERVATIVE, start_gw=5, free_transfer_bank=2)
+def test_strategic_applies_variance_defaults_and_hit_hurdle() -> None:
+    overrides = scenario_arm_overrides(ARM_STRATEGIC, start_gw=5, free_transfer_bank=2)
     assert "num_transfers" not in overrides
     assert "no_transfer_gws" not in overrides
-    assert overrides["weekly_hit_limit"] == 0
+    assert overrides["weekly_hit_limit"] == 1
     assert overrides["hit_cost"] == 4.0
+    assert overrides["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
 
-    base = {"banned_next_gw": [5], "locked_next_gw": [8]}
+    base = {"weekly_hit_limit": 0}
     applied = apply_scenario_arm(
         base,
-        ARM_CONSERVATIVE,
+        ARM_STRATEGIC,
         start_gw=5,
         free_transfer_bank=2,
-        banned_next_gw=[10, 11],
-        locked_next_gw=[20],
+        strategic_options={"hit_friction": 3.0},
     )
-    assert applied["weekly_hit_limit"] == 0
-    assert applied["banned_next_gw"] == [5, 10, 11]
-    assert applied["locked_next_gw"] == [8, 20]
+    assert applied["weekly_hit_limit"] == 1
+    assert applied["strategic_options"]["hit_friction"] == 3.0
+    assert applied["strategic_options"]["starter_xmins_floor"] == 65.0
 
 
 def test_both_arms_always_feasible() -> None:
-    assert feasible_scenario_arms(0) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
-    assert feasible_scenario_arms(1) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
-    assert feasible_scenario_arms(5) == (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+    assert feasible_scenario_arms(0) == (ARM_STRATEGIC, ARM_UNCONSTRAINED, ARM_NO_HIT)
+    assert feasible_scenario_arms(1) == (ARM_STRATEGIC, ARM_UNCONSTRAINED, ARM_NO_HIT)
+    assert feasible_scenario_arms(5) == (ARM_STRATEGIC, ARM_UNCONSTRAINED, ARM_NO_HIT)
 
 
 def test_apply_scenario_arm_clears_conflicting_pins() -> None:
     base = {"num_transfers": 2, "no_transfer_gws": [9], "weekly_hit_limit": 99, "hit_cost": 8}
-    optimal = apply_scenario_arm(base, ARM_OPTIMAL, start_gw=5, free_transfer_bank=2)
-    assert "num_transfers" not in optimal
-    assert "no_transfer_gws" not in optimal
-    assert optimal["weekly_hit_limit"] == 1
-    assert optimal["hit_cost"] == 4.0
+    unconstrained = apply_scenario_arm(base, ARM_UNCONSTRAINED, start_gw=5, free_transfer_bank=2)
+    assert "num_transfers" not in unconstrained
+    assert "no_transfer_gws" not in unconstrained
+    assert unconstrained["weekly_hit_limit"] == 1
+    assert unconstrained["hit_cost"] == 4.0
     no_hit = apply_scenario_arm(base, ARM_NO_HIT, start_gw=5, free_transfer_bank=2)
     assert "num_transfers" not in no_hit
     assert "no_transfer_gws" not in no_hit
     assert no_hit["weekly_hit_limit"] == 0
     assert no_hit["hit_cost"] == 4.0
-
-
-def test_find_unowned_flagged_players() -> None:
-    players_df = pd.DataFrame([
-        {"id": 1, "status": "a", "chance_of_playing_next_round": 100},  # unowned, fit
-        {"id": 2, "status": "d", "chance_of_playing_next_round": 75},   # unowned, doubtful -> flagged
-        {"id": 3, "status": "i", "chance_of_playing_next_round": 0},    # unowned, injured -> flagged
-        {"id": 4, "status": "d", "chance_of_playing_next_round": 75},   # owned, doubtful -> ignored
-    ])
-    flagged = find_unowned_flagged_players(players_df, owned_ids=[4])
-    assert flagged == [2, 3]
-
-
-def test_find_protected_one_match_missed_starters() -> None:
-    perf_df = pd.DataFrame([
-        # Player 1: started GW1-4, missed GW5 -> protected
-        {"player_id": 1, "gameweek_id": 1, "starts": 1, "minutes": 90},
-        {"player_id": 1, "gameweek_id": 2, "starts": 1, "minutes": 85},
-        {"player_id": 1, "gameweek_id": 3, "starts": 1, "minutes": 90},
-        {"player_id": 1, "gameweek_id": 4, "starts": 1, "minutes": 90},
-        {"player_id": 1, "gameweek_id": 5, "starts": 0, "minutes": 0},
-        # Player 2: bench warmer (0 starts) -> not protected
-        {"player_id": 2, "gameweek_id": 1, "starts": 0, "minutes": 10},
-        {"player_id": 2, "gameweek_id": 2, "starts": 0, "minutes": 15},
-        {"player_id": 2, "gameweek_id": 3, "starts": 0, "minutes": 0},
-        # Player 3: played GW5 -> not missed
-        {"player_id": 3, "gameweek_id": 4, "starts": 1, "minutes": 90},
-        {"player_id": 3, "gameweek_id": 5, "starts": 1, "minutes": 90},
-        # Player 4: missed GW4 and GW5 (multi-match absence) -> not protected
-        {"player_id": 4, "gameweek_id": 1, "starts": 1, "minutes": 90},
-        {"player_id": 4, "gameweek_id": 2, "starts": 1, "minutes": 90},
-        {"player_id": 4, "gameweek_id": 3, "starts": 1, "minutes": 90},
-        {"player_id": 4, "gameweek_id": 4, "starts": 0, "minutes": 0},
-        {"player_id": 4, "gameweek_id": 5, "starts": 0, "minutes": 0},
-    ])
-    protected = find_protected_one_match_missed_starters(perf_df, owned_ids=[1, 2, 3, 4])
-    assert protected == [1]
 
 
 def test_unknown_arm_raises() -> None:
@@ -127,25 +89,25 @@ def test_rank_scenarios_uses_horizon_egs_not_solver_objective() -> None:
                 "solver_objective": 400.0,
             },
             {
-                "id": ARM_OPTIMAL,
-                "name": "Optimal",
+                "id": ARM_STRATEGIC,
+                "name": "Strategic",
                 "horizon_egs": 110.0,
                 "solver_objective": 10.0,
             },
         ]
     )
-    assert [row["id"] for row in ranked] == [ARM_OPTIMAL, ARM_NO_HIT]
+    assert [row["id"] for row in ranked] == [ARM_STRATEGIC, ARM_NO_HIT]
     assert [row["rank"] for row in ranked] == [1, 2]
 
 
-def test_rank_scenarios_ties_prefer_optimal() -> None:
+def test_rank_scenarios_ties_prefer_strategic() -> None:
     ranked = rank_scenarios(
         [
             {"id": ARM_NO_HIT, "name": "No Hit", "horizon_egs": 110.0},
-            {"id": ARM_OPTIMAL, "name": "Optimal", "horizon_egs": 110.0},
+            {"id": ARM_STRATEGIC, "name": "Strategic", "horizon_egs": 110.0},
         ]
     )
-    assert [row["id"] for row in ranked] == [ARM_OPTIMAL, ARM_NO_HIT]
+    assert [row["id"] for row in ranked] == [ARM_STRATEGIC, ARM_NO_HIT]
 
 
 def test_annotate_plan_adds_expected_gw_score_and_auto_captain_alternatives() -> None:

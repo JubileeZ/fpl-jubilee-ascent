@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, Mapping
 
 import pandas as pd
 
@@ -94,6 +94,8 @@ def serialize_transfer_plan(
             "use_tc": [int(g) for g in chips.get("use_tc", [])],
         },
     }
+    if solution.get("strategic_audit"):
+        meta["strategic_audit"] = solution["strategic_audit"]
     note = solver_objective_stop_note(
         solution.get("solver_rel_gap"),
         target_gap=float(solution.get("solver_gap_target") or 0),
@@ -107,6 +109,54 @@ def serialize_transfer_plan(
         "weeks": weeks,
         "summary": str(solution.get("summary") or ""),
     }
+
+
+def format_strategic_audit_lines(audit: Mapping[str, Any] | None) -> list[str]:
+    """Format human-readable CLI / UI audit summary lines from strategic_audit."""
+    if not audit or not audit.get("enabled"):
+        return []
+    params = audit.get("parameters") or {}
+    lines = [
+        "=" * 50,
+        "STRATEGIC VARIANCE AUDIT",
+        "=" * 50,
+    ]
+    eff_hurdle = params.get("effective_hit_cost", 5.8)
+    hits = audit.get("total_hits", 0)
+    lines.append(f"• Hit Hurdle: {eff_hurdle:.1f} xP ({hits} paid hits across horizon)")
+
+    sub_floor = audit.get("sub_floor_starters") or []
+    if sub_floor:
+        details = ", ".join(f"GW{e.get('gw')} {e.get('name', 'Player')} ({e.get('xmins', 0):.0f}m)" for e in sub_floor)
+        lines.append(f"• Starter xMins Floor: Sub-floor starters incurred ({details})")
+    else:
+        lines.append(f"• Starter xMins Floor: Passed (all starters ≥ {params.get('starter_xmins_floor', 65.0):.0f}m)")
+
+    bench_short = audit.get("bench_cover_shortfalls") or []
+    if bench_short:
+        details = ", ".join(f"GW{e.get('gw')} ({e.get('nailed_count', 0)}/{e.get('target', 12)})" for e in bench_short)
+        lines.append(f"• First-Bench Cover: Shortfall incurred ({details})")
+    else:
+        lines.append(f"• First-Bench Cover: Met (≥{params.get('bench_cover_min', 12)} players projected ≥{params.get('bench_cover_xmins', 65.0):.0f}m)")
+
+    def_stacks = audit.get("def_stack_breaches") or []
+    if def_stacks:
+        details = ", ".join(f"GW{e.get('gw')} {e.get('club', 'Club')} ({e.get('count', 0)}>{e.get('cap', 2)})" for e in def_stacks)
+        lines.append(f"• Defensive Stack Cap: Stack breach incurred ({details})")
+    else:
+        lines.append(f"• Defensive Stack Cap: Met (max {params.get('def_stack_cap', 2)} DEF/GKP starters per Club)")
+
+    gk_tr = audit.get("gk_transfers_penalized") or []
+    if gk_tr:
+        details = ", ".join(f"GW{e.get('gw')} {e.get('name', 'GK')}" for e in gk_tr)
+        lines.append(f"• GK Transfer Friction: GK transfers penalized ({details})")
+    else:
+        lines.append("• GK Transfer Friction: Met (0 lateral GK transfers penalized)")
+
+    total_slack = float(audit.get("total_slack_penalty") or 0.0)
+    lines.append(f"• Net Strategic Variance Slack Penalties: {total_slack:.2f} pts")
+    lines.append("=" * 50)
+    return lines
 
 
 def _weeks_from_picks(picks: pd.DataFrame, statistics: dict[Any, Any]) -> list[dict[str, Any]]:

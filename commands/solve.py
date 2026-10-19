@@ -27,7 +27,17 @@ from solver.planning import (
 )
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 from solver.solver import prep_data, solve_multi_period_fpl
-from solver.transfer_plan import LIVE_SOLVER_REL_GAP, serialize_transfer_plan
+from solver.scenarios import (
+    ARM_NO_HIT,
+    DEFAULT_STRATEGIC_OPTIONS,
+    apply_scenario_arm,
+    normalize_arm_key,
+)
+from solver.transfer_plan import (
+    LIVE_SOLVER_REL_GAP,
+    format_strategic_audit_lines,
+    serialize_transfer_plan,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -38,9 +48,14 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "allowed_chip_gws",
     "banned",
     "banned_next_gw",
+    "bench_cover_min",
+    "bench_cover_penalty",
+    "bench_cover_xmins",
     "bench_weights",
     "booked_transfers",
     "chip_limits",
+    "def_stack_cap",
+    "def_stack_penalty",
     "delete_tmp",
     "double_defense_pick",
     "ev_per_price_cutoff",
@@ -56,6 +71,8 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "ft_value_list",
     "future_transfer_limit",
     "gap",
+    "gk_transfer_friction",
+    "hit_friction",
     "hit_limit",
     "hide_transfers",
     "itb_loss_per_transfer",
@@ -93,6 +110,18 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "report_decay_base",
     "secs",
     "solver",
+    "starter_xmins_floor",
+    "starter_xmins_penalty",
+    "strategic_bench_cover_min",
+    "strategic_bench_cover_penalty",
+    "strategic_bench_cover_xmins",
+    "strategic_def_stack_penalty",
+    "strategic_defensive_stack_cap",
+    "strategic_gk_friction_penalty",
+    "strategic_hit_buffer",
+    "strategic_options",
+    "strategic_starter_min_xmins",
+    "strategic_starter_xmins_penalty",
     "team_id",
     "team_data",
     "transfer_itb_buffer",
@@ -443,6 +472,12 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
     }
 
 
+def _print_plan_audit(plan: dict[str, Any]) -> None:
+    audit_lines = format_strategic_audit_lines((plan.get("meta") or {}).get("strategic_audit"))
+    if audit_lines:
+        print("\n".join(audit_lines) + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the FPL MILP optimization solver.")
     parser.add_argument(
@@ -462,11 +497,17 @@ def main() -> None:
         help="Explicitly use active Champion model projections",
     )
     parser.add_argument(
+        "--arm",
+        choices=["strategic", "unconstrained", "no_hit", "no-hit", "optimal", "conservative"],
+        default="strategic",
+        help="Scenario arm to solve when not running --scenarios (default: strategic)",
+    )
+    parser.add_argument(
         "--no_hit",
         "--no-hit",
         action="store_true",
-        default=True,
-        help="Disallow points hits across the horizon (default: True, weekly_hit_limit=0)",
+        default=False,
+        help="Disallow points hits across the horizon (sets arm to no_hit, weekly_hit_limit=0)",
     )
     parser.add_argument(
         "--allow_hits",
@@ -483,6 +524,78 @@ def main() -> None:
         type=int,
         default=None,
         help="Maximum allowed hits per gameweek",
+    )
+    parser.add_argument(
+        "--hit-friction",
+        "--strategic-hit-buffer",
+        dest="hit_friction",
+        type=float,
+        default=None,
+        help="Strategic variance control: minimum net-gain hurdle (pts) for paid transfers (default: 1.8)",
+    )
+    parser.add_argument(
+        "--starter-xmins-floor",
+        "--strategic-starter-min-xmins",
+        dest="starter_xmins_floor",
+        type=float,
+        default=None,
+        help="Strategic variance control: expected minutes floor for starting XI (default: 65.0)",
+    )
+    parser.add_argument(
+        "--starter-xmins-penalty",
+        "--strategic-starter-xmins-penalty",
+        dest="starter_xmins_penalty",
+        type=float,
+        default=None,
+        help="Strategic variance control: objective penalty per starter below floor (default: 10.0)",
+    )
+    parser.add_argument(
+        "--bench-cover-min",
+        "--strategic-bench-cover-min",
+        dest="bench_cover_min",
+        type=int,
+        default=None,
+        help="Strategic variance control: minimum active squad players with xMins >= bench_cover_xmins (default: 12)",
+    )
+    parser.add_argument(
+        "--bench-cover-xmins",
+        "--strategic-bench-cover-xmins",
+        dest="bench_cover_xmins",
+        type=float,
+        default=None,
+        help="Strategic variance control: minimum xMins for 1st outfield bench player (default: 65.0)",
+    )
+    parser.add_argument(
+        "--bench-cover-penalty",
+        "--strategic-bench-cover-penalty",
+        dest="bench_cover_penalty",
+        type=float,
+        default=None,
+        help="Strategic variance control: objective penalty per bench cover shortfall (default: 1.5)",
+    )
+    parser.add_argument(
+        "--def-stack-cap",
+        "--strategic-defensive-stack-cap",
+        dest="def_stack_cap",
+        type=int,
+        default=None,
+        help="Strategic variance control: max starting defenders + GK from same club (default: 2)",
+    )
+    parser.add_argument(
+        "--def-stack-penalty",
+        "--strategic-def-stack-penalty",
+        dest="def_stack_penalty",
+        type=float,
+        default=None,
+        help="Strategic variance control: objective penalty per defensive club stack breach (default: 1.2)",
+    )
+    parser.add_argument(
+        "--gk-transfer-friction",
+        "--strategic-gk-friction-penalty",
+        dest="gk_transfer_friction",
+        type=float,
+        default=None,
+        help="Strategic variance control: penalty (pts) per non-chip GK transfer (default: 1.5)",
     )
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")
@@ -503,7 +616,7 @@ def main() -> None:
         "--scenarios",
         action="store_true",
         default=False,
-        help="Solve all 3 canonical arms (Optimal, No Hit, Conservative) instead of a single arm",
+        help="Solve all 3 canonical arms (Strategic, Unconstrained, No Hit) instead of a single arm",
     )
     parser.add_argument(
         "--force",
@@ -541,13 +654,19 @@ def main() -> None:
     except ValueError as exc:
         parser.error(str(exc))
 
-    # Default policy: No-hit (weekly_hit_limit = 0) and gap 0.0
+    strategic_cli_overrides = {
+        k: getattr(args, k)
+        for k in DEFAULT_STRATEGIC_OPTIONS
+        if getattr(args, k, None) is not None
+    }
+    selected_arm = ARM_NO_HIT if args.no_hit else normalize_arm_key(args.arm)
+    options = apply_scenario_arm(options, selected_arm, strategic_options=strategic_cli_overrides)
+
+    # Explicit hit overrides from CLI
     if args.hit_limit is not None:
         options["weekly_hit_limit"] = args.hit_limit
     elif args.allow_hits:
         options["weekly_hit_limit"] = 1
-    else:
-        options["weekly_hit_limit"] = 0
 
     if args.preseason:
         options["preseason"] = True
@@ -617,6 +736,7 @@ def main() -> None:
             print("="*50)
             print(plan["summary"])
             print("="*50 + "\n")
+        _print_plan_audit(plan)
     else:
         from commands.transfer_plan_scenarios import UserSquadRequired, execute_transfer_plan_scenarios
 
@@ -640,6 +760,9 @@ def main() -> None:
                 force=args.force,
                 gap=options["gap"],
                 on_progress=on_progress,
+                datasource=str(options["datasource"]),
+                xmins_override=args.xmins_override,
+                strategic_options=options.get("strategic_options"),
             )
         except UserSquadRequired as exc:
             logger.warning(f"{exc}")
@@ -679,6 +802,7 @@ def main() -> None:
                 print("=" * 50)
                 print(top_plan["summary"])
                 print("=" * 50 + "\n")
+            _print_plan_audit(top_plan)
 
 
 if __name__ == "__main__":

@@ -38,64 +38,88 @@ Resolve default parameters:
 - **Default Planning Horizon**: 8 Gameweeks.
   - *Dynamic expansion*: If the user specifies booking a chip in a Gameweek beyond `target_gw + 7` (e.g. Free Hit on GW16 when target is GW7), expand the horizon to include that Gameweek (`horizon = chip_gw - target_gw + 1`).
   - *Long-horizon warning*: If `horizon > 10`, warn the user: *"Planning horizon exceeds 10 Gameweeks; solving to gap 0.0 may take 5–15 minutes. Consider `--gap 0.002` (0.2%) for faster convergence."*
-- **Default Hit Limit**: 0 hits (`weekly_hit_limit=0`, `--no-hit`).
+- **Solver Mode**: Strategic (`--arm strategic`, default).
+  - *Strategic Variance Controls*:
+    - Paid hit hurdle: +1.8 net pts required over free transfer.
+    - Starter xMins floor: 65.0 mins (infeasibility-guarded −10.0 pt/starter penalty).
+    - 1st bench cover: 65.0 xMins floor (min 12 players with >= 65 xMins, −1.5 pt penalty).
+    - Defensive stack cap: Max 2 starting DEF + GK from same club (−1.2 pt penalty).
+    - GK transfer friction: 1.5 pt penalty (waived on WC and FH).
+  - *Other modes*: Unconstrained (`--arm unconstrained`), No Hit (`--arm no_hit` or `--no-hit`), or 3-Arm Scenarios (`--scenarios`).
 - **Default Solver Gap**: 0.0 (exact mathematical optimum).
 - **Default Chips**: None booked (all available chips preserved unless specified by user).
 
-Present the consolidated preflight card to the user:
+Present consolidated preflight card to user:
 
 ```markdown
 📋 **Transfer Solver Preflight**:
 • Target Gameweek: GW{target_gw}
 • Horizon: {horizon} Gameweeks (GW{target_gw}–GW{target_gw + horizon - 1})
+• Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
+• Strategic Controls: 1.8 pt hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per club · 1.5 pt GK friction
 • Projection Source: {External xMins from <path> | Native Champion}
-• Hit Policy: 0 hits (`weekly_hit_limit=0`)
 • Booked Chips: {None | e.g. Free Hit on GW16}
 • Solver Gap: {0.0}
 • User Squad: Live squad loaded from `data/processed/user_picks.parquet`
 
-👉 Reply "proceed" to run these defaults, or provide any overrides (e.g. "horizon 10, FH on GW16, allow 1 hit").
+👉 Reply "proceed" to run these defaults, or provide any overrides (e.g. "horizon 10, FH on GW16, --arm unconstrained").
 ```
 
-Wait for user confirmation or adjustments before invoking the solver.
+Wait for user confirmation or adjustments before invoking solver.
 
 ---
 
 ### Step 3: Execution & Solve
 
-Construct and run the command:
+Construct and run command:
 
 ```bash
 uv run python -m commands.solve \
   --target_gw <target_gw> \
   --horizon <horizon> \
   --gap <gap> \
+  --arm <strategic | unconstrained | no_hit> \
+  [--hit-friction <pts>] \
+  [--starter-xmins-floor <mins>] \
+  [--starter-xmins-penalty <pts>] \
+  [--bench-cover-min <N>] \
+  [--bench-cover-xmins <mins>] \
+  [--bench-cover-penalty <pts>] \
+  [--def-stack-cap <N>] \
+  [--def-stack-penalty <pts>] \
+  [--gk-transfer-friction <pts>] \
   [--xmins-override <path>] \
   [--use-fh <gw>] \
   [--use-wc <gw>] \
   [--use-bb <gw>] \
   [--use-tc <gw>] \
-  [--allow-hits | --hit-limit <N>] \
+  [--scenarios] \
   --force
 ```
 
-- When `--xmins-override` is provided, `commands.solve` automatically builds external features, projects expected points through the Champion model rates and Plackett-Luce bonus distribution, and optimizes against the resulting datasource.
-- The resulting plan is saved to `data/solution.json`.
+- When `--xmins-override` provided, `commands.solve` builds external features, projects expected points through Champion model rates and Plackett-Luce bonus distribution, and optimizes against resulting datasource.
+- Resulting plan saved to `data/solution.json` (or `data/transfer_plan_scenarios.json` when running `--scenarios`).
 
 ---
 
 ### Step 4: Presentation & Ledger
 
-Present the weekly results cleanly:
+Present weekly results cleanly:
 
 1. **Transfer Ledger Table**:
-   - For each Gameweek: action taken (Player Bought, Player Sold, or Roll FT), Buy Price, Sell Price, and remaining Bank (£m ITB).
+   - Per Gameweek: action taken (Player Bought, Player Sold, or Roll FT), Buy Price, Sell Price, remaining Bank (£m ITB).
 2. **Weekly Lineup Card**:
    - Starting XI formation shape (e.g. 3-5-2 or 3-4-3)
    - Designated Captain (**C**) and Vice-Captain (**V**)
    - Bench order (Slots 1–4)
    - Lineup projected points (xPts)
-3. **Chip Strategy Summary**:
-   - Highlight any activated chip (e.g. Free Hit, Wildcard).
-4. **Artifact Link**:
-   - Link to saved plan: [`data/solution.json`](file:///Users/jubilee/fpl-jubilee-ascent/data/solution.json).
+3. **Strategic Variance Audit** (when Strategic mode active):
+   - Paid Hit Hurdle checks
+   - Starter xMins floor violations / slacks
+   - 1st Outfield Bench xMins coverage
+   - Defensive Club Stacking (DEF+GK)
+   - Goalkeeper Transfer Friction
+4. **Chip Strategy Summary**:
+   - Highlight activated chip (e.g. Free Hit, Wildcard).
+5. **Artifact Link**:
+   - Link to saved plan: [`data/solution.json`](file:///home/jubileez/fpl-jubilee-ascent/data/solution.json).

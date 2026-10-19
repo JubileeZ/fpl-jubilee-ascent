@@ -16,8 +16,7 @@ import pandas as pd
 from dashboard.planner import Planner, digest
 from features.builder import resolve_operational_processed_dir
 from models import get_default_model_name
-from solver.scenarios import (ARM_NAMES, apply_scenario_arm, compute_scenarios_digest,
-                              find_protected_one_match_missed_starters, find_unowned_flagged_players)
+from solver.scenarios import ARM_NAMES, apply_scenario_arm, compute_scenarios_digest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -88,7 +87,8 @@ def solver_options(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
     options.update(gap=0.0, secs=1200, parallel="off", threads=1,
                    parent_state={"lineup": {"slots": {str(index): pid for index, pid in enumerate(planner.state["base_ids"], 1)}},
                                  "evaluation": {"bankRemaining": planner.state["base_bank"],
-                                                "freeTransfersNext": planner.state["base_ft"]}})
+                                                "freeTransfersNext": planner.state["base_ft"]}},
+                   strategic_options=dict(planner.state.get("strategic_options") or {}))
     booked_transfers = []
     force_keep = []
     for gw, moves in planner.state["edits"].items():
@@ -123,20 +123,18 @@ def solve_request(request: dict[str, Any], paths: PlannerPaths) -> dict[str, Any
         raise ValueError("Operational inputs changed before solve. Refresh and retry.")
     planner = Planner(request["dataset"], request["state"])
     options = solver_options(planner, paths)
-    players = pd.read_parquet(paths.processed / "players.parquet")
-    performance_path = paths.processed / "player_performances.parquet"
-    performances = pd.read_parquet(performance_path) if performance_path.exists() else pd.DataFrame()
-    owned = planner.state["base_ids"]
-    flagged = find_unowned_flagged_players(players, owned)
-    protected = find_protected_one_match_missed_starters(performances, owned)
     plans: dict[str, Any] = {}
     errors: dict[str, str] = {}
     run_directory = paths.storage / "solutions" / request["snapshot"]
 
     def solve_arm(arm: str) -> dict[str, Any]:
-        arm_options = apply_scenario_arm(options, arm=arm, start_gw=planner.state["start"],
-                                         free_transfer_bank=planner.state["base_ft"],
-                                         banned_next_gw=flagged, locked_next_gw=protected)
+        arm_options = apply_scenario_arm(
+            options,
+            arm=arm,
+            start_gw=planner.state["start"],
+            free_transfer_bank=planner.state["base_ft"],
+            strategic_options=planner.state.get("strategic_options"),
+        )
         plan = execute_transfer_plan(arm_options, processed_dir=paths.processed,
                                      target_gw=planner.state["start"], solution_path=run_directory / f"{arm}.json")
         if not plan.get("weeks"):
@@ -163,9 +161,14 @@ def import_cached_recommendations(planner: Planner, paths: PlannerPaths) -> bool
     if not cached_path.exists() or planner.state["recommendations"] or planner.state["edits"]:
         return False
     cached = json.loads(cached_path.read_text(encoding="utf-8"))
-    expected = compute_scenarios_digest(processed_dir=paths.processed, target_gw=planner.state["start"],
-                                        horizon=planner.state["end"] - planner.state["start"] + 1,
-                                        champion=get_default_model_name(), gap=0.0)
+    expected = compute_scenarios_digest(
+        processed_dir=paths.processed,
+        target_gw=planner.state["start"],
+        horizon=planner.state["end"] - planner.state["start"] + 1,
+        champion=get_default_model_name(),
+        gap=0.0,
+        strategic_options=planner.state.get("strategic_options"),
+    )
     meta = cached.get("meta", {})
     if meta.get("data_digest") != expected or meta.get("status") != "ok" or meta.get("stale"):
         return False

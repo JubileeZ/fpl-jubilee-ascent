@@ -1,6 +1,6 @@
 (function () {
   const POS_ORDER = ["G", "D", "M", "F"];
-  const ARM_LABEL = { optimal: "Optimal", no_hit: "No Hit", conservative: "Conservative" };
+  const ARM_LABEL = { strategic: "Strategic", unconstrained: "Unconstrained", no_hit: "No Hit", optimal: "Unconstrained", conservative: "Strategic" };
   const CHIP_OPTION = { wc: "use_wc", bb: "use_bb", fh: "use_fh", tc: "use_tc" };
   const CHIP_LABEL = { wc: "Wildcard", bb: "Bench Boost", fh: "Free Hit", tc: "Triple Captain" };
   const STATUS_LABEL = { a: "Avail", d: "Doubt", i: "Inj", s: "Sus", u: "Unav", n: "n/a" };

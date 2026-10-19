@@ -852,6 +852,92 @@ def solve_multi_period_fpl(data, options):
     gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in gws}
     gw_ft_gain = {w: gw_ft_value[w] - gw_ft_value.get(w - 1, 0) for w in gws}
 
+    # Strategic Variance Constraints (ADR 0061, docs/research/milp-variance-constraints)
+    strategic_opts = dict(options.get("strategic_options") or {})
+    strategic_enabled = bool(
+        options.get("strategic_mode", False)
+        or strategic_opts
+        or any(
+            k in options
+            for k in (
+                "hit_friction",
+                "starter_xmins_floor",
+                "bench_cover_min",
+                "def_stack_cap",
+                "gk_transfer_friction",
+            )
+        )
+    )
+
+    hit_friction = float(options.get("hit_friction", strategic_opts.get("hit_friction", 1.8 if strategic_enabled else 0.0)) or 0.0)
+    starter_xmins_floor = float(options.get("starter_xmins_floor", strategic_opts.get("starter_xmins_floor", 65.0 if strategic_enabled else 0.0)) or 0.0)
+    starter_xmins_penalty = float(options.get("starter_xmins_penalty", strategic_opts.get("starter_xmins_penalty", 10.0 if strategic_enabled else 0.0)) or 0.0)
+    bench_cover_min = int(options.get("bench_cover_min", strategic_opts.get("bench_cover_min", 12 if strategic_enabled else 0)) or 0)
+    bench_cover_xmins = float(options.get("bench_cover_xmins", strategic_opts.get("bench_cover_xmins", 65.0 if strategic_enabled else 0.0)) or 0.0)
+    bench_cover_penalty = float(options.get("bench_cover_penalty", strategic_opts.get("bench_cover_penalty", 1.5 if strategic_enabled else 0.0)) or 0.0)
+    def_stack_cap = int(options.get("def_stack_cap", strategic_opts.get("def_stack_cap", 2 if strategic_enabled else 5)) or 5)
+    def_stack_penalty = float(options.get("def_stack_penalty", strategic_opts.get("def_stack_penalty", 1.2 if strategic_enabled else 0.0)) or 0.0)
+    gk_transfer_friction = float(options.get("gk_transfer_friction", strategic_opts.get("gk_transfer_friction", 1.5 if strategic_enabled else 0.0)) or 0.0)
+
+    # 1. Starter xMins Floor (infeasibility-guarded slack for outfield starters)
+    sub_floor_pairs = [
+        (p, w)
+        for p in players
+        for w in gws
+        if player_type[p] in (2, 3, 4) and minutes_player_week[p, w] < starter_xmins_floor
+    ]
+    starter_xmins_slack = cont_vars(sub_floor_pairs, name="sxm_s", lb=0) if (sub_floor_pairs and starter_xmins_penalty > 0) else {}
+    if starter_xmins_slack:
+        m.addConstrs([lineup[p, w] <= starter_xmins_slack[p, w] for (p, w) in sub_floor_pairs])
+
+    # 2. First-Bench Cover Protection (slack on active squad players with xMins >= bench_cover_xmins)
+    nailed_by_week = {w: [p for p in players if minutes_player_week[p, w] >= bench_cover_xmins] for w in gws}
+    bench_cover_slack = cont_vars(gws, name="bc_s", lb=0) if (bench_cover_min > 0 and bench_cover_penalty > 0) else {}
+    if bench_cover_slack:
+        m.addConstrs(
+            [
+                sum_(lineup[p, w] + sum_(bench[p, w, o] for o in order) for p in nailed_by_week[w])
+                + bench_cover_slack[w]
+                >= bench_cover_min
+                for w in gws
+            ]
+        )
+
+    # 3. Defensive Stack Limiter (slack on DEF/GKP starters per Club)
+    team_def_gk = {t: [p for p in players if player_team[p] == t and player_type[p] in (1, 2)] for t in teams}
+    def_stack_slack = cont_vars(teams, gws, name="ds_s", lb=0) if (def_stack_cap < 5 and def_stack_penalty > 0) else {}
+    if def_stack_slack:
+        m.addConstrs(
+            [
+                sum_(lineup[p, w] for p in team_def_gk[t]) - def_stack_slack[t, w] <= def_stack_cap
+                for t in teams
+                for w in gws
+            ]
+        )
+
+    # 4. Goalkeeper Transfer Friction (slack penalized on GKP transfers-in, waived on WC/FH)
+    gk_players = [p for p in players if player_type[p] == 1]
+    gk_tr_slack = cont_vars(gk_players, gws, name="gk_s", lb=0) if (gk_players and gk_transfer_friction > 0) else {}
+    if gk_tr_slack:
+        m.addConstrs(
+            [
+                gk_tr_slack[p, w] >= transfer_in[p, w] - use_wc[w] - use_fh[w]
+                for p in gk_players
+                for w in gws
+            ]
+        )
+
+    strategic_penalty = {
+        w: (
+            (hit_friction * penalized_transfers[w] if hit_friction > 0 else 0)
+            + (starter_xmins_penalty * sum_(starter_xmins_slack[p, w] for p in players if (p, w) in sub_floor_pairs) if starter_xmins_slack else 0)
+            + (bench_cover_penalty * bench_cover_slack[w] if bench_cover_slack else 0)
+            + (def_stack_penalty * sum_(def_stack_slack[t, w] for t in teams) if def_stack_slack else 0)
+            + (gk_transfer_friction * sum_(gk_tr_slack[p, w] for p in gk_players) if gk_tr_slack else 0)
+        )
+        for w in gws
+    }
+
     # Objectives
     hit_cost = options.get("hit_cost", 4)
     vcap_weight = options.get("vcap_weight", 0.1)
@@ -865,7 +951,15 @@ def solve_multi_period_fpl(data, options):
     }
 
     gw_total = {
-        w: gw_xp[w] - hit_cost * penalized_transfers[w] + gw_ft_gain[w] - ft_penalty[w] + itb_value * in_the_bank[w] - cp_penalty.get(w, 0)
+        w: (
+            gw_xp[w]
+            - hit_cost * penalized_transfers[w]
+            - strategic_penalty[w]
+            + gw_ft_gain[w]
+            - ft_penalty[w]
+            + itb_value * in_the_bank[w]
+            - cp_penalty.get(w, 0)
+        )
         for w in gws
     }
 
@@ -1126,6 +1220,106 @@ def solve_multi_period_fpl(data, options):
         if options.get("hide_transfers"):
             buy_decisions = sell_decisions = "-"
 
+        if strategic_enabled:
+            sub_floor_events = []
+            bench_events = []
+            def_stack_events = []
+            gk_tr_events = []
+            per_week_audit = {}
+
+            for w in gws:
+                w_sub = []
+                if starter_xmins_slack:
+                    for p in players:
+                        if (p, w) in sub_floor_pairs and val(starter_xmins_slack[p, w]) > 0.01:
+                            w_sub.append({
+                                "player_id": int(p),
+                                "name": str(merged_data.loc[p, "web_name"]),
+                                "xmins": float(minutes_player_week[p, w]),
+                                "penalty": round(starter_xmins_penalty * val(starter_xmins_slack[p, w]), 2),
+                            })
+                sub_floor_events.extend([{"gw": int(w), **e} for e in w_sub])
+
+                bc_slack = val(bench_cover_slack[w]) if bench_cover_slack else 0.0
+                nailed_cnt = sum(
+                    1 for p in players
+                    if minutes_player_week[p, w] >= bench_cover_xmins and (
+                        val(lineup[p, w]) > BINARY_THRESHOLD or any(val(bench[p, w, o]) > BINARY_THRESHOLD for o in order)
+                    )
+                )
+                if bc_slack > 0.01:
+                    bench_events.append({
+                        "gw": int(w),
+                        "nailed_count": int(nailed_cnt),
+                        "target": int(bench_cover_min),
+                        "penalty": round(bench_cover_penalty * bc_slack, 2),
+                    })
+
+                w_def = []
+                if def_stack_slack:
+                    for t in teams:
+                        slack = val(def_stack_slack[t, w])
+                        if slack > 0.01:
+                            cnt = sum(1 for p in team_def_gk[t] if val(lineup[p, w]) > BINARY_THRESHOLD)
+                            w_def.append({
+                                "gw": int(w),
+                                "club": str(t),
+                                "count": int(cnt),
+                                "cap": int(def_stack_cap),
+                                "penalty": round(def_stack_penalty * slack, 2),
+                            })
+                def_stack_events.extend(w_def)
+
+                w_gk = []
+                if gk_tr_slack:
+                    for p in gk_players:
+                        if val(gk_tr_slack[p, w]) > 0.01:
+                            w_gk.append({
+                                "gw": int(w),
+                                "player_id": int(p),
+                                "name": str(merged_data.loc[p, "web_name"]),
+                                "penalty": round(gk_transfer_friction * val(gk_tr_slack[p, w]), 2),
+                            })
+                gk_tr_events.extend(w_gk)
+
+                w_hits = int(round(val(penalized_transfers[w])))
+                per_week_audit[int(w)] = {
+                    "hits": w_hits,
+                    "hit_penalty": round(hit_friction * w_hits, 2),
+                    "sub_floor_starters": w_sub,
+                    "bench_cover_nailed": int(nailed_cnt),
+                    "bench_cover_slack": round(bc_slack, 2),
+                    "def_stack_breaches": w_def,
+                    "gk_transfers": w_gk,
+                    "total_slack_penalty": round(val(strategic_penalty[w]), 2),
+                }
+
+            total_slack = sum(row["total_slack_penalty"] for row in per_week_audit.values())
+            strategic_audit = {
+                "enabled": True,
+                "parameters": {
+                    "hit_friction": hit_friction,
+                    "effective_hit_cost": round(hit_cost + hit_friction, 2),
+                    "starter_xmins_floor": starter_xmins_floor,
+                    "starter_xmins_penalty": starter_xmins_penalty,
+                    "bench_cover_min": bench_cover_min,
+                    "bench_cover_xmins": bench_cover_xmins,
+                    "bench_cover_penalty": bench_cover_penalty,
+                    "def_stack_cap": def_stack_cap,
+                    "def_stack_penalty": def_stack_penalty,
+                    "gk_transfer_friction": gk_transfer_friction,
+                },
+                "total_slack_penalty": round(total_slack, 2),
+                "total_hits": sum(row["hits"] for row in per_week_audit.values()),
+                "sub_floor_starters": sub_floor_events,
+                "bench_cover_shortfalls": bench_events,
+                "def_stack_breaches": def_stack_events,
+                "gk_transfers_penalized": gk_tr_events,
+                "weeks": per_week_audit,
+            }
+        else:
+            strategic_audit = {"enabled": False}
+
         solutions.append(
             {
                 "iter": iteration,
@@ -1138,6 +1332,7 @@ def solve_multi_period_fpl(data, options):
                 "chip": chip_decisions,
                 "score": val(objective_expr),
                 "decay_metrics": {key: val(value) for key, value in decay_metrics.items()},
+                "strategic_audit": strategic_audit,
                 **solver_stop,
             }
         )

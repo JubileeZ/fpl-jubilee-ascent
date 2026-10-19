@@ -14,7 +14,8 @@ from dashboard.planner_jobs import PlannerJobs
 from dashboard.planner_service import (PlannerPaths, import_cached_recommendations, load_dataset,
                                        make_solve_request, player_history, refresh_request,
                                        solve_request, source_digest)
-from solver.scenarios import ARM_NAMES
+from solver.scenarios import ARM_NAMES, DEFAULT_STRATEGIC_OPTIONS
+from solver.transfer_plan import format_strategic_audit_lines
 from dashboard.presentation import availability, data_age, fixture, utc_time
 
 
@@ -326,7 +327,7 @@ def scout_transfer_review(planner: Planner, store: PlanStore, gw: int) -> None:
                             st.session_state.pop("scout-transfer", None)
                         st.rerun()
                 else:
-                    st.warning("Replacement unavailable under current ownership, Position, bank, Club limit or Conservative availability policy. Choose another outgoing Player or review policy.")
+                    st.warning("Replacement unavailable under current ownership, Position, bank, or Club limit. Choose another outgoing Player or review policy.")
             else:
                 st.warning("No outgoing Player of this Position available.")
         if st.button("Cancel prepared transfer", key="scout-cancel"):
@@ -337,6 +338,125 @@ def scout_transfer_review(planner: Planner, store: PlanStore, gw: int) -> None:
 @st.cache_data(show_spinner="Comparing appearance-aware outcomes across the horizon…", max_entries=16)
 def policy_comparison(dataset: dict[str, Any], state: dict[str, Any], include_expected: bool) -> list[dict[str, Any]]:
     return Planner(dataset, state).comparison(include_expected=include_expected)
+
+
+_STRAT_WIDGET_KEYS = (
+    "strat-hit-friction",
+    "strat-starter-floor",
+    "strat-starter-pen",
+    "strat-bench-min",
+    "strat-bench-xmins",
+    "strat-bench-pen",
+    "strat-stack-cap",
+    "strat-stack-pen",
+    "strat-gk-friction",
+)
+
+
+def strategic_options_panel(planner: Planner, store: PlanStore | None = None) -> None:
+    with st.expander("Strategic Solver Options", key="strategic-options", expanded=False):
+        st.caption("Quantitative variance constraints applied to the Strategic arm.")
+        strat = dict(DEFAULT_STRATEGIC_OPTIONS)
+        strat.update(planner.state.get("strategic_options") or {})
+        col1, col2, col3 = st.columns(3)
+        new_hit_friction = col1.number_input(
+            "Hit friction buffer (pts)",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(strat.get("hit_friction", 1.8)),
+            step=0.1,
+            key="strat-hit-friction",
+        )
+        new_starter_floor = col2.number_input(
+            "Starter xMins floor",
+            min_value=0.0,
+            max_value=90.0,
+            value=float(strat.get("starter_xmins_floor", 65.0)),
+            step=5.0,
+            key="strat-starter-floor",
+        )
+        new_starter_pen = col3.number_input(
+            "Starter xMins penalty (pts/starter)",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(strat.get("starter_xmins_penalty", 10.0)),
+            step=1.0,
+            key="strat-starter-pen",
+        )
+        col4, col5, col6 = st.columns(3)
+        new_bench_min = col4.number_input(
+            "First-bench cover count (players)",
+            min_value=0,
+            max_value=15,
+            value=int(strat.get("bench_cover_min", 12)),
+            step=1,
+            key="strat-bench-min",
+        )
+        new_bench_xmins = col5.number_input(
+            "First-bench cover xMins",
+            min_value=0.0,
+            max_value=90.0,
+            value=float(strat.get("bench_cover_xmins", 65.0)),
+            step=5.0,
+            key="strat-bench-xmins",
+        )
+        new_bench_pen = col6.number_input(
+            "First-bench cover penalty (pts)",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(strat.get("bench_cover_penalty", 1.5)),
+            step=0.5,
+            key="strat-bench-pen",
+        )
+        col7, col8, col9 = st.columns(3)
+        new_stack_cap = col7.number_input(
+            "Defensive club stack cap",
+            min_value=1,
+            max_value=5,
+            value=int(strat.get("def_stack_cap", 2)),
+            step=1,
+            key="strat-stack-cap",
+        )
+        new_stack_pen = col8.number_input(
+            "Defensive stack penalty (pts)",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(strat.get("def_stack_penalty", 1.2)),
+            step=0.2,
+            key="strat-stack-pen",
+        )
+        new_gk_friction = col9.number_input(
+            "GK transfer friction (pts)",
+            min_value=0.0,
+            max_value=10.0,
+            value=float(strat.get("gk_transfer_friction", 1.5)),
+            step=0.5,
+            key="strat-gk-friction",
+        )
+        updated_strat = {
+            "hit_friction": float(new_hit_friction),
+            "starter_xmins_floor": float(new_starter_floor),
+            "starter_xmins_penalty": float(new_starter_pen),
+            "bench_cover_min": int(new_bench_min),
+            "bench_cover_xmins": float(new_bench_xmins),
+            "bench_cover_penalty": float(new_bench_pen),
+            "def_stack_cap": int(new_stack_cap),
+            "def_stack_penalty": float(new_stack_pen),
+            "gk_transfer_friction": float(new_gk_friction),
+        }
+        btn_cols = st.columns(2)
+        if btn_cols[0].button("Apply strategic options", key="strat-apply-btn"):
+            if store is not None:
+                edit(planner, store, lambda: planner.update_strategic_options(updated_strat))
+            else:
+                planner.update_strategic_options(updated_strat)
+        if btn_cols[1].button("Reset to Research Baseline", key="strat-reset-btn"):
+            for k in _STRAT_WIDGET_KEYS:
+                st.session_state.pop(k, None)
+            if store is not None:
+                edit(planner, store, planner.reset_strategic_options)
+            else:
+                planner.reset_strategic_options()
 
 
 def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
@@ -419,6 +539,7 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     if deadline:
         if deadline <= datetime.now(timezone.utc):
             st.warning("Displayed deadline has passed. Refresh before preparing transfers.")
+    active_result = planner.state["recommendations"].get(planner.state["scenario"], {})
     with st.container(key="decision-summary"):
         st.write(f"**{'Ready to review' if week['complete'] and not week['needs_recalculation'] else 'Needs attention'}** · Active {ARM_NAMES[planner.state['scenario']]} · GW{gw}")
         captain = planner.players.get(week["captain_id"], {}).get("name", "Unselected")
@@ -426,6 +547,13 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
         st.write(f"Captain: {captain} · Vice-captain: {vice}")
         st.write(f"Transfers: {len(week['transfers'])} · Hit cost: −{4 * week['hits']} points · Bank: £{week['bank']:.1f}m · Free Transfers: {week['ft']}")
         st.write(f"Lineup projection after hits: {week['projected_points']:.2f}" if week["complete"] else "Lineup projection unavailable until conflicts resolved.")
+        strategic_audit = active_result.get("plan", {}).get("meta", {}).get("strategic_audit")
+        if strategic_audit:
+            audit_lines = format_strategic_audit_lines(strategic_audit)
+            if audit_lines:
+                with st.expander("Strategic Variance Audit", expanded=False):
+                    for line in audit_lines:
+                        st.text(line)
     comparison = st.expander("Compare policies and rolling a transfer", key="policy-comparison", on_change="rerun")
     if comparison.open:
         with comparison:
@@ -436,9 +564,9 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
                 st.caption("Lineup comparison ready. Include Expected GW Score to calculate appearance-aware first-week and horizon totals.")
             st.caption("Roll keeps your current User Squad, books no chips, and selects a legal XI/captain each week. Free Transfers accumulate to five.")
             st.caption("Lineup points sum starting projections plus captain and chip points, minus hits. Expected GW Score also models appearances, substitutes and vice-captain fallback.")
-            st.caption("Optimal permits one hit per week; No Hit permits none. Conservative also avoids flagged incoming Players and protects established starters after one missed match.")
+            st.caption("Strategic balances projection upside against variance (1.8 pt hit hurdle, 65m starter floor, bench cover, 2-defender club cap, 1.5 pt GK transfer friction). Unconstrained maximizes pure expected points with up to 1 hit per week. No Hit forbids points hits.")
             st.caption("Solver objective weights future weeks, bench, retained Free Transfers and bank. It differs from these unweighted totals; a lower first-week score may improve later weeks.")
-    active_result = planner.state["recommendations"].get(planner.state["scenario"], {})
+    strategic_options_panel(planner, store)
     stop_note = active_result.get("plan", {}).get("meta", {}).get("solver_objective_note")
     if stop_note:
         st.caption(stop_note)

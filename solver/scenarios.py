@@ -1,4 +1,4 @@
-"""Transfer Plan Scenario arms: Optimal, No Hit, Conservative (ADR 0042, ADR 0053)."""
+"""Transfer Plan Scenario arms: Strategic, Unconstrained, No Hit (ADR 0042, ADR 0061)."""
 
 from __future__ import annotations
 
@@ -7,137 +7,138 @@ import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-import pandas as pd
-
 from projections.expected_gw_score import PlayerGw, auto_captain_alternatives, expected_gw_score
 
-ARM_OPTIMAL = "optimal"
+ARM_STRATEGIC = "strategic"
+ARM_UNCONSTRAINED = "unconstrained"
 ARM_NO_HIT = "no_hit"
-ARM_CONSERVATIVE = "conservative"
+
+# Legacy backward-compatibility aliases
+ARM_OPTIMAL = ARM_UNCONSTRAINED
+ARM_CONSERVATIVE = ARM_STRATEGIC
+
 ARM_NAMES: dict[str, str] = {
-    ARM_OPTIMAL: "Optimal",
+    ARM_STRATEGIC: "Strategic",
+    ARM_UNCONSTRAINED: "Unconstrained",
     ARM_NO_HIT: "No Hit",
-    ARM_CONSERVATIVE: "Conservative",
 }
-ARM_TIEBREAK: dict[str, int] = {ARM_OPTIMAL: 0, ARM_NO_HIT: 1, ARM_CONSERVATIVE: 2}
+ARM_TIEBREAK: dict[str, int] = {
+    ARM_STRATEGIC: 0,
+    ARM_UNCONSTRAINED: 1,
+    ARM_NO_HIT: 2,
+}
+LEGACY_ARM_MAP: dict[str, str] = {
+    "optimal": ARM_UNCONSTRAINED,
+    "conservative": ARM_STRATEGIC,
+}
+
 LIVE_WEEKLY_HIT_LIMIT = 1
 LIVE_HIT_COST = 4.0
 NO_HIT_WEEKLY_HIT_LIMIT = 0
 
+DEFAULT_STRATEGIC_OPTIONS: dict[str, Any] = {
+    "hit_friction": 1.8,
+    "starter_xmins_floor": 65.0,
+    "starter_xmins_penalty": 10.0,
+    "bench_cover_min": 12,
+    "bench_cover_xmins": 65.0,
+    "bench_cover_penalty": 1.5,
+    "def_stack_cap": 2,
+    "def_stack_penalty": 1.2,
+    "gk_transfer_friction": 1.5,
+}
+
+_STRATEGIC_KEY_ALIASES: dict[str, str] = {
+    "hit_buffer": "hit_friction",
+    "starter_min_xmins": "starter_xmins_floor",
+    "defensive_stack_cap": "def_stack_cap",
+    "gk_friction_penalty": "gk_transfer_friction",
+}
+
+
+def normalize_strategic_options(raw: Mapping[str, Any] | None) -> dict[str, Any]:
+    out = dict(DEFAULT_STRATEGIC_OPTIONS)
+    if not raw:
+        return out
+    for key, val in raw.items():
+        if val is None:
+            continue
+        canon = _STRATEGIC_KEY_ALIASES.get(str(key), str(key))
+        if canon in out:
+            out[canon] = int(val) if isinstance(out[canon], int) else float(val)
+    return out
+
+
+def normalize_arm_key(arm: str | None) -> str:
+    if arm is None:
+        return ARM_STRATEGIC
+    raw = str(arm).strip().lower().replace("-", "_")
+    return LEGACY_ARM_MAP.get(raw, raw)
+
 
 def feasible_scenario_arms(free_transfer_bank: int = 1) -> tuple[str, ...]:
-    """Must arms are Optimal + No Hit + Conservative (ADR 0042, ADR 0053)."""
+    """Must arms are Strategic + Unconstrained + No Hit (ADR 0042, ADR 0061)."""
     _ = int(free_transfer_bank)
-    return (ARM_OPTIMAL, ARM_NO_HIT, ARM_CONSERVATIVE)
+    return (ARM_STRATEGIC, ARM_UNCONSTRAINED, ARM_NO_HIT)
 
 
 def scenario_arm_overrides(
     arm: str,
     *,
-    start_gw: int,
-    free_transfer_bank: int,
+    start_gw: int = 1,
+    free_transfer_bank: int = 1,
+    strategic_options: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if arm not in ARM_NAMES:
+    norm_arm = normalize_arm_key(arm)
+    if norm_arm not in ARM_NAMES:
         raise ValueError(f"unknown Transfer Plan Scenario arm {arm!r}")
     _ = int(start_gw)
     _ = int(free_transfer_bank)
-    if arm in (ARM_NO_HIT, ARM_CONSERVATIVE):
+    if norm_arm == ARM_NO_HIT:
         return {
             "weekly_hit_limit": NO_HIT_WEEKLY_HIT_LIMIT,
             "hit_cost": LIVE_HIT_COST,
+            "strategic_mode": False,
+            "strategic_options": None,
         }
+    if norm_arm == ARM_UNCONSTRAINED:
+        return {
+            "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
+            "hit_cost": LIVE_HIT_COST,
+            "strategic_mode": False,
+            "strategic_options": None,
+        }
+    strat = normalize_strategic_options(strategic_options)
     return {
         "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
         "hit_cost": LIVE_HIT_COST,
+        "strategic_mode": True,
+        "strategic_options": strat,
+        **strat,
     }
-
-
-def find_unowned_flagged_players(
-    players_df: pd.DataFrame,
-    owned_ids: Sequence[int],
-) -> list[int]:
-    """Return IDs of unowned players carrying an injury/availability flag."""
-    if players_df.empty:
-        return []
-    owned_set = set(owned_ids)
-    flagged: list[int] = []
-    id_col = "id" if "id" in players_df.columns else "player_id"
-    for _, row in players_df.iterrows():
-        pid = int(row[id_col])
-        if pid in owned_set:
-            continue
-        status = str(row.get("status", "a"))
-        chance = row.get("chance_of_playing_next_round")
-        if chance is None or pd.isna(chance):
-            chance = row.get("chance")
-        is_flagged = False
-        if status not in ("a", "", "None", "nan"):
-            is_flagged = True
-        elif chance is not None and not pd.isna(chance):
-            try:
-                if float(chance) < 100.0:
-                    is_flagged = True
-            except (ValueError, TypeError):
-                pass
-        if is_flagged:
-            flagged.append(pid)
-    return sorted(set(flagged))
-
-
-def find_protected_one_match_missed_starters(
-    perf_df: pd.DataFrame,
-    owned_ids: Sequence[int],
-    *,
-    min_starter_rate: float = 0.6,
-) -> list[int]:
-    """Return owned players who started >= 60% of prior matches but missed only their most recent match."""
-    if perf_df.empty or not owned_ids:
-        return []
-    owned_set = set(owned_ids)
-    protected: list[int] = []
-    sub = perf_df[perf_df["player_id"].isin(owned_set)]
-    if sub.empty:
-        return []
-    for pid, group in sub.groupby("player_id"):
-        ordered = group.sort_values("gameweek_id")
-        if len(ordered) < 2:
-            continue
-        last_row = ordered.iloc[-1]
-        last_mins = float(last_row.get("minutes", 0.0) or 0.0)
-        last_starts = float(last_row.get("starts", 0.0) or 0.0)
-        if last_mins == 0.0 and last_starts == 0.0:
-            penultimate_row = ordered.iloc[-2]
-            pen_mins = float(penultimate_row.get("minutes", 0.0) or 0.0)
-            pen_starts = float(penultimate_row.get("starts", 0.0) or 0.0)
-            if pen_mins == 0.0 and pen_starts == 0.0:
-                continue
-            prior = ordered.iloc[:-1]
-            prior_starts = float(prior.get("starts", pd.Series(dtype=float)).sum())
-            if len(prior) > 0 and (prior_starts / len(prior)) >= min_starter_rate:
-                protected.append(int(pid))
-    return sorted(protected)
 
 
 def apply_scenario_arm(
     base_options: Mapping[str, Any],
     arm: str,
     *,
-    start_gw: int,
-    free_transfer_bank: int,
-    banned_next_gw: Sequence[int] | None = None,
-    locked_next_gw: Sequence[int] | None = None,
+    start_gw: int = 1,
+    free_transfer_bank: int = 1,
+    strategic_options: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     options = dict(base_options)
     options.pop("num_transfers", None)
     options.pop("no_transfer_gws", None)
-    options.update(scenario_arm_overrides(arm, start_gw=start_gw, free_transfer_bank=free_transfer_bank))
-    if arm == ARM_CONSERVATIVE:
-        if banned_next_gw:
-            existing_banned = list(options.get("banned_next_gw") or [])
-            options["banned_next_gw"] = sorted(set(existing_banned) | set(banned_next_gw))
-        if locked_next_gw:
-            existing_locked = list(options.get("locked_next_gw") or [])
-            options["locked_next_gw"] = sorted(set(existing_locked) | set(locked_next_gw))
+    active_strategic = dict(base_options.get("strategic_options") or {})
+    if strategic_options:
+        active_strategic.update(dict(strategic_options))
+    overrides = scenario_arm_overrides(
+        arm,
+        start_gw=start_gw,
+        free_transfer_bank=free_transfer_bank,
+        strategic_options=active_strategic,
+    )
+    options.update(overrides)
     return options
 
 
@@ -146,7 +147,7 @@ def rank_scenarios(scenarios: Sequence[Mapping[str, Any]]) -> list[dict[str, Any
         scenarios,
         key=lambda row: (
             -float(row.get("horizon_egs") or 0.0),
-            ARM_TIEBREAK.get(str(row.get("id")), 99),
+            ARM_TIEBREAK.get(normalize_arm_key(str(row.get("id"))), 99),
             str(row.get("id")),
         ),
     )
@@ -210,8 +211,10 @@ def compute_scenarios_digest(
     enabled_chips: Sequence[Mapping[str, object]] | None = None,
     force_keep: Sequence[Mapping[str, object]] | None = None,
     gap: float = 0.0,
+    strategic_options: Mapping[str, Any] | None = None,
+    xmins_override: Path | str | None = None,
 ) -> str:
-    """Deterministic SHA-256 fingerprint of inputs for cache avoidance (ADR 0057)."""
+    """Deterministic SHA-256 fingerprint of inputs for cache avoidance (ADR 0057, ADR 0061)."""
     hasher = hashlib.sha256()
     for filename in ("user_picks.parquet", "user_state.parquet", "players.parquet"):
         p = processed_dir / filename
@@ -219,6 +222,12 @@ def compute_scenarios_digest(
             hasher.update(p.read_bytes())
         else:
             hasher.update(b"missing")
+    if xmins_override is not None:
+        xp = Path(xmins_override)
+        if xp.exists():
+            hasher.update(xp.read_bytes())
+        else:
+            hasher.update(str(xmins_override).encode("utf-8"))
     params = {
         "target_gw": int(target_gw),
         "horizon": int(horizon),
@@ -233,6 +242,7 @@ def compute_scenarios_digest(
             key=lambda d: (int(d.get("player_id") or 0), int(d.get("gw") or 0)),
         ),
         "gap": float(gap),
+        "strategic_options": normalize_strategic_options(strategic_options),
     }
     hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
     return hasher.hexdigest()

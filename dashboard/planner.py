@@ -9,11 +9,11 @@ import os
 import threading
 from collections import Counter
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Mapping, cast
 from uuid import uuid4
 
 from projections.expected_gw_score import expected_gw_score, player_gw_from_dashboard
-from solver.scenarios import ARM_NAMES
+from solver.scenarios import ARM_NAMES, DEFAULT_STRATEGIC_OPTIONS, normalize_arm_key, normalize_strategic_options
 from solver.planning import chip_set_for_gw, normalize_chip_key
 
 SHAPES = ((3, 4, 3), (3, 5, 2), (4, 3, 3), (4, 4, 2), (4, 5, 1), (5, 2, 3), (5, 3, 2), (5, 4, 1))
@@ -62,13 +62,18 @@ class Planner:
         self.data_digest = digest(dataset)
         meta = dataset.get("meta") or {}
         start = int(meta.get("transfer_plan_start", 1))
+        default_strat = dict(DEFAULT_STRATEGIC_OPTIONS)
         self.state = copy.deepcopy(state) if state else {
             "version": 1, "start": start, "end": min(start + 5, 38),
-            "scenario": "optimal", "base_ids": meta.get("owned_squad_ids", []),
+            "scenario": "strategic", "base_ids": meta.get("owned_squad_ids", []),
             "base_bank": float(meta.get("itb", 0)), "base_ft": int(meta.get("free_transfers", 1)),
             "data_digest": self.data_digest, "edits": {}, "overrides": {}, "chips": {},
             "recommendations": {}, "revision": 0, "job_id": None,
+            "strategic_options": default_strat,
         }
+        self.state["strategic_options"] = normalize_strategic_options(self.state.get("strategic_options"))
+        if "scenario" in self.state:
+            self.state["scenario"] = normalize_arm_key(self.state["scenario"])
         if self.state.get("version") != 1:
             raise ValueError("Unsupported saved planner version. Preserve file before migrating.")
 
@@ -80,6 +85,7 @@ class Planner:
         return digest({key: self.state[key] for key in (
             "start", "end", "scenario", "base_ids", "base_bank", "base_ft",
             "edits", "overrides", "chips", "revision", "data_digest",
+            "strategic_options",
         )})
 
     def change_horizon(self, start: int, end: int) -> None:
@@ -94,10 +100,20 @@ class Planner:
 
     def reset(self, scenario: str | None = None) -> None:
         if scenario is not None:
-            if scenario not in ARM_NAMES:
+            norm_arm = normalize_arm_key(scenario)
+            if norm_arm not in ARM_NAMES:
                 raise ValueError("Unknown scenario.")
-            self.state["scenario"] = scenario
+            self.state["scenario"] = norm_arm
         self.state.update(edits={}, overrides={}, chips={})
+        self.state["revision"] += 1
+
+    def update_strategic_options(self, updates: Mapping[str, Any]) -> None:
+        current = normalize_strategic_options(self.state.get("strategic_options"))
+        self.state["strategic_options"] = normalize_strategic_options({**current, **dict(updates)})
+        self.state["revision"] += 1
+
+    def reset_strategic_options(self) -> None:
+        self.state["strategic_options"] = dict(DEFAULT_STRATEGIC_OPTIONS)
         self.state["revision"] += 1
 
     def accept_recommendations(self, plans: dict[str, Any], snapshot: str, data_digest: str) -> bool:
@@ -105,22 +121,29 @@ class Planner:
         if not applicable:
             self.state["unapplied_result"] = {"plans": copy.deepcopy(plans), "snapshot": snapshot, "data_digest": data_digest}
             return False
+        strat_digest = digest(normalize_strategic_options(self.state.get("strategic_options")))
         for arm, plan in plans.items():
-            if arm in ARM_NAMES and plan.get("weeks"):
-                self.state["recommendations"][arm] = {
+            norm_arm = normalize_arm_key(arm)
+            if norm_arm in ARM_NAMES and plan.get("weeks"):
+                self.state["recommendations"][norm_arm] = {
                     "plan": copy.deepcopy(plan), "data_digest": data_digest,
                     "start": self.state["start"], "end": self.state["end"],
                     "snapshot": snapshot, "applicable": applicable,
                     "revision": self.state["revision"],
                     "edits_digest": digest(self.state["edits"]),
                     "chips_digest": digest(self.state["chips"]),
+                    "strategic_digest": strat_digest,
                 }
         return applicable
 
     def recommendation_valid(self) -> bool:
         rec = self.state["recommendations"].get(self.state["scenario"])
-        return bool(rec and rec["applicable"] and rec["data_digest"] == self.data_digest
-                    and rec["start"] == self.state["start"] and rec["end"] == self.state["end"])
+        if not (rec and rec["applicable"] and rec["data_digest"] == self.data_digest
+                and rec["start"] == self.state["start"] and rec["end"] == self.state["end"]):
+            return False
+        if self.state["scenario"] == "strategic" and "strategic_digest" in rec:
+            return rec["strategic_digest"] == digest(normalize_strategic_options(self.state.get("strategic_options")))
+        return True
 
     def _recommendation_weeks(self) -> dict[int, dict[str, Any]]:
         if not self.recommendation_valid():
@@ -324,7 +347,7 @@ class Planner:
             if bank < -0.01:
                 conflicts.append("Insufficient bank for proposed transfers.")
             hits = 0 if chip in ("wc", "fh") else max(0, len(purchases) - free_transfers)
-            limit = 1 if self.state["scenario"] == "optimal" else 0
+            limit = 0 if self.state["scenario"] == "no_hit" else 1
             if hits > limit:
                 conflicts.append(f"Proposed Hits exceed {ARM_NAMES[self.state['scenario']]} policy.")
             lineup = self.select_lineup(squad, gw)
@@ -335,12 +358,13 @@ class Planner:
             if chip == "bb":
                 projected += sum(self.xp(pid, gw) for pid in lineup["bench_ids"])
             next_ft = free_transfers if chip in ("wc", "fh") else min(5, max(1, free_transfers - len(purchases) + 1))
+            stale_rec = bool(self.state["recommendations"].get(self.state["scenario"])) and not self.recommendation_valid()
             result.append({"gw": gw, "squad_ids": list(squad), "bank": round(bank, 1),
                            "bank_before": round(bank_before, 1), "ft": free_transfers, "next_ft": next_ft,
                            "hits": hits, "vacancies": vacancies, "complete": not conflicts,
                            "conflicts": conflicts, "transfers": moves, "chip": chip,
                            "projected_points": round(projected - hits * 4, 2),
-                           "needs_recalculation": stale_week or self.stale,
+                           "needs_recalculation": stale_week or self.stale or stale_rec,
                            "has_recommendation": bool(rec_week), **lineup})
             if chip == "fh":
                 squad, bank = before, bank_before
@@ -392,8 +416,6 @@ class Planner:
         return sorted((pid for pid, candidate in self.players.items()
                        if pid not in retained and pid != outgoing and candidate["pos_id"] == player["pos_id"]
                        and float(candidate["price"]) <= available + 0.01
-                       and (self.state["scenario"] != "conservative" or
-                            (candidate.get("status", "a") == "a" and (candidate.get("chance") is None or candidate["chance"] >= 100)))
                        and clubs[candidate["team_id"]] < 3), key=lambda pid: (-self.xp(pid, gw), pid))
 
     def expected_score(self, gw: int) -> float | None:
