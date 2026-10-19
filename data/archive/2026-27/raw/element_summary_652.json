@@ -1,22 +1,6 @@
 {
   "fixtures": [
     {
-      "id": 63,
-      "code": 2645257,
-      "team_h": 5,
-      "team_h_score": null,
-      "team_a": 8,
-      "team_a_score": null,
-      "event": 7,
-      "finished": false,
-      "minutes": 0,
-      "provisional_start_time": false,
-      "kickoff_time": "2026-10-18T13:00:00Z",
-      "event_name": "Gameweek 7",
-      "is_home": true,
-      "difficulty": 2
-    },
-    {
       "id": 78,
       "code": 2645272,
       "team_h": 14,
@@ -693,8 +677,8 @@
       "total_points": 0,
       "was_home": true,
       "kickoff_time": "2026-10-18T13:00:00Z",
-      "team_h_score": null,
-      "team_a_score": null,
+      "team_h_score": 5,
+      "team_a_score": 0,
       "round": 7,
       "modified": false,
       "minutes": 0,
