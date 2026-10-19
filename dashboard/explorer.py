@@ -30,11 +30,13 @@ def player_slice(player: dict[str, Any], model: str, gws: tuple[int, ...], assum
     goals_available = all(cell.get("xp_goals") is not None for cell in cells)
     assists_available = all(cell.get("xp_assists") is not None for cell in cells)
     gi_available = goals_available and assists_available
+    pos_raw = player.get("pos", "")
+    pos = {"G": "GKP", "D": "DEF", "M": "MID", "F": "FWD"}.get(pos_raw, pos_raw)
     return {
         "ID": int(player["id"]),
         "Player": player["name"],
+        "Position": pos,
         "Club": player.get("team", "Unavailable"),
-        "Position": player.get("pos", ""),
         "Price": float(player["price"]),
         "Ownership %": player.get("ownership_pct"),
         "Projection": "Available" if points_available and minutes_available else "Unavailable",
@@ -184,16 +186,7 @@ def watchlist_rows(dataset: dict[str, Any], model: str, gws: tuple[int, ...], wa
         if not player:
             continue
         base = player_slice(player, model, gws)
-        row = {
-            "ID": pid,
-            "Player": player["name"],
-            "Club": player.get("team", ""),
-            "Position": player.get("pos", ""),
-            "Price": f"£{float(player['price']):.1f}m",
-            "xP": round(base["xP"], 1) if base["xP"] is not None else None,
-            "xP / GW": round(base["xP / GW"], 2) if base["xP / GW"] is not None else None,
-            "xMins / GW": round(base["xMins / GW"], 1) if base["xMins / GW"] is not None else None,
-        }
+        row = dict(base)
         for gw in gws:
             cell = projections(player, model).get(f"gw{gw}", {})
             fix_text = cell.get("fixture_label") or cell.get("opponent", "-")

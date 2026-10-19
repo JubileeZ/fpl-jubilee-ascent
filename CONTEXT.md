@@ -567,8 +567,16 @@ Explorer card for the selected pool Player. Planning Horizon clock xMins and Eve
 _Avoid_: Squad Board 15 totals, treating Appearance xP as xMins
 
 **Explorer**:
-Live product dashboard tab (peer to Transfer Plan Surface). Ranks Feature Contract Players on the Planning Horizon. Layout: Squad Board + Component Profile, toolbar, rank table (Total · /GW · per-GW · /90 · xMins), ownership and price charts, Player components. Y-axis default xP per Gameweek; switchable to Projected Rate. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking / Top-10k EO retired. Not the Transfer Plan. Champion Trust in the header. Not a Season Window ranking.
+Live product dashboard tab (peer to Transfer Plan Surface). Ranks Feature Contract Players on the Planning Horizon. Layout: Squad Board + Component Profile, toolbar, rank table (Total · /GW · per-GW · /90 · xMins), ownership and price charts, Player components. Y-axis default xP per Gameweek; switchable to Projected Rate. Same Feature Contract, Primary Projection Model (default Model Champion), and Modified FDR. Dream Team is a pool overlay (chart + table), not a filter. No Role column. Mix vs Mix is not drawn. Differentials Ranking / Top-10k EO retired. Not the Transfer Plan. Champion Trust in the header. Not a Season Window ranking. Standard lead columns: `Player` → `Position` → `Club` → `Price` → `xP` → `xP / GW`, with native pinned identity columns.
 _Avoid_: Ownership Explorer (legacy tab name), Ownership Value Explorer (research HTML), 3D scatter, First-Half Horizon as the product band, Dual-Vector explorer xP, Official Fixture Difficulty as Explorer score, Expected Role as a rank field, Explorer-only as hiding the User Squad, live Mix vs Mix, Dream Team as the table filter, collapsing Transfer Plan Surface into Explorer, README-only legends, shipping Differentials Ranking on overall Own%, Assume 90 Explorer toggle, Top-10k EO crawl product
+
+**Reality Check Triad**:
+Three-layer performance comparison pairing observed season Actuals (`Goals`, `Assists`, `GI`, `Actual Mins`, `Starts`, `CS`), Opta Underlying Expected process (`xG`, `xA`, `xGI`, `xGC`), and Forward Model Projections (`xP Goals`, `xP Assists`, `xP GI`, `xMins / GW`, `xP CS`) in adjacent sortable numeric columns in Explorer and Watchlist tables. Not collapsed string cells. Not backward-only actuals.
+_Avoid_: Form vs Fixture toggle, Actual / Expected string cell
+
+**Player Watchlist**:
+Session-persisted scouting panel on Explorer tracking up to 15 transfer targets. Supports multi-view comparison presets (`Schedule (Heatmap)`, `Overview`, `Reality Check`, `Attacking`, `Defensive`) with 4-tier emerald score heatmap highlighting. Selecting a row activates Top Action Bar inspection. Distinct from Explorer Squad What-If and Dream Team.
+_Avoid_: Wishlist, Transfer Targets sandbox, treating Watchlist as an optimization constraint
 
 **Decision Regret**:
 Actual-point gap between a decision made from Projections and the best legal hindsight alternative under identical constraints. Initial scope: one-Gameweek starting XI, bench order, captain, and vice-captain. Research / CLI evidence; not Champion Trust chrome.

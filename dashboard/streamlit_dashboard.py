@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,8 @@ import plotly.express as px
 import streamlit as st
 
 import os
+
+from pandas.io.formats.style import Styler
 
 from dashboard.content import get_model_methodology, get_research_topic_detail, get_research_topics
 from dashboard.dashboard_jobs import run_tool
@@ -27,6 +30,49 @@ from dashboard.performance_view import performance_view
 
 PAGES = ("Performance", "Explorer", "Research", "Model Methodology")
 POS_ID_TO_CODE: dict[int, Position] = {1: "GK", 2: "D", 3: "M", 4: "F"}
+
+COMPONENT_RENAME_MAP: dict[str, str] = {
+    "xp_gi": "xP GI",
+    "xp_goals": "xP Goals",
+    "xp_assists": "xP Assists",
+    "xp_clean_sheet": "xP CS",
+    "xp_defcon": "xP DefCon",
+    "xp_conceded": "xP Conceded",
+    "xp_saves": "xP Saves",
+    "xp_bonus": "xP Bonus",
+}
+
+EXPLORER_PRESET_COLUMNS: dict[str, list[str]] = {
+    "Overview": ["Player", "Position", "Club", "Price", "xP", "xP / GW", "xP GI", "xP CS", "xMins / GW", "Ownership %"],
+    "Reality Check": [
+        "Player", "Position", "Club", "Price", "xP", "xP / GW",
+        "Actual Mins", "Starts", "xMins / GW",
+        "Goals", "xG", "xP Goals",
+        "Assists", "xA", "xP Assists",
+        "GI", "xGI", "xP GI",
+        "CS", "xGC", "xP CS",
+    ],
+    "Attacking": ["Player", "Position", "Club", "Price", "xP", "xP / GW", "xP GI", "xP Goals", "xP Assists", "xMins / GW", "Ownership %"],
+    "Defensive": ["Player", "Position", "Club", "Price", "xP", "xP / GW", "xP CS", "xP DefCon", "xP Conceded", "xMins / GW", "Ownership %"],
+    "All Components": ["Player", "Position", "Club", "Price", "xP", "xP / GW", "xP GI", "xP Goals", "xP Assists", "xP CS", "xP DefCon", "xP Conceded", "xP Saves", "xP Bonus", "xMins / GW", "Ownership %"],
+    "Underlying Attack": [
+        "Player", "Position", "Club", "Price", "xP", "xP / GW", "Apps", "Starts", "Actual Mins",
+        "Goals", "Goals / 90", "Goals / App",
+        "xG", "xG / 90", "xG / App",
+        "Assists", "Assists / 90", "Assists / App",
+        "xA", "xA / 90", "xA / App",
+        "GI", "GI / 90", "GI / App",
+        "xGI", "xGI / 90", "xGI / App",
+    ],
+    "Underlying Defence": [
+        "Player", "Position", "Club", "Price", "xP", "xP / GW", "Apps", "Starts", "Actual Mins",
+        "CS", "CS %",
+        "GC", "GC / 90",
+        "xGC", "xGC / 90",
+        "Defcon Hits", "Defcon %",
+        "Saves", "Saves / 90", "Saves / App",
+    ],
+}
 
 
 
@@ -443,6 +489,90 @@ def select_explorer_player(key: str, ids: list[int] | None = None) -> None:
         return
 
 
+def highlight_xp_cell(val: Any) -> str:
+    """4-tier monochromatic emerald gradient for score cells with WCAG AA contrast."""
+    if val is None or pd.isna(val):
+        return ""
+    num = None
+    if isinstance(val, (int, float)):
+        num = float(val)
+    elif isinstance(val, str):
+        match = re.search(r"(\d+(?:\.\d+)?)\s*xP", val)
+        if match:
+            num = float(match.group(1))
+    if num is None:
+        return ""
+    if num >= 7.0:
+        return "background-color: #15803d; color: #ffffff; font-weight: 600;"
+    elif num >= 5.0:
+        return "background-color: rgba(34, 197, 94, 0.25); color: inherit; font-weight: 500;"
+    elif num >= 3.0:
+        return "background-color: rgba(34, 197, 94, 0.10); color: inherit;"
+    return ""
+
+
+def apply_score_heatmap(df: pd.DataFrame, target_cols: list[str]) -> pd.DataFrame | Styler:
+    cols_to_style = [c for c in target_cols if c in df.columns]
+    if not cols_to_style or df.empty:
+        return df
+    return df.style.map(highlight_xp_cell, subset=cols_to_style)
+
+
+def get_table_column_config() -> dict[str, Any]:
+    column_config: dict[str, Any] = {
+        "Player": st.column_config.TextColumn("Player", pinned=True, width="medium"),
+        "Position": st.column_config.TextColumn("Position", pinned=True, width="small"),
+        "Club": st.column_config.TextColumn("Club", pinned=True, width="small"),
+        "Price": st.column_config.NumberColumn("Price", format="£%.1fm"),
+        "xP": st.column_config.NumberColumn("xP", format="%.2f"),
+        "xP / GW": st.column_config.NumberColumn("xP / GW", format="%.2f"),
+        "xP / 90": st.column_config.NumberColumn("xP / 90", format="%.2f"),
+        "xP GI": st.column_config.NumberColumn("xP GI", format="%.2f", help="Projected points from goal involvement (goals + assists)"),
+        "xP Goals": st.column_config.NumberColumn("xP Goals", format="%.2f", help="Projected points from goals scored"),
+        "xP Assists": st.column_config.NumberColumn("xP Assists", format="%.2f", help="Projected points from assists"),
+        "xP CS": st.column_config.NumberColumn("xP CS", format="%.2f", help="Projected points from clean sheets"),
+        "xP DefCon": st.column_config.NumberColumn("xP DefCon", format="%.2f", help="Projected points from defensive contributions"),
+        "xP Conceded": st.column_config.NumberColumn("xP Conceded", format="%.2f", help="Projected deductions from goals conceded"),
+        "xP Saves": st.column_config.NumberColumn("xP Saves", format="%.2f", help="Projected points from saves (GKP)"),
+        "xP Bonus": st.column_config.NumberColumn("xP Bonus", format="%.2f", help="Projected bonus points"),
+        "xMins / GW": st.column_config.NumberColumn("xMins / GW", format="%.1f"),
+        "Ownership %": st.column_config.NumberColumn("Ownership %", format="%.1f%%"),
+        "Apps": st.column_config.NumberColumn("Apps", format="%d", help="Total matches played with >0 minutes"),
+        "Starts": st.column_config.NumberColumn("Starts", format="%d", help="Total starts in the Starting XI"),
+        "Actual Mins": st.column_config.NumberColumn("Actual Mins", format="%dm", help="Total actual minutes played this season"),
+        "CS": st.column_config.NumberColumn("CS", format="%d", help="Clean sheets kept"),
+        "CS %": st.column_config.NumberColumn("CS %", format="%.1f%%", help="Clean sheet rate (CS / Apps)"),
+        "GC": st.column_config.NumberColumn("GC", format="%d", help="Goals conceded while on pitch"),
+        "GC / 90": st.column_config.NumberColumn("GC / 90", format="%.2f", help="Goals conceded per 90 minutes"),
+        "xGC": st.column_config.NumberColumn("xGC", format="%.2f", help="Opta Expected Goals Conceded while on pitch"),
+        "xGC / 90": st.column_config.NumberColumn("xGC / 90", format="%.2f", help="Opta Expected Goals Conceded per 90 minutes"),
+        "Defcon Hits": st.column_config.NumberColumn("Defcon Hits", format="%d", help="Matches meeting defensive contribution threshold (DEF: 10, MID/FWD: 12)"),
+        "Defcon %": st.column_config.NumberColumn("Defcon %", format="%.1f%%", help="Defcon hit rate (Defcon Hits / Apps)"),
+    }
+    for col, fmt, desc in (
+        ("Goals", "%d", "Actual goals scored"),
+        ("Assists", "%d", "Actual assists awarded"),
+        ("GI", "%d", "Actual goal involvements (Goals + Assists)"),
+        ("xG", "%.2f", "Opta Expected Goals"),
+        ("xA", "%.2f", "Opta Expected Assists"),
+        ("xGI", "%.2f", "Opta Expected Goal Involvement (xG + xA)"),
+        ("Saves", "%d", "Goalkeeper saves"),
+    ):
+        column_config[col] = st.column_config.NumberColumn(col, format=fmt, help=desc)
+        column_config[f"{col} / 90"] = st.column_config.NumberColumn(f"{col} / 90", format="%.2f", help=f"{desc} per 90 minutes")
+        column_config[f"{col} / App"] = st.column_config.NumberColumn(f"{col} / App", format="%.2f", help=f"{desc} per match appearance")
+    return column_config
+
+
+def select_watchlist_player(key: str, ids: list[int] | None = None) -> None:
+    if key not in st.session_state:
+        return
+    selection = st.session_state[key].get("selection", {})
+    if ids is not None and selection.get("rows"):
+        st.session_state["explorer-player"] = ids[selection["rows"][-1]]
+        st.session_state["explorer-inspection"] = True
+
+
 def render_watchlist(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) -> None:
     players = {int(p["id"]): p for p in dataset.get("players", [])}
     watchlist: list[int] = st.session_state.setdefault("watchlist", [])
@@ -476,8 +606,41 @@ def render_watchlist(dataset: dict[str, Any], model: str, gws: tuple[int, ...]) 
     rows = watchlist_rows(dataset, model, gws, watchlist)
     if rows:
         df_wl = pd.DataFrame(rows)
-        visible_wl = df_wl.drop(columns=["ID"])
-        st.dataframe(visible_wl, hide_index=True, width="stretch")
+        for src, dst in COMPONENT_RENAME_MAP.items():
+            if src in df_wl.columns:
+                df_wl[dst] = df_wl[src]
+
+        wl_view = st.segmented_control(
+            "Watchlist view",
+            ["Schedule (Heatmap)", "Overview", "Reality Check", "Attacking", "Defensive"],
+            default="Schedule (Heatmap)",
+            key="watchlist-view-preset",
+            label_visibility="collapsed",
+        ) or "Schedule (Heatmap)"
+
+        wl_presets = {
+            "Schedule (Heatmap)": ["Player", "Position", "Club", "Price", "xP", "xP / GW", "xMins / GW", *[f"GW{gw}" for gw in gws]],
+            **EXPLORER_PRESET_COLUMNS,
+        }
+        cols_for_wl = [c for c in wl_presets.get(wl_view, wl_presets["Schedule (Heatmap)"]) if c in df_wl.columns]
+        visible_wl = df_wl[cols_for_wl]
+
+        column_config = get_table_column_config()
+        for gw in gws:
+            column_config[f"GW{gw}"] = st.column_config.TextColumn(f"GW{gw}")
+
+        heat_cols = ["xP / GW", *[f"GW{gw}" for gw in gws]] if wl_view == "Schedule (Heatmap)" else ["xP / GW"]
+        styled_wl = apply_score_heatmap(visible_wl, heat_cols)
+
+        st.dataframe(
+            styled_wl,
+            column_config=column_config,
+            hide_index=True,
+            width="stretch",
+            on_select=lambda: select_watchlist_player("watchlist-table", df_wl["ID"].tolist()),
+            selection_mode="single-row",
+            key="watchlist-table",
+        )
 
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -600,52 +763,19 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
                     )
             if scale_bubble:
                 st.caption("Bubble size indicates expected minutes per Gameweek (xMins / GW). Larger bubbles represent higher projected minutes.")
-        rename_map = {
-            "xp_gi": "xP GI",
-            "xp_goals": "xP Goals",
-            "xp_assists": "xP Assists",
-            "xp_clean_sheet": "xP CS",
-            "xp_defcon": "xP DefCon",
-            "xp_conceded": "xP Conceded",
-            "xp_saves": "xP Saves",
-            "xp_bonus": "xP Bonus",
-        }
-        for src, dst in rename_map.items():
+        for src, dst in COMPONENT_RENAME_MAP.items():
             if src in frame.columns:
                 frame[dst] = frame[src]
         table_view = st.segmented_control(
             "Table view",
-            ["Overview", "Attacking", "Defensive", "All Components", "Underlying Attack", "Underlying Defence"],
+            ["Overview", "Reality Check", "Attacking", "Defensive", "All Components", "Underlying Attack", "Underlying Defence"],
             default="Overview",
             key="explorer-table-preset",
             label_visibility="collapsed",
         ) or "Overview"
-        preset_cols = {
-            "Overview": ["Player", "Club", "Position", "Price", "xP", "xP / GW", "xP GI", "xP CS", "xMins / GW", "Ownership %"],
-            "Attacking": ["Player", "Club", "Position", "Price", "xP", "xP GI", "xP Goals", "xP Assists", "xMins / GW", "Ownership %"],
-            "Defensive": ["Player", "Club", "Position", "Price", "xP", "xP CS", "xP DefCon", "xP Conceded", "xMins / GW", "Ownership %"],
-            "All Components": ["Player", "Club", "Position", "Price", "xP", "xP / GW", "xP GI", "xP Goals", "xP Assists", "xP CS", "xP DefCon", "xP Conceded", "xP Saves", "xP Bonus", "xMins / GW", "Ownership %"],
-            "Underlying Attack": [
-                "Player", "Club", "Position", "Price", "xP", "Apps", "Starts", "Actual Mins",
-                "Goals", "Goals / 90", "Goals / App",
-                "xG", "xG / 90", "xG / App",
-                "Assists", "Assists / 90", "Assists / App",
-                "xA", "xA / 90", "xA / App",
-                "GI", "GI / 90", "GI / App",
-                "xGI", "xGI / 90", "xGI / App",
-            ],
-            "Underlying Defence": [
-                "Player", "Club", "Position", "Price", "xP", "Apps", "Starts", "Actual Mins",
-                "CS", "CS %",
-                "GC", "GC / 90",
-                "xGC", "xGC / 90",
-                "Defcon Hits", "Defcon %",
-                "Saves", "Saves / 90", "Saves / App",
-            ],
-        }
-        cols_for_view = list(preset_cols.get(table_view, preset_cols["Overview"]))
+        cols_for_view = list(EXPLORER_PRESET_COLUMNS.get(table_view, EXPLORER_PRESET_COLUMNS["Overview"]))
         if has_user_squad and "Squad" in frame.columns and "Squad" not in cols_for_view:
-            cols_for_view.insert(3, "Squad")
+            cols_for_view.insert(6, "Squad")
         if "Dream Team" in frame.columns and "Dream Team" not in cols_for_view:
             cols_for_view.append("Dream Team")
         visible_cols = [c for c in cols_for_view if c in frame.columns]
@@ -677,47 +807,10 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
                     st.rerun()
             else:
                 bar_cols[0].caption("💡 Select any player row in the table below to inspect details or manage watchlist.")
-        column_config = {
-            "Price": st.column_config.NumberColumn("Price", format="£%.1fm"),
-            "xP": st.column_config.NumberColumn("xP", format="%.2f"),
-            "xP / GW": st.column_config.NumberColumn("xP / GW", format="%.2f"),
-            "xP / 90": st.column_config.NumberColumn("xP / 90", format="%.2f"),
-            "xP GI": st.column_config.NumberColumn("xP GI", format="%.2f", help="Projected points from goal involvement (goals + assists)"),
-            "xP Goals": st.column_config.NumberColumn("xP Goals", format="%.2f", help="Projected points from goals scored"),
-            "xP Assists": st.column_config.NumberColumn("xP Assists", format="%.2f", help="Projected points from assists"),
-            "xP CS": st.column_config.NumberColumn("xP CS", format="%.2f", help="Projected points from clean sheets"),
-            "xP DefCon": st.column_config.NumberColumn("xP DefCon", format="%.2f", help="Projected points from defensive contributions"),
-            "xP Conceded": st.column_config.NumberColumn("xP Conceded", format="%.2f", help="Projected deductions from goals conceded"),
-            "xP Saves": st.column_config.NumberColumn("xP Saves", format="%.2f", help="Projected points from saves (GKP)"),
-            "xP Bonus": st.column_config.NumberColumn("xP Bonus", format="%.2f", help="Projected bonus points"),
-            "xMins / GW": st.column_config.NumberColumn("xMins / GW", format="%.1f"),
-            "Ownership %": st.column_config.NumberColumn("Ownership %", format="%.1f%%"),
-            "Apps": st.column_config.NumberColumn("Apps", format="%d", help="Total matches played with >0 minutes"),
-            "Starts": st.column_config.NumberColumn("Starts", format="%d", help="Total starts in the Starting XI"),
-            "Actual Mins": st.column_config.NumberColumn("Actual Mins", format="%dm", help="Total actual minutes played this season"),
-            "CS": st.column_config.NumberColumn("CS", format="%d", help="Clean sheets kept"),
-            "CS %": st.column_config.NumberColumn("CS %", format="%.1f%%", help="Clean sheet rate (CS / Apps)"),
-            "GC": st.column_config.NumberColumn("GC", format="%d", help="Goals conceded while on pitch"),
-            "GC / 90": st.column_config.NumberColumn("GC / 90", format="%.2f", help="Goals conceded per 90 minutes"),
-            "xGC": st.column_config.NumberColumn("xGC", format="%.2f", help="Opta Expected Goals Conceded while on pitch"),
-            "xGC / 90": st.column_config.NumberColumn("xGC / 90", format="%.2f", help="Opta Expected Goals Conceded per 90 minutes"),
-            "Defcon Hits": st.column_config.NumberColumn("Defcon Hits", format="%d", help="Matches meeting defensive contribution threshold (DEF: 10, MID/FWD: 12)"),
-            "Defcon %": st.column_config.NumberColumn("Defcon %", format="%.1f%%", help="Defcon hit rate (Defcon Hits / Apps)"),
-        }
-        for col, fmt, desc in (
-            ("Goals", "%d", "Actual goals scored"),
-            ("Assists", "%d", "Actual assists awarded"),
-            ("GI", "%d", "Actual goal involvements (Goals + Assists)"),
-            ("xG", "%.2f", "Opta Expected Goals"),
-            ("xA", "%.2f", "Opta Expected Assists"),
-            ("xGI", "%.2f", "Opta Expected Goal Involvement (xG + xA)"),
-            ("Saves", "%d", "Goalkeeper saves"),
-        ):
-            column_config[col] = st.column_config.NumberColumn(col, format=fmt, help=desc)
-            column_config[f"{col} / 90"] = st.column_config.NumberColumn(f"{col} / 90", format="%.2f", help=f"{desc} per 90 minutes")
-            column_config[f"{col} / App"] = st.column_config.NumberColumn(f"{col} / App", format="%.2f", help=f"{desc} per match appearance")
+        column_config = get_table_column_config()
+        styled_visible = apply_score_heatmap(visible, ["xP / GW"])
         st.dataframe(
-            visible,
+            styled_visible,
             column_config=column_config,
             hide_index=True,
             width="stretch",

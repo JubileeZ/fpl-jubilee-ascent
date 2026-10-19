@@ -383,3 +383,112 @@ def test_explorer_horizon_start_defaults_to_upcoming_deadline(tmp_path: Path, mo
     assert not app.exception
     assert app.selectbox(key="explorer-start").value == 7
 
+
+def test_explorer_lead_column_arrangement_and_pinning(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
+    assert not app.exception
+
+    df = next(d for d in app.dataframe if d.key == "explorer-table")
+    cols = df.value.columns.tolist()
+    # Lead sequence must strictly be Player, Position, Club, Price, xP, xP / GW
+    assert cols[:6] == ["Player", "Position", "Club", "Price", "xP", "xP / GW"]
+    # Verify pinned configuration for Player, Position, Club
+    cfg = json.loads(df.proto.columns)
+    assert cfg["Player"]["pinned"] is True
+    assert cfg["Position"]["pinned"] is True
+    assert cfg["Club"]["pinned"] is True
+
+
+def test_explorer_reality_check_triad_view(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = dataset()
+    for p in data["players"]:
+        for gw in range(6, 12):
+            p["projections"][f"gw{gw}"] = {
+                "total_xp": 5.0,
+                "xmins": 90.0,
+                "xp_goals": 1.5,
+                "xp_assists": 0.8,
+                "xp_clean_sheet": 1.2,
+            }
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
+    assert not app.exception
+
+    preset_ctrl = app.segmented_control(key="explorer-table-preset")
+    assert "Reality Check" in preset_ctrl.options
+    preset_ctrl.set_value("Reality Check").run()
+    assert not app.exception
+
+    df_rc = next(d for d in app.dataframe if d.key == "explorer-table")
+    rc_cols = df_rc.value.columns.tolist()
+    assert rc_cols[:6] == ["Player", "Position", "Club", "Price", "xP", "xP / GW"]
+    # Check triad clusters
+    expected_clusters = [
+        "Actual Mins", "Starts", "xMins / GW",
+        "Goals", "xG", "xP Goals",
+        "Assists", "xA", "xP Assists",
+        "GI", "xGI", "xP GI",
+        "CS", "xGC", "xP CS",
+    ]
+    for col in expected_clusters:
+        assert col in rc_cols
+
+
+def test_watchlist_view_presets_and_schedule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(dataset()), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
+    assert not app.exception
+
+    # Add player 7 to watchlist
+    app.selectbox(key="watchlist-add-select").set_value(7).run()
+    app.button(key="watchlist-add-btn").click().run()
+    assert not app.exception
+    assert 7 in app.session_state["watchlist"]
+
+    # Verify Watchlist view preset selector exists and defaults to Schedule (Heatmap)
+    wl_preset = app.segmented_control(key="watchlist-view-preset")
+    assert wl_preset is not None
+    assert wl_preset.value == "Schedule (Heatmap)"
+
+    # Check dataframe in Schedule mode has GW columns
+    wl_df = next(d for d in app.dataframe if d.key == "watchlist-table")
+    cols = wl_df.value.columns.tolist()
+    assert cols[:3] == ["Player", "Position", "Club"]
+    assert any(c.startswith("GW") for c in cols)
+
+    # Switch to Reality Check mode
+    wl_preset.set_value("Reality Check").run()
+    assert not app.exception
+    wl_df_rc = next(d for d in app.dataframe if d.key == "watchlist-table")
+    rc_cols = wl_df_rc.value.columns.tolist()
+    assert rc_cols[:6] == ["Player", "Position", "Club", "Price", "xP", "xP / GW"]
+    assert "Goals" in rc_cols
+    assert "xG" in rc_cols
+    assert "xP Goals" in rc_cols
+
+    # Selecting a row triggers 1-click inspection
+    from dashboard.streamlit_dashboard import select_watchlist_player
+    import streamlit as st
+    st.session_state["watchlist-table"] = {"selection": {"rows": [0]}}
+    select_watchlist_player("watchlist-table", [7])
+    assert st.session_state.get("explorer-player") == 7
+    assert st.session_state.get("explorer-inspection") is True
+
+
+
