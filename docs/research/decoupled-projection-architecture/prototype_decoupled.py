@@ -22,11 +22,10 @@ if str(PROJECT_ROOT) not in sys.path:
 import pandas as pd
 
 from features.contracts import assert_projection_contract
-from models.base import BaseModel, cap_projected_minutes, iter_feature_rows
+from models.base import BaseModel, iter_feature_rows
 from models.learned_start_challenger import LearnedStartChallengerModel
 from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.participation_state_hybrid import target_to_states
-from models.metrics_component_hybrid import _number
 
 
 @dataclass(frozen=True)
@@ -184,31 +183,23 @@ class LearnedStartMinutesAdapter(BaseMinutesModel):
         self._inner.fit(history_df)
 
     def predict_minutes(self, features_df: pd.DataFrame, horizon: int) -> MinutesPrediction:
-        rows = []
-        for row, gw, fix in iter_feature_rows(features_df, horizon):
-            p_dnp, p_start, p_sub = self._inner._state_probabilities(row)
-            start_m = self._inner._conditional_minutes(row, "start", 78.0)
-            sub_m = self._inner._conditional_minutes(row, "sub_in", 18.0)
-            p60_start = min(1.0, max(0.0, _number(row, "p_60_if_start", (start_m - 45.0) / 30.0)))
-            p60_sub = min(1.0, max(0.0, _number(row, "p_60_if_sub_in", (sub_m - 45.0) / 30.0)))
-
-            raw_mins = p_start * start_m + p_sub * sub_m
-            expected_mins = cap_projected_minutes(row, raw_mins)
-            p60 = p_start * p60_start + p_sub * p60_sub
-
-            rows.append({
-                "player_id": int(row["player_id"]),
-                "gameweek_id": gw,
-                "fixture_id": fix,
-                "p_dnp": p_dnp,
-                "p_start": p_start,
-                "p_sub_in": p_sub,
-                "xmins_if_start": start_m,
-                "xmins_if_sub_in": sub_m,
-                "projected_minutes": expected_mins,
-                "p_60_plus": p60,
-            })
-        return MinutesPrediction(pd.DataFrame(rows))
+        proj = self._inner.predict(features_df, horizon)
+        fixture_col = proj["fixture_id"].astype(int) if "fixture_id" in proj.columns else None
+        p60 = proj["p_start"] * proj["p_60_if_start"] + proj["p_sub_in"] * proj["p_60_if_sub_in"]
+        frame = pd.DataFrame({
+            "player_id": proj["player_id"].astype(int),
+            "gameweek_id": proj["gameweek_id"].astype(int),
+            "p_dnp": proj["p_dnp"].astype(float),
+            "p_start": proj["p_start"].astype(float),
+            "p_sub_in": proj["p_sub_in"].astype(float),
+            "xmins_if_start": proj["xmins_if_start"].astype(float),
+            "xmins_if_sub_in": proj["xmins_if_sub_in"].astype(float),
+            "projected_minutes": proj["projected_minutes"].astype(float),
+            "p_60_plus": p60.astype(float),
+        })
+        if fixture_col is not None:
+            frame["fixture_id"] = fixture_col
+        return MinutesPrediction(frame)
 
 
 class DefXgShrinkEventAdapter(BaseEventRateModel):
@@ -230,11 +221,7 @@ class DefXgShrinkEventAdapter(BaseEventRateModel):
         minutes_pred: MinutesPrediction,
         horizon: int,
     ) -> pd.DataFrame:
-        # Align features with minutes_pred
-        feat_with_mins = features_df.copy()
-        if "projected_minutes" not in feat_with_mins.columns:
-            feat_with_mins["external_xmins"] = minutes_pred.frame["projected_minutes"].to_numpy()
-        return self._inner.predict(feat_with_mins, horizon)
+        return self._inner.predict(features_df, horizon)
 
 
 def resolve_composite_spec(spec: str) -> CompositeProjectionModel:

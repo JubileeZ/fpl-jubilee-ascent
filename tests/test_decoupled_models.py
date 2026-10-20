@@ -331,6 +331,186 @@ def test_run_minutes_walkforward_evaluation_live_subset(tmp_path: Path) -> None:
     assert 0.0 <= verdict.candidate_metrics.starter_auc <= 1.0
 
 
+# --- 5. Ticket #165: Composite Model Architecture & Parity Tests ---
+
+def _load_prototype_decoupled():
+    import importlib.util
+    import sys
+    path = Path("docs/research/decoupled-projection-architecture/prototype_decoupled.py")
+    spec = importlib.util.spec_from_file_location("prototype_decoupled", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["prototype_decoupled"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_composite_projection_model_satisfies_contract() -> None:
+    mod = _load_prototype_decoupled()
+    from features.contracts import assert_projection_contract
+
+    df_feat = pd.DataFrame({
+        "player_id": [1, 2, 3],
+        "gameweek_id": [6, 6, 6],
+        "fixture_id": [10, 11, 12],
+        "position_id": [2, 3, 4],
+        "club_id": [1, 2, 3],
+        "opponent_id": [4, 5, 6],
+        "is_home": [True, False, True],
+        "per90_xg": [0.10, 0.40, 0.60],
+        "per90_xa": [0.05, 0.30, 0.15],
+        "per90_goals_conceded": [1.1, 1.3, 1.2],
+        "difficulty": [2.0, 3.0, 4.0],
+        "p_start": [0.90, 0.85, 0.95],
+        "p_sub_in": [0.05, 0.10, 0.05],
+        "p_dnp": [0.05, 0.05, 0.00],
+        "xmins_if_start": [85.0, 75.0, 90.0],
+        "xmins_if_sub_in": [15.0, 20.0, 15.0],
+    })
+
+    composite = mod.resolve_composite_spec("composite:learned_start:def_xg_shrink")
+    res = composite.predict(df_feat, horizon=1)
+
+    assert_projection_contract(res)
+    assert len(res) == 3
+    components = [c for c in res.columns if c.startswith("xp_")]
+    assert len(components) == 13
+    assert (res["projected_points"] - res[components].sum(axis=1)).abs().max() < 1e-9
+
+
+def test_states_from_external_minutes_deterministic() -> None:
+    mod = _load_prototype_decoupled()
+    composite_cls = mod.CompositeProjectionModel
+
+    df_feat = pd.DataFrame({
+        "player_id": [10, 20, 30, 40],
+        "gameweek_id": [7, 7, 7, 7],
+        "fixture_id": [101, 102, 103, 104],
+        "external_xmins": [90.0, 0.0, 45.0, np.nan],
+    })
+
+    states1 = composite_cls._states_from_external_minutes(df_feat, horizon=1)
+    states2 = composite_cls._states_from_external_minutes(df_feat, horizon=1)
+
+    pd.testing.assert_frame_equal(states1.frame, states2.frame)
+
+    p10 = states1.frame.loc[states1.frame["player_id"] == 10].iloc[0]
+    assert p10["p_start"] > 0.95
+    assert p10["p_dnp"] < 0.05
+    assert p10["p_sub_in"] == pytest.approx(0.0)
+    assert p10["projected_minutes"] == pytest.approx(90.0)
+    assert p10["p_60_plus"] == pytest.approx(0.99)
+
+    p20 = states1.frame.loc[states1.frame["player_id"] == 20].iloc[0]
+    assert p20["p_dnp"] == pytest.approx(1.0)
+    assert p20["p_start"] == pytest.approx(0.0)
+    assert p20["p_sub_in"] == pytest.approx(0.0)
+    assert p20["projected_minutes"] == pytest.approx(0.0)
+    assert p20["p_60_plus"] == pytest.approx(0.0)
+
+    p30 = states1.frame.loc[states1.frame["player_id"] == 30].iloc[0]
+    assert p30["p_start"] > 0.0
+    assert p30["p_sub_in"] > 0.0
+    assert p30["projected_minutes"] == pytest.approx(45.0)
+
+    p40 = states1.frame.loc[states1.frame["player_id"] == 40].iloc[0]
+    assert p40["p_dnp"] == pytest.approx(1.0)
+    assert p40["projected_minutes"] == pytest.approx(0.0)
+
+
+def test_bit_for_bit_parity_with_native_champion() -> None:
+    data_dir = Path("data/processed")
+    if not (data_dir / "player_performances.parquet").exists():
+        pytest.skip("Live processed data not present")
+
+    mod = _load_prototype_decoupled()
+    from features.builder import build_features, resolve_operational_processed_dir
+    from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
+
+    processed_dir = resolve_operational_processed_dir(Path("."))
+    df_feat = build_features(processed_dir, target_gw=6, horizon=1)
+    df_perf = pd.read_parquet(processed_dir / "player_performances.parquet")
+
+    native = DefXgShrinkChallengerModel()
+    native.fit(df_perf)
+    res_native = native.predict(df_feat, horizon=1)
+
+    composite = mod.resolve_composite_spec("composite:learned_start:def_xg_shrink")
+    composite.fit(df_perf)
+    res_comp = composite.predict(df_feat, horizon=1)
+
+    assert len(res_native) == len(res_comp)
+    components = [c for c in res_native.columns if c.startswith("xp_")] + ["projected_minutes", "projected_points"]
+    for col in components:
+        np.testing.assert_allclose(
+            res_comp[col].to_numpy(),
+            res_native[col].to_numpy(),
+            atol=1e-12,
+            rtol=1e-12,
+            err_msg=f"Bit-for-bit parity mismatch in column '{col}'",
+        )
+
+
+# --- 6. Ticket #161 / #165: Oracle Event Gate Tests ---
+
+def _load_prototype_oracle_gate():
+    import importlib.util
+    import sys
+    path = Path("docs/research/decoupled-projection-architecture/prototype_oracle_gate.py")
+    spec = importlib.util.spec_from_file_location("prototype_oracle_gate", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["prototype_oracle_gate"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_evaluate_oracle_event_gate_scenarios() -> None:
+    mod = _load_prototype_oracle_gate()
+    eval_gate = mod.evaluate_oracle_event_gate
+
+    base_champ = {
+        "oracle_formation_xi_regret": 63.96,
+        "oracle_captain_regret": 2.79,
+        "playable_bias": -0.2442,
+    }
+
+    cand_a = {
+        "oracle_formation_xi_regret": 63.51,
+        "oracle_captain_regret": 2.74,
+        "playable_bias": -0.2342,
+    }
+    verdict_a = eval_gate(base_champ, cand_a)
+    assert verdict_a.passed is True
+    assert verdict_a.oracle_delta == pytest.approx(0.45)
+    assert len(verdict_a.reasons) == 0
+
+    cand_b = {
+        "oracle_formation_xi_regret": 63.30,
+        "oracle_captain_regret": 2.80,
+        "playable_bias": -0.3242,
+    }
+    verdict_b = eval_gate(base_champ, cand_b)
+    assert verdict_b.passed is False
+    assert any("playable bias" in r for r in verdict_b.reasons)
+
+    cand_c = {
+        "oracle_formation_xi_regret": 63.50,
+        "oracle_captain_regret": 3.04,
+        "playable_bias": -0.2400,
+    }
+    verdict_c = eval_gate(base_champ, cand_c)
+    assert verdict_c.passed is False
+    assert any("Captaincy Regret" in r for r in verdict_c.reasons)
+
+    cand_d = {
+        "oracle_formation_xi_regret": 64.26,
+        "oracle_captain_regret": 2.75,
+        "playable_bias": -0.2400,
+    }
+    verdict_d = eval_gate(base_champ, cand_d)
+    assert verdict_d.passed is False
+    assert any("Regret did not improve" in r for r in verdict_d.reasons)
+
+
 # --- 7. Ticket #164: LOO Teammate Finishing & Shot-Volume GK Saves Tests ---
 
 def _load_prototype_event_challenger():
