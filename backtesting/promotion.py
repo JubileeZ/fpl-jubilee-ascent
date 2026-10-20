@@ -19,7 +19,7 @@ SEASON_WINDOWS: dict[str, tuple[int, int]] = {
 _SEGMENT_NAMES = ("cold_start", "early_mid", "late")
 _MEANINGFUL_LIVE_LEAD = 0.05
 
-# Statistical gate (ADR 0046). No minimum effect beyond delta > 0; bootstrap bar shared by both seasons (ADR 0049).
+# Statistical gate (ADR 0046, 0049, 0062). No minimum effect beyond delta > 0; bootstrap bar shared by both seasons.
 MIN_EFFECT_SHARE = 0.0
 BOOTSTRAP_MIN_P = 0.60
 CONFIRMATION_BOOTSTRAP_MIN_P = 0.60
@@ -31,6 +31,10 @@ SPEARMAN_ABS_TOL = 0.005
 CAPTAIN_REGRET_ABS_TOL = 0.15
 PLAYABLE_XP_THRESHOLD = 2.0
 PLAYABLE_MINUTES_THRESHOLD = 30.0
+
+# Non-catastrophic segment loss guardrails (ADR 0062, replacing binary segs >= 2/3)
+SEGMENT_REGRESSION_TOL: float = 0.15
+COLD_START_PARITY_TOL: float = 0.05
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,7 @@ class PromotionVerdict:
     eval_target: str = "actual_points"
     min_effect: float = 0.0
     bootstrap_p: float | None = None
+    segment_guardrails_passed: bool = True
 
 
 def block_bootstrap_win_probability(
@@ -215,12 +220,30 @@ def evaluate_historical_promotion_gate(
     champ_g = guardrail_metrics(combined_champion)
     guardrails_passed = metrics_meet_guardrails(cand_g, champ_g)
 
+    segment_deltas: dict[str, float] = {}
     segment_wins = 0
     for segment in _SEGMENT_NAMES:
         if segment not in champion_windows or segment not in candidate_windows:
             continue
-        if primary_metric_value(candidate_windows[segment]) < primary_metric_value(champion_windows[segment]):
+        champ_seg_val = primary_metric_value(champion_windows[segment])
+        cand_seg_val = primary_metric_value(candidate_windows[segment])
+        delta_seg = champ_seg_val - cand_seg_val
+        segment_deltas[segment] = delta_seg
+        if delta_seg > 0:
             segment_wins += 1
+
+    cold_start_ok = segment_deltas.get("cold_start", 0.0) >= -COLD_START_PARITY_TOL
+    active_segments_ok = all(
+        segment_deltas[s] >= -SEGMENT_REGRESSION_TOL
+        for s in ("early_mid", "late")
+        if s in segment_deltas
+    )
+    has_active_win = any(
+        segment_deltas[s] > 0
+        for s in ("early_mid", "late")
+        if s in segment_deltas
+    )
+    segment_guardrails_passed = cold_start_ok and active_segments_ok and has_active_win
 
     reasons: list[str] = []
     effect_ok = combined_delta > 0 and combined_delta >= min_effect
@@ -231,8 +254,18 @@ def evaluate_historical_promotion_gate(
     significant = bootstrap_p is None or bootstrap_p >= bootstrap_min_p
     if not significant:
         reasons.append(f"bootstrap P(delta>0) {bootstrap_p:.3f} below {bootstrap_min_p:.2f}")
-    if segment_wins < 2:
-        reasons.append(f"won only {segment_wins}/3 seasonal segments")
+    if not segment_guardrails_passed:
+        if not cold_start_ok:
+            reasons.append(
+                f"cold start regressed ({segment_deltas['cold_start']:.3f} < -{COLD_START_PARITY_TOL:.2f})"
+            )
+        for s in ("early_mid", "late"):
+            if s in segment_deltas and segment_deltas[s] < -SEGMENT_REGRESSION_TOL:
+                reasons.append(
+                    f"catastrophic regression in {s} segment ({segment_deltas[s]:.3f} < -{SEGMENT_REGRESSION_TOL:.2f})"
+                )
+        if not has_active_win:
+            reasons.append("won 0 active in-season segments")
     if not guardrails_passed:
         reasons.append("failed one or more Champion guardrails")
         if (
@@ -275,7 +308,7 @@ def evaluate_historical_promotion_gate(
                     f"({float(candidate_ref['mae']):.4f} vs {float(champion_ref['mae']):.4f})"
                 )
 
-    passed = effect_ok and significant and segment_wins >= 2 and guardrails_passed
+    passed = effect_ok and significant and segment_guardrails_passed and guardrails_passed
     return PromotionVerdict(
         passed=passed,
         primary_metric=primary_metric_name(combined_champion),
@@ -286,6 +319,7 @@ def evaluate_historical_promotion_gate(
         eval_target=eval_target,
         min_effect=min_effect,
         bootstrap_p=bootstrap_p,
+        segment_guardrails_passed=segment_guardrails_passed,
     )
 
 

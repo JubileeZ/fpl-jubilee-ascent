@@ -137,6 +137,7 @@ def build_evidence_record(
                 "min_effect": comparison.verdict.min_effect,
                 "bootstrap_p": comparison.verdict.bootstrap_p,
                 "segment_wins": comparison.verdict.segment_wins,
+                "segment_guardrails_passed": comparison.verdict.segment_guardrails_passed,
                 "guardrails_passed": comparison.verdict.guardrails_passed,
                 "reasons": list(comparison.verdict.reasons),
                 "snapshot_backed": comparison.snapshot_backed,

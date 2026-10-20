@@ -69,7 +69,7 @@ def test_historical_promotion_gate_passes_clear_winner() -> None:
     assert verdict.guardrails_passed
 
 
-def test_historical_promotion_gate_fails_without_segment_majority() -> None:
+def test_historical_promotion_gate_fails_on_catastrophic_segment_regression() -> None:
     champion_windows = {
         "combined": _metrics(mae=2.0, regret=1.0),
         "cold_start": _metrics(mae=2.0, regret=1.0),
@@ -86,7 +86,71 @@ def test_historical_promotion_gate_fails_without_segment_majority() -> None:
     verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
 
     assert not verdict.passed
-    assert "seasonal segments" in verdict.reasons[0]
+    assert any("catastrophic regression in early_mid" in r for r in verdict.reasons)
+    assert any("won 0 active in-season segments" in r for r in verdict.reasons)
+
+
+def test_historical_promotion_gate_tolerates_cold_start_parity_and_wins_late() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=2.0, regret=1.0),  # delta = 0.00 (fallback parity)
+        "early_mid": _metrics(mae=2.0, regret=1.02),  # delta = -0.02 (>= -0.15)
+        "late": _metrics(mae=1.5, regret=0.50),  # delta = +0.50 (active win)
+    }
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+
+    assert verdict.passed
+    assert verdict.segment_guardrails_passed
+    assert verdict.segment_wins == 1
+
+
+def test_historical_promotion_gate_fails_on_cold_start_regression() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=2.2, regret=1.10),  # delta = -0.10 (< -0.05)
+        "early_mid": _metrics(mae=1.8, regret=0.90),
+        "late": _metrics(mae=1.8, regret=0.90),
+    }
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+
+    assert not verdict.passed
+    assert not verdict.segment_guardrails_passed
+    assert any("cold start regressed" in r for r in verdict.reasons)
+
+
+def test_historical_promotion_gate_fails_without_active_season_win() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=1.2, regret=0.50),  # won cold start (+0.50)
+        "early_mid": _metrics(mae=2.05, regret=1.05),  # -0.05
+        "late": _metrics(mae=2.05, regret=1.05),  # -0.05
+    }
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+
+    assert not verdict.passed
+    assert not verdict.segment_guardrails_passed
+    assert any("won 0 active in-season segments" in r for r in verdict.reasons)
 
 
 def test_metrics_by_season_window_splits_gameweeks() -> None:

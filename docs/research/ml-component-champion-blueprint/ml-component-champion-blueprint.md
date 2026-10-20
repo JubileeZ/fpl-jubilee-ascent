@@ -352,9 +352,13 @@ Stacked Candidate `ml_component_challenger` (`enable_mins_h1=True`, `enable_mins
 
 | Season | Role | Gameweeks | Combined $\Delta$ | Bootstrap $P$ | Segment Wins | Guardrails | Gate Verdict |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **2025-26** | `dev` | GW1–38 | **+0.3420 pts/GW** | **0.740** ($\ge 0.60$) | **1 / 3** | **PASS (All 5)** | **FAIL (Segment consistency)** |
+| **2025-26** | `dev` | GW1–38 | **+0.3420 pts/GW** | **0.740** ($\ge 0.60$) | **1 / 3** | **PASS (All 5)** | **FAIL (Catastrophic early-mid regression)** |
 
-- **Gate Result**: While the candidate generated a massive season-long gain of $+0.342$ pts/GW ($+13.0$ legal XI points over the season) with $74.0\%$ bootstrap significance and 100% green guardrails, it won only 1 of 3 seasonal segments (concentrating its edge in the second half while tying the cold-start first half). Per ADR 0047/ADR 0049 promotion canon, passing requires winning $\ge 2/3$ segments. Therefore, confirmation season was not triggered.
+- **Gate Result**: Evaluated under both ADR 0049 (binary $\ge 2/3$ segments) and ADR 0062 (Non-Catastrophic Segment Loss Guardrails). While the candidate produced a net $+0.342$ pts/GW ($+13.0$ legal XI points) with $74.0\%$ bootstrap significance and 100% green guardrails, empirical breakdown across seasonal segments revealed:
+  - `cold_start` (GW1–4): $\Delta = 0.000$ (PASS, fallback parity $\ge -0.05$)
+  - `early_mid` (GW5–19): $\Delta = -0.998$ pts/GW (**FAIL**, catastrophic regression $< -0.15$ pts/GW)
+  - `late` (GW20–38): $\Delta = +1.470$ pts/GW (PASS, active win)
+  The candidate dropped $\approx 15$ points to Champion in the 15-week middle segment due to within-season ML sample size ramp limitations before dominating the second half. Under ADR 0062 non-catastrophic guardrails, the candidate fails and confirmation season was not triggered. Champion `def_xg_shrink_challenger` stands unchanged.
 
 ---
 
