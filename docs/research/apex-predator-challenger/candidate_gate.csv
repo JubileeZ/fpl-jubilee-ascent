@@ -1,0 +1,3 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-10-21,dev,2025-26,,apex_predator_challenger,def_xg_shrink_challenger,1-38,True,0.839999999999975,0.0,2,0.99215,True,,registered
+2026-10-21,confirm,2024-25,,apex_predator_challenger,def_xg_shrink_challenger,1-38,False,-0.15276315789473216,0.0,1,0.3764,True,combined primary metric did not improve; bootstrap P(delta>0) 0.376 below 0.60; catastrophic regression in early_mid segment (-0.959 < -0.15),registered

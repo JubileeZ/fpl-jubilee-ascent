@@ -527,6 +527,12 @@ def _build_gw_panel(
     return feature_df
 
 
+def _col_series(df: pd.DataFrame, col: str) -> np.ndarray:
+    if col in df.columns:
+        return pd.to_numeric(df[col], errors="coerce").fillna(0.0).to_numpy()
+    return np.zeros(len(df), dtype=float)
+
+
 def build_causal_panel(
     history_df: pd.DataFrame,
     features_df: pd.DataFrame,
@@ -576,16 +582,16 @@ def build_causal_panel(
             gw_panel = _build_gw_panel(h_prior, gw_input, gw, positions)
 
             # Attach training targets
-            mins = pd.to_numeric(gw_rows["minutes"], errors="coerce").fillna(0.0).to_numpy()
-            starts = pd.to_numeric(gw_rows.get("starts", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            g = pd.to_numeric(gw_rows.get("goals_scored", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            xg = pd.to_numeric(gw_rows.get("expected_goals", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            a = pd.to_numeric(gw_rows.get("assists", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            xa = pd.to_numeric(gw_rows.get("expected_assists", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            bps = pd.to_numeric(gw_rows.get("bps", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            cs = pd.to_numeric(gw_rows.get("clean_sheets", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            gc = pd.to_numeric(gw_rows.get("goals_conceded", 0.0), errors="coerce").fillna(0.0).to_numpy()
-            saves = pd.to_numeric(gw_rows.get("saves", 0.0), errors="coerce").fillna(0.0).to_numpy()
+            mins = _col_series(gw_rows, "minutes")
+            starts = _col_series(gw_rows, "starts")
+            g = _col_series(gw_rows, "goals_scored")
+            xg = _col_series(gw_rows, "expected_goals")
+            a = _col_series(gw_rows, "assists")
+            xa = _col_series(gw_rows, "expected_assists")
+            bps = _col_series(gw_rows, "bps")
+            cs = _col_series(gw_rows, "clean_sheets")
+            gc = _col_series(gw_rows, "goals_conceded")
+            saves = _col_series(gw_rows, "saves")
 
             pos_arr = gw_panel["pos_gk"].to_numpy() * 1 + gw_panel["pos_def"].to_numpy() * 2 + gw_panel["pos_mid"].to_numpy() * 3 + gw_panel["pos_fwd"].to_numpy() * 4
             is_cs_pos = np.isin(pos_arr, (1, 2, 3)).astype(float)

@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Active map: none. Promotion gate refined per ADR 0062: binary segs >= 2/3 replaced by Non-Catastrophic Segment Loss Guardrails (cold-start parity >= -0.05, active loss >= -0.15, active win > 0). [Decoupled Minutes & Event Architecture with Decomposed Event Challenger #159](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159) completed; decision tickets #160–#165 closed. ML Component Champion Blueprint executed: zero-leakage Causal Panel Feature Engine (`models/ml_panel_features.py`) and Candidate `ml_component_challenger` built; dev gate +0.342 pts/GW boot P 0.740, but failed early_mid segment guardrail (-0.998 < -0.15; late won +1.470); Candidate Ledger updated (`revisit_after = 2027-10-21`); Champion `def_xg_shrink_challenger` stands. Prior Map #150 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional). Pending: 2026-27 GW6+ post-promotion check.
+Active map: none. Promotion gate refined per ADR 0062: binary segs >= 2/3 replaced by Non-Catastrophic Segment Loss Guardrails (cold-start parity >= -0.05, active loss >= -0.15, active win > 0). Composite ML Candidate `apex_predator_challenger` evaluated: passed dev season (+0.840 pts/GW, boot P 0.992, 2/3 segs); failed unseeded confirmation season (-0.153 pts/GW, boot P 0.376, 1/3 segs due to lack of prior-season pretraining in GW10-19); logged dead in Candidate Ledger (`revisit_after = 2027-10-21`). Prior ML Component Candidate `ml_component_challenger` logged dead. Champion `def_xg_shrink_challenger` (ADR 0055, provisional) stands. Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD

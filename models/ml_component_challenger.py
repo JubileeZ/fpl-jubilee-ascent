@@ -137,6 +137,8 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         enable_assists: bool = True,
         enable_defense: bool = False,
         enable_bonus: bool = False,
+        ramp_span: float = 4.0,
+        enable_congestion: bool = False,
     ) -> None:
         super().__init__()
         self.enable_mins_h1 = enable_mins_h1
@@ -146,8 +148,11 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         self.enable_assists = enable_assists
         self.enable_defense = enable_defense
         self.enable_bonus = enable_bonus
+        self.ramp_span = float(ramp_span)
+        self.enable_congestion = enable_congestion
 
         self._history_df = pd.DataFrame()
+        self._last_kickoff_by_player: dict[int, pd.Timestamp] = {}
 
     @property
     def name(self) -> str:
@@ -156,10 +161,24 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
     def fit(self, history_df: pd.DataFrame) -> None:
         super().fit(history_df)
         self._history_df = history_df
+        if self.enable_congestion and not history_df.empty and "kickoff_time" in history_df.columns:
+            valid = history_df.dropna(subset=["kickoff_time", "player_id"])
+            if not valid.empty:
+                times = pd.to_datetime(valid["kickoff_time"], utc=True, errors="coerce")
+                mask = times.notna()
+                if mask.any():
+                    self._last_kickoff_by_player = (
+                        times[mask].groupby(valid.loc[mask, "player_id"].astype(int)).max().to_dict()
+                    )
+                    return
+        self._last_kickoff_by_player = {}
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         if features_df.empty:
             return super().predict(features_df, horizon)
+
+        orig_index = features_df.index
+        features_df = features_df.reset_index(drop=True)
 
         target_gw = resolve_asof_target_gw(features_df, self._history_df)
 
@@ -168,7 +187,7 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         if target_gw < 4 or n_history_rows < 500:
             return super().predict(features_df, horizon)
 
-        w_ml = min(1.0, (target_gw - 3.0) / 4.0)
+        w_ml = min(1.0, max(0.0, (target_gw - 3.0) / self.ramp_span))
 
         # 2. Check for Oracle Minutes bypass (ADR 0054 / Ticket #161 / Ticket #165)
         has_external_xmins = "external_xmins" in features_df.columns and features_df["external_xmins"].notna().any()
@@ -204,8 +223,8 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
 
         if has_external_xmins:
             # Deterministic Oracle bypass
-            for i, row in champ_proj.iterrows():
-                ext = features_df.iloc[i].get("external_xmins")
+            for i, (_, row) in enumerate(features_df.iterrows()):
+                ext = row.get("external_xmins")
                 if pd.notna(ext):
                     p_st, p_sb, p_dn, st_m, sb_m = target_to_states(float(ext))
                     final_p_start[i] = p_st
@@ -231,6 +250,14 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
 
                 X_pr = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h1_cols].to_numpy()])
                 raw_logits = X_pr @ beta_h1
+                if self.enable_congestion and self._last_kickoff_by_player and "kickoff_time" in features_df.columns:
+                    ko_times = pd.to_datetime(features_df["kickoff_time"], utc=True, errors="coerce")
+                    pids = features_df["player_id"].astype(int).values
+                    for i_k, pid in enumerate(pids):
+                        if pid in self._last_kickoff_by_player and pd.notna(ko_times.iloc[i_k]):
+                            diff_days = (ko_times.iloc[i_k] - self._last_kickoff_by_player[pid]).total_seconds() / 86400.0
+                            if 0.0 < diff_days < 3.5:
+                                raw_logits[i_k] -= 0.20
                 raw_p_start = 1.0 / (1.0 + np.exp(-np.clip(raw_logits, -10.0, 10.0)))
 
                 # Mass preservation & horizon decay per gameweek
@@ -285,7 +312,7 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
                         final_p60_start[idx] = np.clip((final_start_m[idx] - 45.0) / 30.0, 0.50, 1.0)
 
             # Operational Hard DNP (ADR 0056)
-            for i, row in features_df.iterrows():
+            for i, (_, row) in enumerate(features_df.iterrows()):
                 is_imm = bool(row.get("is_immediate_next_gw", False))
                 has_snap = bool(row.get("has_availability_snapshot", False))
                 chance = _number(row, "chance_of_playing", 100.0)
@@ -300,11 +327,11 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
 
             # Reconcile expected minutes
             raw_xmins = final_p_start * final_start_m + final_p_sub * final_sub_m
-            for i, row in features_df.iterrows():
+            for i, (_, row) in enumerate(features_df.iterrows()):
                 final_xmins[i] = cap_projected_minutes(row, raw_xmins[i])
 
         # 6. --- M_events: 4-Group Scoring Models ---
-        out_df = champ_proj.copy()
+        out_df = champ_proj.copy().reset_index(drop=True)
         out_df["p_dnp"] = final_p_dnp
         out_df["p_start"] = final_p_start
         out_df["p_sub_in"] = final_p_sub
@@ -398,5 +425,6 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         component_cols = [c for c in out_df.columns if c.startswith("xp_")]
         out_df["projected_points"] = out_df[component_cols].sum(axis=1)
 
+        out_df.index = orig_index
         assert_projection_contract(out_df)
         return out_df
