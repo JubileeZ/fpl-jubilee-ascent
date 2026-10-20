@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Active map: none. [Decoupled Minutes & Event Architecture with Decomposed Event Challenger #159](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159) completed; all six child decision tickets #160–#165 closed, 2026-10-21. Ready for ML component candidate execution (`docs/research/ml-component-champion-blueprint/`). Prior Map #150 completed. Prior Map #143 completed. Prior Map #135 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
+Active map: none. [Decoupled Minutes & Event Architecture with Decomposed Event Challenger #159](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/159) completed; all six child decision tickets #160–#165 closed, 2026-10-21. ML Component Champion Blueprint executed: zero-leakage Causal Panel Feature Engine (`models/ml_panel_features.py`) and Candidate `ml_component_challenger` built; Tier 1 ($H_1, H_3$) and Tier 2 (Goals, LOO Assists) ablations completed; dev gate +0.342 pts/GW boot P 0.740, segs 1/3 (failed segment consistency); logged in Candidate Ledger; Champion `def_xg_shrink_challenger` stands. Prior Map #150 completed. Prior Map #143 completed. Prior Map #135 completed. Champion `def_xg_shrink_challenger` (ADR 0055, provisional), promoted 2026-10-01 over `club_def_prior_challenger` under ADR 0054 legal formation XI eval (dev +0.793, confirm +0.594). Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD

@@ -1,0 +1,5 @@
+variant,passed,delta_mae,cand_mae,champ_mae,bootstrap_p,delta_brier,cand_brier,champ_brier,delta_recall,cand_recall,champ_recall,delta_auc,cand_auc,champ_auc,cand_bias,champ_bias,reasons,elapsed_s
+mins_h1_ridge,True,0.5334,13.033,13.5664,0.9963,-0.0032,0.24485,0.24805,0.0005,0.7716,0.7711,0.0046,0.941,0.9364,0.2524,0.469,All criteria passed,301.6
+mins_h2_ridge,False,-0.0559,13.6223,13.5664,0.0,-0.0038,0.24426,0.24805,0.0001,0.7712,0.7711,-0.0002,0.9363,0.9364,0.8341,0.469,"Candidate MAE does not improve on Champion (13.622 vs 13.566, delta: -0.056); Bootstrap win probability 0.000 below required threshold 0.60",2449.53
+mins_h3_ridge,True,0.0533,13.5132,13.5664,1.0,0.0,0.24805,0.24805,0.0159,0.787,0.7711,-0.0001,0.9364,0.9364,0.6323,0.469,All criteria passed,305.07
+mins_all_ridge,True,0.5102,13.0562,13.5664,0.9142,-0.00579,0.24226,0.24805,0.0151,0.7862,0.7711,0.0037,0.9401,0.9364,0.8857,0.469,All criteria passed,301.93

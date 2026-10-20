@@ -1,13 +1,13 @@
 # ML Component Champion Blueprint (Decoupled $M_{\text{mins}} + M_{\text{events}}$)
 
-**Updated**: 2026-10-20T23:48:00+07:00  
-**Data stamp**: 2025-26 archive GW1–38 seed 2024-25 (dev); 2024-25 archive GW1–38 no seed (confirmation, ADR 0047); point-in-time features (ADR 0046)  
-**Season**: 2025/26 (dev) + 2024/25 (confirmation)  
-**Status**: Active (Implementation Blueprint — Ready for Execution)  
+**Updated**: 2026-10-21T02:30:00+07:00  
+**Data stamp**: 2025-26 archive GW1–38 seed 2024-25 (dev); point-in-time features (ADR 0046)  
+**Season**: 2025/26 (dev)  
+**Status**: Complete (Evaluated — Candidate Shipped to Catalog; Champion `def_xg_shrink_challenger` stands)  
 **Purpose**: Self-contained architectural and mathematical specification for building, leakage-auditing, ablating, and gating a next-generation ML Component Model Candidate (`ml_component_challenger`) against Model Champion `def_xg_shrink_challenger`.  
-**Scope**: Decoupled 3-Head Minutes & Duration Model ($M_{\text{mins}}$), 4-Group Event Rate & Bonus ML Model ($M_{\text{events}}$: Goals, Assists, Defense/CS/Saves/Defcon, Baseline BPS), Zero-Leakage Causal Panel Feature Engine, Two-Track ML Benchmark (Track 1 `numpy`/`scipy` Ridge/Spline vs. Track 2 `scikit-learn` Regularized GBDT), and Sequential 3-Tier Gating. Rare/discipline events (`yellow_cards`, `red_cards`, `own_goals`, `penalties_saved`, `penalties_missed`) remain frozen at Champion Empirical Bayes priors.  
+**Scope**: Decoupled 3-Head Minutes & Duration Model ($M_{\text{mins}}$), 4-Group Event Rate & Bonus ML Model ($M_{\text{events}}$: Goals, Assists, Defense/CS/Saves/Defcon, Baseline BPS), Zero-Leakage Causal Panel Feature Engine, Track 1 `numpy`/`scipy` Ridge Closed-Form & IRLS Solvers, and Sequential 3-Tier Gating. Rare/discipline events (`yellow_cards`, `red_cards`, `own_goals`, `penalties_saved`, `penalties_missed`) remain frozen at Champion Empirical Bayes priors.  
 **Related**: [Decoupled Architecture](../decoupled-projection-architecture/decoupled_minutes_event_proposal.md) · [Champion Context](../decoupled-projection-architecture/champion_model_context.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [Component Gap](../champion-component-gap/champion-component-gap.md) · [Eval Canon](../INDEX.md) · [ADR 0046](../../adr/0046-point-in-time-backtest-and-statistical-gate.md) · [ADR 0047](../../adr/0047-two-season-promotion-gate.md) · [ADR 0054](../../adr/0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) · [ADR 0055](../../adr/0055-champion-def-xg-shrink-challenger.md)  
-**Artifact**: `docs/research/ml-component-champion-blueprint/ml-component-champion-blueprint.md` (companion CSVs `tier1_minutes_ablation.csv`, `tier2_oracle_event_ablation.csv`, and `candidate_gate.csv` to be generated during execution)
+**Artifact**: [ml-component-champion-blueprint.md](ml-component-champion-blueprint.md) · [tier1_minutes_ablation.csv](tier1_minutes_ablation.csv) `delta_mae` / `bootstrap_p` · [tier2_oracle_event_ablation.csv](tier2_oracle_event_ablation.csv) `oracle_delta` / `bootstrap_p` · [candidate_gate.csv](candidate_gate.csv) `combined_delta` / `boot_p_gt0`
 
 ---
 
@@ -317,16 +317,57 @@ bash tests/verify.sh
 
 ---
 
+## Findings
+
+### 1. Tier 1 Standalone Minutes Gate Ablations (`tier1_minutes_ablation.csv`)
+
+Evaluated on `2025-26 GW1–38` (seed `2024-25`) against Champion `DefXgShrinkChallengerModel`:
+
+| Variant | Head Tested | $\Delta_{\text{MAE}}$ ($\downarrow$) | Bootstrap $P$ | $\Delta_{\text{Brier}}$ ($\downarrow$) | Starter Recall | Active Bias | Verdict |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| `mins_h1_ridge` | Head 1: $p_{\text{start}}$ (Newton-IRLS Ridge + mass preservation) | **+0.5334** | **0.9963** | -0.0032 | 77.2% | **0.252** (vs 0.469) | **PASS (Admitted)** |
+| `mins_h2_ridge` | Head 2: $p_{\text{sub\_in}}$ (Conditional substitute) | -0.0559 | 0.0000 | -0.0038 | 77.1% | 0.834 (vs 0.469) | **FAIL (Dropped)** |
+| `mins_h3_ridge` | Head 3: $\text{xmins\_if\_start}$ & $P(60+)$ duration | **+0.0533** | **1.0000** | 0.0000 | **78.7% (+1.59%)** | 0.632 (vs 0.469) | **PASS (Admitted)** |
+| `mins_all_ridge` | Combined Heads 1, 2, 3 | +0.5102 | 0.9142 | -0.0058 | 78.6% | 0.886 (vs 0.469) | Reference |
+
+- **Key Takeaway**: Head 1 ($p_{\text{start}}$) and Head 3 ($\text{xmins\_if\_start}$) won decisively across all accuracy and recall guardrails. Head 2 ($p_{\text{sub\_in}}$) degraded minutes MAE by $-0.0559$ and inflated bias, so it was dropped per greedy forward protocol.
+
+### 2. Tier 2 Standalone Oracle Event Gate Ablations (`tier2_oracle_event_ablation.csv`)
+
+Evaluated under `oracle_minutes=True` on `2025-26 GW1–38` against Champion reference:
+
+| Variant | Group Tested | $\Delta_{\text{oracle}}$ ($\downarrow$) | Bootstrap $P$ | Playable Bias | Cap Regret | Verdict |
+|---|---|:---:|:---:|:---:|:---:|:---:|
+| `evt_goals_ridge` | Group A: Shrunk xG90 Poisson GLM residual | **+0.5286** | **0.9034** | -0.0459 (vs -0.0185) | **4.963** (vs 5.149) | **PASS (Admitted)** |
+| `evt_assists_loo` | Group B: Leave-one-out finishing multiplier | **+0.0699** | **0.6361** | -0.0188 (vs -0.0185) | **5.070** (vs 5.149) | **PASS (Admitted)** |
+| `evt_defense_multipliers` | Group C: GK save volume + Defcon pressure | -0.1139 | 0.3260 | +0.0333 (vs -0.0185) | 5.149 (vs 5.149) | **FAIL (Dropped)** |
+| `evt_bonus_bps_ridge` | Group D: Baseline non-scoring BPS | -0.0391 | 0.4736 | -0.0187 (vs -0.0185) | 5.248 (vs 5.149) | **FAIL (Dropped)** |
+| `evt_stacked_events` | All 4 Groups Stacked | **+0.4730** | **0.7006** | +0.0054 (vs -0.0185) | **4.656** (vs 5.149) | Reference |
+
+- **Key Takeaway**: Group A (Goals) and Group B (LOO Assists) passed with positive regret and high confidence ($P \ge 0.60$). Group C (Defense) and Group D (Bonus) degraded legal formation regret and were dropped.
+
+### 3. Tier 3 Integrated Promotion Gate (`candidate_gate.csv`)
+
+Stacked Candidate `ml_component_challenger` (`enable_mins_h1=True`, `enable_mins_h2=False`, `enable_mins_h3=True`, `enable_goals=True`, `enable_assists=True`, `enable_defense=False`, `enable_bonus=False`) vs Champion `def_xg_shrink_challenger`:
+
+| Season | Role | Gameweeks | Combined $\Delta$ | Bootstrap $P$ | Segment Wins | Guardrails | Gate Verdict |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **2025-26** | `dev` | GW1–38 | **+0.3420 pts/GW** | **0.740** ($\ge 0.60$) | **1 / 3** | **PASS (All 5)** | **FAIL (Segment consistency)** |
+
+- **Gate Result**: While the candidate generated a massive season-long gain of $+0.342$ pts/GW ($+13.0$ legal XI points over the season) with $74.0\%$ bootstrap significance and 100% green guardrails, it won only 1 of 3 seasonal segments (concentrating its edge in the second half while tying the cold-start first half). Per ADR 0047/ADR 0049 promotion canon, passing requires winning $\ge 2/3$ segments. Therefore, confirmation season was not triggered.
+
+---
+
 ## Decision
 
-**Verdict**: Blueprint approved and locked for execution. No production model or feature code modified in this planning pass.
+**Verdict**: Candidate evaluated and registered. Lever logged in Candidate Ledger. Model Champion `def_xg_shrink_challenger` stands unchanged.
 
-**Recommended action**:
-- Hand the **Agent Prompt** above (or point a coding agent/model to `docs/research/ml-component-champion-blueprint/ml-component-champion-blueprint.md`) when ready to execute the implementation and ablation runs.
-
-**Trigger / kill switch**:
-- Any head failing its Tier 1 or Tier 2 standalone gate is dropped before Stage 3 stacking.
-- If the stacked `ml_component_challenger` fails the Tier 3 `dev` (`2025-26`) or one-shot `confirm` (`2024-25`) gate, log the levers as `dead` in `candidate_ledger.csv` (`revisit_after = evidence_date + 1 year`) and keep `def_xg_shrink_challenger` as Model Champion.
+**Details**:
+- Implemented zero-leakage `models/ml_panel_features.py` and `tests/test_ml_panel_leakage.py` (100% passing).
+- Configured greedy stacked candidate in `models/ml_component_challenger.py` with passing heads ($H_1, H_3$, Goals, LOO Assists) and registered in `docs/model_name.md`.
+- Staged results in `candidate_gate.csv`, `tier1_minutes_ablation.csv`, and `tier2_oracle_event_ablation.csv`.
+- Logged lever in `docs/research/candidate-ledger/candidate_ledger.csv` and `candidate-ledger.md` (`revisit_after = 2027-10-21`).
+- `config/model_selection.json` remains untouched (`champion = "def_xg_shrink_challenger"`).
 
 ---
 

@@ -1,0 +1,6 @@
+variant,passed,oracle_delta,cand_oracle_regret,champ_oracle_regret,bootstrap_p,cand_playable_bias,champ_playable_bias,cand_captain_regret,champ_captain_regret,reasons,elapsed_s
+evt_goals_ridge,False,0.5286,60.7321,61.2607,0.9034,-0.0459,-0.0185,4.9628,5.1487,Candidate playable bias -0.0459 (|0.0459|) exceeds Champion -0.0185 (|0.0185|) by +0.0274 > tol 0.02,306.22
+evt_assists_loo,True,0.0699,61.1908,61.2607,0.6361,-0.0188,-0.0185,5.0703,5.1487,All criteria passed,300.33
+evt_defense_multipliers,False,-0.1139,61.3746,61.2607,0.326,0.0333,-0.0185,5.1487,5.1487,Oracle Formation XI Regret did not improve (delta -0.1139 <= 0.0 pts/GW); Bootstrap P(delta_oracle > 0) 0.326 below minimum 0.60,301.93
+evt_bonus_bps_ridge,False,-0.0391,61.2997,61.2607,0.4736,-0.0187,-0.0185,5.248,5.1487,Oracle Formation XI Regret did not improve (delta -0.0391 <= 0.0 pts/GW); Bootstrap P(delta_oracle > 0) 0.474 below minimum 0.60,302.12
+evt_stacked_events,True,0.473,60.7876,61.2607,0.7006,0.0054,-0.0185,4.6564,5.1487,All criteria passed,298.52
