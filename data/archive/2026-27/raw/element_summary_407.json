@@ -91,7 +91,7 @@
       "finished": false,
       "minutes": 0,
       "provisional_start_time": false,
-      "kickoff_time": "2026-12-02T20:00:00Z",
+      "kickoff_time": "2026-12-02T19:30:00Z",
       "event_name": "Gameweek 13",
       "is_home": true,
       "difficulty": 3
@@ -107,7 +107,7 @@
       "finished": false,
       "minutes": 0,
       "provisional_start_time": false,
-      "kickoff_time": "2026-12-05T15:00:00Z",
+      "kickoff_time": "2026-12-05T20:00:00Z",
       "event_name": "Gameweek 14",
       "is_home": false,
       "difficulty": 3
@@ -123,7 +123,7 @@
       "finished": false,
       "minutes": 0,
       "provisional_start_time": false,
-      "kickoff_time": "2026-12-12T15:00:00Z",
+      "kickoff_time": "2026-12-12T17:30:00Z",
       "event_name": "Gameweek 15",
       "is_home": true,
       "difficulty": 4
