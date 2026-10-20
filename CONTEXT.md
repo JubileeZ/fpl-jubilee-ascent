@@ -337,6 +337,18 @@ _Avoid_: Tackles, defensive stat, work rate, raw foreign defensive actions
 A statistical or regression model mapping projected Bonus Points System (BPS) totals from event components into expected bonus points (0, 1, 2, or 3).
 _Avoid_: Bonus guess, bonus score
 
+**Baseline Non-Scoring BPS**:
+Player structural Bonus Points System accumulation per 90 minutes excluding discrete scoring events ($\text{bps} - (24G + 12A + 12\text{CS} + 2\text{Saves})$), capturing pass completion, recoveries, dribbles, key passes, and Opta `influence`. Shrunk toward position mean and added to projected scoring-event BPS (`xbps`) prior to Plackett-Luce bonus allocation.
+_Avoid_: Raw total BPS as baseline, double-counting goal/assist/CS BPS, unshrunk cameo BPS/90
+
+**Causal Panel Feature Engine**:
+Single expanding-window feature builder computing historical training rows ($g < \text{target\_gw}$) and target prediction rows ($g \ge \text{target\_gw}$) strictly from pre-fixture performance rows (`gameweek_id < g` and `kickoff_time < deadline_g`) in memory without external file reads or terminal player metadata. Guarantees zero train/test skew and zero lookahead leakage.
+_Avoid_: Separate training vs. inference feature formulas, reading row $g$ market/transfer columns at $g$, pooling test rows into standardization statistics
+
+**Offset Residual Multiplier**:
+Component ML formulation where the Feature Contract's Empirical Bayes shrunk rate serves as the base log-offset prior ($\log \mu_{\text{base}}$) and the ML model predicts a bounded, pool-centered multiplier $\exp(f(X)) \in [c_{\min}, c_{\max}]$ (mean $1.00$ across the active Gameweek pool) on top of that prior.
+_Avoid_: Direct unshrunk rate regression, uncentered multipliers that drift global signed bias, relaxing defender xG shrinkage below $K=2400$
+
 **Two-Stage Empirical Bayes GLM**:
 An event-level regression fitting a league-wide baseline GLM with a log-minutes offset in Stage 1, and applying Empirical Bayes shrinkage to player-level residuals based on fixture sample size in Stage 2.
 _Avoid_: Per-player regression, unregularized OLS
