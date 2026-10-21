@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phases 1-5 complete**
 
-Active map: none. Promotion gate refined per ADR 0062: binary segs >= 2/3 replaced by Non-Catastrophic Segment Loss Guardrails (cold-start parity >= -0.05, active loss >= -0.15, active win > 0). Composite ML Candidate `apex_predator_challenger` evaluated: passed dev season (+0.840 pts/GW, boot P 0.992, 2/3 segs); failed unseeded confirmation season (-0.153 pts/GW, boot P 0.376, 1/3 segs due to lack of prior-season pretraining in GW10-19); logged dead in Candidate Ledger (`revisit_after = 2027-10-21`). Prior ML Component Candidate `ml_component_challenger` logged dead. Champion `def_xg_shrink_challenger` (ADR 0055, provisional) stands. Pending: 2026-27 GW6+ post-promotion check.
+Active map: none. Promotion gate passed per ADR 0062/0063: `adaptive_causal_challenger` passed dev season (+0.736 pts/GW, boot P 0.992, 1/3 segs) and unseeded confirmation season (+0.226 pts/GW, boot P 0.656, 1/3 segs, all guardrails green). Promoted to Champion replacing `def_xg_shrink_challenger` (ADR 0063 accepted). Pending: 2026-27 GW6+ post-promotion check.
 
 ```mermaid
 flowchart TD

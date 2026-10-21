@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "champion": "def_xg_shrink_challenger",
+  "champion": "adaptive_causal_challenger",
   "candidates": [
-    "club_def_prior_challenger",
-    "learned_start_challenger"
+    "def_xg_shrink_challenger",
+    "club_def_prior_challenger"
   ],
   "promotion_status": "provisional"
 }

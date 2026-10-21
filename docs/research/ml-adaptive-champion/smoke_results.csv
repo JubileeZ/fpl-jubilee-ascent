@@ -1,0 +1,5 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-10-21,dev,2025-26,lane1,lane1_late_gw20,def_xg_shrink_challenger,1-38,True,0.7359210526315536,0.0,1,0.9918,True,,.tmp/agent/explore-candidate/lane1/prototypes.py
+2026-10-21,dev,2025-26,lane1,lane1_late_gw16,def_xg_shrink_challenger,1-38,True,0.7359210526315536,0.0,1,0.9918,True,,.tmp/agent/explore-candidate/lane1/prototypes.py
+2026-10-21,dev,2025-26,lane1,lane1_mins_ast_gw10,def_xg_shrink_challenger,1-38,False,0.00539473684210634,0.0,1,0.5006,True,bootstrap P(delta>0) 0.501 below 0.60; catastrophic regression in early_mid segment (-0.245 < -0.15),.tmp/agent/explore-candidate/lane1/prototypes.py
+2026-10-21,dev,2025-26,lane1,lane1_mins_ast_gw15,def_xg_shrink_challenger,1-38,False,0.048815789473678706,0.0,1,0.55285,True,bootstrap P(delta>0) 0.553 below 0.60,.tmp/agent/explore-candidate/lane1/prototypes.py
