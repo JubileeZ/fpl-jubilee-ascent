@@ -1,0 +1,13 @@
+{
+  "captured_at": "2026-10-22T01:09:17.913470Z",
+  "content_hash": "434a15f9bae793a24cd6f284c5cb4d7611fc40f7b9f2d463bdaf5b43f66d6786",
+  "deadline": "2026-10-23T17:30:00Z",
+  "schema_version": "1",
+  "season": "2026-27",
+  "snapshot_id": "2026-27-GW8-20261022T010917Z-434a15f9bae7",
+  "source_endpoint_versions": {
+    "bootstrap-static": "public",
+    "fixtures": "public"
+  },
+  "target_gameweek": 8
+}
