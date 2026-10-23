@@ -1,0 +1,100 @@
+{
+  "repository": "JubileeZ/fpl-jubilee-ascent",
+  "publication_status": "published_verified",
+  "map": {
+    "title": "[Wayfinder Map] Promotion Gate & Evaluation Rigor Overhaul (ADR 0064)",
+    "labels": [
+      "wayfinder:map"
+    ],
+    "number": 166,
+    "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166",
+    "state": "open",
+    "body": "## Destination\n\nOverhaul the Historical Promotion Gate (`backtesting/promotion.py`, `backtesting/metrics.py`, `backtesting/walkforward.py`, and `models/ml_panel_features.py`) to eliminate unseeded confirmation regime asymmetry, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking. Complete when architectural decisions are locked, ADR 0064 is accepted, and historical candidates (`adaptive_causal_challenger`, `bounded_causal_challenger`, `apex_predator_challenger`) are re-evaluated under the reformed gate without test regressions.\n\n## Notes\n\nDomain: FPL scoring models, statistical backtesting, and combinatorial evaluation.\nConsult Wayfinder, antislop, domain-modeling, and grilling.\nP1/P2/P3 denote priority/impact triage.\nOpen children are decision questions, not automatically approved changes.\nReference evidence and proposals stored in `docs/research/backtest-gate-reform/`.\n\n## Decisions so far\n\n<!-- the index: one line per closed ticket, enough to judge relevance, then zoom the link for the detail the ticket holds -->\n\n## Not yet specified\n\n- Empirical performance of new adaptive ML candidates under the warm-seeded gate in 2026/27 operations\n- Multi-period MILP transfer plan walkforward ranking for scoring model selection\n\n## Out of scope\n\n- Production deployment of unvalidated models\n- Breaking existing BaseModel or CLI solver contracts\n- Dead levers from Candidate Ledger (club 11-man mass conservation, in-season ridge G/A refits, unseeded defender K relaxation, raw Poisson multipliers)\n- Replacing single-GW regret entirely with 38-GW global MILP paths in bootstrap\n"
+  },
+  "tickets": [
+    {
+      "key": "t1_warm_seed_confirmation",
+      "title": "[P1] How should the 2023-24 Season Archive be provisioned and wired as a warm confirmation seed?",
+      "labels": [
+        "wayfinder:task"
+      ],
+      "body": "## Question\n\nHow should the 2023-24 season archive (`data/archive/2023-24`) be reconstructed and wired into `backtesting/walkforward.py` and `backtesting/promotion.py` so the 2024-25 Confirmation Season runs with a 1-season warm seed, matching the 2025-26 Dev Season and live production regimes?\n\n## Observed evidence & proposal\n\nCurrently, Confirmation evaluates 2024-25 with zero historical prior seed (`seed_processed_dir=None`). In live operation and in the 2025-26 Dev Season, models have 38 matches of prior-season history ($N_{\\text{prior}}=1$). Unseeded confirmation imposes an artificial cold-start regime ($N_{\\text{prior}}=0$) that never occurs in deployment, discriminating against adaptive estimators.\nProposed implementation:\n1. Ingest/snapshot 2023-24 season processed archive to `data/archive/2023-24/processed` via `commands/snapshot_season.py`.\n2. Update `backtesting/walkforward.py` and `commands/evaluate_model_promotion.py` so confirmation defaults to `seed_season=\"2023-24\"`.\n3. Verify `player_performances.parquet` and `fixtures.parquet` alignment across 2023-24 and 2024-25.\n\n## Decision acceptance\n\n1. `data/archive/2023-24/processed` exists with verified schemas matching Season Archive contracts.\n2. Walkforward backtest on 2024-25 runs with warm seed `data/archive/2023-24/processed` without data leakage.\n3. All existing walkforward tests pass cleanly.\n",
+      "number": 167,
+      "id": "I_kwDOSrhg8c8AAAABZdp_RQ",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/167",
+      "state": "open"
+    },
+    {
+      "key": "t2_short_panel_shrinkage",
+      "title": "[P1] How should short-panel priors and Neff sample-size shrinkage be regularized in ml_panel_features.py?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should short-panel Nickell bias ($\\mathcal{O}(1/T)$) and unseeded missingness in `models/ml_panel_features.py` be regularized, and how should hard gameweek activation ($g \\ge 20$) be replaced with continuous effective sample size ($N_{\\text{eff}}$) shrinkage?\n\n## Observed evidence & proposal\n\nIn `bounded_causal_challenger`, unseeded within-player fixed effects and lagged form estimators inverted signs on small samples ($T < 10$), collapsing by -5.775 pts/GW in early-mid 2024-25. Additionally, `adaptive_causal_challenger` bypassed this by hard-coding a 100% Champion fallback for GW1\u201319.\nProposed implementation:\n1. Implement Empirical Bayes / positional price-tier prior shrinkage (GW1 starting cost) in `CausalFeatureScaler` when player observations are sparse ($T < 15$) or `seed_archive=None`.\n2. Replace discrete GW activation thresholds with continuous sample-size shrinkage:\n   $$\\alpha_g = \\text{clip}\\left(\\frac{N_{\\text{eff}, g} - N_{\\min}}{N_{\\text{full}} - N_{\\min}}, 0.0, 1.0\\right)$$\n   where $N_{\\text{eff}, g} = 0.5 N_{\\text{seed}} + N_{\\text{in\\_season}, <g}$, $N_{\\min} = 3500$, $N_{\\text{full}} = 7500$.\n3. Verify shrinkage behavior on early-gameweek synthetic fixtures and live player pools.\n\n## Decision acceptance\n\n1. Features on $T < 10$ shrink stably to positional price-tier baselines rather than collapsing or producing extreme z-scores.\n2. Continuous $N_{\\text{eff}}$ blending yields smooth weight transitions without step-activation artifacts.\n3. Zero leakage in `tests/test_ml_panel_leakage.py`.\n",
+      "number": 168,
+      "id": "I_kwDOSrhg8c8AAAABZdqC1w",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/168",
+      "state": "open"
+    },
+    {
+      "key": "t3_constrained_legal_xi",
+      "title": "[P1] How should Legal Formation XI enforce club quotas, starting budget caps, and squad churn guardrails?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should `best_legal_xi` in `backtesting/metrics.py` be constrained to mirror realistic FPL constraints (3-players-per-club limit, starting XI budget cap, and deterministic tie-breaking), and how should Top-15 squad churn be bounded?\n\n## Observed evidence & proposal\n\nCurrent `best_legal_xi` optimizes over 8 formations without budget caps or team limits, selecting all premium assets simultaneously and ignoring mid-price value efficiency. Furthermore, wildly fluctuating top-11 selections week-to-week incur no penalty in single-week regret but degrade rolling MILP transfer plans with heavy hit costs.\nProposed implementation:\n1. Upgrade `best_legal_xi` to `select_legal_formation_xi`:\n   - Enforce $\\max 3$ players per club.\n   - Optional starting XI budget cap (default $B_{\\text{XI}} = 835.0$, corresponding to \u00a383.5m in FPL 0.1m units).\n   - Deterministic sort key: `[pred_col DESC, now_cost ASC, player_id ASC]`.\n2. Implement `top_15_squad_churn` metric measuring weekly turnover in the model's top-15 budget-feasible squad:\n   $$\\text{Churn}_g = 15 - |\\mathcal{S}_g \\cap \\mathcal{S}_{g-1}|$$\n   with guardrail $\\overline{\\text{Churn}}_{\\text{cand}} \\le \\overline{\\text{Churn}}_{\\text{champ}} + 0.50$ players/GW.\n\n## Decision acceptance\n\n1. Lineups strictly respect $\\le 3$ players per team and $\\le \u00a383.5\\text{m}$ cost.\n2. Lineup selection is 100% deterministic on tied projection values.\n3. Churn guardrail metric correctly penalizes high-turnover models.\n4. Existing metric tests pass or update cleanly to the constrained signature.\n",
+      "number": 169,
+      "id": "I_kwDOSrhg8c8AAAABZdqHHQ",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/169",
+      "state": "open"
+    },
+    {
+      "key": "t4_exogenous_playable_pool",
+      "title": "[P1] How should exogenous playable pool masking and active-window guardrails be structured?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should `compute_playable_pool_metrics` and guardrail evaluations in `backtesting/promotion.py` prevent candidate-induced sample shifts and eliminate dormant fallback error dilution?\n\n## Observed evidence & proposal\n\nCurrently, `playable` pool merges candidate predictions `(merged[\"cand_xp\"] >= 2.0)`, meaning a candidate predicting high on fringe players inflates its own denominator and alters the evaluation set. Furthermore, evaluating guardrails across all 38 GWs allows dormant 19-GW fallback wrappers (`adaptive_causal_challenger`) to dilute active-window errors by 50%.\nProposed implementation:\n1. Anchor Playable Pool mask strictly to model-independent criteria:\n   $$\\mathcal{M}_{i,g} = (\\text{Mins}_{i,g} \\ge 30) \\lor (\\hat{y}^{\\text{champ}}_{i,g} \\ge 2.0)$$\n2. Compute all 5 safety guardrails (xMins MAE, Bias, Rank correlation, Captaincy Regret, Playable MAE/Bias) across both full season (38 GWs) and active gameweeks:\n   $$\\mathcal{G}_{\\text{active}} = \\{g : \\max_i |\\hat{y}^{\\text{cand}}_{i,g} - \\hat{y}^{\\text{champ}}_{i,g}| > 10^{-6}\\}$$\n3. Require both full-season and active-window guardrails to pass.\n\n## Decision acceptance\n\n1. Playable pool row counts are bit-for-bit identical between Champion and Candidate across all gameweeks.\n2. Active-window guardrail evaluation flags regressions in active weeks even if full-season average is diluted.\n3. Tests in `tests/test_promotion.py` verify identical row counts and active-window enforcement.\n",
+      "number": 170,
+      "id": "I_kwDOSrhg8c8AAAABZdqKHw",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/170",
+      "state": "open"
+    },
+    {
+      "key": "t5_non_circular_bootstrap",
+      "title": "[P1] How should non-wrapping moving block bootstrap (L=5) and pooled 2-season gates be formulated?",
+      "labels": [
+        "wayfinder:prototype"
+      ],
+      "body": "## Question\n\nHow should `block_bootstrap_win_probability` in `backtesting/promotion.py` eliminate circular modulo wrapping (% n) and final-block truncation, increase block length to span fixture swings (L=5), and formulate a pooled 2-season stratified test?\n\n## Observed evidence & proposal\n\nCurrent circular block bootstrap wraps GW38 into GW1 (`% n`), stitching late-season high-sample weeks to cold-start zeros, while `[:, :n]` truncates the 13th block to length 2 when $n=38, L=3$. Moreover, $P \\ge 0.60$ on a single season has a high one-sided Type I error rate ($\\alpha \\approx 0.40$).\nProposed implementation:\n1. Implement non-wrapping Moving Block Bootstrap restricting start indices to $0 \\le s \\le n - \\text{block}$.\n2. Increase default block length from $L=3$ to $L=5$ to match 4\u20136 week Premier League fixture swings.\n3. Restrict bootstrap resampling to active gameweeks $\\mathcal{G}_{\\text{active}}$ when candidate contains dormant fallback weeks.\n4. Introduce Pooled 2-Season Stratified Bootstrap Gate:\n   - Dev season ($N \\le 38$): $P_{\\text{dev}}(\\bar{\\Delta}^* > 0) \\ge 0.75$\n   - Confirmation season ($N \\le 38$, warm-seeded): $P_{\\text{conf}}(\\bar{\\Delta}^* > 0) \\ge 0.65$\n   - Pooled 2-season stratified ($N \\le 76$): $P_{\\text{pooled}}(\\bar{\\Delta}^* > 0) \\ge 0.85$\n\n## Decision acceptance\n\n1. Block indices never wrap around GW38 to GW1.\n2. Resampling across dormant weeks is prevented.\n3. Pooled stratified bootstrap correctly draws blocks within each season independently and evaluates the combined sample.\n4. Unit tests verify non-wrapping index ranges and statistical properties.\n",
+      "number": 171,
+      "id": "I_kwDOSrhg8c8AAAABZdqNjA",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/171",
+      "state": "open"
+    },
+    {
+      "key": "t6_sqrt_ns_segment_guardrails",
+      "title": "[P2] How should seasonal segment loss guardrails be scaled by sqrt(ns) sample sizes?",
+      "labels": [
+        "wayfinder:grilling"
+      ],
+      "body": "## Question\n\nHow should ADR 0062 segment regression floors be calibrated across asymmetrical sample sizes ($n=4$ cold-start vs $n=15$ early-mid vs $n=19$ late) to maintain uniform statistical stringency?\n\n## Observed evidence & proposal\n\nUnder ADR 0062, requiring $\\Delta_{\\text{cold\\_start}} \\ge -0.05$ pts/GW over $n=4$ games ($\\text{SE} \\approx 1.10$ pts/GW) corresponds to $0.045 \\times \\text{SE}$\u2014virtually zero tolerance, forcing 100% Champion cloning in GW1\u20134. Conversely, the $-0.15$ floor on early-mid ($n=15$, $\\text{SE} \\approx 0.57$) allows $0.26 \\times \\text{SE}$.\nProposed calibration (calibrated to $\\approx -0.25 \\times \\text{SE}_s$ or max cumulative loss):\n- `cold_start` ($n=4$): $\\Delta_{\\text{cold\\_start}} \\ge -0.25$ pts/GW (max $-1.0$ cumulative pt).\n- `early_mid` ($n=15$): $\\Delta_{\\text{early\\_mid}} \\ge -0.15$ pts/GW (max $-2.25$ cumulative pts).\n- `late` ($n=19$): $\\Delta_{\\text{late}} \\ge -0.13$ pts/GW (max $-2.47$ cumulative pts).\n\n## Decision acceptance\n\n1. Segment tolerance floors maintain consistent statistical confidence intervals across all 3 segment windows.\n2. Eliminates artificial requirement for 100% Champion cloning in GW1\u20134 while preventing catastrophic failure.\n3. Documented in ADR 0064 and verified in `tests/test_promotion.py`.\n",
+      "number": 172,
+      "id": "I_kwDOSrhg8c8AAAABZdqRSg",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/172",
+      "state": "open"
+    },
+    {
+      "key": "t7_verification_adr0064",
+      "title": "[P2] What verification suite, candidate re-evaluations, and ADR 0064 validate the reformed gate?",
+      "labels": [
+        "wayfinder:task"
+      ],
+      "body": "## Question\n\nWhat end-to-end integration suite, candidate re-evaluations, and architecture decision record (ADR 0064) prove the reformed promotion gate operates robustly without regression?\n\n## Observed evidence & proposal\n\nThe reformed gate touches multiple core backtesting and model modules. Full system verification requires:\n1. Re-running the 3 historical cases under the reformed gate:\n   - `adaptive_causal_challenger` vs `def_xg_shrink_challenger`\n   - `bounded_causal_challenger` vs `adaptive_causal_challenger`\n   - `apex_predator_challenger` vs `adaptive_causal_challenger`\n2. Verifying that:\n   - Unit test suite passes (`uv run pytest tests/backtesting/ -v`).\n   - Full test suite passes (`uv run pytest`).\n   - Linter and gate checks pass (`uv run ruff check .` and `bash tests/verify.sh`).\n3. Drafting ADR 0064: *Warm-Seeded Confirmation, Active-Window Guardrails, and Non-Wrapping Block Bootstrap*.\n4. Updating `ROADMAP.md` and `docs/agents/current-state.md`.\n\n## Decision acceptance\n\n1. Historical candidates re-evaluated and results logged to `docs/research/backtest-gate-reform/`.\n2. ADR 0064 created and accepted.\n3. 100% of test suite and verification gates pass.\n",
+      "number": 173,
+      "id": "I_kwDOSrhg8c8AAAABZdqVNA",
+      "url": "https://github.com/JubileeZ/fpl-jubilee-ascent/issues/173",
+      "state": "open"
+    }
+  ]
+}

@@ -15,9 +15,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Phases 1-5 complete**
+## Current Project Status: **Phase 6 In Progress**
 
-Active map: none. Promotion gate passed per ADR 0062/0063: `adaptive_causal_challenger` passed dev season (+0.736 pts/GW, boot P 0.992, 1/3 segs) and unseeded confirmation season (+0.226 pts/GW, boot P 0.656, 1/3 segs, all guardrails green). Promoted to Champion replacing `def_xg_shrink_challenger` (ADR 0063 accepted). Pending: 2026-27 GW6+ post-promotion check.
+Active map: [Promotion Gate & Evaluation Rigor Overhaul (ADR 0064) #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166). Resolving 4 structural distortions identified in quantitative audit: unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking across 7 decision tickets (#167–#173).
 
 ```mermaid
 flowchart TD
@@ -25,11 +25,13 @@ flowchart TD
     P2 --> P3["Phase 3: Modeling & Backtesting ✅"]
     P3 --> P4["Phase 4: Solver Vendoring & Execution ✅"]
     P4 --> P5["Phase 5: New-Season Readiness ✅"]
+    P5 --> P6["Phase 6: Gate & Evaluation Rigor ⏳"]
     style P1 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P2 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P3 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P4 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P5 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
+    style P6 fill:#d97706,stroke:#92400e,stroke-width:2px,color:#fff
 ```
 
 ---
@@ -59,6 +61,19 @@ Vendored MILP solver, multi-period transfer optimization wrapper, and top-picks 
 ### ✅ Phase 5: New-Season Readiness (Completed)
 
 Prior-season seed component model, Cold-Start, long-format Feature Contract, Modified FDR, CLI reports, Champion/solver tuning. Issues #75–#87 closed. Design: `docs/adr/0003`. Vocabulary: `CONTEXT.md`.
+
+---
+
+### ⏳ Phase 6: Promotion Gate & Evaluation Rigor Overhaul (Active Map #166)
+
+Re-architect Historical Promotion Gate (`backtesting/promotion.py`, `backtesting/metrics.py`, `backtesting/walkforward.py`, `models/ml_panel_features.py`) under ADR 0064:
+- Ingest and wire 2023-24 warm confirmation seed archive ([#167](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/167)).
+- Short-panel Empirical Bayes priors & continuous $N_{\text{eff}}$ ML shrinkage ([#168](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/168)).
+- Constrained Legal Formation XI (£83.5m budget cap, 3-per-club max, deterministic tie-breaking) and squad churn guardrail ([#169](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/169)).
+- Exogenous Playable Pool mask & Active-Window Guardrails ([#170](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/170)).
+- Non-wrapping Moving Block Bootstrap ($L=5$, Active GWs) & Pooled Stratified Gate ([#171](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/171)).
+- $\sqrt{n_s}$-scaled segment floors ([#172](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/172)).
+- Verification suite, candidate re-evaluations, and ADR 0064 ([#173](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/173)).
 
 ---
 
