@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wayfinder Prototype #168: Short-Panel Shrinkage & Neff Blending</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card-bg: #ffffff;
+      --text-main: #1d1d1f;
+      --text-muted: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --border: #d2d2d7;
+      --green: #34c759;
+      --amber: #ff9500;
+      --red: #ff3b30;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #e8f0fe;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    p.lead {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    .question-box {
+      background: #ffffff;
+      border-left: 4px solid var(--accent);
+      padding: 14px 18px;
+      border-radius: 6px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-indicator {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+    .status-warm { background: #d4edda; color: #155724; }
+    .status-cold { background: #fff3cd; color: #856404; }
+
+    .state-panel {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi {
+      background: #fbfbfd;
+      border: 1px solid #e5e5ea;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .kpi-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .progress-bar-wrap {
+      margin-top: 8px;
+      height: 8px;
+      background: #e5e5ea;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .controls-panel {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    select, button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button.btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    button.btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: none;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .scenario-desc {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 14px;
+      background: #f8f9fa;
+      padding: 10px 14px;
+      border-radius: 6px;
+    }
+
+    .step-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .table-container {
+      margin-top: 12px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e5ea;
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .pill-green { background: #d4edda; color: #155724; }
+    .pill-amber { background: #fff3cd; color: #856404; }
+    .pill-red { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge">Wayfinder Map #166 · Ticket #168 Prototype</div>
+    <h1>Short-Panel Priors & Continuous Neff Shrinkage</h1>
+    <p class="lead">Interactive Logic Sandbox for Empirical Bayes Feature Shrinkage and Continuous Sample-Size Blending</p>
+    <div class="question-box">
+      <strong>Core Question:</strong> How should short-panel Nickell bias (&mathcal;O(1/T)) and unseeded missingness in <code>models/ml_panel_features.py</code> be regularized, and how should hard gameweek activation (g &ge; 20) be replaced with continuous effective sample size (N<sub>eff</sub>) shrinkage?
+    </div>
+  </header>
+
+  <!-- Walkthrough Scenarios -->
+  <div class="card" style="margin-bottom: 24px;">
+    <h2>Guided Scenarios (Walkthroughs)</h2>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="loadScenario(1)">Scenario 1: Warm-Seeded Dev Transition</button>
+      <button class="tab-btn" onclick="loadScenario(2)">Scenario 2: Unseeded Cold-Start Protection</button>
+      <button class="tab-btn" onclick="loadScenario(3)">Scenario 3: Early Talisman Haul (Palmer GW4)</button>
+      <button class="tab-btn" onclick="loadScenario(4)">Scenario 4: Budget Fluke vs. Proven Star</button>
+    </div>
+    <div id="scenario-desc" class="scenario-desc"></div>
+    <div id="scenario-steps" class="step-actions"></div>
+  </div>
+
+  <div class="grid">
+    <!-- Panel 1: Continuous Neff Activation -->
+    <div class="card">
+      <h2>
+        <span>1. Continuous Neff Activation</span>
+        <span id="regime-badge" class="status-indicator status-warm">Warm-Seeded</span>
+      </h2>
+      
+      <div class="state-panel">
+        <div class="kpi">
+          <div class="kpi-label">Effective Samples (N<sub>eff</sub>)</div>
+          <div id="kpi-neff" class="kpi-value">3,800</div>
+          <div id="kpi-neff-sub" class="kpi-sub">0.5×7600 seed + 0 in-season</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">ML Blend Weight (&alpha;<sub>g</sub>)</div>
+          <div id="kpi-alpha" class="kpi-value" style="color: var(--accent);">0.075</div>
+          <div id="kpi-alpha-sub" class="kpi-sub">7.5% ML / 92.5% Champ</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted);">
+          <span>N<sub>min</sub> = 3,500 (0% ML)</span>
+          <span>N<sub>full</sub> = 7,500 (100% ML)</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="alpha-progress" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <div class="controls-panel">
+        <div class="control-row">
+          <label>Gameweek (g): <strong id="gw-display">GW 1</strong></label>
+          <input type="range" id="gw-slider" min="1" max="38" value="1" oninput="updateGameweek(this.value)">
+        </div>
+
+        <div class="control-row">
+          <label>Season Regime:</label>
+          <div class="btn-group">
+            <button id="btn-warm" class="btn-primary" onclick="setRegime('warm')">Warm-Seeded (2023-24)</button>
+            <button id="btn-cold" onclick="setRegime('cold')">Unseeded Cold-Start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Empirical Bayes Player Shrinkage -->
+    <div class="card">
+      <h2>
+        <span>2. Empirical Bayes Feature Shrinkage</span>
+        <span class="status-indicator" style="background:#e8f0fe; color:var(--accent);">K<sub>prior</sub> = 12.0</span>
+      </h2>
+
+      <div class="state-panel">
+        <div class="kpi">
+          <div class="kpi-label">Raw vs. Shrunk Rate</div>
+          <div id="kpi-shrunk-val" class="kpi-value">0.627</div>
+          <div id="kpi-shrunk-sub" class="kpi-sub">Raw: 1.250 &rarr; Prior: 0.420</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Sample Weight vs Dampening</div>
+          <div id="kpi-weight" class="kpi-value" style="color: var(--amber);">25.0%</div>
+          <div id="kpi-weight-sub" class="kpi-sub">75.0% Prior Dampening</div>
+        </div>
+      </div>
+
+      <div class="controls-panel">
+        <div class="control-row">
+          <label>Player Archetype:</label>
+          <select id="player-select" onchange="selectArchetype(this.value)">
+            <option value="palmer_gw4">Early Talisman Haul (Palmer GW4: T=4, £10.5m, xG=1.25)</option>
+            <option value="salah_gw30">Established Talisman (Salah GW30: T=30, £12.5m, xG=0.72)</option>
+            <option value="budget_fluke">Budget Midfield Fluke (GW3: T=3, £5.0m, xG=0.65)</option>
+            <option value="bench_warmer">Fringe Bench Flash (GW2: T=1.5, £4.5m, xG=0.50)</option>
+            <option value="budget_grinder">Budget Defender Grinder (GW15: T=15, £4.5m, xG=0.04)</option>
+            <option value="elite_fwd">Elite Forward (Haaland GW10: T=10, £14.0m, xG=0.85)</option>
+          </select>
+        </div>
+
+        <div class="control-row">
+          <label>Observations (T): <strong id="t-display">4.0</strong></label>
+          <input type="range" id="t-slider" min="1" max="38" step="0.5" value="4.0" oninput="updateObservations(this.value)">
+        </div>
+
+        <div class="control-row">
+          <label>Shrinkage Prior Strength (K<sub>prior</sub>): <strong id="k-display">12.0</strong></label>
+          <input type="range" id="k-slider" min="2" max="30" step="1" value="12" oninput="updateK(this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Archetype Comparison Table -->
+  <div class="card">
+    <h2>Player Pool Shrinkage Impact Audit</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Archetype</th>
+            <th>Obs (T)</th>
+            <th>Cost</th>
+            <th>Raw Metric</th>
+            <th>EB Prior</th>
+            <th>Sample Wt</th>
+            <th>Shrunk Metric</th>
+            <th>Raw Z-Score</th>
+            <th>Shrunk Z-Score</th>
+            <th>Stability Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="audit-table-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pure Logic Engine Module -->
+<script>
+const ShrinkageLogic = (() => {
+  // Positional price-tier empirical priors for xG90
+  const tierPriors = {
+    1: { 40: 0.00, 45: 0.00, 50: 0.00, 55: 0.00 }, // GKP
+    2: { 40: 0.02, 45: 0.03, 50: 0.05, 55: 0.07, 60: 0.10 }, // DEF
+    3: { 45: 0.06, 50: 0.09, 55: 0.14, 65: 0.20, 75: 0.26, 85: 0.32, 100: 0.42, 125: 0.52 }, // MID
+    4: { 50: 0.18, 55: 0.22, 65: 0.30, 75: 0.38, 85: 0.45, 115: 0.60, 140: 0.72 } // FWD
+  };
+
+  function computeAlpha(gw, nSeed, rowsPerGw = 715.0, nMin = 3500.0, nFull = 7500.0) {
+    const nInSeason = Math.max(0, (gw - 1) * rowsPerGw);
+    const nEff = 0.5 * nSeed + nInSeason;
+    const alpha = Math.min(1.0, Math.max(0.0, (nEff - nMin) / (nFull - nMin)));
+    return { nEff, alpha };
+  }
+
+  function shrinkRate(rawMetric, tObs, pos, cost, kPrior = 12.0) {
+    const posTable = tierPriors[pos] || tierPriors[3];
+    const costs = Object.keys(posTable).map(Number);
+    let closestCost = costs[0];
+    let minDiff = Math.abs(closestCost - cost);
+    for (let c of costs) {
+      const diff = Math.abs(c - cost);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestCost = c;
+      }
+    }
+    const muPrior = posTable[closestCost];
+    const wSample = tObs / (tObs + kPrior);
+    const shrunkVal = wSample * rawMetric + (1.0 - wSample) * muPrior;
+    return { muPrior, wSample, shrunkVal };
+  }
+
+  return { computeAlpha, shrinkRate };
+})();
+</script>
+
+<!-- UI Presentation & Walkthrough State Machine -->
+<script>
+let state = {
+  gw: 1,
+  regime: 'warm', // 'warm' | 'cold'
+  nSeed: 7600,
+  tObs: 4.0,
+  rawMetric: 1.25,
+  pos: 3,
+  cost: 105,
+  kPrior: 12.0
+};
+
+const archetypes = {
+  palmer_gw4: { name: "Early Talisman Haul (Palmer GW4)", pos: 3, cost: 105, t: 4.0, raw: 1.25 },
+  salah_gw30: { name: "Established Talisman (Salah GW30)", pos: 3, cost: 125, t: 30.0, raw: 0.72 },
+  budget_fluke: { name: "Budget Midfield Fluke (GW3)", pos: 3, cost: 50, t: 3.0, raw: 0.65 },
+  bench_warmer: { name: "Fringe Bench Flash (GW2)", pos: 3, cost: 45, t: 1.5, raw: 0.50 },
+  budget_grinder: { name: "Budget Defender Grinder (GW15)", pos: 2, cost: 45, t: 15.0, raw: 0.04 },
+  elite_fwd: { name: "Elite Forward (Haaland GW10)", pos: 4, cost: 140, t: 10.0, raw: 0.85 }
+};
+
+function render() {
+  // 1. Neff & Alpha
+  const { nEff, alpha } = ShrinkageLogic.computeAlpha(state.gw, state.nSeed);
+  document.getElementById("gw-display").innerText = `GW ${state.gw}`;
+  document.getElementById("gw-slider").value = state.gw;
+  document.getElementById("kpi-neff").innerText = nEff.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  document.getElementById("kpi-neff-sub").innerText = `${(0.5 * state.nSeed).toLocaleString()} seed + ${(Math.max(0, (state.gw - 1) * 715)).toLocaleString()} in-season`;
+  document.getElementById("kpi-alpha").innerText = alpha.toFixed(4);
+  document.getElementById("kpi-alpha-sub").innerText = `${(alpha * 100).toFixed(1)}% ML / ${((1 - alpha) * 100).toFixed(1)}% Champ`;
+  document.getElementById("alpha-progress").style.width = `${alpha * 100}%`;
+
+  const regimeBadge = document.getElementById("regime-badge");
+  if (state.regime === 'warm') {
+    regimeBadge.className = "status-indicator status-warm";
+    regimeBadge.innerText = "Warm-Seeded (2023-24)";
+    document.getElementById("btn-warm").className = "btn-primary";
+    document.getElementById("btn-cold").className = "";
+  } else {
+    regimeBadge.className = "status-indicator status-cold";
+    regimeBadge.innerText = "Unseeded Cold-Start";
+    document.getElementById("btn-warm").className = "";
+    document.getElementById("btn-cold").className = "btn-primary";
+  }
+
+  // 2. EB Shrinkage
+  const { muPrior, wSample, shrunkVal } = ShrinkageLogic.shrinkRate(state.rawMetric, state.tObs, state.pos, state.cost, state.kPrior);
+  document.getElementById("t-display").innerText = state.tObs.toFixed(1);
+  document.getElementById("t-slider").value = state.tObs;
+  document.getElementById("k-display").innerText = state.kPrior.toFixed(1);
+  document.getElementById("k-slider").value = state.kPrior;
+
+  document.getElementById("kpi-shrunk-val").innerText = shrunkVal.toFixed(3);
+  document.getElementById("kpi-shrunk-sub").innerText = `Raw: ${state.rawMetric.toFixed(3)} → Prior: ${muPrior.toFixed(3)}`;
+  document.getElementById("kpi-weight").innerText = `${(wSample * 100).toFixed(1)}%`;
+  document.getElementById("kpi-weight-sub").innerText = `${((1 - wSample) * 100).toFixed(1)}% Prior Dampening`;
+
+  // 3. Render Audit Table
+  renderAuditTable();
+}
+
+function renderAuditTable() {
+  const tbody = document.getElementById("audit-table-body");
+  tbody.innerHTML = "";
+  const std = 0.22;
+
+  for (let key in archetypes) {
+    const a = archetypes[key];
+    const { muPrior, wSample, shrunkVal } = ShrinkageLogic.shrinkRate(a.raw, a.t, a.pos, a.cost, state.kPrior);
+    const zRaw = (a.raw - muPrior) / std;
+    const zShrunk = (shrunkVal - muPrior) / std;
+
+    let verdict = "";
+    if (zRaw > 3.0 && zShrunk < 1.2) {
+      verdict = `<span class="pill pill-green">Haul Protected (${( (1-wSample)*100 ).toFixed(0)}% damp)</span>`;
+    } else if (zRaw > 2.0 && zShrunk < 0.8) {
+      verdict = `<span class="pill pill-green">Fluke Filtered</span>`;
+    } else if (a.t >= 20) {
+      verdict = `<span class="pill pill-green">Proven Asset Kept</span>`;
+    } else {
+      verdict = `<span class="pill pill-amber">Regularized</span>`;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${a.name}</strong></td>
+      <td>${a.t}</td>
+      <td>£${(a.cost / 10).toFixed(1)}m</td>
+      <td>${a.raw.toFixed(2)}</td>
+      <td>${muPrior.toFixed(2)}</td>
+      <td>${(wSample * 100).toFixed(1)}%</td>
+      <td><strong>${shrunkVal.toFixed(3)}</strong></td>
+      <td style="color:${zRaw > 2.5 ? 'var(--red)' : 'inherit'}; font-weight:${zRaw > 2.5 ? '700' : 'normal'}">${zRaw.toFixed(2)}</td>
+      <td style="color:var(--green); font-weight:600">${zShrunk.toFixed(2)}</td>
+      <td>${verdict}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function updateGameweek(val) {
+  state.gw = parseInt(val, 10);
+  render();
+}
+
+function setRegime(regime) {
+  state.regime = regime;
+  state.nSeed = regime === 'warm' ? 7600 : 0;
+  render();
+}
+
+function updateObservations(val) {
+  state.tObs = parseFloat(val);
+  render();
+}
+
+function updateK(val) {
+  state.kPrior = parseFloat(val);
+  render();
+}
+
+function selectArchetype(key) {
+  const a = archetypes[key];
+  if (!a) return;
+  state.pos = a.pos;
+  state.cost = a.cost;
+  state.tObs = a.t;
+  state.rawMetric = a.raw;
+  render();
+}
+
+// Scenarios
+const scenarios = [
+  {
+    id: 1,
+    title: "Scenario 1: Warm-Seeded Dev Transition",
+    desc: "In Dev (2025-26) or Live operation, a prior-season archive (2023-24) provides 7,600 historical rows (N_eff = 3,800). The model engages smoothly from GW1 (7.5% ML) without cold-start shock and reaches 100% full ML alpha by GW7.",
+    steps: [
+      { label: "1. Start at GW1 (Warm)", action: () => { setRegime('warm'); updateGameweek(1); } },
+      { label: "2. Advance to GW4 (61.1% ML)", action: () => { updateGameweek(4); } },
+      { label: "3. Mature at GW7 (100% ML)", action: () => { updateGameweek(7); } },
+    ]
+  },
+  {
+    id: 2,
+    title: "Scenario 2: Unseeded Cold-Start Protection",
+    desc: "In an unseeded season (N_seed = 0), N_eff remains below N_min (3,500) for GW1–5, enforcing 100% Champion fallback. This mathematically prevents catastrophic cold-start failure (-5.7 pts/GW) and guarantees segment parity.",
+    steps: [
+      { label: "1. Start at GW1 (Cold)", action: () => { setRegime('cold'); updateGameweek(1); } },
+      { label: "2. Check GW4 (0% ML Fallback)", action: () => { updateGameweek(4); } },
+      { label: "3. Smooth Turn-on at GW6 (1.9% ML)", action: () => { updateGameweek(6); } },
+      { label: "4. Reach Mature at GW12 (100% ML)", action: () => { updateGameweek(12); } },
+    ]
+  },
+  {
+    id: 3,
+    title: "Scenario 3: Early Talisman Haul (Palmer GW4)",
+    desc: "In 2024-25 GW4, Cole Palmer produced a 4-goal haul. Without shrinkage, raw xG90 = 1.25 created a massive z-score of +3.77, causing IRLS sign-inversion. With EB shrinkage (K_prior=12), the haul is dampened by 75% to 0.627 xG90 (z = 0.94).",
+    steps: [
+      { label: "1. Inspect Palmer Haul", action: () => { selectArchetype('palmer_gw4'); document.getElementById("player-select").value = 'palmer_gw4'; } },
+      { label: "2. Test K=0 (Unregularized Z=+3.77)", action: () => { updateK(0.01); } },
+      { label: "3. Restore K=12 (Well-Conditioned Z=+0.94)", action: () => { updateK(12); } },
+    ]
+  },
+  {
+    id: 4,
+    title: "Scenario 4: Budget Fluke vs. Proven Star",
+    desc: "Compare a budget midfielder (£5.0m) with 3 good games vs. an established star (Salah, 30 games). The fluke is dampened by 80% towards the budget baseline (0.09 xG90), while Salah retains 71.4% of his true sample weight.",
+    steps: [
+      { label: "1. Inspect Budget Fluke", action: () => { selectArchetype('budget_fluke'); document.getElementById("player-select").value = 'budget_fluke'; } },
+      { label: "2. Inspect Salah GW30", action: () => { selectArchetype('salah_gw30'); document.getElementById("player-select").value = 'salah_gw30'; } },
+    ]
+  }
+];
+
+function loadScenario(id) {
+  const sc = scenarios.find(s => s.id === id);
+  if (!sc) return;
+
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  tabBtns.forEach((btn, idx) => {
+    btn.className = (idx + 1 === id) ? "tab-btn active" : "tab-btn";
+  });
+
+  document.getElementById("scenario-desc").innerHTML = `<strong>${sc.title}:</strong> ${sc.desc}`;
+  const stepsDiv = document.getElementById("scenario-steps");
+  stepsDiv.innerHTML = "";
+  sc.steps.forEach(st => {
+    const btn = document.createElement("button");
+    btn.className = "btn-primary";
+    btn.innerText = st.label;
+    btn.onclick = st.action;
+    stepsDiv.appendChild(btn);
+  });
+
+  // Execute first step by default
+  if (sc.steps.length > 0) {
+    sc.steps[0].action();
+  }
+}
+
+// Initial load
+loadScenario(1);
+render();
+</script>
+
+</body>
+</html>

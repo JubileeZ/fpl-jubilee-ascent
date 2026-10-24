@@ -14,14 +14,20 @@
   - `docs/research/INDEX.md`
   - `docs/research/backtest-gate-reform/backtest-gate-reform.md`
   - `docs/research/backtest-gate-reform/wayfinder-tickets.json`
+  - `docs/research/backtest-gate-reform/prototype_short_panel_shrinkage.html`
+  - `docs/research/backtest-gate-reform/prototype_short_panel_shrinkage.py`
+  - `models/ml_panel_features.py`
+  - `models/ml_component_challenger.py`
+  - `tests/test_ml_panel_leakage.py`
 - **Decisions:**
   - Charted Wayfinder Map #166 on GitHub covering 4 structural audit dilemmas via 7 decision tickets.
   - Linked native sub-issues and blockedBy dependency graph.
   - Added Phase 6: Promotion Gate & Evaluation Rigor Overhaul to ROADMAP.md.
   - Initialized tracking manifest in docs/research/backtest-gate-reform/wayfinder-tickets.json.
   - Resolved Ticket #167: provisioned 2023-24 archive from Vaastav FPL CSVs, updated snapshot_season for multi-season reconstruct, wired default seed_season="2023-24" for confirmation in evaluate_model_promotion and walkforward. Ticket closed.
+  - Resolved Ticket #168: implemented Empirical Bayes positional price-tier priors (K_prior=12.0) and continuous Neff sample-size shrinkage (N_min=3500, N_full=7500, seed_weight=0.5) in models/ml_panel_features.py and CausalFeatureScaler. Ticket closed.
 - **Blocked:** None
-- **Next:** Execute unblocked frontier tickets: #168 (short-panel priors & Neff shrinkage), #169 (constrained LegalXI), #170 (exogenous playable pool mask).
+- **Next:** Execute unblocked frontier tickets: #169 (constrained LegalXI), #170 (exogenous playable pool mask).
 
 ## Todo
 - [x] Chart Wayfinder Map #166 and child decision tickets #167–#173 on GitHub
@@ -32,10 +38,10 @@
 - [x] Implement Ticket #167: provision 2023-24 warm confirmation seed archive
 - [ ] Implement Ticket #169: constrained select_legal_formation_xi and squad churn guardrail
 - [ ] Implement Ticket #170: exogenous playable pool mask and active-window guardrails
-- [ ] Implement Ticket #168: short-panel empirical Bayes priors and continuous Neff shrinkage
+- [x] Implement Ticket #168: short-panel empirical Bayes priors and continuous Neff shrinkage
 - [ ] Implement Ticket #171: non-wrapping moving block bootstrap (L=5) & pooled stratified gate
 - [ ] Implement Ticket #172: sqrt(ns)-scaled segment loss floors
 - [ ] Implement Ticket #173: full test suite verification, candidate re-evaluations, and ADR 0064
 
 ## Blockers / Notes
-- None. Active unblocked frontier: #168, #169, #170.
+- None. Active unblocked frontier: #169, #170.

@@ -257,3 +257,81 @@ def test_cold_start_gw1_to_gw3_exact_champion_parity() -> None:
         proj_cand = cand.predict(features, horizon=1)
 
         pd.testing.assert_frame_equal(proj_champ, proj_cand)
+
+
+def test_short_panel_empirical_bayes_shrinkage() -> None:
+    """Features on T < 10 shrink stably to positional price-tier baselines (Ticket #168)."""
+    from models.ml_panel_features import (
+        empirical_bayes_shrinkage,
+        positional_price_tier_prior,
+    )
+
+    # 1. Early Talisman Haul (T=4, MID £10.5m, raw xG90=1.25): dampened 75% toward 0.42 tier prior
+    prior_palmer = positional_price_tier_prior(3, 105.0, metric="xg90")
+    assert np.isclose(prior_palmer, 0.42)
+    shrunk_palmer = empirical_bayes_shrinkage(1.25, 4.0, 3, 105.0, k_prior=12.0, metric="xg90")
+    assert np.isclose(shrunk_palmer, 0.25 * 1.25 + 0.75 * 0.42)
+
+    # 2. Budget Fluke (T=3, MID £5.0m, raw xG90=0.65): dampened 80% toward 0.09 budget prior
+    prior_budget = positional_price_tier_prior(3, 50.0, metric="xg90")
+    assert np.isclose(prior_budget, 0.09)
+    shrunk_budget = empirical_bayes_shrinkage(0.65, 3.0, 3, 50.0, k_prior=12.0, metric="xg90")
+    assert np.isclose(shrunk_budget, 0.20 * 0.65 + 0.80 * 0.09)
+
+    # 3. Seasoned Talisman (T=30, MID £12.5m, raw xG90=0.72): retains >70% sample weight
+    shrunk_salah = empirical_bayes_shrinkage(0.72, 30.0, 3, 125.0, k_prior=12.0, metric="xg90")
+    assert np.isclose(shrunk_salah, (30.0 / 42.0) * 0.72 + (12.0 / 42.0) * 0.52)
+
+    # 4. CausalFeatureScaler sparse observation damping prevents extreme z-scores on T < 15
+    history = _create_synthetic_history(n_gws=5)
+    features = _create_synthetic_features(target_gw=6)
+    train_panel, pred_panel = build_causal_panel(history, features, min_train_gw=2)
+    feature_cols = [
+        c for c in train_panel.columns
+        if not c.startswith("target_") and c not in ("player_id", "gameweek_id", "fixture_id")
+    ]
+    scaler = CausalFeatureScaler(k_prior=12.0, sparse_threshold=15.0).fit(train_panel, feature_cols)
+
+    unshrunk = scaler.transform(pred_panel)
+    shrunk = scaler.transform(pred_panel, obs_counts=np.full(len(pred_panel), 4.0))
+    # At T=4 with K=12, z-score magnitudes are scaled by 4 / (4 + 12) = 0.25
+    np.testing.assert_allclose(
+        shrunk[feature_cols].to_numpy(),
+        unshrunk[feature_cols].to_numpy() * 0.25,
+        atol=1e-12,
+    )
+
+
+def test_continuous_neff_alpha_blending() -> None:
+    """Continuous Neff sample-size shrinkage yields smooth transitions without step artifacts (Ticket #168)."""
+    from models.ml_panel_features import (
+        compute_continuous_neff_alpha,
+        compute_effective_sample_size,
+    )
+
+    # Warm-seeded regime (n_seed = 7600 -> 0.5 * 7600 = 3800 effective seed rows)
+    assert np.isclose(compute_effective_sample_size(0, 7600), 3800.0)
+    alpha_gw1_warm = compute_continuous_neff_alpha(0, 7600, n_min=3500.0, n_full=7500.0)
+    assert np.isclose(alpha_gw1_warm, 0.075)
+
+    alpha_gw4_warm = compute_continuous_neff_alpha(3 * 715, 7600, n_min=3500.0, n_full=7500.0)
+    assert 0.60 < alpha_gw4_warm < 0.65
+
+    alpha_gw7_warm = compute_continuous_neff_alpha(6 * 715, 7600, n_min=3500.0, n_full=7500.0)
+    assert np.isclose(alpha_gw7_warm, 1.0)
+
+    # Unseeded cold-start regime (n_seed = 0): GW1-5 strictly 0.0 (100% Champion fallback)
+    for gw in range(1, 6):
+        a_cold = compute_continuous_neff_alpha((gw - 1) * 715, 0, n_min=3500.0, n_full=7500.0)
+        assert a_cold == 0.0
+
+    # Monotonic continuous ramp from GW6 to GW12
+    alphas_cold = [
+        compute_continuous_neff_alpha((gw - 1) * 715, 0, n_min=3500.0, n_full=7500.0)
+        for gw in range(5, 14)
+    ]
+    assert np.all(np.diff(alphas_cold) >= 0.0)
+    assert 0.0 < alphas_cold[1] < 0.05  # GW6
+    assert 0.35 < alphas_cold[3] < 0.40  # GW8
+    assert np.isclose(alphas_cold[7], 1.0)  # GW12
+

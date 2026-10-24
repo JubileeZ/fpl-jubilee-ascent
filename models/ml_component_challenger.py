@@ -32,7 +32,11 @@ from models.learned_start_challenger import (
     preserve_mass,
 )
 from models.metrics_component_hybrid import _number
-from models.ml_panel_features import CausalFeatureScaler, build_causal_panel
+from models.ml_panel_features import (
+    CausalFeatureScaler,
+    build_causal_panel,
+    compute_continuous_neff_alpha,
+)
 from models.participation_state_hybrid import target_to_states
 
 
@@ -139,6 +143,10 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         enable_bonus: bool = False,
         ramp_span: float = 4.0,
         enable_congestion: bool = False,
+        use_neff_alpha: bool = False,
+        n_min: float = 3500.0,
+        n_full: float = 7500.0,
+        n_seed: int = 0,
     ) -> None:
         super().__init__()
         self.enable_mins_h1 = enable_mins_h1
@@ -150,6 +158,10 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         self.enable_bonus = enable_bonus
         self.ramp_span = float(ramp_span)
         self.enable_congestion = enable_congestion
+        self.use_neff_alpha = bool(use_neff_alpha)
+        self.n_min = float(n_min)
+        self.n_full = float(n_full)
+        self.n_seed = int(n_seed)
 
         self._history_df = pd.DataFrame()
         self._last_kickoff_by_player: dict[int, pd.Timestamp] = {}
@@ -187,7 +199,17 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         if target_gw < 4 or n_history_rows < 500:
             return super().predict(features_df, horizon)
 
-        w_ml = min(1.0, max(0.0, (target_gw - 3.0) / self.ramp_span))
+        if self.use_neff_alpha:
+            w_ml = compute_continuous_neff_alpha(
+                n_in_season=n_history_rows,
+                n_seed=self.n_seed,
+                n_min=self.n_min,
+                n_full=self.n_full,
+            )
+            if w_ml <= 0.0:
+                return super().predict(features_df, horizon)
+        else:
+            w_ml = min(1.0, max(0.0, (target_gw - 3.0) / self.ramp_span))
 
         # 2. Check for Oracle Minutes bypass (ADR 0054 / Ticket #161 / Ticket #165)
         has_external_xmins = "external_xmins" in features_df.columns and features_df["external_xmins"].notna().any()

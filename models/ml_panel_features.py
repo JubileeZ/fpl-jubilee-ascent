@@ -20,8 +20,9 @@ _DECAY = 0.95
 _MIDFIELDER = 3
 _LEAGUE_XG_DEFAULT = 1.35
 _PSEUDO_MATCHES = 4.0
-_BASE_K = 360.0
-_POSITION_K: dict[int, float] = {1: 360.0, 2: 2400.0, 3: 360.0, 4: 360.0}
+_EB_K_PRIOR_DEFAULT = 12.0
+_BASE_K = 1080.0  # 12.0 matches * 90 mins (Ticket #168 EB prior strength)
+_POSITION_K: dict[int, float] = {1: 1080.0, 2: 2400.0, 3: 1080.0, 4: 1080.0}
 
 # Default position baselines
 _START_MINS_PRIOR = {1: 89.0, 2: 82.0, 3: 76.0, 4: 75.0}
@@ -32,12 +33,106 @@ _CREATIVITY90_PRIOR = {1: 1.0, 2: 12.0, 3: 25.0, 4: 18.0}
 _BASE_BPS90_PRIOR = {1: 12.0, 2: 14.0, 3: 13.0, 4: 10.0}
 _INFLUENCE90_PRIOR = {1: 18.0, 2: 16.0, 3: 18.0, 4: 20.0}
 
+# Positional price-tier Empirical Bayes priors (cost in 0.1m FPL units, e.g. 50 = £5.0m)
+_TIER_PRIORS_XG90: dict[int, dict[int, float]] = {
+    1: {40: 0.00, 45: 0.00, 50: 0.00, 55: 0.00},
+    2: {40: 0.02, 45: 0.03, 50: 0.05, 55: 0.07, 60: 0.10},
+    3: {45: 0.06, 50: 0.09, 55: 0.14, 65: 0.20, 75: 0.26, 85: 0.32, 100: 0.42, 125: 0.52},
+    4: {50: 0.18, 55: 0.22, 65: 0.30, 75: 0.38, 85: 0.45, 115: 0.60, 140: 0.72},
+}
+
+_TIER_PRIORS_XA90: dict[int, dict[int, float]] = {
+    1: {40: 0.00, 45: 0.01, 50: 0.01, 55: 0.01},
+    2: {40: 0.03, 45: 0.05, 50: 0.08, 55: 0.12, 60: 0.18},
+    3: {45: 0.06, 50: 0.09, 55: 0.13, 65: 0.18, 75: 0.22, 85: 0.26, 100: 0.30, 125: 0.34},
+    4: {50: 0.06, 55: 0.08, 65: 0.11, 75: 0.14, 85: 0.16, 115: 0.20, 140: 0.22},
+}
+
+_TIER_PRIORS_START_FRAC: dict[int, dict[int, float]] = {
+    1: {40: 0.05, 45: 0.65, 50: 0.85, 55: 0.92},
+    2: {40: 0.15, 45: 0.60, 50: 0.78, 55: 0.85, 60: 0.90},
+    3: {45: 0.15, 50: 0.45, 55: 0.65, 65: 0.78, 75: 0.84, 85: 0.88, 100: 0.92, 125: 0.95},
+    4: {50: 0.15, 55: 0.45, 65: 0.70, 75: 0.82, 85: 0.88, 115: 0.92, 140: 0.95},
+}
+
+
+def positional_price_tier_prior(
+    position_id: int,
+    cost: float,
+    metric: str = "xg90",
+) -> float:
+    """Resolve Empirical Bayes baseline for a player's position and price tier."""
+    if metric == "xg90":
+        table = _TIER_PRIORS_XG90
+        fallback = _XG90_PRIOR.get(position_id, 0.15)
+    elif metric == "xa90":
+        table = _TIER_PRIORS_XA90
+        fallback = _XA90_PRIOR.get(position_id, 0.12)
+    elif metric == "start_frac":
+        table = _TIER_PRIORS_START_FRAC
+        fallback = 0.65
+    else:
+        return 0.0
+
+    pos_tiers = table.get(int(position_id))
+    if not pos_tiers:
+        return float(fallback)
+    tier_costs = list(pos_tiers.keys())
+    closest = min(tier_costs, key=lambda c: abs(c - float(cost)))
+    return float(pos_tiers[closest])
+
+
+def empirical_bayes_shrinkage(
+    raw_val: float,
+    n_obs: float,
+    position_id: int,
+    cost: float,
+    *,
+    k_prior: float = _EB_K_PRIOR_DEFAULT,
+    metric: str = "xg90",
+) -> float:
+    """Shrink a short-panel sample estimate toward its positional price-tier prior."""
+    t_obs = max(0.0, float(n_obs))
+    k = max(0.0, float(k_prior))
+    mu_prior = positional_price_tier_prior(position_id, cost, metric=metric)
+    if t_obs + k <= 0.0:
+        return mu_prior
+    w_sample = t_obs / (t_obs + k)
+    return float(w_sample * float(raw_val) + (1.0 - w_sample) * mu_prior)
+
+
+def compute_effective_sample_size(
+    n_in_season: int | float,
+    n_seed: int | float = 0,
+    *,
+    seed_weight: float = 0.5,
+) -> float:
+    """Compute effective sample size N_eff,g = seed_weight * N_seed + N_in_season,<g."""
+    return float(seed_weight * max(0.0, float(n_seed)) + max(0.0, float(n_in_season)))
+
+
+def compute_continuous_neff_alpha(
+    n_in_season: int | float,
+    n_seed: int | float = 0,
+    *,
+    n_min: float = 3500.0,
+    n_full: float = 7500.0,
+    seed_weight: float = 0.5,
+) -> float:
+    """Compute continuous sample-size blend weight alpha_g in [0.0, 1.0]."""
+    if n_full <= n_min:
+        return 1.0
+    n_eff = compute_effective_sample_size(n_in_season, n_seed, seed_weight=seed_weight)
+    return float(np.clip((n_eff - n_min) / (n_full - n_min), 0.0, 1.0))
+
 
 @dataclass
 class CausalFeatureScaler:
-    """Fit-only standardization and percentile winsorization on historical training panel."""
+    """Fit-only standardization, percentile winsorization, and short-panel EB shrinkage."""
 
     clip_quantiles: tuple[float, float] = (0.01, 0.99)
+    k_prior: float = _EB_K_PRIOR_DEFAULT
+    sparse_threshold: float = 15.0
     feature_cols: list[str] | None = None
     q01_: np.ndarray | None = None
     q99_: np.ndarray | None = None
@@ -55,18 +150,32 @@ class CausalFeatureScaler:
         self.stds_ = np.where(std < 1e-6, 1.0, std)
         return self
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def transform(
+        self,
+        df: pd.DataFrame,
+        obs_counts: np.ndarray | pd.Series | None = None,
+    ) -> pd.DataFrame:
         if self.feature_cols is None or self.q01_ is None or self.means_ is None or self.stds_ is None:
             raise RuntimeError("Scaler must be fit before calling transform()")
         out = df.copy()
         X = out[self.feature_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0).to_numpy(dtype=float)
         X_clipped = np.clip(X, self.q01_, self.q99_)
         X_scaled = (X_clipped - self.means_) / self.stds_
+        if obs_counts is not None:
+            t_arr = np.maximum(0.0, np.asarray(obs_counts, dtype=float)).reshape(-1, 1)
+            k = max(0.0, float(self.k_prior))
+            shrink_w = np.where(t_arr < self.sparse_threshold, t_arr / np.maximum(t_arr + k, 1e-6), 1.0)
+            X_scaled = X_scaled * shrink_w
         out[self.feature_cols] = X_scaled
         return out
 
-    def fit_transform(self, train_df: pd.DataFrame, feature_cols: Sequence[str]) -> pd.DataFrame:
-        return self.fit(train_df, feature_cols).transform(train_df)
+    def fit_transform(
+        self,
+        train_df: pd.DataFrame,
+        feature_cols: Sequence[str],
+        obs_counts: np.ndarray | pd.Series | None = None,
+    ) -> pd.DataFrame:
+        return self.fit(train_df, feature_cols).transform(train_df, obs_counts=obs_counts)
 
 
 def _clean_numeric_history(hist: pd.DataFrame) -> pd.DataFrame:
@@ -228,7 +337,12 @@ def _build_gw_panel(
     # Populate player-specific features
     pids = out["player_id"].to_numpy()
     pos_arr = pos_s.to_numpy()
-    now_costs = out["now_cost"].to_numpy(dtype=float) if "now_cost" in out.columns else np.full(N, 50.0)
+    if "price" in out.columns:
+        now_costs = out["price"].to_numpy(dtype=float)
+    elif "now_cost" in out.columns:
+        now_costs = out["now_cost"].to_numpy(dtype=float)
+    else:
+        now_costs = np.full(N, 50.0)
     kickoff_times = out["kickoff_time"].to_numpy() if "kickoff_time" in out.columns else None
 
     # Pre-extract player summary stats for fast O(1) lookup
@@ -241,10 +355,11 @@ def _build_gw_panel(
         weights = _DECAY ** np.clip(target_gw - 1 - gws, 0, 38)
         eff_mins = float(np.sum(mins * weights))
 
-        # Market & transfers from last row
+        # Market & transfers from last row; initial_price from first observed row in H_{<g}
         tin = float(pgroup["transfers_in"].iloc[-1]) if "transfers_in" in pgroup.columns else 0.0
         tout = float(pgroup["transfers_out"].iloc[-1]) if "transfers_out" in pgroup.columns else 0.0
         price = float(pgroup["price"].iloc[-1]) if "price" in pgroup.columns else 50.0
+        initial_price = float(pgroup["price"].iloc[0]) if "price" in pgroup.columns else price
 
         # Lags
         sl1 = float(starts[-1] >= 1) if n_apps >= 1 else 0.0
@@ -309,7 +424,8 @@ def _build_gw_panel(
         weighted_base_bps = float(np.sum(base_bps_arr * weights))
 
         player_stats_cache[pid] = {
-            "tin": tin, "tout": tout, "price": price, "last_kickoff": last_kickoff,
+            "tin": tin, "tout": tout, "price": price, "initial_price": initial_price,
+            "n_apps": float(n_apps), "last_kickoff": last_kickoff,
             "sl1": sl1, "sl2": sl2, "sl3": sl3, "sl4": sl4, "sl5": sl5, "sl6": sl6,
             "subl1": subl1, "subl2": subl2, "subl3": subl3, "m3": m3,
             "s_since": s_since, "c_frac": c_frac, "eff_mins": eff_mins,
@@ -325,6 +441,8 @@ def _build_gw_panel(
         pdata = player_stats_cache.get(pid)
 
         if pdata is not None:
+            init_cost = pdata["initial_price"]
+            n_apps_val = pdata["n_apps"]
             # Transfer momentum & price
             transfer_momentum[idx] = np.clip(np.log((pdata["tin"] + 100.0) / (pdata["tout"] + 100.0)), -3.0, 3.0)
             price_rel_pos[idx] = (pdata["price"] - pos_prices.get(pos, 50.0)) / 10.0
@@ -343,7 +461,17 @@ def _build_gw_panel(
 
             min3[idx] = pdata["m3"]
             since_start[idx] = pdata["s_since"]
-            club_frac[idx] = pdata["c_frac"]
+            if n_apps_val < 15.0:
+                club_frac[idx] = empirical_bayes_shrinkage(
+                    pdata["c_frac"],
+                    n_apps_val,
+                    pos,
+                    init_cost,
+                    k_prior=_EB_K_PRIOR_DEFAULT,
+                    metric="start_frac",
+                )
+            else:
+                club_frac[idx] = pdata["c_frac"]
 
             if kickoff_times is not None and pdata["last_kickoff"] is not None:
                 try:
@@ -359,13 +487,13 @@ def _build_gw_panel(
                 pi_hook = _HOOK_RATE_PRIOR.get(pos, 0.20)
                 early_hook_rate[idx] = (pdata["weighted_hooks"] + 4.0 * pi_hook) / (pdata["sum_st_w"] + 4.0)
 
-            # Event rates
+            # Event rates with positional price-tier Empirical Bayes priors (Ticket #168)
             k_xg = _POSITION_K.get(pos, _BASE_K)
-            prior_xg = _XG90_PRIOR.get(pos, 0.15)
+            prior_xg = positional_price_tier_prior(pos, init_cost, metric="xg90")
             shrunk_xg90[idx] = (pdata["weighted_xg"] + k_xg * prior_xg / 90.0) / (eff_mins + k_xg) * 90.0
             finishing_offset_90[idx] = (pdata["tot_g"] - pdata["tot_xg"]) * 90.0 / (pdata["tot_m"] + 1800.0)
 
-            prior_xa = _XA90_PRIOR.get(pos, 0.12)
+            prior_xa = positional_price_tier_prior(pos, init_cost, metric="xa90")
             shrunk_xa90[idx] = (pdata["weighted_xa"] + _BASE_K * prior_xa / 90.0) / (eff_mins + _BASE_K) * 90.0
 
             prior_crea = _CREATIVITY90_PRIOR.get(pos, 15.0)
@@ -375,7 +503,11 @@ def _build_gw_panel(
             shrunk_base_bps90[idx] = (pdata["weighted_base_bps"] + 450.0 * _BASE_BPS90_PRIOR.get(pos, 12.0) / 90.0) / (eff_mins + 450.0) * 90.0
             shrunk_influence90[idx] = (pdata["weighted_inf"] + 450.0 * _INFLUENCE90_PRIOR.get(pos, 18.0) / 90.0) / (eff_mins + 450.0) * 90.0
         else:
-            price_rel_pos[idx] = (now_costs[idx] - pos_prices.get(pos, 50.0)) / 10.0
+            fallback_cost = float(now_costs[idx])
+            price_rel_pos[idx] = (fallback_cost - pos_prices.get(pos, 50.0)) / 10.0
+            club_frac[idx] = positional_price_tier_prior(pos, fallback_cost, metric="start_frac")
+            shrunk_xg90[idx] = positional_price_tier_prior(pos, fallback_cost, metric="xg90")
+            shrunk_xa90[idx] = positional_price_tier_prior(pos, fallback_cost, metric="xa90")
 
     # 3. Matchup & Context Ratios
     team_att_ratio = np.ones(N)
