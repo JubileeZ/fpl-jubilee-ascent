@@ -41,6 +41,7 @@ class WalkforwardConfig:
     start_gw: int
     end_gw: int
     seed_processed_dir: Path | None = None
+    seed_season: str | None = None
     snapshot_root: Path | None = None
     snapshot_season: str | None = None
     require_snapshots: bool = False
@@ -109,6 +110,21 @@ def load_gameweek_deadlines(data_dir: Path) -> dict[int, Any]:
     return {}
 
 
+def _resolve_walkforward_seed_dir(data_dir: Path, seed_season: str) -> Path:
+    resolved = data_dir.resolve()
+    candidates = [
+        resolved.parents[1] / seed_season / "processed",
+        resolved.parent / "archive" / seed_season / "processed",
+        Path(__file__).resolve().parents[1] / "data" / "archive" / seed_season / "processed",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"Prior-season archive not found for seed_season '{seed_season}'"
+    )
+
+
 def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
     data_dir = config.data_dir
     perf_path = data_dir / "player_performances.parquet"
@@ -140,12 +156,16 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         if value is not None
     }
 
+    seed_processed_dir = config.seed_processed_dir
+    if seed_processed_dir is None and config.seed_season:
+        seed_processed_dir = _resolve_walkforward_seed_dir(data_dir, config.seed_season)
+
     for gw in range(config.start_gw, config.end_gw + 1):
         df_feat = build_features(
             data_dir,
             target_gw=gw,
             horizon=1,
-            seed_processed_dir=config.seed_processed_dir,
+            seed_processed_dir=seed_processed_dir,
             use_archive_seed=False,
             as_of_gw=gw,
             availability_snapshot_root=config.snapshot_root,

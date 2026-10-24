@@ -65,6 +65,7 @@ def _run_model(
             start_gw=start_gw,
             end_gw=end_gw,
             seed_processed_dir=seed_processed_dir,
+            seed_season=seed_season,
             snapshot_root=snapshot_root,
             snapshot_season=snapshot_season,
             require_snapshots=require_snapshots,
@@ -143,7 +144,7 @@ def evaluate_and_apply(
     return updated, comparisons, evidence_paths
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Evaluate and apply Automatic Historical Promotion.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
     parser.add_argument("--gw_range", type=str, default="1-38")
@@ -154,19 +155,23 @@ def main() -> None:
     parser.add_argument("--require_snapshots", action="store_true")
     parser.add_argument("--apply", action="store_true", help="Update Comparison Slate when gate passes")
     parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.60 (ADR 0049)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     start_gw, end_gw = _parse_gw_range(args.gw_range)
     data_dir = resolve_backtest_data_dir((PROJECT_ROOT / args.data_dir).resolve())
     snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None
     snapshot_season = args.season or (data_dir.parent.name if data_dir.parent.name != "data" else None)
 
+    seed_season = args.seed_season
+    if seed_season is None and args.confirmation and snapshot_season == "2024-25":
+        seed_season = "2023-24"
+
     updated, comparisons, evidence_paths = evaluate_and_apply(
         config_path=args.config,
         data_dir=data_dir,
         start_gw=start_gw,
         end_gw=end_gw,
-        seed_season=args.seed_season,
+        seed_season=seed_season,
         snapshot_root=snapshot_root,
         snapshot_season=snapshot_season,
         require_snapshots=args.require_snapshots,

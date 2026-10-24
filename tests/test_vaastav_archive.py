@@ -133,6 +133,10 @@ def test_cli_from_vaastav_dir(tmp_path: Path) -> None:
         ["--season", "2024-25", "--from-vaastav-dir", str(src), "--archive-root", str(archive_root)]
     ) == 0
     assert (archive_root / "2024-25" / "processed" / "player_performances.parquet").exists()
+    assert main(
+        ["--season", "2023-24", "--from-vaastav-dir", str(src), "--archive-root", str(archive_root)]
+    ) == 0
+    assert (archive_root / "2023-24" / "processed" / "player_performances.parquet").exists()
 
 
 def test_cli_from_vaastav_dir_rejects_other_seasons(tmp_path: Path) -> None:
@@ -146,3 +150,44 @@ def test_cli_from_vaastav_dir_rejects_other_seasons(tmp_path: Path) -> None:
         assert "2024-25" in str(exc)
     else:
         raise AssertionError("expected vaastav reconstruct-only rejection")
+
+
+def test_2023_24_schema_parity_with_2024_25() -> None:
+    root = Path(__file__).resolve().parents[1]
+    dir_2324 = root / "data" / "archive" / "2023-24" / "processed"
+    dir_2425 = root / "data" / "archive" / "2024-25" / "processed"
+    assert dir_2324.exists(), f"Archive missing: {dir_2324}"
+    assert dir_2425.exists(), f"Archive missing: {dir_2425}"
+    tables = ["clubs", "players", "fixtures", "gameweeks", "player_performances"]
+    for table in tables:
+        f_2324 = dir_2324 / f"{table}.parquet"
+        f_2425 = dir_2425 / f"{table}.parquet"
+        assert f_2324.exists(), f"Missing {f_2324}"
+        assert f_2425.exists(), f"Missing {f_2425}"
+        df_2324 = pd.read_parquet(f_2324)
+        df_2425 = pd.read_parquet(f_2425)
+        diff = set(df_2425.columns) ^ set(df_2324.columns)
+        assert diff == set(), f"Schema mismatch in {table}: {diff}"
+
+
+def test_2024_25_gw1_build_features_with_2023_24_seed_no_leakage() -> None:
+    from features.builder import TERMINAL_PLAYER_COLUMNS, build_features
+
+    root = Path(__file__).resolve().parents[1]
+    dir_2324 = root / "data" / "archive" / "2023-24" / "processed"
+    dir_2425 = root / "data" / "archive" / "2024-25" / "processed"
+    assert dir_2324.exists() and dir_2425.exists()
+    df_feat = build_features(
+        dir_2425,
+        target_gw=1,
+        horizon=1,
+        seed_processed_dir=dir_2324,
+        use_archive_seed=False,
+        as_of_gw=1,
+    )
+    assert not df_feat.empty
+    for col in TERMINAL_PLAYER_COLUMNS:
+        assert col not in df_feat.columns, f"Leaked terminal column {col}"
+
+
+

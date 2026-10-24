@@ -152,3 +152,51 @@ def test_evaluate_and_apply_leaves_config_when_gate_fails(tmp_path: Path) -> Non
     assert not comparisons[0].verdict.passed
     assert evidence_paths is not None
     assert load_model_selection(config_path).champion == "participation_state_hybrid"
+
+
+def test_main_confirmation_defaults_seed_season_to_2023_24(tmp_path: Path) -> None:
+    from commands.evaluate_model_promotion import main
+
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="participation_state_hybrid",
+            candidates=("metrics_component_hybrid",),
+        ),
+        config_path,
+    )
+    data_dir = tmp_path / "archive" / "2024-25" / "processed"
+    data_dir.mkdir(parents=True)
+
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply") as mock_eval:
+        mock_eval.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--data_dir", str(data_dir),
+            "--confirmation",
+        ])
+        assert mock_eval.call_args.kwargs["seed_season"] == "2023-24"
+
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply") as mock_eval:
+        mock_eval.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--data_dir", str(data_dir),
+            "--confirmation",
+            "--seed_season", "2022-23",
+        ])
+        assert mock_eval.call_args.kwargs["seed_season"] == "2022-23"
+
+    data_dir_2526 = tmp_path / "archive" / "2025-26" / "processed"
+    data_dir_2526.mkdir(parents=True)
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply") as mock_eval:
+        mock_eval.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--data_dir", str(data_dir_2526),
+            "--confirmation",
+        ])
+        assert mock_eval.call_args.kwargs["seed_season"] is None
+
+
+

@@ -19,8 +19,9 @@
   - Linked native sub-issues and blockedBy dependency graph.
   - Added Phase 6: Promotion Gate & Evaluation Rigor Overhaul to ROADMAP.md.
   - Initialized tracking manifest in docs/research/backtest-gate-reform/wayfinder-tickets.json.
+  - Resolved Ticket #167: provisioned 2023-24 archive from Vaastav FPL CSVs, updated snapshot_season for multi-season reconstruct, wired default seed_season="2023-24" for confirmation in evaluate_model_promotion and walkforward. Ticket closed.
 - **Blocked:** None
-- **Next:** Execute unblocked frontier tickets: #167 (2023-24 archive provisioning), #169 (constrained LegalXI), #170 (exogenous playable pool mask).
+- **Next:** Execute unblocked frontier tickets: #168 (short-panel priors & Neff shrinkage), #169 (constrained LegalXI), #170 (exogenous playable pool mask).
 
 ## Todo
 - [x] Chart Wayfinder Map #166 and child decision tickets #167–#173 on GitHub
@@ -28,7 +29,7 @@
 - [x] Create local manifest `docs/research/backtest-gate-reform/wayfinder-tickets.json`
 - [x] Create research note `docs/research/backtest-gate-reform/backtest-gate-reform.md` and link in `docs/research/INDEX.md`
 - [x] Update ROADMAP.md and docs/agents/current-state.md for Phase 6
-- [ ] Implement Ticket #167: provision 2023-24 warm confirmation seed archive
+- [x] Implement Ticket #167: provision 2023-24 warm confirmation seed archive
 - [ ] Implement Ticket #169: constrained select_legal_formation_xi and squad churn guardrail
 - [ ] Implement Ticket #170: exogenous playable pool mask and active-window guardrails
 - [ ] Implement Ticket #168: short-panel empirical Bayes priors and continuous Neff shrinkage
@@ -37,4 +38,4 @@
 - [ ] Implement Ticket #173: full test suite verification, candidate re-evaluations, and ADR 0064
 
 ## Blockers / Notes
-- None. Active unblocked frontier: #167, #169, #170.
+- None. Active unblocked frontier: #168, #169, #170.

@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LIVE_SNAPSHOT_SEASON = "2025-26"
-VAASTAV_RECONSTRUCT_SEASON = "2024-25"
+VAASTAV_RECONSTRUCT_SEASONS = ("2023-24", "2024-25")
 
 
 def process_season_archive(
@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--from-vaastav-dir",
         type=Path,
-        help="Frozen reconstruct of 2024-25 vaastav FPL CSVs into processed (not a live source)",
+        help="Frozen reconstruct of 2023-24 / 2024-25 vaastav FPL CSVs into processed (not a live source)",
     )
     parser.add_argument(
         "--archive-root",
@@ -140,9 +140,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.from_raw_dir is not None and args.from_vaastav_dir is not None:
         raise ValueError("pass only one of --from-raw-dir or --from-vaastav-dir")
     if args.from_vaastav_dir is not None:
-        if args.season != VAASTAV_RECONSTRUCT_SEASON:
+        if args.season not in VAASTAV_RECONSTRUCT_SEASONS:
             raise ValueError(
-                f"--from-vaastav-dir is a frozen reconstruct of {VAASTAV_RECONSTRUCT_SEASON} only; "
+                f"--from-vaastav-dir is a frozen reconstruct of {', '.join(VAASTAV_RECONSTRUCT_SEASONS)} only; "
                 "use --from-raw-dir for later seasons"
             )
         if not args.from_vaastav_dir.exists():
