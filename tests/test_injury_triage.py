@@ -88,16 +88,17 @@ def test_synthesize_xmins_override_cascade_precedence(tmp_path: Path):
     out_csv = tmp_path / "xmins_override.csv"
     ref = date(2026, 10, 20)
 
-    # 1. Base External CSV (Tier 2) gives Haaland 80m and Saka 85m
+    # 1. Base External CSV (Tier 2) gives Haaland 80m, Saka 85m, and Janelt 75m (stale external data)
     base_csv = tmp_path / "base_fpl_review.csv"
     base_csv.write_text(
         "ID,Name,8_xMins,9_xMins\n"
         "411,Haaland,80.0,80.0\n"
-        "12,Saka,85.0,85.0\n",
+        "12,Saka,85.0,85.0\n"
+        "98,Janelt,75.0,75.0\n",
         encoding="utf-8",
     )
 
-    # 2. Targeted Override (Tier 3) overrides Saka to 0m (GW8) and 45m (GW9)
+    # 2. Targeted Override (Layer 3 Top) overrides Saka to 0m (GW8) and 45m (GW9)
     targeted = {
         (12, 8): 0.0,
         (12, 9): 45.0,
@@ -115,16 +116,36 @@ def test_synthesize_xmins_override_cascade_precedence(tmp_path: Path):
     assert path.exists()
     df = pd.read_csv(path)
 
-    # Tier 3 wins over Tier 2: Saka receives targeted curve (0.0, 45.0)
+    # Layer 3 Targeted wins over Layer 2: Saka receives targeted curve (0.0, 45.0)
     saka = df[df["ID"] == 12].iloc[0]
     assert saka["8_xMins"] == 0.0
     assert saka["9_xMins"] == 45.0
 
-    # Tier 2 holds when Tier 3 omitted: Haaland receives 80.0, 80.0
+    # Layer 2 holds when healthy and unshielded: Haaland receives 80.0, 80.0
     haaland = df[df["ID"] == 411].iloc[0]
     assert haaland["8_xMins"] == 80.0
     assert haaland["9_xMins"] == 80.0
 
-    # Tier A Broad Pool Shield applies to unlisted injured assets (Janelt ID 98 = 0.0 in GW8)
+    # Layer 3 Broad Pool Shield overrides stale Layer 2 external minutes for injured assets (Janelt ID 98 = 0.0 in GW8)
     janelt = df[df["ID"] == 98].iloc[0]
     assert janelt["8_xMins"] == 0.0
+
+
+def test_resolve_default_target_gw_advances_when_deadline_passed(tmp_path: Path):
+    from solver.planning import resolve_default_target_gw
+    import pandas as pd
+
+    # Create dummy gameweeks.parquet where GW8 deadline is in past, GW9 in future
+    df = pd.DataFrame({
+        "id": [8, 9, 10],
+        "is_next": [True, False, False],
+        "finished": [False, False, False],
+        "deadline_time": [
+            "2026-10-20T17:30:00Z",  # in the past
+            "2099-10-31T11:00:00Z",  # far future
+            "2099-11-06T18:30:00Z",
+        ],
+    })
+    df.to_parquet(tmp_path / "gameweeks.parquet")
+    resolved = resolve_default_target_gw(tmp_path)
+    assert resolved == 9

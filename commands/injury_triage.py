@@ -46,12 +46,8 @@ def main() -> None:
         logger.error("Missing %s. Run refresh_data first.", gw_parquet)
         sys.exit(1)
 
-    df_gw = pd.read_parquet(gw_parquet)
-    if args.target_gw is None:
-        next_gw = df_gw[df_gw["is_next"]]
-        target_gw = int(next_gw["id"].iloc[0]) if not next_gw.empty else 1
-    else:
-        target_gw = args.target_gw
+    from solver.planning import resolve_default_target_gw
+    target_gw = args.target_gw if args.target_gw is not None else resolve_default_target_gw(proc)
 
     horizon = args.horizon
     planning_gws = list(range(target_gw, target_gw + horizon))

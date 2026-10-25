@@ -281,10 +281,10 @@ def synthesize_xmins_override(
     Synthesize consolidated 3-tier xMins override CSV.
     
     Precedence:
-    Tier 3: Targeted Overrides (user curves / web research)
-    Tier 2: Base External CSV (if provided)
-    Tier A: Broad Pool Shield (automated FPL return date zeros & ramps)
-    Tier 1: Blank cells fall back to Native Champion.
+    Layer 3 (Top Guard): Targeted Overrides (user curves / web research)
+    Layer 3 (Top Guard): Broad Pool Shield (automated FPL return date zeros & ramps)
+    Layer 2 (Middle): Base External CSV (if provided)
+    Layer 1 (Base Foundation): Blank cells fall back to Native In-House Champion.
     """
     players_path = processed_dir / "players.parquet"
     if not players_path.exists():
@@ -318,10 +318,10 @@ def synthesize_xmins_override(
             key = (int(pid), int(gw))
             if key in target_map:
                 vals.append(float(target_map[key]))
-            elif key in base_map:
-                vals.append(float(base_map[key]))
             elif key in shield_map:
                 vals.append(float(shield_map[key]))
+            elif key in base_map:
+                vals.append(float(base_map[key]))
             else:
                 vals.append("")
         out_df[col_name] = vals

@@ -268,7 +268,7 @@ An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
 **Minutes Cascade**:
-Three-tier minutes resolution precedence: Targeted Availability Override $\to$ Baseline External Projections CSV $\to$ Native Champion fallback. Omitted/blank cells inherit lower-tier projections. Unlisted assets retain Native Champion expectation.
+Ground-up three-tier minutes resolution precedence: Layer 3 (Injury Guard on top: Targeted Availability Override & Broad Pool Shield) $\to$ Layer 2 (Baseline External Projections CSV) $\to$ Layer 1 (Native In-House Champion fallback). Broad Pool Shield insulates solver against stale external minutes. Omitted/blank cells inherit lower-tier projections; unlisted assets retain Native Champion expectation.
 _Avoid_: Zeroing unlisted players, single-tier overrides, uncomposable projection sources
 
 **Targeted Availability Override**:

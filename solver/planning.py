@@ -1,5 +1,6 @@
 """Planning Horizon, Chip Set, Force Keep/Ban, and dashboard-to-solver mapping."""
 
+from datetime import timezone
 from pathlib import Path
 from typing import Any
 
@@ -49,13 +50,21 @@ def planning_window(start: int, end: int) -> list[int]:
 def resolve_default_target_gw(processed_dir: Path) -> int:
     """Next open transfer deadline Gameweek.
 
-    Prefers is_next from gameweeks.parquet (the upcoming transfer window when a
-    Gameweek is in play). Falls back to earliest unfinished, then 1 (preseason) or 38.
+    Checks deadline_time against current UTC time: any Gameweek whose deadline
+    has already passed cannot accept transfers, so the target advances to the
+    first open Gameweek (deadline_time > now_utc). Falls back to is_next,
+    then earliest unfinished, then 1 (preseason) or 38.
     """
     gameweeks_path = processed_dir / "gameweeks.parquet"
     if gameweeks_path.exists():
         try:
             df_gw = pd.read_parquet(gameweeks_path)
+            now_utc = pd.Timestamp.now(timezone.utc)
+            if "deadline_time" in df_gw.columns:
+                deadlines = pd.to_datetime(df_gw["deadline_time"], utc=True, errors="coerce")
+                open_gws = df_gw[deadlines > now_utc].sort_values("id")
+                if not open_gws.empty:
+                    return int(open_gws.iloc[0]["id"])
             if "is_next" in df_gw.columns:
                 next_gw = df_gw[df_gw["is_next"].fillna(False)]
                 if not next_gw.empty:

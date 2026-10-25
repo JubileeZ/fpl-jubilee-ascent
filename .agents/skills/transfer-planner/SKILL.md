@@ -6,43 +6,92 @@ disable-model-invocation: true
 
 # Transfer Planner
 
-Plan optimal transfers and starting lineups across upcoming Gameweeks for the user's live squad via Mixed-Integer Linear Programming (MILP). Supports the Three-Tier Minutes Cascade: external projections (e.g. FPL Review), automated Broad Pool Shield, and agentic Injury Return Curves decomposed onto Champion scoring rates and Plackett-Luce bonus math.
+Plan optimal transfers and starting lineups across upcoming Gameweeks for the user's live squad via Mixed-Integer Linear Programming (MILP). Built upon the Ground-Up Three-Tier Minutes Cascade: Layer 1 (Native In-House Champion baseline), Layer 2 (Optional External Minutes override), and Layer 3 (Injury Guard on top: automated Broad Pool Shield + Agentic Return Curves) decomposed onto Champion scoring rates and Plackett-Luce bonus math.
+
+## Ground-Up Minutes Cascade Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│  Layer 3 (Top Guard Layer): Injury Guard & Overwrites   │
+│  • Broad Pool Shield (auto 0.0m on injured assets)     │
+│  • Targeted Injury Return Curves (e.g. Saka recovery)  │
+│  👉 Overwrites everything below it                      │
+├────────────────────────────────────────────────────────┤
+│  Layer 2 (Middle Layer): External Minutes Override     │
+│  • External CSV (e.g., FPL Review {gw}_xMins)          │
+│  👉 Overwrites Layer 1 for players in the file         │
+├────────────────────────────────────────────────────────┤
+│  Layer 1 (Base Foundation): Native In-House Champion   │
+│  • Zero-leakage causal panel / Ridge rates & duration   │
+│  👉 Default foundation for every player in the league  │
+└────────────────────────────────────────────────────────┘
+```
 
 ## Workflow
 
 ```mermaid
 flowchart TD
-    S1["1. Ingestion & Baseline (External CSV or Champion)"] --> S2["2. Injury & Availability Triage (Broad Pool Shield + Web Intel)"]
-    S2 --> S3["3. Preflight Confirmation (Review Triage Table & Solver Flags)"]
-    S3 --> S4["4. Execution & Solve (Synthesize xmins_override.csv & Run MILP)"]
-    S4 --> S5["5. Presentation & Ledger (Hold vs Sell & Lineup Card)"]
+    S1["1. Live Sync & Target Detection (Auto refresh_data, sync squad, detect open deadline)"] --> S2["2. Baseline & Minutes Layering (Native Base + optional External Override)"]
+    S2 --> S3["3. Injury Guard & Return Curves (Broad Pool Shield + Web Intel on top)"]
+    S3 --> S4["4. Preflight Confirmation (Review Triage Table, Chips & Solver Flags)"]
+    S4 --> S5["5. Execution & Solve (Synthesize xmins_override.csv & Run MILP)"]
+    S5 --> S6["6. Presentation & Ledger (Transfer Ledger, Lineup Card, Variance & Minutes Audit)"]
 ```
 
 ---
 
-### Step 1: Ingestion & Baseline
+### Step 1: Live Sync & Target Gameweek Auto-Detection
 
-Check the user's triggering prompt for an external minutes CSV path (e.g. `/path/to/projection.csv`).
+Always refresh data first to ensure planning operates on the true real-world state:
 
-1. **Path provided**: Validate file exists and contains `ID` and `{gw}_xMins` (or `{gw}_mins`) columns. Unlisted players or blank cells will smoothly fall back to Native Champion minutes (Three-Tier Minutes Cascade).
-2. **Path omitted**: Ask once:
-   > *"Do you have an external xMins CSV to apply? (Reply with file path, or reply 'skip' / 'no' to use native Champion minutes)."*
-   - If user provides path: use provided file as Tier 2 baseline.
-   - If user skips, declines, or provides no file: proceed with native Champion minutes (`adaptive_causal_challenger` / `def_xg_shrink_challenger`).
+1. **Execute Live Ingest & Squad Sync**:
+   Run the refresh pipeline to sync official FPL bootstrap, fixtures, player availability, and authenticated User Squad:
+   ```bash
+   uv run python -m commands.refresh_data
+   ```
+   - Automatically authenticates via `.env` credentials (`FPL_EMAIL` and `FPL_PASSWORD`) to download live User Squad into `data/processed/user_picks.parquet`.
+   - If offline or credentials are missing, gracefully falls back to existing local parquet cache with a clear note.
+
+2. **Strict Open-Deadline Target Gameweek Detection**:
+   Inspect `data/processed/gameweeks.parquet`:
+   - Checks `deadline_time` against current UTC time (`deadline_time > now_utc`).
+   - Any in-flight or passed Gameweek (e.g. GW8 when deadline passed Oct 23) is locked and cannot receive transfers.
+   - Automatically sets **Transfer Plan Start** (`target_gw`) to the **first Gameweek with an open, future deadline** (e.g. GW9).
+   - Announces live lock state if a passed/in-play Gameweek was detected.
+
+3. **Present Live Sync Card**:
+   ```markdown
+   🔄 **Live FPL Sync**:
+   • Data Status: Bootstrap & fixtures updated to current live state
+   • Next Open Deadline: GW{target_gw} ({deadline_date_str})
+   • User Squad: 15 picks loaded (Entry #{entry_id} · £{itb}m ITB · {free_transfers} Free Transfer)
+   ```
 
 ---
 
-### Step 2: Injury & Availability Triage
+### Step 2: Baseline & Minutes Layering (Layers 1 & 2)
 
-Before solving, detect and triage all flagged assets across the squad and transfer market:
+Check the user's prompt for an external minutes CSV path (e.g. `/path/to/projection.csv`).
+
+1. **Path provided**: Validate file exists and contains `ID` and `{gw}_xMins` (or `{gw}_mins`) columns. Activates **Layer 2 (External Minutes Override)** on top of Layer 1.
+2. **Path omitted**: Ask once:
+   > *"Do you have an external xMins CSV to apply on top of the base? (Reply with file path, or reply 'skip' / 'no' to use native Champion minutes)."*
+   - If user provides path: wire file into Layer 2.
+   - If user skips or provides no file: proceed with **Layer 1 (Native In-House Champion)** (`adaptive_causal_challenger` / `def_xg_shrink_challenger`) as complete baseline.
+
+---
+
+### Step 3: Injury Guard & Triage Overwrite (Layer 3 on Top)
+
+Before solving, apply the protective guard layer on top of all baselines:
 
 1. **Run Automated Triage Scan**:
    Execute the triage helper to build the Broad Pool Shield and extract flagged assets:
    ```bash
    uv run python -m commands.injury_triage --target_gw <target_gw> --horizon <horizon> [--base-csv <path>] --json
    ```
-   - **Tier A (Broad Pool Shield)**: Automatically parses official FPL API return dates and enforces `0.0` xMins prior to club fixture return dates across all 600+ players in the league, preventing the solver from buying any unavailable asset at any price tier.
-   - **Flagged Assets**: Extracts flagged players in the user's squad and key market targets segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
+   - **Broad Pool Shield (Layer 3 Top)**: Automatically parses official FPL API return dates and enforces `0.0` xMins prior to club fixture return dates across all 600+ players in the league, preventing the solver from buying any unavailable asset at any price tier—even if an external CSV gave them minutes.
+   - **Flagged Assets**: Extracts flagged players in the User Squad and key market targets segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
 
 2. **Targeted Agentic Web Intel**:
    For flagged **User Squad** players and relevant market targets, run `search_web` to inspect recent press conferences, team news, injury severity, and expected return gameweek.
@@ -57,23 +106,22 @@ Before solving, detect and triage all flagged assets across the squad and transf
 4. **Present Compact Injury Triage Table**:
    Display a compact Markdown summary table in the chat:
    ```markdown
-   🏥 **Injury & Availability Triage**:
+   🏥 **Injury & Availability Triage (Layer 3 Guard on Top)**:
    | Player | Pos | Price | Status / FPL News | Web Intel / Manager Update | Proposed xMins Curve (GW{start}–GW{end}) |
    |:---|:---:|:---:|:---|:---|:---|
-   | Saka | MID | £9.6m | 50% thigh injury | Arteta: trained lightly; late fitness test | GW8: 45m · GW9: 75m · GW10+: 85m |
+   | Saka | MID | £9.6m | 50% thigh injury | Arteta: fluid in quad; out several weeks | GW9: 0m · GW10: 0m · GW11: 30m · GW12+: 75m |
 
-   🛡️ **Broad Pool Shield**: 69 other flagged pool players automatically shielded (assigned 0.0 xMins before return date).
+   🛡️ **Broad Pool Shield**: 175 other flagged pool players automatically shielded (assigned 0.0 xMins before return date).
    ```
 
 ---
 
-### Step 3: Parameter Preflight Confirmation
+### Step 4: Parameter Preflight Confirmation
 
 Resolve default parameters:
-- **Target Gameweek**: Earliest unfinished GW from `data/processed/gameweeks.parquet` (or explicit user target).
-- **Default Planning Horizon**: 8 Gameweeks.
-  - *Dynamic expansion*: If the user specifies booking a chip beyond `target_gw + 7` (e.g. Free Hit on GW16 when target is GW8), expand horizon (`horizon = chip_gw - target_gw + 1`).
-  - *Long-horizon warning*: If `horizon > 10`, warn the user: *"Planning horizon exceeds 10 Gameweeks; solving to gap 0.0 may take 5–15 minutes. Consider `--gap 0.002` (0.2%) for faster convergence."*
+- **Target Gameweek**: First open deadline GW (`deadline_time > now_utc`, e.g. GW9).
+- **Default Planning Horizon**: 8–10 Gameweeks (clamped to max 10; dynamic expansion if chips booked e.g. Free Hit on GW16).
+  - *Long-horizon warning*: If `horizon > 10`, warn user that solving to gap 0.0 beyond 10 GWs requires `--gap 0.002` (0.2%).
 - **Solver Mode**: Strategic (`--arm strategic`, default).
   - *Strategic Variance Controls*:
     - Paid hit hurdle: +1.8 net pts required over free transfer.
@@ -81,32 +129,30 @@ Resolve default parameters:
     - 1st bench cover: 65.0 xMins floor (min 12 players with >= 65 xMins, −1.5 pt penalty).
     - Defensive stack cap: Max 2 starting DEF + GK from same club (−1.2 pt penalty).
     - GK transfer friction: 1.5 pt penalty (waived on WC and FH).
-  - *Other modes*: Unconstrained (`--arm unconstrained`), No Hit (`--arm no_hit` or `--no-hit`), or 3-Arm Scenarios (`--scenarios`).
 - **Default Solver Gap**: 0.0 (exact mathematical optimum).
-- **Default Chips**: None booked (all available chips preserved unless specified by user).
+- **Booked Chips**: Note any specified chips (e.g. Free Hit on GW16).
 
 Present consolidated preflight card to user:
 
 ```markdown
 📋 **Transfer Solver Preflight**:
-• Target Gameweek: GW{target_gw}
+• Target Gameweek: GW{target_gw} (First Open Deadline: {deadline})
 • Horizon: {horizon} Gameweeks (GW{target_gw}–GW{target_gw + horizon - 1})
 • Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
 • Strategic Controls: 1.8 pt hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per club · 1.5 pt GK friction
-• Projection Source: {External xMins from <path> | Native Champion}
-• Injury Triage: {Active with Broad Pool Shield & Proposed Curves}
+• Minutes Stack: Layer 1 (Native Champion) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield & Confirmed Curves)
 • Booked Chips: {None | e.g. Free Hit on GW16}
 • Solver Gap: {0.0}
 • User Squad: Live squad loaded from `data/processed/user_picks.parquet`
 
-👉 Reply "proceed" to run these defaults, or provide any overrides (e.g. "set Saka to 0 in GW8 and 60 in GW9", "horizon 10, FH on GW16").
+👉 Reply "proceed" to run these defaults, or provide any overrides.
 ```
 
 Wait for user confirmation or adjustments before invoking solver.
 
 ---
 
-### Step 4: Execution & Solve
+### Step 5: Execution & Solve
 
 1. **Synthesize Final Override CSV**:
    Compile confirmed curves and Broad Pool Shield into `data/planner/xmins_override.csv`:
@@ -126,15 +172,6 @@ Wait for user confirmation or adjustments before invoking solver.
      --horizon <horizon> \
      --gap <gap> \
      --arm <strategic | unconstrained | no_hit> \
-     [--hit-friction <pts>] \
-     [--starter-xmins-floor <mins>] \
-     [--starter-xmins-penalty <pts>] \
-     [--bench-cover-min <N>] \
-     [--bench-cover-xmins <mins>] \
-     [--bench-cover-penalty <pts>] \
-     [--def-stack-cap <N>] \
-     [--def-stack-penalty <pts>] \
-     [--gk-transfer-friction <pts>] \
      --xmins-override data/planner/xmins_override.csv \
      [--use-fh <gw>] \
      [--use-wc <gw>] \
@@ -146,7 +183,7 @@ Wait for user confirmation or adjustments before invoking solver.
 
 ---
 
-### Step 5: Presentation & Ledger
+### Step 6: Presentation & Ledger
 
 Present weekly results cleanly:
 
@@ -158,13 +195,13 @@ Present weekly results cleanly:
    - Designated Captain (**C**) and Vice-Captain (**V**)
    - Bench order (Slots 1–4)
    - Lineup projected points (xPts)
-3. **Strategic Variance Audit** (when Strategic mode active):
+3. **Strategic Variance Audit**:
    - Paid Hit Hurdle checks
    - Starter xMins floor violations / slacks
    - 1st Outfield Bench xMins coverage
    - Defensive Club Stacking (DEF+GK)
    - Goalkeeper Transfer Friction
-4. **Chip Strategy Summary**:
-   - Highlight activated chip (e.g. Free Hit, Wildcard).
+4. **Minutes Audit**:
+   - Transparently tag each starting and transfer asset with their minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]`.
 5. **Artifact Link**:
    - Link to saved plan: [`data/solution.json`](file:///home/jubileez/fpl-jubilee-ascent/data/solution.json).
