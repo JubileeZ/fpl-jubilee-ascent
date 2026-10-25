@@ -35,6 +35,7 @@ PLAYABLE_MINUTES_THRESHOLD = 30.0
 # Non-catastrophic segment loss guardrails (ADR 0062, replacing binary segs >= 2/3)
 SEGMENT_REGRESSION_TOL: float = 0.15
 COLD_START_PARITY_TOL: float = 0.05
+CHURN_GUARDRAIL_TOL: float = 0.50
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,7 @@ class GuardrailMetrics:
     captain_regret: float | None = None
     playable_mae: float | None = None
     playable_bias: float | None = None
+    squad_churn: float | None = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +101,7 @@ def guardrail_metrics(metrics: dict[str, Any]) -> GuardrailMetrics:
     cap_regret = metrics.get("captain_regret")
     playable_mae = metrics.get("playable_mae")
     playable_bias = metrics.get("playable_bias")
+    squad_churn = metrics.get("top_15_squad_churn")
     return GuardrailMetrics(
         xmins_mae=float(minutes.get("mae", float("inf"))),
         xp_bias=abs(float(metrics["bias"])),
@@ -106,6 +109,7 @@ def guardrail_metrics(metrics: dict[str, Any]) -> GuardrailMetrics:
         captain_regret=float(cap_regret) if cap_regret is not None else None,
         playable_mae=float(playable_mae) if playable_mae is not None else None,
         playable_bias=abs(float(playable_bias)) if playable_bias is not None else None,
+        squad_churn=float(squad_churn) if squad_churn is not None else None,
     )
 
 
@@ -124,7 +128,11 @@ def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetr
     if candidate.playable_bias is not None and champion.playable_bias is not None:
         meets_playable = meets_playable and (candidate.playable_bias <= champion.playable_bias + BIAS_ABS_TOL)
 
-    return meets_xmins and meets_bias and meets_rank and meets_captain and meets_playable
+    meets_churn = True
+    if candidate.squad_churn is not None and champion.squad_churn is not None:
+        meets_churn = candidate.squad_churn <= champion.squad_churn + CHURN_GUARDRAIL_TOL
+
+    return meets_xmins and meets_bias and meets_rank and meets_captain and meets_playable and meets_churn
 
 
 def compute_playable_pool_metrics(
@@ -294,6 +302,15 @@ def evaluate_historical_promotion_gate(
             reasons.append(
                 f"regressed Playable Pool Bias guardrail "
                 f"({cand_g.playable_bias:.4f} vs {champ_g.playable_bias:.4f})"
+            )
+        if (
+            cand_g.squad_churn is not None
+            and champ_g.squad_churn is not None
+            and cand_g.squad_churn > champ_g.squad_churn + CHURN_GUARDRAIL_TOL
+        ):
+            reasons.append(
+                f"regressed Squad Churn guardrail "
+                f"({cand_g.squad_churn:.2f} vs {champ_g.squad_churn:.2f} + {CHURN_GUARDRAIL_TOL:.2f})"
             )
     if reference_windows:
         for target in _REFERENCE_TARGETS:

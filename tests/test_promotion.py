@@ -406,3 +406,24 @@ def test_playable_pool_metrics_and_guardrail() -> None:
     assert abs(champ_m["bias"] - 0.25) < 1e-6
     assert abs(cand_m["bias"] - 0.15) < 1e-6
 
+
+def test_squad_churn_guardrail() -> None:
+    from backtesting.promotion import CHURN_GUARDRAIL_TOL
+
+    champ_metrics = _metrics(mae=2.0, bias=0.1)
+    champ_metrics["top_15_squad_churn"] = 1.20
+
+    # Within tolerance (+0.50 players/GW) passes
+    cand_ok = _metrics(mae=1.8, bias=0.1)
+    cand_ok["top_15_squad_churn"] = 1.20 + CHURN_GUARDRAIL_TOL
+    g_champ = guardrail_metrics(champ_metrics)
+    g_ok = guardrail_metrics(cand_ok)
+    assert metrics_meet_guardrails(g_ok, g_champ)
+
+    # Beyond tolerance (> +0.50) fails
+    cand_fail = _metrics(mae=1.8, bias=0.1)
+    cand_fail["top_15_squad_churn"] = 1.20 + CHURN_GUARDRAIL_TOL + 0.10
+    g_fail = guardrail_metrics(cand_fail)
+    assert not metrics_meet_guardrails(g_fail, g_champ)
+
+

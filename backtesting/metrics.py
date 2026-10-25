@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import Bounds, LinearConstraint, milp
 
 
 _MINUTE_BAND_LABELS = ("0", "1-59", "60+")
@@ -29,6 +30,9 @@ _POS_DEF = 2
 _POS_MID = 3
 _POS_FWD = 4
 
+_TIE_BREAK_COST_WEIGHT = 1e-8
+_TIE_BREAK_ID_WEIGHT = 1e-12
+
 _LEGAL_FORMATIONS = (
     (3, 5, 2),
     (3, 4, 3),
@@ -41,13 +45,8 @@ _LEGAL_FORMATIONS = (
 )
 
 
-def best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
-    """Select the best legal 11-player lineup maximizing sum(sort_col).
-
-    A legal formation requires 1 GKP (pos 1), and (d, m, f) outfield players
-    where d in [3, 5], m in [2, 5], f in [1, 3] and d + m + f == 10.
-    If position_id is missing or insufficient players exist, returns top 11 by sort_col.
-    """
+def _legacy_best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
+    """Legacy unconstrained formation scan (ADR 0054)."""
     if "position_id" not in group.columns or len(group) < 11:
         return group.nlargest(min(11, len(group)), sort_col)
 
@@ -72,14 +71,264 @@ def best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
     return best_xi if best_xi is not None else group.nlargest(min(11, len(group)), sort_col)
 
 
+def select_legal_formation_xi(
+    group: pd.DataFrame,
+    sort_col: str,
+    *,
+    budget_cap: float | None = 835.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
+) -> pd.DataFrame:
+    """Select the best legal 11-player lineup maximizing sum(sort_col).
+
+    Enforces:
+    1. Legal formation (1 GKP, 3-5 DEF, 2-5 MID, 1-3 FWD, exactly 11 players).
+    2. Optional starting XI budget cap (default £83.5m / 835.0 in 0.1m units).
+    3. Club quota (max 3 players per club).
+    4. Deterministic tie-breaking on [sort_col DESC, cost ASC, player_id ASC].
+    """
+    if "position_id" not in group.columns or len(group) < 11:
+        return group.nlargest(min(11, len(group)), sort_col)
+
+    has_cost = cost_col in group.columns and budget_cap is not None
+    has_club = club_col in group.columns and max_per_club > 0
+
+    if not has_cost and not has_club:
+        return _legacy_best_legal_xi(group, sort_col)
+
+    # Include both highest projected and budget enablers to prevent infeasibility
+    gkp_parts = [group[group["position_id"] == _POS_GKP].nlargest(min(15, len(group)), sort_col)]
+    def_parts = [group[group["position_id"] == _POS_DEF].nlargest(min(30, len(group)), sort_col)]
+    mid_parts = [group[group["position_id"] == _POS_MID].nlargest(min(35, len(group)), sort_col)]
+    fwd_parts = [group[group["position_id"] == _POS_FWD].nlargest(min(20, len(group)), sort_col)]
+
+    if has_cost:
+        gkp_parts.append(group[group["position_id"] == _POS_GKP].nsmallest(min(5, len(group)), cost_col))
+        def_parts.append(group[group["position_id"] == _POS_DEF].nsmallest(min(10, len(group)), cost_col))
+        mid_parts.append(group[group["position_id"] == _POS_MID].nsmallest(min(10, len(group)), cost_col))
+        fwd_parts.append(group[group["position_id"] == _POS_FWD].nsmallest(min(5, len(group)), cost_col))
+
+    pool = pd.concat(gkp_parts + def_parts + mid_parts + fwd_parts).drop_duplicates(
+        "player_id" if "player_id" in group.columns else None
+    ).reset_index(drop=True)
+    n = len(pool)
+    if n < 11:
+        return group.nlargest(min(11, len(group)), sort_col)
+
+    costs = pool[cost_col].fillna(0.0).to_numpy(dtype=float) if cost_col in pool.columns else np.zeros(n)
+    player_ids = pool["player_id"].fillna(0).to_numpy(dtype=float) if "player_id" in pool.columns else np.arange(n, dtype=float)
+    scores = pool[sort_col].fillna(0.0).to_numpy(dtype=float)
+
+    cost_scale = 10.0 if np.max(costs) <= 20.0 and np.max(costs) > 0 else 1.0
+    scaled_costs = costs * cost_scale
+    if budget_cap is not None:
+        effective_budget = budget_cap * 10.0 if budget_cap <= 100.0 and cost_scale == 10.0 else budget_cap
+    else:
+        effective_budget = float("inf")
+
+    c = -(scores - _TIE_BREAK_COST_WEIGHT * scaled_costs - _TIE_BREAK_ID_WEIGHT * player_ids)
+
+    positions = pool["position_id"].to_numpy(dtype=int)
+    clubs = pool[club_col].to_numpy() if club_col in pool.columns else np.zeros(n, dtype=int)
+    unique_clubs = np.unique(clubs) if club_col in pool.columns else []
+
+    A_rows = [
+        np.ones(n),
+        (positions == _POS_GKP).astype(float),
+        (positions == _POS_DEF).astype(float),
+        (positions == _POS_MID).astype(float),
+        (positions == _POS_FWD).astype(float),
+    ]
+    lb = [11.0, 1.0, 3.0, 2.0, 1.0]
+    ub = [11.0, 1.0, 5.0, 5.0, 3.0]
+
+    if has_cost:
+        A_rows.append(scaled_costs)
+        lb.append(0.0)
+        ub.append(effective_budget)
+
+    if has_club:
+        for cl in unique_clubs:
+            A_rows.append((clubs == cl).astype(float))
+            lb.append(0.0)
+            ub.append(float(max_per_club))
+
+    A = np.array(A_rows)
+    constraints = LinearConstraint(A, np.array(lb), np.array(ub))
+    integrality = np.ones(n)
+    bounds = Bounds(0, 1)
+
+    res = milp(c=c, integrality=integrality, bounds=bounds, constraints=constraints)
+
+    if res.success:
+        selected_idx = np.where(res.x > 0.5)[0]
+        selected_df = pool.iloc[selected_idx].copy()
+        sort_order = np.lexsort((
+            selected_df["player_id"] if "player_id" in selected_df.columns else np.arange(len(selected_df)),
+            selected_df[cost_col] if cost_col in selected_df.columns else np.zeros(len(selected_df)),
+            -selected_df[sort_col],
+        ))
+        return selected_df.iloc[sort_order].reset_index(drop=True)
+
+    return _legacy_best_legal_xi(group, sort_col)
+
+
+best_legal_xi = select_legal_formation_xi
+
+
+def select_top_15_squad(
+    group: pd.DataFrame,
+    sort_col: str = "projected_points",
+    *,
+    squad_budget: float = 1000.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
+) -> pd.DataFrame:
+    """Select optimal 15-player squad (2 GKP, 5 DEF, 5 MID, 3 FWD) subject to £100.0m budget."""
+    if "position_id" not in group.columns or len(group) < 15:
+        return group.nlargest(min(15, len(group)), sort_col)
+
+    gkp_parts = [group[group["position_id"] == _POS_GKP].nlargest(min(10, len(group)), sort_col)]
+    def_parts = [group[group["position_id"] == _POS_DEF].nlargest(min(25, len(group)), sort_col)]
+    mid_parts = [group[group["position_id"] == _POS_MID].nlargest(min(30, len(group)), sort_col)]
+    fwd_parts = [group[group["position_id"] == _POS_FWD].nlargest(min(15, len(group)), sort_col)]
+
+    if cost_col in group.columns:
+        gkp_parts.append(group[group["position_id"] == _POS_GKP].nsmallest(min(5, len(group)), cost_col))
+        def_parts.append(group[group["position_id"] == _POS_DEF].nsmallest(min(10, len(group)), cost_col))
+        mid_parts.append(group[group["position_id"] == _POS_MID].nsmallest(min(10, len(group)), cost_col))
+        fwd_parts.append(group[group["position_id"] == _POS_FWD].nsmallest(min(5, len(group)), cost_col))
+
+    pool = pd.concat(gkp_parts + def_parts + mid_parts + fwd_parts).drop_duplicates(
+        "player_id" if "player_id" in group.columns else None
+    ).reset_index(drop=True)
+    n = len(pool)
+    if n < 15:
+        return group.nlargest(min(15, len(group)), sort_col)
+
+    costs = pool[cost_col].fillna(0.0).to_numpy(dtype=float) if cost_col in pool.columns else np.zeros(n)
+    player_ids = pool["player_id"].fillna(0).to_numpy(dtype=float) if "player_id" in pool.columns else np.arange(n, dtype=float)
+    scores = pool[sort_col].fillna(0.0).to_numpy(dtype=float)
+
+    cost_scale = 10.0 if np.max(costs) <= 20.0 and np.max(costs) > 0 else 1.0
+    scaled_costs = costs * cost_scale
+    effective_squad_budget = squad_budget * 10.0 if squad_budget <= 150.0 and cost_scale == 10.0 else squad_budget
+
+    c = -(scores - _TIE_BREAK_COST_WEIGHT * scaled_costs - _TIE_BREAK_ID_WEIGHT * player_ids)
+
+    positions = pool["position_id"].to_numpy(dtype=int)
+    clubs = pool[club_col].to_numpy() if club_col in pool.columns else np.zeros(n, dtype=int)
+    unique_clubs = np.unique(clubs) if club_col in pool.columns else []
+
+    A_rows = [
+        np.ones(n),
+        (positions == _POS_GKP).astype(float),
+        (positions == _POS_DEF).astype(float),
+        (positions == _POS_MID).astype(float),
+        (positions == _POS_FWD).astype(float),
+    ]
+    lb = [15.0, 2.0, 5.0, 5.0, 3.0]
+    ub = [15.0, 2.0, 5.0, 5.0, 3.0]
+
+    if cost_col in pool.columns:
+        A_rows.append(scaled_costs)
+        lb.append(0.0)
+        ub.append(effective_squad_budget)
+
+    if club_col in pool.columns and max_per_club > 0:
+        for cl in unique_clubs:
+            A_rows.append((clubs == cl).astype(float))
+            lb.append(0.0)
+            ub.append(float(max_per_club))
+
+    A = np.array(A_rows)
+    constraints = LinearConstraint(A, np.array(lb), np.array(ub))
+    integrality = np.ones(n)
+    bounds = Bounds(0, 1)
+
+    res = milp(c=c, integrality=integrality, bounds=bounds, constraints=constraints)
+    if res.success:
+        selected_idx = np.where(res.x > 0.5)[0]
+        selected_df = pool.iloc[selected_idx].copy()
+        sort_order = np.lexsort((
+            selected_df["player_id"] if "player_id" in selected_df.columns else np.arange(len(selected_df)),
+            selected_df[cost_col] if cost_col in selected_df.columns else np.zeros(len(selected_df)),
+            -selected_df[sort_col],
+        ))
+        return selected_df.iloc[sort_order].reset_index(drop=True)
+
+    return group.nlargest(min(15, len(group)), sort_col)
+
+
+def compute_top_15_squad_churn_by_gameweek(
+    df_eval: pd.DataFrame,
+    sort_col: str = "projected_points",
+    *,
+    squad_budget: float = 1000.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
+) -> pd.Series:
+    """Per-GW squad churn Churn_g = 15 - |S_g cap S_{g-1}| across rolling top-15 squads."""
+    if "position_id" not in df_eval.columns or cost_col not in df_eval.columns:
+        return pd.Series(dtype=float)
+
+    squads_by_gw: dict[int, set[int]] = {}
+    for gw, group in df_eval.groupby("gameweek"):
+        if len(group) >= 15:
+            squad = select_top_15_squad(
+                group,
+                sort_col,
+                squad_budget=squad_budget,
+                max_per_club=max_per_club,
+                cost_col=cost_col,
+                club_col=club_col,
+            )
+            squads_by_gw[int(gw)] = set(squad["player_id"])
+
+    sorted_gws = sorted(squads_by_gw.keys())
+    churn_dict: dict[int, float] = {}
+    for i in range(1, len(sorted_gws)):
+        gw_prev = sorted_gws[i - 1]
+        gw_curr = sorted_gws[i]
+        s_prev = squads_by_gw[gw_prev]
+        s_curr = squads_by_gw[gw_curr]
+        churn = float(15 - len(s_prev & s_curr))
+        churn_dict[gw_curr] = churn
+
+    return pd.Series(churn_dict, dtype=float)
+
+
 def _formation_xi_stats(
-    group: pd.DataFrame, *, target_column: str = "actual_points"
+    group: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+    budget_cap: float | None = 835.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
 ) -> tuple[float, float, float]:
     """Return (overlap, regret, captain_regret) for formation-constrained legal XI."""
     if len(group) == 0:
         return 0.0, 0.0, 0.0
-    predicted_xi = best_legal_xi(group, "projected_points")
-    actual_xi = best_legal_xi(group, target_column)
+    predicted_xi = select_legal_formation_xi(
+        group,
+        "projected_points",
+        budget_cap=budget_cap,
+        max_per_club=max_per_club,
+        cost_col=cost_col,
+        club_col=club_col,
+    )
+    actual_xi = select_legal_formation_xi(
+        group,
+        target_column,
+        budget_cap=budget_cap,
+        max_per_club=max_per_club,
+        cost_col=cost_col,
+        club_col=club_col,
+    )
     predicted_ids = set(predicted_xi["player_id"])
     actual_ids = set(actual_xi["player_id"])
     count = max(len(predicted_xi), 1)
@@ -98,14 +347,27 @@ def _formation_xi_stats(
 
 
 def formation_xi_regret_by_gameweek(
-    df_eval: pd.DataFrame, *, target_column: str = "actual_points"
+    df_eval: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+    budget_cap: float | None = 835.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
 ) -> pd.Series:
     """Per-GW formation-constrained legal XI regret, indexed by gameweek."""
     if "position_id" not in df_eval.columns:
         return top_k_regret_by_gameweek(df_eval, 11, target_column=target_column)
     return pd.Series(
         {
-            gw: _formation_xi_stats(group, target_column=target_column)[1]
+            gw: _formation_xi_stats(
+                group,
+                target_column=target_column,
+                budget_cap=budget_cap,
+                max_per_club=max_per_club,
+                cost_col=cost_col,
+                club_col=club_col,
+            )[1]
             for gw, group in df_eval.groupby("gameweek")
         },
         dtype=float,
@@ -294,5 +556,9 @@ def evaluate_predictions(
         metrics["formation_xi_overlap"] = float(np.mean(f_overlaps)) if f_overlaps else None
         metrics["formation_xi_regret"] = float(np.mean(f_regrets)) if f_regrets else None
         metrics["captain_regret"] = float(np.mean(f_cap_regrets)) if f_cap_regrets else None
+
+        if "now_cost" in df_eval.columns:
+            churn_series = compute_top_15_squad_churn_by_gameweek(df_eval, "projected_points")
+            metrics["top_15_squad_churn"] = float(churn_series.mean()) if len(churn_series) > 0 else None
 
     return metrics

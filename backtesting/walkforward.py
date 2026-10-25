@@ -219,8 +219,9 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         df_compare = df_proj_gw.merge(df_actual_gw, on=["player_id", "gameweek_id"], how="left")
         fill_cols = [column for column in df_compare.columns if column.startswith(("actual_", "xp_"))]
         df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
-        position_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
-        df_compare = df_compare.merge(position_map, on="player_id", how="left")
+        meta_cols = [c for c in ["player_id", "position_id", "now_cost", "club_id"] if c in df_feat.columns]
+        player_meta = df_feat[meta_cols].drop_duplicates("player_id")
+        df_compare = df_compare.merge(player_meta, on="player_id", how="left")
         process_gw = aggregate_process_points(gw_perf)
         df_compare = df_compare.merge(process_gw, on=["player_id", "gameweek_id"], how="left")
         df_compare["process_points"] = df_compare["process_points"].fillna(0.0)

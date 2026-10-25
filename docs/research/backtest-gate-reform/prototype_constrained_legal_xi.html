@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wayfinder Prototype #169: Constrained Legal Formation XI & Squad Churn</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card-bg: #ffffff;
+      --text-main: #1d1d1f;
+      --text-muted: #86868b;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --border: #d2d2d7;
+      --green: #34c759;
+      --amber: #ff9500;
+      --red: #ff3b30;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #e8f0fe;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 18px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f2;
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .pill-green { background: #e3f9e5; color: #1b7a2d; }
+    .pill-red { background: #fde8e8; color: #c81e1e; }
+    .pill-amber { background: #fef3c7; color: #92400e; }
+    .pill-blue { background: #e0f2fe; color: #0369a1; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .scenario-desc {
+      font-size: 13px;
+      color: var(--text-main);
+      background: #f9f9fb;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    button.action-btn {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    button.action-btn:hover {
+      background: #f0f0f4;
+      border-color: #b0b0b8;
+    }
+
+    button.action-btn.primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    button.action-btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 6px;
+      background: #f2f2f7;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 7px 6px;
+      border-bottom: 1px solid #e5e5ea;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tr.selected {
+      background: #f0f7ff;
+      font-weight: 500;
+    }
+
+    tr.violation {
+      background: #fff5f5;
+    }
+
+    .explanation-box {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Wayfinder Logic Prototype · Ticket #169</span>
+      <h1>Constrained Legal Formation XI & Squad Churn Logic</h1>
+      <p class="subtitle">Interactive state simulation verifying starting XI budget cap (£83.5m), club quotas (&le;3), deterministic tie-breaking, and rolling top-15 squad churn (&le; +0.50 players/GW).</p>
+    </header>
+
+    <div class="tabs" id="scenario-tabs">
+      <button class="tab-btn active" onclick="loadScenario(1)">1. Galácticos / Budget Cap</button>
+      <button class="tab-btn" onclick="loadScenario(2)">2. Club Quota Pinch (Arsenal 4-Man)</button>
+      <button class="tab-btn" onclick="loadScenario(3)">3. Deterministic Tie-Breaking</button>
+      <button class="tab-btn" onclick="loadScenario(4)">4. 5-GW Top-15 Squad Churn</button>
+    </div>
+
+    <div class="scenario-desc" id="scenario-text">
+      Loading scenario description...
+    </div>
+
+    <div class="grid-2">
+      <!-- Controls Panel -->
+      <div class="card">
+        <h2>
+          <span>Optimization Controls</span>
+          <span class="status-pill pill-blue" id="mode-badge">Unconstrained Mode</span>
+        </h2>
+
+        <div class="btn-group">
+          <button class="action-btn primary" id="btn-toggle-constraints" onclick="toggleConstraints()">Apply Constraints</button>
+          <button class="action-btn" onclick="resetCurrentScenario()">Reset Scenario</button>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <div class="stat-row">
+            <span class="stat-label">Budget Cap:</span>
+            <span class="stat-value" id="disp-budget-cap">None</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Max Players Per Club:</span>
+            <span class="stat-value" id="disp-club-cap">None (&infin;)</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Tie-Breaking Protocol:</span>
+            <span class="stat-value" id="disp-tie-break">Arbitrary / Index Order</span>
+          </div>
+        </div>
+
+        <div class="explanation-box" id="step-callout">
+          Click <strong>"Apply Constraints"</strong> to see how the mathematical optimizer replaces unaffordable premiums and illegal 4-player club stacks with optimal value assets.
+        </div>
+      </div>
+
+      <!-- State & KPI Panel -->
+      <div class="card">
+        <h2>
+          <span>Lineup Evaluation State</span>
+          <span id="validity-badge" class="status-pill pill-red">Illegal Lineup</span>
+        </h2>
+
+        <div class="stat-row">
+          <span class="stat-label">Starting XI Total Cost:</span>
+          <span class="stat-value" id="kpi-cost">£97.9m / £83.5m cap</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Max Club Concentration:</span>
+          <span class="stat-value" id="kpi-club-max">4 players (Arsenal)</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Formation Selected:</span>
+          <span class="stat-value" id="kpi-formation">3-4-3 (Legal Template)</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total Projected Points:</span>
+          <span class="stat-value" id="kpi-points">81.30 pts</span>
+        </div>
+        <div class="stat-row" id="churn-kpi-row" style="display: none;">
+          <span class="stat-label">Top-15 Squad Churn (5 GWs):</span>
+          <span class="stat-value" id="kpi-churn">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lineup / Results Table -->
+    <div class="card">
+      <h2 id="table-heading">
+        <span>Selected 11-Player Starting Lineup</span>
+        <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);" id="table-subheading">11 starters shown</span>
+      </h2>
+      <div style="overflow-x: auto;">
+        <table id="lineup-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Pos</th>
+              <th>Club</th>
+              <th>Cost</th>
+              <th>xP (Pred)</th>
+              <th>Status / Reason</th>
+            </tr>
+          </thead>
+          <tbody id="lineup-tbody">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Pure Portable Logic Module for Wayfinder Prototype #169 */
+    const POS_GKP = 1;
+    const POS_DEF = 2;
+    const POS_MID = 3;
+    const POS_FWD = 4;
+    const POS_NAMES = { 1: "GKP", 2: "DEF", 3: "MID", 4: "FWD" };
+
+    const LEGAL_FORMATIONS = [
+      [3, 5, 2], [3, 4, 3], [4, 4, 2], [4, 3, 3],
+      [4, 5, 1], [5, 3, 2], [5, 4, 1], [5, 2, 3]
+    ];
+
+    // Prototype Dataset representing real FPL assets
+    const BASE_PLAYERS = [
+      { id: 1, name: "Raya", pos: 1, club: "Arsenal", cost: 55, xp: 5.5 },
+      { id: 2, name: "Pickford", pos: 1, club: "Everton", cost: 50, xp: 4.5 },
+      { id: 11, name: "Gabriel", pos: 2, club: "Arsenal", cost: 62, xp: 5.8 },
+      { id: 12, name: "Saliba", pos: 2, club: "Arsenal", cost: 60, xp: 5.7 },
+      { id: 13, name: "Alexander-Arnold", pos: 2, club: "Liverpool", cost: 72, xp: 6.5 },
+      { id: 14, name: "Gvardiol", pos: 2, club: "Man City", cost: 60, xp: 5.2 },
+      { id: 15, name: "Robinson", pos: 2, club: "Fulham", cost: 47, xp: 4.0 },
+      { id: 16, name: "Greaves", pos: 2, club: "Ipswich", cost: 40, xp: 3.2 },
+      { id: 21, name: "Saka", pos: 3, club: "Arsenal", cost: 101, xp: 7.5 },
+      { id: 22, name: "Palmer", pos: 3, club: "Chelsea", cost: 108, xp: 8.0 },
+      { id: 23, name: "Salah", pos: 3, club: "Liverpool", cost: 126, xp: 8.5 },
+      { id: 24, name: "Mbeumo", pos: 3, club: "Brentford", cost: 75, xp: 6.2 },
+      { id: 25, name: "Rogers", pos: 3, club: "Aston Villa", cost: 54, xp: 5.0 },
+      { id: 26, name: "Smith Rowe", pos: 3, club: "Fulham", cost: 57, xp: 5.0 },
+      { id: 31, name: "Haaland", pos: 4, club: "Man City", cost: 153, xp: 9.5 },
+      { id: 32, name: "Watkins", pos: 4, club: "Aston Villa", cost: 91, xp: 6.8 },
+      { id: 33, name: "Solanke", pos: 4, club: "Spurs", cost: 76, xp: 5.9 },
+      { id: 34, name: "Wood", pos: 4, club: "Nott'm Forest", cost: 63, xp: 5.5 },
+      { id: 35, name: "Delap", pos: 4, club: "Ipswich", cost: 56, xp: 4.5 }
+    ];
+
+    // State Model
+    let currentScenarioId = 1;
+    let constraintsApplied = false;
+    let customPlayers = JSON.parse(JSON.stringify(BASE_PLAYERS));
+
+    // Scenarios Setup
+    const SCENARIOS = {
+      1: {
+        title: "Scenario 1: Galácticos / Premium Hoard Budget Cap",
+        desc: "Current best_legal_xi picks Haaland (£15.3m), Salah (£12.6m), Palmer (£10.8m), Saka (£10.1m), Watkins (£9.1m), and Trent (£7.2m). Starting XI cost explodes to £97.9m (impossible in FPL; leaves only £2.1m for 4 bench players) and selects 4 Arsenal players. Applying constraints forces realistic budget (£82.6m <= £83.5m) and club trade-offs.",
+        setup: () => {
+          customPlayers = JSON.parse(JSON.stringify(BASE_PLAYERS));
+        }
+      },
+      2: {
+        title: "Scenario 2: Club Quota Pinch (Arsenal 4-Man Conflict)",
+        desc: "Four Arsenal assets (Raya, Gabriel, Saliba, Saka) all project in the top bracket. Unconstrained selection picks all 4 (illegal in FPL). Constrained optimization enforces max 3 per club, selecting Gabriel, Saliba, and Raya, while cleanly substituting Saka with Palmer/Mbeumo.",
+        setup: () => {
+          customPlayers = JSON.parse(JSON.stringify(BASE_PLAYERS));
+        }
+      },
+      3: {
+        title: "Scenario 3: Deterministic Tie-Breaking [pred_col DESC, now_cost ASC, player_id ASC]",
+        desc: "Two players have identical projected points (Rogers vs Smith Rowe both at 5.00 xP). Deterministic tie-breaking selects Rogers because his cost (£5.4m) is cheaper than Smith Rowe (£5.7m). If cost is also tied, lower player_id breaks the tie deterministically.",
+        setup: () => {
+          customPlayers = JSON.parse(JSON.stringify(BASE_PLAYERS));
+          const r = customPlayers.find(p => p.id === 25);
+          const s = customPlayers.find(p => p.id === 26);
+          if (r && s) {
+            r.xp = 5.50;
+            s.xp = 5.50; // tie
+            r.cost = 54;
+            s.cost = 57;
+          }
+        }
+      },
+      4: {
+        title: "Scenario 4: Top-15 Squad Churn & Turnover Guardrail (ADR 0064)",
+        desc: "Simulates 5 consecutive gameweeks. Evaluates weekly squad churn Churn_g = 15 - |S_g ∩ S_{g-1}| across rolling budget-feasible top-15 squads (£100.0m). Shows how the guardrail (+0.50 players/GW) catches volatile, over-reactive models that destroy rolling MILP transfer plans with hit penalties.",
+        setup: () => {
+          customPlayers = JSON.parse(JSON.stringify(BASE_PLAYERS));
+        }
+      }
+    };
+
+    // Optimization Solver (Pure JS Branch-and-Bound / MILP Equivalent)
+    function solveLegalFormationXI(players, applyConstraints, budgetCap = 835, maxPerClub = 3) {
+      if (!applyConstraints) {
+        // Unconstrained: legacy best_legal_xi
+        return legacyBestLegalXI(players);
+      }
+
+      // Constrained: scan formations and solve 0-1 knapsack / ILP
+      let bestXI = null;
+      let bestScore = -Infinity;
+
+      // Group by position
+      const gkps = players.filter(p => p.pos === POS_GKP);
+      const defs = players.filter(p => p.pos === POS_DEF);
+      const mids = players.filter(p => p.pos === POS_MID);
+      const fwds = players.filter(p => p.pos === POS_FWD);
+
+      // Fast combinatorial search across valid combinations
+      // Filter candidates to top available
+      const sortFn = (a, b) => {
+        if (b.xp !== a.xp) return b.xp - a.xp;
+        if (a.cost !== b.cost) return a.cost - b.cost;
+        return a.id - b.id;
+      };
+
+      gkps.sort(sortFn);
+      defs.sort(sortFn);
+      mids.sort(sortFn);
+      fwds.sort(sortFn);
+
+      for (const [d, m, f] of LEGAL_FORMATIONS) {
+        for (const gkp of gkps.slice(0, 3)) {
+          // Combination generation with club and budget pruning
+          const defCombos = getCombinations(defs.slice(0, 8), d);
+          for (const dCombo of defCombos) {
+            const midCombos = getCombinations(mids.slice(0, 8), m);
+            for (const mCombo of midCombos) {
+              const fwdCombos = getCombinations(fwds.slice(0, 6), f);
+              for (const fCombo of fwdCombos) {
+                const xi = [gkp, ...dCombo, ...mCombo, ...fCombo];
+                const totalCost = xi.reduce((acc, p) => acc + p.cost, 0);
+                if (totalCost > budgetCap) continue;
+
+                // Club check
+                const clubCounts = {};
+                let clubValid = true;
+                for (const p of xi) {
+                  clubCounts[p.club] = (clubCounts[p.club] || 0) + 1;
+                  if (clubCounts[p.club] > maxPerClub) {
+                    clubValid = false;
+                    break;
+                  }
+                }
+                if (!clubValid) continue;
+
+                // Objective with deterministic tie-breaking
+                const totalXP = xi.reduce((acc, p) => acc + p.xp, 0);
+                const score = totalXP - 1e-5 * totalCost - 1e-9 * xi.reduce((acc, p) => acc + p.id, 0);
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestXI = xi;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return bestXI || legacyBestLegalXI(players);
+    }
+
+    function legacyBestLegalXI(players) {
+      const gkps = players.filter(p => p.pos === POS_GKP).sort((a,b) => b.xp - a.xp);
+      const defs = players.filter(p => p.pos === POS_DEF).sort((a,b) => b.xp - a.xp);
+      const mids = players.filter(p => p.pos === POS_MID).sort((a,b) => b.xp - a.xp);
+      const fwds = players.filter(p => p.pos === POS_FWD).sort((a,b) => b.xp - a.xp);
+
+      let bestXI = null;
+      let bestScore = -Infinity;
+
+      for (const [d, m, f] of LEGAL_FORMATIONS) {
+        if (defs.length >= d && mids.length >= m && fwds.length >= f && gkps.length >= 1) {
+          const xi = [gkps[0], ...defs.slice(0, d), ...mids.slice(0, m), ...fwds.slice(0, f)];
+          const score = xi.reduce((acc, p) => acc + p.xp, 0);
+          if (score > bestScore) {
+            bestScore = score;
+            bestXI = xi;
+          }
+        }
+      }
+      return bestXI;
+    }
+
+    function getCombinations(arr, k) {
+      if (k === 0) return [[]];
+      if (arr.length < k) return [];
+      const head = arr[0];
+      const tail = arr.slice(1);
+      const withHead = getCombinations(tail, k - 1).map(c => [head, ...c]);
+      const withoutHead = getCombinations(tail, k);
+      return [...withHead, ...withoutHead];
+    }
+
+    // UI Rendering
+    function loadScenario(id) {
+      currentScenarioId = id;
+      constraintsApplied = false;
+      document.querySelectorAll(".tab-btn").forEach((btn, idx) => {
+        btn.classList.toggle("active", idx + 1 === id);
+      });
+      SCENARIOS[id].setup();
+      document.getElementById("scenario-text").innerHTML = SCENARIOS[id].desc;
+      updateUI();
+    }
+
+    function toggleConstraints() {
+      constraintsApplied = !constraintsApplied;
+      updateUI();
+    }
+
+    function resetCurrentScenario() {
+      constraintsApplied = false;
+      SCENARIOS[currentScenarioId].setup();
+      updateUI();
+    }
+
+    function updateUI() {
+      const modeBadge = document.getElementById("mode-badge");
+      const toggleBtn = document.getElementById("btn-toggle-constraints");
+      const budgetCapDisp = document.getElementById("disp-budget-cap");
+      const clubCapDisp = document.getElementById("disp-club-cap");
+      const tieBreakDisp = document.getElementById("disp-tie-break");
+      const validityBadge = document.getElementById("validity-badge");
+      const churnRow = document.getElementById("churn-kpi-row");
+
+      if (constraintsApplied) {
+        modeBadge.textContent = "Constrained Legal XI";
+        modeBadge.className = "status-pill pill-green";
+        toggleBtn.textContent = "Revert to Unconstrained";
+        toggleBtn.className = "action-btn";
+        budgetCapDisp.textContent = "£83.5m (835.0 units)";
+        clubCapDisp.textContent = "Max 3 Players Per Club";
+        tieBreakDisp.textContent = "[pred_col DESC, cost ASC, id ASC]";
+      } else {
+        modeBadge.textContent = "Unconstrained Mode";
+        modeBadge.className = "status-pill pill-blue";
+        toggleBtn.textContent = "Apply Constraints";
+        toggleBtn.className = "action-btn primary";
+        budgetCapDisp.textContent = "None (Infinite)";
+        clubCapDisp.textContent = "None (No Limit)";
+        tieBreakDisp.textContent = "Arbitrary / Index Order";
+      }
+
+      if (currentScenarioId === 4) {
+        renderChurnScenario();
+        return;
+      }
+
+      churnRow.style.display = "none";
+      const xi = solveLegalFormationXI(customPlayers, constraintsApplied, 835, 3);
+      renderLineupTable(xi);
+    }
+
+    function renderLineupTable(xi) {
+      const tbody = document.getElementById("lineup-tbody");
+      tbody.innerHTML = "";
+
+      const totalCost = xi.reduce((acc, p) => acc + p.cost, 0);
+      const totalXP = xi.reduce((acc, p) => acc + p.xp, 0);
+
+      const clubCounts = {};
+      xi.forEach(p => clubCounts[p.club] = (clubCounts[p.club] || 0) + 1);
+      let maxClubCount = 0;
+      let maxClubName = "";
+      for (const [c, cnt] of Object.entries(clubCounts)) {
+        if (cnt > maxClubCount) {
+          maxClubCount = cnt;
+          maxClubName = c;
+        }
+      }
+
+      const dCount = xi.filter(p => p.pos === POS_DEF).length;
+      const mCount = xi.filter(p => p.pos === POS_MID).length;
+      const fCount = xi.filter(p => p.pos === POS_FWD).length;
+
+      document.getElementById("kpi-cost").textContent = `£${(totalCost/10).toFixed(1)}m / £83.5m cap`;
+      document.getElementById("kpi-club-max").textContent = `${maxClubCount} players (${maxClubName})`;
+      document.getElementById("kpi-formation").textContent = `${dCount}-${mCount}-${fCount} (Legal Template)`;
+      document.getElementById("kpi-points").textContent = `${totalXP.toFixed(2)} pts`;
+
+      const isBudgetViolated = totalCost > 835;
+      const isClubViolated = maxClubCount > 3;
+      const isValid = !isBudgetViolated && !isClubViolated;
+
+      const validityBadge = document.getElementById("validity-badge");
+      if (isValid) {
+        validityBadge.textContent = "Fully FPL Legal XI";
+        validityBadge.className = "status-pill pill-green";
+      } else {
+        validityBadge.textContent = isBudgetViolated && isClubViolated ? "Budget & Club Limit Violated" :
+                                   isBudgetViolated ? "Budget Exceeded (£83.5m)" : "Club Quota Exceeded (>3)";
+        validityBadge.className = "status-pill pill-red";
+      }
+
+      // Sort lineup table by Pos, then XP
+      xi.sort((a,b) => a.pos !== b.pos ? a.pos - b.pos : b.xp - a.xp);
+
+      xi.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.className = "selected";
+
+        let reasonTag = `<span class="status-pill pill-green">Starter</span>`;
+        if (clubCounts[p.club] > 3) {
+          reasonTag = `<span class="status-pill pill-red">Illegal Club Stack (4th)</span>`;
+          tr.className = "violation";
+        }
+
+        tr.innerHTML = `
+          <td><strong>${p.name}</strong></td>
+          <td>${POS_NAMES[p.pos]}</td>
+          <td>${p.club}</td>
+          <td>£${(p.cost/10).toFixed(1)}m</td>
+          <td><strong>${p.xp.toFixed(2)}</strong></td>
+          <td>${reasonTag}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Show excluded players that were dropped when constraints applied
+      if (constraintsApplied) {
+        const selectedIds = new Set(xi.map(p => p.id));
+        const excluded = customPlayers.filter(p => !selectedIds.has(p.id) && p.xp >= 5.0);
+        excluded.sort((a,b) => b.xp - a.xp);
+
+        excluded.forEach(p => {
+          const tr = document.createElement("tr");
+          let dropReason = "Budget Trade-off";
+          if (p.club === "Arsenal" && clubCounts["Arsenal"] >= 3) {
+            dropReason = "Club Quota Reached (3/3 Arsenal)";
+          } else if (p.cost > 100) {
+            dropReason = "Unaffordable Premium";
+          }
+          tr.innerHTML = `
+            <td style="color: var(--text-muted);">${p.name}</td>
+            <td style="color: var(--text-muted);">${POS_NAMES[p.pos]}</td>
+            <td style="color: var(--text-muted);">${p.club}</td>
+            <td style="color: var(--text-muted);">£${(p.cost/10).toFixed(1)}m</td>
+            <td style="color: var(--text-muted);">${p.xp.toFixed(2)}</td>
+            <td><span class="status-pill pill-amber">${dropReason}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function renderChurnScenario() {
+      const churnRow = document.getElementById("churn-kpi-row");
+      churnRow.style.display = "flex";
+
+      const champWeekly = [0.0, 1.0, 2.0, 1.0]; // Mean: 1.00
+      const candWeekly = constraintsApplied ? [2.0, 1.0, 2.0, 1.0] : [7.0, 8.0, 6.0, 8.0]; // Mean 1.50 vs 7.25
+
+      const meanChamp = 1.00;
+      const meanCand = constraintsApplied ? 1.50 : 7.25;
+      const churnDelta = meanCand - meanChamp;
+      const guardrailPass = churnDelta <= 0.50;
+
+      document.getElementById("kpi-cost").textContent = "£98.5m / £100.0m squad";
+      document.getElementById("kpi-club-max").textContent = "3 players max";
+      document.getElementById("kpi-formation").textContent = "15-Player Squad";
+      document.getElementById("kpi-points").textContent = constraintsApplied ? "102.4 pts" : "106.8 pts";
+      document.getElementById("kpi-churn").textContent = `Δ = ${churnDelta > 0 ? "+" : ""}${churnDelta.toFixed(2)} (${guardrailPass ? "PASS" : "FAIL"})`;
+
+      const validityBadge = document.getElementById("validity-badge");
+      if (guardrailPass) {
+        validityBadge.textContent = "Churn Guardrail PASSED (<= +0.50)";
+        validityBadge.className = "status-pill pill-green";
+      } else {
+        validityBadge.textContent = "Excessive Churn FAILS Guardrail (+6.25)";
+        validityBadge.className = "status-pill pill-red";
+      }
+
+      const tbody = document.getElementById("lineup-tbody");
+      tbody.innerHTML = `
+        <tr class="${guardrailPass ? 'selected' : 'violation'}">
+          <td><strong>Champion Model</strong></td>
+          <td>15 Squad</td>
+          <td>Mean Churn: 1.00</td>
+          <td>--</td>
+          <td>101.8 pts</td>
+          <td><span class="status-pill pill-green">Baseline Stabilizer</span></td>
+        </tr>
+        <tr class="${guardrailPass ? 'selected' : 'violation'}">
+          <td><strong>Candidate Model</strong></td>
+          <td>15 Squad</td>
+          <td>Mean Churn: ${meanCand.toFixed(2)}</td>
+          <td>--</td>
+          <td>${constraintsApplied ? '102.4 pts' : '106.8 pts'}</td>
+          <td><span class="status-pill ${guardrailPass ? 'pill-green' : 'pill-red'}">${guardrailPass ? 'Controlled Turnover' : 'Fluke Chaser (7.25/GW)'}</span></td>
+        </tr>
+        <tr>
+          <td colspan="6" style="padding: 12px; background: #fafafa;">
+            <strong>Churn Formula:</strong> Churn_g = 15 - |S_g ∩ S_{g-1}|.<br>
+            <strong>Guardrail Rule:</strong> Mean(Churn_cand) &le; Mean(Churn_champ) + 0.50 players/GW.<br>
+            <em>Why it matters:</em> A candidate chasing weekly fixture spikes might boast higher single-GW raw regret, but would burn 7 hits every 2 weeks in rolling transfer planning (-28 pts in real gameplay).
+          </td>
+        </tr>
+      `;
+    }
+
+    // Initialize
+    loadScenario(1);
+  </script>
+</body>
+</html>
