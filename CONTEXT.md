@@ -267,6 +267,22 @@ _Avoid_: Average minutes, Expected Role Prior minutes, in-season last-year playe
 An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has not yet reflected confirmed club information. Production Feature Contract does not apply these caps.
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
+**Minutes Cascade**:
+Three-tier minutes resolution precedence: Targeted Availability Override $\to$ Baseline External Projections CSV $\to$ Native Champion fallback. Omitted/blank cells inherit lower-tier projections. Unlisted assets retain Native Champion expectation.
+_Avoid_: Zeroing unlisted players, single-tier overrides, uncomposable projection sources
+
+**Targeted Availability Override**:
+Sparse player-gameweek minute trajectory for injury recovery ramps or tactical rotation. Top cascade precedence; maps to participation state probabilities ($p_{\text{start}}, p_{\text{sub}}, p_{\text{dnp}}$) via `target_to_states`.
+_Avoid_: Manual points editing, flat 90-minute return assumptions, modifying core model files
+
+**Broad Pool Shield**:
+Automated fixture-date filtering of official FPL API `news` and status flags enforcing `0.0` xMins on unavailable pool assets across all price brackets prior to confirmed return date. Insulates MILP solver against buying injured assets without web search overhead.
+_Avoid_: Point-in-time backtest leakage, searching internet for all 100+ pool injuries, ignoring fixture calendar dates
+
+**Injury Return Curve**:
+Non-linear post-injury participation progression ($0 \to \text{cameo } (15\text{--}30\text{m}) \to \text{managed start } (60\text{--}70\text{m}) \to \text{healthy baseline } (75\text{--}90\text{m})$) calibrated from press conference intel and injury severity. Populates full horizon recovery to overcome multi-week DNP baseline depression.
+_Avoid_: Linear ramp, instant 90-minute recovery, leaving post-recovery cells blank for injury-depressed starters
+
 **Horizon Mean-Reversion**:
 Exponential decay of multi-week learned start probabilities toward baseline Champion state over planning horizon steps ($h \ge 1$, decay $\gamma = 0.5$). Single-step target gameweek predictions ($h=0$) bit-for-bit identical to Model Champion. Preserves exact total starting mass across all gameweeks. ADR 0053.
 _Avoid_: Frozen multi-week DNP, unconstrained horizon broadcast, altering single-step backtests

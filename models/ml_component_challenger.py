@@ -243,12 +243,108 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         final_p60_sub = champ_proj["p_60_if_sub_in"].to_numpy(dtype=float).copy()
         final_xmins = champ_proj["projected_minutes"].to_numpy(dtype=float).copy()
 
+        # Head 1: p_start
+        if self.enable_mins_h1:
+            h1_cols = [
+                "s_lag1", "s_lag2", "s_lag3", "s_lag4", "s_lag5", "s_lag6",
+                "min3", "starts6", "since_start", "club_frac",
+                "pos_gk", "pos_def", "pos_mid", "short_turnaround",
+                "transfer_momentum", "price_rel_pos",
+            ]
+            X_tr = np.column_stack([np.ones(len(train_scaled)), train_scaled[h1_cols].to_numpy()])
+            y_tr = train_panel["target_starts"].to_numpy(dtype=float)
+            beta_h1 = _ridge_logistic_irls(X_tr, y_tr, lam=10.0)
+
+            X_pr = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h1_cols].to_numpy()])
+            raw_logits = X_pr @ beta_h1
+            if self.enable_congestion and self._last_kickoff_by_player and "kickoff_time" in features_df.columns:
+                ko_times = pd.to_datetime(features_df["kickoff_time"], utc=True, errors="coerce")
+                pids = features_df["player_id"].astype(int).values
+                for i_k, pid in enumerate(pids):
+                    if pid in self._last_kickoff_by_player and pd.notna(ko_times.iloc[i_k]):
+                        diff_days = (ko_times.iloc[i_k] - self._last_kickoff_by_player[pid]).total_seconds() / 86400.0
+                        if 0.0 < diff_days < 3.5:
+                            raw_logits[i_k] -= 0.20
+            raw_p_start = 1.0 / (1.0 + np.exp(-np.clip(raw_logits, -10.0, 10.0)))
+
+            # Mass preservation & horizon decay per gameweek
+            for gw, group in pred_panel.groupby("gameweek_id"):
+                idx = group.index.to_numpy()
+                target_mass = float(np.sum(final_p_start[idx]))
+                p_preserved = preserve_mass(raw_p_start[idx], target=target_mass, cap=0.99)
+                h = max(0.0, float(gw - target_gw))
+                decay = 0.5 ** h
+                final_p_start[idx] = final_p_start[idx] + w_ml * decay * (p_preserved - final_p_start[idx])
+
+        # Head 2: p_sub_in
+        if self.enable_mins_h2:
+            non_starts_tr = train_panel["target_starts"] == 0
+            if np.sum(non_starts_tr) > 50:
+                h2_cols = ["sub_lag1", "sub_lag2", "sub_lag3", "s_lag1", "min3", "pos_gk", "pos_def", "pos_mid", "price_rel_pos"]
+                X_tr_sub = np.column_stack([np.ones(np.sum(non_starts_tr)), train_scaled.loc[non_starts_tr, h2_cols].to_numpy()])
+                y_tr_sub = train_panel.loc[non_starts_tr, "target_sub"].to_numpy(dtype=float)
+                beta_h2 = _ridge_logistic_irls(X_tr_sub, y_tr_sub, lam=10.0)
+
+                X_pr_sub = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h2_cols].to_numpy()])
+                raw_sub_p = 1.0 / (1.0 + np.exp(-np.clip(X_pr_sub @ beta_h2, -10.0, 10.0)))
+
+                for gw, group in pred_panel.groupby("gameweek_id"):
+                    idx = group.index.to_numpy()
+                    h = max(0.0, float(gw - target_gw))
+                    decay = 0.5 ** h
+                    champ_sub_ratio = champ_proj.loc[idx, "p_sub_in"] / np.maximum(1.0 - champ_proj.loc[idx, "p_start"], 1e-4)
+                    blended_sub_ratio = champ_sub_ratio + w_ml * decay * (raw_sub_p[idx] - champ_sub_ratio)
+                    blended_sub_ratio = np.clip(blended_sub_ratio, 0.0, 0.85)
+
+                    final_p_sub[idx] = (1.0 - final_p_start[idx]) * blended_sub_ratio
+                    final_p_dnp[idx] = 1.0 - final_p_start[idx] - final_p_sub[idx]
+
+        # Head 3: xmins_if_start
+        if self.enable_mins_h3:
+            starts_tr = train_panel["target_starts"] == 1
+            if np.sum(starts_tr) > 50:
+                h3_cols = ["shrunk_mins_if_start", "early_hook_rate", "short_turnaround", "pos_gk", "pos_def", "pos_mid", "price_rel_pos"]
+                X_tr_dur = np.column_stack([np.ones(np.sum(starts_tr)), train_scaled.loc[starts_tr, h3_cols].to_numpy()])
+                base_mins_tr = train_panel.loc[starts_tr, "shrunk_mins_if_start"].to_numpy()
+                y_tr_dur = train_panel.loc[starts_tr, "target_minutes"].to_numpy() - base_mins_tr
+                beta_h3 = _ridge_linear_solve(X_tr_dur, y_tr_dur, lam=25.0)
+
+                X_pr_dur = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h3_cols].to_numpy()])
+                delta_start_m = np.clip(X_pr_dur @ beta_h3, -12.0, 8.0)
+                for gw, group in pred_panel.groupby("gameweek_id"):
+                    idx = group.index.to_numpy()
+                    h = max(0.0, float(gw - target_gw))
+                    decay = 0.5 ** h
+                    final_start_m[idx] = np.clip(final_start_m[idx] + w_ml * decay * delta_start_m[idx], 60.0, 90.0)
+                    final_p60_start[idx] = np.clip((final_start_m[idx] - 45.0) / 30.0, 0.50, 1.0)
+
+        # Operational Hard DNP (ADR 0056)
+        for i, (_, row) in enumerate(features_df.iterrows()):
+            is_imm = bool(row.get("is_immediate_next_gw", False))
+            has_snap = bool(row.get("has_availability_snapshot", False))
+            chance = _number(row, "chance_of_playing", 100.0)
+            status = str(row.get("status", "")).lower()
+            if is_imm and (
+                (has_snap and chance <= 0.0)
+                or (not has_snap and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
+            ):
+                final_p_dnp[i] = 1.0
+                final_p_start[i] = 0.0
+                final_p_sub[i] = 0.0
+
+        # Reconcile expected minutes
+        raw_xmins = final_p_start * final_start_m + final_p_sub * final_sub_m
+        for i, (_, row) in enumerate(features_df.iterrows()):
+            final_xmins[i] = cap_projected_minutes(row, raw_xmins[i])
+
+        # Deterministic external override / Oracle bypass on specified rows
         if has_external_xmins:
-            # Deterministic Oracle bypass
             for i, (_, row) in enumerate(features_df.iterrows()):
                 ext = row.get("external_xmins")
+                fid = int(row.get("fixture_id", -1))
                 if pd.notna(ext):
-                    p_st, p_sb, p_dn, st_m, sb_m = target_to_states(float(ext))
+                    target_m = 0.0 if fid < 0 else max(0.0, float(ext))
+                    p_st, p_sb, p_dn, st_m, sb_m = target_to_states(target_m)
                     final_p_start[i] = p_st
                     final_p_sub[i] = p_sb
                     final_p_dnp[i] = p_dn
@@ -256,101 +352,7 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
                     final_sub_m[i] = sb_m
                     final_p60_start[i] = min(1.0, max(0.0, (st_m - 45.0) / 30.0))
                     final_p60_sub[i] = min(1.0, max(0.0, (sb_m - 45.0) / 30.0))
-                    final_xmins[i] = float(ext)
-        else:
-            # Head 1: p_start
-            if self.enable_mins_h1:
-                h1_cols = [
-                    "s_lag1", "s_lag2", "s_lag3", "s_lag4", "s_lag5", "s_lag6",
-                    "min3", "starts6", "since_start", "club_frac",
-                    "pos_gk", "pos_def", "pos_mid", "short_turnaround",
-                    "transfer_momentum", "price_rel_pos",
-                ]
-                X_tr = np.column_stack([np.ones(len(train_scaled)), train_scaled[h1_cols].to_numpy()])
-                y_tr = train_panel["target_starts"].to_numpy(dtype=float)
-                beta_h1 = _ridge_logistic_irls(X_tr, y_tr, lam=10.0)
-
-                X_pr = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h1_cols].to_numpy()])
-                raw_logits = X_pr @ beta_h1
-                if self.enable_congestion and self._last_kickoff_by_player and "kickoff_time" in features_df.columns:
-                    ko_times = pd.to_datetime(features_df["kickoff_time"], utc=True, errors="coerce")
-                    pids = features_df["player_id"].astype(int).values
-                    for i_k, pid in enumerate(pids):
-                        if pid in self._last_kickoff_by_player and pd.notna(ko_times.iloc[i_k]):
-                            diff_days = (ko_times.iloc[i_k] - self._last_kickoff_by_player[pid]).total_seconds() / 86400.0
-                            if 0.0 < diff_days < 3.5:
-                                raw_logits[i_k] -= 0.20
-                raw_p_start = 1.0 / (1.0 + np.exp(-np.clip(raw_logits, -10.0, 10.0)))
-
-                # Mass preservation & horizon decay per gameweek
-                for gw, group in pred_panel.groupby("gameweek_id"):
-                    idx = group.index.to_numpy()
-                    target_mass = float(np.sum(final_p_start[idx]))
-                    p_preserved = preserve_mass(raw_p_start[idx], target=target_mass, cap=0.99)
-                    h = max(0.0, float(gw - target_gw))
-                    decay = 0.5 ** h
-                    final_p_start[idx] = final_p_start[idx] + w_ml * decay * (p_preserved - final_p_start[idx])
-
-            # Head 2: p_sub_in
-            if self.enable_mins_h2:
-                non_starts_tr = train_panel["target_starts"] == 0
-                if np.sum(non_starts_tr) > 50:
-                    h2_cols = ["sub_lag1", "sub_lag2", "sub_lag3", "s_lag1", "min3", "pos_gk", "pos_def", "pos_mid", "price_rel_pos"]
-                    X_tr_sub = np.column_stack([np.ones(np.sum(non_starts_tr)), train_scaled.loc[non_starts_tr, h2_cols].to_numpy()])
-                    y_tr_sub = train_panel.loc[non_starts_tr, "target_sub"].to_numpy(dtype=float)
-                    beta_h2 = _ridge_logistic_irls(X_tr_sub, y_tr_sub, lam=10.0)
-
-                    X_pr_sub = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h2_cols].to_numpy()])
-                    raw_sub_p = 1.0 / (1.0 + np.exp(-np.clip(X_pr_sub @ beta_h2, -10.0, 10.0)))
-
-                    for gw, group in pred_panel.groupby("gameweek_id"):
-                        idx = group.index.to_numpy()
-                        h = max(0.0, float(gw - target_gw))
-                        decay = 0.5 ** h
-                        champ_sub_ratio = champ_proj.loc[idx, "p_sub_in"] / np.maximum(1.0 - champ_proj.loc[idx, "p_start"], 1e-4)
-                        blended_sub_ratio = champ_sub_ratio + w_ml * decay * (raw_sub_p[idx] - champ_sub_ratio)
-                        blended_sub_ratio = np.clip(blended_sub_ratio, 0.0, 0.85)
-
-                        final_p_sub[idx] = (1.0 - final_p_start[idx]) * blended_sub_ratio
-                        final_p_dnp[idx] = 1.0 - final_p_start[idx] - final_p_sub[idx]
-
-            # Head 3: xmins_if_start
-            if self.enable_mins_h3:
-                starts_tr = train_panel["target_starts"] == 1
-                if np.sum(starts_tr) > 50:
-                    h3_cols = ["shrunk_mins_if_start", "early_hook_rate", "short_turnaround", "pos_gk", "pos_def", "pos_mid", "price_rel_pos"]
-                    X_tr_dur = np.column_stack([np.ones(np.sum(starts_tr)), train_scaled.loc[starts_tr, h3_cols].to_numpy()])
-                    base_mins_tr = train_panel.loc[starts_tr, "shrunk_mins_if_start"].to_numpy()
-                    y_tr_dur = train_panel.loc[starts_tr, "target_minutes"].to_numpy() - base_mins_tr
-                    beta_h3 = _ridge_linear_solve(X_tr_dur, y_tr_dur, lam=25.0)
-
-                    X_pr_dur = np.column_stack([np.ones(len(pred_scaled)), pred_scaled[h3_cols].to_numpy()])
-                    delta_start_m = np.clip(X_pr_dur @ beta_h3, -12.0, 8.0)
-                    for gw, group in pred_panel.groupby("gameweek_id"):
-                        idx = group.index.to_numpy()
-                        h = max(0.0, float(gw - target_gw))
-                        decay = 0.5 ** h
-                        final_start_m[idx] = np.clip(final_start_m[idx] + w_ml * decay * delta_start_m[idx], 60.0, 90.0)
-                        final_p60_start[idx] = np.clip((final_start_m[idx] - 45.0) / 30.0, 0.50, 1.0)
-
-            # Operational Hard DNP (ADR 0056)
-            for i, (_, row) in enumerate(features_df.iterrows()):
-                is_imm = bool(row.get("is_immediate_next_gw", False))
-                has_snap = bool(row.get("has_availability_snapshot", False))
-                chance = _number(row, "chance_of_playing", 100.0)
-                status = str(row.get("status", "")).lower()
-                if is_imm and (
-                    (has_snap and chance <= 0.0)
-                    or (not has_snap and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
-                ):
-                    final_p_dnp[i] = 1.0
-                    final_p_start[i] = 0.0
-                    final_p_sub[i] = 0.0
-
-            # Reconcile expected minutes
-            raw_xmins = final_p_start * final_start_m + final_p_sub * final_sub_m
-            for i, (_, row) in enumerate(features_df.iterrows()):
-                final_xmins[i] = cap_projected_minutes(row, raw_xmins[i])
+                    final_xmins[i] = target_m
 
         # 6. --- M_events: 4-Group Scoring Models ---
         out_df = champ_proj.copy().reset_index(drop=True)

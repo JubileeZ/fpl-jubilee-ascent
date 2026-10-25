@@ -744,9 +744,10 @@ def load_xmins_override(csv_path: Path | str, planning_gws: list[int]) -> dict[t
         if not matching:
             continue
         col = matching[0]
-        vals = pd.to_numeric(valid_df[col], errors="coerce").fillna(0.0)
+        vals = pd.to_numeric(valid_df[col], errors="coerce")
         for pid, val in zip(valid_df[id_col].astype(int), vals):
-            out[(pid, int(gw))] = float(val)
+            if pd.notna(val):
+                out[(pid, int(gw))] = float(val)
     return out
 
 
@@ -1191,6 +1192,31 @@ def build_features(
     if xmins_override is not None:
         planning_gws = sorted(df_feat["gameweek_id"].unique().tolist())
         xmins_map = load_xmins_override(xmins_override, planning_gws)
-        player_gws = list(zip(df_feat["player_id"].astype(int), df_feat["gameweek_id"].astype(int)))
-        df_feat["external_xmins"] = [xmins_map.get(key, 0.0) for key in player_gws]
+        # Count valid fixtures per (player_id, gameweek_id) for DGW handling
+        valid_fix = df_feat["fixture_id"].fillna(-1).astype(int) >= 0
+        gw_fix_counts = (
+            df_feat[valid_fix]
+            .groupby(["player_id", "gameweek_id"])["fixture_id"]
+            .transform("count")
+        )
+        df_feat["_fix_count"] = 1
+        df_feat.loc[valid_fix, "_fix_count"] = gw_fix_counts
+
+        ext_vals: list[float] = []
+        for pid, gw, fid, n_fix in zip(
+            df_feat["player_id"].astype(int),
+            df_feat["gameweek_id"].astype(int),
+            df_feat["fixture_id"].fillna(-1).astype(int),
+            df_feat["_fix_count"].astype(int),
+        ):
+            if (pid, gw) in xmins_map:
+                if fid < 0:
+                    ext_vals.append(0.0)
+                else:
+                    per_fix = float(xmins_map[(pid, gw)]) / max(1, n_fix)
+                    ext_vals.append(min(90.0, max(0.0, per_fix)))
+            else:
+                ext_vals.append(float("nan"))
+        df_feat["external_xmins"] = ext_vals
+        df_feat.drop(columns=["_fix_count"], inplace=True)
     return assert_feature_contract(df_feat)
