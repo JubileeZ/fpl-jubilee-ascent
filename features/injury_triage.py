@@ -334,3 +334,97 @@ def synthesize_xmins_override(
     filtered_df.to_csv(dest, index=False)
     logger.info("Saved %d player overrides to %s", len(filtered_df), dest)
     return dest
+
+
+def _player_audit_info(
+    pid: int,
+    df_players: pd.DataFrame,
+    override_df: pd.DataFrame,
+    role: str,
+) -> dict[str, Any]:
+    if pid not in df_players.index:
+        return {"id": pid, "web_name": f"Player {pid}", "role": role, "gameweeks": []}
+    row = df_players.loc[pid]
+    mins_trajectory: dict[str, float] = {}
+    if not override_df.empty and pid in override_df.index:
+        o_row = override_df.loc[pid]
+        for col in o_row.index:
+            if col.endswith("_xMins"):
+                val = o_row[col]
+                if pd.notna(val) and val != "":
+                    try:
+                        mins_trajectory[col.replace("_xMins", "")] = float(val)
+                    except (ValueError, TypeError):
+                        pass
+
+    chance = row.get("chance_of_playing_next_round")
+    return {
+        "id": pid,
+        "web_name": str(row.get("web_name", "")),
+        "position": POS_MAP.get(int(row.get("position_id", 3)), "MID"),
+        "price": float(row.get("now_cost", 0)) / 10.0,
+        "status": str(row.get("status", "a")),
+        "chance": float(chance) if pd.notna(chance) else 100.0,
+        "news": str(row.get("news", "")) if pd.notna(row.get("news")) else "",
+        "is_flagged": str(row.get("status", "a")) != "a" or (pd.notna(chance) and float(chance) < 100),
+        "gameweeks": [],
+        "override_xmins": mins_trajectory,
+    }
+
+
+def audit_solution_players(
+    processed_dir: Path,
+    solution_path: Path | str,
+    override_csv_path: Path | str | None = None,
+) -> dict[str, Any]:
+    """Extract and summarize all solution-involved players (buys, sells, held flagged) for post-solve audit."""
+    import json
+    sol_file = Path(solution_path)
+    if not sol_file.exists():
+        raise FileNotFoundError(f"Solution file not found: {sol_file}")
+
+    with open(sol_file, encoding="utf-8") as f:
+        sol_data = json.load(f)
+
+    players_path = processed_dir / "players.parquet"
+    if not players_path.exists():
+        raise FileNotFoundError(f"Missing {players_path}")
+    df_players = pd.read_parquet(players_path).set_index("id")
+
+    override_df = pd.DataFrame()
+    if override_csv_path and Path(override_csv_path).exists():
+        override_df = pd.read_csv(override_csv_path).set_index("ID")
+
+    buys_dict: dict[int, dict[str, Any]] = {}
+    sells_dict: dict[int, dict[str, Any]] = {}
+    held_flagged_dict: dict[int, dict[str, Any]] = {}
+
+    for w in sol_data.get("weeks", []):
+        gw = int(w.get("gw", 0))
+        for b in w.get("buy", []):
+            pid = int(b.get("id"))
+            if pid not in buys_dict:
+                buys_dict[pid] = _player_audit_info(pid, df_players, override_df, "buy")
+            buys_dict[pid]["gameweeks"].append(gw)
+
+        for s in w.get("sell", []):
+            pid = int(s.get("id"))
+            if pid not in sells_dict:
+                sells_dict[pid] = _player_audit_info(pid, df_players, override_df, "sell")
+            sells_dict[pid]["gameweeks"].append(gw)
+
+        for pid_raw in w.get("squad_ids", []):
+            pid = int(pid_raw)
+            if pid in df_players.index:
+                p_row = df_players.loc[pid]
+                if str(p_row.get("status", "a")) != "a" or float(p_row.get("chance_of_playing_next_round", 100) or 100) < 100:
+                    if pid not in held_flagged_dict:
+                        held_flagged_dict[pid] = _player_audit_info(pid, df_players, override_df, "held_flagged")
+                    if gw not in held_flagged_dict[pid]["gameweeks"]:
+                        held_flagged_dict[pid]["gameweeks"].append(gw)
+
+    return {
+        "transfers_in": list(buys_dict.values()),
+        "transfers_out": list(sells_dict.values()),
+        "held_flagged": list(held_flagged_dict.values()),
+    }

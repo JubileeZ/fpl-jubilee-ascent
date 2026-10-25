@@ -149,3 +149,30 @@ def test_resolve_default_target_gw_advances_when_deadline_passed(tmp_path: Path)
     df.to_parquet(tmp_path / "gameweeks.parquet")
     resolved = resolve_default_target_gw(tmp_path)
     assert resolved == 9
+
+
+def test_audit_solution_players(tmp_path: Path):
+    import json
+    from features.injury_triage import audit_solution_players
+    proc = resolve_operational_processed_dir(Path("."))
+    sol_json = tmp_path / "solution.json"
+    sol_json.write_text(
+        json.dumps({
+            "weeks": [
+                {
+                    "gw": 9,
+                    "buy": [{"id": 427, "name": "Mbeumo"}],
+                    "sell": [{"id": 398, "name": "Foden"}],
+                    "squad_ids": [427, 8, 165],
+                }
+            ]
+        }),
+        encoding="utf-8",
+    )
+    res = audit_solution_players(proc, sol_json)
+    assert len(res["transfers_in"]) == 1
+    assert res["transfers_in"][0]["web_name"] == "Mbeumo"
+    assert len(res["transfers_out"]) == 1
+    assert res["transfers_out"][0]["web_name"] == "Foden"
+    # Calafiori (8) and Joao Pedro (165) are flagged in operational players.parquet
+    assert len(res["held_flagged"]) >= 1

@@ -37,10 +37,47 @@ def main() -> None:
         default="data/planner/xmins_override.csv",
         help="Output CSV path for synthesized overrides",
     )
+    parser.add_argument(
+        "--audit-solution",
+        type=str,
+        default=None,
+        help="Path to solution.json to audit solution-involved players",
+    )
     parser.add_argument("--json", action="store_true", help="Output summary in JSON format")
     args = parser.parse_args()
 
     proc = resolve_operational_processed_dir(Path("."))
+
+    if args.audit_solution:
+        from features.injury_triage import audit_solution_players
+        audit_res = audit_solution_players(
+            proc,
+            args.audit_solution,
+            override_csv_path=args.output,
+        )
+        if args.json:
+            print(json.dumps(audit_res, indent=2))
+        else:
+            print("\n" + "=" * 65)
+            print("SOLUTION PLAYERS AUDIT (TRANSFERS & HELD FLAGGED ASSETS)")
+            print("=" * 65)
+            print("\n[TRANSFERS IN]")
+            for p in audit_res["transfers_in"]:
+                flag_str = f" [FLAGGED: {p['status']} - {p['news']}]" if p["is_flagged"] else " [CLEAN]"
+                gws_str = ", ".join(f"GW{g}" for g in p["gameweeks"])
+                print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m) in {gws_str}{flag_str}")
+            print("\n[TRANSFERS OUT]")
+            for p in audit_res["transfers_out"]:
+                flag_str = f" [FLAGGED: {p['status']} - {p['news']}]" if p["is_flagged"] else " [CLEAN]"
+                gws_str = ", ".join(f"GW{g}" for g in p["gameweeks"])
+                print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m) out {gws_str}{flag_str}")
+            print("\n[FLAGGED SQUAD MEMBERS HELD]")
+            for p in audit_res["held_flagged"]:
+                traj_str = ", ".join(f"GW{k}: {v}m" for k, v in p["override_xmins"].items()) if p["override_xmins"] else "Native Champion"
+                print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m, status: {p['status']}) - {p['news']}")
+                print(f"    Assigned Curve: {traj_str}")
+            print("=" * 65 + "\n")
+        return
     gw_parquet = proc / "gameweeks.parquet"
     if not gw_parquet.exists():
         logger.error("Missing %s. Run refresh_data first.", gw_parquet)

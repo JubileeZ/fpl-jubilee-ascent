@@ -35,7 +35,8 @@ flowchart TD
     S2 --> S3["3. Injury Guard & Return Curves (Broad Pool Shield + Web Intel on top)"]
     S3 --> S4["4. Preflight Confirmation (Review Triage Table, Chips & Solver Flags)"]
     S4 --> S5["5. Execution & Solve (Synthesize xmins_override.csv & Run MILP)"]
-    S5 --> S6["6. Presentation & Ledger (Transfer Ledger, Lineup Card, Variance & Minutes Audit)"]
+    S5 --> S6["6. Post-Solve Subagent Audit (Verify Solution Buys/Sells/Holds; Re-run once if needed)"]
+    S6 --> S7["7. Presentation & Ledger (Transfer Ledger, Lineup Card, Variance & Audit Delta)"]
 ```
 
 ---
@@ -164,6 +165,7 @@ Wait for user confirmation or adjustments before invoking solver.
      --set "<pid>:<v1>,<v2>,<v3>..." \
      --output data/planner/xmins_override.csv
    ```
+   *Note: `data/planner/xmins_override.csv` is the synthesized consolidated override file and is distinct from any user-provided external CSV.*
 
 2. **Construct and run solve command**:
    ```bash
@@ -183,25 +185,67 @@ Wait for user confirmation or adjustments before invoking solver.
 
 ---
 
-### Step 6: Presentation & Ledger
+### Step 6: Post-Solve LLM Subagent Verification & Re-run Loop
+
+Once `data/solution.json` is generated, execute a focused audit specifically on the players involved in the solver's decisions:
+
+1. **Extract Solution Players Manifest**:
+   ```bash
+   uv run python -m commands.injury_triage --audit-solution data/solution.json --output data/planner/xmins_override.csv --json
+   ```
+   Extracts:
+   - **Transfers In**: Every player bought across the horizon.
+   - **Transfers Out**: Every player sold across the horizon.
+   - **Flagged Assets Held**: Every flagged player retained in the squad.
+
+2. **Dispatch Verification Subagent**:
+   Invoke a `self` subagent (Role: `Solution Curve Verifier`) with the audit manifest and prompt:
+   - Search recent press conferences (`search_web`) for any player bought or held who has a status flag or doubtful news.
+   - Verify:
+     a) Is any player being bought while actively injured or doubtful?
+     b) Are injured players held given realistic non-linear return curves?
+     c) Were any players prematurely sold right before a confirmed return?
+   - Return structured verdict:
+     ```json
+     {
+       "status": "PASS" | "CORRECTION_NEEDED",
+       "explanation": "Summary of verification findings...",
+       "corrections": {
+         "<player_id>": [v1, v2, v3, ...]
+       }
+     }
+     ```
+
+3. **Convergence Guardrail (Max 1 Re-run)**:
+   - **If `PASS`**: Proceed directly to Step 7 (Presentation).
+   - **If `CORRECTION_NEEDED`**:
+     a) Re-synthesize `data/planner/xmins_override.csv` applying the subagent's corrected curves (`--set "<pid>:<new_curve>"`).
+     b) Execute **one final re-solve** with the updated overrides (`max_iterations = 1`).
+     c) Proceed to Step 7 (Presentation) and include the **Audit & Correction Card** showing the verified delta.
+
+---
+
+### Step 7: Presentation & Ledger
 
 Present weekly results cleanly:
 
-1. **Transfer Ledger Table**:
+1. **Audit & Correction Card** (when corrections were applied by subagent):
+   - Highlight the subagent's findings, cited manager quotes, adjusted curves, and how the transfer sequence adapted.
+2. **Transfer Ledger Table**:
    - Per Gameweek: action taken (Player Bought, Player Sold, or Roll FT), Buy Price, Sell Price, remaining Bank (£m ITB).
    - **Injured Player Hold vs Sell Callout**: Clearly state whether injured squad members are held (benched with coverage) or sold immediately.
-2. **Weekly Lineup Card**:
+3. **Weekly Lineup Card**:
    - Starting XI formation shape (e.g. 3-5-2 or 3-4-3)
    - Designated Captain (**C**) and Vice-Captain (**V**)
    - Bench order (Slots 1–4)
    - Lineup projected points (xPts)
-3. **Strategic Variance Audit**:
+4. **Strategic Variance Audit**:
    - Paid Hit Hurdle checks
    - Starter xMins floor violations / slacks
    - 1st Outfield Bench xMins coverage
    - Defensive Club Stacking (DEF+GK)
    - Goalkeeper Transfer Friction
-4. **Minutes Audit**:
+5. **Minutes Audit**:
    - Transparently tag each starting and transfer asset with their minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]`.
-5. **Artifact Link**:
+6. **Artifact Link**:
    - Link to saved plan: [`data/solution.json`](file:///home/jubileez/fpl-jubilee-ascent/data/solution.json).
