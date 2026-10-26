@@ -19,12 +19,15 @@ SEASON_WINDOWS: dict[str, tuple[int, int]] = {
 _SEGMENT_NAMES = ("cold_start", "early_mid", "late")
 _MEANINGFUL_LIVE_LEAD = 0.05
 
-# Statistical gate (ADR 0046, 0049, 0062). No minimum effect beyond delta > 0; bootstrap bar shared by both seasons.
+# Statistical gate (ADR 0046, 0049, 0062, 0064).
+# Non-wrapping Moving Block Bootstrap (L=5, spanning 4-6 week fixture swings).
+# Dev season: P >= 0.75; Confirmation season (warm-seeded): P >= 0.65; Pooled 2-Season Stratified: P >= 0.85 (ADR 0064).
 MIN_EFFECT_SHARE = 0.0
-BOOTSTRAP_MIN_P = 0.60
-CONFIRMATION_BOOTSTRAP_MIN_P = 0.60
+BOOTSTRAP_MIN_P = 0.75
+CONFIRMATION_BOOTSTRAP_MIN_P = 0.65
+POOLED_BOOTSTRAP_MIN_P = 0.85
 BOOTSTRAP_DRAWS = 20_000
-BOOTSTRAP_BLOCK_GWS = 3
+BOOTSTRAP_BLOCK_GWS = 5
 GUARDRAIL_REL_TOL = 0.01
 BIAS_ABS_TOL = 0.01
 SPEARMAN_ABS_TOL = 0.005
@@ -64,18 +67,133 @@ class PromotionVerdict:
     active_guardrails_passed: bool = True
 
 
-def block_bootstrap_win_probability(
-    deltas: Sequence[float], *, draws: int = BOOTSTRAP_DRAWS, block: int = BOOTSTRAP_BLOCK_GWS, seed: int = 0
-) -> float:
-    """Share of circular block-bootstrap resamples (blocks of consecutive GWs) with mean delta > 0."""
-    values = np.asarray(deltas, dtype=float)
-    n = len(values)
-    if n == 0:
-        return 0.0
+@dataclass(frozen=True)
+class TwoSeasonGateVerdict:
+    passed: bool
+    dev_verdict: PromotionVerdict
+    conf_verdict: PromotionVerdict
+    pooled_bootstrap_p: float
+    reasons: tuple[str, ...]
+
+
+def moving_block_indices(
+    n: int, block: int, draws: int, seed: int = 0
+) -> np.ndarray:
+    """Generate non-wrapping moving block bootstrap indices with shape (draws, k * size).
+
+    Start indices are strictly restricted to 0 <= s <= n - size, ensuring all indices stay in
+    [0, n-1] with zero circular wrapping (% n) and complete blocks of length size (ADR 0064, Ticket #171).
+    """
+    if n <= 0:
+        return np.empty((draws, 0), dtype=int)
     size = min(block, n)
-    starts = np.random.default_rng(seed).integers(0, n, size=(draws, -(-n // size)))
-    idx = ((starts[:, :, None] + np.arange(size)) % n).reshape(draws, -1)[:, :n]
-    return float((values[idx].mean(axis=1) > 0).mean())
+    if size <= 0:
+        return np.empty((draws, 0), dtype=int)
+    rng = np.random.default_rng(seed)
+    k = -(-n // size)
+    num_starts = n - size + 1
+    starts = rng.integers(0, num_starts, size=(draws, k))
+    return (starts[:, :, None] + np.arange(size)).reshape(draws, -1)
+
+
+def stratified_block_bootstrap_win_probability(
+    strata_deltas: Sequence[Sequence[float]],
+    *,
+    draws: int = BOOTSTRAP_DRAWS,
+    block: int = BOOTSTRAP_BLOCK_GWS,
+    seed: int = 0,
+) -> float:
+    """Pooled multi-season stratified block bootstrap probability of positive mean delta.
+
+    Draws non-wrapping moving blocks independently within each season's temporal stratum,
+    preventing inter-season index mixing and modulo boundary artifacts, then evaluates
+    the combined pooled sample mean across all strata (ADR 0064, Ticket #171).
+    """
+    valid_strata: list[np.ndarray] = []
+    for s in strata_deltas:
+        arr = np.asarray(s, dtype=float)
+        arr = arr[~np.isnan(arr)]
+        if len(arr) > 0:
+            valid_strata.append(arr)
+    if not valid_strata:
+        return 0.0
+
+    strata_resamples: list[np.ndarray] = []
+    for i, s_vals in enumerate(valid_strata):
+        idx = moving_block_indices(len(s_vals), block, draws, seed=seed + i * 1000)
+        if idx.shape[1] > 0:
+            strata_resamples.append(s_vals[idx])
+
+    if not strata_resamples:
+        return 0.0
+    pooled_matrix = np.concatenate(strata_resamples, axis=1)
+    return float((pooled_matrix.mean(axis=1) > 0).mean())
+
+
+def block_bootstrap_win_probability(
+    deltas: Sequence[float],
+    *,
+    draws: int = BOOTSTRAP_DRAWS,
+    block: int = BOOTSTRAP_BLOCK_GWS,
+    seed: int = 0,
+) -> float:
+    """Share of non-wrapping moving block-bootstrap resamples with mean delta > 0.
+
+    Eliminates circular modulo wrapping (% n) by restricting start indices to
+    0 <= s <= n - L, and eliminates final-block truncation by evaluating complete
+    blocks of length L (ADR 0064, Ticket #171).
+    """
+    return stratified_block_bootstrap_win_probability(
+        [deltas], draws=draws, block=block, seed=seed
+    )
+
+
+def evaluate_two_season_gate(
+    dev_verdict: PromotionVerdict,
+    conf_verdict: PromotionVerdict,
+    *,
+    dev_gw_deltas: Sequence[float],
+    conf_gw_deltas: Sequence[float],
+    dev_min_p: float = BOOTSTRAP_MIN_P,
+    conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
+    pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
+    seed: int = 0,
+) -> TwoSeasonGateVerdict:
+    """Evaluate full two-season promotion gate with pooled stratified bootstrap (ADR 0064)."""
+    pooled_p = stratified_block_bootstrap_win_probability(
+        [dev_gw_deltas, conf_gw_deltas], seed=seed
+    )
+    reasons: list[str] = []
+    if not dev_verdict.passed:
+        reasons.append(f"dev season failed: {', '.join(dev_verdict.reasons)}")
+    elif dev_verdict.bootstrap_p is not None and dev_verdict.bootstrap_p < dev_min_p:
+        reasons.append(
+            f"dev bootstrap P {dev_verdict.bootstrap_p:.3f} below required {dev_min_p:.2f}"
+        )
+    if not conf_verdict.passed:
+        reasons.append(f"confirmation season failed: {', '.join(conf_verdict.reasons)}")
+    elif conf_verdict.bootstrap_p is not None and conf_verdict.bootstrap_p < conf_min_p:
+        reasons.append(
+            f"confirmation bootstrap P {conf_verdict.bootstrap_p:.3f} below required {conf_min_p:.2f}"
+        )
+    if pooled_p < pooled_min_p:
+        reasons.append(
+            f"pooled stratified bootstrap P(delta>0) {pooled_p:.3f} below required {pooled_min_p:.2f}"
+        )
+    passed = (
+        dev_verdict.passed
+        and conf_verdict.passed
+        and (dev_verdict.bootstrap_p is None or dev_verdict.bootstrap_p >= dev_min_p)
+        and (conf_verdict.bootstrap_p is None or conf_verdict.bootstrap_p >= conf_min_p)
+        and (pooled_p >= pooled_min_p)
+    )
+    return TwoSeasonGateVerdict(
+        passed=passed,
+        dev_verdict=dev_verdict,
+        conf_verdict=conf_verdict,
+        pooled_bootstrap_p=pooled_p,
+        reasons=tuple(reasons),
+    )
 
 
 def _regret_is_informative(metrics: dict[str, Any]) -> bool:
@@ -333,6 +451,8 @@ def evaluate_historical_promotion_gate(
     bootstrap_min_p: float = BOOTSTRAP_MIN_P,
     active_champion_metrics: dict[str, Any] | None = None,
     active_candidate_metrics: dict[str, Any] | None = None,
+    active_gameweeks: Sequence[int] | None = None,
+    active_gw_primary_deltas: Sequence[float] | None = None,
 ) -> PromotionVerdict:
     """Pass = combined delta > 0 and ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
     (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ bootstrap_min_p."""
@@ -342,7 +462,22 @@ def evaluate_historical_promotion_gate(
     candidate_primary = primary_metric_value(combined_candidate)
     combined_delta = champion_primary - candidate_primary
     min_effect = MIN_EFFECT_SHARE * max(champion_primary, 0.0)
-    bootstrap_p = None if gw_primary_deltas is None else block_bootstrap_win_probability(gw_primary_deltas)
+
+    # Restrict bootstrap resampling to active gameweeks to prevent dormant zero-error dilution (ADR 0064, Ticket #171)
+    resample_deltas = gw_primary_deltas
+    if active_gw_primary_deltas is not None:
+        resample_deltas = active_gw_primary_deltas
+    elif active_gameweeks is not None and gw_primary_deltas is not None:
+        if len(active_gameweeks) < len(gw_primary_deltas):
+            resample_deltas = [
+                gw_primary_deltas[g - 1]
+                for g in active_gameweeks
+                if 1 <= g <= len(gw_primary_deltas)
+            ]
+
+    bootstrap_p = (
+        None if resample_deltas is None else block_bootstrap_win_probability(resample_deltas)
+    )
     cand_g = guardrail_metrics(combined_candidate)
     champ_g = guardrail_metrics(combined_champion)
     guardrails_passed = metrics_meet_guardrails(cand_g, champ_g)

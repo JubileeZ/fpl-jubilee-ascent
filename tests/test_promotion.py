@@ -2,19 +2,25 @@ import pandas as pd
 import pytest
 
 from backtesting.promotion import (
+    BOOTSTRAP_BLOCK_GWS,
     BOOTSTRAP_MIN_P,
     CONFIRMATION_BOOTSTRAP_MIN_P,
+    POOLED_BOOTSTRAP_MIN_P,
+    TwoSeasonGateVerdict,
     block_bootstrap_win_probability,
     classify_live_lead,
     compute_playable_pool_metrics,
     diagnose_guardrail_regressions,
     evaluate_historical_promotion_gate,
+    evaluate_two_season_gate,
     guardrail_metrics,
     identify_active_gameweeks,
     metrics_by_season_window,
     metrics_meet_guardrails,
+    pooled_block_bootstrap_win_probability,
     primary_metric_name,
     primary_metric_value,
+    stratified_block_bootstrap_win_probability,
 )
 
 
@@ -212,17 +218,110 @@ def test_gate_requires_block_bootstrap_significance() -> None:
 
 def test_both_seasons_accept_moderate_bootstrap_confidence() -> None:
     champion, candidate = _clear_winner_windows()
-    deltas = [3.0, -1.0, 2.0, -1.5, 1.5, 0.5]
+    deltas = [1.2, -0.8, 1.0, -1.2, 0.9, -0.4, 0.8, -0.6, 1.1, 0.5]
 
     dev = evaluate_historical_promotion_gate(champion, candidate, gw_primary_deltas=deltas)
     confirm = evaluate_historical_promotion_gate(
         champion, candidate, gw_primary_deltas=deltas, bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P
     )
 
-    assert BOOTSTRAP_MIN_P == CONFIRMATION_BOOTSTRAP_MIN_P == 0.60
+    assert BOOTSTRAP_MIN_P == 0.75
+    assert CONFIRMATION_BOOTSTRAP_MIN_P == 0.65
+    assert POOLED_BOOTSTRAP_MIN_P == 0.85
+    assert BOOTSTRAP_BLOCK_GWS == 5
     assert dev.bootstrap_p is not None and BOOTSTRAP_MIN_P <= dev.bootstrap_p < 0.95
     assert dev.passed
     assert confirm.passed
+
+
+def test_non_wrapping_block_bootstrap_never_wraps_around_gw38() -> None:
+    """Verify that start indices are strictly bounded to 0 <= s <= n - L so no indices wrap."""
+    import numpy as np
+
+    n = 38
+    block = 5
+    size = min(block, n)
+    k = -(-n // size)
+    num_starts = n - size + 1
+    starts = np.random.default_rng(42).integers(0, num_starts, size=(5000, k))
+    idx = (starts[:, :, None] + np.arange(size)).reshape(5000, -1)
+
+    assert starts.min() >= 0
+    assert starts.max() <= n - block
+    assert idx.min() >= 0
+    assert idx.max() == n - 1  # Exactly 37 for n=38, never >= 38
+    # Within every contiguous block of length 5, indices must be strictly increasing by 1
+    blocks = idx.reshape(5000, k, block)
+    diffs = np.diff(blocks, axis=2)
+    assert np.all(diffs == 1)  # Never negative or wrapping around
+
+
+def test_bootstrap_active_window_isolation_prevents_dormant_dilution() -> None:
+    """Verify that when a candidate has dormant weeks, bootstrap isolates to active gameweeks."""
+    champion, candidate = _clear_winner_windows()
+    # 19 dormant weeks (zeros) + 19 active weeks (mean ~ +0.5)
+    dormant_deltas = [0.0] * 19
+    active_deltas = [0.8, 0.4, 0.9, -0.2, 0.7, 0.6, 0.3, -0.4, 0.8, 0.5, 0.4, 0.6, -0.1, 0.7, 0.5, 0.6, 0.2, 0.5, 0.7]
+    full_deltas = dormant_deltas + active_deltas
+    active_gws = list(range(20, 39))
+
+    # Evaluate with active_gameweeks specified
+    verdict = evaluate_historical_promotion_gate(
+        champion,
+        candidate,
+        gw_primary_deltas=full_deltas,
+        active_gameweeks=active_gws,
+    )
+    # Compare with standalone active bootstrap
+    expected_p = block_bootstrap_win_probability(active_deltas)
+    assert verdict.bootstrap_p == pytest.approx(expected_p, abs=1e-6)
+    assert verdict.bootstrap_p >= BOOTSTRAP_MIN_P
+
+
+def test_stratified_block_bootstrap_and_two_season_gate() -> None:
+    """Verify pooled multi-season stratified bootstrap and evaluate_two_season_gate."""
+    champion, candidate = _clear_winner_windows()
+
+    dev_deltas = [1.2, -0.8, 1.0, -1.2, 0.9, -0.4, 0.8, -0.6, 1.1, 0.5]
+    conf_deltas = [1.0, -0.5, 0.8, -0.9, 0.7, -0.3, 0.6, -0.4, 0.9, 0.4]
+
+    dev_verdict = evaluate_historical_promotion_gate(
+        champion, candidate, gw_primary_deltas=dev_deltas, bootstrap_min_p=BOOTSTRAP_MIN_P
+    )
+    conf_verdict = evaluate_historical_promotion_gate(
+        champion, candidate, gw_primary_deltas=conf_deltas, bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P
+    )
+
+    pooled_p = stratified_block_bootstrap_win_probability([dev_deltas, conf_deltas])
+    alias_p = pooled_block_bootstrap_win_probability([dev_deltas, conf_deltas])
+    assert pooled_p == alias_p
+    assert pooled_p >= POOLED_BOOTSTRAP_MIN_P
+
+    two_season_verdict = evaluate_two_season_gate(
+        dev_verdict,
+        conf_verdict,
+        dev_gw_deltas=dev_deltas,
+        conf_gw_deltas=conf_deltas,
+    )
+    assert isinstance(two_season_verdict, TwoSeasonGateVerdict)
+    assert two_season_verdict.passed
+    assert two_season_verdict.pooled_bootstrap_p == pooled_p
+    assert len(two_season_verdict.reasons) == 0
+
+    # Negative confirmation season fails two-season gate
+    bad_conf_deltas = [-1.0, -0.8, -1.2, -0.5, -0.9, -0.4, -0.8, -0.6, -1.1, -0.5]
+    bad_conf_verdict = evaluate_historical_promotion_gate(
+        champion, candidate, gw_primary_deltas=bad_conf_deltas, bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P
+    )
+    failing_two_season = evaluate_two_season_gate(
+        dev_verdict,
+        bad_conf_verdict,
+        dev_gw_deltas=dev_deltas,
+        conf_gw_deltas=bad_conf_deltas,
+    )
+    assert not failing_two_season.passed
+    assert any("confirmation season failed" in r for r in failing_two_season.reasons)
+    assert any("pooled stratified" in r for r in failing_two_season.reasons)
 
 
 def test_guardrails_tolerate_noise_but_not_real_regression() -> None:
@@ -235,12 +334,15 @@ def test_guardrails_tolerate_noise_but_not_real_regression() -> None:
 
 
 def test_block_bootstrap_is_deterministic_and_bounded() -> None:
-    deltas = [0.4, -0.2, 0.9, -1.1, 0.3, 0.6, -0.1]
+    deltas = [-1.0, 0.5, 0.8, -0.2, -0.5, 0.4, 0.6, -0.8]
     first = block_bootstrap_win_probability(deltas)
 
     assert first == block_bootstrap_win_probability(deltas)
     assert 0.0 < first < 1.0
     assert block_bootstrap_win_probability([]) == 0.0
+    assert block_bootstrap_win_probability([float("nan")]) == 0.0
+    assert block_bootstrap_win_probability([1.0, float("nan"), 1.5, 0.8, -0.2, 0.5]) > 0.0
+    assert stratified_block_bootstrap_win_probability([[float("nan")], []]) == 0.0
 
 
 @pytest.mark.parametrize(

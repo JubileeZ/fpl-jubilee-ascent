@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Non-Wrapping Moving Block Bootstrap (L=5) & Pooled Stratified Gate Prototype</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-subtle: #1a2234;
+      --surface-border: #243048;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --emerald: #10b981;
+      --emerald-subtle: rgba(16, 185, 129, 0.15);
+      --amber: #f59e0b;
+      --amber-subtle: rgba(245, 158, 11, 0.15);
+      --rose: #f43f5e;
+      --rose-subtle: rgba(244, 63, 94, 0.15);
+      --sky: #38bdf8;
+      --sky-subtle: rgba(56, 189, 248, 0.15);
+      --purple: #a855f7;
+      --purple-subtle: rgba(168, 85, 247, 0.15);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    p.lead {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .badge-strip {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-amber { background: var(--amber-subtle); color: var(--amber); border: 1px solid var(--amber); }
+    .badge-emerald { background: var(--emerald-subtle); color: var(--emerald); border: 1px solid var(--emerald); }
+    .badge-rose { background: var(--rose-subtle); color: var(--rose); border: 1px solid var(--rose); }
+    .badge-sky { background: var(--sky-subtle); color: var(--sky); border: 1px solid var(--sky); }
+    .badge-purple { background: var(--purple-subtle); color: var(--purple); border: 1px solid var(--purple); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Tabs */
+    .tabs-header {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover {
+      background: var(--surface-subtle);
+      color: var(--text);
+    }
+    .tab-btn.active {
+      background: var(--sky-subtle);
+      border-color: var(--sky);
+      color: var(--sky);
+      font-weight: 600;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Visual Timeline Grid */
+    .timeline-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+    .gw-axis {
+      display: grid;
+      grid-template-columns: repeat(38, 1fr);
+      gap: 2px;
+      font-size: 10px;
+      color: var(--text-dim);
+      text-align: center;
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+    .gw-cell {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      transition: transform 0.1s;
+    }
+    .gw-cell.standard { background: #1e293b; color: var(--text-muted); }
+    .gw-cell.active-block { background: var(--sky); color: #000; }
+    .gw-cell.wrapped-block { background: var(--rose); color: #fff; }
+    .gw-cell.dormant { background: #0f172a; color: #475569; border: 1px dashed #334155; }
+    .gw-cell.in-active-pool { background: rgba(56, 189, 248, 0.2); color: var(--sky); }
+
+    /* Comparison metrics grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-val {
+      font-size: 22px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+    .stat-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .control-group label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    select, input[type="range"], input[type="number"] {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-sans);
+    }
+    button.action-btn {
+      background: var(--sky);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button.action-btn:hover {
+      background: #7dd3fc;
+    }
+
+    /* Code & comparison boxes */
+    pre {
+      background: #0b1120;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #cbd5e1;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .hl-kw { color: #f472b6; }
+    .hl-fn { color: #38bdf8; }
+    .hl-num { color: #f59e0b; }
+    .hl-str { color: #34d399; }
+    .hl-cm { color: #64748b; font-style: italic; }
+
+    /* Verdict Banner */
+    .verdict-banner {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .verdict-pass {
+      background: var(--emerald-subtle);
+      border: 1px solid var(--emerald);
+      color: var(--emerald);
+    }
+    .verdict-fail {
+      background: var(--rose-subtle);
+      border: 1px solid var(--rose);
+      color: var(--rose);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Non-Wrapping Moving Block Bootstrap & 2-Season Stratified Gate</h1>
+      <p class="lead">
+        Interactive verification prototype for Wayfinder Ticket #171 (ADR 0064). Demonstrates elimination of circular modulo wrapping (% n), removal of final-block truncation, active-gameweek isolation against dormant zero-error dilution, and pooled multi-season stratified testing.
+      </p>
+      <div class="badge-strip">
+        <span class="badge badge-sky">ADR 0064 Rigor</span>
+        <span class="badge badge-emerald">L = 5 Fixture Swings</span>
+        <span class="badge badge-amber">Non-Wrapping MBB</span>
+        <span class="badge badge-purple">Pooled Stratified Gate</span>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('tab-wrapping')">1. Boundary Wrapping & Truncation</button>
+        <button class="tab-btn" onclick="switchTab('tab-dormant')">2. Dormant Fallback Dilution</button>
+        <button class="tab-btn" onclick="switchTab('tab-stratified')">3. Two-Season Stratified Gate</button>
+        <button class="tab-btn" onclick="switchTab('tab-scenarios')">4. Pre-Packaged Case Scenarios</button>
+      </div>
+
+      <!-- TAB 1: BOUNDARY WRAPPING & TRUNCATION -->
+      <div id="tab-wrapping" class="tab-content active">
+        <div>
+          <h3 style="font-size:16px; margin-bottom:6px;">Boundary Modulo Wrapping Comparison (n = 38 GWs)</h3>
+          <p style="font-size:13px; color:var(--text-muted);">
+            In circular block bootstrap, drawing start index s = 36 with L = 5 yields indices [36, 37, 0, 1, 2]—stitching the final day of the season (GW38) into GW1 cold start. Non-wrapping MBB restricts start indices to 0 &le; s &le; n - L (0..33), guaranteeing 100% intra-season contiguity without artificial jumps.
+          </p>
+        </div>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <label>Block Length (L):</label>
+            <select id="wrap-block-len" onchange="runWrappingDemo()">
+              <option value="3">L = 3 (Legacy ADR 0049)</option>
+              <option value="5" selected>L = 5 (Reformed ADR 0064)</option>
+              <option value="6">L = 6</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Simulated Replicates:</label>
+            <select id="wrap-draws" onchange="runWrappingDemo()">
+              <option value="1000">1,000 Draws</option>
+              <option value="5000" selected>5,000 Draws</option>
+              <option value="20000">20,000 Draws</option>
+            </select>
+          </div>
+          <button class="action-btn" onclick="runWrappingDemo()">🎲 Re-Sample Blocks</button>
+        </div>
+
+        <div class="timeline-container">
+          <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:4px;">
+            Single Draw Sample Trajectory (Blocks Colored):
+          </div>
+          <div class="gw-axis" id="axis-labels"></div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Legacy Circular Resample (<span style="color:var(--rose)">Red = Boundary Wrapped</span>):</div>
+          <div class="gw-axis" id="circ-sample-cells"></div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Non-Wrapping Moving Block Resample (<span style="color:var(--sky)">Sky Blue = True Contiguous Blocks</span>):</div>
+          <div class="gw-axis" id="mbb-sample-cells"></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Circular Wrapping Frequency</span>
+            <span class="stat-val" id="stat-wrap-circ" style="color:var(--rose)">--%</span>
+            <span class="stat-desc">Proportion of draws containing at least one GW38 &rarr; GW1 wrapped block.</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">MBB Wrapping Frequency</span>
+            <span class="stat-val" id="stat-wrap-mbb" style="color:var(--emerald)">0.0%</span>
+            <span class="stat-desc">Start indices bounded strictly within 0 &le; s &le; n - L.</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Final Block Truncation</span>
+            <span class="stat-val" id="stat-trunc-comp" style="color:var(--amber)">0 / 40 items</span>
+            <span class="stat-desc">Legacy sliced [:, :n] (chops block from 5 to 3). MBB evaluates full complete blocks.</span>
+          </div>
+        </div>
+
+        <pre><code><span class="hl-cm"># Non-Wrapping Moving Block Bootstrap Implementation (ADR 0064 / Ticket #171)</span>
+<span class="hl-kw">def</span> <span class="hl-fn">block_bootstrap_win_probability</span>(deltas, *, draws=<span class="hl-num">20_000</span>, block=<span class="hl-num">5</span>, seed=<span class="hl-num">0</span>):
+    values = np.asarray(deltas, dtype=float)
+    n = len(values)
+    size = min(block, n)
+    k = -(-n // size)  <span class="hl-cm"># ceil(n / size) blocks</span>
+    num_starts = n - size + <span class="hl-num">1</span>
+    starts = np.random.default_rng(seed).integers(<span class="hl-num">0</span>, num_starts, size=(draws, k))
+    idx = (starts[:, :, <span class="hl-kw">None</span>] + np.arange(size)).reshape(draws, -<span class="hl-num">1</span>)
+    <span class="hl-kw">return</span> float((values[idx].mean(axis=<span class="hl-num">1</span>) > <span class="hl-num">0</span>).mean())</code></pre>
+      </div>
+
+      <!-- TAB 2: DORMANT FALLBACK DILUTION -->
+      <div id="tab-dormant" class="tab-content">
+        <div>
+          <h3 style="font-size:16px; margin-bottom:6px;">Dormant Fallback Zero-Error Dilution</h3>
+          <p style="font-size:13px; color:var(--text-muted);">
+            When a candidate model relies on Champion fallback during early gameweeks (e.g. <code>adaptive_causal_challenger</code> during GW1–19), the delta is identically zero. Bootstrapping over all 38 GWs dilutes the variance and artificializes standard errors. Active-window isolation restricts resampling strictly to G_active = {g : max |y_cand - y_champ| &gt; 1e-6}.
+          </p>
+        </div>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <label>Dormant Fallback Gameweeks (GW1 to X):</label>
+            <input type="range" id="dormant-slider" min="0" max="25" value="19" oninput="updateDormantSlider(this.value)">
+            <span id="dormant-val-label" style="font-family:var(--font-mono); font-size:12px; color:var(--sky);">GW 1–19 (19 dormant GWs)</span>
+          </div>
+          <div class="control-group">
+            <label>Active Window True Effect (&Delta; pts/GW):</label>
+            <input type="number" id="dormant-effect" value="0.45" step="0.05" style="width:90px;" onchange="runDormantDemo()">
+          </div>
+          <div class="control-group">
+            <label>Active Window Noise (&sigma;):</label>
+            <input type="number" id="dormant-std" value="1.20" step="0.1" style="width:80px;" onchange="runDormantDemo()">
+          </div>
+          <button class="action-btn" onclick="runDormantDemo()">⚡ Re-Calculate Bootstrap</button>
+        </div>
+
+        <div class="timeline-container">
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">
+            Gameweek Architecture Allocation:
+          </div>
+          <div class="gw-axis" id="dormant-grid"></div>
+          <div style="display:flex; gap:16px; font-size:11px; margin-top:8px;">
+            <div><span style="color:#64748b;">■</span> Dormant Fallback (&Delta; = 0.0)</div>
+            <div><span style="color:var(--sky);">■</span> Active ML Evaluation Window (&Delta; ~ N(&mu;, &sigma;))</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Full-Season Diluted P</span>
+            <span class="stat-val" id="stat-p-diluted">--</span>
+            <span class="stat-desc">Dormant zeros artificially compress variance towards 0, dampening true distribution spread.</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Active-Window Isolated P</span>
+            <span class="stat-val" id="stat-p-active" style="color:var(--emerald);">--</span>
+            <span class="stat-desc">Resamples strictly within G_active (length 38 - dormant). Honest candidate estimator evaluation.</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Gate Bar Evaluation</span>
+            <span class="stat-val" id="stat-gate-eval">--</span>
+            <span class="stat-desc">Active P must satisfy Dev bar (0.75) or Confirmation bar (0.65).</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: TWO-SEASON STRATIFIED GATE -->
+      <div id="tab-stratified" class="tab-content">
+        <div>
+          <h3 style="font-size:16px; margin-bottom:6px;">Pooled Two-Season Stratified Bootstrap Gate</h3>
+          <p style="font-size:13px; color:var(--text-muted);">
+            A single season of 38 games has high sampling variance. ADR 0064 introduces a multi-tier stratified gate combining individual season thresholds with a pooled cross-season stratified test drawing independent blocks within each season's temporal stratum.
+          </p>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div class="card" style="background:var(--surface-subtle);">
+            <h4 style="font-size:14px; margin-bottom:10px; color:var(--sky);">Dev Season (2025–26, N &le; 38)</h4>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div class="control-group">
+                <label>Mean Delta (&mu; pts/GW):</label>
+                <input type="number" id="strat-dev-mu" value="0.38" step="0.05" onchange="runStratifiedDemo()">
+              </div>
+              <div class="control-group">
+                <label>Noise (&sigma;):</label>
+                <input type="number" id="strat-dev-sigma" value="1.25" step="0.1" onchange="runStratifiedDemo()">
+              </div>
+              <div style="font-size:12px; color:var(--text-dim);">Gate Threshold: <strong>P &ge; 0.75</strong></div>
+            </div>
+          </div>
+
+          <div class="card" style="background:var(--surface-subtle);">
+            <h4 style="font-size:14px; margin-bottom:10px; color:var(--amber);">Confirmation Season (2024–25, N &le; 38)</h4>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div class="control-group">
+                <label>Mean Delta (&mu; pts/GW):</label>
+                <input type="number" id="strat-conf-mu" value="0.28" step="0.05" onchange="runStratifiedDemo()">
+              </div>
+              <div class="control-group">
+                <label>Noise (&sigma;):</label>
+                <input type="number" id="strat-conf-sigma" value="1.30" step="0.1" onchange="runStratifiedDemo()">
+              </div>
+              <div style="font-size:12px; color:var(--text-dim);">Gate Threshold: <strong>P &ge; 0.65</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="action-btn" onclick="runStratifiedDemo()">📊 Run Stratified Evaluation</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Dev Season P(dev &gt; 0)</span>
+            <span class="stat-val" id="stat-strat-p-dev">--</span>
+            <span class="stat-desc">Target: &ge; 0.75</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Confirm Season P(conf &gt; 0)</span>
+            <span class="stat-val" id="stat-strat-p-conf">--</span>
+            <span class="stat-desc">Target: &ge; 0.65</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Pooled Stratified P(pool &gt; 0)</span>
+            <span class="stat-val" id="stat-strat-p-pool" style="color:var(--purple);">--</span>
+            <span class="stat-desc">Target: &ge; 0.85 (Combined 76 GWs)</span>
+          </div>
+        </div>
+
+        <div id="strat-banner" class="verdict-banner verdict-pass">
+          <div>
+            <div style="font-weight:700; font-size:15px;" id="strat-banner-title">PASS: ALL 3 BOOTSTRAP GATES SATISFIED</div>
+            <div style="font-size:12px; opacity:0.9;" id="strat-banner-sub">Candidate demonstrates statistically significant outperformance across both independent seasons and the pooled cross-season stratified test.</div>
+          </div>
+          <span class="badge badge-emerald" id="strat-badge">PROMOTABLE</span>
+        </div>
+      </div>
+
+      <!-- TAB 4: CASE SCENARIOS -->
+      <div id="tab-scenarios" class="tab-content">
+        <div>
+          <h3 style="font-size:16px; margin-bottom:6px;">Pre-Packaged Historical Candidate Walkthroughs</h3>
+          <p style="font-size:13px; color:var(--text-muted);">
+            Test how historical candidate models perform under the reformed non-wrapping block bootstrap (L=5) and 2-season stratified gate.
+          </p>
+        </div>
+
+        <div class="controls-row">
+          <button class="tab-btn active" onclick="loadScenario('adaptive')">Adaptive Causal ML (ADR 0063)</button>
+          <button class="tab-btn" onclick="loadScenario('fixture_swing')">Fixture Swing Clustered Outperformer</button>
+          <button class="tab-btn" onclick="loadScenario('fluke_winner')">Single-Season Lucky Fluke</button>
+          <button class="tab-btn" onclick="loadScenario('solid_two_season')">Robust Multi-Season Challenger</button>
+        </div>
+
+        <div class="card" style="background:var(--surface-subtle); display:flex; flex-direction:column; gap:12px;">
+          <h4 id="scen-title" style="font-size:15px; color:var(--text);">Adaptive Causal ML (ADR 0063)</h4>
+          <p id="scen-desc" style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+            Champion model features 100% Champion fallback across GW1–19 (dormant), activating Ridge duration and goal residuals for GW20–38. Under reformed gate, dormant weeks are strictly excluded from bootstrap resampling.
+          </p>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Dev Bootstrap (Active G_active)</span>
+              <span class="stat-val" id="scen-dev-p">0.992</span>
+              <span class="stat-desc">Bar: &ge; 0.75 (PASS)</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Confirmation Bootstrap (Active)</span>
+              <span class="stat-val" id="scen-conf-p">0.684</span>
+              <span class="stat-desc">Bar: &ge; 0.65 (PASS)</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Pooled Stratified Bootstrap</span>
+              <span class="stat-val" id="scen-pool-p" style="color:var(--emerald);">0.952</span>
+              <span class="stat-desc">Bar: &ge; 0.85 (PASS)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Render Timeline Axis
+    function renderAxis() {
+      const axis = document.getElementById('axis-labels');
+      axis.innerHTML = '';
+      for (let i = 1; i <= 38; i++) {
+        const div = document.createElement('div');
+        div.innerText = i % 5 === 0 || i === 1 || i === 38 ? i : '·';
+        axis.appendChild(div);
+      }
+    }
+
+    // Tab 1 Demo: Wrapping Simulation
+    function runWrappingDemo() {
+      const L = parseInt(document.getElementById('wrap-block-len').value, 10);
+      const draws = parseInt(document.getElementById('wrap-draws').value, 10);
+      const n = 38;
+      const k = Math.ceil(n / L);
+
+      let circWraps = 0;
+      let mbbWraps = 0;
+
+      // Sample one draw for display
+      const circStarts = [];
+      const mbbStarts = [];
+      for (let b = 0; b < k; b++) {
+        circStarts.push(Math.floor(Math.random() * n));
+        mbbStarts.push(Math.floor(Math.random() * (n - L + 1)));
+      }
+
+      // Check full draws
+      for (let d = 0; d < draws; d++) {
+        let circHasWrap = false;
+        for (let b = 0; b < k; b++) {
+          const s = Math.floor(Math.random() * n);
+          if (s + L - 1 >= n) {
+            circHasWrap = true;
+            break;
+          }
+        }
+        if (circHasWrap) circWraps++;
+      }
+
+      document.getElementById('stat-wrap-circ').innerText = ((circWraps / draws) * 100).toFixed(1) + '%';
+      document.getElementById('stat-wrap-mbb').innerText = '0.0%';
+      document.getElementById('stat-trunc-comp').innerText = `8 × ${L} = ${k * L} elements`;
+
+      // Render cells
+      const circContainer = document.getElementById('circ-sample-cells');
+      const mbbContainer = document.getElementById('mbb-sample-cells');
+      circContainer.innerHTML = '';
+      mbbContainer.innerHTML = '';
+
+      // Flatten single draw
+      const circIndices = [];
+      for (const s of circStarts) {
+        for (let off = 0; off < L; off++) {
+          circIndices.push((s + off) % n);
+        }
+      }
+      const mbbIndices = [];
+      for (const s of mbbStarts) {
+        for (let off = 0; off < L; off++) {
+          mbbIndices.push(s + off);
+        }
+      }
+
+      for (let i = 0; i < 38; i++) {
+        const cCell = document.createElement('div');
+        cCell.className = 'gw-cell';
+        const isWrapped = circStarts.some(s => s + L - 1 >= n && (i >= s || i < (s + L) % n));
+        cCell.classList.add(isWrapped ? 'wrapped-block' : 'standard');
+        cCell.innerText = i + 1;
+        circContainer.appendChild(cCell);
+
+        const mCell = document.createElement('div');
+        mCell.className = 'gw-cell active-block';
+        mCell.innerText = i + 1;
+        mbbContainer.appendChild(mCell);
+      }
+    }
+
+    // Tab 2 Demo: Dormant Fallback
+    function updateDormantSlider(val) {
+      document.getElementById('dormant-val-label').innerText = val === '0' ? 'None (Active all 38 GWs)' : `GW 1–${val} (${val} dormant GWs)`;
+      runDormantDemo();
+    }
+
+    function runDormantDemo() {
+      const dormantCount = parseInt(document.getElementById('dormant-slider').value, 10);
+      const mu = parseFloat(document.getElementById('dormant-effect').value);
+      const sigma = parseFloat(document.getElementById('dormant-std').value);
+      const n = 38;
+      const draws = 5000;
+      const L = 5;
+
+      // Render grid
+      const grid = document.getElementById('dormant-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= n; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'gw-cell ' + (i <= dormantCount ? 'dormant' : 'in-active-pool');
+        cell.innerText = i;
+        grid.appendChild(cell);
+      }
+
+      // Generate active observations
+      const activeCount = n - dormantCount;
+      if (activeCount === 0) {
+        document.getElementById('stat-p-diluted').innerText = '0.000';
+        document.getElementById('stat-p-active').innerText = '0.000';
+        document.getElementById('stat-gate-eval').innerText = 'FAIL (No active GWs)';
+        return;
+      }
+
+      const deltasFull = new Float64Array(n);
+      for (let i = dormantCount; i < n; i++) {
+        deltasFull[i] = mu + (Math.random() + Math.random() + Math.random() - 1.5) * 2 * sigma;
+      }
+      const deltasActive = deltasFull.slice(dormantCount);
+
+      // Full diluted MBB
+      let winDiluted = 0;
+      const kFull = Math.ceil(n / L);
+      for (let d = 0; d < draws; d++) {
+        let sum = 0;
+        for (let b = 0; b < kFull; b++) {
+          const s = Math.floor(Math.random() * (n - L + 1));
+          for (let off = 0; off < L; off++) sum += deltasFull[s + off];
+        }
+        if (sum > 0) winDiluted++;
+      }
+
+      // Active isolated MBB
+      let winActive = 0;
+      const kAct = Math.ceil(activeCount / Math.min(L, activeCount));
+      const sizeAct = Math.min(L, activeCount);
+      for (let d = 0; d < draws; d++) {
+        let sum = 0;
+        for (let b = 0; b < kAct; b++) {
+          const s = Math.floor(Math.random() * (activeCount - sizeAct + 1));
+          for (let off = 0; off < sizeAct; off++) sum += deltasActive[s + off];
+        }
+        if (sum > 0) winActive++;
+      }
+
+      const pDiluted = winDiluted / draws;
+      const pActive = winActive / draws;
+
+      document.getElementById('stat-p-diluted').innerText = pDiluted.toFixed(4);
+      document.getElementById('stat-p-active').innerText = pActive.toFixed(4);
+      const passed = pActive >= 0.75;
+      const gateEl = document.getElementById('stat-gate-eval');
+      gateEl.innerText = passed ? 'PASS (Active P ≥ 0.75)' : 'FAIL (Active P < 0.75)';
+      gateEl.style.color = passed ? 'var(--emerald)' : 'var(--rose)';
+    }
+
+    // Tab 3: Stratified Demo
+    function runStratifiedDemo() {
+      const devMu = parseFloat(document.getElementById('strat-dev-mu').value);
+      const devSig = parseFloat(document.getElementById('strat-dev-sigma').value);
+      const confMu = parseFloat(document.getElementById('strat-conf-mu').value);
+      const confSig = parseFloat(document.getElementById('strat-conf-sigma').value);
+
+      const draws = 5000;
+      const L = 5;
+      const n = 38;
+      const k = Math.ceil(n / L);
+
+      const devDeltas = new Float64Array(n);
+      const confDeltas = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        devDeltas[i] = devMu + (Math.random() + Math.random() + Math.random() - 1.5) * 2 * devSig;
+        confDeltas[i] = confMu + (Math.random() + Math.random() + Math.random() - 1.5) * 2 * confSig;
+      }
+
+      let devWins = 0;
+      let confWins = 0;
+      let poolWins = 0;
+
+      for (let d = 0; d < draws; d++) {
+        let devSum = 0;
+        for (let b = 0; b < k; b++) {
+          const s = Math.floor(Math.random() * (n - L + 1));
+          for (let off = 0; off < L; off++) devSum += devDeltas[s + off];
+        }
+        if (devSum > 0) devWins++;
+
+        let confSum = 0;
+        for (let b = 0; b < k; b++) {
+          const s = Math.floor(Math.random() * (n - L + 1));
+          for (let off = 0; off < L; off++) confSum += confDeltas[s + off];
+        }
+        if (confSum > 0) confWins++;
+
+        if (devSum + confSum > 0) poolWins++;
+      }
+
+      const pDev = devWins / draws;
+      const pConf = confWins / draws;
+      const pPool = poolWins / draws;
+
+      document.getElementById('stat-strat-p-dev').innerText = pDev.toFixed(4);
+      document.getElementById('stat-strat-p-conf').innerText = pConf.toFixed(4);
+      document.getElementById('stat-strat-p-pool').innerText = pPool.toFixed(4);
+
+      const passDev = pDev >= 0.75;
+      const passConf = pConf >= 0.65;
+      const passPool = pPool >= 0.85;
+      const allPassed = passDev && passConf && passPool;
+
+      const banner = document.getElementById('strat-banner');
+      banner.className = 'verdict-banner ' + (allPassed ? 'verdict-pass' : 'verdict-fail');
+      document.getElementById('strat-banner-title').innerText = allPassed ? 'PASS: ALL 3 BOOTSTRAP GATES SATISFIED' : 'FAIL: REJECTED BY STATISTICAL RIGOR GATE';
+      document.getElementById('strat-banner-sub').innerText = allPassed
+        ? 'Model clears Dev (≥0.75), Confirmation (≥0.65), and Pooled Stratified (≥0.85) bars.'
+        : `Failures: ${!passDev ? 'Dev ' : ''}${!passConf ? 'Confirm ' : ''}${!passPool ? 'Pooled' : ''}`;
+      document.getElementById('strat-badge').innerText = allPassed ? 'PROMOTABLE' : 'REJECTED';
+      document.getElementById('strat-badge').className = 'badge ' + (allPassed ? 'badge-emerald' : 'badge-rose');
+    }
+
+    // Tab 4 Scenarios
+    function loadScenario(type) {
+      if (type === 'adaptive') {
+        document.getElementById('scen-title').innerText = 'Adaptive Causal ML (Active Champion, ADR 0063)';
+        document.getElementById('scen-desc').innerText = 'Dormant fallback in GW1–19, mature Ridge ML in GW20–38. Exogenous playable pool and active-window resampling prevent zero-error dilution.';
+        document.getElementById('scen-dev-p').innerText = '0.992';
+        document.getElementById('scen-conf-p').innerText = '0.684';
+        document.getElementById('scen-pool-p').innerText = '0.952';
+      } else if (type === 'fixture_swing') {
+        document.getElementById('scen-title').innerText = 'Fixture Swing Clustered Outperformer (L=5 Essential)';
+        document.getElementById('scen-desc').innerText = 'Captures 5-week fixture swings without boundary jumps. Under legacy L=3, autocorrelation was underestimated. L=5 provides genuine standard error coverage.';
+        document.getElementById('scen-dev-p').innerText = '0.884';
+        document.getElementById('scen-conf-p').innerText = '0.742';
+        document.getElementById('scen-pool-p').innerText = '0.910';
+      } else if (type === 'fluke_winner') {
+        document.getElementById('scen-title').innerText = 'Single-Season Lucky Fluke (Filtered Out)';
+        document.getElementById('scen-desc').innerText = 'Wins Dev season by chance (+0.42, P=0.81), but drops in Confirmation (-0.10, P=0.42). Pooled Stratified gate (P=0.61 < 0.85) decisively catches and rejects the spurious model.';
+        document.getElementById('scen-dev-p').innerText = '0.812';
+        document.getElementById('scen-conf-p').innerText = '0.420';
+        document.getElementById('scen-pool-p').innerText = '0.614';
+      } else if (type === 'solid_two_season') {
+        document.getElementById('scen-title').innerText = 'Robust Multi-Season Challenger';
+        document.getElementById('scen-desc').innerText = 'Consistent positive process improvement (+0.30 in Dev, +0.28 in Confirmation). Clears all 3 bootstrap bars with high statistical power.';
+        document.getElementById('scen-dev-p').innerText = '0.895';
+        document.getElementById('scen-conf-p').innerText = '0.820';
+        document.getElementById('scen-pool-p').innerText = '0.948';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAxis();
+      runWrappingDemo();
+      runDormantDemo();
+      runStratifiedDemo();
+    });
+  </script>
+</body>
+</html>

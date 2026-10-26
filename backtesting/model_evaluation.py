@@ -113,6 +113,7 @@ def compare_to_reference(
         candidate_windows["active"] = active_cand_metrics
 
     gw_deltas = None
+    active_gw_deltas = None
     if primary_metric_name(champion_windows["combined"]) == "decision_regret":
         paired = pd.concat(
             [
@@ -123,6 +124,10 @@ def compare_to_reference(
             join="inner",
         ).sort_index()
         gw_deltas = (paired["champion"] - paired["candidate"]).tolist()
+        if active_gws and set(active_gws) != all_gws:
+            paired_active = paired.loc[paired.index.isin(active_gws)]
+            active_gw_deltas = (paired_active["champion"] - paired_active["candidate"]).tolist()
+
     return evaluate_historical_promotion_gate(
         champion_windows,
         candidate_windows,
@@ -130,6 +135,10 @@ def compare_to_reference(
         reference_windows=reference_windows or None,
         gw_primary_deltas=gw_deltas,
         bootstrap_min_p=bootstrap_min_p,
+        active_champion_metrics=champion_windows.get("active"),
+        active_candidate_metrics=candidate_windows.get("active"),
+        active_gameweeks=active_gws,
+        active_gw_primary_deltas=active_gw_deltas,
     )
 
 

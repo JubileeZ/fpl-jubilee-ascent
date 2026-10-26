@@ -20,6 +20,8 @@
   - `docs/research/backtest-gate-reform/prototype_constrained_legal_xi.py`
   - `docs/research/backtest-gate-reform/prototype_exogenous_playable_pool.html`
   - `docs/research/backtest-gate-reform/prototype_exogenous_playable_pool.py`
+  - `docs/research/backtest-gate-reform/prototype_non_circular_bootstrap.html`
+  - `docs/research/backtest-gate-reform/prototype_non_circular_bootstrap.py`
   - `models/ml_panel_features.py`
   - `models/ml_component_challenger.py`
   - `backtesting/metrics.py`
@@ -40,8 +42,9 @@
   - Resolved Ticket #168: implemented Empirical Bayes positional price-tier priors (K_prior=12.0) and continuous Neff sample-size shrinkage (N_min=3500, N_full=7500, seed_weight=0.5) in models/ml_panel_features.py and CausalFeatureScaler. Ticket closed.
   - Resolved Ticket #169: upgraded best_legal_xi to select_legal_formation_xi with scipy.optimize.milp enforcing <= 3 players per club, starting XI budget cap (£83.5m), and deterministic tie-breaking [pred DESC, cost ASC, id ASC]; implemented select_top_15_squad and weekly squad churn Churn_g = 15 - |S_g cap S_{g-1}| with guardrail delta <= +0.50 players/GW. Ticket closed.
   - Resolved Ticket #170: anchored playable pool strictly to model-independent exogenous mask (Mins >= 30 or champ xP >= 2.0) with exposed sample_count; implemented active-window isolation G_active and dual-window guardrail enforcement stopping dormant fallback error dilution; extracted diagnose_guardrail_regressions helper. Ticket closed.
+  - Resolved Ticket #171: implemented non-wrapping Moving Block Bootstrap (L=5) restricting start indices to 0 <= s <= n - L, eliminating circular modulo wrapping (% n) and final-block truncation; integrated active-gameweek isolation preventing dormant fallback zero-error dilution; formulated pooled 2-season stratified bootstrap gate with raised thresholds (Dev P >= 0.75, Conf P >= 0.65, Pooled P >= 0.85). Ticket closed.
 - **Blocked:** None
-- **Next:** Execute unblocked frontier ticket: #171 (non-wrapping moving block bootstrap (L=5) & pooled stratified gate).
+- **Next:** Execute unblocked frontier ticket: #172 (sqrt(ns)-scaled segment loss floors).
 
 ## Todo
 - [x] Chart Wayfinder Map #166 and child decision tickets #167–#173 on GitHub
@@ -53,9 +56,9 @@
 - [x] Implement Ticket #169: constrained select_legal_formation_xi and squad churn guardrail
 - [x] Implement Ticket #170: exogenous playable pool mask and active-window guardrails
 - [x] Implement Ticket #168: short-panel empirical Bayes priors and continuous Neff shrinkage
-- [ ] Implement Ticket #171: non-wrapping moving block bootstrap (L=5) & pooled stratified gate
+- [x] Implement Ticket #171: non-wrapping moving block bootstrap (L=5) & pooled stratified gate
 - [ ] Implement Ticket #172: sqrt(ns)-scaled segment loss floors
 - [ ] Implement Ticket #173: full test suite verification, candidate re-evaluations, and ADR 0064
 
 ## Blockers / Notes
-- None. Active unblocked frontier: #171.
+- None. Active unblocked frontier: #172.
