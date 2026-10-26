@@ -110,4 +110,69 @@ def test_walkforward_raises_on_missing_seed_season(tmp_path: Path) -> None:
         run_walkforward_backtest(config)
 
 
+def test_backtest_cli_merges_cost_and_club_and_excludes_am(tmp_path: Path, capsys) -> None:
+    from commands.backtest import main as backtest_main
+
+    # 15 players + 1 AM (900) across 2 GWs so formation XI, captaincy, and churn are defined
+    pids = list(range(1, 16)) + [900]
+    pos = [1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 5]
+    costs = [45] * 16
+    clubs = [(i % 10) + 1 for i in range(16)]
+
+    def _feat_gw(gw: int) -> pd.DataFrame:
+        return pd.DataFrame({
+            "player_id": pids,
+            "position_id": pos,
+            "now_cost": costs,
+            "club_id": clubs,
+            "gameweek_id": [gw] * len(pids),
+            "fixture_id": [10 * gw] * len(pids),
+        })
+
+    class _RankedModel:
+        name = "ranked"
+
+        def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
+            out = features_df[["player_id", "fixture_id", "gameweek_id"]].copy()
+            out["projected_points"] = 20.0 - out["player_id"].astype(float) * 0.5
+            out["projected_minutes"] = 90.0
+            for component in LEDGER_COMPONENTS:
+                if component == "xp_minutes":
+                    out[component] = 2.0
+                elif component == "xp_bonus":
+                    out[component] = out["projected_points"] - 2.0
+                else:
+                    out[component] = 0.0
+            return out
+
+    perf_rows = []
+    for gw in (1, 2):
+        for pid in pids:
+            pts = max(2, 17 - pid) if pid < 900 else 15
+            perf_rows.append({
+                "player_id": pid,
+                "gameweek_id": gw,
+                "fixture_id": 10 * gw,
+                "minutes": 90 if pid < 900 else 0,
+                "bonus": pts - 2 if pid < 900 else 15,
+                "total_points": pts,
+            })
+    pd.DataFrame(perf_rows).to_parquet(tmp_path / "player_performances.parquet")
+
+    with (
+        patch("commands.backtest.build_features", side_effect=lambda *a, target_gw, **k: _feat_gw(target_gw)),
+        patch("commands.backtest.get_model", return_value=_RankedModel()),
+        patch("sys.argv", ["backtest.py", "ranked", "--gw_range", "1-2", "--data_dir", str(tmp_path)]),
+    ):
+        backtest_main()
+
+    out = capsys.readouterr().out
+    # 15 players * 2 GWs = 30 samples (AM player 900 excluded)
+    assert "Sample Count    : 30" in out
+    assert "Formation XI Regret" in out
+    assert "Captaincy Regret" in out
+    assert "Top-15 Squad Churn" in out
+
+
+
 

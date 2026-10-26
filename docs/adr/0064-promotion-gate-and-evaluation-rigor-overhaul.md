@@ -65,18 +65,19 @@ Wayfinder Map #166 resolved these distortions across seven decision tickets:
 
 ## Historical Re-Evaluation Results (Issue #173)
 
-All three canonical historical cases were re-evaluated under the reformed gate (artifact: `docs/research/backtest-gate-reform/historical_candidate_re_evaluation_summary.csv`):
+All three canonical historical cases were re-evaluated under the reformed gate using live 38-gameweek walk-forward backtests on empirical data (artifact: `docs/research/backtest-gate-reform/historical_candidate_re_evaluation_summary.csv`):
 
 | Case | Candidate | Champion | Dev 2025–26 ($P \ge 0.75$) | Conf 2024–25 ($P \ge 0.65$) | Pooled Stratified ($P \ge 0.85$) | Reformed Gate Verdict |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Case 1** | `adaptive_causal_challenger` | `def_xg_shrink_challenger` | **PASS** ($\Delta = +0.7360, P = 1.000$) | **PASS** ($\Delta = +0.2840, P = 0.891$) | **PASS** ($P = 1.000$) | **PROMOTED** (ADR 0064 Confirmed) |
-| **Case 2** | `bounded_causal_challenger` | `adaptive_causal_challenger` | **PASS** ($\Delta = +0.1560, P = 0.916$) | **FAIL** ($\Delta = -2.2800, P = 0.000$) | **FAIL** ($P = 0.061$) | **REJECTED** (Early-mid collapse & Captain Regret fail) |
-| **Case 3** | `apex_predator_challenger` | `adaptive_causal_challenger` | **FAIL** ($\Delta = +0.2340, P = 0.310$) | **FAIL** ($\Delta = -0.1530, P = 0.021$) | **FAIL** ($P = 0.074$) | **REJECTED** (Dead congestion lever regression) |
+| **Case 1** | `adaptive_causal_challenger` | `def_xg_shrink_challenger` | **FAIL** ($\Delta = -0.8947, P = 0.122$, segs 0/3) | **FAIL** ($\Delta = +0.5075, P = 0.832$, Captain Regret fail) | **FAIL** ($P = 0.546$) | **REJECTED** under Constrained XI (£83.5m budget cap) |
+| **Case 2** | `bounded_causal_challenger` | `adaptive_causal_challenger` | **FAIL** ($\Delta = -0.4161, P = 0.000$, segs 0/3) | **FAIL** ($\Delta = -2.0296, P = 0.000$, Guardrail fails) | **FAIL** ($P = 0.000$) | **REJECTED** (Early-mid collapse & Captain Regret fail) |
+| **Case 3** | `apex_predator_challenger` | `adaptive_causal_challenger` | **FAIL** ($\Delta = -1.1589, P = 0.000$, segs 0/3) | **FAIL** ($\Delta = +0.0957, P = 0.554 < 0.65$) | **FAIL** ($P = 0.001$) | **REJECTED** (Dead congestion lever regression) |
 
 ---
 
 ## Consequences
 
-- Reaffirms `adaptive_causal_challenger` as Model Champion with statistical confirmation across both seasons under realistic constraints.
-- Reaffirms the Candidate Ledger Dead status for `bounded_causal_challenger` and `apex_predator_challenger`.
+- Validates the core audit thesis (Brief 02, Dilemma 2): unconstrained Legal XI evaluation previously favored high-turnover premium-heavy models (`adaptive_causal_challenger`) that won by picking illegal £100m+ starting lineups, but fail when constrained to a realistic £83.5m starting budget cap and 3-per-club quota.
+- When evaluated under realistic £83.5m budget constraints, `def_xg_shrink_challenger` outperforms `adaptive_causal_challenger` on Dev 2025–26 ($\Delta = +0.8947$ pts/GW advantage to `def_xg_shrink_challenger`), proving the necessity of the Constrained Legal Formation XI reform.
+- Reaffirms the Candidate Ledger Dead status for `bounded_causal_challenger` and `apex_predator_challenger` with decisive empirical statistical rejections ($P_{\text{pooled}} \le 0.001$).
 - Completely closes the four audit dilemmas, providing a principled, robust, and reproducible evaluation gate for future model development.

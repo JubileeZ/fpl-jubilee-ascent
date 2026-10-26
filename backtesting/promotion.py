@@ -172,20 +172,52 @@ def block_bootstrap_win_probability(
     )
 
 
+def _filter_active_gw_deltas(
+    gw_deltas: Sequence[float] | None,
+    *,
+    active_gameweeks: Sequence[int] | None = None,
+    active_gw_deltas: Sequence[float] | None = None,
+) -> Sequence[float] | None:
+    if active_gw_deltas is not None:
+        return active_gw_deltas
+    if active_gameweeks is not None and gw_deltas is not None:
+        if len(active_gameweeks) < len(gw_deltas):
+            return [
+                gw_deltas[g - 1]
+                for g in active_gameweeks
+                if 1 <= g <= len(gw_deltas)
+            ]
+    return gw_deltas
+
+
 def evaluate_two_season_gate(
     dev_verdict: PromotionVerdict,
     conf_verdict: PromotionVerdict,
     *,
     dev_gw_deltas: Sequence[float],
     conf_gw_deltas: Sequence[float],
+    dev_active_gameweeks: Sequence[int] | None = None,
+    conf_active_gameweeks: Sequence[int] | None = None,
+    dev_active_gw_deltas: Sequence[float] | None = None,
+    conf_active_gw_deltas: Sequence[float] | None = None,
     dev_min_p: float = BOOTSTRAP_MIN_P,
     conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
     pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
     seed: int = 0,
 ) -> TwoSeasonGateVerdict:
     """Evaluate full two-season promotion gate with pooled stratified bootstrap (ADR 0064)."""
+    dev_resample = _filter_active_gw_deltas(
+        dev_gw_deltas,
+        active_gameweeks=dev_active_gameweeks,
+        active_gw_deltas=dev_active_gw_deltas,
+    ) or ()
+    conf_resample = _filter_active_gw_deltas(
+        conf_gw_deltas,
+        active_gameweeks=conf_active_gameweeks,
+        active_gw_deltas=conf_active_gw_deltas,
+    ) or ()
     pooled_p = stratified_block_bootstrap_win_probability(
-        [dev_gw_deltas, conf_gw_deltas], seed=seed
+        [dev_resample, conf_resample], seed=seed
     )
     reasons: list[str] = []
     if not dev_verdict.passed:
@@ -490,16 +522,11 @@ def evaluate_historical_promotion_gate(
     min_effect = MIN_EFFECT_SHARE * max(champion_primary, 0.0)
 
     # Restrict bootstrap resampling to active gameweeks to prevent dormant zero-error dilution (ADR 0064, Ticket #171)
-    resample_deltas = gw_primary_deltas
-    if active_gw_primary_deltas is not None:
-        resample_deltas = active_gw_primary_deltas
-    elif active_gameweeks is not None and gw_primary_deltas is not None:
-        if len(active_gameweeks) < len(gw_primary_deltas):
-            resample_deltas = [
-                gw_primary_deltas[g - 1]
-                for g in active_gameweeks
-                if 1 <= g <= len(gw_primary_deltas)
-            ]
+    resample_deltas = _filter_active_gw_deltas(
+        gw_primary_deltas,
+        active_gameweeks=active_gameweeks,
+        active_gw_deltas=active_gw_primary_deltas,
+    )
 
     bootstrap_p = (
         None if resample_deltas is None else block_bootstrap_win_probability(resample_deltas)

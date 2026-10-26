@@ -13,9 +13,13 @@ import pandas as pd
 from backtesting.metrics import evaluate_predictions, formation_xi_regret_by_gameweek
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
+    CONFIRMATION_BOOTSTRAP_MIN_P,
+    POOLED_BOOTSTRAP_MIN_P,
     PromotionVerdict,
+    TwoSeasonGateVerdict,
     compute_playable_pool_metrics,
     evaluate_historical_promotion_gate,
+    evaluate_two_season_gate,
     identify_active_gameweeks,
     metrics_by_season_window,
     primary_metric_name,
@@ -67,6 +71,30 @@ def _attach_playable_metrics(
             window_dict["playable_count"] = playable_metrics["sample_count"]
 
 
+def _paired_regret_deltas(
+    reference_df: pd.DataFrame,
+    candidate_df: pd.DataFrame,
+    *,
+    primary_target: str,
+    active_gws: list[int],
+    all_gws: set[int],
+) -> tuple[list[float], list[float] | None]:
+    paired = pd.concat(
+        [
+            formation_xi_regret_by_gameweek(reference_df, target_column=primary_target).rename("champion"),
+            formation_xi_regret_by_gameweek(candidate_df, target_column=primary_target).rename("candidate"),
+        ],
+        axis=1,
+        join="inner",
+    ).sort_index()
+    gw_deltas = (paired["champion"] - paired["candidate"]).tolist()
+    active_gw_deltas = None
+    if active_gws and set(active_gws) != all_gws:
+        paired_active = paired.loc[paired.index.isin(active_gws)]
+        active_gw_deltas = (paired_active["champion"] - paired_active["candidate"]).tolist()
+    return gw_deltas, active_gw_deltas
+
+
 def compare_to_reference(
     reference: WalkforwardResult,
     candidate: WalkforwardResult,
@@ -115,18 +143,13 @@ def compare_to_reference(
     gw_deltas = None
     active_gw_deltas = None
     if primary_metric_name(champion_windows["combined"]) == "decision_regret":
-        paired = pd.concat(
-            [
-                formation_xi_regret_by_gameweek(reference.df_eval, target_column=primary_target).rename("champion"),
-                formation_xi_regret_by_gameweek(candidate.df_eval, target_column=primary_target).rename("candidate"),
-            ],
-            axis=1,
-            join="inner",
-        ).sort_index()
-        gw_deltas = (paired["champion"] - paired["candidate"]).tolist()
-        if active_gws and set(active_gws) != all_gws:
-            paired_active = paired.loc[paired.index.isin(active_gws)]
-            active_gw_deltas = (paired_active["champion"] - paired_active["candidate"]).tolist()
+        gw_deltas, active_gw_deltas = _paired_regret_deltas(
+            reference.df_eval,
+            candidate.df_eval,
+            primary_target=primary_target,
+            active_gws=active_gws,
+            all_gws=all_gws,
+        )
 
     return evaluate_historical_promotion_gate(
         champion_windows,
@@ -139,6 +162,65 @@ def compare_to_reference(
         active_candidate_metrics=candidate_windows.get("active"),
         active_gameweeks=active_gws,
         active_gw_primary_deltas=active_gw_deltas,
+    )
+
+
+def compare_two_season_gate(
+    dev_reference: WalkforwardResult,
+    dev_candidate: WalkforwardResult,
+    conf_reference: WalkforwardResult,
+    conf_candidate: WalkforwardResult,
+    *,
+    primary_target: str = "blended_points",
+    dev_min_p: float = BOOTSTRAP_MIN_P,
+    conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
+    pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
+    seed: int = 0,
+) -> TwoSeasonGateVerdict:
+    """Compare candidate vs reference across dev and confirmation seasons with pooled stratified bootstrap."""
+    dev_verdict = compare_to_reference(
+        dev_reference,
+        dev_candidate,
+        primary_target=primary_target,
+        bootstrap_min_p=dev_min_p,
+    )
+    conf_verdict = compare_to_reference(
+        conf_reference,
+        conf_candidate,
+        primary_target=primary_target,
+        bootstrap_min_p=conf_min_p,
+    )
+    dev_active_gws = identify_active_gameweeks(dev_reference.df_eval, dev_candidate.df_eval)
+    dev_all_gws = set(dev_reference.df_eval["gameweek"].unique())
+    dev_gw_deltas, dev_active_deltas = _paired_regret_deltas(
+        dev_reference.df_eval,
+        dev_candidate.df_eval,
+        primary_target=primary_target,
+        active_gws=dev_active_gws,
+        all_gws=dev_all_gws,
+    )
+    conf_active_gws = identify_active_gameweeks(conf_reference.df_eval, conf_candidate.df_eval)
+    conf_all_gws = set(conf_reference.df_eval["gameweek"].unique())
+    conf_gw_deltas, conf_active_deltas = _paired_regret_deltas(
+        conf_reference.df_eval,
+        conf_candidate.df_eval,
+        primary_target=primary_target,
+        active_gws=conf_active_gws,
+        all_gws=conf_all_gws,
+    )
+    return evaluate_two_season_gate(
+        dev_verdict,
+        conf_verdict,
+        dev_gw_deltas=dev_gw_deltas,
+        conf_gw_deltas=conf_gw_deltas,
+        dev_active_gameweeks=dev_active_gws,
+        conf_active_gameweeks=conf_active_gws,
+        dev_active_gw_deltas=dev_active_deltas,
+        conf_active_gw_deltas=conf_active_deltas,
+        dev_min_p=dev_min_p,
+        conf_min_p=conf_min_p,
+        pooled_min_p=pooled_min_p,
+        seed=seed,
     )
 
 
@@ -176,6 +258,7 @@ def build_evidence_record(
                 "segment_wins": comparison.verdict.segment_wins,
                 "segment_guardrails_passed": comparison.verdict.segment_guardrails_passed,
                 "guardrails_passed": comparison.verdict.guardrails_passed,
+                "active_guardrails_passed": comparison.verdict.active_guardrails_passed,
                 "reasons": list(comparison.verdict.reasons),
                 "snapshot_backed": comparison.snapshot_backed,
             }
@@ -221,6 +304,7 @@ def write_promotion_evidence(record: dict[str, Any], output_dir: Path) -> tuple[
         lines.append(f"- Segment wins: {comparison['segment_wins']}/3")
         lines.append(f"- Segment guardrails passed: {comparison['segment_guardrails_passed']}")
         lines.append(f"- Guardrails passed: {comparison['guardrails_passed']}")
+        lines.append(f"- Active guardrails passed: {comparison.get('active_guardrails_passed', True)}")
         lines.append(f"- Snapshot backed: {comparison['snapshot_backed']}")
         if comparison["reasons"]:
             lines.append(f"- Reasons: {', '.join(comparison['reasons'])}")

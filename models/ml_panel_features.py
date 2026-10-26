@@ -23,6 +23,17 @@ _PSEUDO_MATCHES = 4.0
 _EB_K_PRIOR_DEFAULT = 12.0
 _BASE_K = 1080.0  # 12.0 matches * 90 mins (Ticket #168 EB prior strength)
 _POSITION_K: dict[int, float] = {1: 1080.0, 2: 2400.0, 3: 1080.0, 4: 1080.0}
+_TS_CACHE: dict[object, pd.Timestamp] = {}
+_TRAIN_GW_CACHE: dict[tuple[int, int, int], pd.DataFrame] = {}
+
+
+def _to_timestamp(val: object) -> pd.Timestamp:
+    ts = _TS_CACHE.get(val)
+    if ts is None:
+        ts = pd.to_datetime(val)  # type: ignore[arg-type]
+        if len(_TS_CACHE) < 10_000:
+            _TS_CACHE[val] = ts
+    return ts
 
 # Default position baselines
 _START_MINS_PRIOR = {1: 89.0, 2: 82.0, 3: 76.0, 4: 75.0}
@@ -289,15 +300,6 @@ def _build_gw_panel(
     # 2. Player-level cumulative features over H_{<target_gw}
     player_history = hist_prior[hist_prior["player_id"].isin(out["player_id"])].copy() if not hist_prior.empty else pd.DataFrame()
 
-    # Pre-index player records
-    player_records = {}
-    if not player_history.empty:
-        # Sort by kickoff or gameweek ascending
-        sort_col = "kickoff_time" if "kickoff_time" in player_history.columns else "gameweek_id"
-        player_history = player_history.sort_values(sort_col)
-        for pid, pgroup in player_history.groupby("player_id"):
-            player_records[pid] = pgroup
-
     # Price / Selected / Transfers baseline
     pos_prices = {}
     if not hist_prior.empty and "price" in hist_prior.columns:
@@ -345,95 +347,118 @@ def _build_gw_panel(
         now_costs = np.full(N, 50.0)
     kickoff_times = out["kickoff_time"].to_numpy() if "kickoff_time" in out.columns else None
 
-    # Pre-extract player summary stats for fast O(1) lookup
+    # Pre-extract player summary stats from contiguous sorted numpy arrays for fast O(1) lookup
     player_stats_cache = {}
-    for pid, pgroup in player_records.items():
-        starts = pgroup["starts"].to_numpy(dtype=float)
-        mins = pgroup["minutes"].to_numpy(dtype=float)
-        n_apps = len(starts)
-        gws = pgroup["gameweek_id"].to_numpy(dtype=float)
-        weights = _DECAY ** np.clip(target_gw - 1 - gws, 0, 38)
-        eff_mins = float(np.sum(mins * weights))
+    if not player_history.empty:
+        sort_col = "kickoff_time" if "kickoff_time" in player_history.columns else "gameweek_id"
+        player_history = player_history.sort_values(sort_col).sort_values("player_id", kind="mergesort")
+        ph_pids = player_history["player_id"].to_numpy()
+        unique_pids, split_indices = np.unique(ph_pids, return_index=True)
+        end_indices = np.append(split_indices[1:], len(ph_pids))
 
-        # Market & transfers from last row; initial_price from first observed row in H_{<g}
-        tin = float(pgroup["transfers_in"].iloc[-1]) if "transfers_in" in pgroup.columns else 0.0
-        tout = float(pgroup["transfers_out"].iloc[-1]) if "transfers_out" in pgroup.columns else 0.0
-        price = float(pgroup["price"].iloc[-1]) if "price" in pgroup.columns else 50.0
-        initial_price = float(pgroup["price"].iloc[0]) if "price" in pgroup.columns else price
+        ph_starts = player_history["starts"].to_numpy(dtype=float)
+        ph_mins = player_history["minutes"].to_numpy(dtype=float)
+        ph_gws = player_history["gameweek_id"].to_numpy(dtype=float)
+        ph_weights = _DECAY ** np.clip(target_gw - 1 - ph_gws, 0, 38)
+        ph_tin = player_history["transfers_in"].to_numpy(dtype=float) if "transfers_in" in player_history.columns else None
+        ph_tout = player_history["transfers_out"].to_numpy(dtype=float) if "transfers_out" in player_history.columns else None
+        ph_price = player_history["price"].to_numpy(dtype=float) if "price" in player_history.columns else None
+        ph_kickoff = player_history["kickoff_time"].to_numpy() if "kickoff_time" in player_history.columns else None
+        n_ph = len(ph_pids)
+        ph_xg = player_history["expected_goals"].to_numpy(dtype=float) if "expected_goals" in player_history.columns else np.zeros(n_ph)
+        ph_g = player_history["goals_scored"].to_numpy(dtype=float) if "goals_scored" in player_history.columns else np.zeros(n_ph)
+        ph_xa = player_history["expected_assists"].to_numpy(dtype=float) if "expected_assists" in player_history.columns else np.zeros(n_ph)
+        ph_a = player_history["assists"].to_numpy(dtype=float) if "assists" in player_history.columns else np.zeros(n_ph)
+        ph_crea = player_history["creativity"].to_numpy(dtype=float) if "creativity" in player_history.columns else np.zeros(n_ph)
+        ph_inf = player_history["influence"].to_numpy(dtype=float) if "influence" in player_history.columns else np.zeros(n_ph)
+        ph_bps = player_history["bps"].to_numpy(dtype=float) if "bps" in player_history.columns else np.zeros(n_ph)
+        ph_cs = player_history["clean_sheets"].to_numpy(dtype=float) if "clean_sheets" in player_history.columns else np.zeros(n_ph)
+        ph_saves = player_history["saves"].to_numpy(dtype=float) if "saves" in player_history.columns else np.zeros(n_ph)
+        ph_base_bps = ph_bps - (24.0 * ph_g + 12.0 * ph_a + 12.0 * ph_cs + 2.0 * ph_saves)
+        ph_club = player_history["club_id"].to_numpy() if "club_id" in player_history.columns else None
 
-        # Lags
-        sl1 = float(starts[-1] >= 1) if n_apps >= 1 else 0.0
-        sl2 = float(starts[-2] >= 1) if n_apps >= 2 else 0.0
-        sl3 = float(starts[-3] >= 1) if n_apps >= 3 else 0.0
-        sl4 = float(starts[-4] >= 1) if n_apps >= 4 else 0.0
-        sl5 = float(starts[-5] >= 1) if n_apps >= 5 else 0.0
-        sl6 = float(starts[-6] >= 1) if n_apps >= 6 else 0.0
+        for u_i, pid in enumerate(unique_pids):
+            s_i = split_indices[u_i]
+            e_i = end_indices[u_i]
+            starts = ph_starts[s_i:e_i]
+            mins = ph_mins[s_i:e_i]
+            n_apps = e_i - s_i
+            weights = ph_weights[s_i:e_i]
+            eff_mins = float(np.sum(mins * weights))
 
-        subl1 = float(mins[-1] > 0 and starts[-1] == 0) if n_apps >= 1 else 0.0
-        subl2 = float(mins[-2] > 0 and starts[-2] == 0) if n_apps >= 2 else 0.0
-        subl3 = float(mins[-3] > 0 and starts[-3] == 0) if n_apps >= 3 else 0.0
+            tin = float(ph_tin[e_i - 1]) if ph_tin is not None else 0.0
+            tout = float(ph_tout[e_i - 1]) if ph_tout is not None else 0.0
+            price = float(ph_price[e_i - 1]) if ph_price is not None else 50.0
+            initial_price = float(ph_price[s_i]) if ph_price is not None else price
 
-        m3 = float(np.sum(mins[-3:])) / 90.0 if n_apps > 0 else 0.0
+            sl1 = float(starts[-1] >= 1) if n_apps >= 1 else 0.0
+            sl2 = float(starts[-2] >= 1) if n_apps >= 2 else 0.0
+            sl3 = float(starts[-3] >= 1) if n_apps >= 3 else 0.0
+            sl4 = float(starts[-4] >= 1) if n_apps >= 4 else 0.0
+            sl5 = float(starts[-5] >= 1) if n_apps >= 5 else 0.0
+            sl6 = float(starts[-6] >= 1) if n_apps >= 6 else 0.0
 
-        since = 0
-        found_start = False
-        for s in reversed(starts):
-            if s >= 1:
-                found_start = True
-                break
-            since += 1
-        s_since = float(min(6.0, since if found_start else 6.0))
-        c_frac = float(np.clip(float(np.sum(starts)) / max(float(n_apps), 1.0), 0.0, 1.0))
-        last_kickoff = pgroup["kickoff_time"].iloc[-1] if "kickoff_time" in pgroup.columns and len(pgroup) > 0 else None
+            subl1 = float(mins[-1] > 0 and starts[-1] == 0) if n_apps >= 1 else 0.0
+            subl2 = float(mins[-2] > 0 and starts[-2] == 0) if n_apps >= 2 else 0.0
+            subl3 = float(mins[-3] > 0 and starts[-3] == 0) if n_apps >= 3 else 0.0
 
-        # Starts duration
-        start_mask = starts >= 1
-        if np.any(start_mask):
-            st_mins = mins[start_mask]
-            st_weights = weights[start_mask]
-            sum_st_w = float(np.sum(st_weights))
-            weighted_st_mins = float(np.sum(st_mins * st_weights))
-            hooks = ((st_mins >= 45.0) & (st_mins < 70.0)).astype(float)
-            weighted_hooks = float(np.sum(hooks * st_weights))
-        else:
-            sum_st_w = 0.0
-            weighted_st_mins = 0.0
-            weighted_hooks = 0.0
+            m3 = float(np.sum(mins[-3:])) / 90.0 if n_apps > 0 else 0.0
 
-        # Event rates sums
-        xg_arr = pgroup["expected_goals"].to_numpy(dtype=float) if "expected_goals" in pgroup.columns else np.zeros(n_apps)
-        g_arr = pgroup["goals_scored"].to_numpy(dtype=float) if "goals_scored" in pgroup.columns else np.zeros(n_apps)
-        xa_arr = pgroup["expected_assists"].to_numpy(dtype=float) if "expected_assists" in pgroup.columns else np.zeros(n_apps)
-        a_arr = pgroup["assists"].to_numpy(dtype=float) if "assists" in pgroup.columns else np.zeros(n_apps)
-        crea_arr = pgroup["creativity"].to_numpy(dtype=float) if "creativity" in pgroup.columns else np.zeros(n_apps)
-        inf_arr = pgroup["influence"].to_numpy(dtype=float) if "influence" in pgroup.columns else np.zeros(n_apps)
-        bps_arr = pgroup["bps"].to_numpy(dtype=float) if "bps" in pgroup.columns else np.zeros(n_apps)
-        cs_arr = pgroup["clean_sheets"].to_numpy(dtype=float) if "clean_sheets" in pgroup.columns else np.zeros(n_apps)
-        saves_arr = pgroup["saves"].to_numpy(dtype=float) if "saves" in pgroup.columns else np.zeros(n_apps)
+            since = 0
+            found_start = False
+            for s in reversed(starts):
+                if s >= 1:
+                    found_start = True
+                    break
+                since += 1
+            s_since = float(min(6.0, since if found_start else 6.0))
+            c_frac = float(np.clip(float(np.sum(starts)) / max(float(n_apps), 1.0), 0.0, 1.0))
+            last_kickoff = ph_kickoff[e_i - 1] if ph_kickoff is not None and n_apps > 0 else None
 
-        weighted_xg = float(np.sum(xg_arr * weights))
-        tot_g = float(np.sum(g_arr))
-        tot_xg = float(np.sum(xg_arr))
-        tot_m = float(np.sum(mins))
-        weighted_xa = float(np.sum(xa_arr * weights))
-        weighted_crea = float(np.sum(crea_arr * weights))
-        weighted_inf = float(np.sum(inf_arr * weights))
+            start_mask = starts >= 1
+            if np.any(start_mask):
+                st_mins = mins[start_mask]
+                st_weights = weights[start_mask]
+                sum_st_w = float(np.sum(st_weights))
+                weighted_st_mins = float(np.sum(st_mins * st_weights))
+                hooks = ((st_mins >= 45.0) & (st_mins < 70.0)).astype(float)
+                weighted_hooks = float(np.sum(hooks * st_weights))
+            else:
+                sum_st_w = 0.0
+                weighted_st_mins = 0.0
+                weighted_hooks = 0.0
 
-        # Base BPS
-        base_bps_arr = bps_arr - (24.0 * g_arr + 12.0 * a_arr + 12.0 * cs_arr + 2.0 * saves_arr)
-        weighted_base_bps = float(np.sum(base_bps_arr * weights))
+            xg_arr = ph_xg[s_i:e_i]
+            g_arr = ph_g[s_i:e_i]
+            xa_arr = ph_xa[s_i:e_i]
+            crea_arr = ph_crea[s_i:e_i]
+            inf_arr = ph_inf[s_i:e_i]
+            base_bps_arr = ph_base_bps[s_i:e_i]
 
-        player_stats_cache[pid] = {
-            "tin": tin, "tout": tout, "price": price, "initial_price": initial_price,
-            "n_apps": float(n_apps), "last_kickoff": last_kickoff,
-            "sl1": sl1, "sl2": sl2, "sl3": sl3, "sl4": sl4, "sl5": sl5, "sl6": sl6,
-            "subl1": subl1, "subl2": subl2, "subl3": subl3, "m3": m3,
-            "s_since": s_since, "c_frac": c_frac, "eff_mins": eff_mins,
-            "sum_st_w": sum_st_w, "weighted_st_mins": weighted_st_mins, "weighted_hooks": weighted_hooks,
-            "weighted_xg": weighted_xg, "tot_g": tot_g, "tot_xg": tot_xg, "tot_m": tot_m,
-            "weighted_xa": weighted_xa, "weighted_crea": weighted_crea, "weighted_inf": weighted_inf,
-            "weighted_base_bps": weighted_base_bps,
-        }
+            weighted_xg = float(np.sum(xg_arr * weights))
+            tot_g = float(np.sum(g_arr))
+            tot_xg = float(np.sum(xg_arr))
+            tot_m = float(np.sum(mins))
+            weighted_xa = float(np.sum(xa_arr * weights))
+            weighted_crea = float(np.sum(crea_arr * weights))
+            weighted_inf = float(np.sum(inf_arr * weights))
+            weighted_base_bps = float(np.sum(base_bps_arr * weights))
+
+            player_stats_cache[pid] = {
+                "tin": tin, "tout": tout, "price": price, "initial_price": initial_price,
+                "n_apps": float(n_apps), "last_kickoff": last_kickoff,
+                "sl1": sl1, "sl2": sl2, "sl3": sl3, "sl4": sl4, "sl5": sl5, "sl6": sl6,
+                "subl1": subl1, "subl2": subl2, "subl3": subl3, "m3": m3,
+                "s_since": s_since, "c_frac": c_frac, "eff_mins": eff_mins,
+                "sum_st_w": sum_st_w, "weighted_st_mins": weighted_st_mins, "weighted_hooks": weighted_hooks,
+                "weighted_xg": weighted_xg, "tot_g": tot_g, "tot_xg": tot_xg, "tot_m": tot_m,
+                "weighted_xa": weighted_xa, "weighted_crea": weighted_crea, "weighted_inf": weighted_inf,
+                "weighted_base_bps": weighted_base_bps,
+                "club_arr": ph_club[s_i:e_i] if ph_club is not None else None,
+                "weights_arr": weights,
+                "g_arr": g_arr,
+                "xg_arr": xg_arr,
+            }
 
     for idx in range(N):
         pid = pids[idx]
@@ -475,7 +500,7 @@ def _build_gw_panel(
 
             if kickoff_times is not None and pdata["last_kickoff"] is not None:
                 try:
-                    diff_days = (pd.to_datetime(kickoff_times[idx]) - pd.to_datetime(pdata["last_kickoff"])).total_seconds() / 86400.0
+                    diff_days = (_to_timestamp(kickoff_times[idx]) - _to_timestamp(pdata["last_kickoff"])).total_seconds() / 86400.0
                     rest_days[idx] = float(np.clip(diff_days, 2.0, 14.0))
                 except Exception:
                     pass
@@ -574,14 +599,13 @@ def _build_gw_panel(
                 tot_g = club_g_totals.get(cid, 0.0)
                 tot_xg = club_xg_totals.get(cid, 0.0)
                 # Subtract player's own contribution
-                pgroup = player_records.get(pid)
-                if pgroup is not None and not pgroup.empty:
-                    c_mask = pgroup["club_id"].to_numpy() == cid
+                pdata = player_stats_cache.get(pid)
+                if pdata is not None and pdata["club_arr"] is not None:
+                    c_mask = pdata["club_arr"] == cid
                     if np.any(c_mask):
-                        p_gws = pgroup["gameweek_id"].to_numpy(dtype=float)[c_mask]
-                        p_w = _DECAY ** np.clip(target_gw - 1 - p_gws, 0, 38)
-                        p_g = float(np.sum(pgroup["goals_scored"].to_numpy(dtype=float)[c_mask] * p_w))
-                        p_xg = float(np.sum(pgroup["expected_goals"].to_numpy(dtype=float)[c_mask] * p_w))
+                        p_w = pdata["weights_arr"][c_mask]
+                        p_g = float(np.sum(pdata["g_arr"][c_mask] * p_w))
+                        p_xg = float(np.sum(pdata["xg_arr"][c_mask] * p_w))
                         g = tot_g - p_g
                         xg = tot_xg - p_xg
                     else:
@@ -697,10 +721,18 @@ def build_causal_panel(
     if not hist.empty:
         max_hist_gw = int(pd.to_numeric(hist["gameweek_id"]).max())
         upper_train_gw = min(target_gw - 1, max_hist_gw)
+        pos_hash = int(pd.util.hash_pandas_object(positions, index=True).sum()) if not positions.empty else 0
 
         for gw in range(min_train_gw, upper_train_gw + 1):
             gw_rows = hist[hist["gameweek_id"] == gw]
             if gw_rows.empty:
+                continue
+
+            hist_le_gw = hist[hist["gameweek_id"] <= gw]
+            cache_key = (gw, int(pd.util.hash_pandas_object(hist_le_gw, index=False).sum()), pos_hash)
+            cached_gw = _TRAIN_GW_CACHE.get(cache_key)
+            if cached_gw is not None:
+                train_dfs.append(cached_gw.copy())
                 continue
 
             h_prior = hist[hist["gameweek_id"] < gw]
@@ -745,6 +777,8 @@ def build_causal_panel(
             gw_panel["target_bps"] = bps
             gw_panel["target_bps_base"] = bps_base
 
+            if len(_TRAIN_GW_CACHE) < 256:
+                _TRAIN_GW_CACHE[cache_key] = gw_panel.copy()
             train_dfs.append(gw_panel)
 
     train_panel = pd.concat(train_dfs, ignore_index=True) if train_dfs else pd.DataFrame(columns=pred_panel.columns)

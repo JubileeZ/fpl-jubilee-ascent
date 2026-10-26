@@ -16,6 +16,7 @@ from models import get_model
 from features.builder import build_features, history_before_target
 from backtesting.metrics import evaluate_predictions
 from backtesting.process_points import aggregate_process_points, blended_points
+from backtesting.walkforward import PLAYER_POSITIONS
 from features.contracts import assert_projection_contract
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -260,7 +261,9 @@ def main() -> None:
                 sys.exit(1)
             logger.warning(f"Skipping GW {gw} because feature construction failed: {e}")
             continue
-            
+
+        if "position_id" in df_feat.columns:
+            df_feat = df_feat[df_feat["position_id"].isin(PLAYER_POSITIONS)]
         if df_feat.empty:
             if args.require_snapshots:
                 logger.error("Point-in-time backtest cannot evaluate empty GW %s.", gw)
@@ -351,8 +354,10 @@ def main() -> None:
         )
         fill_cols = [c for c in df_compare.columns if c.startswith("actual_") or c.startswith("xp_")]
         df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
+        meta_cols = [c for c in ["player_id", "position_id", "now_cost", "club_id"] if c in df_feat.columns]
+        player_meta = df_feat[meta_cols].drop_duplicates("player_id")
+        df_compare = df_compare.merge(player_meta, on="player_id", how="left")
         position_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
-        df_compare = df_compare.merge(position_map, on="player_id", how="left")
         process_src = df_perf[df_perf["gameweek_id"] == gw].merge(
             position_map, on="player_id", how="left"
         )
@@ -400,6 +405,12 @@ def main() -> None:
     )
     print(f"Top-11 Overlap  : {metrics['top_11_overlap']:.4f}")
     print(f"Top-15 Overlap  : {metrics['top_15_overlap']:.4f}")
+    if metrics.get("formation_xi_regret") is not None:
+        print(f"Formation XI Regret: {metrics['formation_xi_regret']:.4f}")
+    if metrics.get("captain_regret") is not None:
+        print(f"Captaincy Regret: {metrics['captain_regret']:.4f}")
+    if metrics.get("top_15_squad_churn") is not None:
+        print(f"Top-15 Squad Churn: {metrics['top_15_squad_churn']:.4f}")
     print(f"Seed Season     : {args.seed_season or 'none (in-season evaluation)'}")
     if snapshot_ids:
         print(f"Snapshots       : {'; '.join(f'GW{gw}={snapshot_id}' for gw, snapshot_id in snapshot_ids.items())}")

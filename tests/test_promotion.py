@@ -401,6 +401,40 @@ def test_stratified_block_bootstrap_and_two_season_gate() -> None:
     assert any("pooled stratified" in r for r in failing_two_season.reasons)
 
 
+def test_evaluate_two_season_gate_filters_active_gameweeks() -> None:
+    """Verify evaluate_two_season_gate isolates active gameweeks before pooled stratified bootstrap."""
+    champion, candidate = _clear_winner_windows()
+    dormant = [0.0] * 19
+    dev_active = [0.8, 0.4, 0.9, -0.2, 0.7, 0.6, 0.3, -0.4, 0.8, 0.5, 0.4, 0.6, -0.1, 0.7, 0.5, 0.6, 0.2, 0.5, 0.7]
+    conf_active = [0.7, 0.3, 0.8, -0.3, 0.6, 0.5, 0.2, -0.3, 0.7, 0.4, 0.3, 0.5, -0.2, 0.6, 0.4, 0.5, 0.3, 0.4, 0.6]
+    dev_full = dormant + dev_active
+    conf_full = dormant + conf_active
+    active_gws = list(range(20, 39))
+
+    dev_verdict = evaluate_historical_promotion_gate(
+        champion, candidate, gw_primary_deltas=dev_full, active_gameweeks=active_gws
+    )
+    conf_verdict = evaluate_historical_promotion_gate(
+        champion,
+        candidate,
+        gw_primary_deltas=conf_full,
+        active_gameweeks=active_gws,
+        bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P,
+    )
+
+    two_season = evaluate_two_season_gate(
+        dev_verdict,
+        conf_verdict,
+        dev_gw_deltas=dev_full,
+        conf_gw_deltas=conf_full,
+        dev_active_gameweeks=active_gws,
+        conf_active_gameweeks=active_gws,
+    )
+    expected_pooled = stratified_block_bootstrap_win_probability([dev_active, conf_active])
+    assert two_season.pooled_bootstrap_p == pytest.approx(expected_pooled, abs=1e-6)
+    assert two_season.passed
+
+
 def test_guardrails_tolerate_noise_but_not_real_regression() -> None:
     champion = guardrail_metrics(_metrics(mae=2.0, bias=0.10, xmins_mae=14.0, spearman=0.69))
     within = guardrail_metrics(_metrics(mae=2.0, bias=0.105, xmins_mae=14.1, spearman=0.687))

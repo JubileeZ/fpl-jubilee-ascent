@@ -635,8 +635,8 @@ Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MA
 _Avoid_: Prediction-only evaluation, aggregate score
 
 **Historical Promotion Gate**:
-A Candidate may replace the Model Champion only after winning the combined prior-season evaluation and at least two of its Cold-Start, early/mid-season, and late-season segments while matching or improving every Champion guardrail. Primary xP metric is Blended Eval Target (ADR 0044); Realized Points and Process Points stay reported guardrails. Evaluation replays This-Season Evidence (ADR 0024); the GW1–4 segment is true Cold-Start only while that season's history is empty.
-_Avoid_: One-off backtest win, aggregate-only promotion, evaluating ADR 0022 in-season last-year blend while shipping 0024
+A Candidate may replace the Model Champion only after passing the two-season evaluation (ADR 0047, ADR 0064): winning combined Constrained Legal Formation XI Regret on the Blended Eval Target (ADR 0044, ADR 0054), passing non-wrapping Moving Block Bootstrap ($L=5$) significance ($P_{\text{dev}} \ge 0.75$, warm-seeded $P_{\text{conf}} \ge 0.65$, pooled stratified $P_{\text{pooled}} \ge 0.85$), satisfying $\sqrt{n_s}$-calibrated seasonal segment loss floors (`cold_start` $\ge -0.25$, `early_mid` $\ge -0.15$, `late` $\ge -0.13$ pts/GW) with $\ge 1$ active segment win, and passing all Champion guardrails (including exogenous Playable Pool MAE/Bias and Top-15 Squad Churn $\le +0.50$/GW) across both the full season and active window ($\mathcal{G}_{\text{active}}$).
+_Avoid_: One-off backtest win, aggregate-only promotion, unseeded confirmation evaluation, evaluating ADR 0022 in-season last-year blend while shipping 0024
 
 **Incremental Promotion**:
 A Candidate that passes the Historical Promotion Gate becomes the Model Champion even for a small primary-metric improvement; the former Champion remains in the comparison slate for live validation and rollback.

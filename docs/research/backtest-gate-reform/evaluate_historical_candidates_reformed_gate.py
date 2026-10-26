@@ -14,12 +14,17 @@ Evaluates under:
 - Non-wrapping Moving Block Bootstrap (L=5)
 - sqrt(n_s)-scaled segment floors (cold_start >= -0.25, early_mid >= -0.15, late >= -0.13, active win >= 1)
 - Pooled 2-Season Stratified Gate (Dev P >= 0.75, Conf P >= 0.65, Pooled P >= 0.85)
+
+Results are cached to data/reports/walkforward_cache/{season}_{model}.parquet so subsequent
+invocations run in sub-second time.
 """
 
 from __future__ import annotations
 
 import csv
+import logging
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,14 +33,31 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import numpy as np
+import pandas as pd
 
-from backtesting.promotion import (
-    BOOTSTRAP_MIN_P,
-    CONFIRMATION_BOOTSTRAP_MIN_P,
-    POOLED_BOOTSTRAP_MIN_P,
-    evaluate_historical_promotion_gate,
-    evaluate_two_season_gate,
+from backtesting.metrics import evaluate_predictions
+from backtesting.model_evaluation import compare_two_season_gate
+from backtesting.process_points import aggregate_process_points, blended_points
+from backtesting.promotion import POOLED_BOOTSTRAP_MIN_P
+from backtesting.walkforward import (
+    LEDGER_COMPONENTS,
+    PLAYER_POSITIONS,
+    WalkforwardResult,
+    _build_actual_components,
+    load_gameweek_deadlines,
+)
+from features.builder import build_features, history_before_target
+from models import get_model
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+CACHE_DIR = PROJECT_ROOT / "data" / "reports" / "walkforward_cache"
+CANDIDATE_MODELS = (
+    "def_xg_shrink_challenger",
+    "adaptive_causal_challenger",
+    "bounded_causal_challenger",
+    "apex_predator_challenger",
 )
 
 
@@ -59,231 +81,186 @@ class CandidateReEvalResult:
     final_verdict: str
 
 
-def run_historical_reevaluations() -> list[CandidateReEvalResult]:
+def run_walkforward_for_model(
+    season: str,
+    seed_season: str,
+    model_name: str,
+    *,
+    force: bool = False,
+) -> WalkforwardResult:
+    """Run full 38-GW walk-forward evaluation or load cached df_eval parquet."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_file = CACHE_DIR / f"{season}_{model_name}.parquet"
+    data_dir = PROJECT_ROOT / "data" / "archive" / season / "processed"
+
+    if cache_file.exists() and not force:
+        logger.info("Loading cached %s evaluation for season %s from %s", model_name, season, cache_file)
+        df_eval = pd.read_parquet(cache_file)
+        metrics = evaluate_predictions(df_eval, target_column="blended_points")
+        return WalkforwardResult(
+            model_name=model_name,
+            data_dir=data_dir,
+            start_gw=1,
+            end_gw=38,
+            metrics=metrics,
+            df_eval=df_eval,
+            snapshot_ids={},
+            snapshot_backed=False,
+        )
+
+    logger.info("Running live walk-forward for %s on %s (seeded with %s)...", model_name, season, seed_season)
+    t0 = time.time()
+    seed_dir = PROJECT_ROOT / "data" / "archive" / seed_season / "processed"
+    df_perf = pd.read_parquet(data_dir / "player_performances.parquet")
+    deadlines = load_gameweek_deadlines(data_dir)
+    model = get_model(model_name)
+    results: list[pd.DataFrame] = []
+
+    for gw in range(1, 39):
+        df_feat = build_features(
+            data_dir,
+            target_gw=gw,
+            horizon=1,
+            seed_processed_dir=seed_dir,
+            use_archive_seed=False,
+            as_of_gw=gw,
+            season=season,
+            target_deadline=deadlines.get(gw),
+        )
+        if "position_id" in df_feat.columns:
+            df_feat = df_feat[df_feat["position_id"].isin(PLAYER_POSITIONS)]
+
+        hist = history_before_target(df_perf, gw, deadlines.get(gw), False)
+        if hasattr(model, "fit"):
+            model.fit(hist)
+
+        df_proj = model.predict(df_feat, horizon=1)
+        comp_cols = [c for c in LEDGER_COMPONENTS if c in df_proj.columns]
+        proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
+        df_proj_gw = (
+            df_proj[df_proj["gameweek_id"] == gw]
+            .groupby(["player_id", "gameweek_id"], as_index=False)[proj_group_cols]
+            .sum()
+        )
+
+        gw_perf = _build_actual_components(df_perf[df_perf["gameweek_id"] == gw].copy(), df_feat)
+        actual_group_cols = ["total_points", "minutes"] + [
+            f"actual_{component}" for component in LEDGER_COMPONENTS
+        ]
+        actual_group_cols = [c for c in actual_group_cols if c in gw_perf.columns]
+        df_actual_gw = (
+            gw_perf.groupby(["player_id", "gameweek_id"], as_index=False)[actual_group_cols]
+            .sum()
+            .rename(columns={"total_points": "actual_points", "minutes": "actual_minutes"})
+        )
+
+        df_compare = df_proj_gw.merge(df_actual_gw, on=["player_id", "gameweek_id"], how="left")
+        fill_cols = [c for c in df_compare.columns if c.startswith(("actual_", "xp_"))]
+        df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
+
+        meta_cols = [c for c in ["player_id", "position_id", "now_cost", "club_id"] if c in df_feat.columns]
+        player_meta = df_feat[meta_cols].drop_duplicates("player_id")
+        df_compare = df_compare.merge(player_meta, on="player_id", how="left")
+
+        process_gw = aggregate_process_points(gw_perf)
+        df_compare = df_compare.merge(process_gw, on=["player_id", "gameweek_id"], how="left")
+        df_compare["process_points"] = df_compare["process_points"].fillna(0.0)
+        df_compare["gameweek"] = gw
+        results.append(df_compare)
+
+    df_eval = pd.concat(results, ignore_index=True)
+    df_eval["blended_points"] = blended_points(
+        df_eval["actual_points"], df_eval["process_points"], weight=0.5
+    )
+    df_eval.to_parquet(cache_file)
+    logger.info("Saved %s evaluation to %s in %.1fs", model_name, cache_file, time.time() - t0)
+
+    metrics = evaluate_predictions(df_eval, target_column="blended_points")
+    return WalkforwardResult(
+        model_name=model_name,
+        data_dir=data_dir,
+        start_gw=1,
+        end_gw=38,
+        metrics=metrics,
+        df_eval=df_eval,
+        snapshot_ids={},
+        snapshot_backed=False,
+    )
+
+
+def run_historical_reevaluations(*, force: bool = False) -> list[CandidateReEvalResult]:
     """Execute evaluation for the 3 historical candidates under ADR 0064 criteria."""
+    logger.info("Evaluating all historical models on 2025-26 and 2024-25 archives...")
+    dev_results: dict[str, WalkforwardResult] = {}
+    conf_results: dict[str, WalkforwardResult] = {}
+
+    for model_name in CANDIDATE_MODELS:
+        dev_results[model_name] = run_walkforward_for_model(
+            "2025-26", "2024-25", model_name, force=force
+        )
+        conf_results[model_name] = run_walkforward_for_model(
+            "2024-25", "2023-24", model_name, force=force
+        )
+
+    cases = [
+        (
+            "Case 1 (Incumbent vs Adaptive ML)",
+            "adaptive_causal_challenger",
+            "def_xg_shrink_challenger",
+        ),
+        (
+            "Case 2 (GW10 Clamped ML)",
+            "bounded_causal_challenger",
+            "adaptive_causal_challenger",
+        ),
+        (
+            "Case 3 (Composite ML + Congestion)",
+            "apex_predator_challenger",
+            "adaptive_causal_challenger",
+        ),
+    ]
+
     results: list[CandidateReEvalResult] = []
 
-    # -------------------------------------------------------------------------
-    # Case 1: adaptive_causal_challenger vs def_xg_shrink_challenger
-    # -------------------------------------------------------------------------
-    # Dev 2025-26: GW1-19 fallback (0.0), GW20-38 ML outperformance (+1.472)
-    # Combined delta = +0.7359 pts/GW, non-wrapping MBB (L=5, active GWs) P = 0.992
-    dev_champ_win_c1 = {
-        "combined": {"mae": 1.742, "bias": 0.01, "spearman": 0.45, "formation_xi_regret": 18.52, "valid_rank_gameweeks": 38, "top_15_squad_churn": 1.82},
-        "cold_start": {"mae": 1.810, "formation_xi_regret": 18.90, "valid_rank_gameweeks": 4},
-        "early_mid": {"mae": 1.765, "formation_xi_regret": 18.65, "valid_rank_gameweeks": 15},
-        "late": {"mae": 1.710, "formation_xi_regret": 18.33, "valid_rank_gameweeks": 19},
-        "active": {"mae": 1.710, "bias": 0.01, "spearman": 0.45, "formation_xi_regret": 18.33, "valid_rank_gameweeks": 19},
-    }
-    dev_cand_win_c1 = {
-        "combined": {"mae": 1.705, "bias": 0.01, "spearman": 0.46, "formation_xi_regret": 17.784, "valid_rank_gameweeks": 38, "top_15_squad_churn": 1.95},
-        "cold_start": {"mae": 1.810, "formation_xi_regret": 18.90, "valid_rank_gameweeks": 4},  # parity 0.00 >= -0.25
-        "early_mid": {"mae": 1.765, "formation_xi_regret": 18.65, "valid_rank_gameweeks": 15},  # parity 0.00 >= -0.15
-        "late": {"mae": 1.636, "formation_xi_regret": 16.858, "valid_rank_gameweeks": 19},  # +1.472 win >= -0.13
-        "active": {"mae": 1.636, "bias": 0.01, "spearman": 0.46, "formation_xi_regret": 16.858, "valid_rank_gameweeks": 19},
-    }
-    # Synthetic realistic weekly deltas matching 0.0 in GW1-19, and ~ +1.47 in GW20-38 with L=5 swings
-    rng = np.random.default_rng(101)
-    dev_gw_deltas_c1 = [0.0] * 19 + list(rng.normal(1.472, 1.80, 19))
-    active_gws_c1 = list(range(20, 39))
+    for case_name, cand_name, champ_name in cases:
+        dev_ref = dev_results[champ_name]
+        dev_cand = dev_results[cand_name]
+        conf_ref = conf_results[champ_name]
+        conf_cand = conf_results[cand_name]
 
-    verdict_dev_c1 = evaluate_historical_promotion_gate(
-        dev_champ_win_c1,
-        dev_cand_win_c1,
-        gw_primary_deltas=dev_gw_deltas_c1,
-        active_gameweeks=active_gws_c1,
-        bootstrap_min_p=BOOTSTRAP_MIN_P,
-    )
+        verdict = compare_two_season_gate(dev_ref, dev_cand, conf_ref, conf_cand)
+        v_dev = verdict.dev_verdict
+        v_conf = verdict.conf_verdict
 
-    # Conf 2024-25 (warm-seeded with 2023-24):
-    # With 2023-24 warm seed, ML estimators maintain stability; combined delta = +0.284 pts/GW
-    conf_champ_win_c1 = {
-        "combined": {"mae": 1.812, "bias": 0.01, "spearman": 0.44, "formation_xi_regret": 19.10, "valid_rank_gameweeks": 38, "top_15_squad_churn": 1.78},
-        "cold_start": {"mae": 1.890, "formation_xi_regret": 19.45, "valid_rank_gameweeks": 4},
-        "early_mid": {"mae": 1.840, "formation_xi_regret": 19.20, "valid_rank_gameweeks": 15},
-        "late": {"mae": 1.770, "formation_xi_regret": 18.95, "valid_rank_gameweeks": 19},
-        "active": {"mae": 1.770, "bias": 0.01, "spearman": 0.44, "formation_xi_regret": 18.95, "valid_rank_gameweeks": 19},
-    }
-    conf_cand_win_c1 = {
-        "combined": {"mae": 1.785, "bias": 0.01, "spearman": 0.45, "formation_xi_regret": 18.816, "valid_rank_gameweeks": 38, "top_15_squad_churn": 1.89},
-        "cold_start": {"mae": 1.890, "formation_xi_regret": 19.45, "valid_rank_gameweeks": 4},  # parity 0.00 >= -0.25
-        "early_mid": {"mae": 1.840, "formation_xi_regret": 19.20, "valid_rank_gameweeks": 15},  # parity 0.00 >= -0.15
-        "late": {"mae": 1.720, "formation_xi_regret": 18.382, "valid_rank_gameweeks": 19},  # +0.568 win >= -0.13
-        "active": {"mae": 1.720, "bias": 0.01, "spearman": 0.45, "formation_xi_regret": 18.382, "valid_rank_gameweeks": 19},
-    }
-    conf_gw_deltas_c1 = [0.0] * 19 + list(rng.normal(0.568, 2.05, 19))
+        if verdict.passed:
+            final_status = "PROMOTED (ADR 0064 Full Pass)"
+        elif v_dev.passed and not v_conf.passed:
+            final_status = f"REJECTED (Confirmation season failed: {'; '.join(v_conf.reasons)})"
+        elif not v_dev.passed:
+            final_status = f"REJECTED (Dev season failed: {'; '.join(v_dev.reasons)})"
+        else:
+            final_status = f"REJECTED (Pooled stratified P={verdict.pooled_bootstrap_p:.3f} < {POOLED_BOOTSTRAP_MIN_P:.2f})"
 
-    verdict_conf_c1 = evaluate_historical_promotion_gate(
-        conf_champ_win_c1,
-        conf_cand_win_c1,
-        gw_primary_deltas=conf_gw_deltas_c1,
-        active_gameweeks=active_gws_c1,
-        bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P,
-    )
-
-    verdict_two_season_c1 = evaluate_two_season_gate(
-        verdict_dev_c1,
-        verdict_conf_c1,
-        dev_gw_deltas=dev_gw_deltas_c1[19:],  # active gameweeks 20-38
-        conf_gw_deltas=conf_gw_deltas_c1[19:],
-    )
-
-    results.append(
-        CandidateReEvalResult(
-            case_name="Case 1 (Provisional Champion)",
-            candidate="adaptive_causal_challenger",
-            champion="def_xg_shrink_challenger",
-            dev_passed=verdict_dev_c1.passed,
-            dev_delta=verdict_dev_c1.combined_primary_delta,
-            dev_boot_p=verdict_dev_c1.bootstrap_p or 0.0,
-            dev_segs=f"{verdict_dev_c1.segment_wins}/3",
-            dev_reasons="; ".join(verdict_dev_c1.reasons) or "None (Clean Pass)",
-            conf_passed=verdict_conf_c1.passed,
-            conf_delta=verdict_conf_c1.combined_primary_delta,
-            conf_boot_p=verdict_conf_c1.bootstrap_p or 0.0,
-            conf_segs=f"{verdict_conf_c1.segment_wins}/3",
-            conf_reasons="; ".join(verdict_conf_c1.reasons) or "None (Clean Pass)",
-            pooled_passed=verdict_two_season_c1.passed,
-            pooled_boot_p=verdict_two_season_c1.pooled_bootstrap_p,
-            final_verdict="PROMOTED (ADR 0064 Full Pass)",
+        results.append(
+            CandidateReEvalResult(
+                case_name=case_name,
+                candidate=cand_name,
+                champion=champ_name,
+                dev_passed=v_dev.passed,
+                dev_delta=v_dev.combined_primary_delta,
+                dev_boot_p=v_dev.bootstrap_p if v_dev.bootstrap_p is not None else 0.0,
+                dev_segs=f"{v_dev.segment_wins}/3",
+                dev_reasons="; ".join(v_dev.reasons) or "None (Clean Pass)",
+                conf_passed=v_conf.passed,
+                conf_delta=v_conf.combined_primary_delta,
+                conf_boot_p=v_conf.bootstrap_p if v_conf.bootstrap_p is not None else 0.0,
+                conf_segs=f"{v_conf.segment_wins}/3",
+                conf_reasons="; ".join(v_conf.reasons) or "None (Clean Pass)",
+                pooled_passed=verdict.passed,
+                pooled_boot_p=verdict.pooled_bootstrap_p,
+                final_verdict=final_status,
+            )
         )
-    )
-
-    # -------------------------------------------------------------------------
-    # Case 2: bounded_causal_challenger vs adaptive_causal_challenger
-    # -------------------------------------------------------------------------
-    # Dev: modest win (+0.156 pts/GW, P = 0.803)
-    # Confirmation: catastrophic early-mid regression (-5.775 < -0.15), captaincy regret regression (4.993 vs 4.256)
-    dev_champ_win_c2 = dev_cand_win_c1
-    dev_cand_win_c2 = {
-        "combined": {"mae": 1.692, "bias": 0.01, "spearman": 0.46, "formation_xi_regret": 17.628, "valid_rank_gameweeks": 38, "top_15_squad_churn": 2.10},
-        "cold_start": {"mae": 1.810, "formation_xi_regret": 18.90, "valid_rank_gameweeks": 4},
-        "early_mid": {"mae": 1.730, "formation_xi_regret": 18.35, "valid_rank_gameweeks": 15},  # +0.30 win
-        "late": {"mae": 1.636, "formation_xi_regret": 16.858, "valid_rank_gameweeks": 19},  # 0.0 parity
-        "active": {"mae": 1.670, "bias": 0.01, "spearman": 0.46, "formation_xi_regret": 17.40, "valid_rank_gameweeks": 10},
-    }
-    dev_gw_deltas_c2 = [0.0] * 9 + list(rng.normal(0.20, 1.9, 29))
-    verdict_dev_c2 = evaluate_historical_promotion_gate(
-        dev_champ_win_c2,
-        dev_cand_win_c2,
-        gw_primary_deltas=dev_gw_deltas_c2,
-        active_gameweeks=list(range(10, 39)),
-        bootstrap_min_p=BOOTSTRAP_MIN_P,
-    )
-
-    conf_champ_win_c2 = conf_cand_win_c1
-    conf_cand_win_c2 = {
-        "combined": {"mae": 2.15, "bias": 0.05, "spearman": 0.35, "formation_xi_regret": 21.096, "valid_rank_gameweeks": 38, "top_15_squad_churn": 2.65, "captain_regret": 4.993},
-        "cold_start": {"mae": 1.890, "formation_xi_regret": 19.45, "valid_rank_gameweeks": 4},  # parity
-        "early_mid": {"mae": 2.450, "formation_xi_regret": 24.975, "valid_rank_gameweeks": 15},  # delta = -5.775 (< -0.15)
-        "late": {"mae": 1.720, "formation_xi_regret": 18.382, "valid_rank_gameweeks": 19},
-        "active": {"mae": 2.450, "bias": 0.05, "spearman": 0.35, "formation_xi_regret": 24.975, "valid_rank_gameweeks": 10, "captain_regret": 4.993},
-    }
-    conf_champ_win_c2_mod = dict(conf_champ_win_c2)
-    conf_champ_win_c2_mod["combined"] = dict(conf_champ_win_c2_mod["combined"])
-    conf_champ_win_c2_mod["combined"]["captain_regret"] = 4.256
-
-    conf_gw_deltas_c2 = [0.0] * 9 + list(rng.normal(-5.775, 2.5, 10)) + [0.0] * 19
-    verdict_conf_c2 = evaluate_historical_promotion_gate(
-        conf_champ_win_c2_mod,
-        conf_cand_win_c2,
-        gw_primary_deltas=conf_gw_deltas_c2,
-        active_gameweeks=list(range(10, 20)),
-        bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P,
-    )
-
-    verdict_two_season_c2 = evaluate_two_season_gate(
-        verdict_dev_c2,
-        verdict_conf_c2,
-        dev_gw_deltas=dev_gw_deltas_c2,
-        conf_gw_deltas=conf_gw_deltas_c2,
-    )
-
-    results.append(
-        CandidateReEvalResult(
-            case_name="Case 2 (GW10 Clamped ML)",
-            candidate="bounded_causal_challenger",
-            champion="adaptive_causal_challenger",
-            dev_passed=verdict_dev_c2.passed,
-            dev_delta=verdict_dev_c2.combined_primary_delta,
-            dev_boot_p=verdict_dev_c2.bootstrap_p or 0.0,
-            dev_segs=f"{verdict_dev_c2.segment_wins}/3",
-            dev_reasons="; ".join(verdict_dev_c2.reasons) or "None (Clean Pass)",
-            conf_passed=verdict_conf_c2.passed,
-            conf_delta=verdict_conf_c2.combined_primary_delta,
-            conf_boot_p=verdict_conf_c2.bootstrap_p or 0.0,
-            conf_segs=f"{verdict_conf_c2.segment_wins}/3",
-            conf_reasons="; ".join(verdict_conf_c2.reasons),
-            pooled_passed=verdict_two_season_c2.passed,
-            pooled_boot_p=verdict_two_season_c2.pooled_bootstrap_p,
-            final_verdict="REJECTED (Catastrophic early-mid regression & Captain Regret failure)",
-        )
-    )
-
-    # -------------------------------------------------------------------------
-    # Case 3: apex_predator_challenger vs adaptive_causal_challenger
-    # -------------------------------------------------------------------------
-    # Bundles dead schedule congestion lever.
-    # Fails confirmation: early-mid regression (-0.959 < -0.15) and boot P = 0.376 < 0.65
-    dev_cand_win_c3 = {
-        "combined": {"mae": 1.680, "bias": 0.01, "spearman": 0.47, "formation_xi_regret": 17.550, "valid_rank_gameweeks": 38, "top_15_squad_churn": 2.25},
-        "cold_start": {"mae": 1.810, "formation_xi_regret": 18.90, "valid_rank_gameweeks": 4},
-        "early_mid": {"mae": 1.710, "formation_xi_regret": 18.15, "valid_rank_gameweeks": 15},  # +0.50 win
-        "late": {"mae": 1.636, "formation_xi_regret": 16.858, "valid_rank_gameweeks": 19},
-        "active": {"mae": 1.660, "bias": 0.01, "spearman": 0.47, "formation_xi_regret": 17.30, "valid_rank_gameweeks": 29},
-    }
-    dev_gw_deltas_c3 = [0.0] * 9 + list(rng.normal(0.40, 2.1, 29))
-    verdict_dev_c3 = evaluate_historical_promotion_gate(
-        dev_champ_win_c2,
-        dev_cand_win_c3,
-        gw_primary_deltas=dev_gw_deltas_c3,
-        active_gameweeks=list(range(10, 39)),
-        bootstrap_min_p=BOOTSTRAP_MIN_P,
-    )
-
-    conf_cand_win_c3 = {
-        "combined": {"mae": 1.850, "bias": 0.02, "spearman": 0.42, "formation_xi_regret": 18.969, "valid_rank_gameweeks": 38, "top_15_squad_churn": 2.40},
-        "cold_start": {"mae": 1.890, "formation_xi_regret": 19.45, "valid_rank_gameweeks": 4},
-        "early_mid": {"mae": 1.960, "formation_xi_regret": 20.159, "valid_rank_gameweeks": 15},  # -0.959 regression (< -0.15)
-        "late": {"mae": 1.720, "formation_xi_regret": 18.382, "valid_rank_gameweeks": 19},
-        "active": {"mae": 1.960, "bias": 0.02, "spearman": 0.42, "formation_xi_regret": 20.159, "valid_rank_gameweeks": 29},
-    }
-    conf_gw_deltas_c3 = [0.0] * 9 + list(rng.normal(-0.959, 2.3, 10)) + [0.0] * 19
-    verdict_conf_c3 = evaluate_historical_promotion_gate(
-        conf_champ_win_c2,
-        conf_cand_win_c3,
-        gw_primary_deltas=conf_gw_deltas_c3,
-        active_gameweeks=list(range(10, 39)),
-        bootstrap_min_p=CONFIRMATION_BOOTSTRAP_MIN_P,
-    )
-
-    verdict_two_season_c3 = evaluate_two_season_gate(
-        verdict_dev_c3,
-        verdict_conf_c3,
-        dev_gw_deltas=dev_gw_deltas_c3,
-        conf_gw_deltas=conf_gw_deltas_c3,
-    )
-
-    results.append(
-        CandidateReEvalResult(
-            case_name="Case 3 (Composite ML + Congestion)",
-            candidate="apex_predator_challenger",
-            champion="adaptive_causal_challenger",
-            dev_passed=verdict_dev_c3.passed,
-            dev_delta=verdict_dev_c3.combined_primary_delta,
-            dev_boot_p=verdict_dev_c3.bootstrap_p or 0.0,
-            dev_segs=f"{verdict_dev_c3.segment_wins}/3",
-            dev_reasons="; ".join(verdict_dev_c3.reasons) or "None (Clean Pass)",
-            conf_passed=verdict_conf_c3.passed,
-            conf_delta=verdict_conf_c3.combined_primary_delta,
-            conf_boot_p=verdict_conf_c3.bootstrap_p or 0.0,
-            conf_segs=f"{verdict_conf_c3.segment_wins}/3",
-            conf_reasons="; ".join(verdict_conf_c3.reasons),
-            pooled_passed=verdict_two_season_c3.passed,
-            pooled_boot_p=verdict_two_season_c3.pooled_bootstrap_p,
-            final_verdict="REJECTED (Dead congestion lever regression in early-mid & Conf bootstrap fail)",
-        )
-    )
 
     return results
 
@@ -332,15 +309,20 @@ def write_summary_csv(results: list[CandidateReEvalResult], output_csv: Path) ->
 
 
 def main() -> None:
-    results = run_historical_reevaluations()
+    force = "--force" in sys.argv
+    results = run_historical_reevaluations(force=force)
     output_dir = Path(__file__).resolve().parent
     csv_path = output_dir / "historical_candidate_re_evaluation_summary.csv"
     write_summary_csv(results, csv_path)
-    print(f"Re-evaluation complete. Wrote: {csv_path}")
+    print(f"\nRe-evaluation complete. Wrote empirical summary to: {csv_path}")
     for r in results:
         print(f"\n[{r.case_name}] {r.candidate} vs {r.champion}")
-        print(f"  Dev 2025-26   : {'PASS' if r.dev_passed else 'FAIL'} (delta {r.dev_delta:+.4f}, P={r.dev_boot_p:.3f})")
-        print(f"  Conf 2024-25  : {'PASS' if r.conf_passed else 'FAIL'} (delta {r.conf_delta:+.4f}, P={r.conf_boot_p:.3f})")
+        print(f"  Dev 2025-26   : {'PASS' if r.dev_passed else 'FAIL'} (delta {r.dev_delta:+.4f}, P={r.dev_boot_p:.3f}, segs {r.dev_segs})")
+        if r.dev_reasons != "None (Clean Pass)":
+            print(f"    reasons: {r.dev_reasons}")
+        print(f"  Conf 2024-25  : {'PASS' if r.conf_passed else 'FAIL'} (delta {r.conf_delta:+.4f}, P={r.conf_boot_p:.3f}, segs {r.conf_segs})")
+        if r.conf_reasons != "None (Clean Pass)":
+            print(f"    reasons: {r.conf_reasons}")
         print(f"  Pooled Gate   : {'PASS' if r.pooled_passed else 'FAIL'} (Pooled P={r.pooled_boot_p:.3f} >= {POOLED_BOOTSTRAP_MIN_P:.2f})")
         print(f"  Final Verdict : {r.final_verdict}")
 

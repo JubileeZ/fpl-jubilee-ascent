@@ -95,3 +95,69 @@ def test_compare_to_reference_wires_active_window_metrics() -> None:
     verdict = compare_to_reference(res_champ, res_cand, primary_target="actual_points")
     assert verdict.active_guardrails_passed is not None
 
+
+def test_compare_two_season_gate_and_evidence_record_active_guardrails(tmp_path) -> None:
+    from pathlib import Path
+    import pandas as pd
+    from backtesting.model_evaluation import (
+        CandidateComparison,
+        build_evidence_record,
+        compare_two_season_gate,
+        write_promotion_evidence,
+    )
+    from backtesting.walkforward import WalkforwardResult
+
+    def _make_season_dfs(cand_bonus: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+        champ_rows = []
+        cand_rows = []
+        for gw in range(1, 26):
+            # 11 outfield/GK players with distinct actual points
+            for pid in range(1, 16):
+                pos = 1 if pid <= 2 else (2 if pid <= 7 else (3 if pid <= 12 else 4))
+                actual = float(16 - pid) if pid <= 11 else 0.0
+                mins = 90 if pid <= 11 else 0
+                # Champion slightly misranks player 1 vs player 2
+                champ_xp = float(15 - pid) if pid > 2 else (13.0 if pid == 1 else 14.5)
+                # Candidate ranks player 1 above player 2 when cand_bonus > 0
+                cand_xp = (15.0 + cand_bonus if pid == 1 else 14.0) if pid <= 2 else champ_xp
+                base = {
+                    "player_id": pid,
+                    "position_id": pos,
+                    "now_cost": 50,
+                    "club_id": (pid % 10) + 1,
+                    "gameweek": gw,
+                    "actual_points": actual,
+                    "process_points": actual,
+                    "blended_points": actual,
+                    "actual_minutes": mins,
+                    "expected_minutes": float(mins),
+                }
+                champ_rows.append({**base, "projected_points": champ_xp})
+                cand_rows.append({**base, "projected_points": cand_xp})
+        return pd.DataFrame(champ_rows), pd.DataFrame(cand_rows)
+
+    dev_champ_df, dev_cand_df = _make_season_dfs(cand_bonus=1.0)
+    conf_champ_df, conf_cand_df = _make_season_dfs(cand_bonus=1.0)
+
+    dev_ref = WalkforwardResult("champ", Path("."), 1, 25, {}, dev_champ_df, {}, False)
+    dev_cand = WalkforwardResult("cand", Path("."), 1, 25, {}, dev_cand_df, {}, False)
+    conf_ref = WalkforwardResult("champ", Path("."), 1, 25, {}, conf_champ_df, {}, False)
+    conf_cand = WalkforwardResult("cand", Path("."), 1, 25, {}, conf_cand_df, {}, False)
+
+    two_season = compare_two_season_gate(dev_ref, dev_cand, conf_ref, conf_cand)
+    assert two_season.passed
+    assert two_season.pooled_bootstrap_p == 1.0
+
+    sel = ModelSelection(champion="champ", candidates=("cand",))
+    record = build_evidence_record(
+        selection_before=sel,
+        selection_after=sel,
+        comparisons=[CandidateComparison("cand", two_season.dev_verdict, True)],
+        evaluation_season="2025-26",
+        git_commit="abc1234",
+    )
+    assert record["comparisons"][0]["active_guardrails_passed"] is True
+    _, md_path = write_promotion_evidence(record, tmp_path)
+    assert "Active guardrails passed: True" in md_path.read_text(encoding="utf-8")
+
+

@@ -335,3 +335,21 @@ def test_continuous_neff_alpha_blending() -> None:
     assert 0.35 < alphas_cold[3] < 0.40  # GW8
     assert np.isclose(alphas_cold[7], 1.0)  # GW12
 
+
+def test_build_causal_panel_fast_execution_and_determinism() -> None:
+    """Verify build_causal_panel executes rapidly on multi-GW panels and is deterministic."""
+    import time
+
+    history = _create_synthetic_history(n_gws=15, n_players=40)
+    features = _create_synthetic_features(target_gw=16, n_players=40)
+
+    t0 = time.perf_counter()
+    train1, pred1 = build_causal_panel(history, features, min_train_gw=4)
+    elapsed = time.perf_counter() - t0
+
+    train2, pred2 = build_causal_panel(history, features, min_train_gw=4)
+    pd.testing.assert_frame_equal(train1, train2)
+    pd.testing.assert_frame_equal(pred1, pred2)
+    assert elapsed < 1.0
+
+
