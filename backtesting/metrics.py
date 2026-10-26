@@ -45,18 +45,33 @@ _LEGAL_FORMATIONS = (
 )
 
 
-def _legacy_best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
-    """Legacy unconstrained formation scan (ADR 0054)."""
-    if "position_id" not in group.columns or len(group) < 11:
-        return group.nlargest(min(11, len(group)), sort_col)
+def _canonical_sort(df: pd.DataFrame, sort_col: str, cost_col: str = "now_cost") -> pd.DataFrame:
+    """Sort DataFrame deterministically by [sort_col DESC, cost_col ASC, player_id ASC]."""
+    if df.empty:
+        return df
+    has_pid = "player_id" in df.columns
+    has_cost = cost_col in df.columns
+    keys = (
+        df["player_id"].to_numpy() if has_pid else np.arange(len(df)),
+        df[cost_col].fillna(0.0).to_numpy(dtype=float) if has_cost else np.zeros(len(df)),
+        -df[sort_col].fillna(0.0).to_numpy(dtype=float),
+    )
+    return df.iloc[np.lexsort(keys)].reset_index(drop=True)
 
-    gkp = group[group["position_id"] == _POS_GKP].nlargest(1, sort_col)
-    defs = group[group["position_id"] == _POS_DEF].nlargest(5, sort_col)
-    mids = group[group["position_id"] == _POS_MID].nlargest(5, sort_col)
-    fwds = group[group["position_id"] == _POS_FWD].nlargest(3, sort_col)
+
+def _legacy_best_legal_xi(group: pd.DataFrame, sort_col: str, cost_col: str = "now_cost") -> pd.DataFrame:
+    """Legacy unconstrained formation scan (ADR 0054)."""
+    sorted_group = _canonical_sort(group, sort_col, cost_col)
+    if "position_id" not in sorted_group.columns or len(sorted_group) < 11:
+        return sorted_group.iloc[:min(11, len(sorted_group))].copy()
+
+    gkp = sorted_group[sorted_group["position_id"] == _POS_GKP].iloc[:1]
+    defs = sorted_group[sorted_group["position_id"] == _POS_DEF].iloc[:5]
+    mids = sorted_group[sorted_group["position_id"] == _POS_MID].iloc[:5]
+    fwds = sorted_group[sorted_group["position_id"] == _POS_FWD].iloc[:3]
 
     if len(gkp) < 1 or len(defs) < 3 or len(mids) < 2 or len(fwds) < 1:
-        return group.nlargest(min(11, len(group)), sort_col)
+        return sorted_group.iloc[:min(11, len(sorted_group))].copy()
 
     best_xi: pd.DataFrame | None = None
     best_score = float("-inf")
@@ -68,53 +83,50 @@ def _legacy_best_legal_xi(group: pd.DataFrame, sort_col: str) -> pd.DataFrame:
                 best_score = score
                 best_xi = candidate
 
-    return best_xi if best_xi is not None else group.nlargest(min(11, len(group)), sort_col)
+    return best_xi if best_xi is not None else sorted_group.iloc[:min(11, len(sorted_group))].copy()
 
 
-def select_legal_formation_xi(
+def _solve_constrained_lineup_milp(
     group: pd.DataFrame,
     sort_col: str,
     *,
-    budget_cap: float | None = 835.0,
+    total_players: int,
+    pos_bounds: dict[int, tuple[int, int]],
+    pos_top_n: dict[int, int],
+    pos_bottom_cost_n: dict[int, int],
+    budget_cap: float | None,
     max_per_club: int = 3,
     cost_col: str = "now_cost",
     club_col: str = "club_id",
-) -> pd.DataFrame:
-    """Select the best legal 11-player lineup maximizing sum(sort_col).
+) -> pd.DataFrame | None:
+    sorted_group = _canonical_sort(group, sort_col, cost_col)
+    if "position_id" not in sorted_group.columns or len(sorted_group) < total_players:
+        return sorted_group.iloc[:min(total_players, len(sorted_group))].copy()
 
-    Enforces:
-    1. Legal formation (1 GKP, 3-5 DEF, 2-5 MID, 1-3 FWD, exactly 11 players).
-    2. Optional starting XI budget cap (default £83.5m / 835.0 in 0.1m units).
-    3. Club quota (max 3 players per club).
-    4. Deterministic tie-breaking on [sort_col DESC, cost ASC, player_id ASC].
-    """
-    if "position_id" not in group.columns or len(group) < 11:
-        return group.nlargest(min(11, len(group)), sort_col)
-
-    has_cost = cost_col in group.columns and budget_cap is not None
-    has_club = club_col in group.columns and max_per_club > 0
+    has_cost = cost_col in sorted_group.columns and budget_cap is not None
+    has_club = club_col in sorted_group.columns and max_per_club > 0
 
     if not has_cost and not has_club:
-        return _legacy_best_legal_xi(group, sort_col)
+        return None
 
-    # Include both highest projected and budget enablers to prevent infeasibility
-    gkp_parts = [group[group["position_id"] == _POS_GKP].nlargest(min(15, len(group)), sort_col)]
-    def_parts = [group[group["position_id"] == _POS_DEF].nlargest(min(30, len(group)), sort_col)]
-    mid_parts = [group[group["position_id"] == _POS_MID].nlargest(min(35, len(group)), sort_col)]
-    fwd_parts = [group[group["position_id"] == _POS_FWD].nlargest(min(20, len(group)), sort_col)]
+    # Deterministic pool construction: slice canonical top and budget enablers
+    parts = []
+    for pos_id, top_count in pos_top_n.items():
+        pos_df = sorted_group[sorted_group["position_id"] == pos_id]
+        parts.append(pos_df.iloc[:min(top_count, len(pos_df))])
+        if has_cost and pos_id in pos_bottom_cost_n:
+            b_count = pos_bottom_cost_n[pos_id]
+            b_sorted = pos_df.sort_values(
+                [cost_col, "player_id"] if "player_id" in pos_df.columns else [cost_col]
+            )
+            parts.append(b_sorted.iloc[:min(b_count, len(b_sorted))])
 
-    if has_cost:
-        gkp_parts.append(group[group["position_id"] == _POS_GKP].nsmallest(min(5, len(group)), cost_col))
-        def_parts.append(group[group["position_id"] == _POS_DEF].nsmallest(min(10, len(group)), cost_col))
-        mid_parts.append(group[group["position_id"] == _POS_MID].nsmallest(min(10, len(group)), cost_col))
-        fwd_parts.append(group[group["position_id"] == _POS_FWD].nsmallest(min(5, len(group)), cost_col))
-
-    pool = pd.concat(gkp_parts + def_parts + mid_parts + fwd_parts).drop_duplicates(
-        "player_id" if "player_id" in group.columns else None
+    pool = pd.concat(parts).drop_duplicates(
+        "player_id" if "player_id" in sorted_group.columns else None
     ).reset_index(drop=True)
     n = len(pool)
-    if n < 11:
-        return group.nlargest(min(11, len(group)), sort_col)
+    if n < total_players:
+        return sorted_group.iloc[:min(total_players, len(sorted_group))].copy()
 
     costs = pool[cost_col].fillna(0.0).to_numpy(dtype=float) if cost_col in pool.columns else np.zeros(n)
     player_ids = pool["player_id"].fillna(0).to_numpy(dtype=float) if "player_id" in pool.columns else np.arange(n, dtype=float)
@@ -123,7 +135,7 @@ def select_legal_formation_xi(
     cost_scale = 10.0 if np.max(costs) <= 20.0 and np.max(costs) > 0 else 1.0
     scaled_costs = costs * cost_scale
     if budget_cap is not None:
-        effective_budget = budget_cap * 10.0 if budget_cap <= 100.0 and cost_scale == 10.0 else budget_cap
+        effective_budget = budget_cap * 10.0 if budget_cap <= 150.0 and cost_scale == 10.0 else budget_cap
     else:
         effective_budget = float("inf")
 
@@ -140,8 +152,20 @@ def select_legal_formation_xi(
         (positions == _POS_MID).astype(float),
         (positions == _POS_FWD).astype(float),
     ]
-    lb = [11.0, 1.0, 3.0, 2.0, 1.0]
-    ub = [11.0, 1.0, 5.0, 5.0, 3.0]
+    lb = [
+        float(total_players),
+        float(pos_bounds[_POS_GKP][0]),
+        float(pos_bounds[_POS_DEF][0]),
+        float(pos_bounds[_POS_MID][0]),
+        float(pos_bounds[_POS_FWD][0]),
+    ]
+    ub = [
+        float(total_players),
+        float(pos_bounds[_POS_GKP][1]),
+        float(pos_bounds[_POS_DEF][1]),
+        float(pos_bounds[_POS_MID][1]),
+        float(pos_bounds[_POS_FWD][1]),
+    ]
 
     if has_cost:
         A_rows.append(scaled_costs)
@@ -164,14 +188,43 @@ def select_legal_formation_xi(
     if res.success:
         selected_idx = np.where(res.x > 0.5)[0]
         selected_df = pool.iloc[selected_idx].copy()
-        sort_order = np.lexsort((
-            selected_df["player_id"] if "player_id" in selected_df.columns else np.arange(len(selected_df)),
-            selected_df[cost_col] if cost_col in selected_df.columns else np.zeros(len(selected_df)),
-            -selected_df[sort_col],
-        ))
-        return selected_df.iloc[sort_order].reset_index(drop=True)
+        return _canonical_sort(selected_df, sort_col, cost_col)
 
-    return _legacy_best_legal_xi(group, sort_col)
+    return None
+
+
+def select_legal_formation_xi(
+    group: pd.DataFrame,
+    sort_col: str,
+    *,
+    budget_cap: float | None = 835.0,
+    max_per_club: int = 3,
+    cost_col: str = "now_cost",
+    club_col: str = "club_id",
+) -> pd.DataFrame:
+    """Select the best legal 11-player lineup maximizing sum(sort_col).
+
+    Enforces:
+    1. Legal formation (1 GKP, 3-5 DEF, 2-5 MID, 1-3 FWD, exactly 11 players).
+    2. Optional starting XI budget cap (default £83.5m / 835.0 in 0.1m units).
+    3. Club quota (max 3 players per club).
+    4. Deterministic tie-breaking on [sort_col DESC, cost ASC, player_id ASC].
+    """
+    res = _solve_constrained_lineup_milp(
+        group,
+        sort_col,
+        total_players=11,
+        pos_bounds={_POS_GKP: (1, 1), _POS_DEF: (3, 5), _POS_MID: (2, 5), _POS_FWD: (1, 3)},
+        pos_top_n={_POS_GKP: 15, _POS_DEF: 30, _POS_MID: 35, _POS_FWD: 20},
+        pos_bottom_cost_n={_POS_GKP: 5, _POS_DEF: 10, _POS_MID: 10, _POS_FWD: 5},
+        budget_cap=budget_cap,
+        max_per_club=max_per_club,
+        cost_col=cost_col,
+        club_col=club_col,
+    )
+    if res is not None:
+        return res
+    return _legacy_best_legal_xi(group, sort_col, cost_col)
 
 
 best_legal_xi = select_legal_formation_xi
@@ -187,79 +240,21 @@ def select_top_15_squad(
     club_col: str = "club_id",
 ) -> pd.DataFrame:
     """Select optimal 15-player squad (2 GKP, 5 DEF, 5 MID, 3 FWD) subject to £100.0m budget."""
-    if "position_id" not in group.columns or len(group) < 15:
-        return group.nlargest(min(15, len(group)), sort_col)
-
-    gkp_parts = [group[group["position_id"] == _POS_GKP].nlargest(min(10, len(group)), sort_col)]
-    def_parts = [group[group["position_id"] == _POS_DEF].nlargest(min(25, len(group)), sort_col)]
-    mid_parts = [group[group["position_id"] == _POS_MID].nlargest(min(30, len(group)), sort_col)]
-    fwd_parts = [group[group["position_id"] == _POS_FWD].nlargest(min(15, len(group)), sort_col)]
-
-    if cost_col in group.columns:
-        gkp_parts.append(group[group["position_id"] == _POS_GKP].nsmallest(min(5, len(group)), cost_col))
-        def_parts.append(group[group["position_id"] == _POS_DEF].nsmallest(min(10, len(group)), cost_col))
-        mid_parts.append(group[group["position_id"] == _POS_MID].nsmallest(min(10, len(group)), cost_col))
-        fwd_parts.append(group[group["position_id"] == _POS_FWD].nsmallest(min(5, len(group)), cost_col))
-
-    pool = pd.concat(gkp_parts + def_parts + mid_parts + fwd_parts).drop_duplicates(
-        "player_id" if "player_id" in group.columns else None
-    ).reset_index(drop=True)
-    n = len(pool)
-    if n < 15:
-        return group.nlargest(min(15, len(group)), sort_col)
-
-    costs = pool[cost_col].fillna(0.0).to_numpy(dtype=float) if cost_col in pool.columns else np.zeros(n)
-    player_ids = pool["player_id"].fillna(0).to_numpy(dtype=float) if "player_id" in pool.columns else np.arange(n, dtype=float)
-    scores = pool[sort_col].fillna(0.0).to_numpy(dtype=float)
-
-    cost_scale = 10.0 if np.max(costs) <= 20.0 and np.max(costs) > 0 else 1.0
-    scaled_costs = costs * cost_scale
-    effective_squad_budget = squad_budget * 10.0 if squad_budget <= 150.0 and cost_scale == 10.0 else squad_budget
-
-    c = -(scores - _TIE_BREAK_COST_WEIGHT * scaled_costs - _TIE_BREAK_ID_WEIGHT * player_ids)
-
-    positions = pool["position_id"].to_numpy(dtype=int)
-    clubs = pool[club_col].to_numpy() if club_col in pool.columns else np.zeros(n, dtype=int)
-    unique_clubs = np.unique(clubs) if club_col in pool.columns else []
-
-    A_rows = [
-        np.ones(n),
-        (positions == _POS_GKP).astype(float),
-        (positions == _POS_DEF).astype(float),
-        (positions == _POS_MID).astype(float),
-        (positions == _POS_FWD).astype(float),
-    ]
-    lb = [15.0, 2.0, 5.0, 5.0, 3.0]
-    ub = [15.0, 2.0, 5.0, 5.0, 3.0]
-
-    if cost_col in pool.columns:
-        A_rows.append(scaled_costs)
-        lb.append(0.0)
-        ub.append(effective_squad_budget)
-
-    if club_col in pool.columns and max_per_club > 0:
-        for cl in unique_clubs:
-            A_rows.append((clubs == cl).astype(float))
-            lb.append(0.0)
-            ub.append(float(max_per_club))
-
-    A = np.array(A_rows)
-    constraints = LinearConstraint(A, np.array(lb), np.array(ub))
-    integrality = np.ones(n)
-    bounds = Bounds(0, 1)
-
-    res = milp(c=c, integrality=integrality, bounds=bounds, constraints=constraints)
-    if res.success:
-        selected_idx = np.where(res.x > 0.5)[0]
-        selected_df = pool.iloc[selected_idx].copy()
-        sort_order = np.lexsort((
-            selected_df["player_id"] if "player_id" in selected_df.columns else np.arange(len(selected_df)),
-            selected_df[cost_col] if cost_col in selected_df.columns else np.zeros(len(selected_df)),
-            -selected_df[sort_col],
-        ))
-        return selected_df.iloc[sort_order].reset_index(drop=True)
-
-    return group.nlargest(min(15, len(group)), sort_col)
+    res = _solve_constrained_lineup_milp(
+        group,
+        sort_col,
+        total_players=15,
+        pos_bounds={_POS_GKP: (2, 2), _POS_DEF: (5, 5), _POS_MID: (5, 5), _POS_FWD: (3, 3)},
+        pos_top_n={_POS_GKP: 10, _POS_DEF: 25, _POS_MID: 30, _POS_FWD: 15},
+        pos_bottom_cost_n={_POS_GKP: 5, _POS_DEF: 10, _POS_MID: 10, _POS_FWD: 5},
+        budget_cap=squad_budget,
+        max_per_club=max_per_club,
+        cost_col=cost_col,
+        club_col=club_col,
+    )
+    if res is not None:
+        return res
+    return _canonical_sort(group, sort_col, cost_col).iloc[:min(15, len(group))].copy()
 
 
 def compute_top_15_squad_churn_by_gameweek(

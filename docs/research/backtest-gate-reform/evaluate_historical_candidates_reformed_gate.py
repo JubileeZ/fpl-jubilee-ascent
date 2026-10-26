@@ -1,4 +1,4 @@
-"""Historical Candidate Re-evaluation under Reformed Gate (ADR 0064, Ticket #173).
+"""Historical Candidate Re-evaluation under Reformed Gate (ADR 0064).
 
 Evaluates the 3 canonical cases from the quantitative audit brief:
 1. adaptive_causal_challenger vs def_xg_shrink_challenger (Active Champion baseline)
@@ -37,17 +37,12 @@ import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
 from backtesting.model_evaluation import compare_two_season_gate
-from backtesting.process_points import aggregate_process_points, blended_points
 from backtesting.promotion import POOLED_BOOTSTRAP_MIN_P
 from backtesting.walkforward import (
-    LEDGER_COMPONENTS,
-    PLAYER_POSITIONS,
+    WalkforwardConfig,
     WalkforwardResult,
-    _build_actual_components,
-    load_gameweek_deadlines,
+    run_walkforward_backtest,
 )
-from features.builder import build_features, history_before_target
-from models import get_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -110,82 +105,20 @@ def run_walkforward_for_model(
 
     logger.info("Running live walk-forward for %s on %s (seeded with %s)...", model_name, season, seed_season)
     t0 = time.time()
-    seed_dir = PROJECT_ROOT / "data" / "archive" / seed_season / "processed"
-    df_perf = pd.read_parquet(data_dir / "player_performances.parquet")
-    deadlines = load_gameweek_deadlines(data_dir)
-    model = get_model(model_name)
-    results: list[pd.DataFrame] = []
-
-    for gw in range(1, 39):
-        df_feat = build_features(
-            data_dir,
-            target_gw=gw,
-            horizon=1,
-            seed_processed_dir=seed_dir,
-            use_archive_seed=False,
-            as_of_gw=gw,
-            season=season,
-            target_deadline=deadlines.get(gw),
-        )
-        if "position_id" in df_feat.columns:
-            df_feat = df_feat[df_feat["position_id"].isin(PLAYER_POSITIONS)]
-
-        hist = history_before_target(df_perf, gw, deadlines.get(gw), False)
-        if hasattr(model, "fit"):
-            model.fit(hist)
-
-        df_proj = model.predict(df_feat, horizon=1)
-        comp_cols = [c for c in LEDGER_COMPONENTS if c in df_proj.columns]
-        proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
-        df_proj_gw = (
-            df_proj[df_proj["gameweek_id"] == gw]
-            .groupby(["player_id", "gameweek_id"], as_index=False)[proj_group_cols]
-            .sum()
-        )
-
-        gw_perf = _build_actual_components(df_perf[df_perf["gameweek_id"] == gw].copy(), df_feat)
-        actual_group_cols = ["total_points", "minutes"] + [
-            f"actual_{component}" for component in LEDGER_COMPONENTS
-        ]
-        actual_group_cols = [c for c in actual_group_cols if c in gw_perf.columns]
-        df_actual_gw = (
-            gw_perf.groupby(["player_id", "gameweek_id"], as_index=False)[actual_group_cols]
-            .sum()
-            .rename(columns={"total_points": "actual_points", "minutes": "actual_minutes"})
-        )
-
-        df_compare = df_proj_gw.merge(df_actual_gw, on=["player_id", "gameweek_id"], how="left")
-        fill_cols = [c for c in df_compare.columns if c.startswith(("actual_", "xp_"))]
-        df_compare[fill_cols] = df_compare[fill_cols].fillna(0.0)
-
-        meta_cols = [c for c in ["player_id", "position_id", "now_cost", "club_id"] if c in df_feat.columns]
-        player_meta = df_feat[meta_cols].drop_duplicates("player_id")
-        df_compare = df_compare.merge(player_meta, on="player_id", how="left")
-
-        process_gw = aggregate_process_points(gw_perf)
-        df_compare = df_compare.merge(process_gw, on=["player_id", "gameweek_id"], how="left")
-        df_compare["process_points"] = df_compare["process_points"].fillna(0.0)
-        df_compare["gameweek"] = gw
-        results.append(df_compare)
-
-    df_eval = pd.concat(results, ignore_index=True)
-    df_eval["blended_points"] = blended_points(
-        df_eval["actual_points"], df_eval["process_points"], weight=0.5
-    )
-    df_eval.to_parquet(cache_file)
-    logger.info("Saved %s evaluation to %s in %.1fs", model_name, cache_file, time.time() - t0)
-
-    metrics = evaluate_predictions(df_eval, target_column="blended_points")
-    return WalkforwardResult(
+    config = WalkforwardConfig(
         model_name=model_name,
         data_dir=data_dir,
         start_gw=1,
         end_gw=38,
-        metrics=metrics,
-        df_eval=df_eval,
-        snapshot_ids={},
-        snapshot_backed=False,
+        seed_season=seed_season,
+        snapshot_season=season,
+        eval_target="blended_points",
+        blend_weight=0.5,
     )
+    result = run_walkforward_backtest(config)
+    result.df_eval.to_parquet(cache_file)
+    logger.info("Saved %s evaluation to %s in %.1fs", model_name, cache_file, time.time() - t0)
+    return result
 
 
 def run_historical_reevaluations(*, force: bool = False) -> list[CandidateReEvalResult]:

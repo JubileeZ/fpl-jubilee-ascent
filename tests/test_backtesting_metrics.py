@@ -128,10 +128,10 @@ def test_best_legal_xi_and_formation_stats() -> None:
 def test_select_legal_formation_xi_constraints_and_tie_breaking() -> None:
     from backtesting.metrics import select_legal_formation_xi
 
-    # 20 players: 4 Arsenal (club 1) players with top xP, premium costs
+    # 20 players: 3 Arsenal (club 1) outfielders with top xP, premium costs
     players = [
-        {"player_id": 1, "position_id": 1, "club_id": 1, "now_cost": 55.0, "projected_points": 5.5},
-        {"player_id": 2, "position_id": 1, "club_id": 2, "now_cost": 50.0, "projected_points": 4.5},
+        {"player_id": 1, "position_id": 1, "club_id": 2, "now_cost": 55.0, "projected_points": 5.5},
+        {"player_id": 2, "position_id": 1, "club_id": 3, "now_cost": 50.0, "projected_points": 5.0},
         # Arsenal DEF
         {"player_id": 11, "position_id": 2, "club_id": 1, "now_cost": 62.0, "projected_points": 5.8},
         {"player_id": 12, "position_id": 2, "club_id": 1, "now_cost": 60.0, "projected_points": 5.7},
@@ -141,12 +141,12 @@ def test_select_legal_formation_xi_constraints_and_tie_breaking() -> None:
         {"player_id": 15, "position_id": 2, "club_id": 5, "now_cost": 47.0, "projected_points": 4.0},
         {"player_id": 16, "position_id": 2, "club_id": 6, "now_cost": 40.0, "projected_points": 3.2},
         # MIDs
-        {"player_id": 21, "position_id": 3, "club_id": 1, "now_cost": 101.0, "projected_points": 7.5},  # 4th Arsenal
+        {"player_id": 21, "position_id": 3, "club_id": 1, "now_cost": 101.0, "projected_points": 7.5},  # 3rd Arsenal
         {"player_id": 22, "position_id": 3, "club_id": 7, "now_cost": 108.0, "projected_points": 8.0},
         {"player_id": 23, "position_id": 3, "club_id": 3, "now_cost": 126.0, "projected_points": 8.5},
         {"player_id": 24, "position_id": 3, "club_id": 8, "now_cost": 75.0, "projected_points": 6.2},
         {"player_id": 25, "position_id": 3, "club_id": 9, "now_cost": 54.0, "projected_points": 5.0},
-        {"player_id": 26, "position_id": 3, "club_id": 5, "now_cost": 57.0, "projected_points": 5.0},  # Tie with 25
+        {"player_id": 26, "position_id": 3, "club_id": 5, "now_cost": 57.0, "projected_points": 5.0},
         # FWDs
         {"player_id": 31, "position_id": 4, "club_id": 4, "now_cost": 153.0, "projected_points": 9.5},
         {"player_id": 32, "position_id": 4, "club_id": 9, "now_cost": 91.0, "projected_points": 6.8},
@@ -163,15 +163,24 @@ def test_select_legal_formation_xi_constraints_and_tie_breaking() -> None:
     club_counts = xi["club_id"].value_counts()
     assert (club_counts <= 3).all()
 
-    # 2. Deterministic tie-breaking on tied xP (5.0): Player 25 (£5.4m) vs Player 26 (£5.7m)
-    # Lower cost wins
-    assert 25 in xi["player_id"].values
+    # 2. Deterministic tie-breaking on tied xP (5.5): GKP 1 (£5.5m) vs GKP 2 (£5.0m)
+    # Lower cost wins: GKP 2 selected, GKP 1 excluded
+    df_gkp_tie = df.copy()
+    df_gkp_tie.loc[df_gkp_tie["player_id"] == 2, "projected_points"] = 5.5
+    xi_gkp = select_legal_formation_xi(df_gkp_tie, "projected_points", budget_cap=835.0, max_per_club=3)
+    assert 2 in xi_gkp["player_id"].values
+    assert 1 not in xi_gkp["player_id"].values
 
-    # Test tie-break with identical cost: lower player_id wins
-    df_tie = df.copy()
-    df_tie.loc[df_tie["player_id"] == 26, "now_cost"] = 54.0  # Equal cost 54.0
-    xi_tie = select_legal_formation_xi(df_tie, "projected_points", budget_cap=835.0, max_per_club=3)
-    assert 25 in xi_tie["player_id"].values  # ID 25 < ID 26
+    # Test tie-break with identical cost: lower player_id wins (GKP 1 £5.0m vs GKP 2 £5.0m)
+    df_gkp_tie.loc[df_gkp_tie["player_id"] == 1, "now_cost"] = 50.0
+    xi_tie = select_legal_formation_xi(df_gkp_tie, "projected_points", budget_cap=835.0, max_per_club=3)
+    assert 1 in xi_tie["player_id"].values  # ID 1 < ID 2
+    assert 2 not in xi_tie["player_id"].values
+
+    # Verify input row-order invariance
+    df_shuffled = df.sample(frac=1.0, random_state=42)
+    xi_shuffled = select_legal_formation_xi(df_shuffled, "projected_points", budget_cap=835.0, max_per_club=3)
+    assert xi_shuffled["player_id"].tolist() == xi["player_id"].tolist()
 
 
 def test_top_15_squad_selection_and_churn() -> None:

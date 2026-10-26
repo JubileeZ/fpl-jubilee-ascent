@@ -123,7 +123,7 @@ def compare_to_reference(
     _attach_playable_metrics(champion_windows["combined"], champ_playable)
     _attach_playable_metrics(candidate_windows["combined"], cand_playable)
 
-    # Active-window guardrails (ADR 0064, Wayfinder Ticket #170)
+    # Active-window guardrails (ADR 0064)
     active_gws = identify_active_gameweeks(reference.df_eval, candidate.df_eval)
     all_gws = set(reference.df_eval["gameweek"].unique())
     if not active_gws or set(active_gws) == all_gws:

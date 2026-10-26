@@ -27,7 +27,7 @@ flowchart TD
     P4 --> P5["Phase 5: New-Season Readiness ✅"]
     P5 --> P6["Phase 6: Gate & Evaluation Rigor ✅"]
     style P1 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
-    P2 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
+    style P2 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P3 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P4 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff
     style P5 fill:#1c7a30,stroke:#155724,stroke-width:2px,color:#fff

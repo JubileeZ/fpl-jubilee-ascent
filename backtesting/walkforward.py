@@ -125,6 +125,18 @@ def _resolve_walkforward_seed_dir(data_dir: Path, seed_season: str) -> Path:
     )
 
 
+def _default_seed_season_for_data_dir(data_dir: Path, snapshot_season: str | None) -> str | None:
+    season = snapshot_season or (data_dir.parent.name if data_dir.parent.name != "data" else None)
+    if season == "2024-25":
+        try:
+            cand = _resolve_walkforward_seed_dir(data_dir, "2023-24")
+            if cand.exists():
+                return "2023-24"
+        except FileNotFoundError:
+            pass
+    return None
+
+
 def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
     data_dir = config.data_dir
     perf_path = data_dir / "player_performances.parquet"
@@ -156,9 +168,13 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         if value is not None
     }
 
+    seed_season = config.seed_season
+    if seed_season is None and config.seed_processed_dir is None:
+        seed_season = _default_seed_season_for_data_dir(data_dir, config.snapshot_season)
+
     seed_processed_dir = config.seed_processed_dir
-    if seed_processed_dir is None and config.seed_season:
-        seed_processed_dir = _resolve_walkforward_seed_dir(data_dir, config.seed_season)
+    if seed_processed_dir is None and seed_season:
+        seed_processed_dir = _resolve_walkforward_seed_dir(data_dir, seed_season)
 
     for gw in range(config.start_gw, config.end_gw + 1):
         df_feat = build_features(

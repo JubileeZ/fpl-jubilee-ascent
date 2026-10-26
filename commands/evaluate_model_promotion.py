@@ -29,9 +29,9 @@ from backtesting.promotion import (
     POOLED_BOOTSTRAP_MIN_P,
     PromotionVerdict,
 )
-from backtesting.walkforward import WalkforwardConfig, run_walkforward_backtest
+from backtesting.walkforward import WalkforwardConfig, WalkforwardResult, run_walkforward_backtest
 from commands.backtest import resolve_backtest_data_dir, resolve_seed_processed_dir
-from models.selection import DEFAULT_CONFIG_PATH, load_model_selection, save_model_selection
+from models.selection import DEFAULT_CONFIG_PATH, ModelSelection, load_model_selection, save_model_selection
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ def _run_model(
     snapshot_root: Path | None,
     snapshot_season: str | None,
     require_snapshots: bool,
-):
+) -> WalkforwardResult:
     seed_processed_dir = resolve_seed_processed_dir(data_dir, model_name, seed_season)
     return run_walkforward_backtest(
         WalkforwardConfig(
@@ -92,7 +92,7 @@ def evaluate_and_apply(
     require_snapshots: bool,
     apply: bool,
     bootstrap_min_p: float = BOOTSTRAP_MIN_P,
-) -> tuple[object, list[CandidateComparison], tuple[Path, Path] | None]:
+) -> tuple[ModelSelection, list[CandidateComparison], tuple[Path, Path] | None]:
     selection = load_model_selection(config_path)
     champion_result = _run_model(
         model_name=selection.champion,
@@ -165,8 +165,8 @@ def evaluate_and_apply_two_season(
     dev_min_p: float = BOOTSTRAP_MIN_P,
     conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
     pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
-) -> tuple[object, list[CandidateComparison], tuple[Path, Path] | None]:
-    """Evaluate and optionally apply 2-season gate across Dev and Confirmation seasons (ADR 0064, Ticket #171)."""
+) -> tuple[ModelSelection, list[CandidateComparison], tuple[Path, Path] | None]:
+    """Evaluate and optionally apply 2-season gate across Dev and Confirmation seasons (ADR 0064)."""
     selection = load_model_selection(config_path)
     dev_champ = _run_model(
         model_name=selection.champion,
@@ -285,8 +285,13 @@ def main(argv: list[str] | None = None) -> None:
     snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None
 
     if args.two_season:
-        dev_dir = resolve_backtest_data_dir((PROJECT_ROOT / "data" / "processed").resolve())
-        conf_dir = resolve_backtest_data_dir((PROJECT_ROOT / "data" / "archive" / "2024-25" / "processed").resolve())
+        if args.data_dir != "data/processed":
+            dev_dir = (PROJECT_ROOT / args.data_dir).resolve()
+        else:
+            default_dev = (PROJECT_ROOT / "data" / "archive" / "2025-26" / "processed").resolve()
+            dev_dir = default_dev if default_dev.exists() else resolve_backtest_data_dir((PROJECT_ROOT / args.data_dir).resolve())
+        conf_default = (PROJECT_ROOT / "data" / "archive" / "2024-25" / "processed").resolve()
+        conf_dir = conf_default if conf_default.exists() else resolve_backtest_data_dir(conf_default)
         updated, comparisons, evidence_paths = evaluate_and_apply_two_season(
             config_path=args.config,
             dev_data_dir=dev_dir,

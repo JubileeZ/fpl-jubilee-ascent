@@ -21,7 +21,7 @@ _MIDFIELDER = 3
 _LEAGUE_XG_DEFAULT = 1.35
 _PSEUDO_MATCHES = 4.0
 _EB_K_PRIOR_DEFAULT = 12.0
-_BASE_K = 1080.0  # 12.0 matches * 90 mins (Ticket #168 EB prior strength)
+_BASE_K = 1080.0  # 12.0 matches * 90 mins EB prior strength
 _POSITION_K: dict[int, float] = {1: 1080.0, 2: 2400.0, 3: 1080.0, 4: 1080.0}
 _TS_CACHE: dict[object, pd.Timestamp] = {}
 _TRAIN_GW_CACHE: dict[tuple[int, int, int], pd.DataFrame] = {}
@@ -65,6 +65,44 @@ _TIER_PRIORS_START_FRAC: dict[int, dict[int, float]] = {
     3: {45: 0.15, 50: 0.45, 55: 0.65, 65: 0.78, 75: 0.84, 85: 0.88, 100: 0.92, 125: 0.95},
     4: {50: 0.15, 55: 0.45, 65: 0.70, 75: 0.82, 85: 0.88, 115: 0.92, 140: 0.95},
 }
+
+
+@dataclass(frozen=True, slots=True)
+class _PlayerPriorSummary:
+    tin: float
+    tout: float
+    price: float
+    initial_price: float
+    n_apps: float
+    last_kickoff: object
+    sl1: float
+    sl2: float
+    sl3: float
+    sl4: float
+    sl5: float
+    sl6: float
+    subl1: float
+    subl2: float
+    subl3: float
+    m3: float
+    s_since: float
+    c_frac: float
+    eff_mins: float
+    sum_st_w: float
+    weighted_st_mins: float
+    weighted_hooks: float
+    weighted_xg: float
+    tot_g: float
+    tot_xg: float
+    tot_m: float
+    weighted_xa: float
+    weighted_crea: float
+    weighted_inf: float
+    weighted_base_bps: float
+    club_arr: np.ndarray | None
+    weights_arr: np.ndarray
+    g_arr: np.ndarray
+    xg_arr: np.ndarray
 
 
 def positional_price_tier_prior(
@@ -444,51 +482,53 @@ def _build_gw_panel(
             weighted_inf = float(np.sum(inf_arr * weights))
             weighted_base_bps = float(np.sum(base_bps_arr * weights))
 
-            player_stats_cache[pid] = {
-                "tin": tin, "tout": tout, "price": price, "initial_price": initial_price,
-                "n_apps": float(n_apps), "last_kickoff": last_kickoff,
-                "sl1": sl1, "sl2": sl2, "sl3": sl3, "sl4": sl4, "sl5": sl5, "sl6": sl6,
-                "subl1": subl1, "subl2": subl2, "subl3": subl3, "m3": m3,
-                "s_since": s_since, "c_frac": c_frac, "eff_mins": eff_mins,
-                "sum_st_w": sum_st_w, "weighted_st_mins": weighted_st_mins, "weighted_hooks": weighted_hooks,
-                "weighted_xg": weighted_xg, "tot_g": tot_g, "tot_xg": tot_xg, "tot_m": tot_m,
-                "weighted_xa": weighted_xa, "weighted_crea": weighted_crea, "weighted_inf": weighted_inf,
-                "weighted_base_bps": weighted_base_bps,
-                "club_arr": ph_club[start_idx:end_idx] if ph_club is not None else None,
-                "weights_arr": weights,
-                "g_arr": g_arr,
-                "xg_arr": xg_arr,
-            }
+            player_stats_cache[pid] = _PlayerPriorSummary(
+                tin=tin, tout=tout, price=price, initial_price=initial_price,
+                n_apps=float(n_apps), last_kickoff=last_kickoff,
+                sl1=sl1, sl2=sl2, sl3=sl3, sl4=sl4, sl5=sl5, sl6=sl6,
+                subl1=subl1, subl2=subl2, subl3=subl3, m3=m3,
+                s_since=s_since, c_frac=c_frac, eff_mins=eff_mins,
+                sum_st_w=sum_st_w, weighted_st_mins=weighted_st_mins, weighted_hooks=weighted_hooks,
+                weighted_xg=weighted_xg, tot_g=tot_g, tot_xg=tot_xg, tot_m=tot_m,
+                weighted_xa=weighted_xa, weighted_crea=weighted_crea, weighted_inf=weighted_inf,
+                weighted_base_bps=weighted_base_bps,
+                club_arr=ph_club[start_idx:end_idx] if ph_club is not None else None,
+                weights_arr=weights,
+                g_arr=g_arr,
+                xg_arr=xg_arr,
+            )
 
+    obs_counts = np.zeros(N, dtype=float)
     for idx in range(N):
         pid = pids[idx]
         pos = int(pos_arr[idx])
         pdata = player_stats_cache.get(pid)
 
         if pdata is not None:
-            init_cost = pdata["initial_price"]
-            n_apps_val = pdata["n_apps"]
+            init_cost = pdata.initial_price
+            n_apps_val = pdata.n_apps
+            obs_counts[idx] = n_apps_val
             # Transfer momentum & price
-            transfer_momentum[idx] = np.clip(np.log((pdata["tin"] + 100.0) / (pdata["tout"] + 100.0)), -3.0, 3.0)
-            price_rel_pos[idx] = (pdata["price"] - pos_prices.get(pos, 50.0)) / 10.0
+            transfer_momentum[idx] = np.clip(np.log((pdata.tin + 100.0) / (pdata.tout + 100.0)), -3.0, 3.0)
+            price_rel_pos[idx] = (pdata.price - pos_prices.get(pos, 50.0)) / 10.0
 
             # Lags & Participation
-            s_lag1[idx] = pdata["sl1"]
-            s_lag2[idx] = pdata["sl2"]
-            s_lag3[idx] = pdata["sl3"]
-            s_lag4[idx] = pdata["sl4"]
-            s_lag5[idx] = pdata["sl5"]
-            s_lag6[idx] = pdata["sl6"]
+            s_lag1[idx] = pdata.sl1
+            s_lag2[idx] = pdata.sl2
+            s_lag3[idx] = pdata.sl3
+            s_lag4[idx] = pdata.sl4
+            s_lag5[idx] = pdata.sl5
+            s_lag6[idx] = pdata.sl6
 
-            sub_lag1[idx] = pdata["subl1"]
-            sub_lag2[idx] = pdata["subl2"]
-            sub_lag3[idx] = pdata["subl3"]
+            sub_lag1[idx] = pdata.subl1
+            sub_lag2[idx] = pdata.subl2
+            sub_lag3[idx] = pdata.subl3
 
-            min3[idx] = pdata["m3"]
-            since_start[idx] = pdata["s_since"]
+            min3[idx] = pdata.m3
+            since_start[idx] = pdata.s_since
             if n_apps_val < 15.0:
                 club_frac[idx] = empirical_bayes_shrinkage(
-                    pdata["c_frac"],
+                    pdata.c_frac,
                     n_apps_val,
                     pos,
                     init_cost,
@@ -496,39 +536,40 @@ def _build_gw_panel(
                     metric="start_frac",
                 )
             else:
-                club_frac[idx] = pdata["c_frac"]
+                club_frac[idx] = pdata.c_frac
 
-            if kickoff_times is not None and pdata["last_kickoff"] is not None:
+            if kickoff_times is not None and pdata.last_kickoff is not None:
                 try:
-                    diff_days = (_to_timestamp(kickoff_times[idx]) - _to_timestamp(pdata["last_kickoff"])).total_seconds() / 86400.0
+                    diff_days = (_to_timestamp(kickoff_times[idx]) - _to_timestamp(pdata.last_kickoff)).total_seconds() / 86400.0
                     rest_days[idx] = float(np.clip(diff_days, 2.0, 14.0))
                 except Exception:
                     pass
 
-            eff_mins = pdata["eff_mins"]
-            if pdata["sum_st_w"] > 0:
+            eff_mins = pdata.eff_mins
+            if pdata.sum_st_w > 0:
                 mu_start = _START_MINS_PRIOR.get(pos, 78.0)
-                shrunk_mins_if_start[idx] = (pdata["weighted_st_mins"] + 4.0 * mu_start) / (pdata["sum_st_w"] + 4.0)
+                shrunk_mins_if_start[idx] = (pdata.weighted_st_mins + 4.0 * mu_start) / (pdata.sum_st_w + 4.0)
                 pi_hook = _HOOK_RATE_PRIOR.get(pos, 0.20)
-                early_hook_rate[idx] = (pdata["weighted_hooks"] + 4.0 * pi_hook) / (pdata["sum_st_w"] + 4.0)
+                early_hook_rate[idx] = (pdata.weighted_hooks + 4.0 * pi_hook) / (pdata.sum_st_w + 4.0)
 
-            # Event rates with positional price-tier Empirical Bayes priors (Ticket #168)
+            # Event rates with positional price-tier Empirical Bayes priors
             k_xg = _POSITION_K.get(pos, _BASE_K)
             prior_xg = positional_price_tier_prior(pos, init_cost, metric="xg90")
-            shrunk_xg90[idx] = (pdata["weighted_xg"] + k_xg * prior_xg / 90.0) / (eff_mins + k_xg) * 90.0
-            finishing_offset_90[idx] = (pdata["tot_g"] - pdata["tot_xg"]) * 90.0 / (pdata["tot_m"] + 1800.0)
+            shrunk_xg90[idx] = (pdata.weighted_xg + k_xg * prior_xg / 90.0) / (eff_mins + k_xg) * 90.0
+            finishing_offset_90[idx] = (pdata.tot_g - pdata.tot_xg) * 90.0 / (pdata.tot_m + 1800.0)
 
             prior_xa = positional_price_tier_prior(pos, init_cost, metric="xa90")
-            shrunk_xa90[idx] = (pdata["weighted_xa"] + _BASE_K * prior_xa / 90.0) / (eff_mins + _BASE_K) * 90.0
+            shrunk_xa90[idx] = (pdata.weighted_xa + _BASE_K * prior_xa / 90.0) / (eff_mins + _BASE_K) * 90.0
 
             prior_crea = _CREATIVITY90_PRIOR.get(pos, 15.0)
-            shrunk_creativity90[idx] = (pdata["weighted_crea"] + _BASE_K * prior_crea / 90.0) / (eff_mins + _BASE_K) * 90.0
+            shrunk_creativity90[idx] = (pdata.weighted_crea + _BASE_K * prior_crea / 90.0) / (eff_mins + _BASE_K) * 90.0
 
             # Base BPS & Influence
-            shrunk_base_bps90[idx] = (pdata["weighted_base_bps"] + 450.0 * _BASE_BPS90_PRIOR.get(pos, 12.0) / 90.0) / (eff_mins + 450.0) * 90.0
-            shrunk_influence90[idx] = (pdata["weighted_inf"] + 450.0 * _INFLUENCE90_PRIOR.get(pos, 18.0) / 90.0) / (eff_mins + 450.0) * 90.0
+            shrunk_base_bps90[idx] = (pdata.weighted_base_bps + 450.0 * _BASE_BPS90_PRIOR.get(pos, 12.0) / 90.0) / (eff_mins + 450.0) * 90.0
+            shrunk_influence90[idx] = (pdata.weighted_inf + 450.0 * _INFLUENCE90_PRIOR.get(pos, 18.0) / 90.0) / (eff_mins + 450.0) * 90.0
         else:
             fallback_cost = float(now_costs[idx])
+            obs_counts[idx] = 0.0
             price_rel_pos[idx] = (fallback_cost - pos_prices.get(pos, 50.0)) / 10.0
             club_frac[idx] = positional_price_tier_prior(pos, fallback_cost, metric="start_frac")
             shrunk_xg90[idx] = positional_price_tier_prior(pos, fallback_cost, metric="xg90")
@@ -588,8 +629,8 @@ def _build_gw_panel(
                 club_xg_totals[cid] = float(np.sum(xg_arr * w))
 
         for pid, pdata in player_stats_cache.items():
-            player_gw_g[pid] = pdata["tot_g"]
-            player_gw_xg[pid] = pdata["weighted_xg"]
+            player_gw_g[pid] = pdata.tot_g
+            player_gw_xg[pid] = pdata.weighted_xg
 
         phi_raw = np.ones(N)
         for idx in range(N):
@@ -600,12 +641,12 @@ def _build_gw_panel(
                 tot_xg = club_xg_totals.get(cid, 0.0)
                 # Subtract player's own contribution
                 pdata = player_stats_cache.get(pid)
-                if pdata is not None and pdata["club_arr"] is not None:
-                    c_mask = pdata["club_arr"] == cid
+                if pdata is not None and pdata.club_arr is not None:
+                    c_mask = pdata.club_arr == cid
                     if np.any(c_mask):
-                        p_w = pdata["weights_arr"][c_mask]
-                        p_g = float(np.sum(pdata["g_arr"][c_mask] * p_w))
-                        p_xg = float(np.sum(pdata["xg_arr"][c_mask] * p_w))
+                        p_w = pdata.weights_arr[c_mask]
+                        p_g = float(np.sum(pdata.g_arr[c_mask] * p_w))
+                        p_xg = float(np.sum(pdata.xg_arr[c_mask] * p_w))
                         g = tot_g - p_g
                         xg = tot_xg - p_xg
                     else:
@@ -679,6 +720,7 @@ def _build_gw_panel(
     for c in core_cols:
         if c in out.columns:
             feature_df[c] = out[c].to_numpy()
+    feature_df["obs_count"] = obs_counts
 
     return feature_df
 

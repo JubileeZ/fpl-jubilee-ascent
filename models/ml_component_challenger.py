@@ -40,6 +40,9 @@ from models.ml_panel_features import (
 from models.participation_state_hybrid import target_to_states
 
 
+_DEFAULT_SEED_ROW_COUNT: int = 7600
+
+
 # --- Numerical Solvers (Track 1 IRLS) ---
 
 def _ridge_linear_solve(X: np.ndarray, y: np.ndarray, lam: float = 20.0) -> np.ndarray:
@@ -200,9 +203,12 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
             return super().predict(features_df, horizon)
 
         if self.use_neff_alpha:
+            n_seed = self.n_seed
+            if n_seed == 0 and "has_seed" in features_df.columns and bool(features_df["has_seed"].any()):
+                n_seed = _DEFAULT_SEED_ROW_COUNT
             w_ml = compute_continuous_neff_alpha(
                 n_in_season=n_history_rows,
-                n_seed=self.n_seed,
+                n_seed=n_seed,
                 n_min=self.n_min,
                 n_full=self.n_full,
             )
@@ -211,7 +217,7 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         else:
             w_ml = min(1.0, max(0.0, (target_gw - 3.0) / self.ramp_span))
 
-        # 2. Check for Oracle Minutes bypass (ADR 0054 / Ticket #161 / Ticket #165)
+        # 2. Check for Oracle Minutes bypass
         has_external_xmins = "external_xmins" in features_df.columns and features_df["external_xmins"].notna().any()
 
         # 3. Base Champion prediction (provides anchor priors and components)
@@ -227,11 +233,13 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
 
         feature_cols = [
             c for c in pred_panel.columns
-            if not c.startswith("target_") and c not in ("player_id", "gameweek_id", "fixture_id")
+            if not c.startswith("target_") and c not in ("player_id", "gameweek_id", "fixture_id", "obs_count")
         ]
         scaler = CausalFeatureScaler().fit(train_panel, feature_cols)
-        train_scaled = scaler.transform(train_panel)
-        pred_scaled = scaler.transform(pred_panel)
+        train_obs = train_panel["obs_count"] if "obs_count" in train_panel.columns else None
+        pred_obs = pred_panel["obs_count"] if "obs_count" in pred_panel.columns else None
+        train_scaled = scaler.transform(train_panel, obs_counts=train_obs)
+        pred_scaled = scaler.transform(pred_panel, obs_counts=pred_obs)
 
         # 5. --- M_mins: 3-Head Participation Modeling ---
         final_p_start = champ_proj["p_start"].to_numpy(dtype=float).copy()

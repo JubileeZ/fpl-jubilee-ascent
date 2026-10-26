@@ -35,7 +35,7 @@ CAPTAIN_REGRET_ABS_TOL = 0.15
 PLAYABLE_XP_THRESHOLD = 2.0
 PLAYABLE_MINUTES_THRESHOLD = 30.0
 
-# Non-catastrophic sqrt(n_s)-calibrated segment loss guardrails (ADR 0062 / ADR 0064, Ticket #172)
+# Non-catastrophic sqrt(n_s)-calibrated segment loss guardrails (ADR 0062, ADR 0064)
 # Standardized to uniform stringency z ~ -0.25 SE:
 # cold_start (n=4):  -0.25 pts/GW (max -1.00 cumulative pt, z = -0.227 SE)
 # early_mid  (n=15): -0.15 pts/GW (max -2.25 cumulative pts, z = -0.264 SE)
@@ -103,7 +103,7 @@ def moving_block_indices(
     """Generate non-wrapping moving block bootstrap indices with shape (draws, k * size).
 
     Start indices are strictly restricted to 0 <= s <= n - size, ensuring all indices stay in
-    [0, n-1] with zero circular wrapping (% n) and complete blocks of length size (ADR 0064, Ticket #171).
+    [0, n-1] with zero circular wrapping (% n) and complete blocks of length size (ADR 0064).
     """
     if n <= 0:
         return np.empty((draws, 0), dtype=int)
@@ -128,7 +128,7 @@ def stratified_block_bootstrap_win_probability(
 
     Draws non-wrapping moving blocks independently within each season's temporal stratum,
     preventing inter-season index mixing and modulo boundary artifacts, then evaluates
-    the combined pooled sample mean across all strata (ADR 0064, Ticket #171).
+    the combined pooled sample mean across all strata (ADR 0064).
     """
     valid_strata: list[np.ndarray] = []
     for s in strata_deltas:
@@ -165,7 +165,7 @@ def block_bootstrap_win_probability(
 
     Eliminates circular modulo wrapping (% n) by restricting start indices to
     0 <= s <= n - L, and eliminates final-block truncation by evaluating complete
-    blocks of length L (ADR 0064, Ticket #171).
+    blocks of length L (ADR 0064).
     """
     return stratified_block_bootstrap_win_probability(
         [deltas], draws=draws, block=block, seed=seed
@@ -531,7 +531,7 @@ def evaluate_historical_promotion_gate(
     combined_delta = champion_primary - candidate_primary
     min_effect = MIN_EFFECT_SHARE * max(champion_primary, 0.0)
 
-    # Restrict bootstrap resampling to active gameweeks to prevent dormant zero-error dilution (ADR 0064, Ticket #171)
+    # Restrict bootstrap resampling to active gameweeks to prevent dormant zero-error dilution (ADR 0064)
     resample_deltas = _filter_active_gw_deltas(
         gw_primary_deltas,
         active_gameweeks=active_gameweeks,
