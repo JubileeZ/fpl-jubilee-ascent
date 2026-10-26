@@ -1,15 +1,5 @@
 # Brief 01: FPL Candidate Model Ideation & Projections Architecture
 
-**Target Audience**: 3rd-Party Frontier LLM (Claude 3.5 Sonnet, GPT-4o, Gemini 1.5 Pro)  
-**Task Type**: Quantitative Modeling Ideation, Mathematical Specification & Algorithmic Design  
-**Repository**: `fpl-jubilee-ascent`  
-**Current Champion**: `adaptive_causal_challenger` (ADR 0063)  
-**Primary Downstream Consumer**: HiGHS MILP Solver with Strategic Variance Constraints (ADR 0061)
-
----
-
-## Part 1: Copy-Paste Prompt for the 3rd-Party LLM
-
 ```markdown
 You are a Principal Quantitative Sports Modeler and Machine Learning Engineer specializing in association football (soccer) analytics and combinatorial lineup optimization for Fantasy Premier League (FPL).
 
