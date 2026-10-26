@@ -1,13 +1,14 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-10-26T18:35:00+07:00  
+**Updated**: 2026-10-26T19:20:00+07:00  
 **Data stamp**: ADR 0064 Promotion Gate & Wayfinder Map #166  
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
 **Status**: Active  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
-**Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and maintains the primary work queue for `explore-candidate`.  
+**Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and maintains the primary two-tier work queue (`idea_queue.csv` + `ideas/` dossiers) for `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
-**Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` — primary candidate work queue.
+**Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` / `spec_path` — primary candidate work queue index.  
+**Dossiers**: [ideas/](ideas/) — full LaTeX formulations, cold-start strategies, and Python code skeletons.
 
 ---
 
@@ -49,5 +50,6 @@ flowchart LR
 
 ### Components:
 1. **Dynamic Prompt Brief**: [`candidate_model_ideation_prompt.md`](candidate_model_ideation_prompt.md) serves as the canonical brief fed to frontier reasoning models.
-2. **Work Queue**: [`idea_queue.csv`](idea_queue.csv) stores structured candidate rows consumed by [`explore-candidate`](../../.agents/skills/explore-candidate/SKILL.md).
-3. **Skill Automation**: Tooling in `.agents/skills/ideate-candidate/` provides `generate_prompt.py` and `ingest_ideas.py` to bridge external ideation with automated backtesting.
+2. **Work Queue Index**: [`idea_queue.csv`](idea_queue.csv) stores structured candidate rows with relative `spec_path` pointers consumed by [`explore-candidate`](../../.agents/skills/explore-candidate/SKILL.md).
+3. **Specification Dossiers**: Dedicated per-idea briefs in [`ideas/`](ideas/) preserving mathematical formulations, cold-start justifications, and Python code skeletons.
+4. **Skill Automation**: Tooling in `.agents/skills/ideate-candidate/` provides `generate_prompt.py` and `ingest_ideas.py` to bridge external ideation with automated backtesting.

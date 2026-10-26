@@ -614,13 +614,21 @@ _Avoid_: Squad Gap (ambiguous), optimizer gap, Decision Regret in the Trust head
 Research evaluation of a Transfer Plan policy. At each historical Gameweek deadline in a Season Window, solve from Projections built only on history before that deadline, then score that Gameweek's scoring 15 on Realized Points. Same This-Season Evidence clock as production (ADR 0024). Distinct from model MAE backtest and from one-Gameweek Decision Regret. Exploratory on archive data without Availability Snapshots. Not a product Transfer Plan; ranking stays in research companions, not Champion Trust chrome.
 _Avoid_: backtest (ambiguous with model MAE), hindsight oracle, treating walk-forward as the live Transfer Plan Surface, in-season Prior-Season Seed after This-Season Evidence, Walk-forward ranking in the Trust header
 
+**Ideation Proposal / Idea**:
+Unverified candidate projection mechanism, parameter grid, and Python implementation skeleton registered in `idea_queue.csv` and documented in dedicated markdown dossier under `docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`. Transitions from `untested` to `in-progress` when selected by `explore-candidate`.
+_Avoid_: Candidate (for unverified queue rows), Prototype (for markdown specifications)
+
+**Prototype**:
+Ephemeral code artifact and variant class instantiated within smoke-test lane (`smoke.py`) during candidate exploration. Evaluates empirical parameter grids and ablates component mechanisms against Model Champion on development season.
+_Avoid_: Idea, Model Candidate, frozen Candidate
+
 **Model Champion**:
-The currently selected operational Projection Model, retained as the primary comparator for historical and live evaluation. CLI commands (`run_model`, `report`, `decision_regret`, `solve`) default to Model Champion when model name is omitted or passed as `--champion` / `"champion"`.
+Currently selected operational Projection Model, retained as primary comparator for historical and live evaluation. CLI commands (`run_model`, `report`, `decision_regret`, `solve`) default to Model Champion when model name omitted or passed as `--champion` / `"champion"`.
 _Avoid_: Default model, production model
 
 **Model Candidate**:
-A Projection Model evaluated against the Model Champion. At most two Candidates may be tracked concurrently, making a three-model comparison including the Champion.
-_Avoid_: Experimental model, challenger
+Frozen, complete Projection Model class registered in `models/` (subclassing `BaseModel` or `CompositeProjectionModel`) passing prototype smoke testing, evaluated against Model Champion under ADR 0064 two-season promotion gate. At most two Candidates tracked concurrently (three-model comparison including Champion).
+_Avoid_: Experimental model, challenger, unverified proposal
 
 **Primary Projection Model**:
 The active model selected in the dashboard to drive Explorer ranking, Squad Board, Component Profile, and Dream Team. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.

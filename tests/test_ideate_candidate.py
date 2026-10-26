@@ -110,6 +110,76 @@ def test_ingest_file_flags_dead_levers_and_writes_queue(tmp_path: Path) -> None:
     assert "ARCH-01" in str(df.loc[1, "nearest_ledger_row"])
 
 
+def test_ingest_file_dual_writes_dossier_with_yaml_and_full_body(tmp_path: Path) -> None:
+    ingest = _load_skill_module("ingest_ideas", "ingest_ideas.py")
+    response_file = tmp_path / "response.md"
+    queue_file = tmp_path / "idea_queue.csv"
+    ideas_dir = tmp_path / "ideas"
+
+    response_file.write_text(
+        r"""
+### Candidate 1: Asymmetric Substitution Hazard Model
+1. **Concept & Football Hypothesis**: Wingers sub out early at 65' while center-backs play 90'.
+2. **Mathematical Formulation**:
+   $$P(60+ \mid \text{Start}) = \beta \cdot \theta$$
+3. **Decoupled Architecture Placement**: Operates in $M_{\text{mins}}$ (`xp_minutes`).
+4. **Replaces / Integration Hook**: `ParticipationStateHybridModel._compute_participation_states`.
+5. **Parameter Sweep Grid**: `K=600; K=1200`
+6. **Small-Sample & Cold-Start Strategy**: Regularized via $N_{\text{eff}}$.
+7. **Budget-Constrained Optimizer Interaction**: Elevates £4.5m center-backs.
+8. **Point-in-Time Feature Requirements**: `features.position`; `history.minutes`
+9. **Python Code Skeleton**:
+```python
+class AsymmetricSubModel(BaseModel):
+    def evaluate(self):
+        return True
+```
+
+### Candidate 2: Club 11-Man Starting Mass Conservation
+1. **Concept & Football Hypothesis**: Force sum of club p_start to 11.0 via mass conservation.
+3. **Decoupled Architecture Placement**: `xp_minutes`
+""",
+        encoding="utf-8",
+    )
+
+    rc = ingest.ingest_file(response_file, queue_path=queue_file, ideas_dir=ideas_dir)
+    assert rc == 0
+    assert queue_file.exists()
+    assert ideas_dir.exists()
+
+    df = pd.read_csv(queue_file)
+    assert "spec_path" in df.columns
+    assert len(df) == 2
+
+    # Verify first dossier
+    spec_path_1 = df.loc[0, "spec_path"]
+    assert spec_path_1.endswith("EXT-01-asymmetric-substitution-hazard-model.md")
+    dossier_1 = ideas_dir / Path(spec_path_1).name
+    assert dossier_1.exists()
+
+    content_1 = dossier_1.read_text(encoding="utf-8")
+    assert content_1.startswith("---\n")
+    assert "idea_id: EXT-01\n" in content_1
+    assert "name: Asymmetric Substitution Hazard Model\n" in content_1
+    assert "component: xp_minutes\n" in content_1
+    assert "status: untested\n" in content_1
+    assert "spec_path: ideas/" in content_1
+    assert "## 1. Concept & Football Hypothesis" in content_1
+    assert "## 2. Mathematical Formulation" in content_1
+    assert "$$P(60+ \\mid \\text{Start}) = \\beta \\cdot \\theta$$" in content_1
+    assert "class AsymmetricSubModel(BaseModel):" in content_1
+
+    # Verify second dossier with dead-lever audit section
+    spec_path_2 = df.loc[1, "spec_path"]
+    dossier_2 = ideas_dir / Path(spec_path_2).name
+    assert dossier_2.exists()
+    content_2 = dossier_2.read_text(encoding="utf-8")
+    assert "status: dead-match\n" in content_2
+    assert "ARCH-01" in content_2
+    assert "## Ledger Audit & Revisit Justification" in content_2
+    assert "ARCH-01: Club 11-man mass conservation" in content_2
+
+
 def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
     gen = _load_skill_module("generate_prompt", "generate_prompt.py")
     for focus in ("general", "minutes", "budget-enablers"):

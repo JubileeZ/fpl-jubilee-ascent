@@ -48,13 +48,13 @@ Mode resolves in priority order:
 
 ## Queue mode
 
-Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_id`, `tier`, `mechanism`, `inputs`, `replaces`, `nearest_ledger_row`, `confirm_informative` (re-check vs resolved confirm season), `grid`, `conflicts_with`, `status`, `ledger_result`. Topic slug = queue's folder; notes/companions go there.
+Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_id`, `tier`, `mechanism`, `inputs`, `replaces`, `nearest_ledger_row`, `confirm_informative` (re-check vs resolved confirm season), `grid`, `conflicts_with`, `status`, `spec_path`, `ledger_result`. Topic slug = queue's folder; notes/companions go there.
 
 - **Eligible row:** `status` = `untested` or `in-progress-b<N>` (resume first). Skip `needs ruling` (Human Queue "rule on <id>?", default skip), `holdout-first`, `blocked*`, anything already verdicted.
 - **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict. Base for `after:` row = current Champion; `<id>` `confirm-pass` unpromoted → row waits. Grid entry naming another row (`+ <id>`) = implicit `after:<id>`; grid token `best` = second smoke round same lane, counts toward ≤6. Deferred rows wait for next batch.
 - **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
 - **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
-- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`. Step 5 Stack protocol on batch winners (stack/verify runs under `.tmp/agent/explore-candidate/stack_b<N>/`). Then steps 6–7 on frozen result.
+- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; if row provides `spec_path`, subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`) providing full mathematical formulation, cold-start strategy, and Python code skeleton. Step 5 Stack protocol on batch winners (stack/verify runs under `.tmp/agent/explore-candidate/stack_b<N>/`). Then steps 6–7 on frozen result.
 - **Row verdict = one atomic edit:** `status` ∈ {`dead-match`, `fail`, `pass-dev`, `stack-member`, `confirm-pass`, `confirm-fail`} + `ledger_result` = `combined_delta segs boot P` (+ stack name if stacked) + ledger row (step 8 rules) + verified smoke rows appended to `docs/research/<slug>/smoke_results.csv` (ledger `evidence_path`; never `.tmp`). Order: evidence CSV → ledger row → queue row. Never status without ledger row.
 - **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
 - **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
@@ -118,6 +118,7 @@ Spawn all lanes in parallel via `Task` (`generalPurpose`). Brief template:
 
 ```text
 Lane <id> of explore-candidate. Mechanism: <m>. Pipeline step: <s>. Scope: <idea or lane A/B>.
+Specification dossier: docs/research/<topic slug>/<spec_path> (if present; contains LaTeX math & Python skeleton).
 Grid (fixed): <variants>. Champion: <name> (models/<file>.py).
 Forbidden (Dead ledger rows): <mechanisms>.
 Write only under .tmp/agent/explore-candidate/<lane>/. No edits to repo files. Unattended: never ask user; report blockers.

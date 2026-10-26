@@ -41,6 +41,7 @@ QUEUE_COLUMNS = [
     "grid",
     "conflicts_with",
     "status",
+    "spec_path",
     "ledger_result",
 ]
 
@@ -154,11 +155,72 @@ def _resolve_component(placement_text: str, body: str) -> str:
     return "all"
 
 
+def slugify(text: str) -> str:
+    """Generate clean URL-safe kebab-case slug from text."""
+    cleaned = re.sub(r"[^a-zA-Z0-9]+", "-", text.strip().lower())
+    return cleaned.strip("-") or "idea"
+
+
+def _yaml_escape(val: str) -> str:
+    """Format value for YAML frontmatter safely quoting special characters."""
+    val = val.strip()
+    if not val:
+        return '""'
+    if val.lower() == "null":
+        return "null"
+    needs_quotes = (
+        any(c in val for c in (':', '{', '}', '[', ']', '&', '*', '#', '?', '|', '<', '>', '=', '!', '%', '@', '\\', '"', "'", '\n'))
+        or val.startswith(('-', '+', '@'))
+        or val.lower() in ("yes", "no", "true", "false", "on", "off")
+    )
+    if needs_quotes:
+        import json
+        return json.dumps(val)
+    return val
+
+
+def build_dossier_markdown(idea: dict[str, str], matched_dead: str = "") -> str:
+    """Generate structured markdown dossier with YAML frontmatter."""
+    raw_body = idea.get("raw_body", "").strip()
+
+    # Format numbered list sections (e.g. '1. **Concept**:') into standard markdown headings
+    heading_pattern = re.compile(
+        r"(?m)^([1-9])\.\s*(?:\*\*)?(Concept[^*\n:]*|Mathematical Formulation[^*\n:]*|Decoupled Architecture[^*\n:]*|Replaces[^*\n:]*|Parameter Sweep Grid[^*\n:]*|Small-Sample[^*\n:]*|Budget-Constrained[^*\n:]*|Point-in-Time[^*\n:]*|Python Code Skeleton[^*\n:]*)(?:\*\*)?[:\s]*(?=\n|[^\s])",
+        re.IGNORECASE,
+    )
+    formatted_body = heading_pattern.sub(r"## \1. \2\n\n", raw_body)
+
+    frontmatter = (
+        "---\n"
+        f"idea_id: {_yaml_escape(str(idea['idea_id']))}\n"
+        f"name: {_yaml_escape(str(idea['name']))}\n"
+        f"tier: {_yaml_escape(str(idea['tier']))}\n"
+        f"component: {_yaml_escape(str(idea['component']))}\n"
+        f"status: {_yaml_escape(str(idea['status']))}\n"
+        f"replaces: {_yaml_escape(str(idea['replaces']))}\n"
+        f"grid: {_yaml_escape(str(idea['grid']))}\n"
+        f"inputs: {_yaml_escape(str(idea['inputs']))}\n"
+        f"nearest_ledger_row: {_yaml_escape(str(idea.get('nearest_ledger_row') or 'null'))}\n"
+        f"spec_path: {_yaml_escape(str(idea['spec_path']))}\n"
+        "---\n\n"
+        f"# {idea['idea_id']}: {idea['name']}\n\n"
+        f"{formatted_body}\n"
+    )
+    if matched_dead:
+        frontmatter += (
+            "\n## Ledger Audit & Revisit Justification\n"
+            f"- **Flagged Match**: `{matched_dead}`\n"
+            "- **Audit Status**: Pending Review\n"
+            "- **Rationale**: [Document why this proposal is structurally distinct from the flagged dead lever before promoting to status: untested]\n"
+        )
+    return frontmatter
+
+
 def parse_markdown_response(content: str) -> list[dict[str, str]]:
     """Parse candidate ideas from markdown text."""
     ideas: list[dict[str, str]] = []
     header_pattern = re.compile(
-        r"(?:^|\n)#{2,4}\s+(?:(?:Candidate|Idea|Proposal)(?:\s+Model)?\s*(?:(\d+|[A-Za-z0-9_-]+))?[:\.\-\s]+|(\d+)[\.\)\:\-\s]+)(.+?)(?=\n)",
+        r"(?:^|\n)(?:(?:#{2,4}\s+)?(?:Candidate|Idea|Proposal)(?:\s+Model)?\s*(?:(\d+|[A-Za-z0-9_-]+))?[:\.\-\s]+|#{2,4}\s+(\d+)[\.\)\:\-\s]+)(.+?)(?=\n|$)",
         re.IGNORECASE,
     )
     matches = list(header_pattern.finditer(content))
@@ -193,7 +255,7 @@ def parse_markdown_response(content: str) -> list[dict[str, str]]:
         replaces = _extract_field(body, r"Replaces|Integration Hook") or "Champion component"
         grid = _extract_field(body, r"Parameter Sweep Grid|Sweep Grid|Grid") or "default"
         raw_inputs = _extract_field(body, r"Point-in-Time Feature|Feature|Inputs|Covariates")
-        inputs = raw_inputs.replace("\n", "; ")[:200] if raw_inputs else "history.minutes; features.position_id"
+        inputs = raw_inputs.replace("\n", "; ") if raw_inputs else "history.minutes; features.position_id"
 
         ideas.append({
             "idea_id": idea_id,
@@ -202,25 +264,35 @@ def parse_markdown_response(content: str) -> list[dict[str, str]]:
             "name": name,
             "mechanism": mechanism,
             "inputs": inputs,
-            "replaces": replaces[:200],
+            "replaces": replaces,
             "nearest_ledger_row": "",
             "confirm_informative": "informative",
-            "grid": grid[:200],
+            "grid": grid,
             "conflicts_with": "",
             "status": "untested",
+            "spec_path": "",
             "ledger_result": "",
+            "raw_body": body,
         })
 
     return ideas
 
 
-def ingest_file(input_path: Path, queue_path: Path = QUEUE_PATH) -> int:
+def ingest_file(
+    input_path: Path,
+    queue_path: Path = QUEUE_PATH,
+    ideas_dir: Path | None = None,
+) -> int:
     if not input_path.exists():
         print(f"Error: input file {input_path} does not exist", file=sys.stderr)
         return 1
 
     content = input_path.read_text(encoding="utf-8")
     dead_levers = load_dead_levers()
+
+    if ideas_dir is None:
+        ideas_dir = queue_path.parent / "ideas"
+    ideas_dir.mkdir(parents=True, exist_ok=True)
 
     next_order = 1
     existing_ideas = set()
@@ -254,6 +326,15 @@ def ingest_file(input_path: Path, queue_path: Path = QUEUE_PATH) -> int:
             counter += 1
         existing_ideas.add(idea["idea_id"])
 
+        slug = slugify(idea["name"])
+        spec_filename = f"{idea['idea_id']}-{slug}.md"
+        spec_path = f"ideas/{spec_filename}"
+        idea["spec_path"] = spec_path
+
+        dossier_content = build_dossier_markdown(idea, matched_dead=matched_dead)
+        dossier_file = ideas_dir / spec_filename
+        dossier_file.write_text(dossier_content, encoding="utf-8")
+
         idea["order"] = next_order
         next_order += 1
         new_rows.append(idea)
@@ -265,7 +346,8 @@ def ingest_file(input_path: Path, queue_path: Path = QUEUE_PATH) -> int:
         if not file_exists:
             writer.writeheader()
         for row in new_rows:
-            writer.writerow(row)
+            csv_row = {col: row.get(col, "") for col in QUEUE_COLUMNS}
+            writer.writerow(csv_row)
 
     print(f"Successfully ingested {len(new_rows)} candidate ideas into: {queue_path}")
     return 0
@@ -275,9 +357,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest external candidate ideas into idea_queue.csv.")
     parser.add_argument("response_file", type=Path, help="Path to raw markdown response file.")
     parser.add_argument("--queue", type=Path, default=QUEUE_PATH, help="Path to idea_queue.csv.")
+    parser.add_argument("--ideas-dir", type=Path, default=None, help="Directory for idea dossiers.")
     args = parser.parse_args()
 
-    sys.exit(ingest_file(args.response_file, queue_path=args.queue))
+    sys.exit(ingest_file(args.response_file, queue_path=args.queue, ideas_dir=args.ideas_dir))
 
 
 if __name__ == "__main__":

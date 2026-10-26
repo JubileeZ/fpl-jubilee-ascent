@@ -46,7 +46,7 @@ Generated output is written to [`docs/research/candidate-ideation/candidate_mode
 
 Copy the generated prompt block from `candidate_model_ideation_prompt.md` into your external frontier model of choice (Claude 3.5 Sonnet, GPT-4o, Gemini 2.0/1.5 Pro).
 
-### 3. Ingest Proposals into `idea_queue.csv`
+### 3. Ingest Proposals into `idea_queue.csv` and `ideas/` Dossiers
 
 Save the raw model response into a text/markdown file (e.g. `docs/research/candidate-ideation/raw_response.md`) and run:
 
@@ -56,8 +56,9 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py docs/research/cand
 
 `ingest_ideas.py`:
 1. Parses candidate mechanisms, parameter grids, and affected components.
-2. Checks each proposal against dead levers in `candidate_ledger.csv`. If a mechanism matches a known dead archetype (e.g. 11-man mass conservation, unseeded defender xG relaxation), it warns and tags the entry.
-3. Appends validated rows to [`docs/research/candidate-ideation/idea_queue.csv`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with `status=untested`.
+2. Checks each proposal against dead levers in `candidate_ledger.csv`. If a mechanism matches a known dead archetype, it tags the entry as `dead-match` and embeds an explicit `## Ledger Audit & Revisit Justification` block.
+3. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
+4. Appends index rows to [`docs/research/candidate-ideation/idea_queue.csv`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
 
 ### 4. Automated Execution via `explore-candidate`
 
