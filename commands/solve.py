@@ -267,6 +267,14 @@ def execute_transfer_plan(
 
     logger.info(f"Preparing solver data using projections from '{options['datasource']}.csv'...")
     pad_solver_csv_horizon(DATA_DIR / f"{options['datasource']}.csv", target_gw, horizon)
+    for key, filename in (("fpl_bootstrap", "bootstrap_static.json"), ("fpl_fixtures", "fixtures_all.json")):
+        if key not in options:
+            raw_path = DATA_DIR / "raw" / filename
+            if raw_path.exists():
+                try:
+                    options[key] = json.loads(raw_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
     solver_data = prep_data(my_data, options)
     logger.info("Executing MILP solver...")
     solutions = solve_multi_period_fpl(solver_data, options)

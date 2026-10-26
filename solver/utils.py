@@ -108,27 +108,43 @@ def cached_request(url: str) -> dict:
             
     # Make external call
     logger.info(f"FPL Solver requesting URL: {url}")
-    r = httpx.get(url, timeout=15.0)
-    r.raise_for_status()
-    data = r.json()
-    
-    cache[url] = {
-        "timestamp": current_time,
-        "data": data
-    }
     try:
-        with open(CACHE_FILE, "w") as f:
-            json.dump(cache, f)
-    except Exception:
-        pass
+        r = httpx.get(url, timeout=15.0)
+        r.raise_for_status()
+        data = r.json()
         
-    return data
+        cache[url] = {
+            "timestamp": current_time,
+            "data": data
+        }
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f)
+        except Exception:
+            pass
+        return data
+    except Exception as e:
+        if url in cache:
+            logger.warning(f"Failed to fetch {url}, using cached response: {e}")
+            return cache[url]["data"]
+        raise
 
 
 def load_solver_static(options: dict) -> tuple[dict, list]:
     """Return bootstrap-static and fixtures. Injected options skip live HTTP."""
     bootstrap = options.get("fpl_bootstrap")
     fixtures = options.get("fpl_fixtures")
+    raw_dir = DATA_DIR / "raw"
+    if bootstrap is None and (raw_dir / "bootstrap_static.json").exists():
+        try:
+            bootstrap = json.loads((raw_dir / "bootstrap_static.json").read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    if fixtures is None and (raw_dir / "fixtures_all.json").exists():
+        try:
+            fixtures = json.loads((raw_dir / "fixtures_all.json").read_text(encoding="utf-8"))
+        except Exception:
+            pass
     if bootstrap is None:
         bootstrap = cached_request("https://fantasy.premierleague.com/api/bootstrap-static/")
     if fixtures is None:
