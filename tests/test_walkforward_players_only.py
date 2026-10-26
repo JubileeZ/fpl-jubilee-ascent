@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from backtesting.walkforward import LEDGER_COMPONENTS, WalkforwardConfig, run_walkforward_backtest
 
@@ -110,7 +111,9 @@ def test_walkforward_raises_on_missing_seed_season(tmp_path: Path) -> None:
         run_walkforward_backtest(config)
 
 
-def test_backtest_cli_merges_cost_and_club_and_excludes_am(tmp_path: Path, capsys) -> None:
+def test_backtest_cli_merges_cost_and_club_and_excludes_am(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     from commands.backtest import main as backtest_main
 
     # 15 players + 1 AM (900) across 2 GWs so formation XI, captaincy, and churn are defined

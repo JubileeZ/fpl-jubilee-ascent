@@ -377,19 +377,19 @@ def _build_gw_panel(
         ph_base_bps = ph_bps - (24.0 * ph_g + 12.0 * ph_a + 12.0 * ph_cs + 2.0 * ph_saves)
         ph_club = player_history["club_id"].to_numpy() if "club_id" in player_history.columns else None
 
-        for u_i, pid in enumerate(unique_pids):
-            s_i = split_indices[u_i]
-            e_i = end_indices[u_i]
-            starts = ph_starts[s_i:e_i]
-            mins = ph_mins[s_i:e_i]
-            n_apps = e_i - s_i
-            weights = ph_weights[s_i:e_i]
+        for idx, pid in enumerate(unique_pids):
+            start_idx = split_indices[idx]
+            end_idx = end_indices[idx]
+            starts = ph_starts[start_idx:end_idx]
+            mins = ph_mins[start_idx:end_idx]
+            n_apps = end_idx - start_idx
+            weights = ph_weights[start_idx:end_idx]
             eff_mins = float(np.sum(mins * weights))
 
-            tin = float(ph_tin[e_i - 1]) if ph_tin is not None else 0.0
-            tout = float(ph_tout[e_i - 1]) if ph_tout is not None else 0.0
-            price = float(ph_price[e_i - 1]) if ph_price is not None else 50.0
-            initial_price = float(ph_price[s_i]) if ph_price is not None else price
+            tin = float(ph_tin[end_idx - 1]) if ph_tin is not None else 0.0
+            tout = float(ph_tout[end_idx - 1]) if ph_tout is not None else 0.0
+            price = float(ph_price[end_idx - 1]) if ph_price is not None else 50.0
+            initial_price = float(ph_price[start_idx]) if ph_price is not None else price
 
             sl1 = float(starts[-1] >= 1) if n_apps >= 1 else 0.0
             sl2 = float(starts[-2] >= 1) if n_apps >= 2 else 0.0
@@ -413,7 +413,7 @@ def _build_gw_panel(
                 since += 1
             s_since = float(min(6.0, since if found_start else 6.0))
             c_frac = float(np.clip(float(np.sum(starts)) / max(float(n_apps), 1.0), 0.0, 1.0))
-            last_kickoff = ph_kickoff[e_i - 1] if ph_kickoff is not None and n_apps > 0 else None
+            last_kickoff = ph_kickoff[end_idx - 1] if ph_kickoff is not None and n_apps > 0 else None
 
             start_mask = starts >= 1
             if np.any(start_mask):
@@ -428,12 +428,12 @@ def _build_gw_panel(
                 weighted_st_mins = 0.0
                 weighted_hooks = 0.0
 
-            xg_arr = ph_xg[s_i:e_i]
-            g_arr = ph_g[s_i:e_i]
-            xa_arr = ph_xa[s_i:e_i]
-            crea_arr = ph_crea[s_i:e_i]
-            inf_arr = ph_inf[s_i:e_i]
-            base_bps_arr = ph_base_bps[s_i:e_i]
+            xg_arr = ph_xg[start_idx:end_idx]
+            g_arr = ph_g[start_idx:end_idx]
+            xa_arr = ph_xa[start_idx:end_idx]
+            crea_arr = ph_crea[start_idx:end_idx]
+            inf_arr = ph_inf[start_idx:end_idx]
+            base_bps_arr = ph_base_bps[start_idx:end_idx]
 
             weighted_xg = float(np.sum(xg_arr * weights))
             tot_g = float(np.sum(g_arr))
@@ -454,7 +454,7 @@ def _build_gw_panel(
                 "weighted_xg": weighted_xg, "tot_g": tot_g, "tot_xg": tot_xg, "tot_m": tot_m,
                 "weighted_xa": weighted_xa, "weighted_crea": weighted_crea, "weighted_inf": weighted_inf,
                 "weighted_base_bps": weighted_base_bps,
-                "club_arr": ph_club[s_i:e_i] if ph_club is not None else None,
+                "club_arr": ph_club[start_idx:end_idx] if ph_club is not None else None,
                 "weights_arr": weights,
                 "g_arr": g_arr,
                 "xg_arr": xg_arr,
