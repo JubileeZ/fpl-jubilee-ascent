@@ -16,7 +16,7 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
   `explore-candidate <scope or "dual-lane">: frozen Candidate passing Historical Promotion Gate on dev + confirm seasons via smoke.py, adoption queued in Human Queue — or scope exhausted with every attempt in Candidate Ledger. State: .agents/work-packets/explore-candidate-<slug>.md`
   Goal already active → skip. `CreateGoal` unavailable → continue without goal; packet = state. Then start step 0 same turn.
 - **Disk = memory.** Chat is not state. Work Packet `.agents/work-packets/explore-candidate-<slug>.md` (from `.agents/work-packet.md.tmpl`) holds: mode, scope, current step, round, per-lane mechanism / grid / best smoke row, ledger verdicts, `## Human Queue`. Update packet after every step; iteration ends with `Next` = exact next action.
-  - **Slug:** Queue = queue CSV's parent folder name (e.g. `component-model-ideas`); Scoped / Dual-lane = topic slug fixed at step 0. Same invocation args → same packet path.
+  - **Slug:** Queue = queue CSV's parent folder name (default `candidate-ideation` for `docs/research/candidate-ideation/idea_queue.csv`, or e.g. `component-model-ideas`); Scoped / Dual-lane = topic slug fixed at step 0. Same invocation args → same packet path.
   - **Bind:** invoking this skill = user naming Packet ID `explore-candidate-<slug>` (AGENTS.md Bind satisfied). Packet exists → Bind + resume at `Next` (never re-create from template); else create.
   - **Scratch** `.tmp/agent/explore-candidate/` persists across iterations and interruptions; exempt from end-of-turn scratch cleanup. Deleted only at Exit (a)/(b).
 - **Resume after interruption** (quota, chat death, kill). Every invocation, step 0 first:
@@ -36,11 +36,15 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 
 ## Mode
 
-- **Scoped** (user gave idea): idea = exploration scope. Skip dual-lane search. Every lane, prototype, and variant traces to idea mechanism.
-- **Dual-lane** (no idea): two parallel lanes.
-  - Lane A **iterate stack**: subclass Champion; levers from Ledger Open rows + component-gap crown (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`).
-  - Lane B **alternative architecture**: new `BaseModel` not inheriting Champion lineage (new form: e.g. learned model over Feature Contract, true scoreline Poisson).
-- **Queue** (user points at idea queue CSV, e.g. `docs/research/component-model-ideas/idea_queue.csv`): queue = scope; one lane per idea row; batches until queue exhausted. See Queue mode.
+Mode resolves in priority order:
+1. **Scoped** (user gave idea): idea = exploration scope. Skip queue and dual-lane search. Every lane, prototype, and variant traces to idea mechanism.
+2. **Queue** (user points at idea queue CSV, or default queue fallback):
+   - If user explicitly points at an idea queue CSV (e.g. `docs/research/component-model-ideas/idea_queue.csv`), use that queue.
+   - If no idea or queue is given, check default queue `docs/research/candidate-ideation/idea_queue.csv`. If it exists and contains eligible rows (`status == 'untested'`), automatically run Queue mode on this file first.
+   - Queue = scope; one lane per idea row; batches until queue exhausted. See Queue mode below.
+3. **Dual-lane** (no idea, default queue missing or exhausted): two parallel lanes.
+   - Lane A **iterate stack**: subclass Champion; levers from Ledger Open rows + component-gap crown (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`).
+   - Lane B **alternative architecture**: new `BaseModel` not inheriting Champion lineage (new form: e.g. learned model over Feature Contract, true scoreline Poisson).
 
 ## Queue mode
 
