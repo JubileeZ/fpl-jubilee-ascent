@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,10 +35,31 @@ CAPTAIN_REGRET_ABS_TOL = 0.15
 PLAYABLE_XP_THRESHOLD = 2.0
 PLAYABLE_MINUTES_THRESHOLD = 30.0
 
-# Non-catastrophic segment loss guardrails (ADR 0062, replacing binary segs >= 2/3)
+# Non-catastrophic sqrt(n_s)-calibrated segment loss guardrails (ADR 0062 / ADR 0064, Ticket #172)
+# Standardized to uniform stringency z ~ -0.25 SE:
+# cold_start (n=4):  -0.25 pts/GW (max -1.00 cumulative pt, z = -0.227 SE)
+# early_mid  (n=15): -0.15 pts/GW (max -2.25 cumulative pts, z = -0.264 SE)
+# late       (n=19): -0.13 pts/GW (max -2.47 cumulative pts, z = -0.258 SE)
+COLD_START_PARITY_TOL: float = 0.25
 SEGMENT_REGRESSION_TOL: float = 0.15
-COLD_START_PARITY_TOL: float = 0.05
+LATE_SEGMENT_REGRESSION_TOL: float = 0.13
 CHURN_GUARDRAIL_TOL: float = 0.50
+
+SEGMENT_REGRESSION_TOLERANCES: dict[str, float] = {
+    "cold_start": COLD_START_PARITY_TOL,
+    "early_mid": SEGMENT_REGRESSION_TOL,
+    "late": LATE_SEGMENT_REGRESSION_TOL,
+}
+
+
+def segment_regression_tolerance(
+    segment: str,
+    *,
+    tolerances: Mapping[str, float] | None = None,
+) -> float:
+    """Return sqrt(n_s)-calibrated regression floor for a seasonal segment."""
+    lookup = tolerances if tolerances is not None else SEGMENT_REGRESSION_TOLERANCES
+    return float(lookup.get(segment, SEGMENT_REGRESSION_TOL))
 
 
 @dataclass(frozen=True)
@@ -128,6 +149,9 @@ def stratified_block_bootstrap_win_probability(
         return 0.0
     pooled_matrix = np.concatenate(strata_resamples, axis=1)
     return float((pooled_matrix.mean(axis=1) > 0).mean())
+
+
+pooled_block_bootstrap_win_probability = stratified_block_bootstrap_win_probability
 
 
 def block_bootstrap_win_probability(
@@ -453,9 +477,11 @@ def evaluate_historical_promotion_gate(
     active_candidate_metrics: dict[str, Any] | None = None,
     active_gameweeks: Sequence[int] | None = None,
     active_gw_primary_deltas: Sequence[float] | None = None,
+    segment_tolerances: Mapping[str, float] | None = None,
 ) -> PromotionVerdict:
-    """Pass = combined delta > 0 and ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
-    (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ bootstrap_min_p."""
+    """Pass = combined delta > 0 and >= min effect, sqrt(n_s)-calibrated segment guardrails,
+    Champion safety guardrails within tolerance, and (when per-GW deltas given) block-bootstrap
+    P(delta > 0) >= bootstrap_min_p."""
     combined_champion = champion_windows["combined"]
     combined_candidate = candidate_windows["combined"]
     champion_primary = primary_metric_value(combined_champion)
@@ -494,12 +520,15 @@ def evaluate_historical_promotion_gate(
         if delta_seg > 0:
             segment_wins += 1
 
-    cold_start_ok = segment_deltas.get("cold_start", 0.0) >= -COLD_START_PARITY_TOL
-    active_segments_ok = all(
-        segment_deltas[s] >= -SEGMENT_REGRESSION_TOL
-        for s in ("early_mid", "late")
-        if s in segment_deltas
-    )
+    cold_tol = segment_regression_tolerance("cold_start", tolerances=segment_tolerances)
+    cold_start_ok = segment_deltas.get("cold_start", 0.0) >= -cold_tol
+    regressed_active_segments: list[tuple[str, float, float]] = []
+    for s in ("early_mid", "late"):
+        if s in segment_deltas:
+            tol_s = segment_regression_tolerance(s, tolerances=segment_tolerances)
+            if segment_deltas[s] < -tol_s:
+                regressed_active_segments.append((s, segment_deltas[s], tol_s))
+    active_segments_ok = not regressed_active_segments
     has_active_win = any(
         segment_deltas[s] > 0
         for s in ("early_mid", "late")
@@ -519,13 +548,12 @@ def evaluate_historical_promotion_gate(
     if not segment_guardrails_passed:
         if not cold_start_ok:
             reasons.append(
-                f"cold start regressed ({segment_deltas['cold_start']:.3f} < -{COLD_START_PARITY_TOL:.2f})"
+                f"cold start regressed ({segment_deltas['cold_start']:.3f} < -{cold_tol:.2f})"
             )
-        for s in ("early_mid", "late"):
-            if s in segment_deltas and segment_deltas[s] < -SEGMENT_REGRESSION_TOL:
-                reasons.append(
-                    f"catastrophic regression in {s} segment ({segment_deltas[s]:.3f} < -{SEGMENT_REGRESSION_TOL:.2f})"
-                )
+        for s, delta_s, tol_s in regressed_active_segments:
+            reasons.append(
+                f"catastrophic regression in {s} segment ({delta_s:.3f} < -{tol_s:.2f})"
+            )
         if not has_active_win:
             reasons.append("won 0 active in-season segments")
     if not guardrails_passed:

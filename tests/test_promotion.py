@@ -20,6 +20,7 @@ from backtesting.promotion import (
     pooled_block_bootstrap_win_probability,
     primary_metric_name,
     primary_metric_value,
+    segment_regression_tolerance,
     stratified_block_bootstrap_win_probability,
 )
 
@@ -120,6 +121,27 @@ def test_historical_promotion_gate_tolerates_cold_start_parity_and_wins_late() -
     assert verdict.segment_wins == 1
 
 
+def test_historical_promotion_gate_tolerates_minor_cold_start_noise_within_sqrt_ns_floor() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=2.2, regret=1.20),  # delta = -0.20 (tolerated under -0.25 floor)
+        "early_mid": _metrics(mae=1.7, regret=0.75),  # delta = +0.25 (active win)
+        "late": _metrics(mae=1.7, regret=0.75),  # delta = +0.25 (active win)
+    }
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+
+    assert verdict.passed
+    assert verdict.segment_guardrails_passed
+    assert verdict.segment_wins == 2
+
+
 def test_historical_promotion_gate_fails_on_cold_start_regression() -> None:
     champion_windows = {
         "combined": _metrics(mae=2.0, regret=1.0),
@@ -129,7 +151,7 @@ def test_historical_promotion_gate_fails_on_cold_start_regression() -> None:
     }
     candidate_windows = {
         "combined": _metrics(mae=1.8, regret=0.8),
-        "cold_start": _metrics(mae=2.2, regret=1.10),  # delta = -0.10 (< -0.05)
+        "cold_start": _metrics(mae=2.3, regret=1.30),  # delta = -0.30 (< -0.25)
         "early_mid": _metrics(mae=1.8, regret=0.90),
         "late": _metrics(mae=1.8, regret=0.90),
     }
@@ -138,7 +160,62 @@ def test_historical_promotion_gate_fails_on_cold_start_regression() -> None:
 
     assert not verdict.passed
     assert not verdict.segment_guardrails_passed
-    assert any("cold start regressed" in r for r in verdict.reasons)
+    assert any("cold start regressed (-0.300 < -0.25)" in r for r in verdict.reasons)
+
+
+def test_historical_promotion_gate_fails_on_tightened_late_segment_regression() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    # -0.14 regression: passes in early_mid (tol 0.15), but fails in late (tightened tol 0.13)
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=1.9, regret=0.95),  # delta = +0.05
+        "early_mid": _metrics(mae=1.6, regret=0.70),  # delta = +0.30 (active win)
+        "late": _metrics(mae=2.14, regret=1.14),  # delta = -0.14 (< -0.13)
+    }
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+
+    assert not verdict.passed
+    assert not verdict.segment_guardrails_passed
+    assert any("catastrophic regression in late segment (-0.140 < -0.13)" in r for r in verdict.reasons)
+
+
+def test_segment_regression_tolerance_helper() -> None:
+    assert segment_regression_tolerance("cold_start") == 0.25
+    assert segment_regression_tolerance("early_mid") == 0.15
+    assert segment_regression_tolerance("late") == 0.13
+    assert segment_regression_tolerance("unknown_segment") == 0.15
+    # Supports mapping lookup overrides
+    assert segment_regression_tolerance("cold_start", tolerances={"cold_start": 0.10}) == 0.10
+
+
+def test_historical_promotion_gate_supports_custom_segment_tolerances() -> None:
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+    }
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.8),
+        "cold_start": _metrics(mae=2.2, regret=1.20),  # delta = -0.20
+        "early_mid": _metrics(mae=1.6, regret=0.70),  # active win
+        "late": _metrics(mae=1.8, regret=0.90),
+    }
+
+    # Stricter custom cold_start tolerance 0.10 -> should fail
+    strict_verdict = evaluate_historical_promotion_gate(
+        champion_windows,
+        candidate_windows,
+        segment_tolerances={"cold_start": 0.10, "early_mid": 0.15, "late": 0.13},
+    )
+    assert not strict_verdict.passed
+    assert any("cold start regressed (-0.200 < -0.10)" in r for r in strict_verdict.reasons)
 
 
 def test_historical_promotion_gate_fails_without_active_season_win() -> None:

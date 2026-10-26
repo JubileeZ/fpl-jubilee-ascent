@@ -219,6 +219,7 @@ def write_promotion_evidence(record: dict[str, Any], output_dir: Path) -> tuple[
             lines.append(f"- Block-bootstrap P(delta>0): {comparison['bootstrap_p']:.3f}")
         lines.append(f"- Eval target: `{comparison.get('eval_target', 'actual_points')}`")
         lines.append(f"- Segment wins: {comparison['segment_wins']}/3")
+        lines.append(f"- Segment guardrails passed: {comparison['segment_guardrails_passed']}")
         lines.append(f"- Guardrails passed: {comparison['guardrails_passed']}")
         lines.append(f"- Snapshot backed: {comparison['snapshot_backed']}")
         if comparison["reasons"]:
