@@ -162,3 +162,41 @@ def test_compare_two_season_gate_and_evidence_record_active_guardrails(tmp_path:
     assert "Active guardrails passed: True" in md_path.read_text(encoding="utf-8")
 
 
+def test_compare_to_reference_and_two_season_forwards_segment_tolerances() -> None:
+    from pathlib import Path
+    import pandas as pd
+    from backtesting.model_evaluation import compare_to_reference, compare_two_season_gate
+    from backtesting.walkforward import WalkforwardResult
+
+    # Test that segment_tolerances parameter is accepted and wired cleanly
+    df = pd.DataFrame([
+        {
+            "player_id": 1,
+            "position_id": 1,
+            "now_cost": 50,
+            "club_id": 1,
+            "gameweek": 1,
+            "projected_points": 4.0,
+            "actual_points": 4.0,
+            "process_points": 4.0,
+            "blended_points": 4.0,
+            "projected_minutes": 90.0,
+            "actual_minutes": 90.0,
+        }
+    ])
+    res1 = WalkforwardResult("m1", Path("."), 1, 1, {}, df, {}, False)
+    res2 = WalkforwardResult("m2", Path("."), 1, 1, {}, df, {}, False)
+
+    custom_tols = {"cold_start": -0.50, "early_mid": -0.30, "late": -0.20}
+    verdict = compare_to_reference(res1, res2, segment_tolerances=custom_tols)
+    assert verdict is not None
+
+    two_season = compare_two_season_gate(
+        res1, res2, res1, res2,
+        dev_segment_tolerances=custom_tols,
+        conf_segment_tolerances=custom_tols,
+    )
+    assert two_season is not None
+
+
+

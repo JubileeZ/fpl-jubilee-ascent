@@ -177,16 +177,21 @@ def _filter_active_gw_deltas(
     *,
     active_gameweeks: Sequence[int] | None = None,
     active_gw_deltas: Sequence[float] | None = None,
+    all_gameweeks: Sequence[int] | None = None,
 ) -> Sequence[float] | None:
     if active_gw_deltas is not None:
         return active_gw_deltas
-    if active_gameweeks is not None and gw_deltas is not None:
-        if len(active_gameweeks) < len(gw_deltas):
-            return [
-                gw_deltas[g - 1]
-                for g in active_gameweeks
-                if 1 <= g <= len(gw_deltas)
-            ]
+    if active_gameweeks is None or gw_deltas is None:
+        return gw_deltas
+    if all_gameweeks is not None and len(all_gameweeks) == len(gw_deltas):
+        mapping = dict(zip(all_gameweeks, gw_deltas))
+        return [mapping[g] for g in active_gameweeks if g in mapping]
+    min_gw = min(active_gameweeks, default=0)
+    max_gw = max(active_gameweeks, default=0)
+    n_deltas = len(gw_deltas)
+    if min_gw >= 1 and max_gw <= n_deltas:
+        if len(active_gameweeks) < n_deltas:
+            return [gw_deltas[g - 1] for g in active_gameweeks if 1 <= g <= n_deltas]
     return gw_deltas
 
 
@@ -200,6 +205,8 @@ def evaluate_two_season_gate(
     conf_active_gameweeks: Sequence[int] | None = None,
     dev_active_gw_deltas: Sequence[float] | None = None,
     conf_active_gw_deltas: Sequence[float] | None = None,
+    dev_all_gameweeks: Sequence[int] | None = None,
+    conf_all_gameweeks: Sequence[int] | None = None,
     dev_min_p: float = BOOTSTRAP_MIN_P,
     conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
     pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
@@ -210,11 +217,13 @@ def evaluate_two_season_gate(
         dev_gw_deltas,
         active_gameweeks=dev_active_gameweeks,
         active_gw_deltas=dev_active_gw_deltas,
+        all_gameweeks=dev_all_gameweeks,
     ) or ()
     conf_resample = _filter_active_gw_deltas(
         conf_gw_deltas,
         active_gameweeks=conf_active_gameweeks,
         active_gw_deltas=conf_active_gw_deltas,
+        all_gameweeks=conf_all_gameweeks,
     ) or ()
     pooled_p = stratified_block_bootstrap_win_probability(
         [dev_resample, conf_resample], seed=seed
@@ -509,6 +518,7 @@ def evaluate_historical_promotion_gate(
     active_candidate_metrics: dict[str, Any] | None = None,
     active_gameweeks: Sequence[int] | None = None,
     active_gw_primary_deltas: Sequence[float] | None = None,
+    all_gameweeks: Sequence[int] | None = None,
     segment_tolerances: Mapping[str, float] | None = None,
 ) -> PromotionVerdict:
     """Pass = combined delta > 0 and >= min effect, sqrt(n_s)-calibrated segment guardrails,
@@ -526,6 +536,7 @@ def evaluate_historical_promotion_gate(
         gw_primary_deltas,
         active_gameweeks=active_gameweeks,
         active_gw_deltas=active_gw_primary_deltas,
+        all_gameweeks=all_gameweeks,
     )
 
     bootstrap_p = (

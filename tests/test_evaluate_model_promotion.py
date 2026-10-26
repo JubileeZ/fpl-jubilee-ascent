@@ -198,5 +198,37 @@ def test_main_confirmation_defaults_seed_season_to_2023_24(tmp_path: Path) -> No
         ])
         assert mock_eval.call_args.kwargs["seed_season"] is None
 
+    # When data_dir is default / unspecified, confirmation defaults to 2023-24
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply") as mock_eval:
+        mock_eval.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--confirmation",
+        ])
+        assert mock_eval.call_args.kwargs["seed_season"] == "2023-24"
+
+
+def test_main_two_season_dispatches_to_two_season_evaluator(tmp_path: Path) -> None:
+    from commands.evaluate_model_promotion import main
+
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="participation_state_hybrid",
+            candidates=("metrics_component_hybrid",),
+        ),
+        config_path,
+    )
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply_two_season") as mock_two:
+        mock_two.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--two_season",
+        ])
+        assert mock_two.called
+        assert mock_two.call_args.kwargs["conf_seed_season"] == "2023-24"
+        assert mock_two.call_args.kwargs["dev_seed_season"] == "2024-25"
+
+
 
 

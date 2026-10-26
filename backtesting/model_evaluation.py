@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -101,6 +102,7 @@ def compare_to_reference(
     *,
     primary_target: str = "blended_points",
     bootstrap_min_p: float = BOOTSTRAP_MIN_P,
+    segment_tolerances: Mapping[str, float] | None = None,
 ) -> PromotionVerdict:
     reference_windows = {
         target: (
@@ -162,6 +164,8 @@ def compare_to_reference(
         active_candidate_metrics=candidate_windows.get("active"),
         active_gameweeks=active_gws,
         active_gw_primary_deltas=active_gw_deltas,
+        all_gameweeks=sorted(all_gws),
+        segment_tolerances=segment_tolerances,
     )
 
 
@@ -175,6 +179,8 @@ def compare_two_season_gate(
     dev_min_p: float = BOOTSTRAP_MIN_P,
     conf_min_p: float = CONFIRMATION_BOOTSTRAP_MIN_P,
     pooled_min_p: float = POOLED_BOOTSTRAP_MIN_P,
+    dev_segment_tolerances: Mapping[str, float] | None = None,
+    conf_segment_tolerances: Mapping[str, float] | None = None,
     seed: int = 0,
 ) -> TwoSeasonGateVerdict:
     """Compare candidate vs reference across dev and confirmation seasons with pooled stratified bootstrap."""
@@ -183,12 +189,14 @@ def compare_two_season_gate(
         dev_candidate,
         primary_target=primary_target,
         bootstrap_min_p=dev_min_p,
+        segment_tolerances=dev_segment_tolerances,
     )
     conf_verdict = compare_to_reference(
         conf_reference,
         conf_candidate,
         primary_target=primary_target,
         bootstrap_min_p=conf_min_p,
+        segment_tolerances=conf_segment_tolerances,
     )
     dev_active_gws = identify_active_gameweeks(dev_reference.df_eval, dev_candidate.df_eval)
     dev_all_gws = set(dev_reference.df_eval["gameweek"].unique())
@@ -217,6 +225,8 @@ def compare_two_season_gate(
         conf_active_gameweeks=conf_active_gws,
         dev_active_gw_deltas=dev_active_deltas,
         conf_active_gw_deltas=conf_active_deltas,
+        dev_all_gameweeks=sorted(dev_all_gws),
+        conf_all_gameweeks=sorted(conf_all_gws),
         dev_min_p=dev_min_p,
         conf_min_p=conf_min_p,
         pooled_min_p=pooled_min_p,

@@ -435,6 +435,31 @@ def test_evaluate_two_season_gate_filters_active_gameweeks() -> None:
     assert two_season.passed
 
 
+def test_filter_active_gw_deltas_handles_offset_and_all_gameweeks() -> None:
+    from backtesting.promotion import _filter_active_gw_deltas
+
+    # Case 1: 1-indexed full season deltas (e.g. GW 1 to 6)
+    deltas_full = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    active_gws = [2, 4]
+    assert _filter_active_gw_deltas(deltas_full, active_gameweeks=active_gws) == [2.0, 4.0]
+
+    # Case 2: Partial gameweek slice GW 10 to 15 (length 6) with all_gameweeks
+    deltas_partial = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    all_gws = [10, 11, 12, 13, 14, 15]
+    active_gws_partial = [12, 14]
+    filtered_explicit = _filter_active_gw_deltas(
+        deltas_partial, active_gameweeks=active_gws_partial, all_gameweeks=all_gws
+    )
+    assert filtered_explicit == [3.0, 5.0]
+
+    # Case 3: Explicit active_gw_deltas takes priority
+    explicit_active = [9.9]
+    assert _filter_active_gw_deltas(
+        deltas_partial, active_gameweeks=active_gws_partial, active_gw_deltas=explicit_active
+    ) == [9.9]
+
+
+
 def test_guardrails_tolerate_noise_but_not_real_regression() -> None:
     champion = guardrail_metrics(_metrics(mae=2.0, bias=0.10, xmins_mae=14.0, spearman=0.69))
     within = guardrail_metrics(_metrics(mae=2.0, bias=0.105, xmins_mae=14.1, spearman=0.687))
