@@ -189,3 +189,104 @@ def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
         assert "BOOTSTRAP_BLOCK_GWS = 5" in md
         assert "POOLED_BOOTSTRAP_MIN_P = 0.85" in md
         assert "### Candidate <N>: <Concise Name>" in md
+
+
+def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance() -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    md = gen.build_prompt_markdown("general")
+    assert "### 1-Shot Concrete Exemplar" in md
+    assert "Python Code Skeleton (Optional" in md
+    assert "### Candidate 1: Asymmetric Substitution Hazard & Beta-Binomial Survival" in md
+
+
+def test_ingest_file_auto_scaffolds_python_skeleton_when_code_missing(tmp_path: Path) -> None:
+    ingest = _load_skill_module("ingest_ideas", "ingest_ideas.py")
+    response_file = tmp_path / "response_no_code.md"
+    queue_file = tmp_path / "idea_queue.csv"
+    ideas_dir = tmp_path / "ideas"
+
+    response_file.write_text(
+        r"""
+### Candidate 1: Possession Adjusted Defcon Expectation
+1. **Concept & Football Hypothesis**: Scales Defcon expectation based on opponent defensive action demand.
+2. **Mathematical Formulation**:
+   $$\mu_{dc, i, o} = \lambda_{dc, i} \cdot M_{dc, o}$$
+3. **Decoupled Architecture Placement**: Operates in $M_{\text{events}}$ (`xp_defcon`).
+4. **Replaces / Integration Hook**: `ComponentBaselineModel._project_defcon_points`
+5. **Parameter Sweep Grid**: `K_dc=1350,s_dc=0.25; K_dc=1800,s_dc=0.35`
+6. **Small-Sample & Cold-Start Strategy**: Anchors to league average defcon rate.
+7. **Budget-Constrained Optimizer Interaction**: Rewards low-cost defenders in high-tackle fixtures.
+8. **Point-in-Time Feature Requirements**: `features.position`; `features.opponent_id`; `history.defcon_per90_eb`
+9. **Python Code Skeleton**: (Omitted; mathematical formulation and parameter grid fully specified above)
+""",
+        encoding="utf-8",
+    )
+
+    rc = ingest.ingest_file(response_file, queue_path=queue_file, ideas_dir=ideas_dir)
+    assert rc == 0
+    assert queue_file.exists()
+
+    df = pd.read_csv(queue_file)
+    assert len(df) == 1
+    assert df.loc[0, "status"] == "untested"
+    assert df.loc[0, "component"] == "xp_defcon"
+
+    spec_path = df.loc[0, "spec_path"]
+    dossier = ideas_dir / Path(spec_path).name
+    assert dossier.exists()
+
+    content = dossier.read_text(encoding="utf-8")
+    assert "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel" in content
+    assert "class PossessionAdjustedDefconExpectationChallengerModel(AdaptiveCausalChallengerModel):" in content
+    assert "k_dc: float = 1350.0" in content
+    assert "s_dc: float = 0.25" in content
+    assert "def _project_defcon_points" in content
+
+
+def test_scaffold_python_skeleton_sanitizes_identifiers() -> None:
+    ingest = _load_skill_module("ingest_ideas", "ingest_ideas.py")
+    idea = {
+        "name": "60-Minute Sub Hazard",
+        "grid": "lambda=0.5, 10min_decay=0.2; lambda=0.8, 10min_decay=0.4",
+        "replaces": "AdaptiveCausalChallengerModel._compute_participation_states",
+    }
+    skeleton = ingest._scaffold_python_skeleton(idea)
+    assert "class Candidate60MinuteSubHazardChallengerModel(AdaptiveCausalChallengerModel):" in skeleton
+    assert "lambda_: float = 0.5" in skeleton
+    assert "p_10min_decay: float = 0.2" in skeleton
+    assert "parent_method = getattr(super(), '_compute_participation_states', None)" in skeleton
+
+
+def test_ingest_preserves_py_code_fences(tmp_path: Path) -> None:
+    ingest = _load_skill_module("ingest_ideas", "ingest_ideas.py")
+    response_file = tmp_path / "response_py_fence.md"
+    queue_file = tmp_path / "idea_queue.csv"
+    ideas_dir = tmp_path / "ideas"
+
+    response_file.write_text(
+        r"""
+### Candidate 1: Custom Py Fence Model
+1. **Concept & Football Hypothesis**: Custom model with py fence.
+3. **Decoupled Architecture Placement**: $M_{\text{mins}}$
+4. **Replaces / Integration Hook**: `AdaptiveCausalChallengerModel._compute_participation_states`
+9. **Python Code Skeleton**:
+```py
+class CustomPyFenceModel(AdaptiveCausalChallengerModel):
+    def custom_method(self):
+        return 42
+```
+""",
+        encoding="utf-8",
+    )
+
+    rc = ingest.ingest_file(response_file, queue_path=queue_file, ideas_dir=ideas_dir)
+    assert rc == 0
+    df = pd.read_csv(queue_file)
+    spec_path = df.loc[0, "spec_path"]
+    dossier = ideas_dir / Path(spec_path).name
+    content = dossier.read_text(encoding="utf-8")
+    assert "class CustomPyFenceModel(AdaptiveCausalChallengerModel):" in content
+    assert "def custom_method(self):" in content
+    assert "(Auto-Scaffolded)" not in content
+
+

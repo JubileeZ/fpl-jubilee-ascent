@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import keyword
 from pathlib import Path
 import re
 import sys
@@ -179,6 +180,71 @@ def _yaml_escape(val: str) -> str:
     return val
 
 
+def _scaffold_python_skeleton(idea: dict[str, str]) -> str:
+    """Synthesize a starting AdaptiveCausalChallengerModel subclass skeleton."""
+    name = idea.get("name", "Candidate")
+    words = [w for w in re.split(r"[^a-zA-Z0-9]+", name) if w]
+    camel = "".join(w.capitalize() for w in words)
+    if not camel or camel[0].isdigit():
+        camel = f"Candidate{camel}"
+    if camel.endswith("ChallengerModel"):
+        class_name = camel
+    elif camel.endswith("Model"):
+        class_name = f"{camel[:-5]}ChallengerModel"
+    else:
+        class_name = f"{camel}ChallengerModel"
+
+    raw_grid = idea.get("grid", "")
+    first_variant = raw_grid.split(";")[0].strip() if raw_grid else ""
+    params: list[tuple[str, float]] = []
+    if first_variant:
+        for pair in re.split(r"[,;]\s*", first_variant):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                k_clean = re.sub(r"[^a-zA-Z0-9_]", "", k.strip().lower())
+                if not k_clean:
+                    continue
+                if k_clean[0].isdigit():
+                    k_clean = f"p_{k_clean}"
+                if keyword.iskeyword(k_clean):
+                    k_clean = f"{k_clean}_"
+                try:
+                    v_clean = float(re.sub(r"[^0-9\.\-eE]", "", v.strip()))
+                    params.append((k_clean, v_clean))
+                except ValueError:
+                    continue
+
+    init_args = [f"{k}: float = {v}" for k, v in params]
+    init_sig = f", {', '.join(init_args)}" if init_args else ""
+    assignments = "\n".join(f"        self.{k} = float({k})" for k, _ in params)
+    if not assignments:
+        assignments = "        pass"
+
+    replaces = idea.get("replaces", "")
+    hook_match = re.search(r"(_[a-zA-Z0-9_]+)", replaces)
+    hook_name = hook_match.group(1) if hook_match else "_project_event_components"
+    if not hook_name.isidentifier():
+        hook_name = "_project_event_components"
+
+    return (
+        "```python\n"
+        "from __future__ import annotations\n\n"
+        "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel\n\n\n"
+        f"class {class_name}(AdaptiveCausalChallengerModel):\n"
+        f'    """Auto-scaffolded skeleton for {name}."""\n\n'
+        f"    def __init__(self{init_sig}, **kwargs: object) -> None:\n"
+        "        super().__init__(**kwargs)\n"
+        f"{assignments}\n\n"
+        f"    def {hook_name}(self, *args: object, **kwargs: object) -> object:\n"
+        f"        # Hook target: {replaces}\n"
+        f"        parent_method = getattr(super(), '{hook_name}', None)\n"
+        "        if callable(parent_method):\n"
+        f"            return parent_method(*args, **kwargs)\n"
+        f"        raise NotImplementedError('{hook_name} mechanism not yet implemented')\n"
+        "```"
+    )
+
+
 def build_dossier_markdown(idea: dict[str, str], matched_dead: str = "") -> str:
     """Generate structured markdown dossier with YAML frontmatter."""
     raw_body = idea.get("raw_body", "").strip()
@@ -189,6 +255,27 @@ def build_dossier_markdown(idea: dict[str, str], matched_dead: str = "") -> str:
         re.IGNORECASE,
     )
     formatted_body = heading_pattern.sub(r"## \1. \2\n\n", raw_body)
+
+    # Check if section 9 contains a valid python code block
+    code_section_pattern = re.compile(
+        r"## 9\.\s*Python Code Skeleton[^\n]*\n*(.+?)(?=\n## |\Z)", re.DOTALL | re.IGNORECASE
+    )
+    code_match = code_section_pattern.search(formatted_body)
+    has_code = False
+    if code_match:
+        sec9_text = code_match.group(1)
+        has_code = bool(
+            re.search(r"```(?:python|py)?\s*\n.*?(?:class\s+|def\s+)", sec9_text, re.DOTALL | re.IGNORECASE)
+        )
+
+    if not has_code:
+        skeleton = _scaffold_python_skeleton(idea)
+        scaffold_block = f"## 9. Python Code Skeleton (Auto-Scaffolded)\n\n{skeleton}\n"
+        if code_match:
+            start, end = code_match.span()
+            formatted_body = formatted_body[:start] + scaffold_block + formatted_body[end:]
+        else:
+            formatted_body = formatted_body.rstrip() + f"\n\n{scaffold_block}"
 
     frontmatter = (
         "---\n"

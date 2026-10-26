@@ -148,7 +148,31 @@ Format each proposed candidate with a level-3 markdown heading `### Candidate <N
 6. **Small-Sample & Cold-Start Strategy**: How does it integrate with warm historical seeding ($N_{{\\text{{prior}}}}=1$) and continuous $N_{{\\text{{eff}}}}$ sample shrinkage ($N_{{\\min}}=3500, N_{{\\text{{full}}}}=7500$), avoiding Nickell bias and early-season over-regularization?
 7. **Budget-Constrained Optimizer Interaction**: Why does this proposed profile resist the Optimizer's Curse under the £83.5m Constrained Legal Formation XI and rolling squad churn guardrail ($\\le {CHURN_GUARDRAIL_TOL:.2f}$ players/GW)?
 8. **Point-in-Time Feature Requirements**: Semicolon-separated manifest of point-in-time covariates needed (`features.<col>` / `history.<col>`, strictly pre-match deadline $\\mathcal{{H}}_{{<g}}$; zero terminal leakage).
-9. **Python Code Skeleton**: Clean class definition conforming to `BaseModel` / `CompositeProjectionModel` interfaces.
+9. **Python Code Skeleton (Optional)**: Class definition stub conforming to `AdaptiveCausalChallengerModel` or `BaseModel`. If response length is constrained, this can be an abbreviated stub or omitted if mathematical formulation and parameter sweep grid are fully specified; our tooling will auto-scaffold class skeletons.
+
+### 1-Shot Concrete Exemplar
+
+### Candidate 1: Asymmetric Substitution Hazard & Beta-Binomial Survival
+1. **Concept & Football Hypothesis**: Decouples 60-minute appearance and clean sheet threshold survival from mean duration. Center-backs and goalkeepers face minimal tactical hook risk before 60', whereas wingers face elevated hazard between 55' and 65'.
+2. **Mathematical Formulation**:
+   $$P(60+ \\mid \\text{{Start}}) = (1 - \\beta_{{\\text{{surv}}}}) \\cdot \\text{{clip}}\\left(\\frac{{\\text{{xMins}} - 45.0}}{{30.0}}, 0.0, 1.0\\right) + \\beta_{{\\text{{surv}}}} \\cdot \\hat{{\\theta}}_{{\\text{{EB}}}}$$
+   where $\\hat{{\\theta}}_{{\\text{{EB}}}}$ is a position-anchored Beta-Binomial Empirical Bayes survival estimator.
+3. **Decoupled Architecture Placement**: Operates in $M_{{\\text{{mins}}}}$ (`xp_minutes`).
+4. **Replaces / Integration Hook**: `ParticipationStateHybridModel._compute_participation_states`
+5. **Parameter Sweep Grid**: `K_surv=12,beta_surv=0.5; K_surv=18,beta_surv=0.65; K_surv=24,beta_surv=0.65`
+6. **Small-Sample & Cold-Start Strategy**: Anchors to positional prior means ($\\text{{DEF}}=0.91, \\text{{MID}}=0.82$) via conjugate Beta-Binomial Empirical Bayes, regularized by $N_{{\\text{{eff}}}}$.
+7. **Budget-Constrained Optimizer Interaction**: Correctly elevates nailed £4.5m center-backs over £5.5m wingers without exceeding squad churn tolerances.
+8. **Point-in-Time Feature Requirements**: `features.position`; `history.minutes`; `history.starts_ewm_19`
+9. **Python Code Skeleton (Optional)**:
+```python
+from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
+
+class AsymmetricSubHazardChallengerModel(AdaptiveCausalChallengerModel):
+    def __init__(self, k_surv: float = 18.0, beta_surv: float = 0.65, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self.k_surv = float(k_surv)
+        self.beta_surv = float(beta_surv)
+```
 
 Review the complete technical specification below before generating candidate recommendations.
 ```

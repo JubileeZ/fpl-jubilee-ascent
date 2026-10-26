@@ -48,8 +48,10 @@ Copy the generated prompt block from `candidate_model_ideation_prompt.md` into y
 
 ### 3. Ingest Proposals into `idea_queue.csv` and `ideas/` Dossiers
 
-Save the raw model response into a text/markdown file (e.g. `docs/research/candidate-ideation/raw_response.md`) and run:
+Save the raw model response into a text/markdown file (e.g. `docs/research/candidate-ideation/raw_response.md`).
 
+#### Path A: Fast Deterministic Ingest (CLI)
+For structured model outputs adhering to the 1-shot exemplar:
 ```bash
 uv run python .agents/skills/ideate-candidate/ingest_ideas.py docs/research/candidate-ideation/raw_response.md
 ```
@@ -57,8 +59,19 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py docs/research/cand
 `ingest_ideas.py`:
 1. Parses candidate mechanisms, parameter grids, and affected components.
 2. Checks each proposal against dead levers in `candidate_ledger.csv`. If a mechanism matches a known dead archetype, it tags the entry as `dead-match` and embeds an explicit `## Ledger Audit & Revisit Justification` block.
-3. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
-4. Appends index rows to [`docs/research/candidate-ideation/idea_queue.csv`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
+3. If Section 9 (Python Code Skeleton) is omitted or lacks code, automatically synthesizes a valid `AdaptiveCausalChallengerModel` subclass skeleton with typed `__init__` arguments derived from the parameter grid.
+4. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
+5. Appends index rows with `status: untested` to [`docs/research/candidate-ideation/idea_queue.csv`](file:///Users/jubilee/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
+
+#### Path B: Agent-Assisted Fallback Ingest (Unstructured / Conversational)
+Free-form, conversational, or zero-regex-match response:
+1. Read raw response in `docs/research/candidate-ideation/raw_response.md` or chat transcript.
+2. Normalize mechanisms into standard 9 sections:
+   - Extract football hypothesis + LaTeX mathematical formulation.
+   - Map decoupled component (`xp_minutes`, `xp_goals`, `xp_assists`, `xp_clean_sheets`, `xp_saves`, `xp_defcon`, `xp_bonus`).
+   - Identify integration hook + parameter sweep grid ($\le 6$ variants).
+   - Screen dead-lever matches against `candidate_ledger.csv`.
+   - Write normalized markdown and run `ingest_ideas.py`, or dual-write dossier (`ideas/`) and append row to `idea_queue.csv`.
 
 ### 4. Automated Execution via `explore-candidate`
 

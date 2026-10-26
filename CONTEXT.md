@@ -615,7 +615,7 @@ Research evaluation of a Transfer Plan policy. At each historical Gameweek deadl
 _Avoid_: backtest (ambiguous with model MAE), hindsight oracle, treating walk-forward as the live Transfer Plan Surface, in-season Prior-Season Seed after This-Season Evidence, Walk-forward ranking in the Trust header
 
 **Ideation Proposal / Idea**:
-Unverified candidate projection mechanism, parameter grid, and Python implementation skeleton registered in `idea_queue.csv` and documented in dedicated markdown dossier under `docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`. Transitions from `untested` to `in-progress` when selected by `explore-candidate`.
+Unverified candidate projection mechanism, mathematical formulation, parameter grid, and Python implementation skeleton (auto-scaffolded if omitted) registered in `idea_queue.csv` and documented in dedicated markdown dossier under `docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`. Transitions from `untested` to `in-progress` when selected by `explore-candidate`.
 _Avoid_: Candidate (for unverified queue rows), Prototype (for markdown specifications)
 
 **Prototype**:
