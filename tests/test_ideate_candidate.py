@@ -196,7 +196,63 @@ def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance()
     md = gen.build_prompt_markdown("general")
     assert "### 1-Shot Concrete Exemplar" in md
     assert "Python Code Skeleton (Optional" in md
-    assert "### Candidate 1: Asymmetric Substitution Hazard & Beta-Binomial Survival" in md
+    assert "### Candidate 1: Continuous Game-Pace & Match-State Elasticity" in md
+    assert "Asymmetric Substitution Hazard & Beta-Binomial Survival" not in md
+
+
+def test_load_active_dead_levers_filters_unlocked_and_active() -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    levers = gen.load_active_dead_levers(today="2026-10-26")
+    assert len(levers) >= 80
+    for item in levers:
+        assert item["status"] == "dead"
+        assert item["revisit_after"] > "2026-10-26" or item["revisit_after"] == "never"
+        assert item["subsystem"] in {
+            "minutes",
+            "goals",
+            "assists",
+            "saves_gkp",
+            "defense_cs",
+            "bonus",
+            "structural",
+        }
+
+
+def test_classify_dead_lever_maps_subsystems() -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    assert gen.classify_dead_lever("Beta-Binomial P(60|state)", "p_60_surv") == "minutes"
+    assert gen.classify_dead_lever("Assist finishing offsets (goals+assists pooled)", "off_k900") == "assists"
+    assert gen.classify_dead_lever("Club SoT volume x pooled save rate", "saves_k50") == "saves_gkp"
+    assert gen.classify_dead_lever("Defcon venue and opposition pressure scaling", "defcon_ratio") == "defense_cs"
+    assert gen.classify_dead_lever("Plackett-Luce bonus pool saturation", "bonus_bmax") == "bonus"
+    assert gen.classify_dead_lever("Static schedule congestion shifts", "congestion_logit") == "structural"
+
+
+def test_generate_prompt_dynamically_injects_subsystem_dead_levers() -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+
+    # Minutes focus prompt must include minutes dead levers
+    md_mins = gen.build_prompt_markdown("minutes")
+    assert "Active Dead Levers (Participation & Minutes Subsystem" in md_mins
+    assert "Beta-binomial" in md_mins
+
+    # Assists focus prompt must include assist dead levers
+    md_ast = gen.build_prompt_markdown("assists")
+    assert "Active Dead Levers (Key Passes & Assists Subsystem" in md_ast
+    assert "Assist finishing offsets" in md_ast
+
+    # General focus prompt includes structural dead levers
+    md_gen = gen.build_prompt_markdown("general")
+    assert "Strict Negative Constraints (Cross-Cutting Structural Dead Levers" in md_gen
+
+
+def test_context_md_defines_candidate_ledger_and_dead_lever_terms() -> None:
+    context_text = (REPO_ROOT / "CONTEXT.md").read_text(encoding="utf-8")
+    assert "**Candidate Ledger**:" in context_text
+    assert "**Dead Lever**:" in context_text
+    assert "**Revisit Period**:" in context_text
+    assert "**Ledger Screen**:" in context_text
+
 
 
 def test_ingest_file_auto_scaffolds_python_skeleton_when_code_missing(tmp_path: Path) -> None:

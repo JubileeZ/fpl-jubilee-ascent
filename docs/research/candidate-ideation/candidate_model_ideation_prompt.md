@@ -11,21 +11,21 @@ We operate under strict empirical model governance:
 - **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 5–10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061: paid hit hurdle, starter minutes floors, bench coverage, defensive stack caps, and GK transfer friction).
 - **Promotion Gate (ADR 0064)**: Any new model ("Candidate") must pass our reformed two-season gate: Constrained Legal Formation XI (£83.5m cap, $\le 3$ per club), rolling squad churn guardrail ($\le \text{Champ} + 0.50$ players/GW), warm-seeded confirmation (2023–24 seed for 2024–25 conf, matching live deployment $N_{\text{prior}}=1$), non-wrapping Moving Block Bootstrap ($L=5$, $B=20,000$), three bootstrap bars (Dev $P \ge 0.75$, Warm Conf $P \ge 0.65$, Pooled Stratified $P \ge 0.85$), $\sqrt{n_s}$-scaled segment floors (cold_start $\ge -0.25$, early_mid $\ge -0.15$, late $\ge -0.13$), and dual-window safety guardrails across both full season and active gameweeks.
-- **Historical Ledger**: Over 92 candidate model levers have been empirically evaluated. 82 have failed or been logged dead. We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
+- **Historical Ledger**: Over 93 candidate model levers have been empirically evaluated. 83 have failed or been logged dead (83 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat `adaptive_causal_challenger` and `def_xg_shrink_challenger` under the ADR 0064 Historical Promotion Gate.
 
 **Focus Area**: Focus on comprehensive architectural breakthroughs across both participation/minutes ($M_{\text{mins}}$) and event rates conditioned on minutes ($M_{\text{events}}$).
 
-### Strict Negative Constraints (Dead Levers — DO NOT PROPOSE)
-1. **Club 11-Man Mass Conservation** ($\sum_{\text{club}} p_{\text{start}} = 11.0$): Rotating squads rotate ~12.5 starting mass across competitions; forcing 11.0 starves elite starters while inflating unplayable bench fodder ($\Delta = -3.14 \dots -4.13$ pts/GW, 0/3 segs).
+### Strict Negative Constraints (Cross-Cutting Structural Dead Levers — DO NOT PROPOSE)
+1. **Club 11-Man Mass Conservation** ($\sum_{{\text{{club}}}} p_{{\text{{start}}}} = 11.0$): Rotating squads rotate ~12.5 starting mass across competitions; forcing 11.0 starves elite starters while inflating unplayable bench fodder ($\Delta = -3.14 \dots -4.13$ pts/GW, 0/3 segs).
 2. **Unregularized In-Season Ridge / Direct G/A Refits**: Small-sample cameo hauls cause unregularized regression weights to fluctuate wildly, degrading out-of-sample prediction ($\Delta = -0.96$ pts/GW).
-3. **Relaxing Defender xG Shrinkage** ($K_{\text{DEF}} < 2400$ pseudo-minutes): Defender xG split-half reliability is $r \approx 0.15$; relaxing shrinkage inflates fluke header noise and induces the Optimizer's Curse ($\Delta = -0.39 \dots -0.84$ pts/GW).
-4. **Bonus Pool Saturation Caps** ($B_{\max} \in [1.2, 1.5]$): Compresses the expected return of talisman forwards (Haaland, Salah), distorting captaincy allocation ($\Delta = -0.16 \dots -0.38$ pts/GW).
+3. **Relaxing Defender xG Shrinkage** ($K_{{\text{{DEF}}}} < 2400$ pseudo-minutes): Defender xG split-half reliability is $r \approx 0.15$; relaxing shrinkage inflates fluke header noise and induces the Optimizer's Curse ($\Delta = -0.39 \dots -0.84$ pts/GW).
+4. **Bonus Pool Saturation Caps** ($B_{{\max}} \in [1.2, 1.5]$): Compresses the expected return of talisman forwards (Haaland, Salah), distorting captaincy allocation ($\Delta = -0.16 \dots -0.38$ pts/GW).
 5. **Raw / Unshrunk Opponent Matchup Multipliers**: Raw Poisson multipliers or FDR tables drastically over-project returns in green fixtures and breach playable pool bias ($\Delta = -0.68$ pts/GW).
-6. **Static Schedule Congestion Shifts** (e.g. flat $-0.20$ logit on $p_{\text{start}}$ for $<3.5$ days rest): Penalizes nailed stamina outliers (Bruno Fernandes, Saliba) who play every 3 days without performance decay; failed confirmation ($-0.105$ pts/GW).
-7. **Discrete Step-Function Early ML Activation** (e.g. activating causal ML at GW8 or GW10, even with $[-10\%, +10\%]$ clamps): Early-season ML over-regularizes talisman hauls and degrades captaincy regret ($\Delta = -2.28$ to $-5.78$ pts/GW, $P_{\text{pooled}} = 0.000$). Early ML must use continuous $N_{\text{eff}}$ shrinkage, not discrete early switches.
+6. **Static Schedule Congestion Shifts** (e.g. flat $-0.20$ logit on $p_{{\text{{start}}}}$ for $<3.5$ days rest): Penalizes nailed stamina outliers (Bruno Fernandes, Saliba) who play every 3 days without performance decay; failed confirmation ($-0.105$ pts/GW).
+7. **Discrete Step-Function Early ML Activation** (e.g. activating causal ML at GW8 or GW10, even with $[-10\%, +10\%]$ clamps): Early-season ML over-regularizes talisman hauls and degrades captaincy regret ($\Delta = -2.28$ to $-5.78$ pts/GW, $P_{{\text{{pooled}}}} = 0.000$). Early ML must use continuous $N_{{\text{{eff}}}}$ shrinkage, not discrete early switches.
 8. **Latent HMM Participation Modeling**: Discrete role transition matrices are noisy in 38-game samples; destroys minutes MAE guardrails ($\Delta = -0.90 \dots -3.70$ pts/GW).
 9. **Transfer Market Churn / Price Momentum as DNP Hazard**: Casual manager selling reflects lagged sentiment and fixture swings, not manager benching hazard ($\Delta = -0.20 \dots -1.34$ pts/GW).
 10. **Zero-Sum Teammate Absence xG Redistribution**: Sidelined talisman volume is absorbed by tactical shape changes and lower team quality, not linearly captured by remaining teammates ($\Delta = -0.72 \dots -2.28$ pts/GW).
@@ -34,6 +34,15 @@ Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW
 13. **Natural Rate Calibration / Slope Flattening**: Addresses elite rate inflation in dev (+0.355) but collapses in confirmation ($-0.449$ pts/GW).
 14. **Goalkeeper Fixture Slot Softmax**: Softmaxing GKP start probabilities per club fixture degrades minutes discrimination ($\Delta = -0.11 \dots -1.21$ pts/GW).
 15. **Fitted Plackett-Luce BPS Ridge Utility on Observed BPS**: Directly regressing observed BPS introduces severe overfitting ($\Delta = -1.44 \dots -1.81$ pts/GW).
+
+### Active Dead Levers by Subsystem Summary (83 Locked Levers)
+Over 83 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
+- **Participation & Minutes (18 dead levers)**: e.g. Beta-Binomial P(60|state), starter tenure decay, naive nailed-starter multipliers.
+- **Goals & Finishing (17 dead levers)**: e.g. high-K finishing pools ($K \ge 3600$), unsharp xG slope flattening, flat position goal scales.
+- **Key Passes & Assists (8 dead levers)**: e.g. pooled assist finishing offsets, uncalibrated raw xA.
+- **Goalkeepers & Saves (3 dead levers)**: e.g. club SoT volume x pooled save rate, slot probability softmax.
+- **Defense & Clean Sheets (7 dead levers)**: e.g. defcon venue/opposition pressure, post-link CS inflation, club-pooled per90 GC.
+- **Bonus Points / BPS (10 dead levers)**: e.g. BPS pool saturation caps, softmax temperature retuning.
 
 ### Required Output Structure for Each Candidate Idea
 Format each proposed candidate with a level-3 markdown heading `### Candidate <N>: <Concise Name>` followed by these exact numbered sections (parsed directly by our queue ingestion tool):
@@ -49,26 +58,27 @@ Format each proposed candidate with a level-3 markdown heading `### Candidate <N
 
 ### 1-Shot Concrete Exemplar
 
-### Candidate 1: Asymmetric Substitution Hazard & Beta-Binomial Survival
-1. **Concept & Football Hypothesis**: Decouples 60-minute appearance and clean sheet threshold survival from mean duration. Center-backs and goalkeepers face minimal tactical hook risk before 60', whereas wingers face elevated hazard between 55' and 65'.
+### Candidate 1: Continuous Game-Pace & Match-State Elasticity
+1. **Concept & Football Hypothesis**: Trailing scorelines and match tempo significantly alter shot generation, transition volume, and defensive block depth. Center-backs face fewer defensive clearances/tackles when leading comfortably, while attacking wingers gain high-xG counter-attack opportunities in trailing game states.
 2. **Mathematical Formulation**:
-   $$P(60+ \mid \text{Start}) = (1 - \beta_{\text{surv}}) \cdot \text{clip}\left(\frac{\text{xMins} - 45.0}{30.0}, 0.0, 1.0\right) + \beta_{\text{surv}} \cdot \hat{\theta}_{\text{EB}}$$
-   where $\hat{\theta}_{\text{EB}}$ is a position-anchored Beta-Binomial Empirical Bayes survival estimator.
-3. **Decoupled Architecture Placement**: Operates in $M_{\text{mins}}$ (`xp_minutes`).
-4. **Replaces / Integration Hook**: `ParticipationStateHybridModel._compute_participation_states`
-5. **Parameter Sweep Grid**: `K_surv=12,beta_surv=0.5; K_surv=18,beta_surv=0.65; K_surv=24,beta_surv=0.65`
-6. **Small-Sample & Cold-Start Strategy**: Anchors to positional prior means ($\text{DEF}=0.91, \text{MID}=0.82$) via conjugate Beta-Binomial Empirical Bayes, regularized by $N_{\text{eff}}$.
-7. **Budget-Constrained Optimizer Interaction**: Correctly elevates nailed £4.5m center-backs over £5.5m wingers without exceeding squad churn tolerances.
-8. **Point-in-Time Feature Requirements**: `features.position`; `history.minutes`; `history.starts_ewm_19`
+   $$\lambda_{xG, i}(g) = \lambda_{xG, i}^0 \cdot \exp\left(\alpha_{\text{pace}} \cdot (\bar{P}_{\text{pace}, o} - 1.0) + \beta_{\text{margin}} \cdot \mathbb{E}[\Delta \text{Score}_{c, o}]\right)$$
+   $$\lambda_{xA, i}(g) = \lambda_{xA, i}^0 \cdot \exp\left(\alpha_{\text{pace}} \cdot (\bar{P}_{\text{pace}, o} - 1.0) + \beta_{\text{margin}} \cdot \mathbb{E}[\Delta \text{Score}_{c, o}]\right)$$
+   where $\bar{P}_{\text{pace}, o}$ is opponent match-pace factor shrunk toward 1.0, and $\Delta \text{Score}_{c, o}$ is expected scoreline margin from bookmaker spreads.
+3. **Decoupled Architecture Placement**: Operates in $M_{\text{events}}$ (`xp_goals`, `xp_assists`).
+4. **Replaces / Integration Hook**: `CalibratedMatchupHybridModel._project_event_components`
+5. **Parameter Sweep Grid**: `alpha_pace=0.15,beta_margin=-0.08; alpha_pace=0.25,beta_margin=-0.08; alpha_pace=0.20,beta_margin=-0.12; alpha_pace=0.15,beta_margin=-0.05`
+6. **Small-Sample & Cold-Start Strategy**: Opponent pace and margin coefficients are anchored to zero at season start ($N_{\text{eff}} < 3500$) and smoothly ramped to full weight via continuous $N_{\text{eff}}$ sample shrinkage, preventing early-season over-reaction.
+7. **Budget-Constrained Optimizer Interaction**: Rewards counter-attacking £5.0m midfielders against high-possession heavy favorites without triggering erratic squad churn.
+8. **Point-in-Time Feature Requirements**: `features.opponent_id`; `history.opp_pace_per90_eb`; `history.exp_goal_diff_eb`
 9. **Python Code Skeleton (Optional)**:
 ```python
 from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
 
-class AsymmetricSubHazardChallengerModel(AdaptiveCausalChallengerModel):
-    def __init__(self, k_surv: float = 18.0, beta_surv: float = 0.65, **kwargs: object) -> None:
+class GamePaceElasticityChallengerModel(AdaptiveCausalChallengerModel):
+    def __init__(self, alpha_pace: float = 0.20, beta_margin: float = -0.08, **kwargs: object) -> None:
         super().__init__(**kwargs)
-        self.k_surv = float(k_surv)
-        self.beta_surv = float(beta_surv)
+        self.alpha_pace = float(alpha_pace)
+        self.beta_margin = float(beta_margin)
 ```
 
 Review the complete technical specification below before generating candidate recommendations.
@@ -238,7 +248,7 @@ Evaluated across both full season (38 GWs) and active gameweeks $\mathcal{G}_{\t
 
 ---
 
-### 4. Verified Dead-Lever Archetypes (from 92 Historical Trials)
+### 4. Verified Dead-Lever Archetypes (from 93 Historical Trials)
 
 | Archetype ID | Tested Hypotheses | Empirical Fate | Mathematical Cause of Failure |
 |---|---|---|---|
@@ -260,14 +270,14 @@ Evaluated across both full season (38 GWs) and active gameweeks $\mathcal{G}_{\t
 
 ### 5. High-Priority Exploration Vectors (Grounded in Technical Feasibility)
 
-Candidates are strongly encouraged to explore mechanisms within these design spaces:
-1. **Asymmetric Substitution & Early-Exit Hazard ($M_{\text{mins}}$)**:
-   - Center-backs and goalkeepers almost never sub out unless injured (duration conditional on start is 90.0). Wingers and fullbacks routinely sub out at 60'–70'. A hazard model conditioned on position, tactical substitutions, and yellow card exposure can sharpen $P(60+)$ and duration without destabilizing $p_{\text{start}}$.
-2. **Sub-In Cameo Return Intensity ($M_{\text{events}}$)**:
-   - Currently, a sub-in appearance assumes the same per-minute event rate as a start. In reality, attacking substitutes face tired legs in higher-variance game states (e.g. chasing a goal), whereas defensive substitutes have near-zero goal involvement rates. Conditioning cameo event intensity on position and scoreline context.
-3. **Calibrated Receiver Finishing Quality for Assists ($M_{\text{events}}$)**:
-   - xA measures key pass expected goals, but FPL assist conversion depends on the finishing skill of the recipient (e.g. Kevin De Bruyne creating for Erling Haaland vs a midfielder creating for an inefficient finisher). A receiver-adjusted assist model.
-4. **Goalkeeper Shot-Quality vs. Save-Volume Profile ($M_{\text{events}}$)**:
-   - Mid-table goalkeepers face high-volume, low-danger shots from outside the box, generating immense save volume with low conceded variance. Elite goalkeepers face rare, high-danger breakaways. A decoupled save intensity model conditioned on opponent shot distance / threat ratio.
+Candidates are strongly encouraged to explore mechanisms within these unreserved design spaces:
+1. **Continuous Match-Pace & Transition Threat Elasticity ($M_{\text{events}}$)**:
+   - Trailing game-state margins and opponent match-tempo significantly alter shot generation, counter-attack frequency, and defensive block depth. Modeling continuous scoreline pace elasticity conditioned on game-state expectation without static logit shifts.
+2. **Dynamic Defensive Block Depth & Tackles Demand ($M_{\text{events}}$)**:
+   - High-possession clubs suppress opponent tackle volume while conceding transition counters. Modeling possession-adjusted defensive contribution elasticity without inflating fluke clean sheets.
+3. **Continuous Teammate Tactical Synergy & Space Creation ($M_{\text{events}}$)**:
+   - Gravity of talisman creators opens space for secondary runners. Modeling synergy effects without zero-sum talisman absence redistribution.
+4. **Position-Conditioned Micro-Cycle Fatigue Recovery ($M_{\text{mins}}$)**:
+   - Nailed outfielders face non-linear stamina decay across dense 3-day fixture turnarounds. Modeling continuous exponential recovery dynamics rather than discrete static logit congestion penalties.
 5. **Budget Enabler Efficiency & Marginal Value Modeling ($M_{\text{events}} / M_{\text{mins}}$ under £83.5m cap)**:
    - The £83.5m starting budget cap elevates the importance of accurate projections for £4.5m–£5.5m outfield starters. Models that eliminate residual bias and accurately rank budget enablers gain substantial legal formation XI points over models tuned solely for premium assets.

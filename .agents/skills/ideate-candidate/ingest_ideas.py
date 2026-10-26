@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import date
 import keyword
 from pathlib import Path
 import re
@@ -81,12 +82,16 @@ _SECTION_STOP = (
 )
 
 
-def load_dead_levers() -> list[str]:
+def load_dead_levers(today: str | None = None) -> list[str]:
     if not LEDGER_PATH.exists():
         return []
     try:
-        df = pd.read_csv(LEDGER_PATH)
-        return df[df["status"] == "dead"]["lever"].dropna().tolist()
+        df = pd.read_csv(LEDGER_PATH, dtype=str, keep_default_na=False)
+        dead = df[df["status"] == "dead"].copy()
+        if today is None:
+            today = date.today().isoformat()
+        active = dead[dead["revisit_after"].apply(lambda r: r == "never" or str(r) > today)]
+        return active["lever"].dropna().tolist()
     except Exception:
         return []
 
@@ -405,6 +410,8 @@ def ingest_file(
             print(f"  [!] Warning: Idea '{idea['name']}' matches dead lever: {matched_dead}")
             idea["nearest_ledger_row"] = matched_dead
             idea["status"] = "dead-match"
+            if not idea.get("ledger_result"):
+                idea["ledger_result"] = f"Dead match: {matched_dead}"
 
         orig_id = idea["idea_id"]
         counter = 1

@@ -630,6 +630,22 @@ _Avoid_: Default model, production model
 Frozen, complete Projection Model class registered in `models/` (subclassing `BaseModel` or `CompositeProjectionModel`) passing prototype smoke testing, evaluated against Model Champion under ADR 0064 two-season promotion gate. At most two Candidates tracked concurrently (three-model comparison including Champion).
 _Avoid_: Experimental model, challenger, unverified proposal
 
+**Candidate Ledger**:
+Authoritative git-tracked audit registry (`docs/research/candidate-ledger/candidate_ledger.csv` and `docs/research/candidate-ledger/candidate-ledger.md`) logging every evaluated candidate lever, baseline, evidence date, delta, and revisit eligibility.
+_Avoid_: Experiment log, model history, benchmark spreadsheet
+
+**Dead Lever**:
+Evaluated candidate projection mechanism or parameter variant failing Historical Promotion Gate or guardrails, placed under mandatory 1-year moratorium (`revisit_after = evidence_date + 1 year`) during which rebuilding, re-sweeping, re-smoking, or proposing is prohibited.
+_Avoid_: Failed model, discarded feature, soft rejection
+
+**Revisit Period**:
+Mandatory 1-year lock following failed candidate gate evaluation before identical or retuned mechanism re-evaluated. Only explicitly overridden by user directive.
+_Avoid_: Cooldown, probation, retest delay
+
+**Ledger Screen**:
+Automated pre-exploration and ingest screening step comparing proposed ideation mechanisms against active dead levers in Candidate Ledger, tagging matches with `dead-match` status to prevent wasted compute.
+_Avoid_: Duplicate check, novelty filter, linting
+
 **Primary Projection Model**:
 The active model selected in the dashboard to drive Explorer ranking, Squad Board, Component Profile, and Dream Team. Defaults to the Model Champion. Does not select the Transfer Plan datasource; that is always the Model Champion.
 _Avoid_: Active UI model, pitch model, MILP model, Dream Team as Champion-only when Primary differs
