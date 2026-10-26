@@ -10,12 +10,13 @@ from typing import Any
 
 import pandas as pd
 
-from backtesting.metrics import formation_xi_regret_by_gameweek
+from backtesting.metrics import evaluate_predictions, formation_xi_regret_by_gameweek
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
     PromotionVerdict,
     compute_playable_pool_metrics,
     evaluate_historical_promotion_gate,
+    identify_active_gameweeks,
     metrics_by_season_window,
     primary_metric_name,
 )
@@ -56,6 +57,16 @@ def replace_candidate(selection: ModelSelection, incoming: str, outgoing: str) -
     )
 
 
+def _attach_playable_metrics(
+    window_dict: dict[str, Any], playable_metrics: dict[str, Any]
+) -> None:
+    if playable_metrics:
+        window_dict["playable_mae"] = playable_metrics.get("mae")
+        window_dict["playable_bias"] = playable_metrics.get("bias")
+        if "sample_count" in playable_metrics:
+            window_dict["playable_count"] = playable_metrics["sample_count"]
+
+
 def compare_to_reference(
     reference: WalkforwardResult,
     candidate: WalkforwardResult,
@@ -70,6 +81,8 @@ def compare_to_reference(
         )
         for target in ("actual_points", "process_points")
         if target != primary_target
+        and target in reference.df_eval.columns
+        and target in candidate.df_eval.columns
     }
     champion_windows = metrics_by_season_window(reference.df_eval, target_column=primary_target)
     candidate_windows = metrics_by_season_window(candidate.df_eval, target_column=primary_target)
@@ -77,12 +90,27 @@ def compare_to_reference(
     champ_playable, cand_playable = compute_playable_pool_metrics(
         reference.df_eval, candidate.df_eval, target_column=primary_target
     )
-    if champ_playable:
-        champion_windows["combined"]["playable_mae"] = champ_playable["mae"]
-        champion_windows["combined"]["playable_bias"] = champ_playable["bias"]
-    if cand_playable:
-        candidate_windows["combined"]["playable_mae"] = cand_playable["mae"]
-        candidate_windows["combined"]["playable_bias"] = cand_playable["bias"]
+    _attach_playable_metrics(champion_windows["combined"], champ_playable)
+    _attach_playable_metrics(candidate_windows["combined"], cand_playable)
+
+    # Active-window guardrails (ADR 0064, Wayfinder Ticket #170)
+    active_gws = identify_active_gameweeks(reference.df_eval, candidate.df_eval)
+    all_gws = set(reference.df_eval["gameweek"].unique())
+    if not active_gws or set(active_gws) == all_gws:
+        champion_windows["active"] = dict(champion_windows["combined"])
+        candidate_windows["active"] = dict(candidate_windows["combined"])
+    else:
+        ref_active = reference.df_eval[reference.df_eval["gameweek"].isin(active_gws)]
+        cand_active = candidate.df_eval[candidate.df_eval["gameweek"].isin(active_gws)]
+        active_champ_metrics = evaluate_predictions(ref_active, target_column=primary_target)
+        active_cand_metrics = evaluate_predictions(cand_active, target_column=primary_target)
+        champ_play_act, cand_play_act = compute_playable_pool_metrics(
+            ref_active, cand_active, target_column=primary_target
+        )
+        _attach_playable_metrics(active_champ_metrics, champ_play_act)
+        _attach_playable_metrics(active_cand_metrics, cand_play_act)
+        champion_windows["active"] = active_champ_metrics
+        candidate_windows["active"] = active_cand_metrics
 
     gw_deltas = None
     if primary_metric_name(champion_windows["combined"]) == "decision_regret":

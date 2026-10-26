@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exogenous Playable Pool Masking & Active-Window Guardrails Prototype</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-subtle: #1a2234;
+      --surface-border: #243048;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --emerald: #10b981;
+      --emerald-subtle: rgba(16, 185, 129, 0.15);
+      --amber: #f59e0b;
+      --amber-subtle: rgba(245, 158, 11, 0.15);
+      --rose: #f43f5e;
+      --rose-subtle: rgba(244, 63, 94, 0.15);
+      --sky: #38bdf8;
+      --sky-subtle: rgba(56, 189, 248, 0.15);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 1080px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    p.lead {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-top: 10px;
+    }
+    .badge-amber { background: var(--amber-subtle); color: var(--amber); border: 1px solid var(--amber); }
+    .badge-emerald { background: var(--emerald-subtle); color: var(--emerald); border: 1px solid var(--emerald); }
+    .badge-rose { background: var(--rose-subtle); color: var(--rose); border: 1px solid var(--rose); }
+
+    /* Layout Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Tabs */
+    .tabs-header {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      background: var(--surface-subtle);
+      color: var(--text);
+    }
+    .tab-btn.active {
+      background: var(--surface-subtle);
+      border-color: var(--sky);
+      color: var(--sky);
+    }
+
+    /* Walkthrough scenario content */
+    .scenario-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: var(--surface-subtle);
+      border-radius: var(--radius-md);
+      border-left: 3px solid var(--sky);
+    }
+    .step-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .step-btn {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-btn:hover {
+      border-color: var(--emerald);
+      color: var(--emerald);
+    }
+
+    /* Grid Layout for State & Controls */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 20px;
+    }
+    @media (max-width: 840px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Controls */
+    .control-group {
+      margin-bottom: 16px;
+    }
+    label.control-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    select, input[type="range"] {
+      width: 100%;
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .range-val {
+      font-family: var(--font-mono);
+      color: var(--sky);
+      font-size: 12px;
+      margin-top: 4px;
+      text-align: right;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Metrics Table & Cards */
+    .state-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .kpi-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      text-align: center;
+    }
+    .kpi-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    .kpi-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    table.data-table th, table.data-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    table.data-table th {
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+    table.data-table td {
+      font-family: var(--font-mono);
+    }
+    .val-pass { color: var(--emerald); }
+    .val-fail { color: var(--rose); font-weight: 600; }
+    .val-neutral { color: var(--text-muted); }
+
+    .verdict-banner {
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .verdict-pass {
+      background: var(--emerald-subtle);
+      border: 1px solid var(--emerald);
+      color: var(--emerald);
+    }
+    .verdict-fail {
+      background: var(--rose-subtle);
+      border: 1px solid var(--rose);
+      color: var(--rose);
+    }
+
+    .diff-callout {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--sky);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Exogenous Playable Pool Masking & Active-Window Guardrails</h1>
+    <p class="lead">
+      Interactive logic prototype demonstrating why sample-selection must be model-independent (&le; 0 candidate leakage),
+      and how dual-window evaluation stops dormant fallback wrappers from halving and diluting active-window regressions.
+    </p>
+    <div style="display:flex; gap:8px;">
+      <span class="badge badge-amber">Wayfinder Ticket #170</span>
+      <span class="badge badge-emerald">ADR 0064 Rigor</span>
+    </div>
+  </header>
+
+  <!-- Guided Walkthroughs / Scenarios -->
+  <div class="card">
+    <div class="card-title">
+      <span>Guided Scenarios</span>
+      <span style="font-size:12px; font-weight:normal; color:var(--text-dim);">Click tab to reset & run walkthrough</span>
+    </div>
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="selectTab(0)">1. Endogenous Sample Inflation Trap</button>
+      <button class="tab-btn" onclick="selectTab(1)">2. Dormant Fallback Dilution Bypass</button>
+      <button class="tab-btn" onclick="selectTab(2)">3. Exogenous Mask Invariance</button>
+      <button class="tab-btn" onclick="selectTab(3)">4. Legitimate ML Promotion</button>
+    </div>
+
+    <div id="tab-content" class="scenario-desc">
+      <!-- Injected by JS -->
+    </div>
+
+    <div id="step-buttons-container" class="step-buttons">
+      <!-- Step buttons injected by JS -->
+    </div>
+  </div>
+
+  <!-- Interactive Sandbox -->
+  <div class="dashboard-grid">
+    <!-- Controls -->
+    <div class="card">
+      <div class="card-title">Interactive Configuration</div>
+
+      <div class="control-group">
+        <label class="control-label">Mask Formulation</label>
+        <select id="mask-mode" onchange="updateSim()">
+          <option value="exogenous" selected>Exogenous (Mins &ge; 30 OR Champ xP &ge; 2.0) [REFORMED]</option>
+          <option value="endogenous">Endogenous (Mins &ge; 30 OR Champ xP &ge; 2.0 OR Cand xP &ge; 2.0) [LEGACY]</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Candidate Architecture</label>
+        <select id="cand-arch" onchange="updateSim()">
+          <option value="adaptive_causal">Dormant Fallback GW1–19 (Adaptive Causal ML GW20+)</option>
+          <option value="early_ml">Early ML Activation GW10+ (Fallback GW1–9)</option>
+          <option value="full_season">Full Season Active ML GW1–38</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Candidate Active-Window Captaincy Regret</label>
+        <input type="range" id="active-cap-regret" min="0.00" max="0.35" step="0.01" value="0.22" oninput="updateSim()">
+        <div class="range-val" id="active-cap-regret-val">+0.22 pts/GW</div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Candidate Active-Window Playable Bias</label>
+        <input type="range" id="active-bias" min="-0.30" max="0.30" step="0.02" value="0.06" oninput="updateSim()">
+        <div class="range-val" id="active-bias-val">+0.06 pts</div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Fringe Player Speculation</label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="fringe-speculation" onchange="updateSim()">
+          <span>Candidate predicts &ge; 2.5 xP on 40 unplayed benchwarmers (0 mins, 0 pts)</span>
+        </label>
+      </div>
+
+      <div class="diff-callout" id="arch-explanation">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- State & Guardrail Results -->
+    <div class="state-panel">
+      <!-- Row Counts & Exogeneity -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-title">Playable Pool Rows</div>
+          <div class="kpi-value" id="kpi-rows">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Exogeneity Parity</div>
+          <div class="kpi-value" id="kpi-parity">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Active GWs (\(\mathcal{G}_{\text{active}}\))</div>
+          <div class="kpi-value" id="kpi-active-gws">--</div>
+        </div>
+      </div>
+
+      <!-- Verdict Banner -->
+      <div id="verdict-banner" class="verdict-banner verdict-pass">
+        <span id="verdict-text">VERDICT: PASS</span>
+        <span id="verdict-sub" style="font-size:11px; font-weight:normal;">Dual guardrails satisfied</span>
+      </div>
+
+      <!-- Guardrail Comparison Table -->
+      <div class="card" style="padding:16px;">
+        <div class="card-title" style="margin-bottom:8px;">
+          <span>Dual Guardrail Enforcement Analysis</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Guardrail Metric</th>
+              <th>Champion</th>
+              <th>Full Season (38 GWs)</th>
+              <th>Active Window (\(\mathcal{G}_{\text{active}}\))</th>
+              <th>Tol</th>
+            </tr>
+          </thead>
+          <tbody id="guardrail-tbody">
+            <!-- Injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Explanation note -->
+      <div class="diff-callout" id="dilution-note" style="border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); color: var(--amber);">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pure logic engine for Exogenous Masking & Dual Window Guardrails
+  const BASE_ROWS_PER_GW = 210; // Genuine playable players (mins >= 30 or champ >= 2.0)
+  const FRINGE_PLAYERS = 40;    // Speculative zero-minute benchwarmers
+  const CAPTAIN_TOL = 0.15;
+  const BIAS_TOL = 0.15;
+  const PLAYABLE_MAE_REL_TOL = 0.05;
+
+  const scenarios = [
+    {
+      title: "1. Endogenous Sample Inflation Trap",
+      desc: "Under legacy endogenous masking, if a candidate speculatively predicts 2.5 xP on 40 fringe benchwarmers who played 0 minutes, the candidate itself forces those 40 rows into the evaluation set! This distorts the benchmark denominator and alters Champion MAE. Watch how exogenous masking locks sample size strictly to Champion & ground-truth minutes.",
+      steps: [
+        { label: "Step 1: Set Legacy Endogenous Mask", action: () => { setControl('mask-mode', 'endogenous'); setControl('fringe-speculation', false); } },
+        { label: "Step 2: Inject Fringe Speculation (+40 rows)", action: () => { setControl('fringe-speculation', true); } },
+        { label: "Step 3: Switch to Exogenous Mask (ADR 0064)", action: () => { setControl('mask-mode', 'exogenous'); } }
+      ]
+    },
+    {
+      title: "2. Dormant Fallback Error Dilution",
+      desc: "Candidate 'adaptive_causal_challenger' clones Champion in GW1–19, activating ML only in GW20–38. In GW20–38, it suffers severe captaincy regret (+0.24 pts/GW). Over the full 38-GW season, 19 zero-error weeks dilute the average to +0.12 pts/GW (< 0.15 tol), sneaking through the legacy gate! Dual active-window enforcement catches and rejects it.",
+      steps: [
+        { label: "Step 1: Setup 19-GW Fallback + Severe Regret", action: () => { setControl('cand-arch', 'adaptive_causal'); setControl('active-cap-regret', '0.24'); setControl('mask-mode', 'exogenous'); setControl('fringe-speculation', false); } },
+        { label: "Step 2: Check Full Season Average (Diluted to +0.12)", action: () => { updateSim(); } },
+        { label: "Step 3: Observe Active Window Rejection (+0.24 > 0.15)", action: () => { updateSim(); } }
+      ]
+    },
+    {
+      title: "3. Exogenous Mask Invariance",
+      desc: "Demonstrates that regardless of what model architecture or speculative projections a candidate produces, the Playable Pool row count is 100% bit-for-bit identical, preserving rigorous Neyman-Pearson evaluation across different model candidates.",
+      steps: [
+        { label: "Step 1: Test Full-Season Model", action: () => { setControl('mask-mode', 'exogenous'); setControl('cand-arch', 'full_season'); setControl('fringe-speculation', true); } },
+        { label: "Step 2: Switch to Dormant Fallback Model", action: () => { setControl('cand-arch', 'adaptive_causal'); } },
+        { label: "Step 3: Toggle Fringe Speculation Off", action: () => { setControl('fringe-speculation', false); } }
+      ]
+    },
+    {
+      title: "4. Legitimate ML Promotion",
+      desc: "A genuine model candidate improves captaincy selection and reduces prediction error across its active window, satisfying both Full-Season AND Active-Window guardrails simultaneously.",
+      steps: [
+        { label: "Step 1: Configure Well-Calibrated Challenger", action: () => { setControl('cand-arch', 'adaptive_causal'); setControl('active-cap-regret', '0.04'); setControl('active-bias', '0.02'); setControl('mask-mode', 'exogenous'); setControl('fringe-speculation', false); } }
+      ]
+    }
+  ];
+
+  let currentTab = 0;
+
+  function setControl(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = val;
+    else el.value = val;
+    updateSim();
+  }
+
+  function selectTab(idx) {
+    currentTab = idx;
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === idx);
+    });
+    const s = scenarios[idx];
+    document.getElementById('tab-content').innerHTML = `<strong>${s.title}</strong>: ${s.desc}`;
+    
+    const btnContainer = document.getElementById('step-buttons-container');
+    btnContainer.innerHTML = '';
+    s.steps.forEach((step, sIdx) => {
+      const b = document.createElement('button');
+      b.className = 'step-btn';
+      b.innerHTML = step.label;
+      b.onclick = () => {
+        step.action();
+      };
+      btnContainer.appendChild(b);
+    });
+    // Run step 0
+    s.steps[0].action();
+  }
+
+  function updateSim() {
+    const maskMode = document.getElementById('mask-mode').value;
+    const arch = document.getElementById('cand-arch').value;
+    const activeCapRegret = parseFloat(document.getElementById('active-cap-regret').value);
+    const activeBias = parseFloat(document.getElementById('active-bias').value);
+    const fringeSpec = document.getElementById('fringe-speculation').checked;
+
+    document.getElementById('active-cap-regret-val').textContent = (activeCapRegret >= 0 ? '+' : '') + activeCapRegret.toFixed(2) + ' pts/GW';
+    document.getElementById('active-bias-val').textContent = (activeBias >= 0 ? '+' : '') + activeBias.toFixed(2) + ' pts';
+
+    // 1. Determine active gameweeks
+    let startGw = 1;
+    let totalActiveGws = 38;
+    if (arch === 'adaptive_causal') { startGw = 20; totalActiveGws = 19; }
+    else if (arch === 'early_ml') { startGw = 10; totalActiveGws = 29; }
+    else { startGw = 1; totalActiveGws = 38; }
+
+    const activeRangeStr = startGw === 1 ? "GW1–38 (All)" : `GW${startGw}–38 (${totalActiveGws} GWs)`;
+    document.getElementById('kpi-active-gws').textContent = activeRangeStr;
+
+    // 2. Compute playable pool rows & exogeneity
+    let totalRows = 38 * BASE_ROWS_PER_GW;
+    let isExogenous = true;
+    if (maskMode === 'endogenous' && fringeSpec) {
+      totalRows += totalActiveGws * FRINGE_PLAYERS;
+      isExogenous = false;
+    }
+    document.getElementById('kpi-rows').textContent = totalRows.toLocaleString();
+    
+    const kpiParity = document.getElementById('kpi-parity');
+    if (isExogenous) {
+      kpiParity.textContent = "100% Invariant";
+      kpiParity.style.color = "var(--emerald)";
+    } else {
+      kpiParity.textContent = `+${totalActiveGws * FRINGE_PLAYERS} Shifted`;
+      kpiParity.style.color = "var(--rose)";
+    }
+
+    // 3. Compute Guardrail Metrics
+    // Champion Baselines
+    const champCapRegret = 1.05;
+    const champBias = 0.08;
+    const champPlayableMae = 1.42;
+
+    // Candidate Active Values
+    const candActiveCapRegret = champCapRegret + activeCapRegret;
+    const candActiveBias = Math.abs(champBias + activeBias);
+    // If fringe speculation in endogenous mode, candidate MAE rises due to unplayed players
+    const fringeMaePenalty = (!isExogenous && fringeSpec) ? 0.18 : 0.0;
+    const candActivePlayableMae = champPlayableMae - 0.03 + fringeMaePenalty;
+
+    // Candidate Full Season Values (Averaging dormant 0-error weeks with active weeks)
+    const dormantWeight = (38 - totalActiveGws) / 38;
+    const activeWeight = totalActiveGws / 38;
+
+    const candFullCapRegret = (dormantWeight * champCapRegret) + (activeWeight * candActiveCapRegret);
+    const candFullBias = (dormantWeight * champBias) + (activeWeight * candActiveBias);
+    const candFullPlayableMae = (dormantWeight * champPlayableMae) + (activeWeight * candActivePlayableMae);
+
+    // Guardrail Checks
+    const fullCapPass = candFullCapRegret <= champCapRegret + CAPTAIN_TOL;
+    const fullBiasPass = candFullBias <= champBias + BIAS_TOL;
+    const fullMaePass = candFullPlayableMae <= champPlayableMae * (1.0 + PLAYABLE_MAE_REL_TOL);
+    const fullSeasonPass = fullCapPass && fullBiasPass && fullMaePass;
+
+    const actCapPass = candActiveCapRegret <= champCapRegret + CAPTAIN_TOL;
+    const actBiasPass = candActiveBias <= champBias + BIAS_TOL;
+    const actMaePass = candActivePlayableMae <= champPlayableMae * (1.0 + PLAYABLE_MAE_REL_TOL);
+    const activeWindowPass = actCapPass && actBiasPass && actMaePass;
+
+    const finalPass = fullSeasonPass && activeWindowPass && isExogenous;
+
+    // Render Table
+    const tbody = document.getElementById('guardrail-tbody');
+    tbody.innerHTML = `
+      <tr>
+        <td style="color:var(--text);">Captaincy Regret</td>
+        <td>${champCapRegret.toFixed(3)}</td>
+        <td class="${fullCapPass ? 'val-pass' : 'val-fail'}">${candFullCapRegret.toFixed(3)} (${(candFullCapRegret - champCapRegret >= 0 ? '+' : '') + (candFullCapRegret - champCapRegret).toFixed(3)})</td>
+        <td class="${actCapPass ? 'val-pass' : 'val-fail'}">${candActiveCapRegret.toFixed(3)} (${(activeCapRegret >= 0 ? '+' : '') + activeCapRegret.toFixed(3)})</td>
+        <td class="val-neutral">+${CAPTAIN_TOL.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style="color:var(--text);">Playable Pool Bias</td>
+        <td>${champBias.toFixed(3)}</td>
+        <td class="${fullBiasPass ? 'val-pass' : 'val-fail'}">${candFullBias.toFixed(3)}</td>
+        <td class="${actBiasPass ? 'val-pass' : 'val-fail'}">${candActiveBias.toFixed(3)}</td>
+        <td class="val-neutral">+${BIAS_TOL.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td style="color:var(--text);">Playable Pool MAE</td>
+        <td>${champPlayableMae.toFixed(3)}</td>
+        <td class="${fullMaePass ? 'val-pass' : 'val-fail'}">${candFullPlayableMae.toFixed(3)}</td>
+        <td class="${actMaePass ? 'val-pass' : 'val-fail'}">${candActivePlayableMae.toFixed(3)}</td>
+        <td class="val-neutral">+${(PLAYABLE_MAE_REL_TOL * 100).toFixed(0)}%</td>
+      </tr>
+    `;
+
+    // Verdict Banner
+    const banner = document.getElementById('verdict-banner');
+    const vText = document.getElementById('verdict-text');
+    const vSub = document.getElementById('verdict-sub');
+
+    if (finalPass) {
+      banner.className = 'verdict-banner verdict-pass';
+      vText.textContent = "PROMOTION VERDICT: PASS";
+      vSub.textContent = "Satisfies both full-season and active-window guardrails under exogenous mask.";
+    } else {
+      banner.className = 'verdict-banner verdict-fail';
+      vText.textContent = "PROMOTION VERDICT: REJECTED";
+      let failReasons = [];
+      if (!isExogenous) failReasons.push("Endogenous sample shift detected");
+      if (!fullSeasonPass) failReasons.push("Full-season guardrails regressed");
+      if (!activeWindowPass) failReasons.push("Active-window guardrails regressed");
+      vSub.textContent = failReasons.join(" &bull; ");
+    }
+
+    // Callout explanations
+    const archExp = document.getElementById('arch-explanation');
+    if (arch === 'adaptive_causal') {
+      archExp.innerHTML = `<strong>Dormant Dilution Ratio</strong>: 19 dormant weeks (GW1–19) dilute active regressions by <strong>${(dormantWeight * 100).toFixed(1)}%</strong>. Full season observes only <strong>${(activeWeight * 100).toFixed(1)}%</strong> of active errors.`;
+    } else if (arch === 'early_ml') {
+      archExp.innerHTML = `<strong>Dormant Dilution Ratio</strong>: 9 dormant weeks (GW1–9) dilute active regressions by <strong>${(dormantWeight * 100).toFixed(1)}%</strong>.`;
+    } else {
+      archExp.innerHTML = `<strong>Full Season Model</strong>: Candidate is active across all 38 GWs. Full-season and active-window guardrails are identical.`;
+    }
+
+    const dilNote = document.getElementById('dilution-note');
+    if (fullSeasonPass && !activeWindowPass) {
+      dilNote.style.display = 'block';
+      dilNote.innerHTML = `<strong>Dormant Dilution Bypass Caught!</strong> Full-season average passed (+${(candFullCapRegret - champCapRegret).toFixed(3)} &le; +${CAPTAIN_TOL.toFixed(2)}), but active-window regret regressed by <strong>+${activeCapRegret.toFixed(3)} pts/GW</strong> (exceeding tolerance). Dual active-window enforcement successfully prevented this dormant trap.`;
+    } else if (!isExogenous) {
+      dilNote.style.display = 'block';
+      dilNote.innerHTML = `<strong>Sample Distortion Detected!</strong> Candidate predictions inflated evaluation rows by +${totalActiveGws * FRINGE_PLAYERS}. Exogenous masking is required to prevent candidate-induced sample shifts.`;
+    } else {
+      dilNote.style.display = 'none';
+    }
+  }
+
+  // Initialize
+  selectTab(0);
+</script>
+
+</body>
+</html>

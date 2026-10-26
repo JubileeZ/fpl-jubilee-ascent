@@ -40,15 +40,15 @@ def test_build_broad_pool_shield():
     ref = date(2026, 10, 20)
     shield = build_broad_pool_shield(proc, target_gw=8, horizon=4, reference_date=ref)
 
-    # Danso (ID 501) is suspended until 31 Oct (GW9 fixture is 31 Oct)
-    # GW8: 0.0 (suspended)
+    # Milosavljević (ID 63) is injured until 31 Oct (GW9 fixture is 31 Oct)
+    # GW8: 0.0 (injured)
     # GW9: 20.0 (cameo on return GW)
     # GW10: 65.0 (managed start)
     # GW11: healthy baseline >= 60.0
-    assert shield.get((501, 8)) == 0.0
-    assert shield.get((501, 9)) == 20.0
-    assert shield.get((501, 10)) == 65.0
-    assert shield.get((501, 11)) is not None and shield[(501, 11)] >= 60.0
+    assert shield.get((63, 8)) == 0.0
+    assert shield.get((63, 9)) == 20.0
+    assert shield.get((63, 10)) == 65.0
+    assert shield.get((63, 11)) is not None and shield[(63, 11)] >= 60.0
 
     # Bentancur (ID 516) is suspended until 7 Nov (Spurs GW10 match is 7 Nov)
     # GW8: 0.0
@@ -88,13 +88,13 @@ def test_synthesize_xmins_override_cascade_precedence(tmp_path: Path):
     out_csv = tmp_path / "xmins_override.csv"
     ref = date(2026, 10, 20)
 
-    # 1. Base External CSV (Tier 2) gives Haaland 80m, Saka 85m, and Danso 75m (stale external data)
+    # 1. Base External CSV (Tier 2) gives Haaland 80m, Saka 85m, and Milosavljević 75m (stale external data)
     base_csv = tmp_path / "base_fpl_review.csv"
     base_csv.write_text(
         "ID,Name,8_xMins,9_xMins\n"
         "411,Haaland,80.0,80.0\n"
         "12,Saka,85.0,85.0\n"
-        "501,Danso,75.0,75.0\n",
+        "63,Milosavljevic,75.0,75.0\n",
         encoding="utf-8",
     )
 
@@ -126,9 +126,9 @@ def test_synthesize_xmins_override_cascade_precedence(tmp_path: Path):
     assert haaland["8_xMins"] == 80.0
     assert haaland["9_xMins"] == 80.0
 
-    # Layer 3 Broad Pool Shield overrides stale Layer 2 external minutes for injured assets (Danso ID 501 = 0.0 in GW8)
-    danso = df[df["ID"] == 501].iloc[0]
-    assert danso["8_xMins"] == 0.0
+    # Layer 3 Broad Pool Shield overrides stale Layer 2 external minutes for injured assets (Milosavljević ID 63 = 0.0 in GW8)
+    milosavljevic = df[df["ID"] == 63].iloc[0]
+    assert milosavljevic["8_xMins"] == 0.0
 
 
 def test_resolve_default_target_gw_advances_when_deadline_passed(tmp_path: Path):

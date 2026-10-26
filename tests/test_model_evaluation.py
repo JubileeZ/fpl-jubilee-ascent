@@ -45,3 +45,53 @@ def test_replace_candidate_swaps_registered_candidate() -> None:
 
     assert updated.champion == "a"
     assert set(updated.candidates) == {"b", "d"}
+
+
+def test_compare_to_reference_wires_active_window_metrics() -> None:
+    from pathlib import Path
+    import pandas as pd
+    from backtesting.model_evaluation import compare_to_reference
+    from backtesting.walkforward import WalkforwardResult
+
+    df_champ = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 1, "projected_points": 1.0, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 2, "projected_points": 1.0, "actual_points": 0.0, "actual_minutes": 0},
+        ]
+    )
+    # Candidate identical in GW1, diverges in GW2
+    df_cand = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 1, "projected_points": 1.0, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 4.8, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 2, "projected_points": 1.0, "actual_points": 0.0, "actual_minutes": 0},
+        ]
+    )
+
+    res_champ = WalkforwardResult(
+        model_name="champ",
+        data_dir=Path("."),
+        start_gw=1,
+        end_gw=2,
+        metrics={},
+        df_eval=df_champ,
+        snapshot_ids={},
+        snapshot_backed=False,
+    )
+    res_cand = WalkforwardResult(
+        model_name="cand",
+        data_dir=Path("."),
+        start_gw=1,
+        end_gw=2,
+        metrics={},
+        df_eval=df_cand,
+        snapshot_ids={},
+        snapshot_backed=False,
+    )
+
+    verdict = compare_to_reference(res_champ, res_cand, primary_target="actual_points")
+    assert verdict.active_guardrails_passed is not None
+

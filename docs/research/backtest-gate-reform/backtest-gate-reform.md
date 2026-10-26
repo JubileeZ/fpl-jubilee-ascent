@@ -26,7 +26,7 @@
 | [#167](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/167) | `t1_warm_seed_confirmation` | P1 | `task` | How should the 2023-24 Season Archive be provisioned and wired as a warm confirmation seed? | Closed |
 | [#168](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/168) | `t2_short_panel_shrinkage` | P1 | `prototype` | How should short-panel priors and Neff sample-size shrinkage be regularized in ml_panel_features.py? | Closed |
 | [#169](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/169) | `t3_constrained_legal_xi` | P1 | `prototype` | How should Legal Formation XI enforce club quotas, starting budget caps, and squad churn guardrails? | Closed |
-| [#170](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/170) | `t4_exogenous_playable_pool` | P1 | `prototype` | How should exogenous playable pool masking and active-window guardrails be structured? | Open |
+| [#170](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/170) | `t4_exogenous_playable_pool` | P1 | `prototype` | How should exogenous playable pool masking and active-window guardrails be structured? | Closed |
 | [#171](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/171) | `t5_non_circular_bootstrap` | P1 | `prototype` | How should non-wrapping moving block bootstrap (L=5) and pooled 2-season gates be formulated? | Open |
 | [#172](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/172) | `t6_sqrt_ns_segment_guardrails` | P2 | `grilling` | How should seasonal segment loss guardrails be scaled by sqrt(ns) sample sizes? | Open |
 | [#173](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/173) | `t7_verification_adr0064` | P2 | `task` | What verification suite, candidate re-evaluations, and ADR 0064 validate the reformed gate? | Open |

@@ -61,6 +61,7 @@ class PromotionVerdict:
     min_effect: float = 0.0
     bootstrap_p: float | None = None
     segment_guardrails_passed: bool = True
+    active_guardrails_passed: bool = True
 
 
 def block_bootstrap_win_probability(
@@ -113,7 +114,12 @@ def guardrail_metrics(metrics: dict[str, Any]) -> GuardrailMetrics:
     )
 
 
-def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetrics) -> bool:
+def metrics_meet_guardrails(
+    candidate: GuardrailMetrics,
+    champion: GuardrailMetrics,
+    *,
+    check_churn: bool = True,
+) -> bool:
     meets_xmins = candidate.xmins_mae <= champion.xmins_mae * (1.0 + GUARDRAIL_REL_TOL)
     meets_bias = candidate.xp_bias <= champion.xp_bias + BIAS_ABS_TOL
     meets_rank = candidate.rank_correlation >= champion.rank_correlation - SPEARMAN_ABS_TOL
@@ -129,10 +135,110 @@ def metrics_meet_guardrails(candidate: GuardrailMetrics, champion: GuardrailMetr
         meets_playable = meets_playable and (candidate.playable_bias <= champion.playable_bias + BIAS_ABS_TOL)
 
     meets_churn = True
-    if candidate.squad_churn is not None and champion.squad_churn is not None:
+    if check_churn and candidate.squad_churn is not None and champion.squad_churn is not None:
         meets_churn = candidate.squad_churn <= champion.squad_churn + CHURN_GUARDRAIL_TOL
 
     return meets_xmins and meets_bias and meets_rank and meets_captain and meets_playable and meets_churn
+
+
+def diagnose_guardrail_regressions(
+    candidate: GuardrailMetrics,
+    champion: GuardrailMetrics,
+    *,
+    window_label: str = "",
+    check_churn: bool = True,
+) -> list[str]:
+    """Return diagnostic failure messages for guardrail metrics exceeding thresholds."""
+    pfx = f"{window_label} " if window_label else ""
+    reasons: list[str] = []
+    if (
+        candidate.xmins_mae is not None
+        and champion.xmins_mae is not None
+        and candidate.xmins_mae > champion.xmins_mae * (1.0 + GUARDRAIL_REL_TOL)
+    ):
+        reasons.append(
+            f"regressed {pfx}xMins MAE guardrail ({candidate.xmins_mae:.4f} vs {champion.xmins_mae:.4f})"
+        )
+    if (
+        candidate.xp_bias is not None
+        and champion.xp_bias is not None
+        and candidate.xp_bias > champion.xp_bias + BIAS_ABS_TOL
+    ):
+        reasons.append(
+            f"regressed {pfx}XP Bias guardrail ({candidate.xp_bias:.4f} vs {champion.xp_bias:.4f} + {BIAS_ABS_TOL:.2f})"
+        )
+    if (
+        candidate.rank_correlation is not None
+        and champion.rank_correlation is not None
+        and candidate.rank_correlation < champion.rank_correlation - SPEARMAN_ABS_TOL
+    ):
+        reasons.append(
+            f"regressed {pfx}Rank Correlation guardrail "
+            f"({candidate.rank_correlation:.4f} vs {champion.rank_correlation:.4f} - {SPEARMAN_ABS_TOL:.3f})"
+        )
+    if (
+        candidate.captain_regret is not None
+        and champion.captain_regret is not None
+        and candidate.captain_regret > champion.captain_regret + CAPTAIN_REGRET_ABS_TOL
+    ):
+        reasons.append(
+            f"regressed {pfx}Captaincy Regret guardrail "
+            f"({candidate.captain_regret:.3f} vs {champion.captain_regret:.3f} + {CAPTAIN_REGRET_ABS_TOL:.2f})"
+        )
+    if (
+        candidate.playable_mae is not None
+        and champion.playable_mae is not None
+        and candidate.playable_mae > champion.playable_mae * (1.0 + GUARDRAIL_REL_TOL)
+    ):
+        reasons.append(
+            f"regressed {pfx}Playable Pool MAE guardrail ({candidate.playable_mae:.4f} vs {champion.playable_mae:.4f})"
+        )
+    if (
+        candidate.playable_bias is not None
+        and champion.playable_bias is not None
+        and candidate.playable_bias > champion.playable_bias + BIAS_ABS_TOL
+    ):
+        reasons.append(
+            f"regressed {pfx}Playable Pool Bias guardrail ({candidate.playable_bias:.4f} vs {champion.playable_bias:.4f})"
+        )
+    if (
+        check_churn
+        and candidate.squad_churn is not None
+        and champion.squad_churn is not None
+        and candidate.squad_churn > champion.squad_churn + CHURN_GUARDRAIL_TOL
+    ):
+        reasons.append(
+            f"regressed {pfx}Squad Churn guardrail "
+            f"({candidate.squad_churn:.2f} vs {champion.squad_churn:.2f} + {CHURN_GUARDRAIL_TOL:.2f})"
+        )
+    return reasons
+
+
+def identify_active_gameweeks(
+    champion_df: pd.DataFrame,
+    candidate_df: pd.DataFrame,
+    *,
+    prediction_col: str = "projected_points",
+    tol: float = 1e-6,
+) -> list[int]:
+    """Identify gameweeks where candidate predictions diverge from champion.
+
+    G_active = {g : max_i |y_hat_cand_{i,g} - y_hat_champ_{i,g}| > tol}.
+    Returns sorted list of active gameweek numbers.
+    """
+    cols = ["gameweek", "player_id", prediction_col]
+    champ_sub = champion_df[cols].rename(columns={prediction_col: "champ_pred"})
+    cand_sub = candidate_df[cols].rename(columns={prediction_col: "cand_pred"})
+    merged = pd.merge(champ_sub, cand_sub, on=["gameweek", "player_id"], how="inner")
+    if merged.empty:
+        return []
+    merged["diff"] = (merged["cand_pred"] - merged["champ_pred"]).abs()
+    active_gws = [
+        int(gw)
+        for gw, max_diff in merged.groupby("gameweek")["diff"].max().items()
+        if max_diff > tol
+    ]
+    return sorted(active_gws)
 
 
 def compute_playable_pool_metrics(
@@ -143,7 +249,13 @@ def compute_playable_pool_metrics(
     xp_threshold: float = PLAYABLE_XP_THRESHOLD,
     minutes_threshold: float = PLAYABLE_MINUTES_THRESHOLD,
 ) -> tuple[dict[str, float], dict[str, float]]:
-    """Compute MAE and bias over the playable pool (xp >= 2.0 or minutes >= 30)."""
+    """Compute MAE and bias over the model-independent exogenous playable pool.
+
+    The playable pool mask is anchored strictly to exogenous criteria (champion xp >= 2.0
+    or actual minutes >= 30). Candidate predictions are strictly excluded from mask
+    construction to eliminate candidate-induced sample shifts and guarantee bit-for-bit
+    identical evaluation sample sizes across all tested candidates (ADR 0064).
+    """
     cols = ["gameweek", "player_id", "projected_points", target_column]
     if "actual_minutes" in champion_df.columns:
         cols.append("actual_minutes")
@@ -159,18 +271,23 @@ def compute_playable_pool_metrics(
         if "actual_minutes" in merged.columns
         else pd.Series(0.0, index=merged.index)
     )
-    playable = (
-        (merged["champ_xp"] >= xp_threshold)
-        | (merged["cand_xp"] >= xp_threshold)
-        | (minutes >= minutes_threshold)
-    )
+    # Exogenous mask: depends only on Champion projection and observed minutes
+    playable = (merged["champ_xp"] >= xp_threshold) | (minutes >= minutes_threshold)
     subset = merged[playable]
     if subset.empty:
         return {}, {}
     champ_err = subset["champ_xp"] - subset[target_column]
     cand_err = subset["cand_xp"] - subset[target_column]
-    champ_metrics = {"mae": float(champ_err.abs().mean()), "bias": float(champ_err.mean())}
-    cand_metrics = {"mae": float(cand_err.abs().mean()), "bias": float(cand_err.mean())}
+    champ_metrics = {
+        "mae": float(champ_err.abs().mean()),
+        "bias": float(champ_err.mean()),
+        "sample_count": int(len(subset)),
+    }
+    cand_metrics = {
+        "mae": float(cand_err.abs().mean()),
+        "bias": float(cand_err.mean()),
+        "sample_count": int(len(subset)),
+    }
     return champ_metrics, cand_metrics
 
 
@@ -214,6 +331,8 @@ def evaluate_historical_promotion_gate(
     reference_windows: dict[str, tuple[dict[str, Any], dict[str, Any]]] | None = None,
     gw_primary_deltas: Sequence[float] | None = None,
     bootstrap_min_p: float = BOOTSTRAP_MIN_P,
+    active_champion_metrics: dict[str, Any] | None = None,
+    active_candidate_metrics: dict[str, Any] | None = None,
 ) -> PromotionVerdict:
     """Pass = combined delta > 0 and ≥ min effect, ≥2/3 segments, guardrails within tolerance, and
     (when per-GW deltas given) block-bootstrap P(delta > 0) ≥ bootstrap_min_p."""
@@ -276,42 +395,24 @@ def evaluate_historical_promotion_gate(
             reasons.append("won 0 active in-season segments")
     if not guardrails_passed:
         reasons.append("failed one or more Champion guardrails")
-        if (
-            cand_g.captain_regret is not None
-            and champ_g.captain_regret is not None
-            and cand_g.captain_regret > champ_g.captain_regret + CAPTAIN_REGRET_ABS_TOL
-        ):
-            reasons.append(
-                f"regressed Captaincy Regret guardrail "
-                f"({cand_g.captain_regret:.3f} vs {champ_g.captain_regret:.3f} + {CAPTAIN_REGRET_ABS_TOL:.2f})"
+        reasons.extend(diagnose_guardrail_regressions(cand_g, champ_g, window_label="", check_churn=True))
+
+    active_cand_dict = active_candidate_metrics or candidate_windows.get("active")
+    active_champ_dict = active_champion_metrics or champion_windows.get("active")
+    active_guardrails_passed = True
+    if active_cand_dict and active_champ_dict:
+        active_cand_g = guardrail_metrics(active_cand_dict)
+        active_champ_g = guardrail_metrics(active_champ_dict)
+        active_guardrails_passed = metrics_meet_guardrails(active_cand_g, active_champ_g, check_churn=False)
+        if not active_guardrails_passed:
+            guardrails_passed = False
+            reasons.append("failed one or more active-window Champion guardrails")
+            reasons.extend(
+                diagnose_guardrail_regressions(
+                    active_cand_g, active_champ_g, window_label="active-window", check_churn=False
+                )
             )
-        if (
-            cand_g.playable_mae is not None
-            and champ_g.playable_mae is not None
-            and cand_g.playable_mae > champ_g.playable_mae * (1.0 + GUARDRAIL_REL_TOL)
-        ):
-            reasons.append(
-                f"regressed Playable Pool MAE guardrail "
-                f"({cand_g.playable_mae:.4f} vs {champ_g.playable_mae:.4f})"
-            )
-        if (
-            cand_g.playable_bias is not None
-            and champ_g.playable_bias is not None
-            and cand_g.playable_bias > champ_g.playable_bias + BIAS_ABS_TOL
-        ):
-            reasons.append(
-                f"regressed Playable Pool Bias guardrail "
-                f"({cand_g.playable_bias:.4f} vs {champ_g.playable_bias:.4f})"
-            )
-        if (
-            cand_g.squad_churn is not None
-            and champ_g.squad_churn is not None
-            and cand_g.squad_churn > champ_g.squad_churn + CHURN_GUARDRAIL_TOL
-        ):
-            reasons.append(
-                f"regressed Squad Churn guardrail "
-                f"({cand_g.squad_churn:.2f} vs {champ_g.squad_churn:.2f} + {CHURN_GUARDRAIL_TOL:.2f})"
-            )
+
     if reference_windows:
         for target in _REFERENCE_TARGETS:
             pair = reference_windows.get(target)
@@ -337,6 +438,7 @@ def evaluate_historical_promotion_gate(
         min_effect=min_effect,
         bootstrap_p=bootstrap_p,
         segment_guardrails_passed=segment_guardrails_passed,
+        active_guardrails_passed=active_guardrails_passed,
     )
 
 

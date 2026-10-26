@@ -6,8 +6,11 @@ from backtesting.promotion import (
     CONFIRMATION_BOOTSTRAP_MIN_P,
     block_bootstrap_win_probability,
     classify_live_lead,
+    compute_playable_pool_metrics,
+    diagnose_guardrail_regressions,
     evaluate_historical_promotion_gate,
     guardrail_metrics,
+    identify_active_gameweeks,
     metrics_by_season_window,
     metrics_meet_guardrails,
     primary_metric_name,
@@ -425,5 +428,166 @@ def test_squad_churn_guardrail() -> None:
     cand_fail["top_15_squad_churn"] = 1.20 + CHURN_GUARDRAIL_TOL + 0.10
     g_fail = guardrail_metrics(cand_fail)
     assert not metrics_meet_guardrails(g_fail, g_champ)
+
+
+def test_playable_pool_exogeneity_invariance() -> None:
+    """Verify Playable Pool mask is model-independent, row counts match bit-for-bit (ADR 0064)."""
+    # 2 gameweeks, 4 players each
+    champ_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 1, "projected_points": 0.5, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 3, "gameweek": 1, "projected_points": 1.0, "actual_points": 2.0, "actual_minutes": 45},
+            {"player_id": 4, "gameweek": 1, "projected_points": 0.2, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 5.5, "actual_points": 6.0, "actual_minutes": 90},
+            {"player_id": 2, "gameweek": 2, "projected_points": 0.3, "actual_points": 0.0, "actual_minutes": 0},
+            {"player_id": 3, "gameweek": 2, "projected_points": 2.5, "actual_points": 1.0, "actual_minutes": 60},
+            {"player_id": 4, "gameweek": 2, "projected_points": 0.1, "actual_points": 0.0, "actual_minutes": 0},
+        ]
+    )
+    # Candidate A: conservative 0.0 on reserve player 2
+    cand_a_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 4.5, "actual_points": 4.0},
+            {"player_id": 2, "gameweek": 1, "projected_points": 0.0, "actual_points": 0.0},
+            {"player_id": 3, "gameweek": 1, "projected_points": 1.2, "actual_points": 2.0},
+            {"player_id": 4, "gameweek": 1, "projected_points": 0.0, "actual_points": 0.0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 5.0, "actual_points": 6.0},
+            {"player_id": 2, "gameweek": 2, "projected_points": 0.0, "actual_points": 0.0},
+            {"player_id": 3, "gameweek": 2, "projected_points": 2.2, "actual_points": 1.0},
+            {"player_id": 4, "gameweek": 2, "projected_points": 0.0, "actual_points": 0.0},
+        ]
+    )
+    # Candidate B: speculative 4.8 on reserve player 2 (0 mins) in both GWs
+    cand_b_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 4.5, "actual_points": 4.0},
+            {"player_id": 2, "gameweek": 1, "projected_points": 4.8, "actual_points": 0.0},
+            {"player_id": 3, "gameweek": 1, "projected_points": 1.2, "actual_points": 2.0},
+            {"player_id": 4, "gameweek": 1, "projected_points": 0.0, "actual_points": 0.0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 5.0, "actual_points": 6.0},
+            {"player_id": 2, "gameweek": 2, "projected_points": 4.8, "actual_points": 0.0},
+            {"player_id": 3, "gameweek": 2, "projected_points": 2.2, "actual_points": 1.0},
+            {"player_id": 4, "gameweek": 2, "projected_points": 0.0, "actual_points": 0.0},
+        ]
+    )
+
+    champ_m_a, cand_m_a = compute_playable_pool_metrics(champ_df, cand_a_df, target_column="actual_points")
+    champ_m_b, cand_m_b = compute_playable_pool_metrics(champ_df, cand_b_df, target_column="actual_points")
+
+    # Row counts must be identical across all candidates and equal exactly 4 (players 1 and 3 in GW1 & GW2)
+    assert champ_m_a["sample_count"] == 4
+    assert champ_m_b["sample_count"] == 4
+    assert cand_m_a["sample_count"] == 4
+    assert cand_m_b["sample_count"] == 4
+
+    # Champion playable metrics must be bit-for-bit identical regardless of Candidate B's speculative projection
+    assert champ_m_a["mae"] == champ_m_b["mae"]
+    assert champ_m_a["bias"] == champ_m_b["bias"]
+
+    # Candidate metrics are also identical because player 2 is excluded by the exogenous mask
+    assert cand_m_a["mae"] == cand_m_b["mae"]
+    assert cand_m_a["bias"] == cand_m_b["bias"]
+
+
+def test_identify_active_gameweeks() -> None:
+    """Test identification of active gameweeks G_active where candidate diverges from champion."""
+    champ_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 3.0},
+            {"player_id": 2, "gameweek": 1, "projected_points": 4.0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 3.0},
+            {"player_id": 2, "gameweek": 2, "projected_points": 4.0},
+            {"player_id": 1, "gameweek": 3, "projected_points": 3.0},
+            {"player_id": 2, "gameweek": 3, "projected_points": 4.0},
+        ]
+    )
+    # Candidate identical in GW1 & GW2, differs in GW3
+    cand_df = pd.DataFrame(
+        [
+            {"player_id": 1, "gameweek": 1, "projected_points": 3.0},
+            {"player_id": 2, "gameweek": 1, "projected_points": 4.0},
+            {"player_id": 1, "gameweek": 2, "projected_points": 3.00000001},  # diff < 1e-6
+            {"player_id": 2, "gameweek": 2, "projected_points": 4.0},
+            {"player_id": 1, "gameweek": 3, "projected_points": 3.5},  # diff 0.5 > 1e-6
+            {"player_id": 2, "gameweek": 3, "projected_points": 4.0},
+        ]
+    )
+
+    active_gws = identify_active_gameweeks(champ_df, cand_df)
+    assert active_gws == [3]
+
+
+def test_active_window_guardrail_catches_dormant_fallback_dilution() -> None:
+    """Verify dual-window guardrail catches regressions diluted across dormant fallback weeks."""
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+        "active": _metrics(mae=2.0, regret=1.0),
+    }
+    champion_windows["combined"]["captain_regret"] = 1.00
+    champion_windows["active"]["captain_regret"] = 1.00
+
+    # In full season combined: candidate captain regret is 1.125 (delta +0.125 <= 0.15 tolerance -> would pass full-season)
+    # In active window: candidate captain regret is 1.250 (delta +0.250 > 0.15 tolerance -> must fail!)
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.90),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=1.7, regret=0.85),
+        "active": _metrics(mae=1.7, regret=0.85),
+    }
+    candidate_windows["combined"]["captain_regret"] = 1.125
+    candidate_windows["active"]["captain_regret"] = 1.250
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+    assert not verdict.passed
+    assert not verdict.guardrails_passed
+    assert not verdict.active_guardrails_passed
+    assert any("failed one or more active-window Champion guardrails" in r for r in verdict.reasons)
+    assert any("regressed active-window Captaincy Regret guardrail" in r for r in verdict.reasons)
+
+
+def test_active_window_guardrail_passes_when_active_window_improves() -> None:
+    """Verify dual-window guardrail passes when active window improves."""
+    champion_windows = {
+        "combined": _metrics(mae=2.0, regret=1.0),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=2.0, regret=1.0),
+        "active": _metrics(mae=2.0, regret=1.0),
+    }
+    champion_windows["combined"]["captain_regret"] = 1.00
+    champion_windows["active"]["captain_regret"] = 1.00
+
+    candidate_windows = {
+        "combined": _metrics(mae=1.8, regret=0.90),
+        "cold_start": _metrics(mae=2.0, regret=1.0),
+        "early_mid": _metrics(mae=2.0, regret=1.0),
+        "late": _metrics(mae=1.7, regret=0.80),
+        "active": _metrics(mae=1.7, regret=0.80),
+    }
+    candidate_windows["combined"]["captain_regret"] = 0.95
+    candidate_windows["active"]["captain_regret"] = 0.95
+
+    verdict = evaluate_historical_promotion_gate(champion_windows, candidate_windows)
+    assert verdict.passed
+    assert verdict.guardrails_passed
+    assert verdict.active_guardrails_passed
+
+
+def test_diagnose_guardrail_regressions_emits_clear_messages() -> None:
+    """Verify diagnose_guardrail_regressions formats window-aware violation reasons."""
+    champ = guardrail_metrics(_metrics(mae=2.0, bias=0.05, xmins_mae=10.0, spearman=0.5))
+    cand_regressed = guardrail_metrics(_metrics(mae=2.0, bias=0.20, xmins_mae=12.0, spearman=0.3))
+
+    reasons = diagnose_guardrail_regressions(cand_regressed, champ, window_label="active-window")
+    assert any("regressed active-window xMins MAE guardrail" in r for r in reasons)
+    assert any("regressed active-window XP Bias guardrail" in r for r in reasons)
+    assert any("regressed active-window Rank Correlation guardrail" in r for r in reasons)
+
+
 
 
