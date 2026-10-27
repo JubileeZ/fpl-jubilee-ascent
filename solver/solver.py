@@ -324,7 +324,7 @@ def solve_multi_period_fpl(data, options):
     bench_weights = options.get("bench_weights", {0: 0.03, 1: 0.21, 2: 0.06, 3: 0.002})
     bench_weights = {int(key): value for (key, value) in bench_weights.items()}
     ft_value = options.get("ft_value", 1.5)
-    ft_value_list = options.get("ft_value_list", {})
+    ft_value_list = options.get("ft_value_list") or {}
     ft_use_penalty = options.get("ft_use_penalty", None)
     itb_value = options.get("itb_value", 0.08)
     initial_ft = max(0, data.get("ft", 1))

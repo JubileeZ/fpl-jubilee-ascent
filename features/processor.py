@@ -208,11 +208,14 @@ def process_directory(input_dir: Path, output_dir: Path):
                 active_chip = c.get("name")
                 break
                 
+        raw_limit = transfers.get("limit")
+        raw_made = transfers.get("made", 0)
+        remaining_ft = max(0, int(raw_limit) - int(raw_made)) if raw_limit is not None else 1
         user_state_data = {
             "entry_id": entry_id,
             "bank": transfers.get("bank", 0),
             "value": transfers.get("value", 0),
-            "free_transfers": transfers.get("limit", 1),
+            "free_transfers": remaining_ft,
             "active_chip": active_chip
         }
         df_state = pd.DataFrame([user_state_data])
