@@ -216,8 +216,6 @@ def test_solve_cli_model_champion_string_uses_champion() -> None:
 
 
 def test_solve_cli_defaults_to_single_arm_strategic_gap_zero(capsys: pytest.CaptureFixture[str]) -> None:
-    from solver.scenarios import DEFAULT_STRATEGIC_OPTIONS
-
     plan = {
         "meta": {"solver_objective": 12.0},
         "summary": "Single plan summary (strategic, gap 0.0)",
@@ -229,7 +227,9 @@ def test_solve_cli_defaults_to_single_arm_strategic_gap_zero(capsys: pytest.Capt
         mock_single.assert_called_once()
         options_passed = mock_single.call_args.args[0]
         assert options_passed["weekly_hit_limit"] == 1
-        assert options_passed["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
+        assert options_passed["strategic_options"]["starter_xmins_floor"] == 65.0
+        assert options_passed["horizon_scale"] == pytest.approx(1.1196, rel=1e-3)
+        assert "2" in options_passed["ft_value_list"]
         assert options_passed["gap"] == 0.0
 
     captured = capsys.readouterr().out

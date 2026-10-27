@@ -48,6 +48,34 @@ DEFAULT_STRATEGIC_OPTIONS: dict[str, Any] = {
     "gk_transfer_friction": 1.5,
 }
 
+DEFAULT_STRATEGIC_FT_SCHEDULE: dict[str, float] = {
+    "2": 2.0,
+    "3": 1.2,
+    "4": 0.6,
+    "5": 0.2,
+}
+
+BASE_STRATEGIC_HORIZON = 5
+
+
+def effective_horizon_scale(
+    horizon: int,
+    decay_base: float = 0.85,
+    base_horizon: int = BASE_STRATEGIC_HORIZON,
+) -> float:
+    """Scale factor for one-off penalties based on cumulative discounted weeks (ADR 0065).
+
+    scale(H) = sum_{k=0}^{H-1} decay_base^k / sum_{k=0}^{base_horizon-1} decay_base^k
+    """
+    h = max(1, int(horizon))
+    base_h = max(1, int(base_horizon))
+    d = float(decay_base)
+    if abs(d - 1.0) < 1e-9:
+        return float(h) / float(base_h)
+    eff_h = sum(d**k for k in range(h))
+    eff_base = sum(d**k for k in range(base_h))
+    return eff_h / eff_base
+
 _STRATEGIC_KEY_ALIASES: dict[str, str] = {
     "hit_buffer": "hit_friction",
     "starter_min_xmins": "starter_xmins_floor",
@@ -87,7 +115,10 @@ def scenario_arm_overrides(
     *,
     start_gw: int = 1,
     free_transfer_bank: int = 1,
+    horizon: int = BASE_STRATEGIC_HORIZON,
+    decay_base: float = 0.85,
     strategic_options: Mapping[str, Any] | None = None,
+    strategic_ft_schedule: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     norm_arm = normalize_arm_key(arm)
     if norm_arm not in ARM_NAMES:
@@ -100,6 +131,7 @@ def scenario_arm_overrides(
             "hit_cost": LIVE_HIT_COST,
             "strategic_mode": False,
             "strategic_options": None,
+            "ft_value_list": None,
         }
     if norm_arm == ARM_UNCONSTRAINED:
         return {
@@ -107,14 +139,32 @@ def scenario_arm_overrides(
             "hit_cost": LIVE_HIT_COST,
             "strategic_mode": False,
             "strategic_options": None,
+            "ft_value_list": None,
         }
     strat = normalize_strategic_options(strategic_options)
+    scale = effective_horizon_scale(horizon, decay_base=decay_base)
+
+    scaled_hit_friction = round(float(strat.get("hit_friction", 1.8)) * scale, 4)
+    scaled_gk_friction = round(float(strat.get("gk_transfer_friction", 1.5)) * scale, 4)
+
+    raw_ft = strategic_ft_schedule or DEFAULT_STRATEGIC_FT_SCHEDULE
+    scaled_ft_schedule = {
+        str(k): round(float(v) * scale, 4)
+        for k, v in raw_ft.items()
+    }
+
+    strat_scaled = dict(strat)
+    strat_scaled["hit_friction"] = scaled_hit_friction
+    strat_scaled["gk_transfer_friction"] = scaled_gk_friction
+
     return {
         "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
         "hit_cost": LIVE_HIT_COST,
         "strategic_mode": True,
-        "strategic_options": strat,
-        **strat,
+        "strategic_options": strat_scaled,
+        "ft_value_list": scaled_ft_schedule,
+        "horizon_scale": round(scale, 4),
+        **strat_scaled,
     }
 
 
@@ -124,19 +174,37 @@ def apply_scenario_arm(
     *,
     start_gw: int = 1,
     free_transfer_bank: int = 1,
+    horizon: int | None = None,
+    decay_base: float | None = None,
     strategic_options: Mapping[str, Any] | None = None,
+    strategic_ft_schedule: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    norm_arm = normalize_arm_key(arm)
     options = dict(base_options)
     options.pop("num_transfers", None)
     options.pop("no_transfer_gws", None)
+    if norm_arm != ARM_STRATEGIC:
+        options.pop("ft_value_list", None)
+        options.pop("horizon_scale", None)
     active_strategic = dict(base_options.get("strategic_options") or {})
+    old_scale = float(base_options.get("horizon_scale") or 1.0)
+    if old_scale > 0 and abs(old_scale - 1.0) > 1e-4 and not strategic_options:
+        if "hit_friction" in active_strategic:
+            active_strategic["hit_friction"] = float(active_strategic["hit_friction"]) / old_scale
+        if "gk_transfer_friction" in active_strategic:
+            active_strategic["gk_transfer_friction"] = float(active_strategic["gk_transfer_friction"]) / old_scale
     if strategic_options:
         active_strategic.update(dict(strategic_options))
+    h = int(options.get("horizon", 6)) if horizon is None else int(horizon)
+    d = float(options.get("decay_base", 0.85)) if decay_base is None else float(decay_base)
     overrides = scenario_arm_overrides(
         arm,
         start_gw=start_gw,
         free_transfer_bank=free_transfer_bank,
+        horizon=h,
+        decay_base=d,
         strategic_options=active_strategic,
+        strategic_ft_schedule=strategic_ft_schedule,
     )
     options.update(overrides)
     return options

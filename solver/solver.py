@@ -1308,6 +1308,8 @@ def solve_multi_period_fpl(data, options):
                     "def_stack_cap": def_stack_cap,
                     "def_stack_penalty": def_stack_penalty,
                     "gk_transfer_friction": gk_transfer_friction,
+                    "horizon_scale": round(float(options.get("horizon_scale") or strategic_opts.get("horizon_scale") or 1.0), 4),
+                    "ft_schedule": ft_value_list,
                 },
                 "total_slack_penalty": round(total_slack, 2),
                 "total_hits": sum(row["hits"] for row in per_week_audit.values()),

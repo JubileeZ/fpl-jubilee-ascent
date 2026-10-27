@@ -7,6 +7,8 @@ from solver.scenarios import (
     ARM_STRATEGIC,
     ARM_UNCONSTRAINED,
     DEFAULT_STRATEGIC_OPTIONS,
+    DEFAULT_STRATEGIC_FT_SCHEDULE,
+    effective_horizon_scale,
     annotate_plan_with_egs,
     apply_scenario_arm,
     compute_scenarios_digest,
@@ -33,13 +35,39 @@ def test_no_hit_forbids_hits_for_whole_horizon() -> None:
     assert overrides["hit_cost"] == 4.0
 
 
+def test_effective_horizon_scale_discounting() -> None:
+    # Baseline H=5 should be exactly 1.0
+    assert effective_horizon_scale(5, decay_base=0.85, base_horizon=5) == pytest.approx(1.0, rel=1e-5)
+    # H=1 discounted weeks = 1.0, base H=5 discounted weeks = sum(0.85^k for k in range(5)) == 3.70866875
+    base_5_discounted = sum(0.85**k for k in range(5))
+    assert effective_horizon_scale(1, decay_base=0.85, base_horizon=5) == pytest.approx(1.0 / base_5_discounted, rel=1e-4)
+    # H=10 discounted weeks = sum(0.85^k for k in range(10))
+    h10_discounted = sum(0.85**k for k in range(10))
+    assert effective_horizon_scale(10, decay_base=0.85, base_horizon=5) == pytest.approx(h10_discounted / base_5_discounted, rel=1e-4)
+
+
 def test_strategic_applies_variance_defaults_and_hit_hurdle() -> None:
-    overrides = scenario_arm_overrides(ARM_STRATEGIC, start_gw=5, free_transfer_bank=2)
+    overrides = scenario_arm_overrides(ARM_STRATEGIC, start_gw=5, free_transfer_bank=2, horizon=5)
     assert "num_transfers" not in overrides
     assert "no_transfer_gws" not in overrides
     assert overrides["weekly_hit_limit"] == 1
     assert overrides["hit_cost"] == 4.0
     assert overrides["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
+    assert overrides["ft_value_list"] == DEFAULT_STRATEGIC_FT_SCHEDULE
+
+    # Test scaling at H=10
+    overrides_h10 = scenario_arm_overrides(ARM_STRATEGIC, start_gw=5, free_transfer_bank=2, horizon=10)
+    scale_10 = effective_horizon_scale(10, decay_base=0.85, base_horizon=5)
+    assert overrides_h10["hit_friction"] == pytest.approx(1.8 * scale_10, rel=1e-3)
+    assert overrides_h10["gk_transfer_friction"] == pytest.approx(1.5 * scale_10, rel=1e-3)
+    assert overrides_h10["ft_value_list"]["2"] == pytest.approx(2.0 * scale_10, rel=1e-3)
+    assert overrides_h10["ft_value_list"]["5"] == pytest.approx(0.2 * scale_10, rel=1e-3)
+
+    # Weekly penalties should remain unscaled
+    assert overrides_h10["starter_xmins_floor"] == 65.0
+    assert overrides_h10["starter_xmins_penalty"] == 10.0
+    assert overrides_h10["bench_cover_min"] == 12
+    assert overrides_h10["def_stack_cap"] == 2
 
     base = {"weekly_hit_limit": 0}
     applied = apply_scenario_arm(
@@ -47,6 +75,7 @@ def test_strategic_applies_variance_defaults_and_hit_hurdle() -> None:
         ARM_STRATEGIC,
         start_gw=5,
         free_transfer_bank=2,
+        horizon=5,
         strategic_options={"hit_friction": 3.0},
     )
     assert applied["weekly_hit_limit"] == 1
@@ -72,6 +101,20 @@ def test_apply_scenario_arm_clears_conflicting_pins() -> None:
     assert "no_transfer_gws" not in no_hit
     assert no_hit["weekly_hit_limit"] == 0
     assert no_hit["hit_cost"] == 4.0
+
+
+def test_apply_scenario_arm_idempotent_scaling_and_isolation() -> None:
+    base = {"horizon": 10, "decay_base": 0.85}
+    first_pass = apply_scenario_arm(base, ARM_STRATEGIC)
+    first_hit = first_pass["strategic_options"]["hit_friction"]
+
+    # Calling apply_scenario_arm again on the same options should yield identical uncompounded friction
+    second_pass = apply_scenario_arm(first_pass, ARM_STRATEGIC)
+    assert second_pass["strategic_options"]["hit_friction"] == pytest.approx(first_hit, rel=1e-5)
+
+    # Re-applying unconstrained onto strategic options must clear ft_value_list
+    unconstrained = apply_scenario_arm(second_pass, ARM_UNCONSTRAINED)
+    assert "ft_value_list" not in unconstrained or unconstrained["ft_value_list"] is None
 
 
 def test_unknown_arm_raises() -> None:

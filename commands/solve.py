@@ -662,6 +662,9 @@ def main() -> None:
     except ValueError as exc:
         parser.error(str(exc))
 
+    if args.decay_base is not None:
+        options["decay_base"] = args.decay_base
+
     strategic_cli_overrides = {
         k: getattr(args, k)
         for k in DEFAULT_STRATEGIC_OPTIONS
@@ -678,8 +681,6 @@ def main() -> None:
 
     if args.preseason:
         options["preseason"] = True
-    if args.decay_base is not None:
-        options["decay_base"] = args.decay_base
     if args.hit_cost is not None:
         options["hit_cost"] = args.hit_cost
     options["gap"] = args.gap if args.gap is not None else 0.0

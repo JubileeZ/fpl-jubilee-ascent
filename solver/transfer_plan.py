@@ -123,7 +123,17 @@ def format_strategic_audit_lines(audit: Mapping[str, Any] | None) -> list[str]:
     ]
     eff_hurdle = params.get("effective_hit_cost", 5.8)
     hits = audit.get("total_hits", 0)
-    lines.append(f"• Hit Hurdle: {eff_hurdle:.1f} xP ({hits} paid hits across horizon)")
+    scale = float(params.get("horizon_scale", 1.0))
+    scale_note = f" (scale: {scale:.2f}x)" if abs(scale - 1.0) > 0.01 else ""
+    lines.append(f"• Hit Hurdle: {eff_hurdle:.1f} xP ({hits} paid hits across horizon){scale_note}")
+
+    ft_sched = params.get("ft_schedule")
+    if ft_sched and isinstance(ft_sched, dict):
+        sched_str = ", ".join(
+            f"{k}FT={float(v):.1f}"
+            for k, v in sorted(ft_sched.items(), key=lambda x: int(x[0]) if str(x[0]).isdigit() else str(x[0]))
+        )
+        lines.append(f"• Free Transfer Values: {sched_str}")
 
     sub_floor = audit.get("sub_floor_starters") or []
     if sub_floor:

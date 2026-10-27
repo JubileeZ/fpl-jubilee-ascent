@@ -538,6 +538,10 @@ _Avoid_: optimization target, fixed halfway bar, pooled all-position swing
 Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
 _Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
 
+**Free Transfer Value**:
+Solver Objective credit per Free Transfer held in Free Transfer Bank. Marginal value may differ by bank size (spare Free Transfer kept as injury cover worth more than fifth). Not part of Expected GW Score.
+_Avoid_: FT bank, rollover bonus, treating Free Transfer Value as xP
+
 **ITB**:
 Unused cash of the User Squad in £m (official "in the bank"). Squad What-If ITB = current ITB + Selling Prices of Players out − Prices of Players in. Distinct from Free Transfer Bank.
 _Avoid_: Free Transfer Bank, Price sum, remaining budget, bank (ambiguous)
