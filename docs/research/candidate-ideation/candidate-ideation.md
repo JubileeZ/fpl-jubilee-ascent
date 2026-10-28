@@ -1,17 +1,50 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-10-26T20:25:00+07:00  
-**Data stamp**: ADR 0064 Promotion Gate & Wayfinder Map #166  
+**Updated**: 2026-10-28T14:21:33+07:00
+**Data stamp**: Local source/ledger audit at HEAD `d2d24154`; no new empirical results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue Exhausted (Exit b) — Model Champion `adaptive_causal_challenger` stands  
+**Status**: Batch 2 queued: six untested, one blocked; Champion `adaptive_causal_challenger` unchanged
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
 **Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` / `spec_path` — primary candidate work queue index.  
 **Dossiers**: [ideas/](ideas/) — full LaTeX formulations, cold-start strategies, and Python code skeletons.  
 **Smoke Results**: [smoke_results.csv](smoke_results.csv) — empirical dev-season gate runs across prototype variants.
+**Agent Reports**: [Minutes](sol-max-minutes-response.md) · [Attack](sol-max-attack-response.md) · [Defense](sol-max-defense-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
 
 ---
+
+## Agent Ideation Review (Batch 2: 2026-10-28)
+
+Three independent `gpt-6.1-sol` agents, `reasoning_effort=max`; specialist lanes: minutes/budget starters, attacking events, defensive/GKP events. Full prompt plus all 93 ledger rows screened. Reports contain eight specialist proposals; shared exposure reconstruction merged into one mechanism, leaving seven unique hypotheses. Ranking below reflects source evidence and implementation feasibility, never measured predictive improvement.
+
+1. **Exposure-coherent participation reconstruction**: First investigate deterministic correctness. Late ML writes final participation/minutes and `xp_minutes`, while event values remain copied from earlier `champ_proj`; attack multipliers act on those earlier values. Replay unchanged scoring links at final coherent states, preserving rates and GW1-19 fallback. Minutes and defense agents found same path independently. Before any experiment, resolve probability simplex, capped conditional-duration/P(60) semantics, inherited effective rate transformations, and single bonus allocation. See [source assembly](../../../models/ml_component_challenger.py#L366).
+2. **Joint xGI intensity and allocation**: First standalone event-rate hypothesis. Joint own xG/xA process model shares information between total involvement and shooter/creator allocation. Nonzero cross-signal derivative distinguishes proposal from independent scalar shrinkage. Existing history sufficient; four proposed variants. Untested generalized likelihood and prior coupling remain risks.
+3. **Binomial fixture opportunities in inherited start anchor**: Replace player-GW any-start Bernoulli target with starts out of observed fixture opportunities. Active causal panel already fixture-level; proposal targets inherited learned-start anchor only. Singleton variant; effect may be narrow or absorbed by existing mass preservation/H1. Never infer missing rows as DNP.
+4. **Full-duration survival likelihood**: Replace H3 duration-offset likelihood with censored starting-duration survival model; derive mean minutes and P(60) jointly. Distinct from direct Beta-binomial threshold fit. Requires explicit immutable seed-hazard summaries and coherent decoder; four proposed variants. Short-panel uncertainty remains unresolved.
+5. **Opponent conditional attacking-role allocation**: Relative opponent-by-attacker-profile concession signal, with total attacking expectation preserved. Distinctness depends on conditional role contrasts, not scalar opponent strength. Three proposed variants. Coarse profiles, schedule composition, and final normalization ordering require care.
+6. **Sequential attacking-opportunity change detection**: Continuous xG/xA rate-change likelihood against stationary reference. Four proposed variants; highest numerical/false-change risk among event proposals. No participation HMM or fixed-decay retune.
+7. **Habit-adjusted cumulative playing dose**: Deferred pending schedule provenance. Actual recent played-minute dose relative to habitual exposure supplies proposed new signal, beyond fixed rest-day congestion shift. Historical scheduled dates must have been known at each deadline; final archive schedule alone insufficient. Missing provenance requires fallback or separately specified deadline-only dose. Four variants remain paper specification, not executable queue work.
+
+### Source corrections and decision
+
+Default Champion uses `clip((GW-3)/5, 0, 1)`, already full weight at GW20; documented five-GW late ramp is not executed. Active constructor leaves `use_neff_alpha=False`; continuous N_eff helper is optional. Prompt corrected without model behavior change. Warm seed enters feature construction; model-fit history must not be assumed to contain raw prior-season rows.
+
+Decision: seven deduplicated hypotheses added to queue with full dossiers, source context, and mechanism audits. Six `untested`; workload `blocked (historical schedule provenance)`. Survival carries `after:EXT-07`; prerequisite failure never authorizes stacking a dead lever. Prior six verdict rows preserved. No candidate implementations, empirical runs, ledger verdicts, or holdout inspection. Mechanism screens provisional until implementation matches stated distinctions; recheck authoritative ledger before experimentation.
+
+Queue dossiers, in priority order:
+
+- [EXT-07: Exposure reconstruction](ideas/EXT-07-exposure-coherent-participation-reconstruction.md).
+- [EXT-08: Joint xGI intensity/allocation](ideas/EXT-08-joint-xgi-intensity-and-allocation.md).
+- [EXT-09: Binomial fixture opportunities](ideas/EXT-09-binomial-fixture-exposure-for-the-inherited-start-anchor.md).
+- [EXT-10: Duration survival](ideas/EXT-10-full-duration-survival-likelihood-for-starting-players.md), after EXT-07.
+- [EXT-11: Opponent role allocation](ideas/EXT-11-opponent-conditional-attacking-role-allocation.md).
+- [EXT-12: Opportunity change detection](ideas/EXT-12-sequential-attacking-opportunity-change-detection.md).
+- [EXT-13: Habit-adjusted playing dose](ideas/EXT-13-habit-adjusted-cumulative-playing-dose.md), blocked.
+
+Priority: deterministic state/exposure audit, then joint xGI coupling. Treat remaining mechanisms independently; shared decoder prerequisite must not conceal incremental effects of new estimated heads. Expected gains, occurrence frequency of state inconsistencies, and promotion success unknown.
+
+Reproduce: regenerate prompt, read three named agent reports and current ledger, recheck referenced source paths, consolidate shared mechanism once. Preserve GW1-19 parity, confirmation freeze, and sealed 2026-27 GW6+ boundary. Report contains no new empirical metric cache.
 
 ## Queue Exploration Verdict (Batch 1: 2026-10-26)
 

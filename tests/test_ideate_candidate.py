@@ -7,6 +7,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pandas as pd
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -192,12 +193,20 @@ def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
 
 
 def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance() -> None:
+    from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
+
     gen = _load_skill_module("generate_prompt", "generate_prompt.py")
     md = gen.build_prompt_markdown("general")
     assert "### 1-Shot Concrete Exemplar" in md
     assert "Python Code Skeleton (Optional" in md
     assert "### Candidate 1: Continuous Game-Pace & Match-State Elasticity" in md
     assert "Asymmetric Substitution Hazard & Beta-Binomial Survival" not in md
+    champion = AdaptiveCausalChallengerModel()
+    assert not champion.use_neff_alpha
+    assert min(1.0, max(0.0, (champion.min_ml_gw - 3.0) / champion.ramp_span)) == 1.0
+    assert "already 1.0 at GW20" in md
+    assert "inherits `use_neff_alpha=False`" in md
+    assert "via a 5-GW Bayesian ramp" not in md
 
 
 def test_load_active_dead_levers_filters_unlocked_and_active() -> None:
@@ -244,6 +253,40 @@ def test_generate_prompt_dynamically_injects_subsystem_dead_levers() -> None:
     # General focus prompt includes structural dead levers
     md_gen = gen.build_prompt_markdown("general")
     assert "Strict Negative Constraints (Cross-Cutting Structural Dead Levers" in md_gen
+
+
+def test_generate_prompt_keeps_new_structural_locks_in_every_focus(monkeypatch: pytest.MonkeyPatch) -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    locked_lever: dict[str, str] = {
+        "lever": "Synthetic newly locked structural mechanism",
+        "tried_as": "synthetic_variant",
+        "result": "dev failed",
+        "revisit_after": "2099-10-28",
+        "subsystem": "structural",
+    }
+    monkeypatch.setattr(gen, "load_active_dead_levers", lambda: [locked_lever])
+
+    for focus in gen.FOCUS_PROMPTS:
+        md = gen.build_prompt_markdown(focus)
+        assert locked_lever["lever"] in md
+        assert "locked until 2099-10-28" in md
+        assert "Early ML must use continuous" not in md
+
+
+def test_generate_prompt_tracks_solver_options_and_sealed_holdout(monkeypatch: pytest.MonkeyPatch) -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    monkeypatch.setattr(gen, "DEFAULT_STRATEGIC_OPTIONS", {"hit_friction": 2.1, "gk_transfer_friction": 1.7})
+    monkeypatch.setattr(gen, "DEFAULT_STRATEGIC_FT_SCHEDULE", {"2": 3.4})
+    monkeypatch.setattr(gen, "BASE_STRATEGIC_HORIZON", 6)
+    md = gen.build_prompt_markdown("general")
+
+    assert "ADR 0065" in md
+    assert r"2.1 \cdot s(H)" in md
+    assert r"-1.7 \cdot s(H)" in md
+    assert 'ft_value_list = {"2": 3.4} * s(H)' in md
+    assert "$H_0=6$" in md
+    assert "Freeze each Candidate before its single 2024-25 confirmation run" in md
+    assert "2026-27 GW6+ is sealed" in md
 
 
 def test_context_md_defines_candidate_ledger_and_dead_lever_terms() -> None:

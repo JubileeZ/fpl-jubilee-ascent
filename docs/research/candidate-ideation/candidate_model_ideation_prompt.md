@@ -9,9 +9,10 @@ You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an
 We operate under strict empirical model governance:
 - **Active Model Champion**: `adaptive_causal_challenger` (provisional). It builds upon `def_xg_shrink_challenger` with 100% Champion stability across Gameweeks 1–19, activating stacked zero-leakage Causal Panel ML models (Ridge logistic $p_{\text{start}}$, Ridge duration offset, shrunk xG goals residual, leave-one-out assist finishing) from Gameweek 20 onward.
 - **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
-- **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 5–10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061: paid hit hurdle, starter minutes floors, bench coverage, defensive stack caps, and GK transfer friction).
+- **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0064)**: Any new model ("Candidate") must pass our reformed two-season gate: Constrained Legal Formation XI (£83.5m cap, $\le 3$ per club), rolling squad churn guardrail ($\le \text{Champ} + 0.50$ players/GW), warm-seeded confirmation (2023–24 seed for 2024–25 conf, matching live deployment $N_{\text{prior}}=1$), non-wrapping Moving Block Bootstrap ($L=5$, $B=20,000$), three bootstrap bars (Dev $P \ge 0.75$, Warm Conf $P \ge 0.65$, Pooled Stratified $P \ge 0.85$), $\sqrt{n_s}$-scaled segment floors (cold_start $\ge -0.25$, early_mid $\ge -0.15$, late $\ge -0.13$), and dual-window safety guardrails across both full season and active gameweeks.
-- **Historical Ledger**: Over 93 candidate model levers have been empirically evaluated. 83 have failed or been logged dead (83 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
+- **Historical Ledger**: 93 candidate model levers recorded. 83 have failed or been logged dead (83 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
+- **Evaluation Boundary**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat `adaptive_causal_challenger` and `def_xg_shrink_challenger` under the ADR 0064 Historical Promotion Gate.
@@ -25,7 +26,7 @@ Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW
 4. **Bonus Pool Saturation Caps** ($B_{{\max}} \in [1.2, 1.5]$): Compresses the expected return of talisman forwards (Haaland, Salah), distorting captaincy allocation ($\Delta = -0.16 \dots -0.38$ pts/GW).
 5. **Raw / Unshrunk Opponent Matchup Multipliers**: Raw Poisson multipliers or FDR tables drastically over-project returns in green fixtures and breach playable pool bias ($\Delta = -0.68$ pts/GW).
 6. **Static Schedule Congestion Shifts** (e.g. flat $-0.20$ logit on $p_{{\text{{start}}}}$ for $<3.5$ days rest): Penalizes nailed stamina outliers (Bruno Fernandes, Saliba) who play every 3 days without performance decay; failed confirmation ($-0.105$ pts/GW).
-7. **Discrete Step-Function Early ML Activation** (e.g. activating causal ML at GW8 or GW10, even with $[-10\%, +10\%]$ clamps): Early-season ML over-regularizes talisman hauls and degrades captaincy regret ($\Delta = -2.28$ to $-5.78$ pts/GW, $P_{{\text{{pooled}}}} = 0.000$). Early ML must use continuous $N_{{\text{{eff}}}}$ shrinkage, not discrete early switches.
+7. **Discrete Step-Function Early ML Activation** (e.g. activating causal ML at GW8 or GW10, even with $[-10\%, +10\%]$ clamps): Early-season ML over-regularizes talisman hauls and degrades captaincy regret ($\Delta = -2.28$ to $-5.78$ pts/GW). Preserve Champion GW1-19 fallback; continuous sample-size shrinkage does not reopen locked early-activation mechanisms.
 8. **Latent HMM Participation Modeling**: Discrete role transition matrices are noisy in 38-game samples; destroys minutes MAE guardrails ($\Delta = -0.90 \dots -3.70$ pts/GW).
 9. **Transfer Market Churn / Price Momentum as DNP Hazard**: Casual manager selling reflects lagged sentiment and fixture swings, not manager benching hazard ($\Delta = -0.20 \dots -1.34$ pts/GW).
 10. **Zero-Sum Teammate Absence xG Redistribution**: Sidelined talisman volume is absorbed by tactical shape changes and lower team quality, not linearly captured by remaining teammates ($\Delta = -0.72 \dots -2.28$ pts/GW).
@@ -35,14 +36,39 @@ Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW
 14. **Goalkeeper Fixture Slot Softmax**: Softmaxing GKP start probabilities per club fixture degrades minutes discrimination ($\Delta = -0.11 \dots -1.21$ pts/GW).
 15. **Fitted Plackett-Luce BPS Ridge Utility on Observed BPS**: Directly regressing observed BPS introduces severe overfitting ($\Delta = -1.44 \dots -1.81$ pts/GW).
 
+### Active Dead Levers (Structural & Cross-Cutting Subsystem)
+Screen every proposal against these current ledger mechanisms, including continuous early-activation variants; matching mechanisms remain locked until their revisit dates:
+- **In-season ridge G/A refit + per-player offsets n/(n+15) (any K)** (tried as: `A1 d_k50 d_k150 a_weights_only b_default_w_offsets b_default_w_k150`, result: `combined -0.13..-1.41; bias up`, locked until 2027-09-28)
+- **Pooled fit without offsets** (tried as: `B2 pf_pooledfit_nooffs`, result: `combined -0.96 1/3`, locked until 2027-09-28)
+- **Learned correction as Poisson GLM** (tried as: `B1 poisson_unfit_*`, result: `<= +0.51; lam10 FAIL`, locked until 2027-09-28)
+- **Ensemble with component_baseline** (tried as: `B2 ens_P+CB* component_baseline*`, result: `|bias| 0.17-1.36 FAIL`, locked until 2027-09-28)
+- **Equal-weight ensembles of hybrid Candidates** (tried as: `B2 ens_eq_*`, result: `best +1.01 weight-fragile; below single-model winner`, locked until 2027-09-28)
+- **Fixture swing multiplicative (s_att) and additive arms** (tried as: `fixture-swing-candidates`, result: `mult breached easy cap +0.681; additive worse easy bias`, locked until 2027-09-24)
+- **Opponent-relative team Poisson lambda rate multiplier** (tried as: `team-poisson-lambda`, result: `over-predicts easy fixtures`, locked until 2027-09-22)
+- **Uncalibrated Matchup Share** (tried as: `matchup-share-addon`, result: `all-pool worse than neutral`, locked until 2027-09-22)
+- **Terminal archive columns as model inputs** (tried as: `any`, result: `leakage: season-end values in archive features`, permanently locked)
+- **Learned hurdle / direct residual correction on face-value base** (tried as: `smoke b2_res_* (6; history-reconstructed base; no memory)`, result: `all -0.98..-1.57 0/3; prior gain needed cross-GW memory`, locked until 2027-09-28)
+- **Dual-Vector ratios shrunk toward 1.0** (tried as: `untried`, result: `superseded by shipped ADR 0040 (Calibrated Matchup Share); multiplicative scaling failed easy-bias cap (+0.681 vs neutral +0.221) and Jensen CS inflation`, locked until 2027-09-30)
+- **True scoreline Poisson (player share x lambda; CS = e^-lambda_against)** (tried as: `smoke b1_sl_* (6)`, result: `attack half reduces algebraically to Dead opponent rate multiplier (rows void); defence half best +0.491 1/3 P 0.70`, locked until 2027-09-28)
+- **Penalty-taker signal from per90 only** (tried as: `smoke a3_pen_taker_* (6)`, result: `delta +0.0000 0/3; fixture unscaling for derived penalty takers inert on top-11`, locked until 2027-09-28)
+- **Pooled red-card rate (Position x state pooled red rate; player shrink K>=3600; K>=9000; K inf)** (tried as: `smoke crd_02_k3600 crd_02_k9000 crd_02_kinf (3)`, result: `all negative -0.13..-0.26; best crd_02_k9000/kinf -0.126 1/3 boot P 0.355`, locked until 2027-09-29)
+- **Penalty-miss de-noising (Replace noisy per-player penalty miss rate with zero; K3600; K9000; league const)** (tried as: `smoke atk_07_zero atk_07_k3600 atk_07_k9000 atk_07_league_const (4)`, result: `all negative -0.41..-0.43 0/3 boot P <= 0.013; best atk_07_zero -0.409 0/3 P 0.013`, locked until 2027-09-29)
+- **Empirical-Bayes yellow card rate (Rate = (sum w*yc + K_pos*prior)/(sum w*min + K_pos)*90; K_pos 900; 1800; 3600; Method of Moments)** (tried as: `smoke crd_01_k900 crd_01_k1800 crd_01_k3600 crd_01_mom (4)`, result: `all negative -0.51..-0.78 1/3 boot P <= 0.185; best crd_01_k1800 -0.505 1/3 P 0.185`, locked until 2027-09-29)
+- **Club starting mass conservation (sum p_start=11) and vacancy redistribution (capacity-capped and formation-constrained)** (tried as: `smoke pos_cap_k90 pos_cap_k95 pos_cap_shrink form_slot_base form_slot_dnp2 form_slot_pure11 (6)`, result: `all negative -3.14..-4.13 0/3 boot P <= 0.022; Playable Pool Bias exploded 0.65-0.70 vs 0.42; Captaincy Regret regressed 5.26-5.58 vs 4.69`, locked until 2027-10-01)
+- **Club x DEF pooled prior stacked with K=2400 shrinkage (club prior 5 matches; DEF K 1800-2400)** (tried as: `smoke club_def_k1800 club_def_k2400 (2)`, result: `all negative -0.81..-0.84 0/3 segs boot P <= 0.005; club-level small sample noise`, locked until 2027-10-13)
+- **Apex Predator Challenger (Composite ML p_start + start duration + shrunk xG goals + LOO assist finishing with GW1-9 Champion stability and schedule congestion)** (tried as: `apex_predator_challenger`, result: `dev 2025-26 PASS +0.840 2/3 boot P 0.992; confirm 2024-25 FAIL -0.153 1/3 boot P 0.376 (early_mid regression -0.959 < -0.15)`, locked until 2027-10-21)
+- **Price-Stratified Huber-Regularized Continuous-N_eff Causal Panel (price-tier centering, Huber duration, continuous N_eff ramp)** (tried as: `smoke ext_05_* (4 variants)`, result: `dev 2025-26 FAIL: combined -1.004 1/3 segs boot P 0.012; early_mid catastrophic regression -2.643 < -0.15; guardrails failed`, locked until 2027-10-26)
+
 ### Active Dead Levers by Subsystem Summary (83 Locked Levers)
-Over 83 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
+83 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
 - **Participation & Minutes (18 dead levers)**: e.g. Beta-Binomial P(60|state), starter tenure decay, naive nailed-starter multipliers.
 - **Goals & Finishing (17 dead levers)**: e.g. high-K finishing pools ($K \ge 3600$), unsharp xG slope flattening, flat position goal scales.
 - **Key Passes & Assists (8 dead levers)**: e.g. pooled assist finishing offsets, uncalibrated raw xA.
 - **Goalkeepers & Saves (3 dead levers)**: e.g. club SoT volume x pooled save rate, slot probability softmax.
 - **Defense & Clean Sheets (7 dead levers)**: e.g. defcon venue/opposition pressure, post-link CS inflation, club-pooled per90 GC.
 - **Bonus Points / BPS (10 dead levers)**: e.g. BPS pool saturation caps, softmax temperature retuning.
+- **Budget & Valuation (0 dead levers)**: pricing and budget mechanisms.
+- **Structural & Cross-Cutting (20 dead levers)**: full current list above.
 
 ### Required Output Structure for Each Candidate Idea
 Format each proposed candidate with a level-3 markdown heading `### Candidate <N>: <Concise Name>` followed by these exact numbered sections (parsed directly by our queue ingestion tool):
@@ -156,20 +182,20 @@ BaseModel (models/base.py)
    - Prevents the optimizer from loading up on center-backs who head home early fluke goals.
 6. **Adaptive Causal ML Activation (ADR 0063)**:
    - **GW 1–19**: Evaluates purely through `def_xg_shrink_challenger`.
-   - **GW 20+**: Activates stacked Causal Panel ML models via a 5-GW Bayesian ramp ($w_{\text{ML}} = \min(1.0, \frac{\text{GW} - 19}{5})$):
+   - **GW 20+**: Activates stacked Causal Panel ML models. Executed default weight is $w_{\text{ML}} = \text{clip}((\text{GW} - 3)/5, 0, 1)$, already 1.0 at GW20. The class docstring describes a five-GW ramp, but the inherited implementation anchors its formula at GW3:
      - **Tier 1 Minutes**: Ridge logistic regression on $p_{\text{start}}$ ($H_1$) + Ridge linear regression on starter duration offset ($H_3$). Sub-in classifier ($H_2$) disabled.
      - **Tier 2 Events**: Group A Shrunk xG Goals Residual + Group B Calibrated Leave-One-Out (LOO) Assist Finishing ($\omega = 0.95^{\Delta \text{GW}}$ exponential decay, bounded $[0.88, 1.15]$). Defensive and Bonus ML heads disabled.
 7. **Empirical Bayes Priors & Continuous $N_{\text{eff}}$ Shrinkage (ADR 0064 / Issue #168)**:
-   - In `models/ml_panel_features.py`, short-panel features are regularized with Empirical Bayes positional price-tier priors ($K_{\text{prior}} = 12.0$).
-   - Continuous sample-size shrinkage replaces discrete gameweek thresholds:
+   - In `models/ml_panel_features.py`, short-panel features are regularized with Empirical Bayes positional price-tier priors ($K_{\text{prior}} = 12.0$); panel rate prior is 1080 pseudo-minutes, separate from the inherited DEF 2400/360 projection adjustment.
+   - Continuous sample-size shrinkage is available when `use_neff_alpha=True`. Active Champion inherits `use_neff_alpha=False`; this optional helper does not replace its current activation rule:
      $$\alpha_g = \text{clip}\left(\frac{N_{\text{eff}, g} - N_{\min}}{N_{\text{full}} - N_{\min}}, 0.0, 1.0\right)$$
      where $N_{\text{eff}, g} = 0.5 N_{\text{seed}} + N_{\text{in\_season}, <g}$, with $N_{\min} = 3500$, $N_{\text{full}} = 7500$.
 
 ---
 
-### 2. Downstream Optimization: HiGHS MILP Solver & Strategic Constraints (ADR 0061)
+### 2. Downstream Optimization: HiGHS MILP Solver & Strategic Constraints (ADR 0061, ADR 0065)
 
-The solver does not pick an isolated 11-man team; it solves a multi-period Mixed-Integer Linear Program over horizon $W \in [5, 10]$ gameweeks, balancing squad transfers, bank value, captaincy, and bench order:
+The solver optimizes a multi-period Mixed-Integer Linear Program over horizon $W \in [1, 10]$ gameweeks, balancing squad transfers, bank value, captaincy, and bench order:
 
 $$\max_{\mathbf{x}, \mathbf{c}, \mathbf{b}, \mathbf{t}_{\text{in}}, \mathbf{t}_{\text{out}}} \sum_{w=1}^W \gamma^{w-1} \left( \sum_{p=1}^P \left( x_{p,w} \hat{y}_{p,w} + c_{p,w} \hat{y}_{p,w} + b_{p,w} v_b \hat{y}_{p,w} \right) - \text{Cost}(w) - \text{Penalties}(w) \right)$$
 
@@ -182,9 +208,12 @@ Where:
 #### The 5 Strategic Variance Constraints (ADR 0061)
 Because optimizers aggressively exploit uncalibrated variance (The Optimizer's Curse), unconstrained solves select fragile, rotation-prone assets. ADR 0061 embeds 5 linear constraints with continuous slack variables:
 
+ADR 0065 scales one-off hit/GK friction by cumulative discounted horizon relative to $H_0=5$ (default decay $\delta=0.85$):
+$$s(H) = \frac{\sum_{k=0}^{H-1} \delta^k}{\sum_{k=0}^{4} \delta^k}$$
+
 1. **Hit Friction Buffer**:
-   $$\text{Penalty}_{\text{hit}}(w) = 1.8 \cdot \text{PaidHits}(w)$$
-   Raises the effective hurdle for an immediate transfer hit from $4.0$ to $5.8$ projected points, eliminating speculative -4 point churn.
+   $$\text{Penalty}_{\text{hit}}(w) = 1.8 \cdot s(H) \cdot \text{PaidHits}(w)$$
+   Effective hit hurdle: $4.0 + 1.8 \cdot s(H)$ projected points ($5.8$ at $H=5$).
 2. **Starter Expected Minutes Floor**:
    $$\forall p \in \text{Outfield Starters}, \quad xMins_{p,w} + s^{\text{mins}}_{p,w} \ge 65.0, \quad s^{\text{mins}}_{p,w} \ge 0$$
    Objective penalty: $-10.0 \cdot s^{\text{mins}}_{p,w}$. Prevents fielding 50-minute high-upside wingers as core starters.
@@ -195,8 +224,10 @@ Because optimizers aggressively exploit uncalibrated variance (The Optimizer's C
    $$\forall c \in \text{Clubs}, \quad \sum_{p \in \text{DEF} \cup \text{GKP}, \text{club}(p)=c} x_{p,w} - s^{\text{stack}}_{c,w} \le 2, \quad s^{\text{stack}}_{c,w} \ge 0$$
    Objective penalty: $-1.2 \cdot s^{\text{stack}}_{c,w}$. Prevents triple-defense correlation wipeouts on single match outcomes.
 5. **Goalkeeper Transfer Friction**:
-   $$-1.5\text{ pt objective penalty on any non-wildcard GKP transfer-in}.$$
-   Goalkeeper variance is dominated by Poisson save/CS noise; burning FTs on lateral GK moves is mathematically negative.
+   $$-1.5 \cdot s(H)\text{ pt objective penalty on non-Wildcard/non-Free-Hit GKP transfer-in}.$$
+
+#### Emergency Free Transfer Value (ADR 0065)
+Strategic marginal FT values for bank states 2-5: `ft_value_list = {"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * s(H)`. First spare FT receives highest emergency value; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = 0.2` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
 
 ---
 
