@@ -35,6 +35,15 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
         exit 0
       fi
     done
+
+    # Single active packet invariant: at most one packet may have Status: In Progress
+    azg_count_in_progress_packets ".agents/work-packets"
+    if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
+      reason="Multiple active Work Packets found with Status: In Progress:${AZG_IN_PROGRESS_PKTS}. Only one active packet may be In Progress at a time. Mark others as Status: Parked or complete them."
+      jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
+      shopt -u nullglob
+      exit 0
+    fi
     shopt -u nullglob
     if azg_packet_is_finished "task.md"; then
       reason="Legacy task.md is complete. Delete task.md (azg apply migrates it to .agents/work-packets/) plus implementation_plan.md / walkthrough.md if present."

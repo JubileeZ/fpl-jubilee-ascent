@@ -81,6 +81,13 @@ _azg_packets=(.agents/work-packets/*.md)
 shopt -u nullglob
 # Bash 3.2 + set -u: empty "${arr[@]}" is unbound. Skip when no packets.
 if [ "${#_azg_packets[@]}" -gt 0 ]; then
+  if [ -f ".agents/hooks/commit-scan.sh" ]; then
+    # shellcheck source=../.agents/hooks/commit-scan.sh
+    source ".agents/hooks/commit-scan.sh"
+  else
+    fail "Missing .agents/hooks/commit-scan.sh required for Work Packet verification"
+  fi
+
   for _pkt in "${_azg_packets[@]}"; do
     for marker in \
       "**Objective:**" \
@@ -98,7 +105,21 @@ if [ "${#_azg_packets[@]}" -gt 0 ]; then
         fail "Work Packet ${_pkt} missing ${marker}"
       fi
     done
+
+    # Finished Work Packet must not linger on disk
+    if azg_packet_is_finished "${_pkt}"; then
+      fail "Finished Work Packet ${_pkt} still present (must be deleted)"
+    else
+      pass "Work Packet ${_pkt} is not finished"
+    fi
   done
+
+  azg_count_in_progress_packets ".agents/work-packets"
+  if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
+    fail "Multiple active Work Packets in progress:${AZG_IN_PROGRESS_PKTS} (only 1 active packet allowed; park others)"
+  else
+    pass "Single active Work Packet invariant maintained"
+  fi
 fi
 
 # --- Project validation (optional until configured) ---

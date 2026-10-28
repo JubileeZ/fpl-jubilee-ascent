@@ -43,6 +43,14 @@ for pkt in .agents/work-packets/*.md; do
     exit 0
   fi
 done
+
+# Single active packet invariant: at most one packet may have Status: In Progress
+azg_count_in_progress_packets ".agents/work-packets"
+if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
+  jq -n --arg p "${AZG_IN_PROGRESS_PKTS}" '{permission:"deny",user_message:"Multiple active Work Packets",agent_message:("Multiple active Work Packets found with Status: In Progress:" + $p + ". Only one active packet may be In Progress at a time. Mark others as Status: Parked or complete them.")}'
+  shopt -u nullglob
+  exit 0
+fi
 shopt -u nullglob
 if azg_packet_is_finished "task.md"; then
   printf '{"permission":"deny","user_message":"Legacy task.md is complete","agent_message":"Delete task.md (azg apply migrates it) plus implementation_plan.md / walkthrough.md if present."}\n'
