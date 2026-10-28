@@ -1,0 +1,4 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-10-28,dev,2025-26,ext_11,ext_11_role_l100,adaptive_causal_challenger,1-38,False,0.0,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.75; won 0 active in-season segments,docs/research/candidate-ideation/prototypes/ext_11/prototypes.py
+2026-10-28,dev,2025-26,ext_11,ext_11_role_l50,adaptive_causal_challenger,1-38,False,0.0,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.75; won 0 active in-season segments,docs/research/candidate-ideation/prototypes/ext_11/prototypes.py
+2026-10-28,dev,2025-26,ext_11,ext_11_role_l25,adaptive_causal_challenger,1-38,False,0.0,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.75; won 0 active in-season segments,docs/research/candidate-ideation/prototypes/ext_11/prototypes.py
