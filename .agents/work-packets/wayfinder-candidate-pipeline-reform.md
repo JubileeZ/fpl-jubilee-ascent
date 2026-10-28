@@ -11,11 +11,11 @@
 - **Files:** `CONTEXT.md`, `docs/research/candidate-ideation/wayfinder-tickets.json`, `docs/research/candidate-ideation/wayfinder-implementation-plan.md`, `.agents/work-packets/wayfinder-candidate-pipeline-reform.md`
 - **Decisions:**
   1. Revert `config/model_selection.json` `champion` to `def_xg_shrink_challenger` (aligning with ADR 0064).
-  2. Define `Inert Prototype` in `CONTEXT.md`; enforce `InertPrototypeError` (`INERT FAIL`, exit 2) in `smoke.py` when $\mathcal{G}_{\text{active}} = \emptyset$ or ($\max_{\mathcal{M}} |\Delta \hat{y}| < 0.01$ and `combined_delta == 0.0`); reclassify `EXT-09` and `EXT-11` from `dead` to `open`.
+  2. Define `Inert Prototype` in `CONTEXT.md`; enforce `InertPrototypeError` (`INERT FAIL`, exit 2) in `smoke.py` when $\mathcal{G}_{\text{active}} = \emptyset$ or ($\max_{\mathcal{M}} |\Delta \hat{y}| < 0.01$ and `combined_delta == 0.0`); reclassify `EXT-08`, `EXT-09`, `EXT-11`, and `EXT-12` from `dead` to `open` (untested against `def_xg_shrink_challenger`).
   3. Wire `oracle_minutes` into `backtesting/walkforward.py` + `evaluate_oracle_event_gate` into `backtesting/promotion.py` under ADR 0064 ($L=5$ MBB, £83.5m Constrained XI, $P_{\text{screen}} \ge 0.65$) and add `--tier {1,2,3,auto}` to `smoke.py`.
   4. Execute Track A 6-variant ablation of `MLComponentChallengerModel` heads and Track B 38-GW budget-enabler ideation on `def_xg_shrink_challenger`.
 - **Blocked:** None
-- **Next:** Execute T1–T6 in `docs/research/candidate-ideation/wayfinder-implementation-plan.md`.
+- **Next:** Execute T1–T6 in `docs/research/candidate-ideation/wayfinder-implementation-plan.md` and test reopened levers `EXT-08` and `EXT-12`.
 
 ## Todo
 - [x] Complete 2-round grill (Q1–Q8)
