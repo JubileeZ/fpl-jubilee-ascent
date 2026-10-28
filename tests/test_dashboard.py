@@ -732,14 +732,14 @@ def test_handle_dashboard_api_research_and_methodology() -> None:
     assert status == 200
     assert "topics" in payload
     assert len(payload["topics"]) > 0
-    assert any(t["slug"] == "formation-eval-retest" for t in payload["topics"])
+    assert any(t["slug"] == "ml-adaptive-champion" for t in payload["topics"])
 
     # GET research topic detail
     status, payload = dash.handle_dashboard_api(
-        "GET", "/api/research/topic", query_string="slug=formation-eval-retest"
+        "GET", "/api/research/topic", query_string="slug=ml-adaptive-champion"
     )
     assert status == 200
-    assert payload["slug"] == "formation-eval-retest"
+    assert payload["slug"] == "ml-adaptive-champion"
     assert "content" in payload
     assert "companions" in payload
 
