@@ -624,7 +624,11 @@ _Avoid_: Candidate (for unverified queue rows), Prototype (for markdown specific
 
 **Prototype**:
 Ephemeral code artifact and variant class instantiated within smoke-test lane (`smoke.py`) during candidate exploration. Evaluates empirical parameter grids and ablates component mechanisms against Model Champion on development season.
-_Avoid_: Idea, Model Candidate, frozen Candidate
+_Avoid_: Idea, Model Candidate, frozen Candidate, Inert Prototype
+
+**Inert Prototype**:
+Prototype whose implementation defect, filter guard, or downstream hook overwrite produces zero active Gameweeks or negligible projection shift on Exogenous Playable Pool with zero combined regret delta against Model Champion. Halted pre-gate as execution defect; never recorded as Dead Lever in Candidate Ledger.
+_Avoid_: Dead Lever, evaluated failure, valid negative result
 
 **Model Champion**:
 Currently selected operational Projection Model, retained as primary comparator for historical and live evaluation. CLI commands (`run_model`, `report`, `decision_regret`, `solve`) default to Model Champion when model name omitted or passed as `--champion` / `"champion"`.
@@ -640,7 +644,7 @@ _Avoid_: Experiment log, model history, benchmark spreadsheet
 
 **Dead Lever**:
 Evaluated candidate projection mechanism or parameter variant failing Historical Promotion Gate or guardrails, placed under mandatory 1-year moratorium (`revisit_after = evidence_date + 1 year`) during which rebuilding, re-sweeping, re-smoking, or proposing is prohibited.
-_Avoid_: Failed model, discarded feature, soft rejection
+_Avoid_: Failed model, discarded feature, soft rejection, Inert Prototype
 
 **Revisit Period**:
 Mandatory 1-year lock following failed candidate gate evaluation before identical or retuned mechanism re-evaluated. Only explicitly overridden by user directive.
