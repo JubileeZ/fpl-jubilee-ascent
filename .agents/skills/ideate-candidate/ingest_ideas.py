@@ -186,7 +186,7 @@ def _yaml_escape(val: str) -> str:
 
 
 def _scaffold_python_skeleton(idea: dict[str, str]) -> str:
-    """Synthesize a starting AdaptiveCausalChallengerModel subclass skeleton."""
+    """Synthesize a starting DefXgShrinkChallengerModel subclass skeleton."""
     name = idea.get("name", "Candidate")
     words = [w for w in re.split(r"[^a-zA-Z0-9]+", name) if w]
     camel = "".join(w.capitalize() for w in words)
@@ -234,8 +234,8 @@ def _scaffold_python_skeleton(idea: dict[str, str]) -> str:
     return (
         "```python\n"
         "from __future__ import annotations\n\n"
-        "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel\n\n\n"
-        f"class {class_name}(AdaptiveCausalChallengerModel):\n"
+        "from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel\n\n\n"
+        f"class {class_name}(DefXgShrinkChallengerModel):\n"
         f'    """Auto-scaffolded skeleton for {name}."""\n\n'
         f"    def __init__(self{init_sig}, **kwargs: object) -> None:\n"
         "        super().__init__(**kwargs)\n"

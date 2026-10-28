@@ -40,6 +40,8 @@ from backtesting.promotion import (
     BOOTSTRAP_BLOCK_GWS,
     BOOTSTRAP_DRAWS,
     BOOTSTRAP_MIN_P,
+    COMPONENT_SCREEN_MIN_P,
+    _filter_active_gw_deltas,
     block_bootstrap_win_probability,
 )
 from backtesting.walkforward import load_gameweek_deadlines
@@ -244,6 +246,10 @@ def evaluate_minutes_gate(
     candidate_metrics: MinutesMetrics,
     champion_metrics: MinutesMetrics,
     per_gw_deltas: Sequence[float],
+    *,
+    bootstrap_min_p: float = COMPONENT_SCREEN_MIN_P,
+    active_gameweeks: Sequence[int] | None = None,
+    all_gameweeks: Sequence[int] | None = None,
 ) -> MinutesGateVerdict:
     """Evaluate candidate minutes predictions against champion under the Tier 1 Minutes Gate."""
     reasons: list[str] = []
@@ -255,13 +261,25 @@ def evaluate_minutes_gate(
             f"Candidate MAE does not improve on Champion ({candidate_metrics.mae:.3f} vs {champion_metrics.mae:.3f}, delta: {delta_mae:+.3f})"
         )
 
-    # 2. Block bootstrap significance P(Δ_MAE > 0) >= 0.60
+    # 2. Block bootstrap significance P(Δ_MAE > 0) >= bootstrap_min_p
+    resample_deltas = per_gw_deltas
+    if active_gameweeks is not None:
+        resample_deltas = _filter_active_gw_deltas(
+            per_gw_deltas,
+            active_gameweeks=active_gameweeks,
+            all_gameweeks=all_gameweeks,
+        ) or per_gw_deltas
+    elif any(abs(d) <= 1e-9 for d in per_gw_deltas) and any(abs(d) > 1e-9 for d in per_gw_deltas):
+        active_subset = [d for d in per_gw_deltas if abs(d) > 1e-9]
+        if len(active_subset) >= 5:
+            resample_deltas = active_subset
+
     bootstrap_p = block_bootstrap_win_probability(
-        per_gw_deltas, draws=BOOTSTRAP_DRAWS, block=BOOTSTRAP_BLOCK_GWS
+        resample_deltas, draws=BOOTSTRAP_DRAWS, block=BOOTSTRAP_BLOCK_GWS
     )
-    if np.isnan(bootstrap_p) or bootstrap_p < BOOTSTRAP_MIN_P:
+    if np.isnan(bootstrap_p) or bootstrap_p < bootstrap_min_p:
         reasons.append(
-            f"Bootstrap win probability {bootstrap_p:.3f} below required threshold {BOOTSTRAP_MIN_P:.2f}"
+            f"Bootstrap win probability {bootstrap_p:.3f} below required threshold {bootstrap_min_p:.2f}"
         )
 
     # 3. Multiclass Brier score non-regression
@@ -304,6 +322,78 @@ def evaluate_minutes_gate(
         auc_delta=float(auc_delta),
         candidate_metrics=candidate_metrics,
         champion_metrics=champion_metrics,
+    )
+
+
+def evaluate_minutes_from_eval_frames(
+    champ_eval: pd.DataFrame,
+    cand_eval: pd.DataFrame,
+    *,
+    bootstrap_min_p: float = COMPONENT_SCREEN_MIN_P,
+    active_gameweeks: Sequence[int] | None = None,
+) -> MinutesGateVerdict:
+    """Evaluate Tier 1 Minutes Gate directly from walkforward evaluation frames."""
+    def _prepare(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        if "actual_start" not in df.columns:
+            act_mins = df["actual_minutes"] if "actual_minutes" in df.columns else 0.0
+            df["actual_start"] = (act_mins >= 60).astype(int)
+            df["actual_sub_in"] = ((act_mins > 0) & (act_mins < 60)).astype(int)
+            df["actual_dnp"] = (act_mins == 0).astype(int)
+        if not {"p_dnp", "p_start", "p_sub_in"}.issubset(df.columns):
+            proj = df["projected_minutes"] if "projected_minutes" in df.columns else 0.0
+            p_start = np.clip(proj / 80.0, 0.0, 0.95)
+            p_sub = np.clip((proj - 40.0) / 40.0, 0.0, 0.3)
+            p_dnp = np.clip(1.0 - p_start - p_sub, 0.0, 1.0)
+            norm = (p_start + p_sub + p_dnp).replace(0.0, 1.0)
+            df["p_start"] = p_start / norm
+            df["p_sub_in"] = p_sub / norm
+            df["p_dnp"] = p_dnp / norm
+        if "p_60_plus" not in df.columns:
+            proj = df["projected_minutes"] if "projected_minutes" in df.columns else 0.0
+            df["p_60_plus"] = 1.0 / (1.0 + np.exp(-(proj - 50.0) / 10.0))
+        return df
+
+    cand_prep = _prepare(cand_eval)
+    champ_prep = _prepare(champ_eval)
+
+    cand_metrics = compute_minutes_metrics(cand_prep)
+    champ_metrics = compute_minutes_metrics(champ_prep)
+
+    gws = sorted(set(cand_prep["gameweek"]).intersection(set(champ_prep["gameweek"])))
+    per_gw_deltas: list[float] = []
+    for gw in gws:
+        c_gw = cand_prep[cand_prep["gameweek"] == gw]
+        ch_gw = champ_prep[champ_prep["gameweek"] == gw]
+        merged = pd.merge(
+            c_gw[["player_id", "projected_minutes", "actual_minutes"]].rename(
+                columns={"projected_minutes": "cand_xmins"}
+            ),
+            ch_gw[["player_id", "projected_minutes"]].rename(
+                columns={"projected_minutes": "champ_xmins"}
+            ),
+            on="player_id",
+            how="inner",
+        )
+        if merged.empty:
+            per_gw_deltas.append(0.0)
+            continue
+        active = (merged["cand_xmins"] > 0) | (merged["champ_xmins"] > 0) | (merged["actual_minutes"] > 0)
+        sub = merged.loc[active]
+        if sub.empty:
+            per_gw_deltas.append(0.0)
+            continue
+        c_mae = (sub["cand_xmins"] - sub["actual_minutes"]).abs().mean()
+        ch_mae = (sub["champ_xmins"] - sub["actual_minutes"]).abs().mean()
+        per_gw_deltas.append(float(ch_mae - c_mae))
+
+    return evaluate_minutes_gate(
+        cand_metrics,
+        champ_metrics,
+        per_gw_deltas,
+        bootstrap_min_p=bootstrap_min_p,
+        active_gameweeks=active_gameweeks,
+        all_gameweeks=gws,
     )
 
 

@@ -14,7 +14,7 @@ from prototypes import OpponentRoleAllocation, RoleFixture, fit_contrasts, norma
 from test_face_value_challenger import _row
 
 from backtesting.walkforward import LEDGER_COMPONENTS
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
+from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.learned_start_challenger import LearnedStartChallengerModel
 from models.scoring_matrix import event_points
 
@@ -126,7 +126,7 @@ def test_unknown_historical_sides_are_excluded() -> None:
 
 def test_early_parity() -> None:
     features = forecast_frame().assign(gameweek_id=19)
-    candidate, champion = OpponentRoleAllocation(), AdaptiveCausalChallengerModel()
+    candidate, champion = OpponentRoleAllocation(), DefXgShrinkChallengerModel()
     candidate.fit(pd.DataFrame())
     champion.fit(pd.DataFrame())
     pd.testing.assert_frame_equal(candidate.predict(features, 1), champion.predict(features, 1))

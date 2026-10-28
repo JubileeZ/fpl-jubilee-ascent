@@ -193,20 +193,15 @@ def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
 
 
 def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance() -> None:
-    from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
-
     gen = _load_skill_module("generate_prompt", "generate_prompt.py")
     md = gen.build_prompt_markdown("general")
     assert "### 1-Shot Concrete Exemplar" in md
     assert "Python Code Skeleton (Optional" in md
     assert "### Candidate 1: Continuous Game-Pace & Match-State Elasticity" in md
     assert "Asymmetric Substitution Hazard & Beta-Binomial Survival" not in md
-    champion = AdaptiveCausalChallengerModel()
-    assert not champion.use_neff_alpha
-    assert min(1.0, max(0.0, (champion.min_ml_gw - 3.0) / champion.ramp_span)) == 1.0
-    assert "already 1.0 at GW20" in md
-    assert "inherits `use_neff_alpha=False`" in md
-    assert "via a 5-GW Bayesian ramp" not in md
+    assert "def_xg_shrink_challenger" in md
+    assert "DefXgShrinkChallengerModel" in md
+    assert "from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel" in md
 
 
 def test_load_active_dead_levers_filters_unlocked_and_active() -> None:
@@ -335,8 +330,8 @@ def test_ingest_file_auto_scaffolds_python_skeleton_when_code_missing(tmp_path: 
     assert dossier.exists()
 
     content = dossier.read_text(encoding="utf-8")
-    assert "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel" in content
-    assert "class PossessionAdjustedDefconExpectationChallengerModel(AdaptiveCausalChallengerModel):" in content
+    assert "from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel" in content
+    assert "class PossessionAdjustedDefconExpectationChallengerModel(DefXgShrinkChallengerModel):" in content
     assert "k_dc: float = 1350.0" in content
     assert "s_dc: float = 0.25" in content
     assert "def _project_defcon_points" in content
@@ -347,10 +342,10 @@ def test_scaffold_python_skeleton_sanitizes_identifiers() -> None:
     idea = {
         "name": "60-Minute Sub Hazard",
         "grid": "lambda=0.5, 10min_decay=0.2; lambda=0.8, 10min_decay=0.4",
-        "replaces": "AdaptiveCausalChallengerModel._compute_participation_states",
+        "replaces": "DefXgShrinkChallengerModel._compute_participation_states",
     }
     skeleton = ingest._scaffold_python_skeleton(idea)
-    assert "class Candidate60MinuteSubHazardChallengerModel(AdaptiveCausalChallengerModel):" in skeleton
+    assert "class Candidate60MinuteSubHazardChallengerModel(DefXgShrinkChallengerModel):" in skeleton
     assert "lambda_: float = 0.5" in skeleton
     assert "p_10min_decay: float = 0.2" in skeleton
     assert "parent_method = getattr(super(), '_compute_participation_states', None)" in skeleton

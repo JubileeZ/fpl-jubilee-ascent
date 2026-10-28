@@ -1,0 +1,3 @@
+date,season,data_season,lane,variant,champion,gw_range,pass,combined_delta,min_effect,segs,boot_p_gt0,guardrails_passed,reasons,source
+2026-10-29,dev,2025-26,,adaptive_assists_challenger,def_xg_shrink_challenger,1-38,True,0.2875000000000085,0.0,1,0.78905,True,,registered
+2026-10-29,confirm,2024-25,,adaptive_assists_challenger,def_xg_shrink_challenger,1-38,False,-0.20605263157894882,0.0,0,0.0,True,combined primary metric did not improve; bootstrap P(delta>0) 0.000 below 0.65; catastrophic regression in late segment (-0.412 < -0.13); won 0 active in-season segments,registered

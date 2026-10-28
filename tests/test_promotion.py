@@ -827,5 +827,58 @@ def test_diagnose_guardrail_regressions_emits_clear_messages() -> None:
     assert any("regressed active-window Rank Correlation guardrail" in r for r in reasons)
 
 
+def test_evaluate_oracle_event_gate() -> None:
+    from backtesting.promotion import evaluate_oracle_event_gate
+
+    champ_metrics = {
+        "oracle_formation_xi_regret": 15.0,
+        "oracle_captain_regret": 4.0,
+        "playable_bias": 0.05,
+    }
+    cand_metrics_pass = {
+        "oracle_formation_xi_regret": 14.5,
+        "oracle_captain_regret": 4.05,
+        "playable_bias": 0.06,
+    }
+    # 20 GW deltas with consistent improvement
+    gw_deltas_good = [0.5] * 20
+    verdict_pass = evaluate_oracle_event_gate(champ_metrics, cand_metrics_pass, gw_deltas=gw_deltas_good)
+    assert verdict_pass.passed
+    assert verdict_pass.oracle_delta == pytest.approx(0.5)
+    assert verdict_pass.bootstrap_p == pytest.approx(1.0)
+    assert verdict_pass.reasons == ()
+
+    # Fails when oracle regret did not improve
+    cand_metrics_fail_delta = {
+        "oracle_formation_xi_regret": 15.5,
+        "oracle_captain_regret": 4.0,
+        "playable_bias": 0.05,
+    }
+    verdict_fail_delta = evaluate_oracle_event_gate(champ_metrics, cand_metrics_fail_delta)
+    assert not verdict_fail_delta.passed
+    assert any("oracle formation XI regret did not improve" in r for r in verdict_fail_delta.reasons)
+
+    # Fails when bias exceeds tolerance (|cand_bias| > min(|champ_bias| + 0.02, 0.20))
+    cand_metrics_fail_bias = {
+        "oracle_formation_xi_regret": 14.0,
+        "oracle_captain_regret": 4.0,
+        "playable_bias": 0.15,
+    }
+    verdict_fail_bias = evaluate_oracle_event_gate(champ_metrics, cand_metrics_fail_bias)
+    assert not verdict_fail_bias.passed
+    assert any("playable pool signed bias" in r for r in verdict_fail_bias.reasons)
+
+    # Fails when captaincy regret regresses by > 0.15
+    cand_metrics_fail_cap = {
+        "oracle_formation_xi_regret": 14.0,
+        "oracle_captain_regret": 4.30,
+        "playable_bias": 0.05,
+    }
+    verdict_fail_cap = evaluate_oracle_event_gate(champ_metrics, cand_metrics_fail_cap)
+    assert not verdict_fail_cap.passed
+    assert any("captaincy regret regressed" in r for r in verdict_fail_cap.reasons)
+
+
+
 
 

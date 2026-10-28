@@ -7,8 +7,8 @@ import pandas as pd
 
 from backtesting.walkforward import LEDGER_COMPONENTS
 from features.contracts import assert_projection_contract
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
 from models.base import resolve_asof_target_gw
+from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.learned_start_challenger import LearnedStartChallengerModel
 from models.ml_panel_features import positional_price_tier_prior
 from models.scoring_matrix import event_points
@@ -160,12 +160,17 @@ def normalized_counts(counts: np.ndarray, contrasts: np.ndarray, alpha: float) -
     return result
 
 
-class OpponentRoleAllocation(AdaptiveCausalChallengerModel):
+class OpponentRoleAllocation(DefXgShrinkChallengerModel):
     ridge: float = 50.0
 
     def __init__(self) -> None:
         super().__init__()
         self._anchor_components: list[dict[str, object]] = []
+        self._history_df = pd.DataFrame()
+
+    def fit(self, history_df: pd.DataFrame) -> None:
+        super().fit(history_df)
+        self._history_df = history_df
 
     @property
     def name(self) -> str:
@@ -216,9 +221,13 @@ class OpponentRoleAllocation(AdaptiveCausalChallengerModel):
                     if profile is not None and theta is not None:
                         role_contrasts[j] = float(theta[profile[0]])
                         known[j] = True
-                if np.any(~known & (counts > 0)):
+                active_mask = known & (counts > 0)
+                if int(np.sum(active_mask)) < 2:
                     continue
-                new_counts = normalized_counts(counts, role_contrasts, alpha)
+                new_counts = counts.copy()
+                new_counts[active_mask] = normalized_counts(
+                    counts[active_mask], role_contrasts[active_mask], alpha
+                )
                 for j, k in enumerate(idx):
                     delta = float(new_counts[j] - counts[j])
                     if delta == 0.0:
@@ -250,7 +259,7 @@ class OpponentRoleAllocation(AdaptiveCausalChallengerModel):
         if features_df.empty:
             return final
         cutoff = resolve_asof_target_gw(features_df, self._history_df)
-        if cutoff < self.min_ml_gw or self._history_df.empty:
+        if cutoff < 4 or self._history_df.empty:
             return final
         history = self._history_df[self._history_df["gameweek_id"] < cutoff].drop_duplicates(["player_id", "fixture_id"])
         alpha = float(np.clip((len(history) - 3500.0) / 4000.0, 0.0, 1.0))
@@ -280,6 +289,7 @@ class Role100(OpponentRoleAllocation):
 
 
 PROTOTYPES = {"ext_11_role_l25": Role25, "ext_11_role_l50": Role50, "ext_11_role_l100": Role100}
+COMPONENTS = {name: "xp_goals" for name in PROTOTYPES}
 FEATURES = {name: (
     "features.player_id", "features.fixture_id", "features.gameweek_id", "features.position_id",
     "features.club_id", "features.opponent_id", "history.player_id", "history.fixture_id", "history.gameweek_id",

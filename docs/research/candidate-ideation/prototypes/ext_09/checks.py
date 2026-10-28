@@ -14,7 +14,7 @@ spec = importlib.util.spec_from_file_location("ext_09_prototype_checks", Path(__
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
+from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.learned_start_challenger import _fit_logistic
 
 
@@ -46,7 +46,7 @@ def main() -> None:
 
     row = runpy.run_path(str(ROOT / "tests/test_face_value_challenger.py"))["_row"]
     candidate = module.BinomialFixtureExposure()
-    champion = AdaptiveCausalChallengerModel()
+    champion = DefXgShrinkChallengerModel()
     candidate.fit(pd.DataFrame())
     champion.fit(pd.DataFrame())
     for gw in range(1, 20):

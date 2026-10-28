@@ -28,6 +28,9 @@ CONFIRMATION_BOOTSTRAP_MIN_P = 0.65
 POOLED_BOOTSTRAP_MIN_P = 0.85
 BOOTSTRAP_DRAWS = 20_000
 BOOTSTRAP_BLOCK_GWS = 5
+COMPONENT_SCREEN_MIN_P: float = 0.65
+ORACLE_BIAS_REL_TOL: float = 0.02
+ORACLE_BIAS_HARD_CAP: float = 0.20
 GUARDRAIL_REL_TOL = 0.01
 BIAS_ABS_TOL = 0.01
 SPEARMAN_ABS_TOL = 0.005
@@ -652,3 +655,106 @@ def classify_live_lead(champion_primary: float, candidate_primary: float) -> str
     if improvement <= -_MEANINGFUL_LIVE_LEAD:
         return "meaningful_loss"
     return "unclear"
+
+
+@dataclass(frozen=True)
+class OracleEventGateVerdict:
+    passed: bool
+    oracle_delta: float
+    bootstrap_p: float | None
+    candidate_playable_bias: float
+    champion_playable_bias: float
+    captain_regret_delta: float
+    reasons: tuple[str, ...]
+
+
+def evaluate_oracle_event_gate(
+    champion_metrics: Mapping[str, Any],
+    candidate_metrics: Mapping[str, Any],
+    *,
+    gw_deltas: Sequence[float] | None = None,
+    active_gameweeks: Sequence[int] | None = None,
+    all_gameweeks: Sequence[int] | None = None,
+    champion_playable_bias: float | None = None,
+    candidate_playable_bias: float | None = None,
+    bootstrap_min_p: float = COMPONENT_SCREEN_MIN_P,
+    bias_tol: float = ORACLE_BIAS_REL_TOL,
+    bias_ceiling: float = ORACLE_BIAS_HARD_CAP,
+    captain_regret_tol: float = CAPTAIN_REGRET_ABS_TOL,
+) -> OracleEventGateVerdict:
+    """Evaluate whether candidate event engine satisfies Tier 2 Oracle Event Gate.
+
+    Conditions for Pass:
+    1. Oracle Formation XI Regret improvement (oracle_delta = champ_regret - cand_regret > 0).
+    2. Non-wrapping Moving Block Bootstrap P(oracle_delta > 0) >= bootstrap_min_p (when N >= 15 GWs).
+    3. Playable Pool Signed Bias: |cand_bias| <= min(|champ_bias| + bias_tol, bias_ceiling).
+    4. Captaincy Regret: cand_cap <= champ_cap + captain_regret_tol (0.15 pts/GW).
+    """
+    champ_regret = float(
+        champion_metrics.get("oracle_formation_xi_regret")
+        or champion_metrics.get("formation_xi_regret", 0.0)
+    )
+    cand_regret = float(
+        candidate_metrics.get("oracle_formation_xi_regret")
+        or candidate_metrics.get("formation_xi_regret", 0.0)
+    )
+    oracle_delta = champ_regret - cand_regret
+
+    champ_cap = float(
+        champion_metrics.get("oracle_captain_regret")
+        or champion_metrics.get("captain_regret", 0.0)
+    )
+    cand_cap = float(
+        candidate_metrics.get("oracle_captain_regret")
+        or candidate_metrics.get("captain_regret", 0.0)
+    )
+    captain_regret_delta = cand_cap - champ_cap
+
+    champ_bias = float(
+        champion_playable_bias
+        if champion_playable_bias is not None
+        else champion_metrics.get("playable_bias", champion_metrics.get("bias", 0.0))
+    )
+    cand_bias = float(
+        candidate_playable_bias
+        if candidate_playable_bias is not None
+        else candidate_metrics.get("playable_bias", candidate_metrics.get("bias", 0.0))
+    )
+
+    reasons: list[str] = []
+
+    # 1. Delta check
+    if oracle_delta <= 0.0:
+        reasons.append(f"oracle formation XI regret did not improve ({oracle_delta:+.4f})")
+
+    # 2. Bootstrap check
+    resample_deltas = _filter_active_gw_deltas(
+        gw_deltas,
+        active_gameweeks=active_gameweeks,
+        all_gameweeks=all_gameweeks,
+    )
+    bootstrap_p = None
+    if resample_deltas is not None and len(resample_deltas) >= 15:
+        bootstrap_p = block_bootstrap_win_probability(resample_deltas)
+        if bootstrap_p < bootstrap_min_p:
+            reasons.append(f"oracle bootstrap P {bootstrap_p:.3f} below required {bootstrap_min_p:.2f}")
+
+    # 3. Playable pool signed bias
+    bias_cap = min(abs(champ_bias) + bias_tol, bias_ceiling)
+    if abs(cand_bias) > bias_cap:
+        reasons.append(f"playable pool signed bias |{cand_bias:+.4f}| exceeded tolerance {bias_cap:.4f}")
+
+    # 4. Captaincy regret tolerance
+    if cand_cap > champ_cap + captain_regret_tol:
+        reasons.append(f"captaincy regret regressed by {captain_regret_delta:+.4f} > {captain_regret_tol:+.4f}")
+
+    passed = len(reasons) == 0
+    return OracleEventGateVerdict(
+        passed=passed,
+        oracle_delta=oracle_delta,
+        bootstrap_p=bootstrap_p,
+        candidate_playable_bias=cand_bias,
+        champion_playable_bias=champ_bias,
+        captain_regret_delta=captain_regret_delta,
+        reasons=tuple(reasons),
+    )

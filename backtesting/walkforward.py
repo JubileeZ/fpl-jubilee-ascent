@@ -51,6 +51,7 @@ class WalkforwardConfig:
     trailing_start_weight: float | None = None
     eval_target: str = "actual_points"  # actual_points | process_points | blended_points
     blend_weight: float = 0.5  # Process share of Blended Eval Target (ADR 0044)
+    oracle_minutes: bool = False
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,30 @@ def _build_actual_components(gw_perf: pd.DataFrame, df_feat: pd.DataFrame) -> pd
         0.0,
     )
     return gw_perf
+
+
+def inject_oracle_minutes(
+    df_feat: pd.DataFrame,
+    df_perf: pd.DataFrame,
+    target_gw: int,
+) -> pd.DataFrame:
+    """Inject realized match minutes into df_feat['external_xmins'] on (player_id, gameweek_id, fixture_id)."""
+    df_feat = df_feat.copy()
+    gw_perf = df_perf[df_perf["gameweek_id"] == target_gw]
+    perf_minutes = (
+        gw_perf[["player_id", "gameweek_id", "fixture_id", "minutes"]]
+        .rename(columns={"minutes": "external_xmins"})
+        .drop_duplicates(subset=["player_id", "gameweek_id", "fixture_id"])
+    )
+    if "external_xmins" in df_feat.columns:
+        df_feat = df_feat.drop(columns=["external_xmins"])
+    df_feat = df_feat.merge(
+        perf_minutes,
+        on=["player_id", "gameweek_id", "fixture_id"],
+        how="left",
+    )
+    df_feat["external_xmins"] = df_feat["external_xmins"].fillna(0.0).astype(float)
+    return df_feat
 
 
 def load_gameweek_deadlines(data_dir: Path) -> dict[int, Any]:
@@ -191,6 +216,8 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
             **feature_kwargs,
         )
         df_feat = df_feat[df_feat["position_id"].isin(PLAYER_POSITIONS)] if "position_id" in df_feat.columns else df_feat
+        if config.oracle_minutes:
+            df_feat = inject_oracle_minutes(df_feat, df_perf, gw)
         if df_feat.empty:
             if config.require_snapshots:
                 raise ValueError(f"Point-in-time backtest cannot evaluate empty GW {gw}")
@@ -257,6 +284,12 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
             df_eval["actual_points"], df_eval["process_points"], weight=config.blend_weight
         )
     metrics = evaluate_predictions(df_eval, target_column=target)
+    if config.oracle_minutes:
+        metrics["oracle_formation_xi_regret"] = metrics.get("formation_xi_regret")
+        metrics["oracle_captain_regret"] = metrics.get("captain_regret")
+        metrics["oracle_minutes_enabled"] = True
+    else:
+        metrics["oracle_minutes_enabled"] = False
     snapshot_backed = bool(snapshot_ids) and len(snapshot_ids) == (config.end_gw - config.start_gw + 1)
     return WalkforwardResult(
         model_name=config.model_name,

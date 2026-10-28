@@ -86,10 +86,10 @@ FOCUS_PROMPTS: dict[str, str] = {
 
 def load_champion_info() -> tuple[str, str]:
     if not MODEL_SELECTION_PATH.exists():
-        return "adaptive_causal_challenger", "provisional"
+        return "def_xg_shrink_challenger", "provisional"
     with open(MODEL_SELECTION_PATH, encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("champion", "adaptive_causal_challenger"), data.get("promotion_status", "provisional")
+    return data.get("champion", "def_xg_shrink_challenger"), data.get("promotion_status", "provisional")
 
 
 def load_ledger_stats() -> tuple[int, int]:
@@ -283,6 +283,63 @@ def build_prompt_markdown(focus: str) -> str:
     gk_friction: float = float(DEFAULT_STRATEGIC_OPTIONS["gk_transfer_friction"])
     ft_schedule: str = ", ".join(f'"{bank}": {value:.1f}' for bank, value in DEFAULT_STRATEGIC_FT_SCHEDULE.items())
 
+    if champ_name == "def_xg_shrink_challenger":
+        champ_desc = (
+            f"- **Active Model Champion**: `{champ_name}` ({champ_status}). It operates across all 38 Gameweeks "
+            "using Empirical Bayes shrinkage on defender xG ($K_{\\text{DEF}}=2400$) combined with learned start "
+            "probabilities, three-state participation modeling, calibrated opponent matchup shares ($s=0.40$), "
+            "and face-value attack weights ($1.0 \\times xG$, $1.0 \\times xA$)."
+        )
+        lineage_block = """BaseModel (models/base.py)
+  └── ComponentBaselineModel (models/component_baseline.py)
+        └── MetricsComponentHybridModel (models/metrics_component_hybrid.py)
+              └── ParticipationStateHybridModel (models/participation_state_hybrid.py)
+                    └── CalibratedMatchupHybridModel (models/calibrated_matchup_hybrid.py)
+                          └── HoldChaseChallengerModel (models/hold_chase_challenger.py)
+                                └── FaceValueChallengerModel (models/face_value_challenger.py)
+                                      └── MultiFeatureAssistChallengerModel (models/multi_feature_assist_challenger.py)
+                                            └── LearnedStartChallengerModel (models/learned_start_challenger.py)
+                                                  └── DefXgShrinkChallengerModel [CHAMPION] (models/def_xg_shrink_challenger.py)"""
+        mechanisms_6_7 = """6. **Decoupled Architecture Seams (ADR 0064 & Issue #174)**:
+   - Projections apply uniformly across all 38 Gameweeks from season open, avoiding artificial step-function activation cliffs while utilizing warm historical seed data ($N_{\\text{prior}}=1$).
+   - Participation interventions ($M_{\\text{mins}}$) hook into `LearnedStartChallengerModel` (`_predict_participation_states`, `_p_start`, `p_sub`, `xp_minutes`).
+   - Match event interventions ($M_{\\text{events}}$) hook into `CalibratedMatchupHybridModel` or `DefXgShrinkChallengerModel` (`_project_event_components`, `_project_clean_sheets`, `_project_defcon`, `xp_goals`, `xp_assists`, `xp_saves`, `xp_bonus`).
+7. **Continuous $N_{\\text{eff}}$ Sample Accumulation**:
+   - Hypotheses may explore continuous sample-size shrinkage using $N_{\\text{eff}, g} = 0.5 N_{\\text{seed}} + N_{\\text{in\\_season}, <g}$ ($N_{\\min}=3500, N_{\\text{full}}=7500$) to smoothly ramp in-season learned parameters without Nickell bias."""
+        exemplar_import = "from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel"
+        exemplar_base = "DefXgShrinkChallengerModel"
+    else:
+        champ_desc = (
+            f"- **Active Model Champion**: `{champ_name}` ({champ_status}). It builds upon `def_xg_shrink_challenger` "
+            "with 100% Champion stability across Gameweeks 1–19, activating stacked zero-leakage Causal Panel ML models "
+            "(Ridge logistic $p_{\\text{start}}$, Ridge duration offset, shrunk xG goals residual, leave-one-out assist finishing) "
+            "from Gameweek 20 onward."
+        )
+        lineage_block = """BaseModel (models/base.py)
+  └── ComponentBaselineModel (models/component_baseline.py)
+        └── MetricsComponentHybridModel (models/metrics_component_hybrid.py)
+              └── ParticipationStateHybridModel (models/participation_state_hybrid.py)
+                    └── CalibratedMatchupHybridModel (models/calibrated_matchup_hybrid.py)
+                          └── HoldChaseChallengerModel (models/hold_chase_challenger.py)
+                                └── FaceValueChallengerModel (models/face_value_challenger.py)
+                                      └── MultiFeatureAssistChallengerModel (models/multi_feature_assist_challenger.py)
+                                            └── LearnedStartChallengerModel (models/learned_start_challenger.py)
+                                                  └── DefXgShrinkChallengerModel (models/def_xg_shrink_challenger.py)
+                                                        └── MLComponentChallengerModel (models/ml_component_challenger.py)
+                                                              └── AdaptiveCausalChallengerModel [CHAMPION] (models/adaptive_causal_challenger.py)"""
+        mechanisms_6_7 = """6. **Adaptive Causal ML Activation (ADR 0063)**:
+   - **GW 1–19**: Evaluates purely through `def_xg_shrink_challenger`.
+   - **GW 20+**: Activates stacked Causal Panel ML models. Executed default weight is $w_{\\text{ML}} = \\text{clip}((\\text{GW} - 3)/5, 0, 1)$, already 1.0 at GW20. The class docstring describes a five-GW ramp, but the inherited implementation anchors its formula at GW3:
+     - **Tier 1 Minutes**: Ridge logistic regression on $p_{\\text{start}}$ ($H_1$) + Ridge linear regression on starter duration offset ($H_3$). Sub-in classifier ($H_2$) disabled.
+     - **Tier 2 Events**: Group A Shrunk xG Goals Residual + Group B Calibrated Leave-One-Out (LOO) Assist Finishing ($\\omega = 0.95^{\\Delta \\text{GW}}$ exponential decay, bounded $[0.88, 1.15]$). Defensive and Bonus ML heads disabled.
+7. **Empirical Bayes Priors & Continuous $N_{\\text{eff}}$ Shrinkage (ADR 0064 / Issue #168)**:
+   - In `models/ml_panel_features.py`, short-panel features are regularized with Empirical Bayes positional price-tier priors ($K_{\\text{prior}} = 12.0$); panel rate prior is 1080 pseudo-minutes, separate from the inherited DEF 2400/360 projection adjustment.
+   - Continuous sample-size shrinkage is available when `use_neff_alpha=True`. Active Champion inherits `use_neff_alpha=False`; this optional helper does not replace its current activation rule:
+     $$\\alpha_g = \\text{clip}\\left(\\frac{N_{\\text{eff}, g} - N_{\\min}}{N_{\\text{full}} - N_{\\min}}, 0.0, 1.0\\right)$$
+     where $N_{\\text{eff}, g} = 0.5 N_{\\text{seed}} + N_{\\text{in\\_season}, <g}$, with $N_{\\min} = 3500$, $N_{\\text{full}} = 7500$."""
+        exemplar_import = "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel"
+    mission_target = f"`{champ_name}`" if champ_name == "def_xg_shrink_challenger" else f"`{champ_name}` and `def_xg_shrink_challenger`"
+
     return f"""# FPL Candidate Model Ideation Prompt Brief
 
 ```markdown
@@ -294,7 +351,7 @@ Use model-neutral language for the LLM producing this proposal: identify the sou
 You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The engine runs on Python 3.14, using an expanding-window causal feature store, empirical Bayes scoring models, and a vendored HiGHS Mixed-Integer Linear Programming (MILP) solver.
 
 We operate under strict empirical model governance:
-- **Active Model Champion**: `{champ_name}` ({champ_status}). It builds upon `def_xg_shrink_challenger` with 100% Champion stability across Gameweeks 1–19, activating stacked zero-leakage Causal Panel ML models (Ridge logistic $p_{{\\text{{start}}}}$, Ridge duration offset, shrunk xG goals residual, leave-one-out assist finishing) from Gameweek 20 onward.
+{champ_desc}
 - **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0064)**: Any new model ("Candidate") must pass our reformed two-season gate: Constrained Legal Formation XI (£83.5m cap, $\\le 3$ per club), rolling squad churn guardrail ($\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW), warm-seeded confirmation (2023–24 seed for 2024–25 conf, matching live deployment $N_{{\\text{{prior}}}}=1$), non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$), three bootstrap bars (Dev $P \\ge {BOOTSTRAP_MIN_P:.2f}$, Warm Conf $P \\ge {CONFIRMATION_BOOTSTRAP_MIN_P:.2f}$, Pooled Stratified $P \\ge {POOLED_BOOTSTRAP_MIN_P:.2f}$), $\\sqrt{{n_s}}$-scaled segment floors (cold_start $\\ge -{COLD_START_PARITY_TOL:.2f}$, early_mid $\\ge -{SEGMENT_REGRESSION_TOL:.2f}$, late $\\ge -{LATE_SEGMENT_REGRESSION_TOL:.2f}$), and dual-window safety guardrails across both full season and active gameweeks.
@@ -302,7 +359,7 @@ We operate under strict empirical model governance:
 - **Evaluation Boundary**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
 
 ### Your Mission
-Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat `{champ_name}` and `def_xg_shrink_challenger` under the ADR 0064 Historical Promotion Gate.
+Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat {mission_target} under the ADR 0064 Historical Promotion Gate.
 
 **Focus Area**: {focus_guidance}
 
@@ -318,7 +375,7 @@ Format each proposed candidate with a level-3 markdown heading `### Candidate <N
 6. **Small-Sample & Cold-Start Strategy**: How does it integrate with warm historical seeding ($N_{{\\text{{prior}}}}=1$) and continuous $N_{{\\text{{eff}}}}$ sample shrinkage ($N_{{\\min}}=3500, N_{{\\text{{full}}}}=7500$), avoiding Nickell bias and early-season over-regularization?
 7. **Budget-Constrained Optimizer Interaction**: Why does this proposed profile resist the Optimizer's Curse under the £83.5m Constrained Legal Formation XI and rolling squad churn guardrail ($\\le {CHURN_GUARDRAIL_TOL:.2f}$ players/GW)?
 8. **Point-in-Time Feature Requirements**: Semicolon-separated manifest of point-in-time covariates needed (`features.<col>` / `history.<col>`, strictly pre-match deadline $\\mathcal{{H}}_{{<g}}$; zero terminal leakage).
-9. **Python Code Skeleton (Optional)**: Class definition stub conforming to `AdaptiveCausalChallengerModel` or `BaseModel`. If response length is constrained, this can be an abbreviated stub or omitted if mathematical formulation and parameter sweep grid are fully specified; our tooling will auto-scaffold class skeletons.
+9. **Python Code Skeleton (Optional)**: Class definition stub conforming to `{exemplar_base}` or `BaseModel`. If response length is constrained, this can be an abbreviated stub or omitted if mathematical formulation and parameter sweep grid are fully specified; our tooling will auto-scaffold class skeletons.
 
 ### 1-Shot Concrete Exemplar
 
@@ -336,9 +393,9 @@ Format each proposed candidate with a level-3 markdown heading `### Candidate <N
 8. **Point-in-Time Feature Requirements**: `features.opponent_id`; `history.opp_pace_per90_eb`; `history.exp_goal_diff_eb`
 9. **Python Code Skeleton (Optional)**:
 ```python
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
+{exemplar_import}
 
-class GamePaceElasticityChallengerModel(AdaptiveCausalChallengerModel):
+class GamePaceElasticityChallengerModel({exemplar_base}):
     def __init__(self, alpha_pace: float = 0.20, beta_margin: float = -0.08, **kwargs: object) -> None:
         super().__init__(**kwargs)
         self.alpha_pace = float(alpha_pace)
@@ -376,21 +433,10 @@ flowchart TD
 
 ### 1. The Active Model Champion: `{champ_name}` ({champ_status})
 
-The active Champion uses an object-oriented inheritance lineage terminating in `AdaptiveCausalChallengerModel`:
+The active Champion uses an object-oriented inheritance lineage terminating in `{exemplar_base}`:
 
 ```
-BaseModel (models/base.py)
-  └── ComponentBaselineModel (models/component_baseline.py)
-        └── MetricsComponentHybridModel (models/metrics_component_hybrid.py)
-              └── ParticipationStateHybridModel (models/participation_state_hybrid.py)
-                    └── CalibratedMatchupHybridModel (models/calibrated_matchup_hybrid.py)
-                          └── HoldChaseChallengerModel (models/hold_chase_challenger.py)
-                                └── FaceValueChallengerModel (models/face_value_challenger.py)
-                                      └── MultiFeatureAssistChallengerModel (models/multi_feature_assist_challenger.py)
-                                            └── LearnedStartChallengerModel (models/learned_start_challenger.py)
-                                                  └── DefXgShrinkChallengerModel (models/def_xg_shrink_challenger.py)
-                                                        └── MLComponentChallengerModel (models/ml_component_challenger.py)
-                                                              └── AdaptiveCausalChallengerModel [CHAMPION] (models/adaptive_causal_challenger.py)
+{lineage_block}
 ```
 
 #### Lineage Mechanism Breakdown:
@@ -418,16 +464,7 @@ BaseModel (models/base.py)
    - Defenders exhibit split-half xG reliability of $r \\approx 0.15$. The Champion shrinks defender xG/90 toward the position mean using $K_{{\\text{{DEF}}}}=2400$ pseudo-minutes (attackers use $K=360$):
      $$\\hat{{\\lambda}}_{{xG, \\text{{DEF}}}} = \\frac{{\\sum xG_{{\\text{{observed}}}} \\cdot 90 + K_{{\\text{{DEF}}}} \\cdot \\bar{{\\lambda}}_{{\\text{{pos}}}}}}{{\\sum \\text{{Minutes}} + K_{{\\text{{DEF}}}}}}$$
    - Prevents the optimizer from loading up on center-backs who head home early fluke goals.
-6. **Adaptive Causal ML Activation (ADR 0063)**:
-   - **GW 1–19**: Evaluates purely through `def_xg_shrink_challenger`.
-   - **GW 20+**: Activates stacked Causal Panel ML models. Executed default weight is $w_{{\\text{{ML}}}} = \\text{{clip}}((\\text{{GW}} - 3)/5, 0, 1)$, already 1.0 at GW20. The class docstring describes a five-GW ramp, but the inherited implementation anchors its formula at GW3:
-     - **Tier 1 Minutes**: Ridge logistic regression on $p_{{\\text{{start}}}}$ ($H_1$) + Ridge linear regression on starter duration offset ($H_3$). Sub-in classifier ($H_2$) disabled.
-     - **Tier 2 Events**: Group A Shrunk xG Goals Residual + Group B Calibrated Leave-One-Out (LOO) Assist Finishing ($\\omega = 0.95^{{\\Delta \\text{{GW}}}}$ exponential decay, bounded $[0.88, 1.15]$). Defensive and Bonus ML heads disabled.
-7. **Empirical Bayes Priors & Continuous $N_{{\\text{{eff}}}}$ Shrinkage (ADR 0064 / Issue #168)**:
-   - In `models/ml_panel_features.py`, short-panel features are regularized with Empirical Bayes positional price-tier priors ($K_{{\\text{{prior}}}} = 12.0$); panel rate prior is 1080 pseudo-minutes, separate from the inherited DEF 2400/360 projection adjustment.
-   - Continuous sample-size shrinkage is available when `use_neff_alpha=True`. Active Champion inherits `use_neff_alpha=False`; this optional helper does not replace its current activation rule:
-     $$\\alpha_g = \\text{{clip}}\\left(\\frac{{N_{{\\text{{eff}}, g}} - N_{{\\min}}}}{{N_{{\\text{{full}}}} - N_{{\\min}}}}, 0.0, 1.0\\right)$$
-     where $N_{{\\text{{eff}}, g}} = 0.5 N_{{\\text{{seed}}}} + N_{{\\text{{in\\_season}}, <g}}$, with $N_{{\\min}} = 3500$, $N_{{\\text{{full}}}} = 7500$.
+{mechanisms_6_7}
 
 ---
 

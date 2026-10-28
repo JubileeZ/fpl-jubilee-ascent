@@ -61,7 +61,7 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py docs/research/cand
 `ingest_ideas.py`:
 1. Parses candidate mechanisms, parameter grids, and affected components.
 2. Checks each proposal against dead levers in `candidate_ledger.csv`. If a mechanism matches a known dead archetype, it tags the entry as `dead-match` and embeds an explicit `## Ledger Audit & Revisit Justification` block.
-3. If Section 9 (Python Code Skeleton) is omitted or lacks code, automatically synthesizes a valid `AdaptiveCausalChallengerModel` subclass skeleton with typed `__init__` arguments derived from the parameter grid.
+3. If Section 9 (Python Code Skeleton) is omitted or lacks code, automatically synthesizes a valid `DefXgShrinkChallengerModel` subclass skeleton with typed `__init__` arguments derived from the parameter grid.
 4. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
 5. Appends index rows with `status: untested` (or `status: dead-match` if matching an active dead lever) to [`docs/research/candidate-ideation/idea_queue.csv`](file:///home/jubileez/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
 
