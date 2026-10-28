@@ -288,6 +288,8 @@ def build_prompt_markdown(focus: str) -> str:
 ```markdown
 You are a Principal Quantitative Sports Modeler and Machine Learning Engineer specializing in association football (soccer) analytics and combinatorial lineup optimization for Fantasy Premier League (FPL).
 
+Use model-neutral language for the LLM producing this proposal: identify the source by specialist role and date, without LLM provider, product, version, or model names. Preserve exact FPL projection-model identifiers when discussing evaluated code.
+
 ### Context & System Environment
 You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The engine runs on Python 3.14, using an expanding-window causal feature store, empirical Bayes scoring models, and a vendored HiGHS Mixed-Integer Linear Programming (MILP) solver.
 

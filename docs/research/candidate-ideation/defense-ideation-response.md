@@ -1,4 +1,4 @@
-# Sol Max defensive candidate ideation
+# Defensive candidate ideation
 
 Updated: 2026-10-28 (Asia/Bangkok)
 

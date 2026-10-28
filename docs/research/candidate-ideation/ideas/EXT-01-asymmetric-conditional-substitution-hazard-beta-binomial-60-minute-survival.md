@@ -3,7 +3,7 @@ idea_id: EXT-01
 name: "Asymmetric Conditional Substitution Hazard & Beta-Binomial 60-Minute Survival"
 tier: P1
 component: xp_minutes
-status: untested
+status: dead-match
 replaces: Replaces the linear p_60_plus_given_start calculation inside ParticipationStateHybridModel._compute_participation_states and updates H3 duration-to-threshold mapping in AdaptiveCausalChallengerModel.
 grid: "K_surv=12,beta_surv=0.5,H_half=19; K_surv=18,beta_surv=0.65,H_half=19; K_surv=24,beta_surv=0.65,H_half=38; K_surv=18,beta_surv=0.80,H_half=19; K_surv=30,beta_surv=0.50,H_half=38"
 inputs: features.position; features.chance_of_playing; history.minutes_ped_lag1; history.starts_ewm_19; history.sixty_plus_given_start_ewm_19; history.prior_season_starts; history.prior_season_sixty_plus_starts
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-01-asymmetric-conditional-substitution-hazard-beta-binomial
 ---
 
 # EXT-01: Asymmetric Conditional Substitution Hazard & Beta-Binomial 60-Minute Survival
+
+## Checkpoint status (2026-10-28)
+
+Screened against locked Dead lever; skipped, no new empirical run. Queue/ledger own mechanism match and revisit boundary. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 

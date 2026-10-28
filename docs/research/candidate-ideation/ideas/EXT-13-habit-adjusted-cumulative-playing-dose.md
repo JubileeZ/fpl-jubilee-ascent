@@ -13,6 +13,10 @@ spec_path: ideas/EXT-13-habit-adjusted-cumulative-playing-dose.md
 
 # EXT-13: Habit-Adjusted Cumulative Playing Dose
 
+## Checkpoint status (2026-10-28)
+
+Blocked, no empirical verdict: (historical schedule provenance). Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 Rotation decisions may respond to accumulated played minutes relative to a player's usual workload, rather than elapsed time since the last listed fixture. Hypothesis: two players on the same turnaround differ when one played several recent full matches and the other had little actual playing time. Current panel's rest_days uses the last recorded row, including rows with zero minutes; short_turnaround is binary. New signal is cumulative played-minute dose relative to a player's own prior exposure distribution.
@@ -97,7 +101,7 @@ class HabitAdjustedCumulativePlayingDoseChallengerModel(AdaptiveCausalChallenger
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-minutes-response.md](../sol-max-minutes-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [minutes-ideation-response.md](../minutes-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 52/82/89; proposed actual played-dose/habit signal; historical schedule provenance unresolved.
 
@@ -135,7 +139,7 @@ Primary local sources:
 - [Inherited learned-start anchor](C:/Users/phjenphithak/fpl-jubilee-ascent/models/learned_start_challenger.py:55).
 - [Causal panel and actual targets](C:/Users/phjenphithak/fpl-jubilee-ascent/models/ml_panel_features.py:734).
 - [Existing scoring function](C:/Users/phjenphithak/fpl-jubilee-ascent/models/calibrated_matchup_hybrid.py:33).
-- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/sol-max-defense-response.md).
+- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/defense-ideation-response.md).
 
 ### Source findings relevant to feasibility
 

@@ -1,6 +1,6 @@
 # Brief 02: FPL Backtesting & Promotion Gate Adversarial Audit
 
-**Target Audience**: 3rd-Party Frontier LLM (Claude 3.5 Sonnet, GPT-4o, Gemini 1.5 Pro)  
+**Target Audience**: Independent frontier language model
 **Task Type**: Statistical Audit, Methodology Review & Algorithmic Reform Plan  
 **Repository**: `fpl-jubilee-ascent`  
 **Current Gate Authority**: ADR 0046, ADR 0047, ADR 0049, ADR 0054, ADR 0062  

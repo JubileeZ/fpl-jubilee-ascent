@@ -13,6 +13,10 @@ spec_path: ideas/EXT-02-state-decoupled-cameo-event-intensity-late-game-fatigue-
 
 # EXT-02: State-Decoupled Cameo Event Intensity & Late-Game Fatigue Scaling
 
+## Checkpoint status (2026-10-28)
+
+Screened against locked Dead lever; skipped, no new empirical run. Queue/ledger own mechanism match and revisit boundary. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 The Champion computes expected goals and assists by multiplying a player's pooled per-90 event rate by total expected minutes: \mathbb{E}[\text{Events}] = (\mathbb{E}[\text{Mins}] / 90.0) \cdot \hat{\lambda}_{90}. This assumes 18 minutes off the bench carry the exact same per-minute scoring intensity as 78 minutes from the start. In reality, substitute minutes occur almost exclusively after minute 65 against fatigued opposition defensive blocks and during skewed game states (attackers are subbed on when trailing or drawing to chase goals; defenders are subbed on to protect leads and run down the clock). Empirically, Premier League attacking substitutes generate \approx 1.30\times to 1.45\times higher xG+xA per 90 than starters, whereas defensive substitutes generate near-zero attacking involvement.

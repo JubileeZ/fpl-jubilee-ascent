@@ -3,7 +3,7 @@ idea_id: EXT-08
 name: Joint xGI Intensity and Allocation
 tier: P1
 component: xp_goals
-status: untested
+status: in-progress-b2
 replaces: Add coupling correction after inherited MultiFeatureAssistChallengerModel._project_event_components count calculation and before inherited bonus allocation. Cache one factor pair per player/fixture. Preserve active MLComponentChallengerModel.predict Group A/B and all existing finishing parameters. Shared helper must use one causal implementation for training contexts and current prediction contexts; no new implicit archive reads.
 grid: "k_mix=2.0; k_mix=4.0; k_mix=8.0; k_mix=16.0"
 inputs: "Existing: features.player_id; features.position_id; features.fixture_id; features.gameweek_id; history.player_id; history.gameweek_id; history.minutes; history.expected_goals; history.expected_assists; history.price. Existing helper: positional_price_tier_prior. Derived to implement: derived.weighted_xg; derived.weighted_xa; derived.exposure90; derived.joint_rate_g; derived.joint_rate_a; derived.independent_reference_g; derived.independent_reference_a. Unavailable/not used: event recipient links, shot tags, terminal set-piece orders, future price. Derived names are proposed internal fields, absent from current FeatureContract."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-08-joint-xgi-intensity-and-allocation.md
 ---
 
 # EXT-08: Joint xGI Intensity and Allocation
+
+## Checkpoint status (2026-10-28)
+
+Partial fixed grid: k2/k4 FAIL; k8/k16 unfinished at user checkpoint, no verdict. Continue remaining grid; whole mechanism Open. Resume CSV: `prototypes/ext_08/resume_smoke.csv`. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 
@@ -90,7 +94,7 @@ Specification stub only; inherited prediction unchanged until new causal helper 
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-attack-response.md](../sol-max-attack-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [attack-ideation-response.md](../attack-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 10/25/44/85/93; new own-xG/xA joint process intensity-allocation likelihood.
 
@@ -104,7 +108,7 @@ No empirical attempt; no candidate-ledger verdict. Recheck authoritative ledger 
 
 ## Shared Source Context
 
-# Sol Max attacking-rate ideation
+# Attacking-rate ideation
 
 Date: 2026-10-28. Scope: local code and ledger review; goals, assists, budget-enabler ranking. Status: untested hypotheses. No empirical gains claimed. No model implementation, ingestion, smoke test, backtest, gate run, or queue change.
 

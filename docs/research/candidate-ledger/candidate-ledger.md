@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-09-29T02:50:00+07:00  
+**Updated**: 2026-10-28 (+07:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -131,11 +131,12 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Decoupled Minutes ML + LOO Assists early activation (GW10-15 activation without goals modification) | smoke `lane1_mins_ast_gw10`, `lane1_mins_ast_gw15` | DXS | dev 2025-26 FAIL: gw10 catastrophic early_mid regression -0.245 < -0.15; gw15 boot P 0.553 < 0.60 | 2026-10-21 | 2027-10-21 | [ml-adaptive-champion](../ml-adaptive-champion/smoke_results.csv) |
 | Bounded Causal ML Challenger (GW10 ML activation with [0.90, 1.10] goal safety clamp) | `bounded_causal_challenger` | ACC | dev 2025-26 PASS +0.156 1/3 boot P 0.803; confirm 2024-25 FAIL -2.280 0/3 boot P 0.012 (early_mid regression -5.775 < -0.15; guardrails fail) | 2026-10-23 | 2027-10-23 | [early-gw-ml-exploration](../early-gw-ml-exploration/candidate_gate.csv) |
 | Price-Stratified Huber-Regularized Continuous-N_eff Causal Panel (price-tier centering, Huber duration, continuous N_eff ramp) | smoke `ext_05_*` (4) | ACC | dev 2025-26 FAIL: combined -1.004 1/3 segs boot P 0.012; early_mid catastrophic regression -2.643 < -0.15; guardrails failed | 2026-10-26 | 2027-10-26 | [candidate-ideation](../candidate-ideation/smoke_results.csv) |
-
+| Binomial fixture-exposure likelihood for inherited learned-start anchor (DGW starts/trials, predictors and mass fixed) | `ext_09_binomial_fixture_exposure` | ACC | dev 2025-26 FAIL: combined 0.000, 0/3 segments, boot P 0.5779; guardrails pass; no confirmation | 2026-10-28 | 2027-10-28 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=ext_09_binomial_fixture_exposure` |
+| Exposure-coherent final participation-state event reconstruction (unchanged rates, scoring links, Group A/B, bonus law) | `ext_07_replay_final_states` | ACC | dev 2025-26 FAIL: combined -0.6053, 0/3 segments, boot P 0.20845; late loss, captaincy and active playable-MAE failures; no confirmation | 2026-10-28 | 2027-10-28 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=ext_07_replay_final_states` |
 
 ## Open (next-lever pool; not proven dead)
 
-None (all candidate levers evaluated or superseded).
+- Joint own-xG/xA process intensity/allocation: Open, partial fixed grid. `ext_08_k2` and `ext_08_k4` failed; `ext_08_k8` / `ext_08_k16` unfinished, no verdict. Continue exact remaining grid; no re-sweep of completed variants. Evidence: [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant` / `combined_delta` / `boot_p_gt0`.
 
 
 ## Agent Prompt

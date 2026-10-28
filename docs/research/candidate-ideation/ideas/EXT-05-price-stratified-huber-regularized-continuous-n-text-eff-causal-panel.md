@@ -3,7 +3,7 @@ idea_id: EXT-05
 name: "Price-Stratified Huber-Regularized Continuous-N_{\\text{eff}} Causal Panel"
 tier: P1
 component: xp_minutes
-status: untested
+status: fail
 replaces: Replaces the global Ridge regression fit and GW 20 step ramp in AdaptiveCausalChallengerModel._compute_ml_blend_weight and MLComponentChallengerModel._fit_predict_panel_heads.
 grid: "N_min=3500,N_full=7500,huber_delta=1.35,l2=50.0; N_min=3500,N_full=7500,huber_delta=1.50,l2=100.0; N_min=4000,N_full=8000,huber_delta=1.35,l2=75.0; N_min=3000,N_full=7000,huber_delta=1.20,l2=100.0"
 inputs: features.now_cost; features.position; history.n_eff_panel_rows; features.ml_panel_covariates
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-05-price-stratified-huber-regularized-continuous-n-text-eff
 ---
 
 # EXT-05: Price-Stratified Huber-Regularized Continuous-N_{\text{eff}} Causal Panel
+
+## Checkpoint status (2026-10-28)
+
+Completed development failure; no promotion. Evidence: `smoke_results.csv`, variant prefix `ext_05_`. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 

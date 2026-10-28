@@ -3,7 +3,7 @@ idea_id: EXT-10
 name: Full-Duration Survival Likelihood for Starting Players
 tier: P2
 component: xp_minutes
-status: untested
+status: blocked (EXT-07 dead; seed hazards unavailable)
 replaces: "MLComponentChallengerModel.predict H3 block currently fits target_minutes minus shrunk_mins_if_start, clips start minutes to [60,90], and maps mean to P(60) with a line. Replace that H3 likelihood and moment mapping. build_causal_panel already supplies fixture-level target_minutes and target_starts. New immutable pooled seed hazard summaries belong in build_features seed preparation, explicitly passed as optional numeric features. Shared Candidate 1 replay utility is a prerequisite for assessing full scoring consequences."
 grid: "hazard_ridge=50,seed_strength=12; hazard_ridge=200,seed_strength=12; hazard_ridge=50,seed_strength=24; hazard_ridge=200,seed_strength=24"
 inputs: "Existing history.minutes; history.starts; history.player_id; history.fixture_id; history.gameweek_id; existing causal-panel shrunk_mins_if_start and early_hook_rate; features.position_id. Proposed derived features: fixed-bin exit counts and at-risk exposures, prior-season position hazard summaries, genuine seed-row count. These are not existing FeatureContract columns. Injury exit reasons, exact substitute identity, player tracking load, and live lineup news are unavailable and unused."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-10-full-duration-survival-likelihood-for-starting-players.m
 ---
 
 # EXT-10: Full-Duration Survival Likelihood for Starting Players
+
+## Checkpoint status (2026-10-28)
+
+Blocked, no empirical verdict: (EXT-07 dead; seed hazards unavailable). Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 
@@ -100,7 +104,7 @@ class FullDurationSurvivalLikelihoodForStartingPlayersChallengerModel(AdaptiveCa
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-minutes-response.md](../sol-max-minutes-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [minutes-ideation-response.md](../minutes-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 19/52/60/64/79/81; full starting-duration censored likelihood, not direct 60+ binary calibration or component mixture.
 
@@ -138,7 +142,7 @@ Primary local sources:
 - [Inherited learned-start anchor](C:/Users/phjenphithak/fpl-jubilee-ascent/models/learned_start_challenger.py:55).
 - [Causal panel and actual targets](C:/Users/phjenphithak/fpl-jubilee-ascent/models/ml_panel_features.py:734).
 - [Existing scoring function](C:/Users/phjenphithak/fpl-jubilee-ascent/models/calibrated_matchup_hybrid.py:33).
-- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/sol-max-defense-response.md).
+- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/defense-ideation-response.md).
 
 ### Source findings relevant to feasibility
 

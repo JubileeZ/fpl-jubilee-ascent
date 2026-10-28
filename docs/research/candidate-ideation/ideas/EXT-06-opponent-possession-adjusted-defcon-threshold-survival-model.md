@@ -3,7 +3,7 @@ idea_id: EXT-06
 name: Opponent Possession-Adjusted Defcon Threshold Survival Model
 tier: P1
 component: xp_defcon
-status: untested
+status: dead-match
 replaces: "Modifies ComponentBaselineModel._project_defcon_points by introducing the shrunk opponent demand multiplier M_{\\text{opp\\_dc}, o}(g) prior to the Negative Binomial survival evaluation."
 grid: "K_dc=1350,s_dc=0.25; K_dc=1350,s_dc=0.35; K_dc=1800,s_dc=0.30; K_dc=1800,s_dc=0.40; K_dc=1080,s_dc=0.25"
 inputs: features.position; features.opponent_id; history.defcon_per90_eb; history.opp_defcon_induced_per90_eb; history.league_avg_defcon_per90
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-06-opponent-possession-adjusted-defcon-threshold-survival-m
 ---
 
 # EXT-06: Opponent Possession-Adjusted Defcon Threshold Survival Model
+
+## Checkpoint status (2026-10-28)
+
+Screened against locked Dead lever; skipped, no new empirical run. Queue/ledger own mechanism match and revisit boundary. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 

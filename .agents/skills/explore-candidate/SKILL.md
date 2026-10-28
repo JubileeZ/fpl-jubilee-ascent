@@ -12,6 +12,8 @@ Goal: replace Model Champion (`config/model_selection.json` `champion`) with Can
 
 Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 
+LLM references in prompts, reports, filenames, and documentation: specialist role, date, source artifact; omit fixed provider, product, model, and version names. Preserve exact FPL projection-model identifiers.
+
 - **Arm goal.** First invocation in conversation, no goal active: call `CreateGoal` once (per `/goal` contract) with objective:
   `explore-candidate <scope or "dual-lane">: frozen Candidate passing Historical Promotion Gate on dev + confirm seasons via smoke.py, adoption queued in Human Queue — or scope exhausted with every attempt in Candidate Ledger. State: .agents/work-packets/explore-candidate-<slug>.md`
   Goal already active → skip. `CreateGoal` unavailable → continue without goal; packet = state. Then start step 0 same turn.

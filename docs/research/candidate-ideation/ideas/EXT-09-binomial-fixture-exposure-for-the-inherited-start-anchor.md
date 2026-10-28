@@ -3,7 +3,7 @@ idea_id: EXT-09
 name: Binomial Fixture Exposure for the Inherited Start Anchor
 tier: P1
 component: xp_minutes
-status: untested
+status: fail
 replaces: "Late-only branch around models.learned_start_challenger._panel, _covariates, _fit_logistic, and learned_start_probabilities reached from LearnedStartChallengerModel.predict. _panel adds fixture_count and start_count while retaining started=max and current lag columns. _fit_logistic accepts binomial exposures. target_start_probabilities, blend_states, bonus law, and main ML H1/H3 remain fixed. Candidate-level dispatch must use original inherited anchor for target GW1-19. This is a reachable inherited-anchor change, not a correction to build_causal_panel."
 grid: "binomial_fixture_exposure=True"
 inputs: "Existing history.player_id; history.fixture_id; history.gameweek_id; history.starts; history.minutes; history.was_home; history.opponent_club_id; features.position_id; features.club_id; features.gameweek_id; features.fixture_id. Proposed derived columns: player-GW fixture_count and start_count, assembled from distinct pre-target fixture rows; immutable seed-row-count metadata. No new external source. Unknown/missing fixture opportunity causes exclusion/fallback, never a manufactured zero."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-09-binomial-fixture-exposure-for-the-inherited-start-anchor
 ---
 
 # EXT-09: Binomial Fixture Exposure for the Inherited Start Anchor
+
+## Checkpoint status (2026-10-28)
+
+Completed development failure; no promotion. Evidence: `smoke_results.csv`, variant prefix `ext_09_`. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 
@@ -88,7 +92,7 @@ class BinomialFixtureExposureForTheInheritedStartAnchorChallengerModel(AdaptiveC
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-minutes-response.md](../sol-max-minutes-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [minutes-ideation-response.md](../minutes-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data row 52; inherited-anchor observation-unit correction, not position/head/regularization variation.
 
@@ -126,7 +130,7 @@ Primary local sources:
 - [Inherited learned-start anchor](C:/Users/phjenphithak/fpl-jubilee-ascent/models/learned_start_challenger.py:55).
 - [Causal panel and actual targets](C:/Users/phjenphithak/fpl-jubilee-ascent/models/ml_panel_features.py:734).
 - [Existing scoring function](C:/Users/phjenphithak/fpl-jubilee-ascent/models/calibrated_matchup_hybrid.py:33).
-- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/sol-max-defense-response.md).
+- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/defense-ideation-response.md).
 
 ### Source findings relevant to feasibility
 

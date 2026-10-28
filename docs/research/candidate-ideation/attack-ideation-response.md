@@ -1,4 +1,4 @@
-# Sol Max attacking-rate ideation
+# Attacking-rate ideation
 
 Date: 2026-10-28. Scope: local code and ledger review; goals, assists, budget-enabler ranking. Status: untested hypotheses. No empirical gains claimed. No model implementation, ingestion, smoke test, backtest, gate run, or queue change.
 

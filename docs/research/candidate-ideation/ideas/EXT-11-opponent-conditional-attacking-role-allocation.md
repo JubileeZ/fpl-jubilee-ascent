@@ -13,6 +13,10 @@ spec_path: ideas/EXT-11-opponent-conditional-attacking-role-allocation.md
 
 # EXT-11: Opponent Conditional Attacking Role Allocation
 
+## Checkpoint status (2026-10-28)
+
+Implementation/checks prepared under `prototypes/ext_11/`; audit and synthetic checks pending. No smoke or empirical verdict. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 Hypothesis: opponents differ in which attacking profiles generate chances against them, beyond total chances conceded. Aggregate opponent xG cannot distinguish concessions to shooting midfielders, creating midfielders, and forwards. FPL positions provide coarse profiles only; no inference about real winger/striker locations. New signal is relative attacking-role concession pattern, conditional on opponents already faced.
@@ -78,7 +82,7 @@ Existing: `features.player_id`; `features.position_id`; `features.club_id`; `fea
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-attack-response.md](../sol-max-attack-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [attack-ideation-response.md](../attack-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 12/32/40/50/73; new conditional opponent-role contrasts, not scalar club strength or absent-player mass transfer.
 
@@ -92,7 +96,7 @@ No empirical attempt; no candidate-ledger verdict. Recheck authoritative ledger 
 
 ## Shared Source Context
 
-# Sol Max attacking-rate ideation
+# Attacking-rate ideation
 
 Date: 2026-10-28. Scope: local code and ledger review; goals, assists, budget-enabler ranking. Status: untested hypotheses. No empirical gains claimed. No model implementation, ingestion, smoke test, backtest, gate run, or queue change.
 

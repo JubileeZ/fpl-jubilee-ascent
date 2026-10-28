@@ -1,22 +1,54 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-10-28T14:21:33+07:00
-**Data stamp**: Local source/ledger audit at HEAD `d2d24154`; no new empirical results
+**Updated**: 2026-10-28 (+07:00)
+**Data stamp**: Completed dev rows in `smoke_results.csv`; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Batch 2 queued: six untested, one blocked; Champion `adaptive_causal_challenger` unchanged
+**Status**: Session checkpoint; EXT-07/09 FAIL, EXT-08 partial grid, no passing Candidate; continue exploration next session
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
 **Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` / `spec_path` — primary candidate work queue index.  
 **Dossiers**: [ideas/](ideas/) — full LaTeX formulations, cold-start strategies, and Python code skeletons.  
 **Smoke Results**: [smoke_results.csv](smoke_results.csv) — empirical dev-season gate runs across prototype variants.
-**Agent Reports**: [Minutes](sol-max-minutes-response.md) · [Attack](sol-max-attack-response.md) · [Defense](sol-max-defense-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+**Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md); frontier language-model review, 2026-10-28.
+
+LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
 
 ---
 
+## Exploration execution (2026-10-28, active)
+
+Mode: default queue; batch 2 EXT-07, EXT-08, EXT-09. Fixed grids from dossiers; no widening. Dev 2025-26 GW1-38 seeded 2024-25; confirm 2024-25 seeded 2023-24; live holdout sealed. EXT-07/09 failed dev and recorded Dead; revisit 2027-10-28. EXT-08 k2/k4 failed, k8/k16 unfinished; mechanism Open. No registered Candidate, confirmation, or promotion. Champion unchanged.
+
+Audited implementations and synthetic checks preserved in [prototypes/](prototypes/README.md); executable prototype snapshots byte-identical to running scratch sources. Parent independently re-audited manifests and ran preserved checks. Ruff passes; eight exposure-replay tests pass; joint-xGI checks pass (cross-signal derivative, independent-collapse identity, early parity, finite/component reconciliation); binomial checks pass (singleton equivalence, fixture-opportunity optimum, missing/duplicate exposure, early parity, reachable correction). Synthetic effect confirms implementation reachability, never predictive gain.
+
+Initial Windows worker-IPC startup denied; exact archive-only permission retries accepted. User ended session: verified EXT-08 harness/workers stopped, completed rows preserved. Unfinished variants carry no verdict. `smoke_results.csv` owns completed audited rows; `refresh_evidence.py` regenerates note caches. Work Packet: `.agents/work-packets/explore-candidate-candidate-ideation.md`; handoff pointer committed with checkpoint.
+
+Gate caveat: current `smoke.py` checks seasons independently. Frozen Candidate additionally needs authoritative `compare_two_season_gate` pooled P >= 0.85 on exact saved dev/confirm results; standalone season passes alone insufficient.
+
+Remaining eligible mechanisms: EXT-11/12 after current batch verdict; EXT-11 source preparation in progress without smoke. EXT-10 blocked: decoder prerequisite EXT-07 now Dead; immutable seed-hazard summaries also absent. No EXT-10 empirical attempt or verdict. EXT-13 blocked on historical schedule provenance. Human adoption/commit gates preserved.
+
+### Continue exploration
+
+No passing Candidate established; eligible scope remains. Resume EXT-08 k8/k16 first using [durable resume rows](prototypes/ext_08/resume_smoke.csv), which skip completed k2/k4. Exact command and fixed batch-3 grids in Work Packet. Then audit/check prepared EXT-11 and develop EXT-12. Never reuse Dead EXT-07 as EXT-10 prerequisite without explicit user override.
+
+Prepared work preserved: [EXT-11 source/checks](prototypes/ext_11/README.md), not yet audited/evaluated; [feature-cache draft](runtime-draft/README.md), 17 scratch synthetic tests passed, not activated, relocation/guard fixes pending. No background exploration remains at checkpoint.
+
+<!-- exploration-results:start -->
+## Completed development evidence
+
+Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cached columns `combined_delta`, `segs`, `boot_p_gt0`, `guardrails_passed`, `pass`. Full failed-mechanism reasons retained in companion. Partial grid rows never imply whole-lane verdict.
+
+- `ext_09_binomial_fixture_exposure`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.57790; guardrails True.
+- `ext_07_replay_final_states`: FAIL; dev 2025-26 GW1-38; delta -0.605263 points/GW; 0/3 segments; bootstrap P 0.20845; guardrails False.
+- `ext_08_k2`: FAIL; dev 2025-26 GW1-38; delta -0.653026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_08_k4`: FAIL; dev 2025-26 GW1-38; delta -0.267500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+
+<!-- exploration-results:end -->
+
 ## Agent Ideation Review (Batch 2: 2026-10-28)
 
-Three independent `gpt-6.1-sol` agents, `reasoning_effort=max`; specialist lanes: minutes/budget starters, attacking events, defensive/GKP events. Full prompt plus all 93 ledger rows screened. Reports contain eight specialist proposals; shared exposure reconstruction merged into one mechanism, leaving seven unique hypotheses. Ranking below reflects source evidence and implementation feasibility, never measured predictive improvement.
+Three independent specialist reviews; lanes: minutes/budget starters, attacking events, defensive/GKP events. Full prompt plus all 93 ledger rows screened. Reports contain eight specialist proposals; shared exposure reconstruction merged into one mechanism, leaving seven unique hypotheses. Ranking below reflects source evidence and implementation feasibility, never measured predictive improvement.
 
 1. **Exposure-coherent participation reconstruction**: First investigate deterministic correctness. Late ML writes final participation/minutes and `xp_minutes`, while event values remain copied from earlier `champ_proj`; attack multipliers act on those earlier values. Replay unchanged scoring links at final coherent states, preserving rates and GW1-19 fallback. Minutes and defense agents found same path independently. Before any experiment, resolve probability simplex, capped conditional-duration/P(60) semantics, inherited effective rate transformations, and single bonus allocation. See [source assembly](../../../models/ml_component_challenger.py#L366).
 2. **Joint xGI intensity and allocation**: First standalone event-rate hypothesis. Joint own xG/xA process model shares information between total involvement and shooter/creator allocation. Nonzero cross-signal derivative distinguishes proposal from independent scalar shrinkage. Existing history sufficient; four proposed variants. Untested generalized likelihood and prior coupling remain risks.
@@ -118,14 +150,14 @@ The lever is logged as **Dead** in `docs/research/candidate-ledger/candidate_led
 
 ## Sources & Ideation Pipeline
 
-- **Primary**: Frontier LLM Collaborations (Claude 3.5 Sonnet, GPT-4o, Gemini 1.5/2.0 Pro) via structured prompt briefs.
+- **Primary**: Frontier LLM Collaborations via structured prompt briefs.
 - **Repository data**: [`candidate_ledger.csv`](../candidate-ledger/candidate_ledger.csv), [`config/model_selection.json`](../../config/model_selection.json), [`backtesting/promotion.py`](../../backtesting/promotion.py).
 
 ```mermaid
 flowchart LR
     State["Repo State\n(Champion, Dead Levers, ADR 0064 Gate)"] --> GenPrompt["generate_prompt.py\n(Dynamic Prompt Builder)"]
     GenPrompt --> PromptFile["candidate_model_ideation_prompt.md"]
-    PromptFile --> ExtLLM["External Frontier LLMs\n(Claude, GPT-4o, Gemini)"]
+    PromptFile --> ExtLLM["Frontier language-model review"]
     ExtLLM --> Response["Raw Model Ideas"]
     Response --> Ingest["ingest_ideas.py\n(Schema & Dead-Lever Validator)"]
     Ingest --> Queue["idea_queue.csv\n(explore-candidate Default Queue)"]

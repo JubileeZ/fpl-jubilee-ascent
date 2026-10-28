@@ -13,6 +13,10 @@ spec_path: ideas/EXT-04-shot-quality-decoupled-goalkeeper-save-volume-exact-step
 
 # EXT-04: Shot-Quality Decoupled Goalkeeper Save Volume & Exact Step-Tier Expectation
 
+## Checkpoint status (2026-10-28)
+
+Screened against locked Dead lever; skipped, no new empirical run. Queue/ledger own mechanism match and revisit boundary. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 The Champion scales goalkeeper saves via generic defensive matchup multipliers and historical save averages. However, saves are governed by the divergence between Shot on Target (SoT) volume conceded and Shot Lethality (xG per SoT). Low-block, mid-to-lower table clubs (£4.5m GKs) systematically funnel opponents into speculative perimeter shots (high SoT volume, low xG/SoT), yielding frequent 1-point and 2-point save bonuses even in matches with moderate xGC. Conversely, high-line possession teams concede few shots, but those conceded are high-xG transition breakaways, starving premium GKs (£5.5m) of save points.

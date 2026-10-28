@@ -1,6 +1,6 @@
 ---
 name: ideate-candidate
-description: Generates point-in-time candidate ideation prompts for external frontier models and ingests candidate hypotheses into idea_queue.csv for explore-candidate. Use when seeking new FPL model ideas from Claude/GPT/Gemini, building focused ideation briefs, or parsing external model proposals into the work queue.
+description: Generates point-in-time candidate ideation prompts for frontier language models and ingests candidate hypotheses into idea_queue.csv for explore-candidate. Use when seeking new FPL model ideas, building focused ideation briefs, or parsing external proposals into the work queue.
 ---
 
 # Ideate Candidate
@@ -44,7 +44,9 @@ Generated output is written to [`docs/research/candidate-ideation/candidate_mode
 
 ### 2. Dispatch to External Model
 
-Copy the generated prompt block from `candidate_model_ideation_prompt.md` into your external frontier model of choice (Claude 3.5 Sonnet, GPT-4o, Gemini 2.0/1.5 Pro).
+Copy the generated prompt block from `candidate_model_ideation_prompt.md` into a current frontier language model available to the user.
+
+Keep reusable prompts, report titles, filenames, and documentation model-neutral: no fixed LLM provider, product, version, or model-ID recommendations. Identify reports by specialist role, date, and source artifact. Preserve exact FPL projection-model identifiers; those describe evaluated code.
 
 ### 3. Ingest Proposals into `idea_queue.csv` and `ideas/` Dossiers
 

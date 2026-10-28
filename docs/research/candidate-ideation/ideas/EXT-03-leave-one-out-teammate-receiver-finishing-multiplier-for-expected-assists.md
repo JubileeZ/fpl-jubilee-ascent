@@ -13,6 +13,10 @@ spec_path: ideas/EXT-03-leave-one-out-teammate-receiver-finishing-multiplier-for
 
 # EXT-03: Leave-One-Out Teammate Receiver Finishing Multiplier for Expected Assists
 
+## Checkpoint status (2026-10-28)
+
+Screened against locked Dead lever; skipped, no new empirical run. Queue/ledger own mechanism match and revisit boundary. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 Expected Assists (xA) measures the probability that a pass becomes a goal given the spatial coordinates of the shot taken by the receiver. However, actual FPL assist realization depends on the finishing efficiency of the receiving teammates. While AdaptiveCausalChallengerModel includes a Group B assist residual on the creator's historical (A - xA), a creator's own (A - xA) is dominated by small-sample shot variance. Directly modeling the minute-weighted finishing skill (G - xG) of the other attacking players on the same club (j \neq i) captures true structural conversion alpha with 10x larger sample size (pooling across all club shooters).

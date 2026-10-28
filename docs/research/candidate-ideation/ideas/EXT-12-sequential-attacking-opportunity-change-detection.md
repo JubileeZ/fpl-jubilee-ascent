@@ -13,6 +13,10 @@ spec_path: ideas/EXT-12-sequential-attacking-opportunity-change-detection.md
 
 # EXT-12: Sequential Attacking Opportunity Change Detection
 
+## Checkpoint status (2026-10-28)
+
+Untested; no empirical verdict. Continue only within eligible fixed scope. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
+
 ## 1. Concept & Football Hypothesis
 
 Hypothesis: persistent attacking-opportunity changes can occur during season, so fixed 0.95 decay sometimes mixes distinct opportunity regimes. Repeated process innovations should support changing memory; isolated realized goals should not. Candidate learns continuous xG/xA intensity change points, never hidden participation roles. Unobserved cause might be tactical responsibility or team context; model cannot identify cause from FPL data.
@@ -77,7 +81,7 @@ Existing: `features.player_id`; `features.position_id`; `features.fixture_id`; `
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-attack-response.md](../sol-max-attack-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [attack-ideation-response.md](../attack-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 25/78/85/86; continuous process-rate change likelihood, not participation HMM or fixed recency retune.
 
@@ -91,7 +95,7 @@ No empirical attempt; no candidate-ledger verdict. Recheck authoritative ledger 
 
 ## Shared Source Context
 
-# Sol Max attacking-rate ideation
+# Attacking-rate ideation
 
 Date: 2026-10-28. Scope: local code and ledger review; goals, assists, budget-enabler ranking. Status: untested hypotheses. No empirical gains claimed. No model implementation, ingestion, smoke test, backtest, gate run, or queue change.
 

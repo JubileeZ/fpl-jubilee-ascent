@@ -3,7 +3,7 @@ idea_id: EXT-07
 name: Exposure-Coherent Participation Reconstruction
 tier: P1
 component: all
-status: untested
+status: fail
 replaces: "Replace out_df = champ_proj.copy() as event decoder input in MLComponentChallengerModel.predict, after hard DNP/oracle processing and before Group A. Reuse ParticipationStateHybridModel.predict's two calls to _project_event_components and LearnedStartChallengerModel._allocate_bonus. Preserve effective rows produced through DefXgShrinkChallengerModel.predict and MultiFeatureAssistChallengerModel.predict. A direct scorer call on original rows would miss inherited rate adjustments. Requires extracting/capturing prepared rows or controlled state override; constructor-only subclass is insufficient."
 grid: "replay_final_states=True"
 inputs: "Existing features.player_id; features.fixture_id; features.gameweek_id; features.position_id; features.per90_; features.attack_multiplier; features.defence_multiplier; features.xmins_cap when present; current operational availability/blank/external-minutes fields; existing final state arrays and fitted Group A/B outputs. Proposed derived object: effective prepared event rows and coherent final state record, neither currently an exported feature column. No new football source or terminal metadata."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-07-exposure-coherent-participation-reconstruction.md
 ---
 
 # EXT-07: Exposure-Coherent Participation Reconstruction
+
+## Checkpoint status (2026-10-28)
+
+Completed development failure; no promotion. Evidence: `smoke_results.csv`, variant prefix `ext_07_`. Current status: `idea_queue.csv` + Candidate Ledger. Proposal body below records original intake, not a current gate verdict.
 
 ## 1. Concept & Football Hypothesis
 
@@ -94,7 +98,7 @@ class ExposureCoherentParticipationReconstructionChallengerModel(AdaptiveCausalC
 
 ## Intake Provenance & Mechanism Audit
 
-Source: [sol-max-minutes-response.md](../sol-max-minutes-response.md); GPT-6.1 Sol, Max reasoning, 2026-10-28.
+Source: [minutes-ideation-response.md](../minutes-ideation-response.md); frontier language-model review, 2026-10-28.
 
 Nearest ledger mechanisms: CSV data rows 24/28/52/64/66; deterministic state/exposure propagation, not new rate fit, CS scale, P(60) estimator, or bench routing.
 
@@ -132,7 +136,7 @@ Primary local sources:
 - [Inherited learned-start anchor](C:/Users/phjenphithak/fpl-jubilee-ascent/models/learned_start_challenger.py:55).
 - [Causal panel and actual targets](C:/Users/phjenphithak/fpl-jubilee-ascent/models/ml_panel_features.py:734).
 - [Existing scoring function](C:/Users/phjenphithak/fpl-jubilee-ascent/models/calibrated_matchup_hybrid.py:33).
-- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/sol-max-defense-response.md).
+- [Shared reconstruction audit](C:/Users/phjenphithak/fpl-jubilee-ascent/docs/research/candidate-ideation/defense-ideation-response.md).
 
 ### Source findings relevant to feasibility
 
