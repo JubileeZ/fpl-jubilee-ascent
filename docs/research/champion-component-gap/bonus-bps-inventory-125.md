@@ -18,7 +18,7 @@
 - **Repository data**: [component_gap_summary.csv](component_gap_summary.csv) `mse_share` / `signed_bias` / `demotion_label` for `xp_bonus`; [segment_fix_experiments_124.md](segment_fix_experiments_124.md) flat `k_bonus` disproven for `late`  
 - **Secondary path (not Champion stack)**: `models/component_baseline.py` `per90_bonus` → `xp_bonus` without fixture ranking
 
-**Source boundary**: Inventory of shipped forms. Official FPL BPS weight table not re-derived here (`docs/fpl_scoring_rules_2025-26.md` only names bonus 1–3 via BPS). ADR labels current form a **proxy**, not fitted multinomial.
+**Source boundary**: Inventory of shipped forms. Official FPL BPS weight table not re-derived here (`docs/rules/scoring-rules-2025-26.md` only names bonus 1–3 via BPS). ADR labels current form a **proxy**, not fitted multinomial.
 
 ## Agent Prompt
 

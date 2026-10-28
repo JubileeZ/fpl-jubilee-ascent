@@ -12,7 +12,7 @@ count-distribution expectations for thresholded FPL events.
 
 We introduce `metrics_component_hybrid` (`models/metrics_component_hybrid.py`) which implements:
 
-1. **Scoring Matrix Alignment**: Official goal points (GK=10, D=6, M=5, F=4), red cards (-3), and outfield defensive-contribution points live in `models/scoring_matrix.py`. Source and capture date are recorded in `docs/fpl_scoring_rules_2025-26.md`.
+1. **Scoring Matrix Alignment**: Official goal points (GK=10, D=6, M=5, F=4), red cards (-3), and outfield defensive-contribution points live in `models/scoring_matrix.py`. Source and capture date are recorded in `docs/rules/scoring-rules-2025-26.md`.
 2. **Fixture-Level Inputs**: Feature rows retain `fixture_id` and derive separate attack and defence multipliers from opponent/team strength vectors when available; FDR remains the documented fallback.
 3. **Calibrated Attack Mapping**: Goal rates use `xG` + `Threat`, and assist rates use `xA` + `Creativity`. `fit(history_df)` estimates non-negative weights from pre-cutoff history and shrinks sparse estimates toward the default prior.
 4. **Poisson Defence & Defcon Model**:
