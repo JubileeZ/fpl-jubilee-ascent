@@ -8,6 +8,8 @@ from collections import defaultdict
 
 import pandas as pd
 
+from models.native_scoring_context import native_scoring_context
+
 from models.base import cap_projected_minutes, iter_feature_rows
 from models.metrics_component_hybrid import (
     MetricsComponentHybridModel,
@@ -74,6 +76,7 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
         return max(0.0, _number(row, f"xmins_if_{state}", default))
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
+        native_scoring_context(features_df)
         components: list[dict[str, object]] = []
         bonus_groups: defaultdict[int, list[int]] = defaultdict(list)
         component_columns = (

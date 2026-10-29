@@ -5,11 +5,12 @@ Status: **IN PROGRESS**. Prepared 2026-10-29 against repository `66729b15`; impl
 ## Execution status and phase teams
 
 - Phase 0: complete; local commit `a96af707`.
-- Phase 1: synthetic admission engineering accepted by Standards and Spec; 61 focused passes, lint/type checks clean, full checkpoint 753 passes plus accepted timing exception. Explicit empirical/native/integration follow-through remains unchecked below. Phase 2 next.
-- Phases 2–14: not implemented; Phase 2 rule-source preparation only.
+- Phase 1: synthetic admission engineering committed `d4536c42`; accepted by Standards and Spec, 61 focused passes, lint/type checks clean, full checkpoint 753 passes plus accepted timing exception. Explicit empirical/native/integration follow-through remains unchecked below.
+- Phase 2: both review axes accepted; 139 focused passes, 772 full-suite passes, Ruff/new-core types clean. Scoped native engineering accepted; empirical/calendar/solver integration limits explicit. Phase 3 next.
+- Phases 3–14: not started.
 - Exactly three agents per phase from Phase 1 reset: `phase_NN_implement` = GPT-6.1 Terra Medium; `phase_NN_review_standards` and `phase_NN_review_spec` = GPT-6.1 Sol xhigh. Fresh names/team for each phase; no reuse across phases.
 - Progress states: implementing -> independent Standards/Spec reviews -> repair findings -> validation -> local commit. Record findings, validation and commit in durable delivery record; update checklist/current-state at each transition. No push.
-- Current team: `phase_01_implement`, `phase_01_review_standards`, `phase_01_review_spec`. Earlier reused names retired; preserve existing work and unresolved review findings.
+- Current team: `phase_02_implement`, `phase_02_review_standards`, `phase_02_review_spec`. Phase 1 team completed; earlier reused names retired. Preserve explicit follow-through and review provenance.
 
 Draft author: GPT-6.1 Sol subagent, xhigh reasoning; parent review checked dependencies, source seams, approval boundaries, and completion/deletion criteria.
 
@@ -77,7 +78,7 @@ Likely seams: `features/availability_snapshots.py`, `features/season_archive.py`
 - [ ] Trace terminal/future fallbacks through `point_in_time_players`, `bootstrap_from_processed`, `prices_at_deadline`, `_owned_meta`, and feature fixture maps. Replace promotion-path fallbacks with admitted as-of inputs or explicit invalid reasons. A player's first future performance row cannot establish earlier eligibility/price/club.
 - [x] Distinguish known blank, known DNP, unknown schedule, missing forecast, missing outcome, postponed fixture, and not-yet-final outcome. Zero valid only for established zero event/blank/DNP under complete coverage; absent records remain missing.
 - [x] Retain fixture grain for DGWs; ownership/price stock fields collapse under declared as-of semantics, never sum across fixtures. Require consistent player/fixture/GW keys and ID mapping, including seed-season identity mapping.
-- [ ] Register native scoring/rules support by season. Explicitly handle 2024-25 Assistant Manager exclusion: either no use in registered shared policy, with claim limited to supported policy, or separate future extension. Do not claim unrestricted full-chip support or implement unused Assistant Manager by default.
+- [x] Register native scoring/rules support by season. Explicitly handle 2024-25 Assistant Manager exclusion: either no use in registered shared policy, with claim limited to supported policy, or separate future extension. Do not claim unrestricted full-chip support or implement unused Assistant Manager by default.
 - [x] Publish deterministic admission report with reasons and blockers. Permitted Q13 limitations must have controlled known leakage and complete required inputs; disclose model-dependent effects of missing availability. Disclosure alone cannot admit known leakage.
 - [x] Route any needed historical reconstruction through snapshot tooling into separately versioned output; flag migration/regeneration proposal for review. Never edit/delete existing archive Parquet files directly. Store research companions under topic folder, execution outputs under `data/reports/`.
 
@@ -87,7 +88,7 @@ Validation when implemented: `uv run pytest tests/test_availability_snapshots.py
 
 Checkpoint B: approve concrete admission/application proposal and remaining acquisition scope. If full required coverage unavailable, continue synthetic engine verification; withhold empirical promotion claim.
 
-Checkpoint outcome: synthetic admission engineering accepted by both phase-named reviewers. Remaining unchecked items are explicit follow-through: empirical freshness/eligibility and complete per-origin coverage remain blocked/unverified; acquired raw packages remain unadmitted; native rules register in Phase 2; strict forecast/replay adapters replace legacy fallbacks in Phases 3/5/11. No actual promotion evidence permitted until these conditions are met. Checkpoint B bounded acquisition approved; synthetic engine verification may continue under original plan.
+Checkpoint outcome: synthetic admission engineering accepted by both phase-named reviewers. Remaining unchecked items are explicit follow-through: empirical freshness/eligibility and complete per-origin coverage remain blocked/unverified; acquired raw packages remain unadmitted; native rule versions registered in Phase 2; strict forecast/replay adapters replace legacy fallbacks in Phases 3/5/11. No actual promotion evidence permitted until these conditions are met. Checkpoint B bounded acquisition approved; synthetic engine verification may continue under original plan.
 
 ### Phase 2. Specify state transitions and season-aware scoring
 
@@ -95,21 +96,23 @@ Dependencies: Phase 1 coverage/rule inventory. Specification and known-answer fi
 
 Likely seams: `backtesting/transfer_plan_walkforward.py`, `backtesting/strategy_policy.py`, `backtesting/decision_regret.py`, `models/scoring_matrix.py`, `solver/planning.py`; proposed pure `backtesting/replay_state.py` and season-rule contract. Keep one authoritative scoring-weight source; pass explicit rules version rather than duplicate constants.
 
-- [ ] Define full replay state: owned fifteen, acquisition prices, sale entitlements/current market prices, Money in the Bank, FT balance, transfers already made/penalties, available/used/expired chips, chip window, temporary squad restoration, deadline index, and parent-state hash.
-- [ ] Define atomic transition: validate causal decision and legality -> apply transfers/finances/chip -> freeze lineup/bench/captain/vice -> score completed immediate GW -> deduct official hits exactly once -> restore temporary state/advance native FT/chip state. Only validated complete transition becomes resumable checkpoint.
-- [ ] Specify initial anchor spending and bank in integer tenths; total initial capital equals acquisition spending plus bank. No full-budget credit on top of owned squad. GW1 transfers forbidden after reference lock, without consuming artificial Wildcard; GW2 FT starts from actual season rules.
-- [ ] Encode native FT caps/accrual, transfer penalties, Wildcard/Free Hit interactions, chip availability/expiry windows and restoration rules for each admitted season. Reject unsupported chip/calendar combinations before solve.
-- [ ] Specify purchase/sale profit rounding, price falls, retained acquisition value, re-buy after sale, temporary Free Hit finances, and bank conservation. Current price is not automatically acquisition or selling price.
-- [ ] Specify legal lineup and ordered autosubs, goalkeeper substitution, formation preservation, appearance across DGW fixtures, captain/vice fallback, Triple Captain, Bench Boost, and complete-DNP/blank behavior. Separate official match score, captain/chip increment, and penalties.
-- [ ] Audit native projection conversion as well as observed scoring. `models/scoring_matrix.py` has fixed current constants and no season argument; callers in component/hybrid models and actual-component reconstruction must use registered season scoring semantics. Unsupported historical event definitions must be declared rather than fabricated from current rules.
+- [x] Define full replay state: owned fifteen, acquisition prices, sale entitlements/current market prices, Money in the Bank, FT balance, transfers already made/penalties, available/used/expired chips, chip window, temporary squad restoration, deadline index, and parent-state hash.
+- [x] Define atomic transition: validate causal decision and legality -> apply transfers/finances/chip -> freeze lineup/bench/captain/vice -> score completed immediate GW -> deduct official hits exactly once -> restore temporary state/advance native FT/chip state. Only validated complete transition becomes resumable checkpoint.
+- [x] Specify initial anchor spending and bank in integer tenths; total initial capital equals acquisition spending plus bank. No full-budget credit on top of owned squad. GW1 transfers forbidden after reference lock, without consuming artificial Wildcard; GW2 FT starts from actual season rules.
+- [x] Encode native FT caps/accrual, transfer penalties, Wildcard/Free Hit interactions, chip availability/expiry windows and restoration rules for each admitted season. Reject unsupported chip/calendar combinations before solve.
+- [x] Specify purchase/sale profit rounding, price falls, retained acquisition value, re-buy after sale, temporary Free Hit finances, and bank conservation. Current price is not automatically acquisition or selling price.
+- [x] Specify legal lineup and ordered autosubs, goalkeeper substitution, formation preservation, appearance across DGW fixtures, captain/vice fallback, Triple Captain, Bench Boost, and complete-DNP/blank behavior. Separate official match score, captain/chip increment, and penalties.
+- [x] Audit native projection conversion as well as observed scoring. `models/scoring_matrix.py` has fixed current constants and no season argument; callers in component/hybrid models and actual-component reconstruction must use registered season scoring semantics. Unsupported historical event definitions must be declared rather than fabricated from current rules.
 - [ ] Register chip subset and shared calendar construction using only deadline-known information. A native-rule-correct policy may choose no Assistant Manager; it must disclose that scope. Independent model chip timing remains separate experiment.
-- [ ] Write human-readable transition examples with independently computed expected values before engine implementation. Version examples alongside source rule references under durable testing/rules documentation.
+- [x] Write human-readable transition examples with independently computed expected values before engine implementation. Version examples alongside source rule references under durable testing/rules documentation.
 
 Acceptance: complete state sufficient to reproduce next decision without hidden global settings; rule applicability explicit for every admitted season; deterministic fixture expectations for finances, FT, chips, and scoring agreed before trajectory results.
 
 Validation when implemented: proposed `tests/test_replay_state.py` plus `tests/test_scoring_matrix.py` and lineup/EGS tests. Known answers cover price rise with half-profit rounding, price fall, sale/re-buy, bank conservation, hit, FT cap differences, WC/FH restoration, chip expiry, BB/TC, captain DNP, GK/outfield autosub ordering, and DGW appearance. Include invalid duplicates, wrong position/club count, overspend, stale state, illegal chip and missing outcome.
 
 Checkpoint C: state/rule correctness review. Returning plausible points from old helper is insufficient acceptance.
+
+Checkpoint C outcome: both named reviewers accepted scoped native engineering; parent focused suite 139 passed, stable full suite 772 passed, Ruff clean, new-core/test Pyright clean. Registered four-chip subset and legal-calendar validation implemented. The remaining unchecked item includes causal shared-calendar/source adapter construction, owned by Phases 3/5/8; dates and empirical applicability are not inferred from fixtures. Historical card-only/inherited-club exceptions fail closed. No empirical replay or promotion claim.
 
 ### Phase 3. Build causal issue-by-target forecasts and reproducible storage
 

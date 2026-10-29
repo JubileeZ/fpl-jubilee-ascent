@@ -173,8 +173,19 @@ def _number(row: Mapping[str, Any], key: str, default: float = 0.0) -> float:
 def realized_gameweek_score(
     fixture_rows: Iterable[Mapping[str, Any]],
     position_id: int,
+    *,
+    rules_version: str | None = None,
 ) -> GameweekScore:
     """Official points plus Event Component points from performance rows in one GW."""
+    if rules_version is not None:
+        from backtesting.season_rules import get_rules
+
+        get_rules(rules_version)
+        fixture_rows = tuple(fixture_rows)
+        if not fixture_rows:
+            raise ValueError("Native outcome requires explicit blank or fixture data")
+        if type(position_id) is not int or position_id not in _POS_ID:
+            raise ValueError("Unsupported native position")
     position = _POS_ID.get(position_id, "M")
     points = 0.0
     minutes = 0.0
@@ -187,19 +198,32 @@ def realized_gameweek_score(
     xp_saves = 0.0
     xp_bonus = 0.0
     for row in fixture_rows:
+        if rules_version is not None:
+            required = {"minutes", "total_points", "goals_scored", "assists", "clean_sheets", "goals_conceded", "saves", "bonus"}
+            if rules_version == "2025-26":
+                required.add("defensive_contribution")
+            if any(key not in row or row[key] is None for key in required):
+                raise ValueError("Native observed component data incomplete")
+            for key in required:
+                try:
+                    value = float(row[key])
+                except (TypeError, ValueError, OverflowError) as exc:
+                    raise ValueError("Invalid native observed component") from exc
+                if not math.isfinite(value) or isinstance(row[key], bool):
+                    raise ValueError("Invalid native observed component")
         mins = _number(row, "minutes")
         points += _number(row, "total_points")
         minutes += mins
-        xp_minutes += event_points("minutes", position, mins)
-        xp_goals += event_points("goals", position, _number(row, "goals_scored"))
-        xp_assists += event_points("assists", position, _number(row, "assists"))
-        xp_clean_sheet += event_points("clean_sheets", position, _number(row, "clean_sheets"))
-        xp_conceded += event_points("goals_conceded", position, _number(row, "goals_conceded"))
+        xp_minutes += event_points("minutes", position, mins, rules_version=rules_version)
+        xp_goals += event_points("goals", position, _number(row, "goals_scored"), rules_version=rules_version)
+        xp_assists += event_points("assists", position, _number(row, "assists"), rules_version=rules_version)
+        xp_clean_sheet += event_points("clean_sheets", position, _number(row, "clean_sheets"), rules_version=rules_version)
+        xp_conceded += event_points("goals_conceded", position, _number(row, "goals_conceded"), rules_version=rules_version)
         defcon_count = _number(row, "defensive_contribution")
         defcon_hit = 1.0 if defcon_count >= _DEFCON_THRESHOLD[position] else 0.0
-        xp_defcon += event_points("defensive_contributions", position, defcon_hit)
-        xp_saves += event_points("saves", position, _number(row, "saves"))
-        xp_bonus += event_points("bonus", position, _number(row, "bonus"))
+        xp_defcon += event_points("defensive_contributions", position, defcon_hit, rules_version=rules_version)
+        xp_saves += event_points("saves", position, _number(row, "saves"), rules_version=rules_version)
+        xp_bonus += event_points("bonus", position, _number(row, "bonus"), rules_version=rules_version)
     return GameweekScore(
         points=points,
         minutes=minutes,

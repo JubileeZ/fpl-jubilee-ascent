@@ -12,6 +12,7 @@ import pandas as pd
 
 from models.base import BaseModel, cap_projected_minutes, iter_feature_rows
 from models.scoring_matrix import event_points
+from models.native_scoring_context import native_scoring_context, native_scoring_row
 
 _POS_CODE = {1: "GK", 2: "D", 3: "M", 4: "F"}
 _CLEAN_SHEET_POINTS = {"GK": 4.0, "D": 4.0, "M": 1.0, "F": 0.0}
@@ -180,6 +181,7 @@ class MetricsComponentHybridModel(BaseModel):
         p_sixty_mins: float,
     ) -> dict[str, float]:
         """Project non-minute events conditional on a participation state."""
+        rules_version = native_scoring_row(row)
         pid = int(row["player_id"])
         diff = _number(row, "difficulty", 3.0)
         fdr_attack = max(0.2, (6.0 - diff) / 3.0)
@@ -244,21 +246,21 @@ class MetricsComponentHybridModel(BaseModel):
         own_goals = _number(row, "per90_own_goals", 0.0) * expected_minutes / 90.0
 
         components = {
-            "xp_goals": event_points("goals", position, expected_goals),
-            "xp_assists": event_points("assists", position, expected_assists),
+            "xp_goals": event_points("goals", position, expected_goals, rules_version=rules_version),
+            "xp_assists": event_points("assists", position, expected_assists, rules_version=rules_version),
             "xp_clean_sheet": prob_clean_sheet * _CLEAN_SHEET_POINTS[position],
             "xp_conceded": (
                 -_expected_negbin_conceded_penalty(lmbda_player, r=3.0)
                 if position in ("GK", "D")
                 else 0.0
             ),
-            "xp_defcon": event_points("defensive_contributions", position, prob_defcon),
+            "xp_defcon": event_points("defensive_contributions", position, prob_defcon, rules_version=rules_version),
             "xp_saves": _expected_poisson_floor(expected_saves, 3),
-            "xp_yellow_cards": event_points("yellow_cards", position, yellow_cards),
-            "xp_red_cards": event_points("red_cards", position, red_cards),
-            "xp_penalties_saved": event_points("penalties_saved", position, penalties_saved),
-            "xp_penalties_missed": event_points("penalties_missed", position, penalties_missed),
-            "xp_own_goals": event_points("own_goals", position, own_goals),
+            "xp_yellow_cards": event_points("yellow_cards", position, yellow_cards, rules_version=rules_version),
+            "xp_red_cards": event_points("red_cards", position, red_cards, rules_version=rules_version),
+            "xp_penalties_saved": event_points("penalties_saved", position, penalties_saved, rules_version=rules_version),
+            "xp_penalties_missed": event_points("penalties_missed", position, penalties_missed, rules_version=rules_version),
+            "xp_own_goals": event_points("own_goals", position, own_goals, rules_version=rules_version),
             "xp_bonus": 0.0,
             "xbps": (
                 expected_minutes * 0.1
@@ -318,6 +320,7 @@ class MetricsComponentHybridModel(BaseModel):
                 )
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
+        native_scoring_context(features_df)
         components: list[dict[str, object]] = []
         bonus_groups: defaultdict[int, list[int]] = defaultdict(list)
 

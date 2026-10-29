@@ -14,6 +14,8 @@ from backtesting.process_points import aggregate_process_points, blended_points
 from features.builder import build_features, history_before_target
 from features.contracts import assert_projection_contract
 from models import get_model
+from models.native_scoring_context import native_scoring_context
+from models.scoring_matrix import event_points
 
 LEDGER_COMPONENTS = (
     "xp_minutes",
@@ -67,10 +69,24 @@ class WalkforwardResult:
 
 
 def _build_actual_components(gw_perf: pd.DataFrame, df_feat: pd.DataFrame) -> pd.DataFrame:
+    rules_version = native_scoring_context(df_feat)
     if gw_perf.empty:
         return gw_perf
     pos_map = df_feat[["player_id", "position_id"]].drop_duplicates("player_id")
     gw_perf = gw_perf.merge(pos_map, on="player_id", how="left")
+    if rules_version is not None:
+        required = ["total_points", "minutes", "goals_scored", "assists", "clean_sheets", "goals_conceded", "saves", "penalties_saved", "penalties_missed", "own_goals", "yellow_cards", "red_cards", "bonus"]
+        if rules_version == "2025-26":
+            required.append("defensive_contribution")
+        if not gw_perf["position_id"].isin(PLAYER_POSITIONS).all():
+            raise ValueError("Unknown native actual position")
+        for column in required:
+            if column not in gw_perf:
+                raise ValueError("Missing native actual component")
+            values = pd.to_numeric(gw_perf[column], errors="coerce")
+            if values.isna().any() or not np.isfinite(values).all():
+                raise ValueError("Invalid native actual component")
+            gw_perf[column] = values
     pos_codes = {1: "GK", 2: "D", 3: "M", 4: "F"}
     pos_series = gw_perf["position_id"].map(pos_codes).fillna("M")
     goal_pts_map = {"GK": 10.0, "D": 6.0, "M": 5.0, "F": 4.0}
@@ -98,6 +114,9 @@ def _build_actual_components(gw_perf: pd.DataFrame, df_feat: pd.DataFrame) -> pd
         2.0,
         0.0,
     )
+    if rules_version is not None:
+        gw_perf["actual_xp_goals"] = [event_points("goals", pos, float(q), rules_version=rules_version) for pos, q in zip(pos_series, gw_perf["goals_scored"], strict=True)]
+        gw_perf["actual_xp_defcon"] = [event_points("defensive_contributions", pos, float(q) / 2, rules_version=rules_version) for pos, q in zip(pos_series, gw_perf["actual_xp_defcon"], strict=True)]
     return gw_perf
 
 

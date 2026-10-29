@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 
 from models.defence_link_challenger import DefenceLinkChallengerModel
+from models.native_scoring_context import native_scoring_row
+from models.scoring_matrix import event_points
 from models.metrics_component_hybrid import (
     _CLEAN_SHEET_POINTS,
     _number,
@@ -26,10 +28,6 @@ from models.metrics_component_hybrid import (
 _BONUS_SOFTMAX_T = 8.0
 _BONUS_ELIG_MINS = 45.0  # documented; eligibility frozen (#127) — not wired
 _XBPS_WEIGHTS = (0.1, 96.0, 48.0, 48.0, 24.0, 8.0)  # mins, goals, assists, CS, Defcon, saves; event k=4
-
-_GOAL_POINTS = {"GK": 10.0, "D": 6.0, "M": 5.0, "F": 4.0}
-_DEFCON_POINTS = {"GK": 0.0, "D": 2.0, "M": 2.0, "F": 2.0}
-
 
 class BonusArmChallengerModel(DefenceLinkChallengerModel):
     """Defence-link stack plus non-flat BPS Bonus Model levers (#129)."""
@@ -56,12 +54,13 @@ class BonusArmChallengerModel(DefenceLinkChallengerModel):
             p_sixty_mins=p_sixty_mins,
         )
         w_mins, w_goals, w_assists, w_cs, w_defcon, w_saves = _XBPS_WEIGHTS
-        goal_pts = _GOAL_POINTS[position]
+        rules_version = native_scoring_row(row)
+        goal_pts = event_points("goals", position, 1, rules_version=rules_version)
         expected_goals = float(components["xp_goals"]) / goal_pts if goal_pts else 0.0
         expected_assists = float(components["xp_assists"]) / 3.0
         cs_pts = _CLEAN_SHEET_POINTS[position]
         prob_clean_sheet = float(components["xp_clean_sheet"]) / cs_pts if cs_pts else 0.0
-        dc_pts = _DEFCON_POINTS[position]
+        dc_pts = event_points("defensive_contributions", position, 1, rules_version=rules_version)
         prob_defcon = float(components["xp_defcon"]) / dc_pts if dc_pts else 0.0
         expected_saves = self._expected_saves(row, position, expected_minutes)
         components["xbps"] = (

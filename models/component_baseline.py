@@ -8,6 +8,7 @@ through models.scoring_matrix.event_points. Players without any usable seed proj
 import pandas as pd
 
 from models.base import BaseModel, cap_projected_minutes, iter_feature_rows
+from models.native_scoring_context import native_scoring_context
 from models.scoring_matrix import event_points
 
 _POS_CODE = {1: "GK", 2: "D", 3: "M", 4: "F"}
@@ -40,6 +41,7 @@ class ComponentBaseline(BaseModel):
         return "component_baseline"
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
+        rules_version = native_scoring_context(features_df)
         predictions = []
         for row, gameweek_id, fixture_id in iter_feature_rows(features_df, horizon):
             has_seed = bool(row.get("has_seed", row.get("has_prior_seed", False)))
@@ -64,12 +66,12 @@ class ComponentBaseline(BaseModel):
             difficulty_multiplier = max(0.2, (6.0 - diff) / 3.0)
 
             pos = _POS_CODE.get(int(row["position_id"]), "M")
-            xp_mins = event_points("minutes", pos, expected_minutes)
+            xp_mins = event_points("minutes", pos, expected_minutes, rules_version=rules_version)
             comp_dict = {}
             for component, rate_col in _COMPONENT_RATES:
                 per90 = _number(row, rate_col, 0.0)
                 expected_events = per90 * (expected_minutes / 90.0) * difficulty_multiplier
-                comp_dict[component] = event_points(component, pos, expected_events)
+                comp_dict[component] = event_points(component, pos, expected_events, rules_version=rules_version)
 
             xp = (
                 xp_mins

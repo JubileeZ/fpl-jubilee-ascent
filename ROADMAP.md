@@ -15,14 +15,15 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 2 next**
+## Current Project Status: **Backtesting foundation Phase 3 next**
 
 ### Backtesting/promotion foundation — implementation active
 
 - Phase 0 complete: versioned evidence contracts, entry-point inventory, recommendation-only CI guard; reviewed/verified, accepted existing timing exception.
-- Phase 1 engineering accepted: strict synthetic causal admission, source/fixture checks and complete-origin requirements inventory; empirical coverage/admission remains unverified. 61 focused passes, lint/type clean, accepted existing full-suite timing exception.
-- [ ] Phase 2: native state transitions, financial/chip accounting and season-aware scoring contracts.
-- Current team: `phase_01_implement` (GPT-6.1 Terra Medium), `phase_01_review_standards` + `phase_01_review_spec` (GPT-6.1 Sol xhigh). Exactly three fresh agents per phase; record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
+- Phase 1 engineering committed `d4536c42`: strict synthetic causal admission, source/fixture checks and complete-origin requirements inventory; empirical coverage/admission remains unverified. 61 focused passes, lint/type clean, accepted existing full-suite timing exception.
+- Phase 2 engineering accepted: native state transitions, financial/chip accounting and explicit season scoring; both reviews accepted, 139 focused and 772 full-suite passes, Ruff/new-core types clean. Causal calendar/source integration remains explicit.
+- [ ] Phase 3: causal issue-by-target forecasts, strict export, identity/cache/resume storage.
+- Current team: `phase_02_implement` (GPT-6.1 Terra Medium), `phase_02_review_standards` + `phase_02_review_spec` (GPT-6.1 Sol xhigh). Exactly three fresh agents per phase; record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
 - Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Sequential Terra Medium implementation, Sol xhigh review, per-phase commits; no push. Numerical/protocol/adoption approvals pending.
 
 Wayfinder Map: [Promotion Gate & Evaluation Rigor Overhaul (ADR 0064) #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166) completed. Resolved 4 structural distortions identified in quantitative audit: unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking across 7 closed decision tickets (#167–#173).

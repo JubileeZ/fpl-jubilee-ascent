@@ -19,6 +19,7 @@ import pandas as pd
 from models.base import resolve_asof_target_gw
 from models.face_value_challenger import FaceValueChallengerModel
 from models.scoring_matrix import event_points
+from models.native_scoring_context import native_scoring_row
 
 _DECAY = 0.95
 _PSEUDO_MINUTES = 360.0
@@ -218,7 +219,7 @@ class MultiFeatureAssistChallengerModel(FaceValueChallengerModel):
             return components
         old_assists = components["xp_assists"] / 3.0
         new_assists = rate * expected_minutes / 90.0
-        new_points = event_points("assists", position, new_assists)
+        new_points = event_points("assists", position, new_assists, rules_version=native_scoring_row(row))
         components["projected_points"] += new_points - components["xp_assists"]
         components["xbps"] += 12.0 * (new_assists - old_assists)
         components["xp_assists"] = new_points
