@@ -17,6 +17,12 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Phase 6 Completed**
 
+### Backtesting/promotion foundation — implementation active
+
+- Phase 0 complete: versioned evidence contracts, entry-point inventory, recommendation-only CI guard; reviewed/verified, accepted existing timing exception.
+- [ ] Phase 1: strict causal data admission, complete-origin reporting and pre-I/O sealed guard; empirical coverage approval separate.
+- Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Sequential Terra Medium implementation, Sol xhigh review, per-phase commits; no push. Numerical/protocol/adoption approvals pending.
+
 Wayfinder Map: [Promotion Gate & Evaluation Rigor Overhaul (ADR 0064) #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166) completed. Resolved 4 structural distortions identified in quantitative audit: unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking across 7 closed decision tickets (#167–#173).
 
 ```mermaid

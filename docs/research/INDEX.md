@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-10-28 (+07:00)
+**Updated**: 2026-10-29 (+07:00)
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -42,6 +42,8 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 ---
 
 ## Active Research Index
+
+- **Backtesting and promotion foundation (2026-10-29)**: [Q1-Q28 agreements](backtesting-promotion-foundation/backtesting-promotion-foundation.md) · [Independent review](backtesting-promotion-foundation/independent-review.md) · [Ownership-anchor evidence](backtesting-promotion-foundation/ownership-anchor-feasibility.md) · [Preflight plan](backtesting-promotion-foundation/preflight-plan.md) · [Conditional workload](backtesting-promotion-foundation/workload_scenarios.csv) (one highest-owned feasible GW1 anchor/season, locked then continuous transfer paths; pinned public samples and pre-deadline Git chronology checked; freshness/eligibility/replay admission and numerical limits pending; no optimizer/backtest/holdout access; current Eval canon unchanged).
 
 - **Candidate Ideation & External Model Collaboration (2026-10-28)**: [Note](candidate-ideation/candidate-ideation.md) · [Prompt Brief](candidate-ideation/candidate_model_ideation_prompt.md) · [Minutes report](candidate-ideation/minutes-ideation-response.md) · [Attack report](candidate-ideation/attack-ideation-response.md) · [Defense report](candidate-ideation/defense-ideation-response.md) · [Idea Queue](candidate-ideation/idea_queue.csv) · [Smoke](candidate-ideation/smoke_results.csv) · [Prototype sources/checks](candidate-ideation/prototypes/README.md) (EXT-07/09 full-dev FAIL recorded in ledger; EXT-08 partial grid checkpointed (k2/k4 FAIL, k8/k16 unfinished); continue remaining grid then EXT-11/12; EXT-10 blocked by Dead decoder prerequisite/seed summaries, EXT-13 by schedule provenance. Model-neutral LLM guidance and report names; prompt regenerated from current ledger. Champion unchanged; no confirmation or holdout run.)
 - **Promotion Gate & Evaluation Rigor Overhaul (2026-10-24)**: [Note](backtest-gate-reform/backtest-gate-reform.md) · [Summary](backtest-gate-reform/historical_candidate_re_evaluation_summary.csv) · [Tickets](backtest-gate-reform/wayfinder-tickets.json) · [Wayfinder Map #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166) (Wayfinder Map #166 charted with 7 decision tickets #167–#173; resolving unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary wrap, and endogenous playable pool masking under ADR 0064)

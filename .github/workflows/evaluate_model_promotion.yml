@@ -21,7 +21,7 @@ on:
         default: ""
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   evaluate:
@@ -43,21 +43,8 @@ jobs:
           SEED_SEASON: ${{ github.event.inputs.seed_season || '' }}
         run: |
           set -euo pipefail
-          args=(--apply --gw_range 1-38 --data_dir "$DATA_DIR")
+          args=(--gw_range 1-38 --data_dir "$DATA_DIR")
           if [ -n "$SEED_SEASON" ]; then
             args+=(--seed_season "$SEED_SEASON")
           fi
           uv run python -m commands.evaluate_model_promotion "${args[@]}"
-
-      - name: Commit promotion updates
-        shell: bash
-        run: |
-          if [ -z "$(git status --porcelain -- config/model_selection.json data/reports/promotion_evidence)" ]; then
-            echo "No promotion changes."
-            exit 0
-          fi
-          git add config/model_selection.json data/reports/promotion_evidence
-          git -c user.name="github-actions[bot]" \
-              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -m "chore: automatic historical model promotion"
-          git push
