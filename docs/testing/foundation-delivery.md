@@ -112,3 +112,33 @@ Named-team re-review round 2:
 Parent final validation: 11 focused tests passed (0.64s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: neutral GW1 ownership anchor MILP solver, certificate generation, atomic serialization, row-order invariance, and initial `ReplayState` bridge. All 6 Phase 4 checklist items complete. Actual anchor construction on real historical seasons is research execution; no empirical candidate outcomes evaluated.
+
+## Phase 5 — engineering accepted; empirical replay unexecuted
+
+Baseline: `324a20eb`. Team: `phase_05_implement`, `phase_05_review_standards` + `phase_05_review_spec`.
+
+Scope: independent multi-deadline transfer plan rolling replay engine (`backtesting/rolling_replay.py`, `tests/test_replay_integration.py`), 6-GW Strategic scenario options, horizon boundary clipping, solver certificates, strict outcome coverage validation, independent legality verification, native Bench Boost scoring, full per-deadline JSON checkpoint serialization, offline audit recomputation from disk without solver, crash/restart resume, cache corruption detection, and explicit uncertified/timeout execution status tracking.
+
+Named-team review round 1:
+- Standards findings: unused `IncompleteReplayOutcomeError` and `DEFAULT_BUDGET_TENTHS`; multi-line loop building `target_xp`; manual instantiation of `ReplayDeadlineRecord` instead of `dataclasses.replace`; speculative generality in `solve_lineup_milp(..., chip=None)`; unexecuted resume block.
+- Spec findings: disk checkpoint serialization omitted transfers, lineup, captain, vice, chip, and certificate; resume was a stub; time-capped policy lacked timeout/infeasible treatment; `get_strategic_replay_options` ignored native season rules (hardcoded FT cap at 5 for 2023-24); Bench Boost ignored in lineup MILP.
+
+Repairs executed:
+- Wired `IncompleteReplayOutcomeError` to strict outcome coverage checks across all squad players before transition (`test_strict_outcome_coverage_partial_publication`).
+- Implemented full JSON serialization (`record_to_dict`, `record_from_dict`) persisting decision (transfers, lineup, captain, vice, chip), certificate, outcome provenance, pre/post hashes, and transition state.
+- Enabled offline audit recomputing cumulative net totals directly from saved disk checkpoint JSONs without a solver (`test_multigw_independent_rolling_replay_and_score_reconstruction`).
+- Implemented working checkpoint resume in `run_rolling_replay` loading past deadlines from disk and advancing state (`test_checkpoint_crash_and_resume`).
+- Parameterized `get_strategic_replay_options` with native rules version, capping FT value schedules at 2 for 2023-24 and 5 for 2024-25 (`test_strategic_replay_options_and_horizon_clipping`).
+- Simplified dictionary comprehensions, adopted `dataclasses.replace`, and cleaned test fixtures with helpers `_make_test_certificate` and `_make_default_lineup`.
+
+Named-team re-review round 2 & final adjustments:
+- Standards review: ACCEPTED; 0 standards breaches, strict typing, clean single-line expressions, clean interfaces.
+- Spec review: Caught that Bench Boost must retain native 11 starters / 4 bench lineup partition per `replay_state.py:177-178` while scoring all 15 players, and requested explicit cache corruption detection and non-halting `execution_status` tracking for uncertified/timed-out solves.
+- Fixed Bench Boost lineup structure and verified native 15-player scoring in `test_bench_boost_native_scoring`.
+- Added `execution_status` (`SUCCESS`, `UNCERTIFIED_GAP`, `TIMEOUT`, `INFEASIBLE`, `LEGALITY_VIOLATION`) to `ReplayDeadlineRecord`, ensuring deadlines never vanish from the schedule or record false model losses when `raise_on_failure=False` (`test_uncertified_solve_trajectory_recording`).
+- Added cache corruption test (`test_cache_changes_and_corruption_rejection`) validating `pre_state_hash` mismatch detection.
+- Final Spec review: ACCEPTED; all requirements satisfied and verified.
+
+Parent final validation: 12 integration tests passed (0.67s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: independent rolling replay engine, legality verification, solver certificates, native rule options, offline disk audit, and crash/resume handling. All 10 Phase 5 checklist items complete. Real multi-season replay runs remain subsequent phase execution.
