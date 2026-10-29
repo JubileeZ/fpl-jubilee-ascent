@@ -15,27 +15,26 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 13 complete; Phase 14 ready**
+## Current Project Status: **Backtesting and promotion foundation complete (Phases 0–14 delivered)**
 
-### Backtesting/promotion foundation — implementation in progress
+### Backtesting/promotion foundation — delivered (ADR 0066)
 
-- Phase 0 complete: versioned evidence contracts, entry-point inventory, recommendation-only CI guard; reviewed/verified, accepted existing timing exception.
-- Phase 1 engineering committed `d4536c42`: strict synthetic causal admission, source/fixture checks and complete-origin requirements inventory; empirical coverage/admission remains unverified. 61 focused passes, lint/type clean, accepted existing full-suite timing exception.
-- Phase 2 committed `d8fa3ad6`: native state transitions, financial/chip accounting and explicit season scoring; both reviews accepted, 139 focused and 772 full-suite passes, Ruff/new-core types clean. Causal calendar/source integration remains explicit.
-- Phase 3 committed `2676a568`: causal issue-by-target forecasts, strict export, identity/cache/resume storage; both reviews accepted, 41 focused passes, Ruff clean, new-core types clean.
-- Phase 4 committed `324a20eb`: neutral GW1 ownership anchor construction, exact two-stage tie-breaking and freezing; both reviews accepted, 11 tests pass, Ruff clean, new-core types clean.
-- Phase 5 committed `98537076`: independent rolling replay implementation and verification; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
-- Phase 6 committed `265fbb0a`: substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
-- Phase 7 committed `e171dc23`: transfer plan replay profiler; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
-- Phase 8 committed `4f56e975`: numerical and statistical protocol; both reviews accepted, 13 unit tests pass, Ruff clean, Pyright clean.
-- Phase 9 committed `d3f1d72b`: confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
-- Phase 10 committed `4157dd35`: prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
-- Phase 11 committed `e803e2fc`: unify recommendation paths and require manual adoption; both reviews accepted, 8 unit tests pass, Ruff clean, Pyright clean.
-- Phase 12 committed `f5e71b7e`: audit legacy verdicts using recorded evidence only; both reviews accepted, 7 unit tests pass, companion CSV/markdown generated, Ruff clean, Pyright clean.
-- Phase 13 complete: adopt durable documentation and workflow/skill migration; ADR 0066 accepted, operator workflow documented, skill migration complete; both reviews accepted.
-- [ ] Phase 14: delivery validation, cleanup, and plan deletion.
-- Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
-- Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; push authorized per phase by user goal request. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
+- Phase 0 complete `a96af707`: versioned evidence contracts, entry-point inventory, recommendation-only CI guard.
+- Phase 1 complete `d4536c42`: strict synthetic causal admission, source/fixture checks and complete-origin inventory.
+- Phase 2 complete `d8fa3ad6`: native state transitions, financial/chip accounting and explicit season scoring.
+- Phase 3 complete `2676a568`: causal issue-by-target forecasts, strict export, identity/cache/resume storage.
+- Phase 4 complete `324a20eb`: neutral GW1 ownership anchor construction, exact two-stage tie-breaking and freezing.
+- Phase 5 complete `98537076`: independent rolling replay implementation and verification.
+- Phase 6 complete `265fbb0a`: substantive projection guards and staged diagnostics.
+- Phase 7 complete `e171dc23`: transfer plan replay profiler within bounded experiment.
+- Phase 8 complete `4f56e975`: numerical and statistical evaluation protocol, stored-score block bootstrap, family-wise error control.
+- Phase 9 complete `d3f1d72b`: confirmation admission, immutable attempt registry, tamper detection, dead-lever checks.
+- Phase 10 complete `4157dd35`: prospective capture, shadow replay state transitions, outcome finalization, rollback recommendations.
+- Phase 11 complete `e803e2fc`: unify recommendation paths, read-only pipelines, explicit manual adoption.
+- Phase 12 complete `f5e71b7e`: legacy candidate ledger audit using recorded evidence only; lock preservation verified.
+- Phase 13 complete `6f60734d`: adopt durable documentation, ADR 0066, operator workflow, and workflow/skill migration.
+- Phase 14 complete: full delivery validation (869 tests pass), temporary implementation plan and finished packet deleted.
+- Durable canon: [ADR 0066](docs/adr/0066-backtesting-and-promotion-foundation.md), [Operator Workflow](docs/testing/operator-workflow.md), [Delivery Record](docs/testing/foundation-delivery.md), and [Foundation Topic](docs/research/backtesting-promotion-foundation/). Production Model Champion `def_xg_shrink_challenger` stands unchanged; sealed season 2026-27 GW6+ protected.
 
 Wayfinder Map: [Promotion Gate & Evaluation Rigor Overhaul (ADR 0064) #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166) completed. Resolved 4 structural distortions identified in quantitative audit: unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking across 7 closed decision tickets (#167–#173).
 

@@ -290,3 +290,28 @@ Named-team review round 1:
 Parent final validation: 44 foundation tests passed (1.46s); full suite 869 tests passed; Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: ADR 0066, ADR updates, Eval canon update, domain terms, operator workflow, and explore/ideate skill migration. All Phase 13 checklist items complete. Final delivery validation, cleanup, and plan deletion remain Phase 14 responsibility.
+
+## Phase 14 — delivery validation, cleanup, and plan deletion accepted
+
+Baseline: `6f60734d`. Team: `phase_14_validation`.
+
+Scope: full delivery validation, cleanup of temporary planning artifacts, and user confirmation.
+
+Validation results:
+- Full test suite: 869 passed, 0 failed in 137.28s across all unit, integration, and backtesting test suites.
+- Portable delivery gate (`bash tests/verify.sh`): 29 passed, 0 failed.
+- Static analysis & lint (`uv run ruff check .`): clean with 0 errors.
+- Type integrity (`uv run pyright`): 0 errors, 0 warnings across all foundation modules and CLIs.
+- Zero network requests in test runs (all HTTP mock/fixture isolated).
+- Zero secret values, tokens, or credentials leaked.
+- Sealed season `2026-27 GW6+` and `data/archive/` strictly protected and untouched.
+- Production Model Champion `def_xg_shrink_challenger` stands unchanged in `config/model_selection.json`.
+
+Cleanup:
+- Temporary root `implementation_plan.md` deleted.
+- Finished Work Packet `.agents/work-packets/backtesting-promotion-foundation.md` deleted.
+- Task `.agents/handoff-pointer` removed.
+- Temporary scratch verified clean.
+- Durable references established: [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md), [Operator Workflow](operator-workflow.md), [Delivery Record](foundation-delivery.md), and [Foundation Topic Notes](../research/backtesting-promotion-foundation/).
+
+Delivery complete: foundation infrastructure ready for operation. Scientific candidate confirmations and manual adoption remain evidence-dependent follow-through under ADR 0066.
