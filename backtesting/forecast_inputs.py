@@ -5,12 +5,13 @@ import json
 import math
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from backtesting.data_admission import AdmittedInput, verify_input
 
 
-def _read(catalog: dict[str, bytes], digest: str) -> dict[str, Any]:
+def _read_canonical_json(catalog: dict[str, bytes], digest: str) -> dict[str, Any]:
     raw = catalog.get(digest)
     if not isinstance(raw, bytes) or hashlib.sha256(raw).hexdigest() != digest:
         raise ValueError("Missing or corrupt retained material")
@@ -20,13 +21,20 @@ def _read(catalog: dict[str, bytes], digest: str) -> dict[str, Any]:
     return value
 
 
-def _time(value: Any) -> datetime:
+def _parse_iso_time(value: Any) -> datetime:
     if not isinstance(value, str):
         raise ValueError("Timestamp required")
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.utcoffset() is None:
         raise ValueError("Timezone required")
     return parsed
+
+
+def validate_storage_path(path: Path) -> Path:
+    resolved = path.resolve()
+    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in resolved.parts):
+        raise ValueError("Invalid storage path")
+    return resolved
 
 
 def verify_training_bundle(
@@ -39,14 +47,14 @@ def verify_training_bundle(
     verify_input(capability, request, catalog)
     if capability.season == "2026-27":
         raise ValueError("Protected season")
-    authority = _read(catalog, authority_digest)
+    authority = _read_canonical_json(catalog, authority_digest)
     required = {"version", "mode", "input_digest", "season", "gw", "seed_identity", "source_digest"}
     if set(authority) != required or authority["version"] != 2 or authority["mode"] != "synthetic":
         raise ValueError("Unsupported training authority")
     origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
     if (authority["input_digest"], authority["season"], authority["gw"], authority["seed_identity"]) != (capability.input_digest, capability.season, capability.gw, origin["seed_identity"]):
         raise ValueError("Training authority scope mismatch")
-    source = _read(catalog, authority["source_digest"])
+    source = _read_canonical_json(catalog, authority["source_digest"])
     keys = {"version", "url", "revision", "parser_version", "seed_season", "seed_registry_complete", "published_at", "captured_at", "timestamp_uncertainty_seconds", "tables", "seed_mapping"}
     if set(source) != keys or source["version"] != 2:
         raise ValueError("Invalid training source")
@@ -67,8 +75,8 @@ def verify_training_bundle(
     uncertainty = source["timestamp_uncertainty_seconds"]
     if type(uncertainty) is not int or uncertainty < 0:
         raise ValueError("Invalid timestamp uncertainty")
-    cutoff = _time(origin["deadline"])
-    if max(_time(source["published_at"]), _time(source["captured_at"])) + timedelta(seconds=uncertainty) >= cutoff:
+    cutoff = _parse_iso_time(origin["deadline"])
+    if max(_parse_iso_time(source["published_at"]), _parse_iso_time(source["captured_at"])) + timedelta(seconds=uncertainty) >= cutoff:
         raise ValueError("Training source at or after issue cutoff")
     tables = source["tables"]
     names = {"clubs", "player_metadata", "target_fixtures", "history", "history_fixtures", "seed_players", "seed_history", "seed_fixtures"}
@@ -76,7 +84,7 @@ def verify_training_bundle(
         raise ValueError("Incomplete training tables")
     if any(not isinstance(row, dict) or type(row.get("gameweek_id")) is not int or not 1 <= row["gameweek_id"] < capability.gw for row in tables["history"]):
         raise ValueError("History must precede issue")
-    base_authority = _read(catalog, request["authority_digest"])
+    base_authority = _read_canonical_json(catalog, request["authority_digest"])
     if authority["source_digest"] not in base_authority.get("training_source_digests", []):
         raise ValueError("Training source outside admission authority")
     if source["seed_mapping"] != base_authority.get("seed_mapping"):
@@ -122,15 +130,17 @@ def verify_training_bundle(
         ids: set[int] = set()
         fixture_gws: dict[int, int] = {}
         for fixture in fixtures:
-            if not isinstance(fixture, dict) or type(fixture.get("id")) is not int or fixture["id"] in ids or type(fixture.get("gameweek_id")) is not int or not 1 <= fixture["gameweek_id"] <= 38 or fixture.get("finished") is not True or _time(fixture.get("finalized_at")) >= cutoff:
+            if not isinstance(fixture, dict) or type(fixture.get("id")) is not int or fixture["id"] in ids or type(fixture.get("gameweek_id")) is not int or not 1 <= fixture["gameweek_id"] <= 38 or fixture.get("finished") is not True or _parse_iso_time(fixture.get("finalized_at")) >= cutoff:
                 raise ValueError("Fixture completion provenance missing")
+            if name == "history_fixtures" and fixture["gameweek_id"] >= capability.gw:
+                raise ValueError("History fixture outside issue scope")
             ids.add(fixture["id"])
             fixture_gws[fixture["id"]] = fixture["gameweek_id"]
         performance_name = "history" if name == "history_fixtures" else "seed_history"
         player_ids = set(origin["universe"]) if name == "history_fixtures" else {player["id"] for player in seed_players}
         seen: set[tuple[int, int]] = set()
         for row in tables[performance_name]:
-            if not isinstance(row, dict) or type(row.get("player_id")) is not int or row["player_id"] not in player_ids or type(row.get("fixture_id")) is not int or row["fixture_id"] not in ids or row.get("gameweek_id") != fixture_gws[row["fixture_id"]] or _time(row.get("kickoff_time")) >= cutoff:
+            if not isinstance(row, dict) or type(row.get("player_id")) is not int or row["player_id"] not in player_ids or type(row.get("fixture_id")) is not int or row["fixture_id"] not in ids or row.get("gameweek_id") != fixture_gws[row["fixture_id"]] or _parse_iso_time(row.get("kickoff_time")) >= cutoff:
                 raise ValueError("Performance fixture provenance missing")
             key = (row["player_id"], row["fixture_id"])
             if key in seen or type(row.get("minutes")) not in (int, float) or not 0 <= row["minutes"] <= 90 or type(row.get("total_points")) not in (int, float) or not math.isfinite(row["total_points"]):

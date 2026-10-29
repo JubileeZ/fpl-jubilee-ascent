@@ -1,22 +1,24 @@
 # Active Task: Backtesting and promotion foundation
 
-- **Status:** Parked — user-requested handoff during unfinished Phase 3
+- **Status:** In progress — Phase 3 complete, ready for Phase 4
 - **Objective:** Implement temporary implementation_plan.md phase by phase; preserve Q1-Q28 and manual scientific approvals.
 - **Acceptance:** Verified infrastructure and per-phase commits; no push; plan deleted only after delivery acceptance.
 - **Issue/Ticket:** implementation_plan.md; docs/research/backtesting-promotion-foundation/backtesting-promotion-foundation.md
 
 ## Work Packet (SFDBN)
 
-- **Status:** Paused at user request, 2026-10-29. Phase 0 `a96af707`, Phase 1 `d4536c42`, Phase 2 `d8fa3ad6` committed locally. Phase 3 incomplete, unreviewed, not accepted. Handoff checkpoint preserves drafts; not Phase 3 completion.
+- **Status:** Phase 0 `a96af707`, Phase 1 `d4536c42`, Phase 2 `d8fa3ad6` committed locally. Phase 3 engineering completed, both reviews accepted, 41 focused tests pass, Ruff clean, new-core types clean.
 - **Files:** implementation_plan.md; backtesting/data_admission.py; backtesting/forecast_inputs.py; backtesting/forecast_adapter.py; backtesting/forecast_export.py; backtesting/forecast_store.py; backtesting/forecast_solver_export.py; backtesting/replay_cache.py; models/base.py; tests/test_forecast_*.py; tests/test_replay_cache.py; docs/testing/causal-forecasts.md; durable tracking.
-- **Decisions:** Resume in next session using repository documents; choose execution workflow there. Current branch main; local phase commits, no push. Numerical freeze, adoption, rollback and sealed-data amendments retain explicit approval barriers. No Champion change. Temporary-document cleanup mandatory after full delivery, not at this unfinished handoff.
+- **Decisions:** Current branch main; local phase commits, no push. Numerical freeze, adoption, rollback and sealed-data amendments retain explicit approval barriers. No Champion change. Temporary-document cleanup mandatory after full delivery.
 - **Blocked:** Empirical admission and numerical protocol still unapproved. User accepted existing timing-only test exception for phase commits; no test weakening.
-- **Next:** Read handoff below; reproduce current defects before edits. Finish Phase 3 source/staging hardening, component checks, strict solver export, immutable forecast/problem/checkpoint store and regressions. Review against standards/specification, validate, update progress and commit completed phase. No push.
+- **Next:** Phase 4: Construct and freeze neutral GW1 anchor.
 
 ## Todo
 - [x] Complete Phase 0 contracts, tests and review; 14 focused passes, type/Ruff clean, 29 portable gate passes; full suite 705 passes plus accepted existing timing exception.
 - [x] Complete reviewed Phase 1 synthetic engineering checkpoint; 61 focused passes, lint/type clean, 753 full-checkpoint passes plus accepted timing exception. Empirical/native/adapter follow-through retained explicitly in plan.
 - [x] Complete scoped Phase 2 native state/scoring checkpoint; both reviews accepted, 139 focused and 772 full-suite passes, Ruff/new-core types clean. Causal calendar/source adapters and empirical applicability remain explicit.
+- [x] Complete Phase 3 causal forecasts and reproducible store checkpoint; both reviews accepted, 41 focused passes, Ruff clean, new-core types clean, portable gate 29 passes.
+- [ ] Implement Phase 4 neutral GW1 anchor construction and freeze.
 - [ ] Implement subsequent phases in dependency order; preserve approval barriers.
 - [ ] Final validation, cleanup, plan deletion and confirmation.
 

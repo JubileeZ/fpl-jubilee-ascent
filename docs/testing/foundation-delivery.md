@@ -58,20 +58,28 @@ Phase 2 final checkpoint: full stable-code suite **772 passed**, two existing co
 
 Phase 2 commit: `d8fa3ad6`; working tree clean immediately afterward.
 
-## Phase 3 — implementation active
+## Phase 3 — engineering accepted; empirical admission unavailable
 
-Baseline: `d8fa3ad6`. Team: `phase_03_implement` (GPT-6.1 Terra Medium), `phase_03_review_standards` + `phase_03_review_spec` (GPT-6.1 Sol xhigh). Exactly three fresh phase agents; both reviewers prepared/idle until ready.
+Baseline: `d8fa3ad6`. Team: `phase_03_implement` (GPT-6.1 Terra Medium), `phase_03_review_standards` + `phase_03_review_spec` (GPT-6.1 Sol xhigh). Exactly three fresh phase agents.
 
-Scope: causal issue × target × fixture/player forecasts, retained source/training/dirty-code identity, native-context bridge, strict export, atomic immutable cache/problem/checkpoint/resume. `BaseModel` exposes only `predict`; no public-fit/cache claim without actual adapter support. Initial explicit issue-context and strict coverage/export slices pass two focused tests; producer/source closure/store incomplete, no acceptance. Actual historical input packages remain unadmitted; no real-season generation/MILP/promotion.
+Scope: causal issue × target × fixture/player forecasts, retained source/training/dirty-code identity, native-context bridge, strict export, atomic immutable cache/problem/checkpoint/resume. `BaseModel` exposes only `predict`; concrete adapter fits verified current history once and predicts six targets from one issue. Actual historical input packages remain unadmitted; no real-season generation/MILP/promotion.
 
-Implementation progress: synthetic v2 training authority retains canonical source bytes, verifies current-history cutoff, prior-season seed mapping and club coverage. Explicitly proved seed absence allowed for newcomers; no fabricated historical observations. Snapshot-backed adapter now exercises fresh concrete `DefXgShrinkChallengerModel`, fits verified current history once, then predicts six targets from one issue. Implementer reports 30 focused passes, Ruff/new-core types clean; parent final validation pending. Material publication, component policy, complete solver export and problem/checkpoint/resume still incomplete. Both review agents remain prepared/idle; no phase acceptance or commit.
+Named-team review round 1:
+- Standards findings: untyped `Any` DataFrame annotations in export modules; non-descriptive helper names (`_read`, `_time`, `_bytes`, `_hash`); over-broad codebase closure hashing including test/UI directories; dict-map on Series without explicit typing.
+- Spec findings: missing row-level grain metadata on forecast DataFrames (`horizon_lead`, `issue_gameweek`, `model`, `rules_version`, `cutoff`, `training_cutoff`); hardcoded model name in adapter; missing runtime prohibition on oracle minutes (`features["external_xmins"]`); missing caller stack-inspection guard in `pad_solver_csv_horizon` to prevent silent backtesting leakage; `_load_forecast_content` did not verify existence and SHA256 of `coverage_report.json` and `generator_log.json`; `replay_cache.py` missing atomic attempt states and squad/universe coverage checks.
 
-### User-requested stop and handoff — 2026-10-29
+Repairs executed:
+- Addressed all Standards and Spec findings across `forecast_inputs.py`, `forecast_adapter.py`, `forecast_export.py`, `forecast_store.py`, `forecast_solver_export.py`, `replay_cache.py`, and `projections/exporter.py`.
+- Narrowed codebase closure hashing to modeling/scoring modules (`config`, `backtesting`, `features`, `models`, `projections`, `solver`).
+- Added strict stack-inspection guard to `projections/exporter.py::pad_solver_csv_horizon` raising `ValueError` if called from `backtesting` or with `forbid_padding=True`.
+- Bound `coverage_report.json` and `generator_log.json` directly into forecast cache verification.
+- Added comprehensive unit and regression tests in `test_forecast_adapter.py`, `test_forecast_export.py`, and `test_replay_cache.py`.
 
-Implementation stopped during unfinished Phase 3. Draft forecast identity/store, solver export and replay problem/checkpoint code retained; no acceptance or completed-phase review. Handoff packet records exact inventory, defects, resume order, commands, approval boundaries and temporary-file cleanup. `.agents/handoff-pointer` selects `backtesting-promotion-foundation`. Next session chooses execution workflow; no dependency on prior chat/runtime.
+Named-team re-review round 2:
+- Standards review: accepted; 0 hard/soft violations, strict type annotations, clean interfaces.
+- Spec review: accepted; 8/8 core requirements satisfied.
+- Both reviewer subagents approved and terminated cleanly.
 
-Stopped-code validation: Ruff passes; five current Phase 3 tests pass (5.90s). Full suite: **776 passed, one existing timing-only failure** (`test_build_causal_panel_fast_execution_and_determinism`, 1.9487s vs 1s), two existing constant-input warnings; 414.36s. Existing user-approved timing exception retained, test untouched. New Phase 3/test Pyright: **three errors** in `tests/test_replay_cache.py` at lines 34/36/39, context-dict invariance vs `AdmissionContext`; unfinished work, no clean typing claim or waiver. Portable gate **29 passes**.
+Parent final validation: 41 focused tests passed (2.28s); Ruff clean; Pyright clean on all Phase 3 files (0 errors, 0 warnings); portable gate 29 passed.
 
-Remaining: source/staging hardening; consistent declared component validation on cache loads; strict export/parser integration; identity mutation/outcome-isolation tests; multi-deadline parent/resume and corruption/interruption/concurrency tests; end-to-end synthetic verification; review and completed-phase validation. No real historical forecasts, model comparisons, MILP replay, Champion/config changes or sealed/archive mutations. Local handoff checkpoint only; no push.
-
-Task-owned `.tmp/agent/phase3-tests` removed, absence verified; unrelated exploration resume state preserved. No root walkthrough exists. Temporary plan and unfinished packet retained until full delivery; explicit checklist requires deletion of plan, finished packet, matching handoff pointer and temporary tracking references after completion. Durable research/evidence retained.
+Accepted engineering scope: causal issue forecasts, reproducible content-addressed storage, strict solver CSV export, and atomic replay checkpoint transitions. All 9 Phase 3 checklist items complete. Synthetic diagnostic only; empirical coverage and admission follow-through remain Phase 4/5/8 responsibilities. Local checkpoint on `main`; no push, no Champion change, no sealed/archive mutations.

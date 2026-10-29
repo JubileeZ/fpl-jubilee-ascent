@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -74,8 +75,18 @@ def solver_csv_covers_horizon(csv_path: Path, target_gw: int, horizon: int) -> b
     return all(f"{week}_Pts" in columns for week in range(target_gw, last_gw + 1))
 
 
-def pad_solver_csv_horizon(csv_path: Path, target_gw: int, horizon: int) -> Path:
-    """Add missing `{week}_Pts` / `{week}_xMins` columns so prep_data can load the horizon."""
+def pad_solver_csv_horizon(csv_path: Path, target_gw: int, horizon: int, *, forbid_padding: bool = False) -> Path:
+    """Add missing `{week}_Pts` / `{week}_xMins` columns so prep_data can load the horizon.
+
+    Product convenience padding only. Prohibited in backtesting and promotion evidence paths
+    (use backtesting.forecast_solver_export.export_solver_csv for strict non-padding export).
+    """
+    if forbid_padding or os.getenv("STRICT_EVALUATION", "0") == "1":
+        raise ValueError("pad_solver_csv_horizon is prohibited in backtesting and promotion evidence paths")
+    import inspect
+    for frame_info in inspect.stack():
+        if "backtesting" in frame_info.filename.replace("\\", "/"):
+            raise ValueError("pad_solver_csv_horizon is prohibited in backtesting and promotion evidence paths")
     if not csv_path.exists():
         raise FileNotFoundError(f"Data file {csv_path.name} not found in {csv_path.parent}.")
     df = pd.read_csv(csv_path)

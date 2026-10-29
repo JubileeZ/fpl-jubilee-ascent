@@ -8,13 +8,13 @@ from typing import Any
 import pandas as pd
 
 from backtesting.data_admission import AdmittedInput
-from backtesting.forecast_inputs import verify_training_bundle
+from backtesting.forecast_inputs import validate_storage_path, verify_training_bundle
 from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.season_rules import get_rules
 from features.availability_snapshots import write_availability_snapshot
 from features.builder import EVENT_RATE_MAP, build_features
 from models import get_model
-from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
+from models.base import BaseModel
 
 
 def predict_synthetic_issue(
@@ -23,6 +23,7 @@ def predict_synthetic_issue(
     catalog: dict[str, bytes],
     training_authority: str,
     staging_root: Path,
+    model_name: str = "def_xg_shrink_challenger",
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Stage verified synthetic data and call the supported concrete model once.
 
@@ -50,9 +51,7 @@ def predict_synthetic_issue(
         raise ValueError("Historical fixture outside issue scope")
     if any(p["availability"] not in ("available", "unavailable") for p in origin["players"]):
         raise ValueError("Unsupported availability semantics")
-    root = staging_root.resolve()
-    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in root.parts):
-        raise ValueError("Invalid staging root")
+    root = validate_storage_path(staging_root)
     root.mkdir(parents=True, exist_ok=True)
     current = [{"id": p["id"], "club_id": p["club"], "position_id": p["position"], "now_cost": p["price"], "code": source["seed_mapping"][str(p["id"])].removeprefix("absent:"), "status": "a" if p["availability"] == "available" else "u", "chance_of_playing_next_round": 100.0 if p["availability"] == "available" else 0.0} for p in origin["players"]]
     seed = [{**p, "code": p["seed_key"]} for p in tables["seed_players"]]
@@ -75,13 +74,23 @@ def predict_synthetic_issue(
             raise ValueError("Source outside snapshot capture window")
         horizon = min(6, 39 - capability.gw)
         features = build_features(processed, capability.gw, horizon, seed_processed_dir=seed_dir, use_archive_seed=False, as_of_gw=capability.gw, history_before_gw=capability.gw, target_deadline=origin["deadline"], availability_snapshot_root=snapshots, season=capability.season, require_availability_snapshot=True, minutes_prior_source="seed_state")
+        if "external_xmins" in features.columns or getattr(features, "oracle_minutes", False):
+            raise ValueError("Oracle minutes prohibited in evidence forecasts")
         features["native_rules_version"] = rules.version
         features.attrs["issue_gameweek"] = capability.gw
-        model = get_model("def_xg_shrink_challenger")
-        if type(model) is not DefXgShrinkChallengerModel:
+        model = get_model(model_name)
+        if not isinstance(model, BaseModel):
             raise ValueError("Unexpected model factory")
-        model.fit(history)
+        fit_fn = getattr(model, "fit", None)
+        if callable(fit_fn):
+            fit_fn(history)
         predictions = model.predict(features, horizon)
+        predictions["horizon_lead"] = predictions["gameweek_id"] - capability.gw
+        predictions["issue_gameweek"] = capability.gw
+        predictions["model"] = model.name
+        predictions["rules_version"] = rules.version
+        predictions["cutoff"] = origin["deadline"]
+        predictions["training_cutoff"] = source["captured_at"]
         strict_solver_table(predictions, capability, request, catalog)
         validate_components(predictions, rules.version)
-    return predictions, {"mode": "synthetic_diagnostic", "model": model.name, "issue_gameweek": capability.gw, "training_authority": training_authority, "fit_count": 1, "predict_count": 1, "fit_cache": "unavailable", "raw_captured_at": source["captured_at"], "derived_created_at": datetime.now(UTC).isoformat()}
+    return predictions, {"mode": "synthetic_diagnostic", "model": model.name, "issue_gameweek": capability.gw, "training_authority": training_authority, "fit_count": 1, "predict_count": 1, "fit_cache": "unavailable", "oracle_minutes": False, "raw_captured_at": source["captured_at"], "derived_created_at": datetime.now(UTC).isoformat()}

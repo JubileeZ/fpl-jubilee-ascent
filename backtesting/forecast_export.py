@@ -1,7 +1,7 @@
 """Strict solver-table preparation for an admitted synthetic issue."""
 
 import math
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
@@ -52,10 +52,10 @@ def strict_solver_table(
     columns = ["player_id", "gameweek_id", "fixture_id", "projected_points", "projected_minutes"]
     if not set(columns).issubset(predictions.columns):
         raise ValueError("Forecast columns missing")
-    frame: Any = predictions[columns].copy()
+    frame: pd.DataFrame = cast(pd.DataFrame, predictions[columns].copy())
     for col in columns:
         frame[col] = pd.to_numeric(frame[col], errors="raise")
-        if not frame[col].map(math.isfinite).all():
+        if not bool(frame[col].map(math.isfinite).all()):
             raise ValueError(f"Nonfinite {col}")
     for col in columns[:3]:
         if not (frame[col] == frame[col].astype(int)).all():
@@ -68,9 +68,9 @@ def strict_solver_table(
     blank = frame.fixture_id == -1
     if ((frame.loc[blank, "projected_points"] != 0) | (frame.loc[blank, "projected_minutes"] != 0)).any():
         raise ValueError("Known blank must be zero")
-    grouped: Any = frame.groupby(["player_id", "gameweek_id"], as_index=False)[columns[3:]].sum()
-    metadata: Any = pd.DataFrame(origin["players"])
-    metadata = metadata[["id", "club", "position", "price"]].rename(columns={"id": "player_id"})
+    grouped: pd.DataFrame = cast(pd.DataFrame, frame.groupby(["player_id", "gameweek_id"], as_index=False)[columns[3:]].sum())
+    raw_meta: pd.DataFrame = pd.DataFrame(origin["players"])
+    metadata: pd.DataFrame = cast(pd.DataFrame, raw_meta[["id", "club", "position", "price"]]).rename(columns={"id": "player_id"})
     points = grouped.pivot(index="player_id", columns="gameweek_id", values="projected_points")
     points.columns = [f"{gw}_Pts" for gw in points.columns]
     minutes = grouped.pivot(index="player_id", columns="gameweek_id", values="projected_minutes")
