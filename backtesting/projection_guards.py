@@ -376,8 +376,6 @@ def reconcile_total_to_ledger(
 ) -> LedgerReconciliationResult:
     """Verify that total projected points match native scoring components and enforce semantic validity."""
     rules = get_rules(season)
-
-    # 1. Semantic validity checks
     violations: list[str] = []
 
     if components.minutes < 0.0 or components.minutes > 95.0:
@@ -403,7 +401,6 @@ def reconcile_total_to_ledger(
     if position == "F" and components.clean_sheets > 0.05:
         violations.append("Forwards do not receive clean sheet points under official rules")
 
-    # 2. Compute native component point contribution using canonical event_points
     ledger_sum = 0.0
     details: dict[str, float] = {}
 

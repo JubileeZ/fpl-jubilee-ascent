@@ -260,3 +260,56 @@ def test_fixed_review_point_material_harm_rollback_recommendation(tmp_path: Path
     assert rev.net_delta == -20.0
     assert any("exceeding live material loss limit" in r for r in rev.rollback_reasons)
     assert len(rev.bundle_hash) == 64
+
+
+def test_evaluate_live_review_top_level_convenience() -> None:
+    """Verify top-level evaluate_live_review convenience function works directly."""
+    from backtesting.live_capture import evaluate_live_review
+
+    gws = [2, 3, 4, 5]
+    adopted_hist = [
+        ShadowReplayState(
+            model_role="adopted_candidate",
+            season="2025-26",
+            gameweek=gw,
+            owned_fifteen=tuple(range(1, 16)),
+            bank_tenths=0,
+            free_transfers=1,
+            transfers_made=0,
+            hit_cost=0,
+            lineup_starters=tuple(range(1, 12)),
+            captain_id=1,
+            vice_id=2,
+            gross_points=20.0,
+            net_points=20.0,
+        )
+        for gw in gws
+    ]
+    champ_hist = [
+        ShadowReplayState(
+            model_role="former_champion",
+            season="2025-26",
+            gameweek=gw,
+            owned_fifteen=tuple(range(1, 16)),
+            bank_tenths=0,
+            free_transfers=1,
+            transfers_made=0,
+            hit_cost=0,
+            lineup_starters=tuple(range(1, 12)),
+            captain_id=1,
+            vice_id=2,
+            gross_points=18.0,
+            net_points=18.0,
+        )
+        for gw in gws
+    ]
+
+    rev = evaluate_live_review(
+        season="2025-26",
+        gameweeks=gws,
+        adopted_history=adopted_hist,
+        champion_history=champ_hist,
+    )
+    assert rev.should_rollback is False
+    assert rev.net_delta == 8.0
+    assert len(rev.bundle_hash) == 64

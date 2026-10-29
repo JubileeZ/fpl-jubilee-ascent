@@ -296,9 +296,9 @@ def run_stored_score_bootstrap(
     if config.family_error_control == "bonferroni":
         adjusted_alpha = config.nominal_alpha / max(1, config.max_family_attempts)
     elif config.family_error_control == "holm":
-        adjusted_alpha = config.nominal_alpha / max(1, (config.max_family_attempts - attempt_number + 1))
+        k = max(1, min(attempt_number, config.max_family_attempts))
+        adjusted_alpha = config.nominal_alpha / (config.max_family_attempts - k + 1)
 
-    # Partition by season
     by_season: dict[str, list[PairedGameweekScore]] = {}
     for s in paired_scores:
         by_season.setdefault(s.season, []).append(s)
@@ -368,7 +368,6 @@ def evaluate_evidence_against_protocol(
     reasons: list[str] = []
     limitations: list[str] = []
 
-    # 1. Input validity check
     if not paired_scores:
         return PromotionEvidenceEvaluation(
             verdict="invalid",
@@ -387,7 +386,6 @@ def evaluate_evidence_against_protocol(
             is_confirmation_available=is_confirmation_available,
         )
 
-    # 2. Season summaries and material loss checks
     season_summaries = compute_season_summaries(
         paired_scores,
         config.season_material_loss_limit,
@@ -410,7 +408,6 @@ def evaluate_evidence_against_protocol(
                             f"Season {s.season} segment '{seg}' loss of {abs(loss):.1f} pts exceeds segment limit of {config.segment_material_loss_limit:.1f} pts"
                         )
 
-    # 3. Projection guards validation
     guard_failures: list[str] = []
     if projection_guards is not None:
         for guard in projection_guards:
@@ -421,7 +418,6 @@ def evaluate_evidence_against_protocol(
     if not guards_passed:
         reasons.extend(guard_failures)
 
-    # 4. Block bootstrap statistical inference
     bootstrap_res = run_stored_score_bootstrap(
         paired_scores,
         config,
@@ -433,7 +429,6 @@ def evaluate_evidence_against_protocol(
     point_est = bootstrap_res.point_estimate
     p_val = bootstrap_res.p_value_superiority
 
-    # 5. Scientific Verdict synthesis
     # Fail criteria:
     # - Material loss limit violated in any season or segment
     # - Significant net loss (ci_upper < 0)
@@ -446,19 +441,33 @@ def evaluate_evidence_against_protocol(
         verdict: ScientificVerdict = "fail"
 
     # Pass criteria:
+    # - Protocol configuration approved by human
     # - Confirmation season available and complete
     # - Positive point estimate
     # - Statistically significant superiority (ci_lower > 0.0 or p_value <= adjusted_alpha)
     # - No material loss
     # - All projection guards passed
-    elif is_confirmation_available and point_est > 0.0 and ci_lower > 0.0 and guards_passed and not material_loss_violated:
+    elif (
+        config.approved_by_human
+        and is_confirmation_available
+        and point_est > 0.0
+        and ci_lower > 0.0
+        and guards_passed
+        and not material_loss_violated
+    ):
         verdict = "pass"
 
     # Inconclusive criteria:
+    # - Unapproved protocol configuration
     # - Point estimate is positive or non-inferior, but uncertainty is too wide (ci_lower <= 0.0)
     # - OR confirmation season is not yet available (development-only evidence)
     else:
         verdict = "inconclusive"
+        if not config.approved_by_human:
+            reasons.append(
+                "Numerical protocol configuration has not been approved by human; candidate recommendation capability disabled pending protocol approval"
+            )
+            limitations.append("Protocol unapproved; human approval barrier active")
         if not is_confirmation_available:
             reasons.append(
                 "Confirmation season evidence not yet admitted or available; candidate cannot pass on development-only evidence"

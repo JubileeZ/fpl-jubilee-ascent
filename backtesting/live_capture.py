@@ -353,3 +353,27 @@ class LiveCaptureManager:
             bundle_hash=bundle_hash,
             reviewed_at=datetime.now(timezone.utc).isoformat(),
         )
+
+
+def evaluate_live_review(
+    season: str,
+    gameweeks: Sequence[int],
+    adopted_history: Sequence[ShadowReplayState],
+    champion_history: Sequence[ShadowReplayState],
+    *,
+    material_loss_limit: float = 8.0,
+    min_gameweeks: int = 4,
+    review_point_id: str | None = None,
+    storage_dir: Path | str | None = None,
+) -> LiveReviewPoint:
+    """Evaluate fixed live review horizon and generate rollback recommendations if regressed."""
+    manager = LiveCaptureManager(storage_dir=storage_dir)
+    return manager.evaluate_live_review(
+        season=season,
+        gameweeks=gameweeks,
+        adopted_history=adopted_history,
+        champion_history=champion_history,
+        material_loss_limit=material_loss_limit,
+        min_gameweeks=min_gameweeks,
+        review_point_id=review_point_id,
+    )

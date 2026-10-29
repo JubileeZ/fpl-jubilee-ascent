@@ -280,11 +280,9 @@ class ConfirmationRegistry:
         """Register a new finalist confirmation round."""
         self._ensure_dir()
 
-        # 1. Enforce safety checks
         self.check_sealed_data_safety(requested_seasons, registered_gameweeks)
         self.check_candidate_ledger_safety(candidate_name, candidate_lever_description, ledger_csv_path)
 
-        # 2. Check family history and duplicate prevention
         family_history = self.find_family_history(mechanism_family, candidate_name, known_aliases)
         for prior in family_history:
             if (

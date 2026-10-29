@@ -1,4 +1,4 @@
-"""Automatic Historical Promotion for registered Model Candidates."""
+"""Model Promotion Evaluation and Adoption (ADR 0066)."""
 
 from __future__ import annotations
 
@@ -283,6 +283,12 @@ def adopt_champion(
         raise FileNotFoundError(f"Evidence bundle not found: {bundle_path}")
 
     data = json.loads(bundle_file.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Evidence bundle content must be a JSON object")
+
+    exec_status = data.get("execution_status")
+    if exec_status != "complete":
+        raise ValueError(f"Cannot adopt candidate: execution status is '{exec_status}', not 'complete'")
 
     # Validate scientific verdict
     verdict = (
@@ -296,10 +302,6 @@ def adopt_champion(
 
     if verdict != "pass":
         raise ValueError(f"Cannot adopt candidate: scientific verdict is '{verdict}', not 'pass'")
-
-    exec_status = data.get("execution_status", "complete")
-    if exec_status != "complete":
-        raise ValueError(f"Cannot adopt candidate: execution status is '{exec_status}', not 'complete'")
 
     cand_name = candidate_name
     if not cand_name:
@@ -316,9 +318,10 @@ def adopt_champion(
     selection_path = config_path or DEFAULT_CONFIG_PATH
     current_sel = load_model_selection(selection_path)
 
-    if expected_current_champion and current_sel.champion != expected_current_champion:
+    expected_champ = expected_current_champion or data.get("former_champion")
+    if expected_champ and current_sel.champion != expected_champ:
         raise ValueError(
-            f"Current Champion mismatch: expected '{expected_current_champion}', found '{current_sel.champion}'"
+            f"Current Champion mismatch: expected '{expected_champ}', found '{current_sel.champion}'"
         )
 
     if cand_name == current_sel.champion:
@@ -348,6 +351,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--apply", action="store_true", help="Produce evidence record for evaluation (read-only for Champion config)")
     parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.65 (ADR 0064)")
     parser.add_argument("--two_season", action="store_true", help="Evaluate 2-season gate (Dev 2025-26 + Conf 2024-25 with pooled stratified bootstrap >= 0.85)")
+    parser.add_argument("--confirmation_data_dir", type=str, default=None, help="Confirmation season data directory for 2-season evaluation")
+    parser.add_argument("--confirmation_seed_season", type=str, default=None, help="Confirmation seed season")
     parser.add_argument("--adopt", type=Path, default=None, help="Explicitly adopt a candidate from verified evidence bundle")
     parser.add_argument("--approval_ref", type=str, default=None, help="Human approval reference for manual adoption")
     parser.add_argument("--expected_champion", type=str, default=None, help="Expected current champion name for safe adoption")
@@ -382,14 +387,21 @@ def main(argv: list[str] | None = None) -> None:
     start_gw, end_gw = _parse_gw_range(args.gw_range)
     snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None
 
-    if args.two_season:
+    if args.two_season or args.confirmation_data_dir:
         if args.data_dir != "data/processed":
             dev_dir = (PROJECT_ROOT / args.data_dir).resolve()
         else:
             default_dev = (PROJECT_ROOT / "data" / "archive" / "2025-26" / "processed").resolve()
             dev_dir = default_dev if default_dev.exists() else resolve_backtest_data_dir((PROJECT_ROOT / args.data_dir).resolve())
-        conf_default = (PROJECT_ROOT / "data" / "archive" / "2024-25" / "processed").resolve()
-        conf_dir = conf_default if conf_default.exists() else resolve_backtest_data_dir(conf_default)
+
+        if args.confirmation_data_dir:
+            raw_conf = Path(args.confirmation_data_dir)
+            conf_dir = raw_conf.resolve() if raw_conf.is_absolute() else (PROJECT_ROOT / raw_conf).resolve()
+        else:
+            conf_default = (PROJECT_ROOT / "data" / "archive" / "2024-25" / "processed").resolve()
+            conf_dir = conf_default if conf_default.exists() else resolve_backtest_data_dir(conf_default)
+
+        conf_seed = args.confirmation_seed_season or "2023-24"
         updated, comparisons, evidence_paths = evaluate_and_apply_two_season(
             config_path=args.config,
             dev_data_dir=dev_dir,
@@ -397,7 +409,7 @@ def main(argv: list[str] | None = None) -> None:
             start_gw=start_gw,
             end_gw=end_gw,
             dev_seed_season=args.seed_season or "2024-25",
-            conf_seed_season="2023-24",
+            conf_seed_season=conf_seed,
             snapshot_root=snapshot_root,
             require_snapshots=args.require_snapshots,
             apply=args.apply,
@@ -424,7 +436,7 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     print("\n" + "=" * 60)
-    print("AUTOMATIC HISTORICAL PROMOTION")
+    print("MODEL PROMOTION EVALUATION & ADOPTION (ADR 0066)")
     print("=" * 60)
     print(f"Champion        : {updated.champion}")
     print(f"Candidates      : {', '.join(updated.candidates) or 'none'}")

@@ -315,3 +315,22 @@ Cleanup:
 - Durable references established: [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md), [Operator Workflow](operator-workflow.md), [Delivery Record](foundation-delivery.md), and [Foundation Topic Notes](../research/backtesting-promotion-foundation/).
 
 Delivery complete: foundation infrastructure ready for operation. Scientific candidate confirmations and manual adoption remain evidence-dependent follow-through under ADR 0066.
+
+## Post-Delivery Code Review Verification & Defect Resolution
+
+Baseline: `01568956`. Review: parallel Standards and Spec sub-agents across Phases 1–14.
+
+Defects resolved:
+- **Evidence statistics**: enforce explicit human approval check for scientific verdict `pass` (unapproved protocols fail closed as `inconclusive`); restore sequential Holm step-down multiplier formula $\alpha / (M - k + 1)$ with bounds checking; remove numbered workflow comments.
+- **Manual adoption**: harden `adopt_champion` to reject missing or incomplete execution status; require verified scientific verdict `pass`; require non-empty approval reference; require current champion match against expected champion or bundle former champion; add `--confirmation_data_dir` and `--confirmation_seed_season` CLI arguments; update print and docstrings to `MODEL PROMOTION EVALUATION & ADOPTION (ADR 0066)`.
+- **Live review**: expose module-level `evaluate_live_review` convenience wrapper matching documented interface.
+- **Operator workflow**: align Stage 1 imports and registrations with `ConfirmationRegistry.register_finalist`; align Stage 8 live review example with exposed wrapper; fix component name to canonical `xp_clean_sheet`.
+- **Research documentation**: standardize metadata headers (`Updated`, `Data stamp`, `Season`, `Status`, `Purpose`, `Scope`, `Sources`, `Method`, `Findings`, `Decision`, `Risks and unknowns`) in `legacy_verdicts_audit.md` and `acquisition-report.md`.
+- **End-to-end integration**: add comprehensive offline test `tests/test_foundation_end_to_end.py` exercising complete lifecycle (inputs, anchor, replay, reconstruction, guards, registry, bootstrap, result contract, adoption, and live review).
+
+Validation:
+- Full test suite: 874 passed, 0 failed in 140.68s.
+- Portable delivery gate (`bash tests/verify.sh`): 29 passed, 0 failed.
+- Static analysis & lint (`uv run ruff check .`): clean with 0 errors.
+- Type integrity (`uv run pyright`): 0 errors, 0 warnings across all foundation modules, CLIs, and tests.
+- Model Champion `def_xg_shrink_challenger` and sealed holdout `2026-27 GW6+` preserved.

@@ -165,12 +165,13 @@ def test_protocol_hash_determinism_and_sensitivity() -> None:
 
 
 def test_evidence_evaluation_pass_verdict() -> None:
-    """Verify PASS verdict requires positive CI, confirmation season, and green guards."""
+    """Verify PASS verdict requires positive CI, confirmation season, green guards, and human approval."""
     scores = _make_paired_scores(gameweek_count=38, mean_cand=63.0, mean_champ=60.0, noise_std=0.5)
     config = StatisticalProtocolConfig(
         nominal_alpha=0.05,
         bootstrap_draws=1_000,
         family_error_control="none",
+        approved_by_human=True,
     )
     guard = GuardOutput(
         metric_name="minutes_mae",
@@ -199,6 +200,25 @@ def test_evidence_evaluation_pass_verdict() -> None:
     assert eval_res.confidence_interval[0] > 0.0
     assert eval_res.projection_guards_passed is True
     assert eval_res.material_loss_violated is False
+
+
+def test_evidence_evaluation_unapproved_protocol_yields_inconclusive() -> None:
+    """Verify unapproved protocol yields INCONCLUSIVE even with winning evidence."""
+    scores = _make_paired_scores(gameweek_count=38, mean_cand=63.0, mean_champ=60.0, noise_std=0.5)
+    config = StatisticalProtocolConfig(
+        nominal_alpha=0.05,
+        bootstrap_draws=1_000,
+        family_error_control="none",
+        approved_by_human=False,
+    )
+    eval_res = evaluate_evidence_against_protocol(
+        scores,
+        None,
+        config,
+        is_confirmation_available=True,
+    )
+    assert eval_res.verdict == "inconclusive"
+    assert any("approved by human" in r for r in eval_res.reasons)
 
 
 def test_evidence_evaluation_inconclusive_wide_uncertainty() -> None:

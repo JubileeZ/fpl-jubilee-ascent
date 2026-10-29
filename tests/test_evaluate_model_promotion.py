@@ -309,5 +309,51 @@ def test_main_two_season_dispatches_to_two_season_evaluator(tmp_path: Path) -> N
         assert mock_two.call_args.kwargs["dev_seed_season"] == "2024-25"
 
 
+def test_main_confirmation_data_dir_dispatches_to_two_season_evaluator(tmp_path: Path) -> None:
+    from commands.evaluate_model_promotion import main
+
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="participation_state_hybrid",
+            candidates=("metrics_component_hybrid",),
+        ),
+        config_path,
+    )
+    conf_dir = tmp_path / "conf_dir"
+    conf_dir.mkdir()
+    with patch("commands.evaluate_model_promotion.evaluate_and_apply_two_season") as mock_two:
+        mock_two.return_value = (ModelSelection(champion="champ", candidates=()), [], None)
+        main([
+            "--config", str(config_path),
+            "--confirmation_data_dir", str(conf_dir),
+            "--confirmation_seed_season", "2023-24",
+        ])
+        assert mock_two.called
+        assert mock_two.call_args.kwargs["conf_seed_season"] == "2023-24"
+        assert mock_two.call_args.kwargs["conf_data_dir"] == conf_dir.resolve()
+
+
+def test_adopt_champion_fails_on_missing_or_incomplete_execution_status(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(ModelSelection(champion="champ", candidates=("cand",)), config_path)
+
+    bundle_path = tmp_path / "missing_status_bundle.json"
+    bundle_data = {
+        "scientific_verdict": "pass",
+        "candidate_name": "cand",
+    }
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="execution status is 'None', not 'complete'"):
+        adopt_champion(bundle_path=bundle_path, config_path=config_path, approval_ref="APR-01")
+
+    # Incomplete execution status
+    bundle_data["execution_status"] = "partial"
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+    with pytest.raises(ValueError, match="execution status is 'partial', not 'complete'"):
+        adopt_champion(bundle_path=bundle_path, config_path=config_path, approval_ref="APR-01")
+
+
 
 

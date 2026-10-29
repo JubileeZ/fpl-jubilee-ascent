@@ -33,21 +33,19 @@ The evaluation lifecycle separates research exploration from scientific confirma
 ### Stage 1: Register Finalist Attempt
 Before executing a formal confirmation evaluation, register the frozen finalist in the append-only registry:
 ```python
-from backtesting.confirmation_registry import ConfirmationAttemptRegistry, AttemptRegistrationRequest
+from backtesting.confirmation_registry import ConfirmationRegistry
 
-registry = ConfirmationAttemptRegistry("data/confirmation_registry.jsonl")
-entry = registry.register_attempt(
-    AttemptRegistrationRequest(
-        attempt_id="att_20261029_cand_01",
-        candidate_model_name="my_model_challenger",
-        family_name="def_xg_shrink_family",
-        source_commit_hash="f5e71b7e...",
-        parameter_hash="a1b2c3d4...",
-        protocol_hash="p1p2p3p4...",
-        registered_gameweeks=list(range(1, 39)),
-        dev_selection_ref="docs/research/my-topic/dev_evidence.csv",
-        created_at="2026-10-29T22:00:00Z",
-    )
+registry = ConfirmationRegistry("data/confirmation_registry.jsonl")
+entry = registry.register_finalist(
+    candidate_name="my_model_challenger",
+    champion_name="def_xg_shrink_challenger",
+    mechanism_family="def_xg_shrink_family",
+    model_source_hash="f5e71b7e" + "0" * 56,
+    parameters_hash="a1b2c3d4" + "0" * 56,
+    dev_selection_record_ref="docs/research/my-topic/dev_evidence.csv",
+    protocol_hash="p1p2p3p4" + "0" * 56,
+    attempt_id="att_20261029_cand_01",
+    registered_gameweeks=list(range(1, 39)),
 )
 ```
 - **Integrity**: `registry.verify_integrity()` validates the entire cryptographic SHA-256 chain.
@@ -108,14 +106,16 @@ For deployed champions, prospective shadow replay runs each gameweek:
 from backtesting.live_capture import evaluate_live_review
 
 review = evaluate_live_review(
-    adopted_state=adopted_shadow,
-    former_state=former_shadow,
-    horizon_gws=4,
-    material_harm_threshold=-1.5,
+    season="2025-26",
+    gameweeks=list(range(1, 5)),
+    adopted_history=adopted_history,
+    champion_history=champion_history,
+    material_loss_limit=8.0,
+    min_gameweeks=4,
 )
-if review.recommend_rollback:
-    print(f"ROLLBACK RECOMMENDED: {review.harm_reason}")
-    print(f"Action requires human approval reference: approval_ref")
+if review.should_rollback:
+    print(f"ROLLBACK RECOMMENDED: {review.rollback_reasons}")
+    print("Action requires human approval reference: approval_ref")
 ```
 
 ---
@@ -133,5 +133,5 @@ if review.recommend_rollback:
 - **Supported Historical Seasons**: 2023–24 (seed only), 2024–25 (Confirmation), 2025–26 (Development).
 - **Sealed Season**: 2026–27 GW6+ (Holdout; access strictly prohibited).
 - **Supported Event Components**:
-  - `xp_goals`, `xp_assists`, `xp_clean_sheets`, `xp_saves`, `xp_defcon`, `xp_bonus`, `xp_minutes`.
+  - `xp_goals`, `xp_assists`, `xp_clean_sheet`, `xp_saves`, `xp_defcon`, `xp_bonus`, `xp_minutes`.
 - **Supported Chips**: Bench Boost, Triple Captain, Free Hit, Wildcard.

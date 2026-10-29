@@ -59,20 +59,46 @@ def report(rows: list[dict[str, str]]) -> None:
         tree_lines = '- No tree inspection companion.'
     (TOPIC / 'acquisition-report.md').write_text(f'''# Historical admission acquisition
 
+**Updated**: 2026-10-29T20:00:00+07:00  
+**Data stamp**: acquisition_manifest.csv (5 retrieved rows)  
+**Season**: Multi-season  
+**Status**: Active  
+**Purpose**: Document historical admission source acquisition and raw file quarantine status for 2023-24, 2024-25, and 2025-26.  
+**Scope**: Evaluates raw file manifests and tree inspections only; quarantined from forecast inputs.  
+**Artifact**: [acquisition_manifest.csv](acquisition_manifest.csv)  
+
+## Sources
+
+- **Primary**: [Randdalf/fplcache](https://github.com/Randdalf/fplcache) — commits adb4450b, 75750671, 0bb12a87
+- **Repository data**: `docs/research/backtesting-promotion-foundation/ownership_snapshot_provenance.csv`
+
+## Method
+
 Scope: 2023-24, 2024-25 and 2025-26. Opening cap 10 MiB; pilot cap 2 MiB. Manifest is current attempt status; append-only `data/reports/replay-admission/v1/retrieval-attempts.jsonl` retains attempt history. Earlier successes reconstructed from manifest; initial sandbox failures lack individual timestamps. A start without completion indicates an interrupted or killed attempt.
 
-Opening latest status: {sum(r['status'] == 'retrieved_unadmitted' for r in openings)}/{len(openings)} retrieved.
+## Findings
+
+### Opening latest status: {sum(r['status'] == 'retrieved_unadmitted' for r in openings)}/{len(openings)} retrieved.
 {summary(openings)}
 
-Pilot latest status: {sum(r['status'] == 'retrieved_unadmitted' for r in pilots)}/{len(pilots)} retrieved.
+### Pilot latest status: {sum(r['status'] == 'retrieved_unadmitted' for r in pilots)}/{len(pilots)} retrieved.
 {summary(pilots)}
 
+### Coverage summary
 All {len(gaps)} complete-origin labels remain pending. Opening deadlines are planned deadlines; a pilot bootstrap may record its own next deadline. Git times corroborate chronology, not exact capture or independent publication. Fixture source lineage, schedule completeness and announcement timing unverified. Raw files contain mixed facts and possible outcomes; quarantine, no forecast input. No freshness, eligibility, admission, numerical accuracy or replay feasibility established. No model, solver or outcome comparison.
 
-Manual tree inspection, calendar-year paths, not verified origin coverage:
+### Manual tree inspection
+Calendar-year paths, not verified origin coverage:
 {tree_lines}
 
-Counts and rows derive from `acquisition_manifest.csv` columns `kind`, `status`, `season`, `origin`, `bytes`, `detail`; tree counts derive from `acquisition_tree_inspection.csv` columns `calendar_years`, `path_count`, `tree_commit`, `inspection_method`. Full URLs, hashes, timestamps and parsers: manifest. Re-run using `--openings` or `--pilot`; network required.
+## Decision
+
+Quarantine all retrieved raw files. No forecast input until causal admission and provenance verification are complete. Counts and rows derive from `acquisition_manifest.csv` columns `kind`, `status`, `season`, `origin`, `bytes`, `detail`; tree counts derive from `acquisition_tree_inspection.csv` columns `calendar_years`, `path_count`, `tree_commit`, `inspection_method`.
+
+## Risks and unknowns
+
+- Git commit timestamps corroborate publication chronology only; exact API capture timing unverified.
+- Fixture announcement timing and schedule completeness unverified.
 ''', encoding='utf-8')
 
 
