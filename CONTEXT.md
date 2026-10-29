@@ -506,7 +506,7 @@ Mean of `projected_points − actual_points` vs Realized Points for the Model Ch
 _Avoid_: calibrating live xP from this cell, FPL `ep_next`, third-party xP as the gate, Process Points as the ADR 0033 gate
 
 **Blended Eval Target**:
-Mean of Realized Points and Process Points per player-gameweek (50/50, all positions). Promotion primary for backtests and the Historical Promotion Gate (ADR 0044). Realized Points and Process Points stay reported guardrails. CLI `--eval_target blend`; companions triple-report `realized|process|blend`.
+Mean of Realized Points and Process Points per player-gameweek (50/50, all positions). Supporting diagnostic screen for backtests (ADR 0044, ADR 0066). Superseded as primary promotion gate by Rolling Replay Net Score (ADR 0066). Realized Points and Process Points stay reported guardrails. CLI `--eval_target blend`; companions triple-report `realized|process|blend`.
 _Avoid_: position-weighted blend, Process-only primary, calibrating live xP from this cell, component-gap ranking primary
 
 **Component MSE Share**:
@@ -667,12 +667,28 @@ Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MA
 _Avoid_: Prediction-only evaluation, aggregate score
 
 **Historical Promotion Gate**:
-Two-season promotion protocol (ADR 0047, ADR 0064). Candidate replaces Model Champion only after: winning combined Constrained Legal Formation XI Regret on Blended Eval Target (ADR 0044, ADR 0054); passing non-wrapping Moving Block Bootstrap ($L=5$) significance ($P_{\text{dev}} \ge 0.75$, warm-seeded $P_{\text{conf}} \ge 0.65$, pooled stratified $P_{\text{pooled}} \ge 0.85$); satisfying $\sqrt{n_s}$-calibrated seasonal segment loss floors (`cold_start` $\ge -0.25$, `early_mid` $\ge -0.15$, `late` $\ge -0.13$ pts/GW) with $\ge 1$ active segment win; passing all Champion guardrails (including exogenous Playable Pool MAE/Bias and Top-15 Squad Churn $\le +0.50$/GW) across full season and active window ($\mathcal{G}_{\text{active}}$).
-_Avoid_: One-off backtest win, aggregate-only promotion, unseeded confirmation evaluation, evaluating ADR 0022 in-season last-year blend while shipping 0024
+Multi-season evaluation protocol (ADR 0047, ADR 0064, ADR 0066). Evaluates whether a Candidate achieves scientific verdict PASS over Model Champion based on primary Rolling Replay Net Score (gross points minus official hit deductions under rolling 6-GW Strategic transfer plans from neutral GW1 ownership anchor); non-wrapping Moving Block Bootstrap ($L=5$) with search-wide family-wise error control ($\text{FWER} \le 0.05$ via Bonferroni/Holm); non-catastrophic seasonal segment loss floors; and substantive player projection non-inferiority guards (total, minutes, components). Evaluated on Development (2025-26, seed 2024-25) and un-tuned registered Confirmation (2024-25, seed 2023-24).
+_Avoid_: Single-gameweek proxy as promotion primary, automatic promotion without human approval, unseeded confirmation evaluation, unconstrained lineup evaluation
+
+**Rolling Replay Net Score**:
+The primary promotion estimand: actual native-season cumulative FPL points minus official hit deductions achieved by executing immediate actions from independent rolling 6-Gameweek Strategic transfer plans starting from a neutral GW1 ownership anchor (ADR 0066).
+_Avoid_: Single-gameweek proxy as primary, static squad regret
+
+**Neutral GW1 Ownership Anchor**:
+Deterministic starting squad for rolling replay: the unique feasible full £100m fifteen maximizing summed reported ownership under official position and club constraints, with exact lexicographic tie-breaking. Squad is locked at GW1 deadline; transfers begin at GW2 deadline (ADR 0066).
+_Avoid_: Arbitrary template, hindsight optimal squad, user squad in historical archive
+
+**Four-Way Scientific Verdicts**:
+Standardized model evaluation outcomes (`pass`, `fail`, `inconclusive`, `invalid`) tracked independently from execution status. Inconclusive verdicts (e.g. uncertainty spanning zero or unconfirmed dev evidence) route to fresh registered confirmation and do not trigger the 1-year Dead Lever moratorium (ADR 0066).
+_Avoid_: Binary pass/fail, treating inconclusive as dead lever, conflating crash with model failure
+
+**Immutable Attempt Registry**:
+Append-only JSONL registry with SHA-256 tamper-evident integrity chaining, recording confirmation candidate finalist attempts, source hashes, parameters, protocol hashes, and prior family history before evaluation (ADR 0066).
+_Avoid_: Overwriting past attempts, unregistered confirmation runs, adaptive parameter tuning on confirmation
 
 **Incremental Promotion**:
-A Candidate that passes the Historical Promotion Gate becomes the Model Champion even for a small primary-metric improvement; the former Champion remains in the comparison slate for live validation and rollback.
-_Avoid_: Margin threshold, discard previous model
+A Candidate that passes the Historical Promotion Gate may be adopted as Model Champion via explicit manual adoption; the former Champion remains in the comparison slate for live validation and rollback.
+_Avoid_: Margin threshold, discard previous model, automatic adoption
 
 **Provisional Historical Promotion**:
 An Incremental Promotion supported only by archive data without verified pre-deadline snapshots. It remains provisional until two Live Validation Windows provide current-season evidence.
@@ -694,12 +710,12 @@ _Avoid_: Single-week win, automatic promotion threshold
 When the three-model comparison slate is full, a new Model Candidate enters only by passing the Historical Promotion Gate against an existing Candidate, which it replaces. The Model Champion is retained.
 _Avoid_: Unbounded experiment list, Champion replacement by admission
 
-**Automatic Historical Promotion**:
-An evaluation job triggered by Candidate code changes updates the committed Model Champion configuration and preserves its evidence report whenever a Candidate passes the Historical Promotion Gate. Routine model reports do not mutate selection state.
-_Avoid_: Manual promotion, silent report-side effect
+**Manual Adoption Authority**:
+Requirement that production Model Champion updates in `config/model_selection.json` occur only via explicit user-approved adoption actions (`commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref <ref>`). Evaluation CLI commands and CI promotion workflows are strictly read-only and produce evidence records without mutating selection state (ADR 0066).
+_Avoid_: Automatic promotion, silent configuration writes from CI or CLI `--apply`
 
 **Candidate Registration**:
-An explicit committed addition of a Model Candidate to the comparison slate. Registration enables automatic evaluation and promotion but does not itself change the Model Champion.
+An explicit committed addition of a Model Candidate to the comparison slate or confirmation attempt registry. Registration enables evaluation but does not itself change the Model Champion.
 _Avoid_: Model auto-discovery, implicit admission
 
 **Comparison Slate**:

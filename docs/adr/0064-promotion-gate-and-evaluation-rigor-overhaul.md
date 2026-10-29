@@ -1,6 +1,6 @@
 # Promotion Gate & Evaluation Rigor Overhaul (ADR 0064)
 
-**Status**: Accepted (2026-10-26, Wayfinder Map #166 completion)
+**Status**: Accepted (2026-10-26, Wayfinder Map #166 completion); amended by [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Warm-seeded confirmation and non-wrapping MBB retained; binary pass/fail replaced by 4-verdict taxonomy; rolling net-score primary; manual adoption enforced).
 
 Amends ADR 0046 (point-in-time features & statistical gate), ADR 0047 (two-season promotion gate), ADR 0049 (bootstrap bar 0.60, no minimum effect), ADR 0054 (formation-constrained XI regret and playable pool guardrails), and ADR 0062 (non-catastrophic segment loss guardrail).
 

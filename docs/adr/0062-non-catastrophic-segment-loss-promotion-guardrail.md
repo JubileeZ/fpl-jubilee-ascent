@@ -1,5 +1,7 @@
 # Promotion Gate: Non-Catastrophic Segment Loss Guardrail
 
+**Status**: Accepted; amended by [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) and [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Continuous segment loss floors integrated into multi-season statistical protocol and substantive projection guards).
+
 Amends ADR 0010 (seasonal segments majority), ADR 0046 (point-in-time features & statistical gate), ADR 0047 (two-season promotion gate), and ADR 0049 (bootstrap bar 0.60, no minimum effect).
 
 ## Context

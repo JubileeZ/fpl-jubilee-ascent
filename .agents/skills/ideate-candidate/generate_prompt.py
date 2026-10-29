@@ -1,6 +1,6 @@
 """Generate point-in-time candidate ideation prompts for external frontier models.
 
-Assembles current Champion state, ADR 0064 Promotion Gate rules, and
+Assembles current Champion state, ADR 0066 Backtesting & Promotion Foundation rules, and
 Candidate Ledger constraints into a prompt brief.
 """
 
@@ -354,12 +354,12 @@ We operate under strict empirical model governance:
 {champ_desc}
 - **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
-- **Promotion Gate (ADR 0064)**: Any new model ("Candidate") must pass our reformed two-season gate: Constrained Legal Formation XI (£83.5m cap, $\\le 3$ per club), rolling squad churn guardrail ($\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW), warm-seeded confirmation (2023–24 seed for 2024–25 conf, matching live deployment $N_{{\\text{{prior}}}}=1$), non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$), three bootstrap bars (Dev $P \\ge {BOOTSTRAP_MIN_P:.2f}$, Warm Conf $P \\ge {CONFIRMATION_BOOTSTRAP_MIN_P:.2f}$, Pooled Stratified $P \\ge {POOLED_BOOTSTRAP_MIN_P:.2f}$), $\\sqrt{{n_s}}$-scaled segment floors (cold_start $\\ge -{COLD_START_PARITY_TOL:.2f}$, early_mid $\\ge -{SEGMENT_REGRESSION_TOL:.2f}$, late $\\ge -{LATE_SEGMENT_REGRESSION_TOL:.2f}$), and dual-window safety guardrails across both full season and active gameweeks.
+- **Promotion Gate (ADR 0066 & ADR 0064)**: Any new model ("Candidate") must pass our multi-season evaluation: primary Rolling Transfer Plan Net Score from neutral GW1 ownership anchor, paired non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$) with search-wide family-wise error control ($\\text{{FWER}} \\le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and Constrained Legal Formation XI diagnostic screen (£83.5m cap, $\\le 3$ per club, squad churn $\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
 - **Historical Ledger**: {total_trials} candidate model levers recorded. {dead_count} have failed or been logged dead ({len(active_dead)} currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
 - **Evaluation Boundary**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
 
 ### Your Mission
-Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat {mission_target} under the ADR 0064 Historical Promotion Gate.
+Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat {mission_target} under the ADR 0066 Historical Promotion Gate.
 
 **Focus Area**: {focus_guidance}
 
@@ -506,7 +506,7 @@ Strategic marginal FT values for bank states 2-5: `ft_value_list = {{{ft_schedul
 
 ---
 
-### 3. The Reformed Historical Promotion Gate (ADR 0064 Standards)
+### 3. The Historical Promotion Gate (ADR 0066 Foundation & ADR 0064 Standards)
 
 A Candidate must pass all criteria across both Development (2025–26, seeded with 2024–25) and Confirmation (2024–25, warm-seeded with 2023–24) seasons:
 

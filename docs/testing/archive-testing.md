@@ -12,24 +12,29 @@
 - **Immutability Rule**: Treat `data/archive/` Parquet files as immutable. Regenerate historical data through archive/snapshot tooling; never edit or delete archive files directly.
 - **Exploratory Scope**: Archive backtests are exploratory only: terminal player, club, fixture, and availability metadata may not represent the pre-deadline information set.
 - **Point-in-time guard (ADR 0046)**: as-of builds without snapshot take price/club from pre-target performance rows and drop `TERMINAL_PLAYER_COLUMNS` (`features/builder.py`). Residual terminal inputs: club strength (GW1 only), fixture FDR, player universe (all season players listed from GW1). Guard tests: `tests/test_feature_leakage.py`.
-- **Holdout (ADR 0047, 0049, 0064)**: 2025-26 = development (boot P >= 0.75 via `BOOTSTRAP_MIN_P`; delta > 0, no min effect); 2024-25 = confirmation season (warm-seeded with 2023-24 archive under ADR 0064, one gate run per frozen Candidate, never tuned, boot P >= 0.65 via `CONFIRMATION_BOOTSTRAP_MIN_P`; pooled stratified boot P >= 0.85 via `POOLED_BOOTSTRAP_MIN_P`); 2026-27 GW6+ sealed (one post-promotion check per Champion).
-- **Eval target**: `--eval_target realized|process|blend` (blend = 50/50 Blended Eval Target, ADR 0044). Promotion primary is blend; Realized Points + Process Points stay reported guardrails. Champion Signed Bias gate migrates to blend at next window; current companion still Realized.
-- **Eval canon**: [docs/research/INDEX.md](../research/INDEX.md) **Eval canon** — promotion vs Event Component gap (`mse_share`). Component-gap runner: `docs/research/champion-component-gap/runner.py`.
+- **Holdout & Gating (ADR 0046, 0047, 0064, 0066)**: 2025-26 = development season; 2024-25 = confirmation season (warm-seeded with 2023-24 archive under ADR 0064; registered in immutable attempt registry under ADR 0066); 2026-27 GW6+ sealed holdout (strictly protected; no backtests, tuning, or exploration).
+- **Promotion Primary (ADR 0066)**: Actual native-season net FPL points under independent 6-GW rolling Strategic transfer plan replay from neutral GW1 ownership anchor. Paired non-wrapping Moving Block Bootstrap ($L=5$) with search-wide family-wise error control ($\text{FWER} \le 0.05$ via Bonferroni/Holm).
+- **Eval target**: `--eval_target realized|process|blend` (blend = 50/50 Blended Eval Target, ADR 0044). Retained as an exploratory and diagnostic screen; does not grant promotion.
+- **Scientific Verdicts & Adoption (ADR 0066)**: Four-way verdicts (`pass`, `fail`, `inconclusive`, `invalid`). Inconclusive routes to fresh confirmation; execution defects stop as invalid. Adoption requires explicit human approval via `uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref <ref>`.
+- **Eval canon**: [docs/research/INDEX.md](../research/INDEX.md) **Eval canon** — promotion primary vs diagnostic targets vs Event Component gap (`mse_share`). Component-gap runner: `docs/research/champion-component-gap/runner.py`.
 
 ---
 
 ## Example Execution Commands
 
 ```bash
-# Run exploratory backtest against historical processed season data
+# Run exploratory single-gameweek backtest against historical processed season data
 uv run python -m commands.backtest participation_state_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed
 
-# Same window scored vs Process Points (finish-luck reduced on goals/assists)
-uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed --seed_season 2024-25 --eval_target process
-
-# Same window scored vs 50/50 Blended Eval Target (promotion primary; ADR 0044)
+# Diagnostic evaluation scored vs 50/50 Blended Eval Target (ADR 0044, ADR 0066 diagnostic)
 uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --data_dir data/archive/2025-26/processed --seed_season 2024-25 --eval_target blend
 
 # Event Component gap companion (mse_share + twins)
 uv run python docs/research/champion-component-gap/runner.py
+
+# Promotion evaluation (recommendation-only evidence generation; ADR 0066)
+uv run python -m commands.evaluate_model_promotion --data_dir data/archive/2025-26/processed --seed_season 2024-25 --confirmation_data_dir data/archive/2024-25/processed --confirmation_seed_season 2023-24
+
+# Manual Champion adoption from verified evidence bundle (ADR 0066)
+uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "RFC-2026-10-29"
 ```

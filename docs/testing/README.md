@@ -33,5 +33,11 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 - **Key Concepts**:
   - Point-in-time feature isolation: features must never leak post-kickoff information into target gameweek predictions.
   - Development Season (`2025-26`): Used for parameter tuning and prototype exploration.
-  - Confirmation Season (`2024-25`): Used for un-tuned single-shot evaluation under ADR 0064.
+  - Confirmation Season (`2024-25`): Used for un-tuned single-shot evaluation under ADR 0064 and ADR 0066.
   - Sealed Holdout (`2026-27` GW6+): Strictly sealed from training/tuning.
+
+### 4. Promotion & Operator Workflow
+- **Specification**: [`operator-workflow.md`](operator-workflow.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md)
+- **Lifecycle**: `register -> capture/generate -> verify/admit -> replay -> evaluate -> recommend -> human adopt -> prospective review/rollback`.
+- **Primary Estimand**: Rolling 6-GW Strategic transfer plan net score from neutral GW1 ownership anchor.
+- **Manual Adoption**: CLI and CI are read-only; Champion adoption requires explicit verified bundle and human approval.

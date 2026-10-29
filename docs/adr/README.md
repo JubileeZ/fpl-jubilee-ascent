@@ -5,6 +5,7 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 ## Lifecycle Statuses
 
 - **Accepted**: Active architectural baseline currently enforced in production and tests.
+- **Amended**: Baseline modified or scoped by a subsequent decision while preserving core tenets.
 - **Superseded**: Historical record replaced by a newer decision (indicated with link).
 - **Proposed**: Under evaluation or awaiting formal adoption gate.
 
@@ -102,17 +103,18 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | ADR | Title | Status | Summary |
 |-----|-------|--------|---------|
 | [0038](0038-process-points-eval-target.md) | Process Points Evaluation Target | Accepted | Evaluates underlying expected points removing match-level variance noise. |
-| [0044](0044-blended-eval-target-promotion-primary.md) | Blended Eval Target as Promotion Primary | Accepted | Primary promotion metric: 50% Realized Points + 50% Process Points. |
-| [0046](0046-point-in-time-backtest-and-statistical-gate.md) | Point-in-Time Backtest & Statistical Gate | Accepted | Mandates strict zero-leakage point-in-time feature engineering and bootstrap hypothesis testing. |
-| [0047](0047-two-season-promotion-gate.md) | Two-Season Promotion Gate | Accepted | Requires candidate model to pass on Dev season (2025/26) and un-tuned Confirmation season (2024/25). |
-| [0049](0049-gate-bootstrap-060-no-min-effect.md) | Bootstrap Bar 0.60 Without Arbitrary Minimum Effect | Accepted | Adjusts confirmation bootstrap significance threshold to $P \ge 0.60$. |
-| [0054](0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) | Constrained Legal XI Regret & Playable Pool Guardrails | Accepted | Evaluates regret on £83.5m budget-constrained Formation XI; enforces playable pool guardrails. |
-| [0062](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Non-Catastrophic Segment Loss Guardrail | Accepted | Replaces majority-voting segment rule with continuous non-catastrophic loss floors. |
-| [0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Promotion Gate & Evaluation Rigor Overhaul | Accepted | Non-wrapping Moving Block Bootstrap ($L=5$), pooled 2-season stratified test, and Empirical Bayes priors. |
+| [0044](0044-blended-eval-target-promotion-primary.md) | Blended Eval Target as Promotion Primary | Superseded | Replaced as primary promotion metric by rolling replay net points in ADR 0066; retained as diagnostic. |
+| [0046](0046-point-in-time-backtest-and-statistical-gate.md) | Point-in-Time Backtest & Statistical Gate | Amended | Zero-leakage features retained; amended by ADR 0066 for rolling replay estimand and attempt registry. |
+| [0047](0047-two-season-promotion-gate.md) | Two-Season Promotion Gate | Amended | Dev and Confirmation seasons retained; amended by ADR 0066 requiring fresh registered confirmation and manual adoption. |
+| [0049](0049-gate-bootstrap-060-no-min-effect.md) | Bootstrap Bar 0.60 Without Arbitrary Minimum Effect | Superseded | Superseded by ADR 0066 search-wide family-wise error control (FWER ≤ 0.05 via Bonferroni/Holm). |
+| [0054](0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) | Constrained Legal XI Regret & Playable Pool Guardrails | Amended | Constrained XI regret and squad churn retained as fast screens; amended by ADR 0066 rolling net-score primary. |
+| [0062](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Non-Catastrophic Segment Loss Guardrail | Amended | Continuous segment loss floors integrated into ADR 0066 multi-season protocol and substantive guards. |
+| [0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Promotion Gate & Evaluation Rigor Overhaul | Amended | Warm-seeded confirmation and non-wrapping MBB (L=5) retained; amended by ADR 0066 for 4-way verdicts and manual adoption. |
+| [0066](0066-backtesting-and-promotion-foundation.md) | Backtesting and Promotion Foundation | Accepted | Primary rolling replay net FPL points, neutral GW1 anchor, substantive projection guards, 4-verdict taxonomy, immutable attempt registry, and manual adoption. |
 
 ---
 
-## Chronological Index (0001–0065)
+## Chronological Index (0001–0066)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -159,17 +161,17 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0041 | [champion-calibrated-matchup-hybrid](0041-champion-calibrated-matchup-hybrid.md) | Accepted | Modeling |
 | 0042 | [must-arms-optimal-vs-no-hit](0042-must-arms-optimal-vs-no-hit.md) | Accepted | Solver |
 | 0043 | [transfer-plan-solver-gap](0043-transfer-plan-solver-gap.md) | Superseded | Solver |
-| 0044 | [blended-eval-target-promotion-primary](0044-blended-eval-target-promotion-primary.md) | Accepted | Evaluation |
+| 0044 | [blended-eval-target-promotion-primary](0044-blended-eval-target-promotion-primary.md) | Superseded | Evaluation |
 | 0045 | [champion-face-value-challenger](0045-champion-face-value-challenger.md) | Accepted | Modeling |
-| 0046 | [point-in-time-backtest-and-statistical-gate](0046-point-in-time-backtest-and-statistical-gate.md) | Accepted | Evaluation |
-| 0047 | [two-season-promotion-gate](0047-two-season-promotion-gate.md) | Accepted | Evaluation |
+| 0046 | [point-in-time-backtest-and-statistical-gate](0046-point-in-time-backtest-and-statistical-gate.md) | Amended | Evaluation |
+| 0047 | [two-season-promotion-gate](0047-two-season-promotion-gate.md) | Amended | Evaluation |
 | 0048 | [champion-multi-feature-assist-challenger](0048-champion-multi-feature-assist-challenger.md) | Accepted | Modeling |
-| 0049 | [gate-bootstrap-060-no-min-effect](0049-gate-bootstrap-060-no-min-effect.md) | Accepted | Evaluation |
+| 0049 | [gate-bootstrap-060-no-min-effect](0049-gate-bootstrap-060-no-min-effect.md) | Superseded | Evaluation |
 | 0050 | [champion-learned-start-challenger](0050-champion-learned-start-challenger.md) | Accepted | Modeling |
 | 0051 | [champion-club-def-prior-challenger](0051-champion-club-def-prior-challenger.md) | Accepted | Modeling |
 | 0052 | [projection-parity-cli-dashboard](0052-projection-parity-cli-dashboard.md) | Accepted | Dashboard |
 | 0053 | [conservative-scenario-and-horizon-recovery](0053-conservative-scenario-and-horizon-recovery.md) | Accepted | Solver |
-| 0054 | [formation-constrained-xi-regret-and-playable-pool-guardrails](0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) | Accepted | Evaluation |
+| 0054 | [formation-constrained-xi-regret-and-playable-pool-guardrails](0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) | Amended | Evaluation |
 | 0055 | [champion-def-xg-shrink-challenger](0055-champion-def-xg-shrink-challenger.md) | Accepted | Modeling |
 | 0056 | [operational-zero-availability-hard-dnp](0056-operational-zero-availability-hard-dnp.md) | Accepted | Modeling |
 | 0057 | [zero-gap-digest-caching-3-arm-transfer-plan](0057-zero-gap-digest-caching-3-arm-transfer-plan.md) | Accepted | Solver |
@@ -177,7 +179,8 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0059 | [streamlit-transfer-planner](0059-streamlit-transfer-planner.md) | Superseded | Dashboard |
 | 0060 | [one-streamlit-dashboard](0060-one-streamlit-dashboard.md) | Accepted | Dashboard |
 | 0061 | [strategic-variance-scenario-and-unconstrained-rename](0061-strategic-variance-scenario-and-unconstrained-rename.md) | Accepted | Solver |
-| 0062 | [non-catastrophic-segment-loss-promotion-guardrail](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Accepted | Evaluation |
+| 0062 | [non-catastrophic-segment-loss-promotion-guardrail](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Amended | Evaluation |
 | 0063 | [champion-adaptive-causal-challenger](0063-champion-adaptive-causal-challenger.md) | Accepted | Modeling |
-| 0064 | [promotion-gate-and-evaluation-rigor-overhaul](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Accepted | Evaluation |
+| 0064 | [promotion-gate-and-evaluation-rigor-overhaul](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Amended | Evaluation |
 | 0065 | [strategic-arm-horizon-penalty-scaling-and-ft-schedule](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) | Accepted | Solver |
+| 0066 | [backtesting-and-promotion-foundation](0066-backtesting-and-promotion-foundation.md) | Accepted | Evaluation |

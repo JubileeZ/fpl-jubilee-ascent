@@ -1,5 +1,7 @@
 # Point-in-time backtest features, statistical promotion gate, sealed holdout
 
+**Status**: Accepted; amended by [ADR 0049](0049-gate-bootstrap-060-no-min-effect.md), [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md), and [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Point-in-time feature isolation retained; rolling replay net score primary; attempt registry and 4-way scientific verdicts).
+
 **Amended by ADR 0049**: bootstrap bar 0.95 → 0.60 (both promotion seasons); minimum effect 1% → none (delta > 0).
 
 Archive `players.parquet` holds season-end values; backtests without Availability Snapshot now build as-of metadata: price (`now_cost`) and club from each player's last pre-target performance row (first recorded row when none), and season-total / availability / set-piece-order columns (`TERMINAL_PLAYER_COLUMNS`) dropped; any as-of build caps history at `as_of_gw` (no whole-season fallback when deadline missing). Live projections unchanged.

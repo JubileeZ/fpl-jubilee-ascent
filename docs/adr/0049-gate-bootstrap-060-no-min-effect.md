@@ -1,5 +1,7 @@
 # Promotion gate: bootstrap bar 0.60 both seasons, no minimum effect
 
+**Status**: Superseded by [ADR 0066](0066-backtesting-and-promotion-foundation.md) (single-season P ≥ 0.60 gate replaced by search-wide family-wise error rate control FWER ≤ 0.05 via Bonferroni/Holm and non-wrapping Moving Block Bootstrap on rolling replay net score).
+
 Amends ADR 0046 (bar 0.95, min effect 1%), ADR 0047 (two-season gate), ADR 0048 (confirmation bar 0.60, dev 0.95). Historical Promotion Gate on 2025-26 development season and 2024-25 confirmation season:
 
 - block-bootstrap P(delta > 0) ≥ **0.60** both seasons (`BOOTSTRAP_MIN_P` = `CONFIRMATION_BOOTSTRAP_MIN_P` = 0.60, `backtesting/promotion.py`);

@@ -275,3 +275,18 @@ Named-team review round 1:
 Parent final validation: 7 focused tests passed (0.03s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: legacy candidate ledger audit tool, companion CSV, markdown report, and lock preservation verification. All Phase 12 checklist items complete. Documentation and workflow/skill migration remain Phase 13 responsibility.
+
+## Phase 13 — documentation and workflow/skill migration accepted
+
+Baseline: `f5e71b7e`. Team: `phase_13_implement`, `phase_13_review_standards` + `phase_13_review_spec`.
+
+Scope: adopt durable documentation and workflow/skill migration. Drafted and accepted ADR 0066 (`docs/adr/0066-backtesting-and-promotion-foundation.md`) documenting rolling replay net score primary, neutral GW1 anchor, substantive projection non-inferiority guards, 4-verdict taxonomy, immutable attempt registry, and manual adoption authority. Explicitly supersedes conflicting parts of ADR 0044 & ADR 0049; amends ADR 0046, ADR 0047, ADR 0054, ADR 0062, and ADR 0064; reconciles ADR 0020 first-half diagnostic; freezes ADR 0065 Strategic arm constants; retains sealed 2026-27 GW6+ boundary. Updated `docs/adr/README.md`, `docs/research/INDEX.md` Eval canon, `docs/testing/archive-testing.md`, `docs/rules/README.md`, `CONTEXT.md` domain definitions, `.agents/skills/explore-candidate/SKILL.md`, `.agents/skills/ideate-candidate/SKILL.md`, and `generate_prompt.py`. Authored comprehensive `docs/testing/operator-workflow.md` documenting end-to-end operator lifecycle and updated root `README.md`.
+
+Named-team review round 1:
+- Standards findings: conditional on 2 P2s (unescaped LaTeX in `generate_prompt.py:357`; broken link in `docs/rules/README.md`) and 5 P3s (Amended status definition in `docs/adr/README.md`, ADR 0066 hyperlinks, considered options section, ideate-candidate skill references and absolute paths). All 2 P2s and 5 P3s repaired immediately.
+- Spec findings: accepted with all checklist items fulfilled and verified. Recommended reciprocal backlinks in amended ADRs, updating README CLI snippet, and updating ideate-candidate headings, all of which were resolved.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 44 foundation tests passed (1.46s); full suite 869 tests passed; Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: ADR 0066, ADR updates, Eval canon update, domain terms, operator workflow, and explore/ideate skill migration. All Phase 13 checklist items complete. Final delivery validation, cleanup, and plan deletion remain Phase 14 responsibility.

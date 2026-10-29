@@ -1,5 +1,7 @@
 # Promotion Gate: Formation-Constrained Legal XI Regret and Playable-Pool Guardrails
 
+**Status**: Accepted; amended by [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) and [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Formation XI regret and squad churn preserved as fast development screens; rolling transfer plan net score is primary authority).
+
 Amends ADR 0044 (Blended Eval Target primary), ADR 0046 (point-in-time gate), ADR 0049 (bootstrap bar 0.60, delta > 0).
 
 ## Context

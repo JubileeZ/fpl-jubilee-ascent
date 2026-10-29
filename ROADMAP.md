@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 12 complete; Phase 13 ready**
+## Current Project Status: **Backtesting foundation Phase 13 complete; Phase 14 ready**
 
 ### Backtesting/promotion foundation — implementation in progress
 
@@ -31,8 +31,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 - Phase 9 committed `d3f1d72b`: confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
 - Phase 10 committed `4157dd35`: prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
 - Phase 11 committed `e803e2fc`: unify recommendation paths and require manual adoption; both reviews accepted, 8 unit tests pass, Ruff clean, Pyright clean.
-- Phase 12 complete: audit legacy verdicts using recorded evidence only; both reviews accepted, 7 unit tests pass, companion CSV/markdown generated, Ruff clean, Pyright clean.
-- [ ] Phase 13: adopt durable documentation and workflow/skill migration.
+- Phase 12 committed `f5e71b7e`: audit legacy verdicts using recorded evidence only; both reviews accepted, 7 unit tests pass, companion CSV/markdown generated, Ruff clean, Pyright clean.
+- Phase 13 complete: adopt durable documentation and workflow/skill migration; ADR 0066 accepted, operator workflow documented, skill migration complete; both reviews accepted.
+- [ ] Phase 14: delivery validation, cleanup, and plan deletion.
 - Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
 - Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; push authorized per phase by user goal request. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
 

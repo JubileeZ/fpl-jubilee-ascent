@@ -343,11 +343,13 @@ Live `refresh_data` pins Official FPL into `data/archive/<season>/` (Live Season
 
 ### 10. Compare and promote models
 
-Read-only Comparison Slate scorecard, then optional Champion write:
+Read-only Comparison Slate scorecard and promotion evaluation (ADR 0066), followed by manual adoption if recommended:
 
 ```bash
 uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed
-uv run python -m commands.evaluate_model_promotion --apply --gw_range 1-38 --data_dir data/archive/2025-26/processed
+uv run python -m commands.evaluate_model_promotion --gw_range 1-38 --data_dir data/archive/2025-26/processed
+# Manual Champion adoption from verified evidence bundle (requires explicit human approval reference):
+# uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "RFC-YYYY-MM-DD"
 ```
 
 First-Half Transfer Plan Walk-Forward ranking (needs 2024-25 seed; otherwise prints a blocked summary):

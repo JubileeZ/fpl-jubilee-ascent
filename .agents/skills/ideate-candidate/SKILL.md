@@ -5,7 +5,7 @@ description: Generates point-in-time candidate ideation prompts for frontier lan
 
 # Ideate Candidate
 
-Orchestrates external frontier model ideation for FPL projection candidates. Dynamically constructs point-in-time prompt briefs reflecting current Champion state, ADR 0064 promotion gate standards, and the Candidate Ledger. Ingests structured proposals directly into the primary work queue for [`explore-candidate`](../explore-candidate/SKILL.md).
+Orchestrates external frontier model ideation for FPL projection candidates. Dynamically constructs point-in-time prompt briefs reflecting current Champion state, ADR 0066 backtesting and promotion foundation standards, and the Candidate Ledger. Ingests structured proposals directly into the primary work queue for [`explore-candidate`](../explore-candidate/SKILL.md).
 
 ## Quickstart
 
@@ -30,7 +30,7 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py path/to/external_r
 Run `generate_prompt.py` to assemble a fresh prompt reflecting active repo reality:
 - Active Champion from `config/model_selection.json`
 - Active dead levers dynamically filtered from `docs/research/candidate-ledger/candidate_ledger.csv` by subsystem focus area (`revisit_after > today` or `never`), enforcing the 1-year retest moratorium
-- Reformed Promotion Gate standards from `backtesting/promotion.py` (ADR 0064: £83.5m Constrained Formation XI, non-wrapping Moving Block Bootstrap $L=5$, $\sqrt{n_s}$-scaled segment floors, squad churn limit)
+- Promotion Gate standards from `backtesting/rolling_replay.py` and `backtesting/evidence_statistics.py` (ADR 0066: actual rolling transfer plan net score primary, paired non-wrapping MBB $L=5$ with $\text{FWER} \le 0.05$, substantive projection non-inferiority guards, and ADR 0064 £83.5m Constrained Formation XI screen)
 
 Supported `--focus` modes:
 - `general`: Comprehensive architectural sweep across minutes and event rates, with cross-cutting structural dead levers and active dead summary counts.
@@ -40,7 +40,7 @@ Supported `--focus` modes:
 - `goalkeepers`: Focuses on shot threat distance vs. save volume and clean-sheet variance with goalkeeper/defensive dead levers.
 - `budget-enablers`: Focuses on £4.5m–£5.5m asset valuation under the £83.5m team cap with structural/valuation dead levers.
 
-Generated output is written to [`docs/research/candidate-ideation/candidate_model_ideation_prompt.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/research/candidate-ideation/candidate_model_ideation_prompt.md).
+Generated output is written to [`docs/research/candidate-ideation/candidate_model_ideation_prompt.md`](docs/research/candidate-ideation/candidate_model_ideation_prompt.md).
 
 ### 2. Dispatch to External Model
 
@@ -62,8 +62,8 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py docs/research/cand
 1. Parses candidate mechanisms, parameter grids, and affected components.
 2. Checks each proposal against dead levers in `candidate_ledger.csv`. If a mechanism matches a known dead archetype, it tags the entry as `dead-match` and embeds an explicit `## Ledger Audit & Revisit Justification` block.
 3. If Section 9 (Python Code Skeleton) is omitted or lacks code, automatically synthesizes a valid `DefXgShrinkChallengerModel` subclass skeleton with typed `__init__` arguments derived from the parameter grid.
-4. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](file:///home/jubileez/fpl-jubilee-ascent/docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
-5. Appends index rows with `status: untested` (or `status: dead-match` if matching an active dead lever) to [`docs/research/candidate-ideation/idea_queue.csv`](file:///home/jubileez/fpl-jubilee-ascent/docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
+4. Atomically dual-writes the candidate specification dossier to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](docs/research/candidate-ideation/ideas/) with YAML frontmatter, complete LaTeX formulations, and Python code skeletons.
+5. Appends index rows with `status: untested` (or `status: dead-match` if matching an active dead lever) to [`docs/research/candidate-ideation/idea_queue.csv`](docs/research/candidate-ideation/idea_queue.csv) with relative `spec_path` pointers for consumption by `explore-candidate`.
 
 #### Path B: Agent-Assisted Fallback Ingest (Unstructured / Conversational)
 Free-form, conversational, or zero-regex-match response:
@@ -77,4 +77,4 @@ Free-form, conversational, or zero-regex-match response:
 
 ### 4. Automated Execution via `explore-candidate`
 
-Once `idea_queue.csv` holds untested rows, invoking [`/explore-candidate`](../explore-candidate/SKILL.md) automatically consumes this queue by default, smoke-testing variants and evaluating winners against the ADR 0064 Historical Promotion Gate.
+Once `idea_queue.csv` holds untested rows, invoking [`/explore-candidate`](../explore-candidate/SKILL.md) automatically consumes this queue by default, smoke-testing variants and evaluating winners against the ADR 0066 Historical Promotion Gate.

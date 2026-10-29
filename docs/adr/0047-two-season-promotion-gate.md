@@ -1,5 +1,7 @@
 # Two-season promotion gate; sealed holdout becomes post-promotion check
 
+**Status**: Accepted; amended by [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) and [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Two-season evaluation retained; automatic promotion eliminated; fresh registered confirmation and manual adoption required).
+
 Amends ADR 0046 promotion order. **Amended by ADR 0048**: 2024-25 bootstrap bar 0.60. **Amended by ADR 0049**: bootstrap bar 0.60 on both seasons; minimum effect removed. Frozen Candidate promotes when it passes Historical Promotion Gate (ADR 0046 rules unchanged: Blended `top_11_regret`, delta ≥ 1% Champion regret (removed, ADR 0049), 3-GW block-bootstrap P ≥ 0.95 (0.60 per ADR 0049), ≥2/3 segments, guardrail tolerances) on **both** seasons:
 
 1. 2025-26 GW1–38, seed 2024-25 (development season; selection + tuning here only).

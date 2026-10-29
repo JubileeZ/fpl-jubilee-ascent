@@ -24,7 +24,7 @@ Transfer Plan Scenarios refine the **Strategic** arm (ADR 0061) by scaling one-o
 4. **Strategic Audit**:
    - `meta["strategic_audit"]` reports `horizon_scale`, effective hit hurdle ($4.0 + \lambda_{\text{hit}}(H)$), and the active `ft_schedule`.
 
-**Status:** Proposed. Amends ADR 0061.
+**Status:** Accepted (frozen research baseline in [ADR 0066](0066-backtesting-and-promotion-foundation.md)). Amends ADR 0061.
 
 **Considered:**
 - *Non-linear injury risk penalty*: Scale FT value dynamically with squad doubtful count. Deferred: requires coupling solver state with dynamic injury news priors; static diminishing schedule provides clean linear MILP formulation.

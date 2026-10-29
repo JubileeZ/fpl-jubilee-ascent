@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Explore Candidate
 
-Goal: replace Model Champion (`config/model_selection.json` `champion`) with Candidate that passes Historical Promotion Gate on both ADR 0047 seasons.
+Goal: replace Model Champion (`config/model_selection.json` `champion`) with Candidate that achieves scientific verdict PASS on Historical Promotion Gate (ADR 0066).
 
 ## Run contract (AFK by default)
 
@@ -27,7 +27,7 @@ LLM references in prompts, reports, filenames, and documentation: specialist rol
   3. Queue rows `status` = `in-progress-b<N>` = resume batch N first, before new rows.
   4. Champion (`config/model_selection.json`) differs from packet's recorded Champion → prior smoke rows = hints only; re-smoke on new Champion.
 - **Never block mid-run.** No `AskQuestion` before Exit. Decision needing human → append to `## Human Queue` (question · options · default taken · evidence path) → take default → continue. Harness/gate crash (traceback, not verdict) ≠ FAIL: queue traceback + command, no ledger verdict; blocks that step only.
-- **Human Gates** (queue only; AFK never executes): `config/model_selection.json` edit · `commands.evaluate_model_promotion --apply` · Dead-row override · commit / push · Champion-change ADR acceptance (draft allowed, status Proposed).
+- **Human Gates** (queue only; AFK never executes): `config/model_selection.json` edit · `commands.evaluate_model_promotion --adopt` · Dead-row override · commit / push · Champion-change ADR acceptance (draft allowed, status Proposed).
 - **Progress guard.** Lane closes after 2 consecutive rounds with no new best `combined_delta`. Mechanism already in lane CSVs or ledger never re-smoked. All lanes closed → Exit.
 - **Exit.**
   - (a) Candidate frozen + dev PASS + confirm PASS → Human Queue holds adoption → goal complete.
@@ -197,7 +197,8 @@ From winning prototype:
    - Lever depends on scoring rule absent in confirm season (e.g. defcon points, BPS weights) → skip confirm (uninformative); Human Queue "holdout-first per ADR 0046; wait holdout GW6+"; Exit (c).
 3. PASS both → Human Queue adoption bundle:
    - add Candidate first in `config/model_selection.json` `candidates`;
-   - `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/<confirm season>/processed --confirmation --apply` — deterministic replay of same gate (bootstrap seed 0), not new look; verdict must match smoke confirm row;
+   - `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/<dev season>/processed --seed_season <dev seed> --confirmation_data_dir data/archive/<confirm season>/processed --confirmation_seed_season <confirm seed>` — deterministic evaluation producing verified evidence bundle JSON with scientific verdict 'pass';
+   - manual adoption command: `uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "<user_ref>"`;
    - draft ADR (status Proposed, pattern ADR 0045) + catalog Role update + INDEX entry;
    - post-promotion holdout check once holdout GW6+ finished (`--data_dir data/archive/<holdout season>/processed --seed_season <dev season> --gw_range 6-<last finished>`); FAIL → revert on user's words.
 
