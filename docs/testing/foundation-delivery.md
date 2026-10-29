@@ -200,3 +200,18 @@ Named-team re-review round 2:
 Parent final validation: 7 focused tests passed (0.49s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: bounded development profiling engine, paired quality probes, action sensitivity analysis, telemetry capture, and empirical season workload projection. All 8 Phase 7 checklist items complete. Numerical protocol calibration and approval remains Phase 8 responsibility.
+
+## Phase 8 — numerical and statistical protocol accepted
+
+Baseline: `e171dc23`. Team: `phase_08_implement`, `phase_08_review_standards` + `phase_08_review_spec`.
+
+Scope: numerical and statistical evaluation protocol (`backtesting/evidence_statistics.py`, `tests/test_evidence_statistics.py`). Continuous net-score estimand under Strategic policy and neutral GW1 anchor; per-season and segment/state material-loss limits; paired calendar dependence with non-wrapping Moving Block Bootstrap (MBB) preserving serial autocorrelation; stored-score resampling without solver calls per bootstrap draw; search-wide family-wise error control (Q17) with Bonferroni/Holm adjustments; multi-season normalized weighting; four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); routing inconclusive uncertainty and unconfirmed development evidence to registered fresh confirmation; integration with substantive projection guards; AR(1) simulation calibration diagnostic; and concrete Q21 practical units proposal with deterministic SHA256 protocol hash and explicit human approval barriers.
+
+Named-team review round 1:
+- Standards findings: accepted with two P3 advisories (clarified degenerate-sample fallback when `n <= block_size`; added fail-closed range validation `1 <= gameweek <= 38` in `assign_gameweek_segment`).
+- Spec findings: accepted with all checklist items fulfilled and verified across 13 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 13 focused tests passed (0.95s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: numerical and statistical evaluation protocol, non-wrapping block bootstrap, stored-score resampling, family-wise error control, four-way scientific verdicts, and Q21 protocol configuration proposal. All Phase 8 checklist items complete. Confirmation admission and immutable attempt registry remain Phase 9 responsibility.
