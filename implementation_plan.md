@@ -1,16 +1,16 @@
 # Backtesting and promotion foundation implementation plan
 
-Status: **IN PROGRESS**. Prepared 2026-10-29 against repository `66729b15`; implementation authorized 2026-10-29. Terra Medium implements phases; Sol xhigh reviews. Commit each completed phase on current branch; no push. Unchecked items remain pending; scientific/human approval boundaries still apply.
+Status: **PAUSED FOR HANDOFF DURING PHASE 3**. Prepared 2026-10-29 against repository `66729b15`; implementation authorized 2026-10-29. Resume from `.agents/work-packets/backtesting-promotion-foundation.md`. Commit each completed phase on current branch; no push. Unchecked items remain pending; scientific/human approval boundaries still apply.
 
 ## Execution status and phase teams
 
 - Phase 0: complete; local commit `a96af707`.
 - Phase 1: synthetic admission engineering committed `d4536c42`; accepted by Standards and Spec, 61 focused passes, lint/type checks clean, full checkpoint 753 passes plus accepted timing exception. Explicit empirical/native/integration follow-through remains unchecked below.
-- Phase 2: both review axes accepted; 139 focused passes, 772 full-suite passes, Ruff/new-core types clean. Scoped native engineering accepted; empirical/calendar/solver integration limits explicit. Phase 3 next.
-- Phases 3–14: not started.
-- Exactly three agents per phase from Phase 1 reset: `phase_NN_implement` = GPT-6.1 Terra Medium; `phase_NN_review_standards` and `phase_NN_review_spec` = GPT-6.1 Sol xhigh. Fresh names/team for each phase; no reuse across phases.
-- Progress states: implementing -> independent Standards/Spec reviews -> repair findings -> validation -> local commit. Record findings, validation and commit in durable delivery record; update checklist/current-state at each transition. No push.
-- Current team: `phase_02_implement`, `phase_02_review_standards`, `phase_02_review_spec`. Phase 1 team completed; earlier reused names retired. Preserve explicit follow-through and review provenance.
+- Phase 2: committed `d8fa3ad6`; both review axes accepted, 139 focused and 772 full-suite passes, Ruff/new-core types clean. Scoped empirical/calendar/solver limits explicit.
+- Phase 3: unfinished work checkpoint from `d8fa3ad6`; causal forecasts/export/cache/resume drafts retained. Not accepted or phase-complete. Session stopped at user request; see handoff packet for defects and next steps.
+- Phases 4–14: not started.
+- Progress states: implement -> review against repository standards and agreed specification -> repair findings -> validation -> local commit. Record findings, validation and commit in durable delivery record; update checklist/current-state at each transition. No push.
+- Execution workflow chosen by next session. Resume from repository files; no dependency on this chat or its runtime.
 
 Draft author: GPT-6.1 Sol subagent, xhigh reasoning; parent review checked dependencies, source seams, approval boundaries, and completion/deletion criteria.
 

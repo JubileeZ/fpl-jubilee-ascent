@@ -12,6 +12,7 @@ from backtesting.admission_fixtures import (
     assess_fixture_coverage,
     assess_issue_fixture_coverage,
 )
+from backtesting.season_rules import get_rules
 
 
 @dataclass(frozen=True)
@@ -320,7 +321,7 @@ def assess_origins(
         raise ValueError("Missing authority closure")
     try:
         authority = json.loads(authority_raw)
-        if authority["version"] != 1:
+        if authority["version"] not in (1, 2):
             raise ValueError("Unknown authority version")
     except (ValueError, TypeError, KeyError):
         raise ValueError("Invalid authority closure") from None
@@ -485,8 +486,14 @@ def assess_origins(
             issue_package = {
                 key: origin[key] for key in ("players", "fixtures", "schedule")
             }
+            try:
+                expected_rules = "synthetic-rules-v1" if authority["version"] == 1 else get_rules(season).rules_id
+                rules_authorized = authority["version"] == 1 or authority.get("native_rules") == expected_rules
+            except ValueError:
+                expected_rules, rules_authorized = "", False
             if (
-                origin["native_rules"] != "synthetic-rules-v1"
+                origin["native_rules"] != expected_rules
+                or not rules_authorized
                 or request["mode"] != "synthetic"
                 or origin["chip_policy"] != "no_assistant_manager"
             ):

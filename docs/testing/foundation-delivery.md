@@ -55,3 +55,23 @@ Final named-team reviews: Standards accepted, Spec accepted; shared outcome vali
 Accepted engineering scope: mandatory decision pre-state/deadline binding; immutable season/deadline-scoped shared outcomes; native financial/FT/chip/lineup transitions; strict native observed conversion and actual-component propagation; legal GW1 BB/TC with ownership lock. Historical card-only/inherited-club exceptions fail closed; native rule/calendar/source applicability and MILP integration still require admitted adapters before empirical use. No actual season replay or promotion.
 
 Phase 2 final checkpoint: full stable-code suite **772 passed**, two existing constant-input correlation warnings; timing benchmark passed, no exception used. Focused suite 139 passed; Ruff clean; new-core/test Pyright 0 errors. Both named review axes accepted. Eight Phase 2 checklist items complete; causal shared-calendar/source construction remains explicit Phases 3/5/8 follow-through. Phase 1 native-rule registration item resolved; remaining empirical/source/adapter conditions unchanged. No Champion/config change, archive/sealed mutation, or push.
+
+Phase 2 commit: `d8fa3ad6`; working tree clean immediately afterward.
+
+## Phase 3 — implementation active
+
+Baseline: `d8fa3ad6`. Team: `phase_03_implement` (GPT-6.1 Terra Medium), `phase_03_review_standards` + `phase_03_review_spec` (GPT-6.1 Sol xhigh). Exactly three fresh phase agents; both reviewers prepared/idle until ready.
+
+Scope: causal issue × target × fixture/player forecasts, retained source/training/dirty-code identity, native-context bridge, strict export, atomic immutable cache/problem/checkpoint/resume. `BaseModel` exposes only `predict`; no public-fit/cache claim without actual adapter support. Initial explicit issue-context and strict coverage/export slices pass two focused tests; producer/source closure/store incomplete, no acceptance. Actual historical input packages remain unadmitted; no real-season generation/MILP/promotion.
+
+Implementation progress: synthetic v2 training authority retains canonical source bytes, verifies current-history cutoff, prior-season seed mapping and club coverage. Explicitly proved seed absence allowed for newcomers; no fabricated historical observations. Snapshot-backed adapter now exercises fresh concrete `DefXgShrinkChallengerModel`, fits verified current history once, then predicts six targets from one issue. Implementer reports 30 focused passes, Ruff/new-core types clean; parent final validation pending. Material publication, component policy, complete solver export and problem/checkpoint/resume still incomplete. Both review agents remain prepared/idle; no phase acceptance or commit.
+
+### User-requested stop and handoff — 2026-10-29
+
+Implementation stopped during unfinished Phase 3. Draft forecast identity/store, solver export and replay problem/checkpoint code retained; no acceptance or completed-phase review. Handoff packet records exact inventory, defects, resume order, commands, approval boundaries and temporary-file cleanup. `.agents/handoff-pointer` selects `backtesting-promotion-foundation`. Next session chooses execution workflow; no dependency on prior chat/runtime.
+
+Stopped-code validation: Ruff passes; five current Phase 3 tests pass (5.90s). Full suite: **776 passed, one existing timing-only failure** (`test_build_causal_panel_fast_execution_and_determinism`, 1.9487s vs 1s), two existing constant-input warnings; 414.36s. Existing user-approved timing exception retained, test untouched. New Phase 3/test Pyright: **three errors** in `tests/test_replay_cache.py` at lines 34/36/39, context-dict invariance vs `AdmissionContext`; unfinished work, no clean typing claim or waiver. Portable gate **29 passes**.
+
+Remaining: source/staging hardening; consistent declared component validation on cache loads; strict export/parser integration; identity mutation/outcome-isolation tests; multi-deadline parent/resume and corruption/interruption/concurrency tests; end-to-end synthetic verification; review and completed-phase validation. No real historical forecasts, model comparisons, MILP replay, Champion/config changes or sealed/archive mutations. Local handoff checkpoint only; no push.
+
+Task-owned `.tmp/agent/phase3-tests` removed, absence verified; unrelated exploration resume state preserved. No root walkthrough exists. Temporary plan and unfinished packet retained until full delivery; explicit checklist requires deletion of plan, finished packet, matching handoff pointer and temporary tracking references after completion. Durable research/evidence retained.

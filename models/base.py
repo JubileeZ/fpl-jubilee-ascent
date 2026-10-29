@@ -38,6 +38,18 @@ def cap_projected_minutes(row: pd.Series, expected_minutes: float) -> float:
 
 def resolve_asof_target_gw(features_df: pd.DataFrame, history_df: pd.DataFrame) -> int:
     """Resolve operational target Gameweek, advancing past finished Gameweeks in history."""
+    if "issue_gameweek" in features_df.attrs:
+        issue = features_df.attrs["issue_gameweek"]
+        if type(issue) is not int or not 1 <= issue <= 38:
+            raise ValueError("Invalid issue Gameweek")
+        targets = pd.to_numeric(features_df["gameweek_id"], errors="raise")
+        if targets.empty or targets.isna().any() or (targets % 1 != 0).any() or (targets < issue).any() or (targets > min(issue + 5, 38)).any():
+            raise ValueError("Targets outside issue horizon")
+        if not history_df.empty:
+            history = pd.to_numeric(history_df["gameweek_id"], errors="raise")
+            if history.isna().any() or (history % 1 != 0).any() or (history < 1).any() or (history >= issue).any():
+                raise ValueError("History must precede issue Gameweek")
+        return issue
     target_gw = int(pd.to_numeric(features_df["gameweek_id"]).min())
     if not history_df.empty and "gameweek_id" in history_df.columns:
         last_finished = pd.to_numeric(history_df["gameweek_id"], errors="coerce").max()
