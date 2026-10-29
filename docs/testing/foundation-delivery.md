@@ -142,3 +142,34 @@ Named-team re-review round 2 & final adjustments:
 Parent final validation: 12 integration tests passed (0.67s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: independent rolling replay engine, legality verification, solver certificates, native rule options, offline disk audit, and crash/resume handling. All 10 Phase 5 checklist items complete. Real multi-season replay runs remain subsequent phase execution.
+
+## Phase 6 — engineering accepted; numerical margins pending Phase 8
+
+Baseline: `98537076`. Team: `phase_06_implement`, `phase_06_review_standards` + `phase_06_review_spec`.
+
+Scope: substantive projection guards, component reconciliation, and staged diagnostics (`backtesting/projection_guards.py`, `tests/test_projection_guards.py`). Invariant evaluation population masks; squared-error point metrics; predeclared season/component applicability; native total-to-component ledger reconciliation under canonical ADR-0003 vocabulary and `event_points`; substantive non-inferiority claims with uncertainty; composite multi-component non-inferiority; oracle-minutes mechanism diagnosis; fast prioritization screens; and bounded Unconstrained development reversal diagnostics.
+
+Named-team review round 1:
+- Standards findings: component strings deviated from canonical ADR-0003 vocabulary (`clean_sheet`, `conceded`, `defcon`); `reconcile_total_to_ledger` reimplemented scoring multipliers rather than reusing `models.scoring_matrix.event_points`, erroneously awarding defcon points to GK; primitive obsession in loose dictionaries with ad-hoc aliases; speculative generality in unreached `ReversalDiagnostic` categories; hardcoded "95% bound" strings despite parameterized alpha.
+- Spec findings: missing horizon leads (1–6), weights, and missingness policy; missing oracle-minutes diagnostic mechanism; missing unavailable measurement distinction in applicability; missing composite multi-component non-inferiority; calibration bias non-inferiority evaluated on point estimate only, ignoring CI bounds; unpaired sequence slicing in `evaluate_non_inferiority_guard`.
+
+Repairs executed:
+- Adopted canonical ADR-0003 vocabulary (`clean_sheets`, `goals_conceded`, `defensive_contributions`) matching `models/scoring_matrix.py`.
+- Reused canonical `models.scoring_matrix.event_points(component, position, quantity, rules_version=...)` in `reconcile_total_to_ledger`, respecting GK defcon = 0.
+- Introduced typed `ComponentLedger` dataclass replacing loose dictionaries.
+- Added `EvaluationHorizonConfig` with standardized leads (1–6), geometric discount weights, and `fail_closed` missingness policy.
+- Added `evaluate_oracle_minutes_mechanism` returning `OracleMinutesDiagnostic` with explicit `diagnostic_only=True` and `is_accuracy_evidence=False`, prohibiting accuracy/promotion claims.
+- Supported `unavailable_measurement` alongside `inapplicable_season` in `declare_component_applicability`.
+- Corrected calibration bias equivalence to require the full two-sided confidence interval to lie within `[-margin, +margin]`, failing wide uncertainty.
+- Implemented `evaluate_composite_non_inferiority` verifying multi-component non-inferiority without imposing every-component improvement.
+- Supported paired series alignment on index via inner join on `pd.Series`.
+- Expanded `diagnose_unconstrained_reversal` across penalties, transfers, minutes floor, bench cover, def stack, calendar state, and solver quality.
+
+Named-team re-review round 2:
+- Standards review: ACCEPTED; 0 standards violations, 0 smells, clean interfaces, 823 full-suite tests passed.
+- Spec review: ACCEPTED; all 7 checklist items fulfilled and verified across 15 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 15 focused tests passed (0.77s); 56 related tests passed (1.43s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: substantive projection guards, component ledger reconciliation, non-inferiority evaluation, and staged diagnostics. All 7 Phase 6 checklist items complete. Numerical approval of formal margins remains Phase 8 responsibility.

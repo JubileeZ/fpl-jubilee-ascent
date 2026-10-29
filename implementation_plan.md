@@ -184,13 +184,13 @@ Dependencies: causal forecast/outcome contracts; Phase 5 for decision diagnostic
 
 Likely seams: `backtesting/walkforward.py`, `backtesting/metrics.py`, `backtesting/promotion.py`, `backtesting/process_points.py`, `features/contracts.py`, component attribution helpers; proposed `backtesting/projection_guards.py`.
 
-- [ ] Define common population, unit, horizon leads, aggregation/weights, native targets, eligibility and missingness policy for total points, expected minutes, and each measurable event component. Candidate cannot choose its own evaluation mask.
-- [ ] Retain squared-error metric appropriate to conditional-mean point forecast; report bias/calibration and useful descriptive errors. Select component metrics appropriate to target type, with formula, units, direction and ideal benchmark in durable metric definitions.
-- [ ] Declare season/component applicability before finalist. Distinguish genuinely inapplicable native component, unavailable measurement, and required-but-missing guard. Unsupported component explicitly unassessed; required missing evidence prevents Pass.
-- [ ] Reconcile total to component ledger under native scoring; verify minutes and component semantics rather than treating accounting sum as accuracy evidence. Oracle-minutes experiments diagnose mechanisms only.
-- [ ] Implement non-inferiority claims against approved meaningful margins and uncertainty procedure. Absence of statistically significant deterioration is insufficient proof of acceptable regression. Do not impose every-component improvement.
-- [ ] Separate optional cheap forecast/lineup/shared-state screens from final safeguards. Deferred or failed prioritization screen does not automatically yield demonstrated Fail/Dead Lever; allow full-replay route for mechanisms screen cannot assess.
-- [ ] Add bounded Unconstrained development diagnostic with separately reported evidence. Predeclare substantial-reversal investigation across forecasts, penalties, transfers, solver quality and state/calendar interactions. Strategic primary cannot be selected or averaged away after outcomes.
+- [x] Define common population, unit, horizon leads, aggregation/weights, native targets, eligibility and missingness policy for total points, expected minutes, and each measurable event component. Candidate cannot choose its own evaluation mask.
+- [x] Retain squared-error metric appropriate to conditional-mean point forecast; report bias/calibration and useful descriptive errors. Select component metrics appropriate to target type, with formula, units, direction and ideal benchmark in durable metric definitions.
+- [x] Declare season/component applicability before finalist. Distinguish genuinely inapplicable native component, unavailable measurement, and required-but-missing guard. Unsupported component explicitly unassessed; required missing evidence prevents Pass.
+- [x] Reconcile total to component ledger under native scoring; verify minutes and component semantics rather than treating accounting sum as accuracy evidence. Oracle-minutes experiments diagnose mechanisms only.
+- [x] Implement non-inferiority claims against approved meaningful margins and uncertainty procedure. Absence of statistically significant deterioration is insufficient proof of acceptable regression. Do not impose every-component improvement.
+- [x] Separate optional cheap forecast/lineup/shared-state screens from final safeguards. Deferred or failed prioritization screen does not automatically yield demonstrated Fail/Dead Lever; allow full-replay route for mechanisms screen cannot assess.
+- [x] Add bounded Unconstrained development diagnostic with separately reported evidence. Predeclare substantial-reversal investigation across forecasts, penalties, transfers, solver quality and state/calendar interactions. Strategic primary cannot be selected or averaged away after outcomes.
 
 Acceptance: fixture with reconciling but wrong components fails applicable guard; missing required metric cannot Pass; small uncertain differences remain distinguishable from demonstrated harm. Guard outputs contain estimates, margins, uncertainty and coverage, not only booleans.
 

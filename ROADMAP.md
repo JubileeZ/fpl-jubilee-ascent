@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 5 complete; Phase 6 ready**
+## Current Project Status: **Backtesting foundation Phase 6 complete; Phase 7 ready**
 
 ### Backtesting/promotion foundation — implementation in progress
 
@@ -24,8 +24,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 - Phase 2 committed `d8fa3ad6`: native state transitions, financial/chip accounting and explicit season scoring; both reviews accepted, 139 focused and 772 full-suite passes, Ruff/new-core types clean. Causal calendar/source integration remains explicit.
 - Phase 3 committed `2676a568`: causal issue-by-target forecasts, strict export, identity/cache/resume storage; both reviews accepted, 41 focused passes, Ruff clean, new-core types clean.
 - Phase 4 committed `324a20eb`: neutral GW1 ownership anchor construction, exact two-stage tie-breaking and freezing; both reviews accepted, 11 tests pass, Ruff clean, new-core types clean.
-- Phase 5 complete: independent rolling replay implementation and verification; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
-- [ ] Phase 6: substantive projection guards and staged diagnostics.
+- Phase 5 committed `98537076`: independent rolling replay implementation and verification; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
+- Phase 6 complete: substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
+- [ ] Phase 7: profile corrected policy within bounded development-only experiment.
 - Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
 - Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; no push. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
 
