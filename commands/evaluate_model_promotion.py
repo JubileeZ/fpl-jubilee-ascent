@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import subprocess
 import sys
@@ -127,18 +128,17 @@ def evaluate_and_apply(
                 snapshot_backed=candidate_result.snapshot_backed,
             )
         )
-        if apply and verdict.passed and not promoted:
-            updated = promote_candidate(
-                updated,
-                candidate,
-                snapshot_backed=candidate_result.snapshot_backed,
+        if verdict.passed and not promoted:
+            updated = ModelSelection(
+                champion=selection.champion,
+                candidates=selection.candidates,
+                promotion_status=f"recommend_promotion:{candidate}",
+                schema_version=selection.schema_version,
             )
             promoted = True
 
     evidence_paths = None
     if apply:
-        if promoted:
-            save_model_selection(updated, config_path)
         record = build_evidence_record(
             selection_before=selection,
             selection_after=updated,
@@ -244,18 +244,17 @@ def evaluate_and_apply_two_season(
                 snapshot_backed=snapshot_backed,
             )
         )
-        if apply and two_season.passed and not promoted:
-            updated = promote_candidate(
-                updated,
-                candidate,
-                snapshot_backed=snapshot_backed,
+        if two_season.passed and not promoted:
+            updated = ModelSelection(
+                champion=selection.champion,
+                candidates=selection.candidates,
+                promotion_status=f"recommend_promotion:{candidate}",
+                schema_version=selection.schema_version,
             )
             promoted = True
 
     evidence_paths = None
     if apply:
-        if promoted:
-            save_model_selection(updated, config_path)
         record = build_evidence_record(
             selection_before=selection,
             selection_after=updated,
@@ -267,8 +266,78 @@ def evaluate_and_apply_two_season(
     return updated, comparisons, evidence_paths
 
 
+def adopt_champion(
+    bundle_path: Path | str,
+    *,
+    config_path: Path | None = None,
+    approval_ref: str | None = None,
+    expected_current_champion: str | None = None,
+    candidate_name: str | None = None,
+) -> ModelSelection:
+    """Explicitly adopt an approved candidate as the new Model Champion with human approval."""
+    if not approval_ref or not approval_ref.strip():
+        raise ValueError("Cannot adopt candidate: missing required human approval reference")
+
+    bundle_file = Path(bundle_path)
+    if not bundle_file.is_file():
+        raise FileNotFoundError(f"Evidence bundle not found: {bundle_path}")
+
+    data = json.loads(bundle_file.read_text(encoding="utf-8"))
+
+    # Validate scientific verdict
+    verdict = (
+        data.get("scientific_verdict")
+        or data.get("verdict")
+        or ("pass" if data.get("passed") is True else None)
+    )
+    if not verdict and "comparisons" in data and data["comparisons"]:
+        comp = data["comparisons"][0]
+        verdict = "pass" if comp.get("passed") else "fail"
+
+    if verdict != "pass":
+        raise ValueError(f"Cannot adopt candidate: scientific verdict is '{verdict}', not 'pass'")
+
+    exec_status = data.get("execution_status", "complete")
+    if exec_status != "complete":
+        raise ValueError(f"Cannot adopt candidate: execution status is '{exec_status}', not 'complete'")
+
+    cand_name = candidate_name
+    if not cand_name:
+        if "comparisons" in data and data["comparisons"]:
+            cand_name = data["comparisons"][0].get("candidate")
+        elif "candidate_name" in data:
+            cand_name = data["candidate_name"]
+        elif "selection_after" in data:
+            cand_name = data["selection_after"].get("champion")
+
+    if not cand_name:
+        raise ValueError("Could not determine candidate name from evidence bundle")
+
+    selection_path = config_path or DEFAULT_CONFIG_PATH
+    current_sel = load_model_selection(selection_path)
+
+    if expected_current_champion and current_sel.champion != expected_current_champion:
+        raise ValueError(
+            f"Current Champion mismatch: expected '{expected_current_champion}', found '{current_sel.champion}'"
+        )
+
+    if cand_name == current_sel.champion:
+        raise ValueError(f"Candidate '{cand_name}' is already the active Model Champion")
+
+    snapshot_backed = bool(data.get("snapshot_backed", True))
+    updated = promote_candidate(current_sel, cand_name, snapshot_backed=snapshot_backed)
+    save_model_selection(updated, selection_path)
+    logger.info(
+        "Successfully adopted candidate '%s' as Model Champion (approval: %s, former: %s)",
+        cand_name,
+        approval_ref,
+        current_sel.champion,
+    )
+    return updated
+
+
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Evaluate and apply Automatic Historical Promotion.")
+    parser = argparse.ArgumentParser(description="Evaluate candidate models and manage manual promotion adoption.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
     parser.add_argument("--gw_range", type=str, default="1-38")
     parser.add_argument("--data_dir", type=str, default="data/processed")
@@ -276,10 +345,39 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--snapshot_root", type=str, default=None)
     parser.add_argument("--season", type=str, default=None)
     parser.add_argument("--require_snapshots", action="store_true")
-    parser.add_argument("--apply", action="store_true", help="Update Comparison Slate when gate passes")
+    parser.add_argument("--apply", action="store_true", help="Produce evidence record for evaluation (read-only for Champion config)")
     parser.add_argument("--confirmation", action="store_true", help="Confirmation season gate: bootstrap bar 0.65 (ADR 0064)")
     parser.add_argument("--two_season", action="store_true", help="Evaluate 2-season gate (Dev 2025-26 + Conf 2024-25 with pooled stratified bootstrap >= 0.85)")
+    parser.add_argument("--adopt", type=Path, default=None, help="Explicitly adopt a candidate from verified evidence bundle")
+    parser.add_argument("--approval_ref", type=str, default=None, help="Human approval reference for manual adoption")
+    parser.add_argument("--expected_champion", type=str, default=None, help="Expected current champion name for safe adoption")
     args = parser.parse_args(argv)
+
+    if args.adopt is not None:
+        if not args.approval_ref:
+            print("[ERROR] Manual adoption requires --approval_ref <ref>", file=sys.stderr)
+            sys.exit(1)
+        try:
+            updated = adopt_champion(
+                bundle_path=args.adopt,
+                config_path=args.config,
+                approval_ref=args.approval_ref,
+                expected_current_champion=args.expected_champion,
+            )
+            print("\n" + "=" * 60)
+            print("MANUAL CHAMPION ADOPTION COMPLETED")
+            print("=" * 60)
+            print(f"New Champion    : {updated.champion}")
+            print(f"Candidates      : {', '.join(updated.candidates) or 'none'}")
+            print(f"Approval Ref    : {args.approval_ref}")
+            print("=" * 60 + "\n")
+            return
+        except Exception as exc:
+            print(f"[ERROR] Adoption failed: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+    if args.apply:
+        print("[NOTICE] --apply in evaluation is read-only for Model Champion. Evidence is recorded; selection config is untouched.")
 
     start_gw, end_gw = _parse_gw_range(args.gw_range)
     snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None

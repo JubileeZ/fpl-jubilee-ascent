@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 10 complete; Phase 11 ready**
+## Current Project Status: **Backtesting foundation Phase 11 complete; Phase 12 ready**
 
 ### Backtesting/promotion foundation — implementation in progress
 
@@ -29,8 +29,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 - Phase 7 committed `e171dc23`: transfer plan replay profiler; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
 - Phase 8 committed `4f56e975`: numerical and statistical protocol; both reviews accepted, 13 unit tests pass, Ruff clean, Pyright clean.
 - Phase 9 committed `d3f1d72b`: confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
-- Phase 10 complete: prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
-- [ ] Phase 11: unify recommendation paths and require manual adoption.
+- Phase 10 committed `4157dd35`: prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- Phase 11 complete: unify recommendation paths and require manual adoption; both reviews accepted, 8 unit tests pass, Ruff clean, Pyright clean.
+- [ ] Phase 12: audit legacy verdicts using recorded evidence only.
 - Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
 - Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; push authorized per phase by user goal request. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
 

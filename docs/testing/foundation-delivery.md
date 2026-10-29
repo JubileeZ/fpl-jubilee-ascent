@@ -245,3 +245,18 @@ Named-team review round 1:
 Parent final validation: 7 focused tests passed (0.03s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: prospective capture, dual shadow replay state transitions, outcome finalization enforcement, fixed live review points, and rollback recommendations. All Phase 10 checklist items complete. Unified recommendation and manual adoption remain Phase 11 responsibility.
+
+## Phase 11 — unified recommendation paths and manual adoption accepted
+
+Baseline: `4157dd35`. Team: `phase_11_implement`, `phase_11_review_standards` + `phase_11_review_spec`.
+
+Scope: unified recommendation paths and manual adoption (`commands/evaluate_model_promotion.py`, `tests/test_evaluate_model_promotion.py`). Evaluation pipelines and `--apply` made strictly read-only with respect to Model Champion selection; computed Pass produces evidence records without disk configuration mutation; explicit `adopt_champion` function requiring verified evidence bundle with scientific verdict 'pass', complete execution status, non-empty human approval reference, and expected current champion match; CLI supports `--adopt <bundle_path> --approval_ref <ref> [--expected_champion <champ>]`; CI workflow configured read-only without commit/push authority.
+
+Named-team review round 1:
+- Standards findings: accepted with two P3 advisories (moved dynamic `json` in `adopt_champion` to top level; cleaned up redundant test-level imports).
+- Spec findings: accepted with all checklist items fulfilled and verified across 8 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 8 focused tests passed (0.85s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: recommendation-only evaluation routes, explicit manual adoption with human approval reference and champion match validation, and CLI adoption interface. All Phase 11 checklist items complete. Legacy verdicts audit remains Phase 12 responsibility.

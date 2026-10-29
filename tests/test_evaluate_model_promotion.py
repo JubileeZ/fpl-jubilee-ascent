@@ -1,11 +1,13 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from backtesting.promotion import CONFIRMATION_BOOTSTRAP_MIN_P
 from backtesting.walkforward import WalkforwardResult
-from commands.evaluate_model_promotion import evaluate_and_apply
+from commands.evaluate_model_promotion import adopt_champion, evaluate_and_apply
 from models.selection import ModelSelection, load_model_selection, save_model_selection
 
 
@@ -60,7 +62,7 @@ def _result(model_name: str, *, worse: bool) -> WalkforwardResult:
     )
 
 
-def test_evaluate_and_apply_promotes_clear_candidate(tmp_path: Path) -> None:
+def test_evaluate_and_apply_recommends_without_mutating_selection(tmp_path: Path) -> None:
     config_path = tmp_path / "model_selection.json"
     save_model_selection(
         ModelSelection(
@@ -88,10 +90,87 @@ def test_evaluate_and_apply_promotes_clear_candidate(tmp_path: Path) -> None:
             apply=True,
         )
 
-    assert updated.champion == "participation_state_hybrid"
+    # Evaluation is read-only: Champion on disk is untouched
+    assert load_model_selection(config_path).champion == "metrics_component_hybrid"
+    assert "recommend_promotion" in updated.promotion_status
     assert comparisons[0].verdict.passed
     assert evidence_paths is not None
-    assert load_model_selection(config_path).champion == "participation_state_hybrid"
+
+
+def test_adopt_champion_with_valid_bundle(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="former_champ",
+            candidates=("new_candidate",),
+        ),
+        config_path,
+    )
+
+    bundle_path = tmp_path / "valid_bundle.json"
+    bundle_data = {
+        "scientific_verdict": "pass",
+        "execution_status": "complete",
+        "candidate_name": "new_candidate",
+        "snapshot_backed": True,
+    }
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+
+    updated = adopt_champion(
+        bundle_path=bundle_path,
+        config_path=config_path,
+        approval_ref="HUMAN-APPROVAL-20261029",
+        expected_current_champion="former_champ",
+    )
+
+    assert updated.champion == "new_candidate"
+    assert load_model_selection(config_path).champion == "new_candidate"
+
+
+def test_adopt_champion_fails_on_inconclusive_or_failing_verdict(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(ModelSelection(champion="champ", candidates=("cand",)), config_path)
+
+    bundle_path = tmp_path / "inconclusive_bundle.json"
+    bundle_data = {
+        "scientific_verdict": "inconclusive",
+        "execution_status": "complete",
+        "candidate_name": "cand",
+    }
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="scientific verdict is 'inconclusive', not 'pass'"):
+        adopt_champion(
+            bundle_path=bundle_path,
+            config_path=config_path,
+            approval_ref="APR-01",
+        )
+
+
+def test_adopt_champion_fails_on_missing_approval_or_mismatch(tmp_path: Path) -> None:
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(ModelSelection(champion="champ", candidates=("cand",)), config_path)
+
+    bundle_path = tmp_path / "pass_bundle.json"
+    bundle_data = {
+        "scientific_verdict": "pass",
+        "execution_status": "complete",
+        "candidate_name": "cand",
+    }
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+
+    # Missing approval ref
+    with pytest.raises(ValueError, match="missing required human approval reference"):
+        adopt_champion(bundle_path=bundle_path, config_path=config_path, approval_ref="")
+
+    # Expected champion mismatch
+    with pytest.raises(ValueError, match="Current Champion mismatch"):
+        adopt_champion(
+            bundle_path=bundle_path,
+            config_path=config_path,
+            approval_ref="APR-01",
+            expected_current_champion="different_champ",
+        )
 
 
 def test_evaluate_and_apply_forwards_confirmation_bootstrap_bar(tmp_path: Path) -> None:
