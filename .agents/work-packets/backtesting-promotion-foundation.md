@@ -1,17 +1,17 @@
 # Active Task: Backtesting and promotion foundation
 
-- **Status:** In progress — Phase 9 complete, ready for Phase 10
+- **Status:** In progress — Phase 10 complete, ready for Phase 11
 - **Objective:** Implement temporary implementation_plan.md phase by phase; preserve Q1-Q28 and manual scientific approvals.
 - **Acceptance:** Verified infrastructure and per-phase commits; push per phase; plan deleted only after delivery acceptance.
 - **Issue/Ticket:** implementation_plan.md; docs/research/backtesting-promotion-foundation/backtesting-promotion-foundation.md
 
 ## Work Packet (SFDBN)
 
-- **Status:** Phases 0-8 committed. Phase 9 engineering completed, both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
-- **Files:** backtesting/confirmation_registry.py; tests/test_confirmation_registry.py; durable tracking.
+- **Status:** Phases 0-9 committed. Phase 10 engineering completed, both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- **Files:** backtesting/live_capture.py; tests/test_live_validation.py; durable tracking.
 - **Decisions:** Current branch main; per-phase commits and push authorized by user goal. Numerical freeze, adoption, rollback and sealed-data amendments retain explicit approval barriers. No Champion change. Temporary-document cleanup mandatory after full delivery.
 - **Blocked:** Empirical admission and numerical protocol still unapproved. User accepted existing timing-only test exception for phase commits; no test weakening.
-- **Next:** Phase 10: Prepare prospective capture, shadow replay and live review.
+- **Next:** Phase 11: Unify recommendation paths and require manual adoption.
 
 ## Todo
 - [x] Complete Phase 0 contracts, tests and review; 14 focused passes, type/Ruff clean, 29 portable gate passes; full suite 705 passes plus accepted existing timing exception.
@@ -24,7 +24,8 @@
 - [x] Complete Phase 7 profile corrected policy within bounded development-only experiment; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
 - [x] Complete Phase 8 research, calibrate, and approve numerical/statistical protocol; both reviews accepted, 13 unit tests pass, Ruff clean, Pyright clean.
 - [x] Complete Phase 9 confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
-- [ ] Implement Phase 10 prepare prospective capture, shadow replay and live review.
+- [x] Complete Phase 10 prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- [ ] Implement Phase 11 unify recommendation paths and require manual adoption.
 - [ ] Implement subsequent phases in dependency order; preserve approval barriers.
 - [ ] Final validation, cleanup, plan deletion and confirmation.
 

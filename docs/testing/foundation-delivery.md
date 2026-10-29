@@ -230,3 +230,18 @@ Named-team review round 1:
 Parent final validation: 9 focused tests passed (0.70s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: confirmation admission, immutable attempt registry, tamper detection, alias/family continuity, sealed data protection, stopping rule enforcement, and dead lever checks. All Phase 9 checklist items complete. Prospective capture and live review infrastructure remain Phase 10 responsibility.
+
+## Phase 10 — prospective capture, shadow replay, and live review accepted
+
+Baseline: `d3f1d72b`. Team: `phase_10_implement`, `phase_10_review_standards` + `phase_10_review_spec`.
+
+Scope: prospective pre-deadline capture, shadow replay, and live operational review (`backtesting/live_capture.py`, `tests/test_live_validation.py`). Scheduled pre-deadline capture enforcing strict cutoff (`capture_time <= deadline_time`); rejection of late captures (`LateCaptureError`) preventing retrospective prospective fabrication; dual shadow replay state maintaining independent squads, finances, and decisions for provisionally adopted candidate and former champion; outcome finalization delay enforcement (`OutcomeNotFinalizedError`); fixed review points requiring minimum horizon gameweeks (`InsufficientLiveEvidenceError`) preventing peeking on weekly noise; material-harm rollback recommendation citing bundle hash and requiring explicit human approval barrier; and sealed holdout protection (2026-27 GW6+).
+
+Named-team review round 1:
+- Standards findings: accepted with one P3 advisory (used timezone-aware UTC ISO timestamps in `reviewed_at`).
+- Spec findings: accepted with all checklist items fulfilled and verified across 7 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 7 focused tests passed (0.03s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: prospective capture, dual shadow replay state transitions, outcome finalization enforcement, fixed live review points, and rollback recommendations. All Phase 10 checklist items complete. Unified recommendation and manual adoption remain Phase 11 responsibility.
