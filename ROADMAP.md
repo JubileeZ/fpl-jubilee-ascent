@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 6 complete; Phase 7 ready**
+## Current Project Status: **Backtesting foundation Phase 7 complete; Phase 8 ready**
 
 ### Backtesting/promotion foundation — implementation in progress
 
@@ -25,10 +25,11 @@ This roadmap tracks the development progress, target architecture, and phases fo
 - Phase 3 committed `2676a568`: causal issue-by-target forecasts, strict export, identity/cache/resume storage; both reviews accepted, 41 focused passes, Ruff clean, new-core types clean.
 - Phase 4 committed `324a20eb`: neutral GW1 ownership anchor construction, exact two-stage tie-breaking and freezing; both reviews accepted, 11 tests pass, Ruff clean, new-core types clean.
 - Phase 5 committed `98537076`: independent rolling replay implementation and verification; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
-- Phase 6 complete: substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
-- [ ] Phase 7: profile corrected policy within bounded development-only experiment.
+- Phase 6 committed `265fbb0a`: substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
+- Phase 7 complete: profile corrected policy within bounded development-only experiment; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- [ ] Phase 8: research, calibrate, and approve numerical/statistical protocol.
 - Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
-- Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; no push. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
+- Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; push authorized per phase by user goal request. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
 
 Wayfinder Map: [Promotion Gate & Evaluation Rigor Overhaul (ADR 0064) #166](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/166) completed. Resolved 4 structural distortions identified in quantitative audit: unseeded confirmation regime mismatch, short-panel Nickell bias, unconstrained LegalXI churn blindness, circular bootstrap boundary bugs, and endogenous playable pool masking across 7 closed decision tickets (#167–#173).
 

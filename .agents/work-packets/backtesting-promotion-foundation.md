@@ -1,17 +1,17 @@
 # Active Task: Backtesting and promotion foundation
 
-- **Status:** In progress — Phase 6 complete, ready for Phase 7
+- **Status:** In progress — Phase 7 complete, ready for Phase 8
 - **Objective:** Implement temporary implementation_plan.md phase by phase; preserve Q1-Q28 and manual scientific approvals.
 - **Acceptance:** Verified infrastructure and per-phase commits; push per phase; plan deleted only after delivery acceptance.
 - **Issue/Ticket:** implementation_plan.md; docs/research/backtesting-promotion-foundation/backtesting-promotion-foundation.md
 
 ## Work Packet (SFDBN)
 
-- **Status:** Phases 0-5 committed. Phase 6 engineering completed, both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
-- **Files:** implementation_plan.md; backtesting/projection_guards.py; tests/test_projection_guards.py; durable tracking.
+- **Status:** Phases 0-6 committed. Phase 7 engineering completed, both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- **Files:** commands/profile_transfer_replay.py; tests/test_profile_transfer_replay.py; durable tracking.
 - **Decisions:** Current branch main; per-phase commits and push authorized by user goal. Numerical freeze, adoption, rollback and sealed-data amendments retain explicit approval barriers. No Champion change. Temporary-document cleanup mandatory after full delivery.
 - **Blocked:** Empirical admission and numerical protocol still unapproved. User accepted existing timing-only test exception for phase commits; no test weakening.
-- **Next:** Phase 7: Profile corrected policy within bounded development-only experiment.
+- **Next:** Phase 8: Research, calibrate, and approve numerical/statistical protocol.
 
 ## Todo
 - [x] Complete Phase 0 contracts, tests and review; 14 focused passes, type/Ruff clean, 29 portable gate passes; full suite 705 passes plus accepted existing timing exception.
@@ -21,7 +21,8 @@
 - [x] Complete Phase 4 neutral GW1 ownership anchor construction and freeze; both reviews accepted, 11 tests pass, Ruff clean, new-core types clean, portable gate 29 passes.
 - [x] Complete Phase 5 independent rolling replay; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
 - [x] Complete Phase 6 substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
-- [ ] Implement Phase 7 profile corrected policy within bounded development-only experiment.
+- [x] Complete Phase 7 profile corrected policy within bounded development-only experiment; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- [ ] Implement Phase 8 research, calibrate, and approve numerical/statistical protocol.
 - [ ] Implement subsequent phases in dependency order; preserve approval barriers.
 - [ ] Final validation, cleanup, plan deletion and confirmation.
 

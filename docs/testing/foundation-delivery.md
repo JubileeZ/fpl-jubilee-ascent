@@ -173,3 +173,30 @@ Named-team re-review round 2:
 Parent final validation: 15 focused tests passed (0.77s); 56 related tests passed (1.43s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: substantive projection guards, component ledger reconciliation, non-inferiority evaluation, and staged diagnostics. All 7 Phase 6 checklist items complete. Numerical approval of formal margins remains Phase 8 responsibility.
+
+## Phase 7 — transfer plan replay profiler accepted
+
+Baseline: `265fbb0a`. Team: `phase_07_implement`, `phase_07_review_standards` + `phase_07_review_spec`.
+
+Scope: transfer plan replay profiler within bounded development experiment (`commands/profile_transfer_replay.py`, `tests/test_profile_transfer_replay.py`). Preselected problem archetypes (`ordinary`, `constrained_budget`, `transfer_heavy`, `chip_enabled`); computational envelope (max 20 calls, 30s/call, 1 thread, serial, 20m elapsed cap); paired quality probes (exact 0.0 vs approximate 0.02 gap) with immediate-action sensitivity; execution telemetry (hardware metadata, source/data/protocol IDs, feature/model prep, assembly, solve, scoring time, peak memory MB, feasible rate, objective bounds, termination status, cache costs); workload projection separating anchor, GW1 lineup, and transfer jobs, cleanly distinguishing complete from censored timings; dynamic policy recommendations derived from action sensitivity; CLI module interface (`uv run python -m commands.profile_transfer_replay`).
+
+Named-team review round 1:
+- Standards findings: CLI module interface missing; untyped loose dictionaries used for telemetry; repetitive timing boilerplate; docstrings in tests.
+- Spec findings: source/data/protocol IDs and peak memory tracking missing; incomplete samples count missing from workload projection; cold/warm benchmark return contract incomplete.
+
+Repairs executed:
+- Added full CLI module interface: `main(args: Sequence[str] | None = None) -> int` with `argparse`, supporting `--output`, `--max-calls`, `--time-limit`, and `--dry-run`.
+- Converted loose dictionaries to strongly-typed dataclasses (`EnvironmentMetadata`, `ProbeExecutionRecord`, `PairedProbeComparison`, `ArchetypeTimingSummary`, `CacheBenchmark`, `WorkloadProjection`, `PolicyRecommendations`).
+- Added source/data/protocol IDs and peak memory MB tracking via `resource.getrusage`.
+- Added `unfinished_samples_count` and `sample_coverage_ratio` to `WorkloadProjection`.
+- Refactored `benchmark_cache_and_resume` returning typed `CacheBenchmark` tracking cold/warm execution and interrupted resume.
+- Simplified timing helpers and cleaned docstrings.
+
+Named-team re-review round 2:
+- Standards review: ACCEPTED; 0 standards breaches, strict typing, clean single-line expressions, clean interfaces.
+- Spec review: ACCEPTED; all 8 checklist items fulfilled and verified across 7 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 7 focused tests passed (0.49s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: bounded development profiling engine, paired quality probes, action sensitivity analysis, telemetry capture, and empirical season workload projection. All 8 Phase 7 checklist items complete. Numerical protocol calibration and approval remains Phase 8 responsibility.
