@@ -305,11 +305,11 @@ Dependencies: verdict taxonomy and existing recorded artifacts. Can run independ
 
 Likely sources: `docs/research/candidate-ledger/candidate_ledger.csv`, `candidate-ledger.md`, recorded promotion bundles/research companions, old protocol/code identities. New audit companion within foundation topic; original rows/results untouched during audit.
 
-- [ ] Inventory legacy rows and evidence references; distinguish original metric/protocol objective, execution defect/inertness, missing evidence, unsupported inference and valid negative finding. Do not claim known fallback actually affected published result without trace evidence.
-- [ ] Preserve original figures, dates, source/protocol identity and current locks. Record audit classification and confidence separately; missing evidence remains missing rather than recomputed result.
-- [ ] State valid negative result does not prove mechanism permanently bad; one-year lock remains resource-governance policy. Invalid/Inconclusive classification alone cannot silently reopen existing row.
-- [ ] Produce individually scoped reopening proposals only when justified, naming exact ledger row/mechanism, evidence concern, allowed rerun/protocol and existing lock. Obtain explicit user words before any locked mechanism retried.
-- [ ] Cross-link durable audit companion and report schema; approved future amendments append provenance rather than rewrite historical scientific result.
+- [x] Inventory legacy rows and evidence references; distinguish original metric/protocol objective, execution defect/inertness, missing evidence, unsupported inference and valid negative finding. Do not claim known fallback actually affected published result without trace evidence.
+- [x] Preserve original figures, dates, source/protocol identity and current locks. Record audit classification and confidence separately; missing evidence remains missing rather than recomputed result.
+- [x] State valid negative result does not prove mechanism permanently bad; one-year lock remains resource-governance policy. Invalid/Inconclusive classification alone cannot silently reopen existing row.
+- [x] Produce individually scoped reopening proposals only when justified, naming exact ledger row/mechanism, evidence concern, allowed rerun/protocol and existing lock. Obtain explicit user words before any locked mechanism retried.
+- [x] Cross-link durable audit companion and report schema; approved future amendments append provenance rather than rewrite historical scientific result.
 
 Acceptance: audit reproducible from recorded evidence; no model/solver/backtest rerun; original ledger and Champion unchanged except separately approved administrative amendments. Unresolved legacy record does not block correct new-engine infrastructure delivery.
 

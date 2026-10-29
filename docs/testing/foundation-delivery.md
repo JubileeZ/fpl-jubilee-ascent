@@ -260,3 +260,18 @@ Named-team review round 1:
 Parent final validation: 8 focused tests passed (0.85s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: recommendation-only evaluation routes, explicit manual adoption with human approval reference and champion match validation, and CLI adoption interface. All Phase 11 checklist items complete. Legacy verdicts audit remains Phase 12 responsibility.
+
+## Phase 12 — legacy verdicts audit accepted
+
+Baseline: `e803e2fc`. Team: `phase_12_implement`, `phase_12_review_standards` + `phase_12_review_spec`.
+
+Scope: audit legacy verdicts using recorded evidence only (`commands/audit_legacy_verdicts.py`, `tests/test_audit_legacy_verdicts.py`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv`, `legacy_verdicts_audit.md`). Complete inventory of all 104 rows in `candidate_ledger.csv`; classification across 4-verdict taxonomy (`pass`, `fail`, `inconclusive`, `invalid`) and 5 audit categories (`valid_negative`, `execution_defect`, `missing_evidence`, `unsupported_inference`, `shipped_accepted`); zero model/solver/backtest runs; strict preservation of 1-year Dead Lever locks (no automatic reopening from inconclusive or invalid findings); companion CSV and structured markdown report generation; CLI module interface.
+
+Named-team review round 1:
+- Standards findings: accepted with one P3 advisory (added explicit parentheses around mixed boolean clause).
+- Spec findings: accepted with all checklist items fulfilled and verified across 7 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 7 focused tests passed (0.03s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: legacy candidate ledger audit tool, companion CSV, markdown report, and lock preservation verification. All Phase 12 checklist items complete. Documentation and workflow/skill migration remain Phase 13 responsibility.

@@ -1,17 +1,17 @@
 # Active Task: Backtesting and promotion foundation
 
-- **Status:** In progress — Phase 11 complete, ready for Phase 12
+- **Status:** In progress — Phase 12 complete, ready for Phase 13
 - **Objective:** Implement temporary implementation_plan.md phase by phase; preserve Q1-Q28 and manual scientific approvals.
 - **Acceptance:** Verified infrastructure and per-phase commits; push per phase; plan deleted only after delivery acceptance.
 - **Issue/Ticket:** implementation_plan.md; docs/research/backtesting-promotion-foundation/backtesting-promotion-foundation.md
 
 ## Work Packet (SFDBN)
 
-- **Status:** Phases 0-10 committed. Phase 11 engineering completed, both reviews accepted, 8 unit tests pass, Ruff clean, Pyright clean.
-- **Files:** commands/evaluate_model_promotion.py; tests/test_evaluate_model_promotion.py; durable tracking.
+- **Status:** Phases 0-11 committed. Phase 12 engineering completed, both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
+- **Files:** commands/audit_legacy_verdicts.py; tests/test_audit_legacy_verdicts.py; docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv; legacy_verdicts_audit.md; durable tracking.
 - **Decisions:** Current branch main; per-phase commits and push authorized by user goal. Numerical freeze, adoption, rollback and sealed-data amendments retain explicit approval barriers. No Champion change. Temporary-document cleanup mandatory after full delivery.
 - **Blocked:** Empirical admission and numerical protocol still unapproved. User accepted existing timing-only test exception for phase commits; no test weakening.
-- **Next:** Phase 12: Audit legacy verdicts using recorded evidence only.
+- **Next:** Phase 13: Adopt durable documentation and workflow/skill migration.
 
 ## Todo
 - [x] Complete Phase 0 contracts, tests and review; 14 focused passes, type/Ruff clean, 29 portable gate passes; full suite 705 passes plus accepted existing timing exception.
@@ -26,7 +26,8 @@
 - [x] Complete Phase 9 confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
 - [x] Complete Phase 10 prepare prospective capture, shadow replay and live review; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
 - [x] Complete Phase 11 unify recommendation paths and require manual adoption; both reviews accepted, 8 unit tests pass, Ruff clean, Pyright clean.
-- [ ] Implement Phase 12 audit legacy verdicts using recorded evidence only.
+- [x] Complete Phase 12 audit legacy verdicts using recorded evidence only; both reviews accepted, 7 unit tests pass, companion CSV/markdown generated, Ruff clean, Pyright clean.
+- [ ] Implement Phase 13 adopt durable documentation and workflow/skill migration.
 - [ ] Implement subsequent phases in dependency order; preserve approval barriers.
 - [ ] Final validation, cleanup, plan deletion and confirmation.
 
