@@ -641,6 +641,11 @@ def main(args: Sequence[str] | None = None) -> int:
         )
         return cert, f"tr:101_{problem.problem_id}"
 
+    if parsed.dry_run:
+        print("[profiler] Dry-run enabled: executing synthetic simulation without external solver.")
+    else:
+        print("[profiler] NOTICE: Operating in dry-run mode (external solver hook not configured for standalone CLI).")
+
     print(f"[profiler] Starting bounded development profiling (max {envelope.max_optimizer_calls} calls, {envelope.time_limit_per_call_seconds}s limit)...")
     report = execute_profiling_experiment(
         manifest=PREDEFINED_PROFILING_MANIFEST,

@@ -191,8 +191,8 @@ def test_complete_foundation_lifecycle_end_to_end(tmp_path: Path) -> None:
             gameweek=gw,
             candidate_net_points=float(c_rec.net_points),
             champion_net_points=float(h_rec.net_points),
-            candidate_gross_points=float(c_rec.gross_points),
-            champion_gross_points=float(h_rec.gross_points),
+            candidate_gross_points=float(c_rec.total_gross_points),
+            champion_gross_points=float(h_rec.total_gross_points),
             candidate_hits_deducted=int(c_rec.hit_penalty // 4),
             champion_hits_deducted=int(h_rec.hit_penalty // 4),
         )

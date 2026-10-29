@@ -81,6 +81,38 @@ def _run_model(
     )
 
 
+def _stage_evidence_and_recommendation(
+    *,
+    selection: ModelSelection,
+    passing_candidate: str | None,
+    comparisons: list[CandidateComparison],
+    evaluation_season: str,
+    apply: bool,
+    commit_hash: str | None = None,
+) -> tuple[ModelSelection, list[CandidateComparison], tuple[Path, Path] | None]:
+    updated = (
+        ModelSelection(
+            champion=selection.champion,
+            candidates=selection.candidates,
+            promotion_status=f"recommend_promotion:{passing_candidate}",
+            schema_version=selection.schema_version,
+        )
+        if passing_candidate
+        else selection
+    )
+    evidence_paths = None
+    if apply:
+        record = build_evidence_record(
+            selection_before=selection,
+            selection_after=updated,
+            comparisons=comparisons,
+            evaluation_season=evaluation_season,
+            git_commit=commit_hash or _git_commit(),
+        )
+        evidence_paths = write_promotion_evidence(record, EVIDENCE_DIR)
+    return updated, comparisons, evidence_paths
+
+
 def evaluate_and_apply(
     *,
     config_path: Path,
@@ -107,8 +139,7 @@ def evaluate_and_apply(
     )
 
     comparisons: list[CandidateComparison] = []
-    updated = selection
-    promoted = False
+    passing_candidate: str | None = None
     for candidate in selection.candidates:
         candidate_result = _run_model(
             model_name=candidate,
@@ -128,26 +159,17 @@ def evaluate_and_apply(
                 snapshot_backed=candidate_result.snapshot_backed,
             )
         )
-        if verdict.passed and not promoted:
-            updated = ModelSelection(
-                champion=selection.champion,
-                candidates=selection.candidates,
-                promotion_status=f"recommend_promotion:{candidate}",
-                schema_version=selection.schema_version,
-            )
-            promoted = True
+        if verdict.passed and passing_candidate is None:
+            passing_candidate = candidate
 
-    evidence_paths = None
-    if apply:
-        record = build_evidence_record(
-            selection_before=selection,
-            selection_after=updated,
-            comparisons=comparisons,
-            evaluation_season=snapshot_season or data_dir.parent.name,
-            git_commit=_git_commit(),
-        )
-        evidence_paths = write_promotion_evidence(record, EVIDENCE_DIR)
-    return updated, comparisons, evidence_paths
+    evaluation_season = snapshot_season or data_dir.parent.name
+    return _stage_evidence_and_recommendation(
+        selection=selection,
+        passing_candidate=passing_candidate,
+        comparisons=comparisons,
+        evaluation_season=evaluation_season,
+        apply=apply,
+    )
 
 
 def evaluate_and_apply_two_season(
@@ -190,8 +212,7 @@ def evaluate_and_apply_two_season(
     )
 
     comparisons: list[CandidateComparison] = []
-    updated = selection
-    promoted = False
+    passing_candidate: str | None = None
     for candidate in selection.candidates:
         dev_cand = _run_model(
             model_name=candidate,
@@ -244,26 +265,16 @@ def evaluate_and_apply_two_season(
                 snapshot_backed=snapshot_backed,
             )
         )
-        if two_season.passed and not promoted:
-            updated = ModelSelection(
-                champion=selection.champion,
-                candidates=selection.candidates,
-                promotion_status=f"recommend_promotion:{candidate}",
-                schema_version=selection.schema_version,
-            )
-            promoted = True
+        if two_season.passed and passing_candidate is None:
+            passing_candidate = candidate
 
-    evidence_paths = None
-    if apply:
-        record = build_evidence_record(
-            selection_before=selection,
-            selection_after=updated,
-            comparisons=comparisons,
-            evaluation_season="2025-26 + 2024-25",
-            git_commit=_git_commit(),
-        )
-        evidence_paths = write_promotion_evidence(record, EVIDENCE_DIR)
-    return updated, comparisons, evidence_paths
+    return _stage_evidence_and_recommendation(
+        selection=selection,
+        passing_candidate=passing_candidate,
+        comparisons=comparisons,
+        evaluation_season="2025-26 + 2024-25",
+        apply=apply,
+    )
 
 
 def adopt_champion(
@@ -291,15 +302,7 @@ def adopt_champion(
         raise ValueError(f"Cannot adopt candidate: execution status is '{exec_status}', not 'complete'")
 
     # Validate scientific verdict
-    verdict = (
-        data.get("scientific_verdict")
-        or data.get("verdict")
-        or ("pass" if data.get("passed") is True else None)
-    )
-    if not verdict and "comparisons" in data and data["comparisons"]:
-        comp = data["comparisons"][0]
-        verdict = "pass" if comp.get("passed") else "fail"
-
+    verdict = data.get("scientific_verdict") or data.get("verdict")
     if verdict != "pass":
         raise ValueError(f"Cannot adopt candidate: scientific verdict is '{verdict}', not 'pass'")
 

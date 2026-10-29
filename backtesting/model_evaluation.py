@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
@@ -130,8 +130,8 @@ def compare_to_reference(
         champion_windows["active"] = dict(champion_windows["combined"])
         candidate_windows["active"] = dict(candidate_windows["combined"])
     else:
-        ref_active = reference.df_eval[reference.df_eval["gameweek"].isin(active_gws)]
-        cand_active = candidate.df_eval[candidate.df_eval["gameweek"].isin(active_gws)]
+        ref_active = cast(pd.DataFrame, reference.df_eval[reference.df_eval["gameweek"].isin(active_gws)])
+        cand_active = cast(pd.DataFrame, candidate.df_eval[candidate.df_eval["gameweek"].isin(active_gws)])
         active_champ_metrics = evaluate_predictions(ref_active, target_column=primary_target)
         active_cand_metrics = evaluate_predictions(cand_active, target_column=primary_target)
         champ_play_act, cand_play_act = compute_playable_pool_metrics(
@@ -242,7 +242,10 @@ def build_evidence_record(
     evaluation_season: str,
     git_commit: str | None,
 ) -> dict[str, Any]:
+    scientific_verdict = "pass" if any(c.verdict.passed for c in comparisons) else "fail"
     return {
+        "scientific_verdict": scientific_verdict,
+        "execution_status": "complete",
         "evaluated_at": datetime.now(UTC).isoformat(),
         "evaluation_season": evaluation_season,
         "git_commit": git_commit,
@@ -260,6 +263,7 @@ def build_evidence_record(
             {
                 "candidate": comparison.candidate,
                 "passed": comparison.verdict.passed,
+                "scientific_verdict": "pass" if comparison.verdict.passed else "fail",
                 "eval_target": comparison.verdict.eval_target,
                 "primary_metric": comparison.verdict.primary_metric,
                 "combined_primary_delta": comparison.verdict.combined_primary_delta,

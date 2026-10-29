@@ -76,6 +76,49 @@ def test_tamper_detection(tmp_path: Path) -> None:
         registry.load_all_records()
 
 
+def test_registry_hash_chaining_and_reorder_tamper_detection(tmp_path: Path) -> None:
+    """Verify registry enforces cryptographic SHA-256 chain links and detects deletions/reordering."""
+    reg_file = tmp_path / "chain_registry.jsonl"
+    registry = ConfirmationRegistry(reg_file)
+
+    rec1 = registry.register_finalist(
+        candidate_name="cand_1",
+        champion_name="champ",
+        mechanism_family="fam_1",
+        model_source_hash="1" * 64,
+        parameters_hash="1" * 64,
+        dev_selection_record_ref="dev-1",
+        protocol_hash="p1" + "0" * 62,
+    )
+    rec2 = registry.register_finalist(
+        candidate_name="cand_2",
+        champion_name="champ",
+        mechanism_family="fam_2",
+        model_source_hash="2" * 64,
+        parameters_hash="2" * 64,
+        dev_selection_record_ref="dev-2",
+        protocol_hash="p2" + "0" * 62,
+    )
+
+    assert rec1.prev_record_hash == "0" * 64
+    assert rec2.prev_record_hash == rec1.record_hash
+    assert registry.verify_integrity() is True
+
+    # Reorder lines in jsonl file
+    lines = reg_file.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 2
+    reordered = f"{lines[1]}\n{lines[0]}\n"
+    reg_file.write_text(reordered, encoding="utf-8")
+
+    with pytest.raises(TamperedRegistryError, match="Cryptographic chain break"):
+        registry.load_all_records()
+
+    # Deleting an earlier record breaks the chain
+    reg_file.write_text(f"{lines[1]}\n", encoding="utf-8")
+    with pytest.raises(TamperedRegistryError, match="Cryptographic chain break"):
+        registry.load_all_records()
+
+
 def test_duplicate_attempt_prevention(tmp_path: Path) -> None:
     """Verify duplicate finalist registration with identical code and config is blocked."""
     reg_file = tmp_path / "registry.jsonl"

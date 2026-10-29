@@ -81,6 +81,7 @@ class FinalistRegistration:
     known_aliases: tuple[str, ...] = ()
     registered_gameweeks: tuple[int, ...] = tuple(range(1, 39))
     completed_gameweeks: tuple[int, ...] = ()
+    prev_record_hash: str = "0" * 64
     record_hash: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -88,6 +89,7 @@ class FinalistRegistration:
         data["known_aliases"] = list(self.known_aliases)
         data["registered_gameweeks"] = list(self.registered_gameweeks)
         data["completed_gameweeks"] = list(self.completed_gameweeks)
+        data["prev_record_hash"] = self.prev_record_hash
         return data
 
     def compute_record_hash(self) -> str:
@@ -113,6 +115,7 @@ class FinalistRegistration:
             "known_aliases": sorted(self.known_aliases),
             "registered_gameweeks": list(self.registered_gameweeks),
             "completed_gameweeks": list(self.completed_gameweeks),
+            "prev_record_hash": self.prev_record_hash,
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
@@ -164,12 +167,19 @@ class ConfirmationRegistry:
                         known_aliases=tuple(data.get("known_aliases", ())),
                         registered_gameweeks=tuple(data.get("registered_gameweeks", ())),
                         completed_gameweeks=tuple(data.get("completed_gameweeks", ())),
+                        prev_record_hash=data.get("prev_record_hash", "0" * 64),
                         record_hash=data.get("record_hash", ""),
                     )
                     expected_hash = rec.compute_record_hash()
                     if rec.record_hash and rec.record_hash != expected_hash:
                         raise TamperedRegistryError(
                             f"Cryptographic hash mismatch at line {line_no} for attempt '{rec.attempt_id}'"
+                        )
+                    expected_prev = records[-1].record_hash if records else ("0" * 64)
+                    if rec.prev_record_hash and rec.prev_record_hash != expected_prev:
+                        raise TamperedRegistryError(
+                            f"Cryptographic chain break at line {line_no} for attempt '{rec.attempt_id}': "
+                            f"expected prev_record_hash '{expected_prev}', got '{rec.prev_record_hash}'"
                         )
                     records.append(rec)
                 except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
@@ -297,7 +307,9 @@ class ConfirmationRegistry:
                     f"in attempt '{prior.attempt_id}'. Adaptive reruns or overwrites are prohibited."
                 )
 
-        # Attempt numbering within family
+        existing_records = self.load_all_records()
+        prev_hash = existing_records[-1].record_hash if existing_records else ("0" * 64)
+
         attempt_number = len(family_history) + 1
         now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -307,7 +319,6 @@ class ConfirmationRegistry:
         else:
             generated_id = attempt_id
 
-        # Determine parent attempt
         if parent_attempt_id is None and family_history:
             parent_attempt_id = family_history[-1].attempt_id
 
@@ -330,6 +341,7 @@ class ConfirmationRegistry:
             registered_gameweeks=tuple(registered_gameweeks),
             completed_gameweeks=(),
             human_approval_ref=human_approval_ref,
+            prev_record_hash=prev_hash,
         )
 
         record_hash = reg.compute_record_hash()
@@ -337,7 +349,6 @@ class ConfirmationRegistry:
             **{**reg.to_dict(), "record_hash": record_hash}
         )
 
-        # Append atomically to log
         self._append_record(final_reg)
         return final_reg
 
@@ -373,9 +384,13 @@ class ConfirmationRegistry:
                     f"Stopping when intermediate results look favorable is strictly prohibited."
                 )
 
+        existing_records = self.load_all_records()
+        prev_hash = existing_records[-1].record_hash if existing_records else ("0" * 64)
+
         now_iso = datetime.now(timezone.utc).isoformat()
         updated_dict = prior.to_dict()
         updated_dict["status"] = status
+        updated_dict["prev_record_hash"] = prev_hash
         if execution_status is not None:
             updated_dict["execution_status"] = execution_status
         if scientific_verdict is not None:
@@ -410,6 +425,7 @@ class ConfirmationRegistry:
             known_aliases=tuple(updated_dict.get("known_aliases", ())),
             registered_gameweeks=tuple(updated_dict.get("registered_gameweeks", ())),
             completed_gameweeks=tuple(updated_dict.get("completed_gameweeks", ())),
+            prev_record_hash=prev_hash,
             record_hash="",
         )
 

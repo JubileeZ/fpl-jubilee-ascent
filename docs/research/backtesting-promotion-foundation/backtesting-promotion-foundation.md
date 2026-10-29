@@ -265,13 +265,19 @@ Q21 requires documented development-only calibration proposal and human approval
 - One mandatory promotion protocol across smoke, CLI, CI; full evidence identity and trial history; live review calendar/evidence thresholds and defect handling within agreed manual adoption/rollback (Q20).
 - Legacy evidence audit agreed Q23; preserve original figures/protocol/locks and seek explicit individual reopening approval. No blanket ledger exceptions.
 
-## Decision and refresh
+## Decision
 
 **Verdict:** Q1-Q26 policy direction agreed as design intent. Preflight/calibration proposal prepared for shared-understanding review; numerical protocol and implementation not adopted. Note is rationale reference, not implemented gate or superseding ADR.
 
 **Next:** Complete source-time admission and replay-accounting feasibility for agreed Q28 reference; then bounded development-only timings and statistical-method assessment before numerical proposal. [Preflight plan](preflight-plan.md) updated to single-anchor design. Formalize ADR/glossary and implementation plan when complete protocol ready for approval.
 
 **Revision trigger:** Measured timings, validated replay accounting, new causal evidence, or changed human decisions. Replace assumptions only with labeled empirical measurements; keep dataset/machine/settings identity.
+
+## Risks and unknowns
+
+- **Computational Scaling**: Full-season 6-GW rolling transfer plan replays across multiple seasons and candidates require bounded runtime controls and certified solver gap management.
+- **Serial Dependence**: Overlapping multi-deadline transfer paths introduce strong temporal autocorrelation; IID bootstrap assumptions fail and require non-wrapping Moving Block Bootstrap (MBB).
+- **Confirmation Data Integrity**: Reusing historical seasons risks subtle exploratory leakage; strict immutable registration and prospective capture protocols are mandatory.
 
 ## Agent Prompt
 

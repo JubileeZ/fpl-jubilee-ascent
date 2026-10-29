@@ -110,13 +110,17 @@ Declare midseason reference finances: total capital minus squad cost equals bank
 
 Replan/evolve through branch if modeling actual product behavior. Committing all originally planned future actions tests open-loop plan instead. Overlapping branches reuse match outcomes and cost additional planning calls; not independent seasons. Terminal horizon truncates long-term transfer value. Sparse predeclared origins useful sensitivity option.
 
-## Adopted Q28 direction and remaining work
+## Decision
 
-User agreed A: one highest-owned feasible GW1 anchor per season, locked at first deadline; lineup/captain assessed GW1, transfers begin GW2, independent continuously evolving paths. B remains optional local-decision diagnostic. Keep agreed Unconstrained development / Strategic adoption roles. Earlier mandatory archetype/personal-squad proposals replaced.
+1. **GW1 Opening Anchor Benchmark**: Adopt one highest-owned feasible GW1 squad per season as the standardized initial benchmark condition (Q28), locked at first deadline.
+2. **Continuous Path Evolution**: Lineup and captain evaluated in GW1; transfers commence at GW2 with native FT state, preserving independent finances, ownership, and chips.
+3. **Local Reset Diagnostic Separation**: Periodic refreshed anchors remain optional local-intervention diagnostics, never substituted for continuous season score.
 
-Remaining work: source timestamp/freshness admission, eligibility, deterministic exact anchor construction, native initial financial/FT state and GW1-lock verification. Reset diagnostics require separately declared capital/FT/chip assumptions if added. No further reset-frequency decision required for primary benchmark.
+## Risks and unknowns
 
-Only design choice adopted. No anchor solver, model backtest, promotion, or sealed-data use performed.
+- **Pre-deadline Timing Latency**: Pre-deadline public mirror snapshots are captured hours before lock; subtle late price or ownership movements may remain unobserved.
+- **Lexicographic Tie-breaking**: Multiple feasible squads can achieve equal total ownership under £100m budget; secondary objective tie-breaks must remain model-neutral and deterministic.
+- **Population Representativeness**: The highest-owned template represents aggregate market selection, not individual manager cohort distributions.
 
 ## Agent Prompt
 

@@ -129,6 +129,20 @@ class ReplayDeadlineRecord:
     parent_checkpoint_id: str | None
     execution_status: Literal["SUCCESS", "UNCERTIFIED_GAP", "TIMEOUT", "INFEASIBLE", "LEGALITY_VIOLATION"] = "SUCCESS"
 
+    @property
+    def total_gross_points(self) -> int:
+        """Total gross FPL points inclusive of captain increment before hits."""
+        return int(self.gross_points + self.captain_increment)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize deadline record to JSON-compatible dictionary."""
+        return record_to_dict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "ReplayDeadlineRecord":
+        """Deserialize deadline record from JSON-compatible dictionary."""
+        return record_from_dict(d)
+
 
 def record_to_dict(rec: ReplayDeadlineRecord) -> dict[str, Any]:
     """Serialize a complete deadline record into a JSON-compatible dictionary."""
@@ -669,7 +683,7 @@ def run_rolling_replay(
         parent_cp_id = rec.checkpoint_id
         current_state = rec.transition_result.state
 
-    cum_gross = sum(r.gross_points + r.captain_increment for r in records if r.execution_status == "SUCCESS")
+    cum_gross = sum(r.total_gross_points for r in records if r.execution_status == "SUCCESS")
     cum_hits = sum(r.hit_penalty for r in records if r.execution_status == "SUCCESS")
     cum_net = sum(r.net_points for r in records if r.execution_status == "SUCCESS")
     final_ids = tuple(sorted(p.player_id for p in current_state.squad))

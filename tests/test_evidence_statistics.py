@@ -307,6 +307,36 @@ def test_evidence_evaluation_fail_on_projection_guard() -> None:
     assert any("playing time error significantly regressed" in r for r in eval_res.reasons)
 
 
+def test_evidence_evaluation_invalid_on_missing_guard_evidence() -> None:
+    """Verify INVALID verdict when required projection guard is missing evidence (does not lock dead lever)."""
+    scores = _make_paired_scores(gameweek_count=38, mean_cand=65.0, mean_champ=60.0, noise_std=0.5)
+    config = StatisticalProtocolConfig(bootstrap_draws=500, family_error_control="none")
+    missing_guard = GuardOutput(
+        metric_name="minutes_mae",
+        passed=False,
+        status="MISSING_EVIDENCE",
+        estimate=0.0,
+        margin=1.0,
+        standard_error=0.0,
+        ci_lower=0.0,
+        ci_upper=0.0,
+        coverage=0.0,
+        sample_size=0,
+        direction="lower_is_better",
+        reason="No minutes projection column found in output",
+    )
+
+    eval_res = evaluate_evidence_against_protocol(
+        scores,
+        [missing_guard],
+        config,
+        is_confirmation_available=True,
+    )
+    assert eval_res.verdict == "invalid"
+    assert eval_res.projection_guards_passed is False
+    assert any("missing required evidence" in r for r in eval_res.reasons)
+
+
 def test_evidence_evaluation_invalid_on_empty_input() -> None:
     """Verify INVALID verdict when score data is empty."""
     config = StatisticalProtocolConfig()

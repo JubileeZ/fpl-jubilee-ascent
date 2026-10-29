@@ -303,7 +303,6 @@ def run_stored_score_bootstrap(
     for s in paired_scores:
         by_season.setdefault(s.season, []).append(s)
 
-    # Compute weights per season
     total_weights = 0.0
     season_weights: dict[str, float] = {}
     for season in by_season:
@@ -320,7 +319,6 @@ def run_stored_score_bootstrap(
     season_means = {s: float(np.mean([x.delta_net for x in scores])) for s, scores in by_season.items()}
     point_estimate = float(sum(season_means[s] * norm_weights[s] for s in by_season))
 
-    # Bootstrap draws
     rng = np.random.default_rng(seed)
     bootstrap_means = np.empty(config.bootstrap_draws, dtype=float)
 
@@ -408,15 +406,24 @@ def evaluate_evidence_against_protocol(
                             f"Season {s.season} segment '{seg}' loss of {abs(loss):.1f} pts exceeds segment limit of {config.segment_material_loss_limit:.1f} pts"
                         )
 
-    guard_failures: list[str] = []
+    guard_regressions: list[str] = []
+    guard_missing_evidence: list[str] = []
     if projection_guards is not None:
         for guard in projection_guards:
             if not guard.passed:
-                guard_failures.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
+                if guard.status in ("MISSING_EVIDENCE", "UNASSESSED"):
+                    guard_missing_evidence.append(
+                        f"Guard '{guard.metric_name}' missing required evidence: {guard.reason}"
+                    )
+                else:
+                    guard_regressions.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
 
-    guards_passed = len(guard_failures) == 0
-    if not guards_passed:
-        reasons.extend(guard_failures)
+    guards_passed = len(guard_regressions) == 0 and len(guard_missing_evidence) == 0
+    guard_failures = guard_regressions + guard_missing_evidence
+    if guard_missing_evidence:
+        reasons.extend(guard_missing_evidence)
+    if guard_regressions:
+        reasons.extend(guard_regressions)
 
     bootstrap_res = run_stored_score_bootstrap(
         paired_scores,
@@ -429,16 +436,21 @@ def evaluate_evidence_against_protocol(
     point_est = bootstrap_res.point_estimate
     p_val = bootstrap_res.p_value_superiority
 
+    # Invalid criteria:
+    # - Missing or unassessed required projection guard evidence (contract defect; does NOT lock dead lever)
+    if guard_missing_evidence:
+        verdict: ScientificVerdict = "invalid"
+
     # Fail criteria:
     # - Material loss limit violated in any season or segment
     # - Significant net loss (ci_upper < 0)
-    # - Projection guard substantive failure
-    if material_loss_violated or ci_upper < 0.0 or not guards_passed:
+    # - Substantive projection guard regression
+    elif material_loss_violated or ci_upper < 0.0 or bool(guard_regressions):
         if ci_upper < 0.0:
             reasons.append(
                 f"Candidate significantly worse than Champion (upper CI {ci_upper:.3f} < 0.0 at alpha {bootstrap_res.adjusted_alpha:.4f})"
             )
-        verdict: ScientificVerdict = "fail"
+        verdict = "fail"
 
     # Pass criteria:
     # - Protocol configuration approved by human
@@ -520,7 +532,6 @@ def simulate_bootstrap_calibration(
     innov_std = std_dev * math.sqrt(max(1e-6, 1.0 - rho**2))
 
     for sim in range(num_simulations):
-        # Generate AR(1) series
         deltas = np.empty(num_gameweeks, dtype=float)
         current = rng.normal(true_delta_mean, std_dev)
         for t in range(num_gameweeks):
