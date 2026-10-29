@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting foundation Phase 8 complete; Phase 9 ready**
+## Current Project Status: **Backtesting foundation Phase 9 complete; Phase 10 ready**
 
 ### Backtesting/promotion foundation — implementation in progress
 
@@ -27,8 +27,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 - Phase 5 committed `98537076`: independent rolling replay implementation and verification; both reviews accepted, 12 integration tests pass, Ruff clean, Pyright clean.
 - Phase 6 committed `265fbb0a`: substantive projection guards and staged diagnostics; both reviews accepted, 15 focused tests pass, 56 related tests pass, Ruff clean, Pyright clean.
 - Phase 7 committed `e171dc23`: transfer plan replay profiler; both reviews accepted, 7 unit tests pass, Ruff clean, Pyright clean.
-- Phase 8 complete: research, calibrate, and approve numerical/statistical protocol; both reviews accepted, 13 unit tests pass, Ruff clean, Pyright clean.
-- [ ] Phase 9: implement confirmation admission and immutable attempt registry.
+- Phase 8 committed `4f56e975`: numerical and statistical protocol; both reviews accepted, 13 unit tests pass, Ruff clean, Pyright clean.
+- Phase 9 complete: confirmation admission and immutable attempt registry; both reviews accepted, 9 unit tests pass, Ruff clean, Pyright clean.
+- [ ] Phase 10: prepare prospective capture, shadow replay and live review.
 - Resume: `.agents/handoff-pointer` identifies `.agents/work-packets/backtesting-promotion-foundation.md`. Record review/validation/commit transitions in `docs/testing/foundation-delivery.md`.
 - Later phases: temporary `implementation_plan.md`; Q1-Q28 rationale in `docs/research/backtesting-promotion-foundation/`. Per-phase reviewed commits; push authorized per phase by user goal request. Numerical/protocol/adoption approvals pending. Delete temporary plan, finished packet and matching handoff pointer after full delivery; remove temporary pointers from tracking.
 

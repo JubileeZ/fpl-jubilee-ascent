@@ -215,3 +215,18 @@ Named-team review round 1:
 Parent final validation: 13 focused tests passed (0.95s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: numerical and statistical evaluation protocol, non-wrapping block bootstrap, stored-score resampling, family-wise error control, four-way scientific verdicts, and Q21 protocol configuration proposal. All Phase 8 checklist items complete. Confirmation admission and immutable attempt registry remain Phase 9 responsibility.
+
+## Phase 9 — confirmation admission and attempt registry accepted
+
+Baseline: `4f56e975`. Team: `phase_09_implement`, `phase_09_review_standards` + `phase_09_review_spec`.
+
+Scope: confirmation admission and immutable attempt registry (`backtesting/confirmation_registry.py`, `tests/test_confirmation_registry.py`). One frozen finalist per confirmation round tracking source/parameters/protocol hashes and prior history; append-only JSONL storage with cryptographic SHA256 tamper-evident integrity verification; family-wise continuity and attempt counting across aliases and model renames; duplicate and adaptive run prevention blocking overwrites of active or completed attempts; sealed holdout protection strictly enforcing 2026-27 GW6+ sealing; stopping rule enforcement requiring completion of full registered gameweek schedule before verdict admission; and Candidate Ledger integration enforcing 1-year Dead Lever moratorium.
+
+Named-team review round 1:
+- Standards findings: accepted with one P3 advisory (moved dynamic `csv` import inside `check_candidate_ledger_safety` to top-level module imports).
+- Spec findings: accepted with all checklist items fulfilled and verified across 9 unit tests.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 9 focused tests passed (0.70s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: confirmation admission, immutable attempt registry, tamper detection, alias/family continuity, sealed data protection, stopping rule enforcement, and dead lever checks. All Phase 9 checklist items complete. Prospective capture and live review infrastructure remain Phase 10 responsibility.

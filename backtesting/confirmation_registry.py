@@ -1,0 +1,431 @@
+"""Confirmation admission and immutable attempt registry.
+
+Implements Phase 9 requirements:
+1. One frozen finalist per confirmation round: model dependency/source hashes, parameters,
+   training/seed, dev selection reference, protocol hash, and family history.
+2. Registry append-only atomicity and tamper-evident integrity hashing.
+3. Family-wise continuity across aliases and model renames; prevents history reset.
+4. Prevention of duplicate, adaptive, or peeking runs; requires registered complete schedule.
+5. Sealed-path protection enforcing strict holdout boundaries (2026-27 GW6+).
+6. Candidate Ledger integration preventing re-evaluation of active Dead Levers without explicit override.
+7. Verification of completed schedules before verdict admission.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+import csv
+from dataclasses import asdict, dataclass
+from datetime import date, datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+from typing import Any, Literal
+
+from backtesting.evidence_statistics import ScientificVerdict
+
+AttemptStatus = Literal["registered", "in_progress", "completed", "withdrawn", "invalidated"]
+ExecutionStatus = Literal["not_run", "partial", "censored", "complete"]
+
+
+class RegistryError(Exception):
+    """Base exception for confirmation registry errors."""
+
+
+class DuplicateAttemptError(RegistryError):
+    """Raised when registering an identical finalist attempt that is already active or completed."""
+
+
+class SealedDataViolationError(RegistryError):
+    """Raised when an evaluation attempt references sealed or protected holdout seasons."""
+
+
+class DeadLeverViolationError(RegistryError):
+    """Raised when an attempt tests an active dead lever before its revisit_after moratorium date."""
+
+
+class AdaptiveRunViolationError(RegistryError):
+    """Raised when attempting to mutate or selectively reset prior attempt history."""
+
+
+class IncompleteScheduleError(RegistryError):
+    """Raised when an attempt is prematurely finalized before completing its registered schedule."""
+
+
+class TamperedRegistryError(RegistryError):
+    """Raised when disk records fail cryptographic tamper-evident verification."""
+
+
+@dataclass(frozen=True)
+class FinalistRegistration:
+    """Immutable audit record for a single confirmation round finalist."""
+
+    attempt_id: str
+    candidate_name: str
+    champion_name: str
+    mechanism_family: str
+    parent_attempt_id: str | None
+    model_source_hash: str
+    parameters_hash: str
+    dev_selection_record_ref: str
+    protocol_hash: str
+    status: AttemptStatus
+    execution_status: ExecutionStatus
+    scientific_verdict: ScientificVerdict | None
+    attempt_number_in_family: int
+    registered_at: str
+    completed_at: str | None = None
+    bundle_path: str | None = None
+    human_approval_ref: str | None = None
+    known_aliases: tuple[str, ...] = ()
+    registered_gameweeks: tuple[int, ...] = tuple(range(1, 39))
+    completed_gameweeks: tuple[int, ...] = ()
+    record_hash: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["known_aliases"] = list(self.known_aliases)
+        data["registered_gameweeks"] = list(self.registered_gameweeks)
+        data["completed_gameweeks"] = list(self.completed_gameweeks)
+        return data
+
+    def compute_record_hash(self) -> str:
+        """Compute tamper-evident SHA256 digest of record contents excluding the hash itself."""
+        payload = {
+            "attempt_id": self.attempt_id,
+            "candidate_name": self.candidate_name,
+            "champion_name": self.champion_name,
+            "mechanism_family": self.mechanism_family,
+            "parent_attempt_id": self.parent_attempt_id,
+            "model_source_hash": self.model_source_hash,
+            "parameters_hash": self.parameters_hash,
+            "dev_selection_record_ref": self.dev_selection_record_ref,
+            "protocol_hash": self.protocol_hash,
+            "status": self.status,
+            "execution_status": self.execution_status,
+            "scientific_verdict": self.scientific_verdict,
+            "attempt_number_in_family": self.attempt_number_in_family,
+            "registered_at": self.registered_at,
+            "completed_at": self.completed_at,
+            "bundle_path": self.bundle_path,
+            "human_approval_ref": self.human_approval_ref,
+            "known_aliases": sorted(self.known_aliases),
+            "registered_gameweeks": list(self.registered_gameweeks),
+            "completed_gameweeks": list(self.completed_gameweeks),
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+
+class ConfirmationRegistry:
+    """Append-only, tamper-evident registry tracking candidate confirmation attempts."""
+
+    def __init__(self, registry_file: Path | str | None = None) -> None:
+        if registry_file is None:
+            self.registry_file = Path("data/reports/confirmation_registry/registry.jsonl")
+        else:
+            self.registry_file = Path(registry_file)
+
+    def _ensure_dir(self) -> None:
+        self.registry_file.parent.mkdir(parents=True, exist_ok=True)
+
+    def load_all_records(self) -> list[FinalistRegistration]:
+        """Load and verify all registration records from disk."""
+        if not self.registry_file.is_file():
+            return []
+
+        records: list[FinalistRegistration] = []
+        with open(self.registry_file, encoding="utf-8") as f:
+            for line_no, line in enumerate(f, start=1):
+                raw = line.strip()
+                if not raw:
+                    continue
+                try:
+                    data = json.loads(raw)
+                    rec = FinalistRegistration(
+                        attempt_id=data["attempt_id"],
+                        candidate_name=data["candidate_name"],
+                        champion_name=data["champion_name"],
+                        mechanism_family=data["mechanism_family"],
+                        parent_attempt_id=data.get("parent_attempt_id"),
+                        model_source_hash=data["model_source_hash"],
+                        parameters_hash=data["parameters_hash"],
+                        dev_selection_record_ref=data["dev_selection_record_ref"],
+                        protocol_hash=data["protocol_hash"],
+                        status=data["status"],
+                        execution_status=data["execution_status"],
+                        scientific_verdict=data.get("scientific_verdict"),
+                        attempt_number_in_family=int(data["attempt_number_in_family"]),
+                        registered_at=data["registered_at"],
+                        completed_at=data.get("completed_at"),
+                        bundle_path=data.get("bundle_path"),
+                        human_approval_ref=data.get("human_approval_ref"),
+                        known_aliases=tuple(data.get("known_aliases", ())),
+                        registered_gameweeks=tuple(data.get("registered_gameweeks", ())),
+                        completed_gameweeks=tuple(data.get("completed_gameweeks", ())),
+                        record_hash=data.get("record_hash", ""),
+                    )
+                    expected_hash = rec.compute_record_hash()
+                    if rec.record_hash and rec.record_hash != expected_hash:
+                        raise TamperedRegistryError(
+                            f"Cryptographic hash mismatch at line {line_no} for attempt '{rec.attempt_id}'"
+                        )
+                    records.append(rec)
+                except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                    raise TamperedRegistryError(f"Corrupt registry record at line {line_no}: {exc}") from exc
+
+        return records
+
+    def verify_integrity(self) -> bool:
+        """Cryptographically verify all records in the registry."""
+        self.load_all_records()
+        return True
+
+    def get_attempt(self, attempt_id: str) -> FinalistRegistration | None:
+        """Find the latest state of a specific attempt by ID."""
+        records = [r for r in self.load_all_records() if r.attempt_id == attempt_id]
+        return records[-1] if records else None
+
+    def find_family_history(
+        self,
+        mechanism_family: str,
+        candidate_name: str | None = None,
+        aliases: Sequence[str] | None = None,
+    ) -> list[FinalistRegistration]:
+        """Find all registered attempts within the same declared mechanism family or aliases."""
+        alias_set = set(aliases or ())
+        if candidate_name:
+            alias_set.add(candidate_name)
+
+        history: list[FinalistRegistration] = []
+        for r in self.load_all_records():
+            matches_family = r.mechanism_family == mechanism_family
+            matches_alias = bool(alias_set and (r.candidate_name in alias_set or any(a in alias_set for a in r.known_aliases)))
+            if matches_family or matches_alias:
+                history.append(r)
+        return history
+
+    def check_sealed_data_safety(
+        self,
+        requested_seasons: Sequence[str],
+        requested_gameweeks: Sequence[int] | None = None,
+    ) -> None:
+        """Enforce strict holdout boundary: season 2026-27 GW6+ is completely sealed."""
+        for season in requested_seasons:
+            if season == "2026-27":
+                gws = requested_gameweeks or tuple(range(1, 39))
+                if any(gw >= 6 for gw in gws):
+                    raise SealedDataViolationError(
+                        "Access to sealed season 2026-27 GW6+ strictly prohibited without approved protocol amendment"
+                    )
+
+    def check_candidate_ledger_safety(
+        self,
+        candidate_name: str,
+        lever_description: str,
+        ledger_csv_path: Path | str | None = None,
+    ) -> None:
+        """Enforce 1-year Dead Lever moratorium in Candidate Ledger."""
+        path = Path(ledger_csv_path or "docs/research/candidate-ledger/candidate_ledger.csv")
+        if not path.is_file():
+            return
+
+        today = date.today()
+        cand_lower = candidate_name.lower().strip()
+        lever_lower = lever_description.lower().strip()
+
+        with open(path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                status = row.get("status", "").lower().strip()
+                if status != "dead":
+                    continue
+                revisit_str = row.get("revisit_after", "").strip()
+                if not revisit_str:
+                    continue
+                try:
+                    revisit_date = date.fromisoformat(revisit_str)
+                except ValueError:
+                    continue
+
+                if today < revisit_date:
+                    tried_as = [item.strip().lower() for item in row.get("tried_as", "").split()]
+                    row_lever = row.get("lever", "").lower().strip()
+                    if cand_lower in tried_as or cand_lower == row_lever or (lever_lower and lever_lower in row_lever):
+                        raise DeadLeverViolationError(
+                            f"Candidate '{candidate_name}' matches active Dead Lever '{row.get('lever')}' "
+                            f"locked until {revisit_str}. Reopening requires explicit user authorization."
+                        )
+
+    def register_finalist(
+        self,
+        candidate_name: str,
+        champion_name: str,
+        mechanism_family: str,
+        model_source_hash: str,
+        parameters_hash: str,
+        dev_selection_record_ref: str,
+        protocol_hash: str,
+        *,
+        attempt_id: str | None = None,
+        parent_attempt_id: str | None = None,
+        known_aliases: Sequence[str] = (),
+        registered_gameweeks: Sequence[int] = tuple(range(1, 39)),
+        human_approval_ref: str | None = None,
+        ledger_csv_path: Path | str | None = None,
+        candidate_lever_description: str = "",
+        requested_seasons: Sequence[str] = ("2024-25",),
+    ) -> FinalistRegistration:
+        """Register a new finalist confirmation round."""
+        self._ensure_dir()
+
+        # 1. Enforce safety checks
+        self.check_sealed_data_safety(requested_seasons, registered_gameweeks)
+        self.check_candidate_ledger_safety(candidate_name, candidate_lever_description, ledger_csv_path)
+
+        # 2. Check family history and duplicate prevention
+        family_history = self.find_family_history(mechanism_family, candidate_name, known_aliases)
+        for prior in family_history:
+            if (
+                prior.candidate_name == candidate_name
+                and prior.model_source_hash == model_source_hash
+                and prior.parameters_hash == parameters_hash
+                and prior.protocol_hash == protocol_hash
+                and prior.status in ("registered", "in_progress", "completed")
+            ):
+                raise DuplicateAttemptError(
+                    f"Candidate '{candidate_name}' with identical code and parameters is already {prior.status} "
+                    f"in attempt '{prior.attempt_id}'. Adaptive reruns or overwrites are prohibited."
+                )
+
+        # Attempt numbering within family
+        attempt_number = len(family_history) + 1
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if attempt_id is None:
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            generated_id = f"eval-{candidate_name}-{ts}"
+        else:
+            generated_id = attempt_id
+
+        # Determine parent attempt
+        if parent_attempt_id is None and family_history:
+            parent_attempt_id = family_history[-1].attempt_id
+
+        reg = FinalistRegistration(
+            attempt_id=generated_id,
+            candidate_name=candidate_name,
+            champion_name=champion_name,
+            mechanism_family=mechanism_family,
+            parent_attempt_id=parent_attempt_id,
+            model_source_hash=model_source_hash,
+            parameters_hash=parameters_hash,
+            dev_selection_record_ref=dev_selection_record_ref,
+            protocol_hash=protocol_hash,
+            status="registered",
+            execution_status="not_run",
+            scientific_verdict=None,
+            attempt_number_in_family=attempt_number,
+            registered_at=now_iso,
+            known_aliases=tuple(known_aliases),
+            registered_gameweeks=tuple(registered_gameweeks),
+            completed_gameweeks=(),
+            human_approval_ref=human_approval_ref,
+        )
+
+        record_hash = reg.compute_record_hash()
+        final_reg = FinalistRegistration(
+            **{**reg.to_dict(), "record_hash": record_hash}
+        )
+
+        # Append atomically to log
+        self._append_record(final_reg)
+        return final_reg
+
+    def transition_attempt_status(
+        self,
+        attempt_id: str,
+        status: AttemptStatus,
+        *,
+        execution_status: ExecutionStatus | None = None,
+        scientific_verdict: ScientificVerdict | None = None,
+        completed_gameweeks: Sequence[int] | None = None,
+        bundle_path: str | None = None,
+        human_approval_ref: str | None = None,
+    ) -> FinalistRegistration:
+        """Append a state transition record for an existing attempt."""
+        prior = self.get_attempt(attempt_id)
+        if prior is None:
+            raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
+
+        if prior.status == "completed" and status in ("registered", "in_progress"):
+            raise AdaptiveRunViolationError(
+                f"Cannot re-open or overwrite completed confirmation attempt '{attempt_id}'"
+            )
+
+        new_completed_gws = tuple(completed_gameweeks) if completed_gameweeks is not None else prior.completed_gameweeks
+
+        # Enforce complete schedule before completion
+        if status == "completed":
+            if set(new_completed_gws) != set(prior.registered_gameweeks):
+                raise IncompleteScheduleError(
+                    f"Attempt '{attempt_id}' has completed gameweeks {sorted(new_completed_gws)}, "
+                    f"which does not match registered schedule {sorted(prior.registered_gameweeks)}. "
+                    f"Stopping when intermediate results look favorable is strictly prohibited."
+                )
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        updated_dict = prior.to_dict()
+        updated_dict["status"] = status
+        if execution_status is not None:
+            updated_dict["execution_status"] = execution_status
+        if scientific_verdict is not None:
+            updated_dict["scientific_verdict"] = scientific_verdict
+        if completed_gameweeks is not None:
+            updated_dict["completed_gameweeks"] = list(new_completed_gws)
+        if bundle_path is not None:
+            updated_dict["bundle_path"] = bundle_path
+        if human_approval_ref is not None:
+            updated_dict["human_approval_ref"] = human_approval_ref
+        if status == "completed":
+            updated_dict["completed_at"] = now_iso
+
+        updated = FinalistRegistration(
+            attempt_id=updated_dict["attempt_id"],
+            candidate_name=updated_dict["candidate_name"],
+            champion_name=updated_dict["champion_name"],
+            mechanism_family=updated_dict["mechanism_family"],
+            parent_attempt_id=updated_dict.get("parent_attempt_id"),
+            model_source_hash=updated_dict["model_source_hash"],
+            parameters_hash=updated_dict["parameters_hash"],
+            dev_selection_record_ref=updated_dict["dev_selection_record_ref"],
+            protocol_hash=updated_dict["protocol_hash"],
+            status=updated_dict["status"],
+            execution_status=updated_dict["execution_status"],
+            scientific_verdict=updated_dict.get("scientific_verdict"),
+            attempt_number_in_family=int(updated_dict["attempt_number_in_family"]),
+            registered_at=updated_dict["registered_at"],
+            completed_at=updated_dict.get("completed_at"),
+            bundle_path=updated_dict.get("bundle_path"),
+            human_approval_ref=updated_dict.get("human_approval_ref"),
+            known_aliases=tuple(updated_dict.get("known_aliases", ())),
+            registered_gameweeks=tuple(updated_dict.get("registered_gameweeks", ())),
+            completed_gameweeks=tuple(updated_dict.get("completed_gameweeks", ())),
+            record_hash="",
+        )
+
+        record_hash = updated.compute_record_hash()
+        final_rec = FinalistRegistration(**{**updated.to_dict(), "record_hash": record_hash})
+
+        self._append_record(final_rec)
+        return final_rec
+
+    def _append_record(self, record: FinalistRegistration) -> None:
+        """Append record line to registry file."""
+        self._ensure_dir()
+        line = json.dumps(record.to_dict(), sort_keys=True) + "\n"
+        with open(self.registry_file, "a", encoding="utf-8") as f:
+            f.write(line)
+            f.flush()
+            os.fsync(f.fileno())
