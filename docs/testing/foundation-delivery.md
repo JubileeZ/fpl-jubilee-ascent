@@ -83,3 +83,32 @@ Named-team re-review round 2:
 Parent final validation: 41 focused tests passed (2.28s); Ruff clean; Pyright clean on all Phase 3 files (0 errors, 0 warnings); portable gate 29 passed.
 
 Accepted engineering scope: causal issue forecasts, reproducible content-addressed storage, strict solver CSV export, and atomic replay checkpoint transitions. All 9 Phase 3 checklist items complete. Synthetic diagnostic only; empirical coverage and admission follow-through remain Phase 4/5/8 responsibilities. Local checkpoint on `main`; no push, no Champion change, no sealed/archive mutations.
+
+Phase 3 commit: `2676a568`; published to `origin/main`.
+
+## Phase 4 — engineering accepted; empirical anchor uncomputed
+
+Baseline: `2676a568`. Team: `phase_04_implement`, `phase_04_review_standards` + `phase_04_review_spec`.
+
+Scope: neutral GW1 ownership anchor construction and freezing, binary MILP maximization over admitted universe, exact reported-ownership precision, deterministic secondary lexicographic tie-breaking, optimality certification, row-order independence, native eligibility enforcement, and diagnostic anchor separation.
+
+Named-team review round 1:
+- Standards findings: loose unconstrained `Any` annotations across parameters and collections; Data Clumps in repetitive column parameters; Duplicated Code in DataFrame sorting and column extraction.
+- Spec findings: omitted module documentation on ownership-overlap expectation ($\mathbb{E}[|S \cap M|] = \sum p_{i,g}$) and manager representativeness disclaimer; missing native eligibility enforcement; missing diagnostic anchor IDs; unasked cost-minimization in secondary tie-breaker; non-lexicographic integer sum ties and informal epsilon tolerance.
+
+Repairs executed:
+- Added full mathematical ownership-overlap derivation and population disclaimer to module docstring.
+- Removed unasked cost minimization; implemented strictly concave $\sum \log(1 + \text{player\_id}) x_i$ lexicographic secondary objective over certified primary optimum ($Z^* - 10^{-7}$).
+- Encapsulated column mappings in `UniverseSchema` and extracted `_extract_canonical_universe` helper returning typed `CanonicalUniverse`.
+- Enforced native eligibility via `Bounds(0, 0)` for ineligible players, filtering and passing `purchase_eligible` into `ReplayState`.
+- Implemented diagnostic anchor identification and `diagnostic-anchor-` ID prefix for `gameweek > 1`.
+- Added `test_rounded_ties_and_no_epsilon_sacrifice` proving exact non-sacrifice compared to naive single-stage epsilon perturbation, along with eligibility and diagnostic anchor tests.
+
+Named-team re-review round 2:
+- Standards review: PASS; strict typing, 0 smells, clean interfaces.
+- Spec review: APPROVED / ACCEPTED; all requirements satisfied, 0 missing, 0 creep, 0 bugs.
+- Both reviewer subagents terminated cleanly.
+
+Parent final validation: 11 focused tests passed (0.64s); Ruff clean; Pyright clean (0 errors, 0 warnings); portable gate 29 passed.
+
+Accepted engineering scope: neutral GW1 ownership anchor MILP solver, certificate generation, atomic serialization, row-order invariance, and initial `ReplayState` bridge. All 6 Phase 4 checklist items complete. Actual anchor construction on real historical seasons is research execution; no empirical candidate outcomes evaluated.

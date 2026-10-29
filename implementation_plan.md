@@ -142,16 +142,18 @@ Dependencies: admitted opening snapshot, native rules, manifest format. Independ
 
 Likely seams: reuse constraint-building ideas from `backtesting/metrics.py::select_top_15_squad` only where strict; proposed `backtesting/ownership_anchor.py`. Existing weekly XI/top-fifteen metrics are not primary anchor implementation.
 
-- [ ] Solve binary ownership maximization over admitted GW1 universe: full fifteen, 2 GKP/5 DEF/5 MID/3 FWD, initial £100m cap, max three per club, native eligibility. Ownership remains objective, price affordability constraint; no ownership/price ratio or model score.
-- [ ] Use exact parsed reported-ownership precision and deterministic secondary tie procedure independent of forecasts/outcomes, such as lexicographic stable player IDs after primary optimum fixed. Demonstrate secondary step cannot sacrifice ownership objective through arbitrary epsilon perturbation.
-- [ ] Record solver feasibility/optimality certificate, objective, constraints, tie version, selected IDs, acquisition prices, bank, source hashes and anchor ID. If highest-owned optimum not certified, report incomplete construction rather than quietly label approximate squad highest-owned.
-- [ ] Freeze one anchor per admitted season before Candidate outcomes. GW1 lineup/captain choice may differ by model; fifteen and acquisition state identical. No empty-squad/preseason redraft permitted.
-- [ ] Validate anchor independent of source row ordering and model selection. Document ownership-overlap interpretation without manager-population representativeness claim.
-- [ ] Keep optional later anchors/calendars under separate diagnostic IDs and report labels. Do not make old three-start workload rows mandatory or include local-reset totals in continuous score.
+- [x] Solve binary ownership maximization over admitted GW1 universe: full fifteen, 2 GKP/5 DEF/5 MID/3 FWD, initial £100m cap, max three per club, native eligibility. Ownership remains objective, price affordability constraint; no ownership/price ratio or model score.
+- [x] Use exact parsed reported-ownership precision and deterministic secondary tie procedure independent of forecasts/outcomes, such as lexicographic stable player IDs after primary optimum fixed. Demonstrate secondary step cannot sacrifice ownership objective through arbitrary epsilon perturbation.
+- [x] Record solver feasibility/optimality certificate, objective, constraints, tie version, selected IDs, acquisition prices, bank, source hashes and anchor ID. If highest-owned optimum not certified, report incomplete construction rather than quietly label approximate squad highest-owned.
+- [x] Freeze one anchor per admitted season before Candidate outcomes. GW1 lineup/captain choice may differ by model; fifteen and acquisition state identical. No empty-squad/preseason redraft permitted.
+- [x] Validate anchor independent of source row ordering and model selection. Document ownership-overlap interpretation without manager-population representativeness claim.
+- [x] Keep optional later anchors/calendars under separate diagnostic IDs and report labels. Do not make old three-start workload rows mandatory or include local-reset totals in continuous score.
 
 Acceptance: small brute-force known answer matches optimizer; real admitted anchor has legal full fifteen, nonnegative bank, conserved initial capital, neutral deterministic ties, and valid certificate. Infeasible source yields actionable admission/anchor failure.
 
 Validation when implemented: proposed `tests/test_ownership_anchor.py`; greedy counterexample, club/budget/position interaction, rounded ties, shuffled rows, duplicate/missing metadata, infeasible universe, and forecast-independence test. Actual anchor construction is research execution, distinct from offline tests and separately recorded.
+
+Checkpoint outcome: neutral GW1 ownership anchor construction and freezing accepted by both phase-named reviewers. 11 unit tests pass in 0.64s; Ruff clean; Pyright clean with 0 errors. Mathematical ownership-overlap interpretation and manager population disclaimer documented in module header. Exact two-stage lexicographic tie-breaking (`min sum log(1+pid)*x` over certified optimum $Z^* - 10^{-7}$) proves non-sacrifice on exact reported ties. Invariant to row ordering; actionable `InfeasibleAnchorError` on invalid or unaffordable universe. Diagnostic anchors separated by type and ID prefix. Actual historical anchor construction is research execution; no empirical candidate outcomes evaluated.
 
 ### Phase 5. Implement and verify independent rolling replay
 
