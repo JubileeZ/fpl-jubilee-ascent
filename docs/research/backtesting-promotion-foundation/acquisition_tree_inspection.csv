@@ -1,0 +1,4 @@
+calendar_years,tree_commit,tree_url,untruncated,path_count,inspection_method
+2023-2024,adb4450b10e20c9d6b8c709535b70e4ff461ea36,https://api.github.com/repos/Randdalf/fplcache/git/trees/adb4450b10e20c9d6b8c709535b70e4ff461ea36?recursive=1,True,2065,manual metadata inspection; not retained or hashed
+2024-2025,75750671281e334174be59217c9dd4a5fef88c9d,https://api.github.com/repos/Randdalf/fplcache/git/trees/75750671281e334174be59217c9dd4a5fef88c9d?recursive=1,True,2065,manual metadata inspection; not retained or hashed
+2025-2026,0bb12a87e5a5c2d35a208800203cd3e7fadbea39,https://api.github.com/repos/Randdalf/fplcache/git/trees/0bb12a87e5a5c2d35a208800203cd3e7fadbea39?recursive=1,True,2054,manual metadata inspection; not retained or hashed

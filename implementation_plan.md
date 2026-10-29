@@ -2,6 +2,15 @@
 
 Status: **IN PROGRESS**. Prepared 2026-10-29 against repository `66729b15`; implementation authorized 2026-10-29. Terra Medium implements phases; Sol xhigh reviews. Commit each completed phase on current branch; no push. Unchecked items remain pending; scientific/human approval boundaries still apply.
 
+## Execution status and phase teams
+
+- Phase 0: complete; local commit `a96af707`.
+- Phase 1: synthetic admission engineering accepted by Standards and Spec; 61 focused passes, lint/type checks clean, full checkpoint 753 passes plus accepted timing exception. Explicit empirical/native/integration follow-through remains unchecked below. Phase 2 next.
+- Phases 2–14: not implemented; Phase 2 rule-source preparation only.
+- Exactly three agents per phase from Phase 1 reset: `phase_NN_implement` = GPT-6.1 Terra Medium; `phase_NN_review_standards` and `phase_NN_review_spec` = GPT-6.1 Sol xhigh. Fresh names/team for each phase; no reuse across phases.
+- Progress states: implementing -> independent Standards/Spec reviews -> repair findings -> validation -> local commit. Record findings, validation and commit in durable delivery record; update checklist/current-state at each transition. No push.
+- Current team: `phase_01_implement`, `phase_01_review_standards`, `phase_01_review_spec`. Earlier reused names retired; preserve existing work and unresolved review findings.
+
 Draft author: GPT-6.1 Sol subagent, xhigh reasoning; parent review checked dependencies, source seams, approval boundaries, and completion/deletion criteria.
 
 Deliverable: reproducible evaluation infrastructure measuring actual net FPL points from rolling Transfer Plans, with substantive player-projection safeguards, auditable evidence, and manual adoption. Infrastructure delivery can finish before fresh confirmation accumulates. Candidate statistical Pass, Champion adoption, and live validation remain separate evidence-dependent outcomes.
@@ -59,24 +68,26 @@ Dependencies: Phase 0 identities. Admission precedes anchor construction and any
 
 Likely seams: `features/availability_snapshots.py`, `features/season_archive.py`, `features/vaastav_archive.py`, `backtesting/archive_static.py`, `features/builder.py`; proposed `backtesting/data_admission.py`. Extend foundation audit tooling rather than treating existing coverage audit as admission proof.
 
-- [ ] Produce per-season, per-origin coverage/applicability matrix: opening ownership, price, position/club/eligibility, deadline, complete player universe including blank-GW players, as-of fixture schedule, availability, seed/training history, outcomes, measurable components, and native rules. Fields classified required, permitted limitation, inapplicable, or unavailable before model results.
-- [ ] Preserve existing narrow positive finding: three fplcache opening payloads have pinned full commits, matching compressed SHA256, valid content checks, and recorded UTC commits before payload GW1 deadlines. Reuse `ownership_snapshot_samples.csv` and `ownership_snapshot_provenance.csv`; do not reclassify these as full-season or exact-lock snapshots.
+- [x] Produce per-season, per-origin coverage/applicability matrix: opening ownership, price, position/club/eligibility, deadline, complete player universe including blank-GW players, as-of fixture schedule, availability, seed/training history, outcomes, measurable components, and native rules. Fields classified required, permitted limitation, inapplicable, or unavailable before model results.
+- [x] Preserve existing narrow positive finding: three fplcache opening payloads have pinned full commits, matching compressed SHA256, valid content checks, and recorded UTC commits before payload GW1 deadlines. Reuse `ownership_snapshot_samples.csv` and `ownership_snapshot_provenance.csv`; do not reclassify these as full-season or exact-lock snapshots.
 - [ ] Resolve freshness/eligibility admission from source evidence. Record source publication/capture semantics, mirror limitations, snapshot age and cutoff, eligible IDs/positions/clubs, removals/arrivals, price units, ownership denominator/rounding, and deterministic latest-admissible selection. Present proposed freshness limits in Phase 8 where quantitative preference required.
 - [ ] Pin acquired raw bytes and processed manifest: immutable source URL/full commit/blob identity, source timestamps and uncertainty, retrieval time, payload deadline, compressed/decompressed hashes as applicable, parser/schema version, transformed table hashes, and parent manifest. Never depend on moving `main` for reproduction.
-- [ ] Keep acquisition separate from tests. Actual research acquisition may use network after execution scope approved; tests use checked-in small fixtures/HTTPX mocks and never request real HTTP.
+- [x] Keep acquisition separate from tests. Actual research acquisition may use network after execution scope approved; tests use checked-in small fixtures/HTTPX mocks and never request real HTTP.
 - [ ] Establish complete per-origin fixture/price/universe/availability source coverage. Opening bootstrap admission alone insufficient for six-GW rolling replay. Fixture schedule must be what was knowable at issue time, including postponements and announcements; later realized schedule belongs only to scoring side.
 - [ ] Trace terminal/future fallbacks through `point_in_time_players`, `bootstrap_from_processed`, `prices_at_deadline`, `_owned_meta`, and feature fixture maps. Replace promotion-path fallbacks with admitted as-of inputs or explicit invalid reasons. A player's first future performance row cannot establish earlier eligibility/price/club.
-- [ ] Distinguish known blank, known DNP, unknown schedule, missing forecast, missing outcome, postponed fixture, and not-yet-final outcome. Zero valid only for established zero event/blank/DNP under complete coverage; absent records remain missing.
-- [ ] Retain fixture grain for DGWs; ownership/price stock fields collapse under declared as-of semantics, never sum across fixtures. Require consistent player/fixture/GW keys and ID mapping, including seed-season identity mapping.
+- [x] Distinguish known blank, known DNP, unknown schedule, missing forecast, missing outcome, postponed fixture, and not-yet-final outcome. Zero valid only for established zero event/blank/DNP under complete coverage; absent records remain missing.
+- [x] Retain fixture grain for DGWs; ownership/price stock fields collapse under declared as-of semantics, never sum across fixtures. Require consistent player/fixture/GW keys and ID mapping, including seed-season identity mapping.
 - [ ] Register native scoring/rules support by season. Explicitly handle 2024-25 Assistant Manager exclusion: either no use in registered shared policy, with claim limited to supported policy, or separate future extension. Do not claim unrestricted full-chip support or implement unused Assistant Manager by default.
-- [ ] Publish deterministic admission report with reasons and blockers. Permitted Q13 limitations must have controlled known leakage and complete required inputs; disclose model-dependent effects of missing availability. Disclosure alone cannot admit known leakage.
-- [ ] Route any needed historical reconstruction through snapshot tooling into separately versioned output; flag migration/regeneration proposal for review. Never edit/delete existing archive Parquet files directly. Store research companions under topic folder, execution outputs under `data/reports/`.
+- [x] Publish deterministic admission report with reasons and blockers. Permitted Q13 limitations must have controlled known leakage and complete required inputs; disclose model-dependent effects of missing availability. Disclosure alone cannot admit known leakage.
+- [x] Route any needed historical reconstruction through snapshot tooling into separately versioned output; flag migration/regeneration proposal for review. Never edit/delete existing archive Parquet files directly. Store research companions under topic folder, execution outputs under `data/reports/`.
 
 Acceptance: every requested replay origin has explicit admission outcome and input hash chain; unavailable windows cannot silently shrink; altered hash/timestamp/universe fails admission; sealed paths rejected before reading. Partial source coverage yields explicit feasibility limit, not policy-value result.
 
 Validation when implemented: `uv run pytest tests/test_availability_snapshots.py tests/test_feature_leakage.py tests/test_snapshot_season.py` plus proposed `tests/test_data_admission.py`; fixture cases for late source, future arrival, missing blank player, DGW stock disagreement, unknown fixture, corrupt hash, and sealed-path rejection. Admission tests offline.
 
 Checkpoint B: approve concrete admission/application proposal and remaining acquisition scope. If full required coverage unavailable, continue synthetic engine verification; withhold empirical promotion claim.
+
+Checkpoint outcome: synthetic admission engineering accepted by both phase-named reviewers. Remaining unchecked items are explicit follow-through: empirical freshness/eligibility and complete per-origin coverage remain blocked/unverified; acquired raw packages remain unadmitted; native rules register in Phase 2; strict forecast/replay adapters replace legacy fallbacks in Phases 3/5/11. No actual promotion evidence permitted until these conditions are met. Checkpoint B bounded acquisition approved; synthetic engine verification may continue under original plan.
 
 ### Phase 2. Specify state transitions and season-aware scoring
 
