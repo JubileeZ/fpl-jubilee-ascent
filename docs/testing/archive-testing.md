@@ -15,7 +15,7 @@
 - **Holdout & Gating (ADR 0046, 0047, 0064, 0066)**: 2025-26 = development season; 2024-25 = confirmation season (warm-seeded with 2023-24 archive under ADR 0064; registered in immutable attempt registry under ADR 0066); 2026-27 GW6+ sealed holdout (strictly protected; no backtests, tuning, or exploration).
 - **Promotion Primary (ADR 0066)**: Actual native-season net FPL points under independent 6-GW rolling Strategic transfer plan replay from neutral GW1 ownership anchor. Paired non-wrapping Moving Block Bootstrap ($L=5$) with search-wide family-wise error control ($\text{FWER} \le 0.05$ via Bonferroni/Holm).
 - **Eval target**: `--eval_target realized|process|blend` (blend = 50/50 Blended Eval Target, ADR 0044). Retained as an exploratory and diagnostic screen; does not grant promotion.
-- **Scientific Verdicts & Adoption (ADR 0066)**: Four-way verdicts (`pass`, `fail`, `inconclusive`, `invalid`). Inconclusive routes to fresh confirmation; execution defects stop as invalid. Adoption requires explicit human approval via `uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref <ref>`.
+- **Scientific Verdicts & Adoption (ADR 0066)**: Four-way verdicts (`pass`, `fail`, `inconclusive`, `invalid`). Inconclusive routes to fresh confirmation; execution defects stop as invalid. Adoption requires verified empirical evidence, finalized registered confirmation, exact approved bundle hash and expected Champion; commands in [operator workflow](operator-workflow.md). Bonferroni implemented with fixed attempt budget; sequential Holm unsupported. Empirical calibration/approval remains required; infrastructure tests do not establish the FWER target.
 - **Eval canon**: [docs/research/INDEX.md](../research/INDEX.md) **Eval canon** — promotion primary vs diagnostic targets vs Event Component gap (`mse_share`). Component-gap runner: `docs/research/champion-component-gap/runner.py`.
 
 ---
@@ -32,9 +32,9 @@ uv run python -m commands.backtest calibrated_matchup_hybrid --gw_range 1-38 --d
 # Event Component gap companion (mse_share + twins)
 uv run python docs/research/champion-component-gap/runner.py
 
-# Promotion evaluation (recommendation-only evidence generation; ADR 0066)
-uv run python -m commands.evaluate_model_promotion --data_dir data/archive/2025-26/processed --seed_season 2024-25 --confirmation_data_dir data/archive/2024-25/processed --confirmation_seed_season 2023-24
+# Final recommendation from retained admitted rolling replay evidence (ADR 0066)
+uv run python -m commands.evaluate_model_promotion --evidence_request data/reports/my-evaluation/request.json
 
 # Manual Champion adoption from verified evidence bundle (ADR 0066)
-uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "RFC-2026-10-29"
+uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "RFC-2026-10-29" --expected_champion <champion> --bundle_hash <approved_hash>
 ```

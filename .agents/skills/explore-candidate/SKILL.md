@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Goal: replace Model Champion (`config/model_selection.json` `champion`) with Candidate that achieves scientific verdict PASS on Historical Promotion Gate (ADR 0066).
 
+**Authority boundary:** Legacy smoke `pass`/`FAIL`, oracle gates and blended-XI comparisons = development diagnostics. They cannot establish scientific Pass, final confirmation, adoption readiness or a new Dead Lever lock. Final verdict uses verified rolling replay evidence, declared projection guards, approved statistical protocol and immutable confirmation registration through the shared evaluator. Follow [operator workflow](../../../docs/testing/operator-workflow.md). Synthetic evidence cannot authorize production adoption; missing empirical admission → wait. Existing Dead Lever locks remain unchanged.
+
 ## Run contract (AFK by default)
 
 Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
@@ -15,7 +17,7 @@ Runs unattended (Ralph-style loop). Human enters only at Human Gates and Exit.
 LLM references in prompts, reports, filenames, and documentation: specialist role, date, source artifact; omit fixed provider, product, model, and version names. Preserve exact FPL projection-model identifiers.
 
 - **Arm goal.** First invocation in conversation, no goal active: call `CreateGoal` once (per `/goal` contract) with objective:
-  `explore-candidate <scope or "dual-lane">: frozen Candidate passing Historical Promotion Gate on dev + confirm seasons via smoke.py, adoption queued in Human Queue — or scope exhausted with every attempt in Candidate Ledger. State: .agents/work-packets/explore-candidate-<slug>.md`
+  `explore-candidate <scope or "dual-lane">: frozen Candidate with verified ADR 0066 evidence and registered confirmation, adoption queued in Human Queue — or scope exhausted with every attempt recorded. Smoke diagnostics alone cannot satisfy gate. State: .agents/work-packets/explore-candidate-<slug>.md`
   Goal already active → skip. `CreateGoal` unavailable → continue without goal; packet = state. Then start step 0 same turn.
 - **Disk = memory.** Chat is not state. Work Packet `.agents/work-packets/explore-candidate-<slug>.md` (from `.agents/work-packet.md.tmpl`) holds: mode, scope, current step, round, per-lane mechanism / grid / best smoke row, ledger verdicts, `## Human Queue`. Update packet after every step; iteration ends with `Next` = exact next action.
   - **Slug:** Queue = queue CSV's parent folder name (default `candidate-ideation` for `docs/research/candidate-ideation/idea_queue.csv`, or e.g. `component-model-ideas`); Scoped / Dual-lane = topic slug fixed at step 0. Same invocation args → same packet path.
@@ -57,7 +59,7 @@ Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_i
 - **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
 - **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
 - **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; if row provides `spec_path`, subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`) providing full mathematical formulation, cold-start strategy, and Python code skeleton. Step 5 Stack protocol on batch winners (stack/verify runs under `.tmp/agent/explore-candidate/stack_b<N>/`). Then steps 6–7 on frozen result.
-- **Row verdict = one atomic edit:** `status` ∈ {`dead-match`, `fail`, `pass-dev`, `stack-member`, `confirm-pass`, `confirm-fail`} + `ledger_result` = `combined_delta segs boot P` (+ stack name if stacked) + ledger row (step 8 rules) + verified smoke rows appended to `docs/research/<slug>/smoke_results.csv` (ledger `evidence_path`; never `.tmp`). Order: evidence CSV → ledger row → queue row. Never status without ledger row.
+- **Row verdict = one atomic edit:** Record diagnostic metrics with diagnostic scope; final `pass`/`fail` requires shared scientific evidence. `inconclusive`/`invalid` never creates a new Dead Lever lock. Persist evidence → ledger record → queue status; never mark `confirm-pass` from legacy smoke or unregistered historical inspection.
 - **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
 - **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
 
@@ -68,14 +70,14 @@ Roles resolve from `data/archive/YYYY-YY` each run: `uv run python .agents/skill
 - **confirm** = second-latest complete season (ADR 0047). One run per frozen Candidate, never tuned on.
 - **holdout** = incomplete live season. Sealed (ADR 0046 GW6+): no smoke, tuning, ablation; post-promotion check only.
 
-Record resolved names in packet at step 0; roles roll forward automatically when a season completes. Commands, prototypes, and briefs name roles, never years.
+Record resolved names in packet at step 0. Season completion alone cannot assign fresh confirmation or unseal holdout; use approved protocol windows and registered inspection history. Commands, prototypes, and briefs name roles and exact frozen season identities.
 
 ## Hard constraints
 
 - **Zero leakage.** Inputs only from `fit(history_df)` / `predict(features_df)` handed in by walk-forward (as-of `gw`, history before target deadline). No direct file reads. No `players.parquet` season columns (`TERMINAL_PLAYER_COLUMNS`, `features/builder.py`). Prototype source holds no season literal (audit refuses). Holdout sealed.
 - **Strict feature audit.** Each prototype declares `FEATURES` manifest; every column literal in source must be declared; `smoke.py` refuses undeclared or terminal columns and fails any run where fit history reaches target GW.
 - **Ledger law.** Dead row with `revisit_after` > today = untouchable (rebuild, re-sweep, re-smoke, stack). Only user's explicit words override. Match by mechanism, not name. Retuned grid / wider clamp / new stack order of Dead form = same lever.
-- Gate code = `backtesting.model_evaluation.compare_to_reference` / `compare_two_season_gate` (Blended Constrained `formation_xi_regret`, delta > 0 (no min effect), non-wrapping MBB L=5 P ≥ 0.75 dev, P ≥ 0.65 warm-seeded confirm, P ≥ 0.85 pooled stratified per ADR 0064, sqrt(ns) segment floors + ≥1 active win, full + active-window guardrails). No private metric replaces it. Never loosen gate, drop guardrail, or shrink GW range to manufacture a win.
+- Diagnostic code = `backtesting.model_evaluation.compare_to_reference` / `compare_two_season_gate`; historical blended-XI thresholds retain diagnostic meaning only. Final authority = shared ADR 0066 evaluator over native rolling net-score traces, complete guards and registered confirmation. Never loosen protocol, drop guardrails or shorten registered schedule to manufacture a win.
 
 ## Workflow
 
@@ -170,16 +172,16 @@ Smoke row counts only with AUDIT PASS and no `LEAKAGE FAIL`. Winner claims → r
 
 ### 5. Iterate to paper win
 
-Paper win = verified smoke row `pass=True` (full gate, dev season, full season range).
-- No win: read `reasons` + segment deltas; next round = new mechanism inside scope (Scoped) or inside lane (Dual-lane), fresh pre-declared grid. Failed mechanism → Dead row at step 8. Apply progress guard.
+Paper win = verified smoke row `pass=True` (development diagnostic; no final gate authority).
+- No win: read `reasons` + segment deltas; next round = new mechanism inside scope (Scoped) or inside lane (Dual-lane), fresh pre-declared grid. Record diagnostic failure without inventing demonstrated scientific harm or a new Dead Lever lock. Apply progress guard.
 - All lanes closed → step 8, Exit (b).
 
 **Stack protocol** (≥2 verified dev winners, non-conflicting):
 1. Stack = new prototype combining each winner's best variant (prefix `stack_`); one smoke run on dev. Stack must itself be paper win — sum of singles is not evidence.
 2. Ablate: leave-one-out variant per lever in same smoke file. Lever whose removal does not lower `combined_delta` → drop; re-smoke reduced stack.
 3. Frozen pick = best of {surviving stack, best single} by verified `combined_delta` with `pass=True`.
-4. Only winners stack: failed or near-miss lever = Dead row, never added to stack.
-5. Confirm (step 7) runs once, on frozen pick only — never on singles then stack (each extra frozen name = extra look at confirm season). Confirm FAIL on frozen pick → every member row `confirm-fail` + Dead; no confirm on subsets or singles from same batch.
+4. Only diagnostic winners stack; exclude failed or near-miss levers from current stack without assigning unsupported scientific verdicts.
+5. Confirm (step 7) runs once, on frozen registered pick only; never on singles then stack. Demonstrated failure of a stack does not establish harm from each member separately. Preserve family history; no confirmation on subsets without new authorized registration.
 
 ### 6. Build Candidate
 
@@ -191,21 +193,16 @@ From winning prototype:
 
 ### 7. Adopt gate
 
-1. Dev PASS = step 6 row.
-2. Confirmation (ADR 0047), once: `uv run python .agents/skills/explore-candidate/smoke.py --model <name> --season confirm --out docs/research/<slug>/candidate_gate.csv`. Harness refuses repeat runs, prototypes, partial GW range, scratch `--out`. Ledger `result` records `confirm <confirm season> PASS|FAIL <delta> <segs> boot P <p>` (harness reads this, `--out`, and every `docs/{research,archive}/*/candidate_gate.csv` to block repeats). `--out` must be `docs/research/<slug>/candidate_gate.csv`.
-   - FAIL → Dead ledger row; back to step 5 if scope remains, else Exit (b).
-   - Lever depends on scoring rule absent in confirm season (e.g. defcon points, BPS weights) → skip confirm (uninformative); Human Queue "holdout-first per ADR 0046; wait holdout GW6+"; Exit (c).
-3. PASS both → Human Queue adoption bundle:
-   - add Candidate first in `config/model_selection.json` `candidates`;
-   - `uv run python -m commands.evaluate_model_promotion --data_dir data/archive/<dev season>/processed --seed_season <dev seed> --confirmation_data_dir data/archive/<confirm season>/processed --confirmation_seed_season <confirm seed>` — deterministic evaluation producing verified evidence bundle JSON with scientific verdict 'pass';
-   - manual adoption command: `uv run python -m commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref "<user_ref>"`;
-   - draft ADR (status Proposed, pattern ADR 0045) + catalog Role update + INDEX entry;
-   - post-promotion holdout check once holdout GW6+ finished (`--data_dir data/archive/<holdout season>/processed --seed_season <dev season> --gw_range 6-<last finished>`); FAIL → revert on user's words.
+1. Step 6 row establishes development-screen eligibility only. Freeze candidate source/parameters, complete evidence identities, approved windows, guards, statistical budget and shared chip calendar before final evaluation.
+2. Register one finalist before confirmation. Preserve prior inspected-data/family history; evaluate complete registered schedule through causal admission, native rolling replay and shared evidence evaluator. Legacy `smoke.py --season confirm` is diagnostic and cannot establish fresh confirmation.
+   - Required admission, guards, live readiness or numerical approval missing → record `inconclusive`/`invalid` with exact reason; Human Queue, Exit (c). No new Dead lock.
+   - Historical native scoring difference → native normalization or disclosed limitation under approved protocol; never substitute sealed holdout automatically.
+3. Verified scientific Pass with complete execution → Human Queue exact candidate-bound evidence bundle/hash, approval reference and expected current Champion. Commands and request schema: [operator workflow](../../../docs/testing/operator-workflow.md). No config mutation during research. Draft Champion-change ADR Proposed. Holdout access and adoption/rollback remain separate explicit human decisions; season completion never unseals data.
 
 ### 8. Record + Exit
 
 - Topic folder `docs/research/<slug>/` from `docs/research/template/research-note.md`: note + frozen `smoke_results.csv` (append verified lane rows; never overwrite) + `candidate_gate.csv`. Metric section per INDEX conventions.
-- Every attempt (pass/fail) → `candidate_ledger.csv` row (Dead: `revisit_after` = evidence date + 1 year) + ledger table view. `uv run pytest tests/test_candidate_ledger.py`.
+- Every attempt → `candidate_ledger.csv` evidence record + ledger table view. New Dead lock only for demonstrated scientific failure under approved policy; `inconclusive`, `invalid` and diagnostic failure never imply Dead. Existing locks preserved. `uv run pytest tests/test_candidate_ledger.py`.
 - Code touched → `uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`. Failures fixed before Exit.
 - Delete `.tmp/agent/explore-candidate/` only at Exit (a)/(b); keep for (c).
 - Exit per Run contract.

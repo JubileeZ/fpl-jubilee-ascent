@@ -5,7 +5,7 @@ Implements Phase 8 requirements:
 2. Season-level and segment/state-level material-loss limits.
 3. Paired calendar dependence and non-wrapping Moving Block Bootstrap (MBB) preserving serial autocorrelation.
 4. Stored-score resampling without solver calls per bootstrap draw.
-5. Search-wide family-wise error control (Q17) across evaluation attempts.
+5. Fixed Bonferroni alpha allocation across registered attempts; bootstrap validity requires calibration.
 6. Multi-season weighting and explicit Inconclusive vs demonstrated Fail vs Pass routes.
 7. Integration with substantive projection guards (Phase 6).
 8. Simulation calibration diagnostic for bootstrap coverage and empirical Type I error.
@@ -19,11 +19,14 @@ from dataclasses import asdict, dataclass, field
 import hashlib
 import json
 import math
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
-from backtesting.projection_guards import GuardOutput
+from backtesting.projection_guards import GuardOutput, classify_non_inferiority_interval
+
+if TYPE_CHECKING:
+    from backtesting.confirmation_registry import ConfirmationRegistry
 
 ScientificVerdict = Literal["pass", "fail", "inconclusive", "invalid"]
 FamilyErrorControl = Literal["bonferroni", "holm", "none"]
@@ -121,6 +124,10 @@ class StatisticalProtocolConfig:
     state_harm_checks_enabled: bool = True
     approved_by_human: bool = False
     approval_reference: str = "UNAPPROVED"
+    required_projection_guards: tuple[str, ...] = ()
+    development_season: str = "2025-26"
+    confirmation_season: str = "2024-25"
+    evidence_protocol_hash: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -139,6 +146,10 @@ class StatisticalProtocolConfig:
             "max_family_attempts": self.max_family_attempts,
             "season_weights": dict(sorted(self.season_weights.items())),
             "state_harm_checks_enabled": self.state_harm_checks_enabled,
+            "required_projection_guards": list(self.required_projection_guards),
+            "development_season": self.development_season,
+            "confirmation_season": self.confirmation_season,
+            "evidence_protocol_hash": self.evidence_protocol_hash,
         }
         encoded = json.dumps(canonical_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
@@ -197,6 +208,8 @@ def compute_season_summaries(
     paired_scores: Sequence[PairedGameweekScore],
     season_material_loss_limit: float,
     segment_material_loss_limit: float,
+    *,
+    state_harm_checks_enabled: bool = True,
 ) -> list[SeasonScoreSummary]:
     """Compute per-season performance totals and evaluate seasonal/segment harm limits."""
     by_season: dict[str, list[PairedGameweekScore]] = {}
@@ -214,7 +227,12 @@ def compute_season_summaries(
         # Segment breakdown
         segment_deltas: dict[str, float] = {}
         for s in scores:
-            segment_deltas[s.segment] = segment_deltas.get(s.segment, 0.0) + s.delta_net
+            segment = assign_gameweek_segment(s.gameweek)
+            segment_deltas[segment] = segment_deltas.get(segment, 0.0) + s.delta_net
+            if not isinstance(s.is_chip_gameweek, bool):
+                raise ValueError("Chip gameweek flag must be an explicit boolean")
+            if state_harm_checks_enabled and s.is_chip_gameweek:
+                segment_deltas["chip"] = segment_deltas.get("chip", 0.0) + s.delta_net
 
         violates_season = net_delta < -season_material_loss_limit
         violates_segment = any(loss < -segment_material_loss_limit for loss in segment_deltas.values())
@@ -270,6 +288,27 @@ def resample_paired_blocks(
     return sampled_deltas
 
 
+def compute_score_trace_hash(paired_scores: Sequence[PairedGameweekScore]) -> str:
+    """Bind retained paired score values and their calendar keys to a registry entry."""
+    payload = [asdict(score) for score in sorted(paired_scores, key=lambda score: (score.season, score.gameweek))]
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _adjusted_alpha(config: StatisticalProtocolConfig, attempt_number: int) -> float:
+    if config.max_family_attempts < 1 or not 1 <= attempt_number <= config.max_family_attempts:
+        raise ValueError("Attempt number exceeds the registered positive family attempt budget")
+    if not 0.0 < config.nominal_alpha < 1.0:
+        raise ValueError("Nominal alpha must lie strictly between zero and one")
+    if config.family_error_control == "holm":
+        raise ValueError("Holm requires a fixed family ordered by p-value; sequential attempt ranks are unsupported")
+    if config.family_error_control == "bonferroni":
+        return config.nominal_alpha / config.max_family_attempts
+    if config.family_error_control == "none":
+        return config.nominal_alpha
+    raise ValueError(f"Unsupported family error control: {config.family_error_control}")
+
+
 def run_stored_score_bootstrap(
     paired_scores: Sequence[PairedGameweekScore],
     config: StatisticalProtocolConfig,
@@ -278,26 +317,21 @@ def run_stored_score_bootstrap(
     seed: int = 42,
 ) -> BootstrapInferenceResult:
     """Run non-wrapping block bootstrap on stored scores without invoking the MILP solver."""
+    adjusted_alpha = _adjusted_alpha(config, attempt_number)
+    if config.bootstrap_draws < 1 or config.bootstrap_block_size < 1:
+        raise ValueError("Bootstrap draws and block size must be positive")
     if not paired_scores:
         return BootstrapInferenceResult(
             point_estimate=0.0,
             confidence_interval=(0.0, 0.0),
             alpha=config.nominal_alpha,
-            adjusted_alpha=config.nominal_alpha,
+            adjusted_alpha=adjusted_alpha,
             p_value_superiority=1.0,
             p_value_non_inferiority=1.0,
             bootstrap_draws=0,
             block_size=config.bootstrap_block_size,
             standard_error=0.0,
         )
-
-    # Multiplicity adjustment under comparison family (Q17)
-    adjusted_alpha = config.nominal_alpha
-    if config.family_error_control == "bonferroni":
-        adjusted_alpha = config.nominal_alpha / max(1, config.max_family_attempts)
-    elif config.family_error_control == "holm":
-        k = max(1, min(attempt_number, config.max_family_attempts))
-        adjusted_alpha = config.nominal_alpha / (config.max_family_attempts - k + 1)
 
     by_season: dict[str, list[PairedGameweekScore]] = {}
     for s in paired_scores:
@@ -358,10 +392,16 @@ def evaluate_evidence_against_protocol(
     config: StatisticalProtocolConfig,
     *,
     attempt_number: int = 1,
-    is_confirmation_available: bool = True,
+    is_confirmation_available: bool = False,
+    confirmation_registry: ConfirmationRegistry | None = None,
+    confirmation_attempt_id: str | None = None,
     seed: int = 42,
 ) -> PromotionEvidenceEvaluation:
-    """Synthesize rolling replay scores, projection guards, and statistical uncertainty into a scientific verdict."""
+    """Evaluate retained scores with complete guards and registry-bound confirmation.
+
+    The legacy confirmation boolean does not establish evidence admission. Bonferroni
+    allocation controls multiplicity only insofar as the bootstrap intervals are calibrated.
+    """
     protocol_hash = config.compute_hash()
     reasons: list[str] = []
     limitations: list[str] = []
@@ -381,13 +421,14 @@ def evaluate_evidence_against_protocol(
             admitted_limitations=["Zero gameweeks evaluated"],
             protocol_hash=protocol_hash,
             attempt_number=attempt_number,
-            is_confirmation_available=is_confirmation_available,
+            is_confirmation_available=False,
         )
 
     season_summaries = compute_season_summaries(
         paired_scores,
         config.season_material_loss_limit,
         config.segment_material_loss_limit,
+        state_harm_checks_enabled=config.state_harm_checks_enabled,
     )
     material_loss_violated = any(
         s.violates_material_loss or s.violates_segment_loss for s in season_summaries
@@ -408,22 +449,102 @@ def evaluate_evidence_against_protocol(
 
     guard_regressions: list[str] = []
     guard_missing_evidence: list[str] = []
-    if projection_guards is not None:
-        for guard in projection_guards:
-            if not guard.passed:
-                if guard.status in ("MISSING_EVIDENCE", "UNASSESSED"):
-                    guard_missing_evidence.append(
-                        f"Guard '{guard.metric_name}' missing required evidence: {guard.reason}"
-                    )
-                else:
-                    guard_regressions.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
+    guard_uncertainty: list[str] = []
+    required_guards = config.required_projection_guards
+    if not required_guards or len(set(required_guards)) != len(required_guards) or any(not name.strip() for name in required_guards):
+        guard_missing_evidence.append("Required projection guard inventory is missing or contains duplicate/empty names")
+    guards = list(projection_guards or ())
+    actual_guard_names = [guard.metric_name for guard in guards]
+    if len(set(actual_guard_names)) != len(actual_guard_names):
+        guard_missing_evidence.append("Projection guard evidence contains duplicate metric names")
+    if set(actual_guard_names) != set(required_guards):
+        guard_missing_evidence.append(
+            f"Projection guard inventory mismatch: required {sorted(required_guards)}, supplied {sorted(actual_guard_names)}"
+        )
+    if not guards:
+        guard_missing_evidence.append("Projection guards missing required evidence")
+    for guard in guards:
+        if guard.status not in ("PASS", "FAIL", "INCONCLUSIVE", "MISSING_EVIDENCE", "UNASSESSED"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has unknown status evidence: {guard.status}")
+        elif guard.status in ("MISSING_EVIDENCE", "UNASSESSED"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' missing required evidence: {guard.reason}")
+        elif not isinstance(guard.passed, bool) or guard.passed != (guard.status == "PASS"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has inconsistent pass/status evidence")
+        elif (
+            guard.sample_size <= 0
+            or not all(math.isfinite(value) for value in (guard.estimate, guard.margin))
+            or guard.margin < 0.0
+            or guard.direction not in ("lower_is_better", "higher_is_better", "zero_is_ideal")
+        ):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
+        elif (
+            guard.status == "INCONCLUSIVE"
+            and guard.sample_size == 1
+            and guard.standard_error is None
+            and guard.ci_lower is None
+            and guard.ci_upper is None
+            and guard.coverage == 0.0
+        ):
+            guard_uncertainty.append(f"Guard '{guard.metric_name}' has insufficient observations to estimate uncertainty")
+        elif (
+            guard.sample_size < 2
+            or guard.standard_error is None
+            or guard.ci_lower is None
+            or guard.ci_upper is None
+            or not 0.0 < guard.coverage <= 1.0
+            or not all(math.isfinite(value) for value in (guard.standard_error, guard.ci_lower, guard.ci_upper))
+            or guard.standard_error < 0.0
+            or guard.ci_lower > guard.ci_upper
+        ):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
+        else:
+            interval_status = classify_non_inferiority_interval(guard.ci_lower, guard.ci_upper, guard.margin, guard.direction)
+            if interval_status == "INCONCLUSIVE" and not guard.passed:
+                guard_uncertainty.append(f"Guard '{guard.metric_name}' non-inferiority remains uncertain: {guard.reason}")
+            elif interval_status != guard.status:
+                guard_missing_evidence.append(f"Guard '{guard.metric_name}' status contradicts its uncertainty bounds")
+            elif interval_status == "FAIL":
+                guard_regressions.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
 
-    guards_passed = len(guard_regressions) == 0 and len(guard_missing_evidence) == 0
-    guard_failures = guard_regressions + guard_missing_evidence
+    guards_passed = not guard_regressions and not guard_missing_evidence and not guard_uncertainty
+    guard_failures = guard_regressions + guard_missing_evidence + guard_uncertainty
     if guard_missing_evidence:
         reasons.extend(guard_missing_evidence)
     if guard_regressions:
         reasons.extend(guard_regressions)
+    if guard_uncertainty:
+        reasons.extend(guard_uncertainty)
+
+    confirmation_admitted = False
+    if confirmation_registry is not None and confirmation_attempt_id is not None:
+        registration = confirmation_registry.get_attempt(confirmation_attempt_id)
+        confirmation_scores = [score for score in paired_scores if score.season == config.confirmation_season]
+        completed_gws = [score.gameweek for score in confirmation_scores]
+        if (
+            registration is not None
+            and registration.status in ("in_progress", "completed")
+            and registration.execution_status == "complete"
+            and registration.protocol_hash == protocol_hash
+            and registration.attempt_number_in_family == attempt_number
+            and registration.max_family_attempts == config.max_family_attempts
+            and registration.requested_seasons == (config.confirmation_season,)
+            and bool(completed_gws)
+            and len(set(completed_gws)) == len(completed_gws)
+            and set(completed_gws) == set(registration.registered_gameweeks) == set(registration.completed_gameweeks)
+            and registration.score_trace_hash == compute_score_trace_hash(confirmation_scores)
+        ):
+            confirmation_admitted = True
+    has_required_seasons = (
+        config.development_season != config.confirmation_season
+        and {score.season for score in paired_scores} == {config.development_season, config.confirmation_season}
+    )
+    if not confirmation_admitted:
+        limitations.append("Confirmation unavailable: no matching registered complete score trace")
+    if not has_required_seasons:
+        limitations.append("Required development and confirmation seasons are incomplete")
+    if config.family_error_control == "none":
+        limitations.append("Unadjusted bootstrap diagnostic; no search-wide family error control")
+    protocol_approved = config.approved_by_human and bool(config.approval_reference.strip()) and config.approval_reference != "UNAPPROVED"
 
     bootstrap_res = run_stored_score_bootstrap(
         paired_scores,
@@ -435,6 +556,10 @@ def evaluate_evidence_against_protocol(
     ci_lower, ci_upper = bootstrap_res.confidence_interval
     point_est = bootstrap_res.point_estimate
     p_val = bootstrap_res.p_value_superiority
+    if ci_upper < 0.0:
+        reasons.append(
+            f"Candidate net-score interval below zero (upper CI {ci_upper:.3f} < 0.0 at alpha {bootstrap_res.adjusted_alpha:.4f})"
+        )
 
     # Invalid criteria:
     # - Missing or unassessed required projection guard evidence (contract defect; does NOT lock dead lever)
@@ -445,11 +570,7 @@ def evaluate_evidence_against_protocol(
     # - Material loss limit violated in any season or segment
     # - Significant net loss (ci_upper < 0)
     # - Substantive projection guard regression
-    elif material_loss_violated or ci_upper < 0.0 or bool(guard_regressions):
-        if ci_upper < 0.0:
-            reasons.append(
-                f"Candidate significantly worse than Champion (upper CI {ci_upper:.3f} < 0.0 at alpha {bootstrap_res.adjusted_alpha:.4f})"
-            )
+    elif protocol_approved and (material_loss_violated or ci_upper < 0.0 or bool(guard_regressions)):
         verdict = "fail"
 
     # Pass criteria:
@@ -460,8 +581,10 @@ def evaluate_evidence_against_protocol(
     # - No material loss
     # - All projection guards passed
     elif (
-        config.approved_by_human
-        and is_confirmation_available
+        protocol_approved
+        and confirmation_admitted
+        and has_required_seasons
+        and config.family_error_control == "bonferroni"
         and point_est > 0.0
         and ci_lower > 0.0
         and guards_passed
@@ -475,17 +598,17 @@ def evaluate_evidence_against_protocol(
     # - OR confirmation season is not yet available (development-only evidence)
     else:
         verdict = "inconclusive"
-        if not config.approved_by_human:
+        if not protocol_approved:
             reasons.append(
                 "Numerical protocol configuration has not been approved by human; candidate recommendation capability disabled pending protocol approval"
             )
             limitations.append("Protocol unapproved; human approval barrier active")
-        if not is_confirmation_available:
+        if not confirmation_admitted:
             reasons.append(
                 "Confirmation season evidence not yet admitted or available; candidate cannot pass on development-only evidence"
             )
             limitations.append("Development-only trajectory; awaiting registered fresh confirmation")
-        if ci_lower <= 0.0:
+        if ci_lower <= 0.0 <= ci_upper:
             reasons.append(
                 f"Uncertainty contains zero (CI [{ci_lower:.3f}, {ci_upper:.3f}] at alpha {bootstrap_res.adjusted_alpha:.4f}); advantage not statistically distinguished"
             )
@@ -504,7 +627,7 @@ def evaluate_evidence_against_protocol(
         admitted_limitations=limitations,
         protocol_hash=protocol_hash,
         attempt_number=attempt_number,
-        is_confirmation_available=is_confirmation_available,
+        is_confirmation_available=confirmation_admitted,
     )
 
 

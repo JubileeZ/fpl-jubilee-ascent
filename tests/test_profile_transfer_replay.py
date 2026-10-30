@@ -1,9 +1,17 @@
 """Unit tests for transfer plan replay profiling engine."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+import json
+import subprocess
+import sys
+from dataclasses import asdict, replace
+
+import pytest
 
 from backtesting.rolling_replay import SolverCertificate
+from backtesting.replay_state import Player, initial_state, state_hash
+from models.scoring_matrix import Position
 from commands.profile_transfer_replay import (
     PREDEFINED_PROFILING_MANIFEST,
     ProbeExecutionRecord,
@@ -68,6 +76,7 @@ def test_profiling_call_cap_and_unfinished_coverage_reporting() -> None:
     )
     assert report.total_calls_executed == 2
     assert report.budget_exhausted is True
+    assert report.workload_projection is not None
     assert report.workload_projection.sample_coverage_ratio == 0.25  # 2 of 8 planned probes
     assert report.workload_projection.unfinished_samples_count == 6
 
@@ -122,6 +131,7 @@ def test_censored_timing_individual_reporting() -> None:
     assert report.censored_calls_count == 2
     assert report.records[0].is_censored is True
     assert report.records[0].termination_status == "TIMEOUT"
+    assert report.workload_projection is not None
     assert report.workload_projection.extrapolation_reliable is False
 
 
@@ -199,3 +209,63 @@ def test_cli_execution_and_report_saving(tmp_path: Path) -> None:
     text = out_file.read_text(encoding="utf-8")
     assert "workload_projection" in text
     assert "policy_recommendations" in text
+    assert json.loads(text)["is_simulation"] is True
+    assert json.loads(text)["cache_benchmark"] is None
+    assert json.loads(text)["workload_projection"] is None
+    assert json.loads(text)["policy_recommendations"] is None
+
+
+def test_nondryrun_cli_requires_real_adapter(tmp_path: Path) -> None:
+    destination = tmp_path / "not-created.json"
+    with pytest.raises(SystemExit) as exc:
+        main(["--output", str(destination)])
+    assert exc.value.code == 2
+    assert not destination.exists()
+
+
+def test_import_does_not_require_unix_resource() -> None:
+    result = subprocess.run([sys.executable, "-c", "import sys; sys.modules['resource'] = None; import commands.profile_transfer_replay"],
+                            capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_cli_profiles_actual_native_solver_from_retained_manifest(tmp_path: Path) -> None:
+    positions = cast(list[Position], ["GK"] * 2 + ["D"] * 5 + ["M"] * 5 + ["F"] * 3)
+    squad = tuple(Player(i, position, (i - 1) % 6 + 1, 50, 50) for i, position in enumerate(positions, 1))
+    opening = initial_state("2024-25", squad)
+    state = replace(opening, deadline=2, free_transfers=1, parent_hash=state_hash(opening))
+    rows = [{"player_id": p.player_id, "position_id": {"GK": 1, "D": 2, "M": 3, "F": 4}[p.position], "club_id": p.club,
+             "now_cost": p.market, "purchase_eligible": True, "2_Pts": 5.0, "2_xMins": 90.0} for p in squad]
+    source = tmp_path / "native.json"
+    source.write_text(json.dumps({"version": 1, "mode": "synthetic_diagnostic", "problems": [{"problem_id": "tiny",
+                      "archetype": "ordinary", "horizon": 1, "state": asdict(state), "forecasts": {"rows": rows}}]}))
+    output = tmp_path / "actual-profile.json"
+    assert main(["--problem-manifest", str(source), "--output", str(output), "--max-calls", "2"]) == 0
+    report = json.loads(output.read_text())
+    assert report["is_simulation"] is False
+    assert report["workload_projection"] is not None
+    assert report["policy_recommendations"] is not None
+    assert report["total_calls_executed"] == 2
+    assert report["records"][0]["solve_time_seconds"] > 0
+    assert report["records"][0]["source_id"].startswith("synthetic-native:")
+    assert report["records"][0]["objective"] == pytest.approx(report["records"][0]["objective_bound"], abs=1e-6)
+
+
+@pytest.mark.parametrize("kwargs", [{"max_optimizer_calls": 21}, {"time_limit_per_call_seconds": 31}, {"threads": 2}, {"serial": False}])
+def test_profiling_hard_caps_cannot_be_relaxed(kwargs: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match="at most 20"):
+        ProfilingEnvelope(**kwargs)
+
+
+def test_simulation_does_not_assess_workload_or_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("Simulated timings cannot assess workload or policy")
+
+    monkeypatch.setattr("commands.profile_transfer_replay.compute_workload_projection", forbidden)
+    monkeypatch.setattr("commands.profile_transfer_replay.derive_policy_recommendations", forbidden)
+    report = execute_profiling_experiment(manifest=PREDEFINED_PROFILING_MANIFEST[:1],
+                                         solver_hook=lambda problem, gap, limit: (_make_certificate(), "synthetic"), simulation=True)
+    assert report.workload_projection is None
+    assert report.policy_recommendations is None
+    assert report.cache_benchmark is None
+    assert report.to_dict()["policy_recommendations"] is None

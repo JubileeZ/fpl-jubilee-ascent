@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -30,6 +32,7 @@ from backtesting.promotion import (
     POOLED_BOOTSTRAP_MIN_P,
     PromotionVerdict,
 )
+from backtesting.promotion_evidence import verify_recommendation_bundle, write_recommendation_bundle
 from backtesting.walkforward import WalkforwardConfig, WalkforwardResult, run_walkforward_backtest
 from commands.backtest import resolve_backtest_data_dir, resolve_seed_processed_dir
 from models.selection import DEFAULT_CONFIG_PATH, ModelSelection, load_model_selection, save_model_selection
@@ -90,16 +93,7 @@ def _stage_evidence_and_recommendation(
     apply: bool,
     commit_hash: str | None = None,
 ) -> tuple[ModelSelection, list[CandidateComparison], tuple[Path, Path] | None]:
-    updated = (
-        ModelSelection(
-            champion=selection.champion,
-            candidates=selection.candidates,
-            promotion_status=f"recommend_promotion:{passing_candidate}",
-            schema_version=selection.schema_version,
-        )
-        if passing_candidate
-        else selection
-    )
+    updated = selection
     evidence_paths = None
     if apply:
         record = build_evidence_record(
@@ -284,55 +278,52 @@ def adopt_champion(
     approval_ref: str | None = None,
     expected_current_champion: str | None = None,
     candidate_name: str | None = None,
+    approved_bundle_hash: str | None = None,
 ) -> ModelSelection:
     """Explicitly adopt an approved candidate as the new Model Champion with human approval."""
     if not approval_ref or not approval_ref.strip():
         raise ValueError("Cannot adopt candidate: missing required human approval reference")
-
-    bundle_file = Path(bundle_path)
-    if not bundle_file.is_file():
-        raise FileNotFoundError(f"Evidence bundle not found: {bundle_path}")
-
-    data = json.loads(bundle_file.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError("Evidence bundle content must be a JSON object")
-
-    exec_status = data.get("execution_status")
-    if exec_status != "complete":
-        raise ValueError(f"Cannot adopt candidate: execution status is '{exec_status}', not 'complete'")
-
-    # Validate scientific verdict
-    verdict = data.get("scientific_verdict") or data.get("verdict")
-    if verdict != "pass":
-        raise ValueError(f"Cannot adopt candidate: scientific verdict is '{verdict}', not 'pass'")
-
-    cand_name = candidate_name
-    if not cand_name:
-        if "comparisons" in data and data["comparisons"]:
-            cand_name = data["comparisons"][0].get("candidate")
-        elif "candidate_name" in data:
-            cand_name = data["candidate_name"]
-        elif "selection_after" in data:
-            cand_name = data["selection_after"].get("champion")
-
-    if not cand_name:
-        raise ValueError("Could not determine candidate name from evidence bundle")
-
+    if not expected_current_champion:
+        raise ValueError("Cannot adopt candidate: explicit expected current Champion required")
+    if not approved_bundle_hash:
+        raise ValueError("Cannot adopt candidate: exact approved bundle hash required")
+    data = verify_recommendation_bundle(bundle_path, require_finalized=True)
+    if approved_bundle_hash != data["bundle_hash"]:
+        raise ValueError("Human approval refers to a different evidence bundle hash")
+    if data["scientific_verdict"] != "pass" or data["execution_status"] != "complete" or not data["empirical_admission"]:
+        raise ValueError("Cannot adopt candidate: complete empirical scientific pass required")
+    cand_name = data["candidate_name"]
+    if candidate_name is not None and candidate_name != cand_name:
+        raise ValueError("Candidate override differs from approved evidence")
     selection_path = config_path or DEFAULT_CONFIG_PATH
     current_sel = load_model_selection(selection_path)
-
-    expected_champ = expected_current_champion or data.get("former_champion")
-    if expected_champ and current_sel.champion != expected_champ:
+    if current_sel.champion != expected_current_champion or data["former_champion"] != expected_current_champion:
         raise ValueError(
-            f"Current Champion mismatch: expected '{expected_champ}', found '{current_sel.champion}'"
+            f"Current Champion mismatch: expected '{expected_current_champion}', found '{current_sel.champion}'"
         )
-
     if cand_name == current_sel.champion:
         raise ValueError(f"Candidate '{cand_name}' is already the active Model Champion")
-
-    snapshot_backed = bool(data.get("snapshot_backed", True))
-    updated = promote_candidate(current_sel, cand_name, snapshot_backed=snapshot_backed)
-    save_model_selection(updated, selection_path)
+    if cand_name not in current_sel.candidates:
+        raise ValueError("Approved candidate is absent from current Comparison Slate")
+    updated = promote_candidate(current_sel, cand_name, snapshot_backed=False)
+    receipt = {
+        "version": 1, "bundle_hash": approved_bundle_hash, "protocol_hash": data["protocol_hash"],
+        "approval_ref": approval_ref, "former_champion": current_sel.champion,
+        "candidate_name": cand_name, "selection_before": {
+            "champion": current_sel.champion, "candidates": list(current_sel.candidates),
+            "promotion_status": current_sel.promotion_status, "schema_version": current_sel.schema_version,
+        },
+    }
+    with tempfile.NamedTemporaryFile(dir=selection_path.parent, suffix=".json", delete=False) as temporary:
+        temporary_path = Path(temporary.name)
+    try:
+        save_model_selection(updated, temporary_path)
+        selection_path.with_suffix(".adoption.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        if load_model_selection(selection_path) != current_sel:
+            raise ValueError("Current Champion configuration changed during adoption")
+        os.replace(temporary_path, selection_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     logger.info(
         "Successfully adopted candidate '%s' as Model Champion (approval: %s, former: %s)",
         cand_name,
@@ -359,6 +350,9 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--adopt", type=Path, default=None, help="Explicitly adopt a candidate from verified evidence bundle")
     parser.add_argument("--approval_ref", type=str, default=None, help="Human approval reference for manual adoption")
     parser.add_argument("--expected_champion", type=str, default=None, help="Expected current champion name for safe adoption")
+    parser.add_argument("--bundle_hash", type=str, default=None, help="Exact evidence bundle hash approved by human")
+    parser.add_argument("--evidence_request", type=Path, default=None, help="Reconstruct final recommendation from registered retained replay evidence")
+    parser.add_argument("--output_bundle", type=Path, default=None, help="Verified bundle destination alongside retained request")
     args = parser.parse_args(argv)
 
     if args.adopt is not None:
@@ -371,6 +365,7 @@ def main(argv: list[str] | None = None) -> None:
                 config_path=args.config,
                 approval_ref=args.approval_ref,
                 expected_current_champion=args.expected_champion,
+                approved_bundle_hash=args.bundle_hash,
             )
             print("\n" + "=" * 60)
             print("MANUAL CHAMPION ADOPTION COMPLETED")
@@ -384,8 +379,15 @@ def main(argv: list[str] | None = None) -> None:
             print(f"[ERROR] Adoption failed: {exc}", file=sys.stderr)
             sys.exit(1)
 
+    if args.evidence_request is not None:
+        output = args.output_bundle or args.evidence_request.with_name("recommendation_bundle.json")
+        bundle = write_recommendation_bundle(args.evidence_request, output)
+        print(f"Scientific verdict: {bundle['scientific_verdict']}\nBundle hash: {bundle['bundle_hash']}\nEvidence bundle: {output}")
+        return
+
     if args.apply:
         print("[NOTICE] --apply in evaluation is read-only for Model Champion. Evidence is recorded; selection config is untouched.")
+    print("[NOTICE] Legacy proxy evaluation is diagnostic only. Final scientific verdict: inconclusive; registered rolling evidence required via --evidence_request.")
 
     start_gw, end_gw = _parse_gw_range(args.gw_range)
     snapshot_root = Path(args.snapshot_root).resolve() if args.snapshot_root else None
@@ -439,13 +441,13 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     print("\n" + "=" * 60)
-    print("MODEL PROMOTION EVALUATION & ADOPTION (ADR 0066)")
+    print("LEGACY MODEL DIAGNOSTICS (NO PROMOTION AUTHORITY)")
     print("=" * 60)
     print(f"Champion        : {updated.champion}")
     print(f"Candidates      : {', '.join(updated.candidates) or 'none'}")
     print(f"Promotion status: {updated.promotion_status}")
     for comparison in comparisons:
-        outcome = "PASS" if comparison.verdict.passed else "FAIL"
+        outcome = "SCREEN_PASS" if comparison.verdict.passed else "SCREEN_NOT_PASSED"
         verdict = comparison.verdict
         boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
         print(

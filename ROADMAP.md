@@ -15,7 +15,9 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **Backtesting and promotion foundation complete (Phases 0–14 delivered)**
+## Current Project Status: **Foundation engineering repaired; empirical admission/calibration pending**
+
+- Correctness repair checkpoint, 2026-10-30: Phase 1–14 Standards/Spec findings resolved; final reviews 0 confirmed findings on both axes. Full suite 1007 passed, Ruff/core types clean; unchanged diagnostic smoke baseline types recorded. Native replay and verified evidence authority validated synthetically. Empirical admission, numerical calibration/approval and prospective validation remain separate prerequisites; no Champion change. Local checkpoint/temporary packet cleanup pending.
 
 ### Backtesting/promotion foundation — delivered (ADR 0066)
 

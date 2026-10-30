@@ -1,5 +1,7 @@
 # Evaluation protocol v1: migration boundary
 
+**Historical Phase 0 contract reference.** Migration below records original implementation boundary, not current write authority. Current final recommendation = retained rolling replay reconstruction through `backtesting.promotion_evidence`; legacy `--apply` diagnostic-only. Manual adoption requires empirical evidence, finalized registry, exact approved bundle hash and expected Champion. See [operator workflow](operator-workflow.md) and [repair/delivery record](foundation-delivery.md). Structural v1 validators alone never establish promotion readiness.
+
 Phase 0 contract only; no promotion authority. Existing canon and ADRs remain authoritative until approved migration. Numerical thresholds, weights, statistical protection and approval references unapproved. `null` weight means unapproved. Declaration validation proves neither approval, causal admission, statistical validity nor Pass.
 
 ## Migration ownership

@@ -19,6 +19,10 @@ on:
         description: "Prior-season seed directory name"
         required: false
         default: ""
+      evidence_request:
+        description: "Retained registered rolling evidence request; empty runs diagnostics only"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -41,8 +45,13 @@ jobs:
         env:
           DATA_DIR: ${{ github.event.inputs.data_dir || 'data/archive/2025-26/processed' }}
           SEED_SEASON: ${{ github.event.inputs.seed_season || '' }}
+          EVIDENCE_REQUEST: ${{ github.event.inputs.evidence_request || '' }}
         run: |
           set -euo pipefail
+          if [ -n "$EVIDENCE_REQUEST" ]; then
+            uv run python -m commands.evaluate_model_promotion --evidence_request "$EVIDENCE_REQUEST"
+            exit 0
+          fi
           args=(--gw_range 1-38 --data_dir "$DATA_DIR")
           if [ -n "$SEED_SEASON" ]; then
             args+=(--seed_season "$SEED_SEASON")

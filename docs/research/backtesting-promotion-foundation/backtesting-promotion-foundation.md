@@ -1,15 +1,17 @@
 # Backtesting and promotion foundation: decisions, projections, and evidence
 
-**Updated**: 2026-10-29T13:42:04+07:00\
+**Updated**: 2026-10-30 (+07:00)\
 **Data stamp**: Repository `66729b15`; source review/user decisions plus data-only ownership-price feasibility audit, 2026-10-29. No solver timing, outcome analysis, or backtest evidence.\
 **Season**: Multi-season methodology; sealed 2026-27 holdout untouched.\
-**Status**: Policy direction agreed Q1-Q28; quantitative protocol, data admission, and implementation pending.\
+**Status**: Policy direction agreed Q1-Q28; ADR 0066 adopted; engineering repairs independently reviewed and synthetically validated. Quantitative approval, empirical admission and calibration pending.\
 **Purpose**: Preserve why evaluation should measure rolling transfer value while protecting interpretable player projections and controlling compute cost.\
 **Scope**: Scoring-model evaluation, optimization policy, statistical evidence, promotion authority, and workload arithmetic.\
 **Related**: [Eval canon](../INDEX.md), [archive limitations](../../testing/archive-testing.md), [ADR 0044](../../adr/0044-blended-eval-target-promotion-primary.md), [ADR 0047](../../adr/0047-two-season-promotion-gate.md), [ADR 0054](../../adr/0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md), [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md), [previous reform](../backtest-gate-reform/backtest-gate-reform.md).\
 **Artifact**: [workload_scenarios.csv](workload_scenarios.csv); arithmetic runner [estimate_workload.py](estimate_workload.py).
 
 **Next-stage proposal**: [Preflight and calibration plan](preflight-plan.md), prepared for review; not executed.
+
+**Engineering follow-through:** [Delivery record](../../testing/foundation-delivery.md) and [operator workflow](../../testing/operator-workflow.md) distinguish historical implementation claims, 2026-10-30 correctness repairs and remaining empirical prerequisites. Synthetic regression results never become Candidate evidence or numerical approval. Rationale below retains original decision context; ADR 0066 governs implemented authority.
 
 **Independent challenge review**: [GPT-6.1 Sol xhigh review](independent-review.md). Targeted clarifications and technical refinements proposed; Q1-Q26 not silently amended. Main human questions: tested recommendation procedure and relationship of neutral starting panel to deployment context.
 
@@ -99,6 +101,11 @@ No model fitting, solver calls, archive writes, sealed-holdout inspection, or Ca
 - **Player-points MSE:** Mean `(projected_points - actual_points)^2` on common eligible population, separately by horizon. Lower ↓. Ideal 0, generally unattainable under outcome noise. Squared error matches conditional-mean target; MAE useful descriptively, not sole universal gate.
 - **Signed bias:** Mean projected minus observed points. Absolute magnitude lower ↓. Ideal 0; unbiased aggregate alone does not prove calibration.
 - **Component reconciliation error:** Absolute total projection minus sum of defined component contributions. Lower ↓. Ideal 0; accounting invariant, not component-accuracy proof.
+- **Native component point MSE (`*_points_mse`):** Weighted mean `(xp_component - actual_component_points)^2` on identical player/issue/target-GW cells after fixture aggregation. Units points²; Lower ↓; ideal 0. Covers appearance, goals, assists, clean sheet, conceded, defensive contribution, saves, cards, penalties saved/missed, own goals and bonus. Uses native FPL point contributions, not event counts or probabilities; `minutes_points_mse` measures appearance points, distinct from expected playing minutes. Native-inapplicable components declared before evaluation; missing measurable evidence blocks Pass.
+- **Minutes MAE (`minutes_mae`):** Weighted mean `abs(projected_minutes - actual_minutes)` over common cells. Units minutes; Lower ↓; ideal 0. Separate from appearance-point component.
+- **Projection RMSE / descriptive MAE:** Square root of total-point MSE / mean absolute total-point error, separately by season and horizon lead. Units points; Lower ↓; ideal 0. Diagnostics supplement conditional-mean squared-error guard.
+- **Calibration ratio:** Mean projected points / mean observed points for a declared season/horizon group. Dimensionless; distance from 1 Lower ↓; ideal 1. Undefined when mean observed points = 0; emit missing, never substitute 0 or Pass. Aggregate ratio alone does not establish conditional calibration.
+- **Guard weighting:** Registered positive horizon weights normalized over admitted common cells; population, leads, aggregation, native applicability, uncertainty method and margins frozen in protocol. No post-result changes. Finite measurements and approved limits required before scientific Pass/Fail; malformed evidence Invalid, unapproved limits Inconclusive.
 - **Optimizer calls:** Models × seasons × starting states × deadlines × strategy arms × iterations. Lower ↓ for fixed evidence coverage/quality. Benchmark = smallest workload meeting approved protocol; no universal number.
 - **Conditional solver time:** Calls × assumed or measured mean seconds/call. Lower ↓ for fixed coverage/quality. Benchmark = approved budget, unresolved. Excludes feature/fitting/scoring/I/O overhead and parallel scheduling effects.
 - **MIP gap:** Feasible-objective versus bound difference, absolute/relative as reported. Lower ↓. Ideal 0 within solver tolerances; does not bound realized FPL loss.
@@ -267,9 +274,9 @@ Q21 requires documented development-only calibration proposal and human approval
 
 ## Decision
 
-**Verdict:** Q1-Q26 policy direction agreed as design intent. Preflight/calibration proposal prepared for shared-understanding review; numerical protocol and implementation not adopted. Note is rationale reference, not implemented gate or superseding ADR.
+**Verdict:** Q1-Q28 direction recorded in ADR 0066; engineering repairs validated separately in delivery record. Preflight/calibration proposal remains pending; numerical protocol not approved. Note preserves rationale and empirical prerequisites; it does not grant promotion authority.
 
-**Next:** Complete source-time admission and replay-accounting feasibility for agreed Q28 reference; then bounded development-only timings and statistical-method assessment before numerical proposal. [Preflight plan](preflight-plan.md) updated to single-anchor design. Formalize ADR/glossary and implementation plan when complete protocol ready for approval.
+**Next:** Complete empirical source-time admission/coverage for Q28 reference; then authorized bounded development-only timings and statistical calibration before numerical proposal. [Preflight plan](preflight-plan.md) retains single-anchor design. Seek explicit quantitative approval on measured evidence; synthetic engineering validation cannot substitute.
 
 **Revision trigger:** Measured timings, validated replay accounting, new causal evidence, or changed human decisions. Replace assumptions only with labeled empirical measurements; keep dataset/machine/settings identity.
 

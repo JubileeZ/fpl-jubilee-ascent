@@ -1,4 +1,4 @@
-"""Compare models and apply Automatic Historical Promotion."""
+"""Legacy proxy diagnostics and explicit Comparison Slate transformations."""
 
 from __future__ import annotations
 
@@ -242,10 +242,12 @@ def build_evidence_record(
     evaluation_season: str,
     git_commit: str | None,
 ) -> dict[str, Any]:
-    scientific_verdict = "pass" if any(c.verdict.passed for c in comparisons) else "fail"
     return {
-        "scientific_verdict": scientific_verdict,
-        "execution_status": "complete",
+        "evidence_kind": "legacy_proxy_diagnostic",
+        "scientific_verdict": "inconclusive",
+        "execution_status": "not_run",
+        "diagnostic_execution_status": "complete",
+        "reasons": ["Registered rolling replay, substantive guards and confirmation evidence required"],
         "evaluated_at": datetime.now(UTC).isoformat(),
         "evaluation_season": evaluation_season,
         "git_commit": git_commit,
@@ -263,7 +265,8 @@ def build_evidence_record(
             {
                 "candidate": comparison.candidate,
                 "passed": comparison.verdict.passed,
-                "scientific_verdict": "pass" if comparison.verdict.passed else "fail",
+                "scientific_verdict": "inconclusive",
+                "diagnostic_passed": comparison.verdict.passed,
                 "eval_target": comparison.verdict.eval_target,
                 "primary_metric": comparison.verdict.primary_metric,
                 "combined_primary_delta": comparison.verdict.combined_primary_delta,
@@ -290,11 +293,12 @@ def write_promotion_evidence(record: dict[str, Any], output_dir: Path) -> tuple[
     json_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "# Promotion Evidence Record",
+        "# Legacy Proxy Diagnostic Record",
         "",
         f"- Evaluated at: {record['evaluated_at']}",
         f"- Evaluation season: {record['evaluation_season']}",
         f"- Git commit: {record.get('git_commit') or 'unknown'}",
+        "- Scientific verdict: inconclusive; no promotion or Dead Lever authority",
         "",
         "## Comparison Slate",
         "",

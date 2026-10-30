@@ -2,11 +2,13 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from backtesting.projection_guards import (
     CANONICAL_METRICS,
     ComponentLedger,
     EvaluationHorizonConfig,
+    MetricDirection,
     declare_component_applicability,
     diagnose_unconstrained_reversal,
     evaluate_composite_non_inferiority,
@@ -169,6 +171,7 @@ def test_evaluate_non_inferiority_guard_with_meaningful_margin() -> None:
     assert res.status == "PASS"
     assert res.margin == 0.05
     assert res.estimate < 0.05
+    assert res.ci_upper is not None
     assert res.ci_upper <= 0.05
     assert res.coverage == 0.95
     assert res.sample_size == 200
@@ -185,11 +188,11 @@ def test_evaluate_non_inferiority_guard_with_meaningful_margin() -> None:
     )
     assert res_bad.passed is False
     assert res_bad.status == "FAIL"
-    assert res_bad.ci_upper > 0.05
+    assert res_bad.ci_lower is not None
+    assert res_bad.ci_lower > 0.05
 
 
-def test_absence_of_significant_deterioration_fails_if_ci_exceeds_margin() -> None:
-    """Verify that wide uncertainty crossing the margin fails non-inferiority even if not p < 0.05 different."""
+def test_uncertainty_crossing_non_inferiority_margin_remains_inconclusive() -> None:
     diffs = np.array([0.03, 0.12, -0.06, 0.14, -0.03, 0.10, -0.08, 0.11, 0.02, -0.05])
     champ_small = np.ones(10) * 1.5
     cand_small = champ_small + diffs
@@ -202,10 +205,11 @@ def test_absence_of_significant_deterioration_fails_if_ci_exceeds_margin() -> No
         alpha=0.05,
         direction="lower_is_better",
     )
-    # Absence of statistically significant deterioration is insufficient proof of acceptable regression!
+    assert res.ci_lower is not None and res.ci_upper is not None
+    assert res.ci_lower <= 0.05
     assert res.ci_upper > 0.05
     assert res.passed is False
-    assert res.status == "FAIL"
+    assert res.status == "INCONCLUSIVE"
 
 
 def test_calibration_bias_equivalence_requires_both_ci_bounds_within_margin() -> None:
@@ -223,9 +227,52 @@ def test_calibration_bias_equivalence_requires_both_ci_bounds_within_margin() ->
         alpha=0.05,
         direction="zero_is_ideal",
     )
-    # Point estimate is within 0.05, but CI bounds exceed margin -> MUST FAIL equivalence!
     assert res_wide.passed is False
-    assert res_wide.status == "FAIL"
+    assert res_wide.status == "INCONCLUSIVE"
+    assert res_wide.ci_lower is not None and res_wide.ci_upper is not None
+    assert res_wide.ci_lower <= 0.05 < res_wide.ci_upper
+
+
+@pytest.mark.parametrize("direction", ["lower_is_better", "higher_is_better", "zero_is_ideal"])
+def test_large_opposing_errors_do_not_demonstrate_harm(direction: MetricDirection) -> None:
+    result = evaluate_non_inferiority_guard(
+        [0.0, 200.0], [100.0, 100.0], metric_name="paired_error", meaningful_margin=1.0, direction=direction
+    )
+    assert result.estimate == 0.0
+    assert result.ci_lower is not None and result.ci_upper is not None
+    assert result.ci_lower < -1.0 < 1.0 < result.ci_upper
+    assert result.passed is False
+    assert result.status == "INCONCLUSIVE"
+
+
+@pytest.mark.parametrize("direction,delta", [("lower_is_better", 2.0), ("higher_is_better", -2.0), ("zero_is_ideal", 2.0), ("zero_is_ideal", -2.0)])
+def test_interval_entirely_outside_harm_bound_demonstrates_harm(direction: MetricDirection, delta: float) -> None:
+    result = evaluate_non_inferiority_guard(
+        [10.0 + delta] * 3, [10.0] * 3, metric_name="paired_error", meaningful_margin=1.0, direction=direction
+    )
+    assert result.ci_lower == delta and result.ci_upper == delta
+    assert result.passed is False
+    assert result.status == "FAIL"
+    assert "Demonstrated harm" in result.reason
+
+
+@pytest.mark.parametrize("delta", [-100.0, 100.0])
+def test_one_observation_cannot_estimate_uncertainty(delta: float) -> None:
+    result = evaluate_non_inferiority_guard([delta], [0.0], metric_name="paired_error", meaningful_margin=1.0)
+    assert result.estimate == delta
+    assert result.sample_size == 1
+    assert result.standard_error is None and result.ci_lower is None and result.ci_upper is None
+    assert result.coverage == 0.0
+    assert result.passed is False
+    assert result.status == "INCONCLUSIVE"
+
+
+def test_scientific_bounds_preserve_precision_at_margin() -> None:
+    result = evaluate_non_inferiority_guard([0.05000001] * 3, [0.0] * 3, metric_name="paired_error", meaningful_margin=0.05)
+    assert result.status == "FAIL"
+    assert result.ci_lower is not None
+    assert result.ci_lower > result.margin
+    assert result.ci_lower == pytest.approx(0.05000001, abs=1e-12)
 
 
 def test_composite_non_inferiority_does_not_impose_every_component_improvement() -> None:

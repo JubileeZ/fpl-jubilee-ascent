@@ -12,6 +12,36 @@ from smoke import InertPrototypeError, check_inert_prototype, max_playable_pool_
 from backtesting.walkforward import WalkforwardResult  # noqa: E402
 
 
+def test_smoke_proxy_rows_have_no_promotion_or_dead_lever_authority(tmp_path: Path) -> None:
+    import csv
+    from smoke import append_row
+
+    output = tmp_path / "diagnostic.csv"
+    append_row(output, {"variant": "toy", "pass": False})
+    row = next(csv.DictReader(output.read_text().splitlines()))
+    assert row["evidence_kind"] == "legacy_proxy_diagnostic"
+    assert row["scientific_verdict"] == "inconclusive"
+    assert row["execution_status"] == "not_run"
+    assert row["dead_lever_authority"] == "False"
+
+
+def test_smoke_final_evidence_route_does_not_open_archive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import smoke
+    from backtesting import promotion_evidence
+
+    calls: list[tuple[Path, Path]] = []
+    def evaluate(request: Path, output: Path) -> dict[str, str]:
+        calls.append((request, output))
+        return {"scientific_verdict": "inconclusive", "bundle_hash": "a" * 64}
+    def forbidden() -> None:
+        raise AssertionError("Final evidence route must not resolve exploratory archive seasons")
+    monkeypatch.setattr(promotion_evidence, "write_recommendation_bundle", evaluate)
+    monkeypatch.setattr(smoke, "resolve_seasons", forbidden)
+    monkeypatch.setattr(sys, "argv", ["smoke.py", "--evidence_request", str(tmp_path / "request.json")])
+    assert smoke.main() == 0
+    assert calls == [(tmp_path / "request.json", tmp_path / "recommendation_bundle.json")]
+
+
 def _make_result(name: str, df: pd.DataFrame) -> WalkforwardResult:
     return WalkforwardResult(
         model_name=name,

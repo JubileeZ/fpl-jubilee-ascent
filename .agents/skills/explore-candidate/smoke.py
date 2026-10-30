@@ -265,8 +265,11 @@ def _read_rows(path: Path) -> list[dict[str, str]]:
 
 
 def append_row(out: Path, row: dict[str, object]) -> None:
+    row = {**row, "evidence_kind": "legacy_proxy_diagnostic", "scientific_verdict": "inconclusive", "execution_status": "not_run", "dead_lever_authority": False}
     out.parent.mkdir(parents=True, exist_ok=True)
     new_file = not out.exists()
+    if not new_file and next(csv.reader(out.read_text().splitlines()), []) != list(row):
+        raise ValueError("Legacy smoke CSV schema differs; choose a new diagnostic output file")
     with out.open("a", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(row))
         if new_file:
@@ -310,7 +313,18 @@ def main() -> int:
     parser.add_argument("--lane", default="")
     parser.add_argument("--tier", choices=("1", "2", "3", "auto"), default="auto", help="Evaluation tier: 1, 2, 3, or auto")
     parser.add_argument("--audit_only", action="store_true")
+    parser.add_argument("--evidence_request", type=Path, default=None, help="Evaluate retained rolling evidence through shared final recommendation protocol")
+    parser.add_argument("--output_bundle", type=Path, default=None)
     args = parser.parse_args()
+
+    if args.evidence_request is not None:
+        from backtesting.promotion_evidence import write_recommendation_bundle
+
+        output = args.output_bundle or args.evidence_request.with_name("recommendation_bundle.json")
+        bundle = write_recommendation_bundle(args.evidence_request, output)
+        print(f"Scientific verdict: {bundle['scientific_verdict']}; bundle hash: {bundle['bundle_hash']}; {output}")
+        return 0
+    print("Legacy smoke diagnostics only: scientific verdict inconclusive; no promotion or Dead Lever authority.")
 
     roles, live = resolve_seasons()
     if args.show_seasons:
@@ -433,7 +447,7 @@ def main() -> int:
                         "source": str(args.prototypes or "registered"),
                     })
                     written += 1
-                    print(f"{name}: FAIL delta {t2_verdict.oracle_delta:+.4f} (min 0.0000) segs 0/3 boot P {boot_str} {reasons_str}", flush=True)
+                    print(f"{name}: SCREEN_NOT_PASSED delta {t2_verdict.oracle_delta:+.4f} (min 0.0000) segs 0/3 boot P {boot_str} {reasons_str}", flush=True)
                 else:
                     print(f"{name}: Tier 2 Oracle Event Gate PASSED (delta {t2_verdict.oracle_delta:+.4f}, P={t2_verdict.bootstrap_p}); queueing Tier 3 walkforward...", flush=True)
                     f3 = pool.submit(_run, (name, season, start_gw, end_gw, False))
@@ -479,7 +493,7 @@ def main() -> int:
                 })
                 written += 1
                 boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
-                print(f"{name}: {'PASS' if is_pass else 'FAIL'} delta {verdict.combined_primary_delta:+.4f} "
+                print(f"{name}: {'SCREEN_PASS' if is_pass else 'SCREEN_NOT_PASSED'} delta {verdict.combined_primary_delta:+.4f} "
                       f"(min {verdict.min_effect:.4f}) segs {verdict.segment_wins}/3 boot P {boot} {'; '.join(reasons_list)}", flush=True)
     print(f"Wrote {written} rows -> {args.out}")
     return 2 if leaked else 0

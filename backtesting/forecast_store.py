@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import sys
+import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,6 +30,28 @@ def _sha256_hex(content: bytes) -> str:
 
 _bytes = _canonical_json_bytes
 _hash = _sha256_hex
+
+
+def _publish_forecast_directory(stage: Path, destination: Path) -> bool:
+    """Retry brief Windows scanner locks without replacing an existing publication."""
+    root = validate_storage_path(destination.parent)
+    if stage.resolve().parent != root or not stage.name.startswith(".stage-") or len(destination.name) != 64:
+        raise ValueError("Invalid forecast publication paths")
+    delays = (0.0, 0.02, 0.05, 0.1, 0.2)
+    for index, delay in enumerate(delays):
+        if delay:
+            time.sleep(delay)
+        try:
+            os.rename(stage, destination)
+            return True
+        except FileExistsError:
+            return False
+        except PermissionError as error:
+            if destination.exists():
+                return False
+            if getattr(error, "winerror", None) not in {5, 32, 33} or index == len(delays) - 1:
+                raise
+    raise RuntimeError("Forecast publication retry exhausted")
 
 
 def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str = "def_xg_shrink_challenger") -> dict[str, Any]:
@@ -167,17 +190,19 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
             (stage / "coverage_report.json").write_bytes(rep_bytes)
             (stage / "generator_log.json").write_bytes(log_bytes)
             (stage / "manifest.json").write_bytes(_canonical_json_bytes(manifest))
-            try:
-                os.rename(stage, destination)
-            except FileExistsError:
-                import shutil
-
-                shutil.rmtree(stage)
+            published = _publish_forecast_directory(stage, destination)
+            if not published:
                 if (destination / "forecast.csv").read_bytes() != table:
                     raise ValueError("Concurrent forecast content mismatch")
             frame = _load_forecast_content(resolved, forecast_id, material)
             strict_solver_table(frame, capability, request, catalog)
             validate_components(frame, rules.version)
+            if not published:
+                import shutil
+
+                if stage.resolve().parent != forecasts.resolve() or not stage.name.startswith(".stage-"):
+                    raise ValueError("Invalid redundant publication cleanup path")
+                shutil.rmtree(stage)
             hit = False
         (attempt / "complete.json").write_bytes(_canonical_json_bytes({"forecast_id": forecast_id, "cache_hit": hit, "completed_at": datetime.now(UTC).isoformat()}))
         return forecast_id, frame, hit

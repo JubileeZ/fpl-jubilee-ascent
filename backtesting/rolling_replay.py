@@ -15,7 +15,10 @@ from collections import Counter
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 import hashlib
+import inspect
 import json
+import math
+import os
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -128,6 +131,12 @@ class ReplayDeadlineRecord:
     checkpoint_id: str
     parent_checkpoint_id: str | None
     execution_status: Literal["SUCCESS", "UNCERTIFIED_GAP", "TIMEOUT", "INFEASIBLE", "LEGALITY_VIOLATION"] = "SUCCESS"
+    pre_state: ReplayState | None = None
+    evaluation_identity: str = ""
+    model_version_hash: str = ""
+    protocol_hash: str = ""
+    forecast_hash: str = ""
+    outcome_hash: str = ""
 
     @property
     def total_gross_points(self) -> int:
@@ -147,6 +156,12 @@ class ReplayDeadlineRecord:
 def record_to_dict(rec: ReplayDeadlineRecord) -> dict[str, Any]:
     """Serialize a complete deadline record into a JSON-compatible dictionary."""
     return {
+        "pre_state": asdict(rec.pre_state) if rec.pre_state is not None else None,
+        "evaluation_identity": rec.evaluation_identity,
+        "model_version_hash": rec.model_version_hash,
+        "protocol_hash": rec.protocol_hash,
+        "forecast_hash": rec.forecast_hash,
+        "outcome_hash": rec.outcome_hash,
         "checkpoint_id": rec.checkpoint_id,
         "parent_checkpoint_id": rec.parent_checkpoint_id,
         "deadline": rec.deadline,
@@ -269,7 +284,7 @@ def record_from_dict(d: dict[str, Any]) -> ReplayDeadlineRecord:
         net=int(tr_data["net"]),
     )
 
-    return ReplayDeadlineRecord(
+    rec = ReplayDeadlineRecord(
         deadline=int(d["deadline"]),
         model_name=str(d["model_name"]),
         pre_state_hash=str(d["pre_state_hash"]),
@@ -288,7 +303,125 @@ def record_from_dict(d: dict[str, Any]) -> ReplayDeadlineRecord:
             Literal["SUCCESS", "UNCERTIFIED_GAP", "TIMEOUT", "INFEASIBLE", "LEGALITY_VIOLATION"],
             d.get("execution_status", "SUCCESS"),
         ),
+        pre_state=replay_state_from_dict(d["pre_state"]) if d.get("pre_state") is not None else None,
+        evaluation_identity=str(d.get("evaluation_identity", "")),
+        model_version_hash=str(d.get("model_version_hash", "")),
+        protocol_hash=str(d.get("protocol_hash", "")),
+        forecast_hash=str(d.get("forecast_hash", "")),
+        outcome_hash=str(d.get("outcome_hash", "")),
     )
+    if rec.pre_state is not None:
+        verify_replay_record(rec, rec.pre_state, parent_checkpoint_id=rec.parent_checkpoint_id)
+    return rec
+
+
+def replay_state_from_dict(data: dict[str, Any]) -> ReplayState:
+    return ReplayState(
+        rules_version=data["rules_version"], squad=tuple(Player(**p) for p in data["squad"]), bank=data["bank"],
+        rules_id=data["rules_id"], deadline=data["deadline"], free_transfers=data["free_transfers"],
+        chip_history=tuple(tuple(item) for item in data["chip_history"]), previous_transfers=data["previous_transfers"],
+        previous_hits=data["previous_hits"], parent_hash=data["parent_hash"],
+    )
+
+
+def _content_hash(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+
+
+def forecast_content_hash(forecasts: pd.DataFrame) -> str:
+    """Hash every issued value and provenance attribute, independent of row/column ordering."""
+    if not forecasts.columns.is_unique or "player_id" not in forecasts or forecasts["player_id"].duplicated().any():
+        raise ValueError("Forecast hash requires unique columns and player IDs")
+    normalized = forecasts.sort_values("player_id").reindex(sorted(forecasts.columns), axis=1)
+    return _content_hash({"columns": list(normalized.columns), "rows": normalized.to_dict(orient="records"), "attrs": forecasts.attrs})
+
+
+def refresh_replay_market(state: ReplayState, forecasts: pd.DataFrame) -> ReplayState:
+    """Refresh held issue metadata while preserving acquisition basis and action history."""
+    required = {"player_id", "position_id", "club_id", "now_cost", "purchase_eligible"}
+    if not required <= set(forecasts.columns) or forecasts["player_id"].duplicated().any():
+        raise ValueError("Native replay requires complete unique issue metadata")
+    rows = {row["player_id"]: row for row in forecasts.to_dict(orient="records")}
+    positions: dict[int, Position] = {1: "GK", 2: "D", 3: "M", 4: "F"}
+    refreshed: list[Player] = []
+    for player in state.squad:
+        if player.player_id not in rows:
+            raise ValueError("Owned player absent from issue metadata")
+        row = rows[player.player_id]
+        if (any(type(row[key]) is not int or row[key] <= 0 for key in ("position_id", "club_id", "now_cost"))
+                or row["position_id"] not in positions or type(row["purchase_eligible"]) is not bool):
+            raise ValueError("Invalid owned issue metadata")
+        refreshed.append(replace(player, position=positions[row["position_id"]], club=row["club_id"],
+                                 market=row["now_cost"], purchase_eligible=row["purchase_eligible"]))
+    validate_squad(tuple(refreshed))
+    return replace(state, squad=tuple(refreshed))
+
+
+def replay_evaluation_identity(*, model_name: str, model_version_hash: str, protocol_hash: str, season: str,
+                               anchor_id: str, horizon: int, last_gw: int, policy: QualityPolicy,
+                               chip_calendar: tuple[tuple[int, Chip], ...], solver_identity: str, scored_end_gw: int = 38) -> str:
+    return _content_hash({"version": 2, "model_name": model_name, "model_version_hash": model_version_hash,
+                          "protocol_hash": protocol_hash, "season": season, "anchor_id": anchor_id,
+                          "horizon": horizon, "last_gw": last_gw, "scored_end_gw": scored_end_gw, "policy": asdict(policy),
+                          "chip_calendar": chip_calendar, "solver_identity": solver_identity,
+                          "strategic_options": get_strategic_replay_options(horizon, rules_version=season)})
+
+
+def replay_solver_identity(solve_fn: Callable[..., Any]) -> str:
+    import highspy
+    from importlib.metadata import version
+    from importlib.util import find_spec
+
+    core = find_spec("highspy._core")
+    if core is None or core.origin is None or not Path(core.origin).is_file():
+        raise ValueError("Installed HiGHS binary identity unavailable")
+    runtime = {"distribution_version": version("highspy"), "solver_version": highspy.Highs().version(),
+               "binary_sha256": hashlib.sha256(Path(core.origin).read_bytes()).hexdigest()}
+    return _content_hash({"module": solve_fn.__module__, "name": solve_fn.__qualname__,
+                          "source": Path(inspect.getfile(solve_fn)).read_bytes().hex(), "runtime": runtime})
+
+
+def validate_solver_certificate_consistency(cert: SolverCertificate) -> None:
+    """Check reported HiGHS bounds/gaps; zero objective requires a closed absolute gap."""
+    values = (cert.objective, cert.objective_bound, cert.absolute_gap, cert.relative_gap, cert.runtime_seconds)
+    if (any(isinstance(value, bool) or not math.isfinite(value) for value in values)
+            or min(cert.absolute_gap, cert.relative_gap, cert.runtime_seconds) < 0 or cert.threads != 1
+            or cert.objective_bound + 1e-6 < cert.objective
+            or not math.isclose(cert.absolute_gap, abs(cert.objective_bound - cert.objective), rel_tol=1e-6, abs_tol=1e-6)):
+        raise UncertifiedSolveError("Malformed or nonfinite solver certificate")
+    if abs(cert.objective) <= 1e-12:
+        if cert.absolute_gap > 1e-6:
+            raise UncertifiedSolveError("Zero-objective solver certificate has an unresolved absolute gap")
+        expected_relative_gap = 0.0
+    else:
+        expected_relative_gap = cert.absolute_gap / abs(cert.objective)
+    if not math.isclose(cert.relative_gap, expected_relative_gap, rel_tol=1e-5, abs_tol=1e-8):
+        raise UncertifiedSolveError("Solver certificate relative gap contradicts objective bounds")
+
+
+def _checkpoint_hash(rec: ReplayDeadlineRecord) -> str:
+    data = record_to_dict(rec)
+    data.pop("checkpoint_id")
+    return _content_hash(data)
+
+
+def verify_replay_record(rec: ReplayDeadlineRecord, pre_state: ReplayState, *, model_name: str | None = None,
+                         parent_checkpoint_id: str | None = None) -> ReplayState:
+    """Reconstruct native state and score from the stored action/outcomes, without optimizing."""
+    if rec.pre_state != pre_state or rec.pre_state_hash != state_hash(pre_state) or rec.deadline != pre_state.deadline:
+        raise ValueError("Corrupted resume checkpoint state mismatch")
+    if model_name is not None and rec.model_name != model_name:
+        raise ValueError("Checkpoint model mismatch")
+    if rec.parent_checkpoint_id != parent_checkpoint_id or rec.checkpoint_id != _checkpoint_hash(rec):
+        raise ValueError("Checkpoint content or lineage mismatch")
+    if rec.outcome_hash != _content_hash(asdict(rec.outcomes)):
+        raise ValueError("Checkpoint outcome hash mismatch")
+    validate_decision_legality(pre_state, rec.decision)
+    expected = transition(pre_state, rec.decision, rec.outcomes)
+    if (expected != rec.transition_result or rec.post_state_hash != state_hash(expected.state)
+            or (rec.gross_points, rec.captain_increment, rec.hit_penalty, rec.net_points) != (expected.gross, expected.captain_increment, expected.hit, expected.net)):
+        raise ValueError("Checkpoint native transition or score mismatch")
+    return expected.state
 
 
 @dataclass(frozen=True)
@@ -309,7 +442,17 @@ class ReplayTrajectory:
     def audit_reconstructed_net_score(self) -> int:
         """Independently recompute total net points from stored decisions and outcomes without solver."""
         running_net = 0
+        previous: ReplayState | None = None
+        parent_id: str | None = None
         for rec in self.records:
+            if rec.pre_state is None:
+                raise ValueError("Replay audit requires stored native pre-state")
+            if previous is not None:
+                if ({p.player_id: p.purchase for p in previous.squad} != {p.player_id: p.purchase for p in rec.pre_state.squad}
+                        or replace(previous, squad=rec.pre_state.squad) != rec.pre_state):
+                    raise ValueError("Replay audit ownership or financial lineage mismatch")
+            previous = verify_replay_record(rec, rec.pre_state, model_name=self.model_name, parent_checkpoint_id=parent_id)
+            parent_id = rec.checkpoint_id
             if rec.execution_status != "SUCCESS":
                 continue
             expected_net = rec.gross_points + rec.captain_increment - rec.hit_penalty
@@ -327,7 +470,7 @@ class ReplayTrajectory:
 
 def get_strategic_replay_options(
     horizon: int = DEFAULT_HORIZON,
-    decay_base: float = 0.84,
+    decay_base: float = 0.85,
     rules_version: str = "2024-25",
 ) -> dict[str, Any]:
     """Compute frozen 6-GW Strategic scenario settings for replay solves under native season rules."""
@@ -336,7 +479,7 @@ def get_strategic_replay_options(
 
     ft_values: dict[str, float] = {}
     if rules.free_transfer_cap >= 2:
-        ft_values["2"] = round(2.0 * scale, 4) if rules.free_transfer_cap > 2 else round(0.8 * scale, 4)
+        ft_values["2"] = round(2.0 * scale, 4)
     if rules.free_transfer_cap >= 3:
         ft_values["3"] = round(1.2 * scale, 4)
     if rules.free_transfer_cap >= 4:
@@ -355,11 +498,13 @@ def get_strategic_replay_options(
         "gk_transfer_friction": round(1.5 * scale, 4),
         "ft_use_penalty": 0.2,
         "starter_xmins_floor": 65.0,
-        "starter_xmins_penalty": -10.0,
+        "starter_xmins_penalty": 10.0,
         "bench_cover_min": 12,
-        "bench_cover_penalty": -1.5,
+        "bench_cover_xmins": 65.0,
+        "bench_cover_penalty": 1.5,
         "def_stack_cap": 2,
-        "def_stack_penalty": -1.2,
+        "def_stack_penalty": 1.2,
+        "weekly_hit_limit": 1,
         "ft_value_list": ft_values,
     }
 
@@ -544,10 +689,11 @@ def execute_replay_deadline(
     solve_fn: Callable[
         [ReplayState, int, pd.DataFrame, dict[str, Any]],
         tuple[Decision, SolverCertificate],
-    ] = heuristic_zero_transfer_solve,
+    ] | None = None,
     horizon: int = DEFAULT_HORIZON,
     last_gw: int = 38,
     policy: QualityPolicy = QualityPolicy(),
+    chip_calendar: tuple[tuple[int, Chip], ...] = (),
 ) -> ReplayDeadlineRecord:
     """Execute one full rolling replay deadline: solve -> legality check -> transition -> audit."""
     # Strict outcome coverage validation
@@ -561,14 +707,24 @@ def execute_replay_deadline(
 
     eff_horizon = clipped_replay_horizon(state.deadline, last_gw=last_gw, horizon=horizon)
     options = get_strategic_replay_options(eff_horizon, rules_version=state.rules_version)
+    options.update(chip_calendar=chip_calendar, target_gap=policy.target_gap, time_limit_seconds=policy.time_limit_seconds)
 
+    if solve_fn is None:
+        from backtesting.native_transfer_solver import native_strategic_solve
+
+        solve_fn = native_strategic_solve
     decision, cert = solve_fn(state, eff_horizon, forecast_df, options)
 
     exec_status: Literal["SUCCESS", "UNCERTIFIED_GAP", "TIMEOUT", "INFEASIBLE", "LEGALITY_VIOLATION"] = "SUCCESS"
 
+    validate_solver_certificate_consistency(cert)
+    if cert.termination_status == "OPTIMAL" and (not cert.feasible or cert.relative_gap > policy.target_gap + 1e-8):
+        raise UncertifiedSolveError("False OPTIMAL solver certificate")
+
     # Validate certificate against policy
     if policy.mode == "certified":
-        if not cert.feasible or (policy.require_proven_optimal and cert.relative_gap > policy.target_gap):
+        if not cert.feasible or (policy.require_proven_optimal and (cert.relative_gap > policy.target_gap + 1e-8
+                or cert.termination_status != "OPTIMAL" or cert.quality_mode != "certified")):
             if policy.raise_on_failure:
                 raise UncertifiedSolveError(
                     f"Solve at deadline {state.deadline} failed certified quality policy (status={cert.termination_status}, gap={cert.relative_gap})"
@@ -600,7 +756,7 @@ def execute_replay_deadline(
         json.dumps(checkpoint_material, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
 
-    return ReplayDeadlineRecord(
+    rec = ReplayDeadlineRecord(
         deadline=state.deadline,
         model_name="unnamed_model",
         pre_state_hash=pre_hash,
@@ -616,7 +772,11 @@ def execute_replay_deadline(
         checkpoint_id=checkpoint_id,
         parent_checkpoint_id=state.parent_hash,
         execution_status=exec_status,
+        pre_state=state,
+        forecast_hash=forecast_content_hash(forecast_df),
+        outcome_hash=_content_hash(asdict(outcomes)),
     )
+    return replace(rec, checkpoint_id=_checkpoint_hash(rec))
 
 
 def run_rolling_replay(
@@ -632,38 +792,69 @@ def run_rolling_replay(
     solve_fn: Callable[
         [ReplayState, int, pd.DataFrame, dict[str, Any]],
         tuple[Decision, SolverCertificate],
-    ] = heuristic_zero_transfer_solve,
+    ] | None = None,
     policy: QualityPolicy = QualityPolicy(),
     checkpoint_dir: Path | None = None,
+    model_version_hash: str = "",
+    protocol_hash: str = "",
+    chip_calendar: tuple[tuple[int, Chip], ...] = (),
 ) -> ReplayTrajectory:
     """Execute complete independent multi-period rolling replay over the specified gameweeks."""
     rules = get_rules(season)
     current_state = anchor.to_replay_state(season, rules_id=rules.rules_id)
+    if start_gw != 1 or not 1 <= end_gw <= 38:
+        raise ValueError("Continuous replay must start at GW1 with a valid final deadline")
+    if solve_fn is None:
+        from backtesting.native_transfer_solver import native_strategic_solve
+
+        solve_fn = native_strategic_solve
+    solver_identity = replay_solver_identity(solve_fn)
+    identity = replay_evaluation_identity(model_name=model_name, model_version_hash=model_version_hash, protocol_hash=protocol_hash,
+                                          season=season, anchor_id=anchor.anchor_id, horizon=horizon, last_gw=38,
+                                          policy=policy, chip_calendar=chip_calendar, solver_identity=solver_identity, scored_end_gw=end_gw)
 
     records: list[ReplayDeadlineRecord] = []
     parent_cp_id: str | None = None
 
     if checkpoint_dir is not None:
+        if not model_version_hash.strip() or not protocol_hash.strip():
+            raise ValueError("Persistent replay requires explicit model_version_hash and protocol_hash")
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        manifest_file = checkpoint_dir / "evaluation.json"
+        manifest = {"evaluation_identity": identity, "initial_state_hash": state_hash(current_state)}
+        if manifest_file.exists():
+            if json.loads(manifest_file.read_text(encoding="utf-8")) != manifest:
+                raise ValueError("Replay checkpoint evaluation identity mismatch")
+        else:
+            with manifest_file.open("x", encoding="utf-8") as stream:
+                json.dump(manifest, stream, sort_keys=True)
 
     for gw in range(start_gw, end_gw + 1):
         if current_state.deadline != gw:
             raise ValueError(f"State deadline {current_state.deadline} != scheduled GW {gw}")
 
-        # Checkpoint resume check
+        forecast_df = forecast_provider(gw, current_state)
+        if solve_fn.__module__ == "backtesting.native_transfer_solver":
+            current_state = refresh_replay_market(current_state, forecast_df)
+        outcomes = outcome_provider(gw)
         cp_file = checkpoint_dir / f"checkpoint_gw_{gw}_{state_hash(current_state)}.json" if checkpoint_dir else None
+        if checkpoint_dir is not None and cp_file is not None and not cp_file.exists() and any(checkpoint_dir.glob(f"checkpoint_gw_{gw}_*.json")):
+            raise ValueError("Replay checkpoint issue metadata changed")
         if cp_file and cp_file.is_file():
             data = json.loads(cp_file.read_text(encoding="utf-8"))
             if data["pre_state_hash"] != state_hash(current_state):
                 raise ValueError("Corrupted resume checkpoint state mismatch")
             rec = record_from_dict(data)
+            if (rec.evaluation_identity != identity or rec.model_version_hash != model_version_hash or rec.protocol_hash != protocol_hash
+                    or rec.forecast_hash != forecast_content_hash(forecast_df) or rec.outcome_hash != _content_hash(asdict(outcomes))):
+                raise ValueError("Replay checkpoint forecast, outcome or evaluation identity mismatch")
+            verify_replay_record(rec, current_state, model_name=model_name, parent_checkpoint_id=parent_cp_id)
             records.append(rec)
             parent_cp_id = rec.checkpoint_id
             current_state = rec.transition_result.state
+            if rec.execution_status != "SUCCESS":
+                break
             continue
-
-        forecast_df = forecast_provider(gw, current_state)
-        outcomes = outcome_provider(gw)
 
         rec = execute_replay_deadline(
             current_state,
@@ -671,17 +862,27 @@ def run_rolling_replay(
             outcomes,
             solve_fn=solve_fn,
             horizon=horizon,
-            last_gw=end_gw,
+            last_gw=38,
             policy=policy,
+            chip_calendar=chip_calendar,
         )
-        rec = replace(rec, model_name=model_name, parent_checkpoint_id=parent_cp_id)
+        rec = replace(rec, model_name=model_name, parent_checkpoint_id=parent_cp_id, evaluation_identity=identity,
+                      model_version_hash=model_version_hash, protocol_hash=protocol_hash)
+        rec = replace(rec, checkpoint_id=_checkpoint_hash(rec))
 
         if cp_file is not None:
-            cp_file.write_text(json.dumps(record_to_dict(rec), indent=2, sort_keys=True), encoding="utf-8")
+            stage = cp_file.with_suffix(".tmp")
+            with stage.open("w", encoding="utf-8") as stream:
+                json.dump(record_to_dict(rec), stream, indent=2, sort_keys=True, allow_nan=False)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(stage, cp_file)
 
         records.append(rec)
         parent_cp_id = rec.checkpoint_id
         current_state = rec.transition_result.state
+        if rec.execution_status != "SUCCESS":
+            break
 
     cum_gross = sum(r.total_gross_points for r in records if r.execution_status == "SUCCESS")
     cum_hits = sum(r.hit_penalty for r in records if r.execution_status == "SUCCESS")

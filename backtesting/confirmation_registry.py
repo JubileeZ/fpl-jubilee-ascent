@@ -15,13 +15,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import csv
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timezone
 import hashlib
 import json
 import os
 from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 from backtesting.evidence_statistics import ScientificVerdict
 
@@ -83,12 +84,16 @@ class FinalistRegistration:
     completed_gameweeks: tuple[int, ...] = ()
     prev_record_hash: str = "0" * 64
     record_hash: str = ""
+    requested_seasons: tuple[str, ...] = ()
+    max_family_attempts: int | None = None
+    score_trace_hash: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["known_aliases"] = list(self.known_aliases)
         data["registered_gameweeks"] = list(self.registered_gameweeks)
         data["completed_gameweeks"] = list(self.completed_gameweeks)
+        data["requested_seasons"] = list(self.requested_seasons)
         data["prev_record_hash"] = self.prev_record_hash
         return data
 
@@ -117,6 +122,12 @@ class FinalistRegistration:
             "completed_gameweeks": list(self.completed_gameweeks),
             "prev_record_hash": self.prev_record_hash,
         }
+        if self.requested_seasons:
+            payload["requested_seasons"] = list(self.requested_seasons)
+        if self.max_family_attempts is not None:
+            payload["max_family_attempts"] = self.max_family_attempts
+        if self.score_trace_hash is not None:
+            payload["score_trace_hash"] = self.score_trace_hash
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
@@ -169,14 +180,17 @@ class ConfirmationRegistry:
                         completed_gameweeks=tuple(data.get("completed_gameweeks", ())),
                         prev_record_hash=data.get("prev_record_hash", "0" * 64),
                         record_hash=data.get("record_hash", ""),
+                        requested_seasons=tuple(data.get("requested_seasons", ())),
+                        max_family_attempts=data.get("max_family_attempts"),
+                        score_trace_hash=data.get("score_trace_hash"),
                     )
                     expected_hash = rec.compute_record_hash()
-                    if rec.record_hash and rec.record_hash != expected_hash:
+                    if rec.record_hash != expected_hash:
                         raise TamperedRegistryError(
                             f"Cryptographic hash mismatch at line {line_no} for attempt '{rec.attempt_id}'"
                         )
                     expected_prev = records[-1].record_hash if records else ("0" * 64)
-                    if rec.prev_record_hash and rec.prev_record_hash != expected_prev:
+                    if rec.prev_record_hash != expected_prev:
                         raise TamperedRegistryError(
                             f"Cryptographic chain break at line {line_no} for attempt '{rec.attempt_id}': "
                             f"expected prev_record_hash '{expected_prev}', got '{rec.prev_record_hash}'"
@@ -286,6 +300,7 @@ class ConfirmationRegistry:
         ledger_csv_path: Path | str | None = None,
         candidate_lever_description: str = "",
         requested_seasons: Sequence[str] = ("2024-25",),
+        max_family_attempts: int = 10,
     ) -> FinalistRegistration:
         """Register a new finalist confirmation round."""
         self._ensure_dir()
@@ -310,14 +325,25 @@ class ConfirmationRegistry:
         existing_records = self.load_all_records()
         prev_hash = existing_records[-1].record_hash if existing_records else ("0" * 64)
 
-        attempt_number = len(family_history) + 1
+        attempt_number = len({record.attempt_id for record in family_history}) + 1
+        if max_family_attempts < 1 or attempt_number > max_family_attempts:
+            raise AdaptiveRunViolationError("Registered mechanism family attempt budget exhausted or invalid")
+        if any(record.max_family_attempts != max_family_attempts for record in family_history):
+            raise AdaptiveRunViolationError("Cannot change an existing mechanism family's registered attempt budget")
+        schedule = tuple(registered_gameweeks)
+        if not schedule or len(set(schedule)) != len(schedule) or any(not 1 <= gw <= 38 for gw in schedule):
+            raise RegistryError("Registered gameweeks must be a nonempty unique schedule within [1, 38]")
+        if not requested_seasons or len(set(requested_seasons)) != len(requested_seasons):
+            raise RegistryError("Requested seasons must be nonempty and unique")
         now_iso = datetime.now(timezone.utc).isoformat()
 
         if attempt_id is None:
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            generated_id = f"eval-{candidate_name}-{ts}"
+            generated_id = f"eval-{candidate_name}-{ts}-{uuid4().hex[:12]}"
         else:
             generated_id = attempt_id
+        if not generated_id.strip() or any(record.attempt_id == generated_id for record in existing_records):
+            raise DuplicateAttemptError(f"Attempt ID '{generated_id}' is empty or already registered")
 
         if parent_attempt_id is None and family_history:
             parent_attempt_id = family_history[-1].attempt_id
@@ -342,12 +368,12 @@ class ConfirmationRegistry:
             completed_gameweeks=(),
             human_approval_ref=human_approval_ref,
             prev_record_hash=prev_hash,
+            requested_seasons=tuple(requested_seasons),
+            max_family_attempts=max_family_attempts,
         )
 
         record_hash = reg.compute_record_hash()
-        final_reg = FinalistRegistration(
-            **{**reg.to_dict(), "record_hash": record_hash}
-        )
+        final_reg = replace(reg, record_hash=record_hash)
 
         self._append_record(final_reg)
         return final_reg
@@ -362,27 +388,65 @@ class ConfirmationRegistry:
         completed_gameweeks: Sequence[int] | None = None,
         bundle_path: str | None = None,
         human_approval_ref: str | None = None,
+        score_trace_hash: str | None = None,
     ) -> FinalistRegistration:
         """Append a state transition record for an existing attempt."""
         prior = self.get_attempt(attempt_id)
         if prior is None:
             raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
 
-        if prior.status == "completed" and status in ("registered", "in_progress"):
+        transition_graph: dict[AttemptStatus, tuple[AttemptStatus, ...]] = {
+            "registered": ("in_progress", "completed", "withdrawn", "invalidated"),
+            "in_progress": ("in_progress", "completed", "withdrawn", "invalidated"),
+            "completed": (),
+            "withdrawn": (),
+            "invalidated": (),
+        }
+        requested_fields = {
+            "execution_status": execution_status,
+            "scientific_verdict": scientific_verdict,
+            "completed_gameweeks": tuple(completed_gameweeks) if completed_gameweeks is not None else None,
+            "bundle_path": bundle_path,
+            "human_approval_ref": human_approval_ref,
+            "score_trace_hash": score_trace_hash,
+        }
+        unchanged = status == prior.status and all(
+            value is None or value == getattr(prior, name) for name, value in requested_fields.items()
+        )
+        if unchanged:
+            return prior
+        if status not in transition_graph.get(prior.status, ()):
             raise AdaptiveRunViolationError(
-                f"Cannot re-open or overwrite completed confirmation attempt '{attempt_id}'"
+                f"Cannot re-open or overwrite {prior.status} confirmation attempt '{attempt_id}' with status '{status}'"
             )
 
         new_completed_gws = tuple(completed_gameweeks) if completed_gameweeks is not None else prior.completed_gameweeks
+        if (
+            len(set(new_completed_gws)) != len(new_completed_gws)
+            or not set(prior.completed_gameweeks) <= set(new_completed_gws) <= set(prior.registered_gameweeks)
+        ):
+            raise IncompleteScheduleError("Completed gameweeks must progress monotonically within the registered schedule")
+        if prior.execution_status == "complete" and (
+            (execution_status is not None and execution_status != "complete")
+            or new_completed_gws != prior.completed_gameweeks
+            or (score_trace_hash is not None and score_trace_hash != prior.score_trace_hash)
+        ):
+            raise AdaptiveRunViolationError("Cannot replace a completed confirmation score trace or execution state")
+        if score_trace_hash is not None and (
+            len(score_trace_hash) != 64 or any(char not in "0123456789abcdef" for char in score_trace_hash)
+        ):
+            raise RegistryError("Score trace hash must be a SHA256 hex digest")
 
         # Enforce complete schedule before completion
-        if status == "completed":
+        if status == "completed" or execution_status == "complete":
             if set(new_completed_gws) != set(prior.registered_gameweeks):
                 raise IncompleteScheduleError(
                     f"Attempt '{attempt_id}' has completed gameweeks {sorted(new_completed_gws)}, "
                     f"which does not match registered schedule {sorted(prior.registered_gameweeks)}. "
                     f"Stopping when intermediate results look favorable is strictly prohibited."
                 )
+        if status == "completed" and (execution_status or prior.execution_status) != "complete":
+            raise IncompleteScheduleError("Completed attempt requires complete execution status")
 
         existing_records = self.load_all_records()
         prev_hash = existing_records[-1].record_hash if existing_records else ("0" * 64)
@@ -401,6 +465,8 @@ class ConfirmationRegistry:
             updated_dict["bundle_path"] = bundle_path
         if human_approval_ref is not None:
             updated_dict["human_approval_ref"] = human_approval_ref
+        if score_trace_hash is not None:
+            updated_dict["score_trace_hash"] = score_trace_hash
         if status == "completed":
             updated_dict["completed_at"] = now_iso
 
@@ -427,10 +493,13 @@ class ConfirmationRegistry:
             completed_gameweeks=tuple(updated_dict.get("completed_gameweeks", ())),
             prev_record_hash=prev_hash,
             record_hash="",
+            requested_seasons=tuple(updated_dict.get("requested_seasons", ())),
+            max_family_attempts=updated_dict.get("max_family_attempts"),
+            score_trace_hash=updated_dict.get("score_trace_hash"),
         )
 
         record_hash = updated.compute_record_hash()
-        final_rec = FinalistRegistration(**{**updated.to_dict(), "record_hash": record_hash})
+        final_rec = replace(updated, record_hash=record_hash)
 
         self._append_record(final_rec)
         return final_rec

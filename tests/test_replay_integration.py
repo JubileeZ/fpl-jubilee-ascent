@@ -1,6 +1,7 @@
 """Integration and verification tests for independent rolling transfer plan replay."""
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -19,10 +20,19 @@ from backtesting.rolling_replay import (
     execute_replay_deadline,
     get_strategic_replay_options,
     record_from_dict,
-    run_rolling_replay,
+    run_rolling_replay as _run_rolling_replay,
+    heuristic_zero_transfer_solve,
+    ReplayTrajectory,
     solve_lineup_milp,
     validate_decision_legality,
 )
+
+
+def _run_lineup_fixture_replay(*args: Any, **kwargs: Any) -> ReplayTrajectory:
+    kwargs.setdefault("solve_fn", heuristic_zero_transfer_solve)
+    kwargs.setdefault("model_version_hash", "synthetic-model-v1")
+    kwargs.setdefault("protocol_hash", "synthetic-protocol-v1")
+    return _run_rolling_replay(*args, **kwargs)
 
 
 def _make_test_universe() -> pd.DataFrame:
@@ -122,7 +132,7 @@ def test_multigw_independent_rolling_replay_and_score_reconstruction(tmp_path: P
         )
 
     cp_dir = tmp_path / "checkpoints"
-    traj = run_rolling_replay(
+    traj = _run_lineup_fixture_replay(
         model_name="test_model_alpha",
         season="2024-25",
         anchor=anchor,
@@ -171,21 +181,15 @@ def test_checkpoint_crash_and_resume(tmp_path: Path) -> None:
 
     cp_dir = tmp_path / "resume_cps"
 
-    # Run GW1 and GW2
-    traj_initial = run_rolling_replay(
-        model_name="resume_model",
-        season="2024-25",
-        anchor=anchor,
-        forecast_provider=fake_forecast_provider,
-        outcome_provider=fake_outcome_provider,
-        start_gw=1,
-        end_gw=2,
-        checkpoint_dir=cp_dir,
-    )
-    assert len(traj_initial.records) == 2
+    interrupted = True
 
-    # Resume to GW3: should load GW1 and GW2 from disk and solve only GW3
-    traj_resumed = run_rolling_replay(
+    def interrupted_solve(state: ReplayState, horizon: int, forecasts: pd.DataFrame, options: dict[str, Any]) -> tuple[Decision, SolverCertificate]:
+        if interrupted and state.deadline == 3:
+            raise RuntimeError("simulated interruption")
+        return heuristic_zero_transfer_solve(state, horizon, forecasts, options)
+
+    with pytest.raises(RuntimeError, match="simulated interruption"):
+        _run_lineup_fixture_replay(
         model_name="resume_model",
         season="2024-25",
         anchor=anchor,
@@ -194,11 +198,28 @@ def test_checkpoint_crash_and_resume(tmp_path: Path) -> None:
         start_gw=1,
         end_gw=3,
         checkpoint_dir=cp_dir,
+        solve_fn=interrupted_solve,
+    )
+    first_ids = [json.loads(p.read_text())["checkpoint_id"] for p in sorted(cp_dir.glob("checkpoint_gw_*.json"))]
+    assert len(first_ids) == 2
+    interrupted = False
+
+    # Resume to GW3: should load GW1 and GW2 from disk and solve only GW3
+    traj_resumed = _run_lineup_fixture_replay(
+        model_name="resume_model",
+        season="2024-25",
+        anchor=anchor,
+        forecast_provider=fake_forecast_provider,
+        outcome_provider=fake_outcome_provider,
+        start_gw=1,
+        end_gw=3,
+        checkpoint_dir=cp_dir,
+        solve_fn=interrupted_solve,
     )
     assert len(traj_resumed.records) == 3
     assert traj_resumed.deadlines == (1, 2, 3)
-    assert traj_resumed.records[0].checkpoint_id == traj_initial.records[0].checkpoint_id
-    assert traj_resumed.records[1].checkpoint_id == traj_initial.records[1].checkpoint_id
+    assert traj_resumed.records[0].checkpoint_id == first_ids[0]
+    assert traj_resumed.records[1].checkpoint_id == first_ids[1]
 
 
 def test_cache_changes_and_corruption_rejection(tmp_path: Path) -> None:
@@ -213,7 +234,7 @@ def test_cache_changes_and_corruption_rejection(tmp_path: Path) -> None:
         return OutcomeBatch("2024-25", gw, f"s-{gw}", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25)))
 
     cp_dir = tmp_path / "corrupted_cps"
-    run_rolling_replay(
+    _run_lineup_fixture_replay(
         model_name="model_corrupt",
         season="2024-25",
         anchor=anchor,
@@ -232,14 +253,14 @@ def test_cache_changes_and_corruption_rejection(tmp_path: Path) -> None:
 
     # Resuming should detect corrupted pre-state hash and raise ValueError
     with pytest.raises(ValueError, match="Corrupted resume checkpoint state mismatch"):
-        run_rolling_replay(
+        _run_lineup_fixture_replay(
             model_name="model_corrupt",
             season="2024-25",
             anchor=anchor,
             forecast_provider=fake_forecast_provider,
             outcome_provider=fake_outcome_provider,
             start_gw=1,
-            end_gw=2,
+            end_gw=1,
             checkpoint_dir=cp_dir,
         )
 
@@ -351,8 +372,8 @@ def test_policies_diverge_and_retain_consequences() -> None:
             outcomes=tuple((pid, Outcome(points=15 if pid in (5, 6, 7, 8) else 5, minutes=90, appeared=True)) for pid in range(1, 25)),
         )
 
-    traj_a = run_rolling_replay("model_a", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2, solve_fn=solver_a)
-    traj_b = run_rolling_replay("model_b", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2, solve_fn=solver_b)
+    traj_a = _run_lineup_fixture_replay("model_a", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2, solve_fn=solver_a)
+    traj_b = _run_lineup_fixture_replay("model_b", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2, solve_fn=solver_b)
 
     # State diverged at GW2: Squad A and Squad B have different players
     assert traj_a.final_squad_ids != traj_b.final_squad_ids
@@ -374,8 +395,8 @@ def test_identical_policies_remain_identical() -> None:
     def fake_outcomes(gw: int) -> OutcomeBatch:
         return OutcomeBatch("2024-25", gw, f"s-{gw}", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25)))
 
-    traj_1 = run_rolling_replay("champion", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2)
-    traj_2 = run_rolling_replay("champion", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2)
+    traj_1 = _run_lineup_fixture_replay("champion", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2)
+    traj_2 = _run_lineup_fixture_replay("champion", "2024-25", anchor, fake_forecast, fake_outcomes, start_gw=1, end_gw=2)
 
     assert traj_1.cumulative_net == traj_2.cumulative_net
     assert traj_1.final_squad_ids == traj_2.final_squad_ids
@@ -432,6 +453,8 @@ def test_certified_quality_policy_rejection() -> None:
         cert = _make_test_certificate(
             opts,
             relative_gap=0.10,
+            objective_bound=11.0,
+            absolute_gap=1.0,
             termination_status="TIME_LIMIT",
         )
         return dec, cert
@@ -465,6 +488,8 @@ def test_uncertified_solve_trajectory_recording() -> None:
         cert = _make_test_certificate(
             opts,
             relative_gap=0.05,
+            objective_bound=10.5,
+            absolute_gap=0.5,
             termination_status="SUBOPTIMAL",
         )
         return dec, cert
@@ -476,7 +501,7 @@ def test_uncertified_solve_trajectory_recording() -> None:
         return OutcomeBatch("2024-25", gw, f"test-{gw}", tuple((pid, Outcome(5, 90, True)) for pid in anchor.player_ids))
 
     # Run with raise_on_failure=False: should record uncertified status explicitly
-    traj = run_rolling_replay(
+    traj = _run_lineup_fixture_replay(
         model_name="gap_model",
         season="2024-25",
         anchor=anchor,
@@ -487,9 +512,8 @@ def test_uncertified_solve_trajectory_recording() -> None:
         solve_fn=non_optimal_solver,
         policy=QualityPolicy(mode="certified", target_gap=0.0, require_proven_optimal=True, raise_on_failure=False),
     )
-    assert traj.deadlines == (1, 2)
+    assert traj.deadlines == (1,)
     assert traj.records[0].execution_status == "UNCERTIFIED_GAP"
-    assert traj.records[1].execution_status == "UNCERTIFIED_GAP"
 
 
 def test_time_capped_policy_timeout_rejection() -> None:
@@ -526,3 +550,83 @@ def test_time_capped_policy_timeout_rejection() -> None:
             solve_fn=timed_out_solver,
             policy=QualityPolicy(mode="time_capped", time_limit_seconds=30.0),
         )
+
+
+@pytest.mark.parametrize("changed", ["model", "version", "protocol", "policy", "forecast", "outcome", "schedule"])
+def test_resume_rejects_changed_evaluation_inputs(tmp_path: Path, changed: str) -> None:
+    anchor = solve_ownership_anchor(_make_test_universe(), season="2024-25")
+    forecasts = pd.DataFrame([{"player_id": pid, "projected_points": 5.0} for pid in range(1, 25)])
+    point = 5
+
+    def forecast_provider(gw: int, state: ReplayState) -> pd.DataFrame:
+        return forecasts
+
+    def outcome_provider(gw: int) -> OutcomeBatch:
+        return OutcomeBatch("2024-25", gw, "synthetic-source", tuple((pid, Outcome(point, 90, True)) for pid in range(1, 25)))
+
+    kwargs: dict[str, Any] = {"model_name": "candidate", "season": "2024-25", "anchor": anchor,
+                              "forecast_provider": forecast_provider, "outcome_provider": outcome_provider,
+                              "end_gw": 2, "checkpoint_dir": tmp_path}
+    _run_lineup_fixture_replay(**kwargs)
+    if changed == "model":
+        kwargs["model_name"] = "different-candidate"
+    elif changed == "version":
+        kwargs["model_version_hash"] = "different-source"
+    elif changed == "protocol":
+        kwargs["protocol_hash"] = "different-protocol"
+    elif changed == "policy":
+        kwargs["policy"] = QualityPolicy(target_gap=0.01)
+    elif changed == "schedule":
+        kwargs["end_gw"] = 3
+    elif changed == "forecast":
+        forecasts.loc[0, "projected_points"] = 50.0
+    else:
+        point = 6
+    with pytest.raises(ValueError, match="identity mismatch"):
+        _run_lineup_fixture_replay(**kwargs)
+
+
+def test_record_and_trajectory_audit_recompute_native_transition() -> None:
+    anchor = solve_ownership_anchor(_make_test_universe(), season="2024-25")
+    forecasts = pd.DataFrame([{"player_id": pid, "projected_points": 5.0} for pid in range(1, 25)])
+    outcomes = OutcomeBatch("2024-25", 1, "synthetic", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25)))
+    trajectory = _run_lineup_fixture_replay("fixture", "2024-25", anchor, lambda gw, state: forecasts, lambda gw: outcomes, end_gw=1)
+    record = trajectory.records[0]
+    corrupted = replace(record, gross_points=record.gross_points + 10, net_points=record.net_points + 10)
+    with pytest.raises(ValueError, match="content"):
+        replace(trajectory, records=(corrupted,), cumulative_net=trajectory.cumulative_net + 10).audit_reconstructed_net_score()
+    data = record.to_dict()
+    data["transition_result"]["state"]["bank"] += 10
+    with pytest.raises(ValueError, match="content"):
+        record_from_dict(data)
+
+
+@pytest.mark.parametrize("bad", [{"relative_gap": float("nan")}, {"objective": float("inf")},
+                                 {"quality_mode": "time_capped"}, {"termination_status": "TIME_LIMIT"}])
+def test_bad_certificate_cannot_supply_successful_evidence(bad: dict[str, Any]) -> None:
+    anchor = solve_ownership_anchor(_make_test_universe(), season="2024-25")
+    state = anchor.to_replay_state("2024-25")
+    forecasts = pd.DataFrame([{"player_id": p.player_id, "projected_points": 5.0} for p in state.squad])
+    outcomes = OutcomeBatch("2024-25", 1, "synthetic", tuple((p.player_id, Outcome(5, 90, True)) for p in state.squad))
+
+    def bad_solver(s: ReplayState, horizon: int, forecasts: pd.DataFrame, options: dict[str, Any]) -> tuple[Decision, SolverCertificate]:
+        decision, cert = heuristic_zero_transfer_solve(s, horizon, forecasts, options)
+        return decision, replace(cert, **bad)
+
+    with pytest.raises(UncertifiedSolveError):
+        execute_replay_deadline(state, forecasts, outcomes, solve_fn=bad_solver)
+
+
+def test_scoring_window_does_not_clip_planning_horizon() -> None:
+    anchor = solve_ownership_anchor(_make_test_universe(), season="2024-25")
+    horizons: list[int] = []
+
+    def solve(state: ReplayState, horizon: int, forecasts: pd.DataFrame, options: dict[str, Any]) -> tuple[Decision, SolverCertificate]:
+        horizons.append(horizon)
+        return heuristic_zero_transfer_solve(state, horizon, forecasts, options)
+
+    _run_lineup_fixture_replay("fixture", "2024-25", anchor,
+                              lambda gw, state: pd.DataFrame([{"player_id": pid, "projected_points": 5.0} for pid in range(1, 25)]),
+                              lambda gw: OutcomeBatch("2024-25", gw, "synthetic", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25))),
+                              end_gw=2, solve_fn=solve)
+    assert horizons == [6, 6]

@@ -21,6 +21,9 @@ import json
 from pathlib import Path
 from typing import Any, Literal
 
+from backtesting.replay_state import Decision, OutcomeBatch, ReplayState, transition
+from backtesting.rolling_replay import validate_decision_legality
+
 ModelRole = Literal["adopted_candidate", "former_champion"]
 
 
@@ -131,6 +134,7 @@ class ShadowReplayState:
     gross_points: float
     net_points: float
     chip_used: str | None = None
+    native_state: ReplayState | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -225,7 +229,11 @@ class LiveCaptureManager:
         )
 
         out_path = self.storage_dir / "captures" / f"{cid}.json"
-        with open(out_path, "w", encoding="utf-8") as f:
+        if out_path.exists():
+            if json.loads(out_path.read_text(encoding="utf-8")) != final_cap.to_dict():
+                raise LiveCaptureError("Immutable deadline capture already exists with different content")
+            return final_cap
+        with open(out_path, "x", encoding="utf-8") as f:
             json.dump(final_cap.to_dict(), f, indent=2)
 
         return final_cap
@@ -233,15 +241,17 @@ class LiveCaptureManager:
     def step_shadow_state(
         self,
         prior_state: ShadowReplayState,
-        new_transfers_in: Sequence[int],
-        new_transfers_out: Sequence[int],
-        lineup_starters: Sequence[int],
-        captain_id: int,
-        vice_id: int,
-        outcomes_by_player: dict[int, float],
+        new_transfers_in: Sequence[int] = (),
+        new_transfers_out: Sequence[int] = (),
+        lineup_starters: Sequence[int] = (),
+        captain_id: int | None = None,
+        vice_id: int | None = None,
+        outcomes_by_player: dict[int, float] | None = None,
         *,
         chip_used: str | None = None,
         outcomes_finalized: bool = True,
+        native_decision: Decision | None = None,
+        outcome_batch: OutcomeBatch | None = None,
     ) -> ShadowReplayState:
         """Advance a single model's shadow replay state by one gameweek."""
         if not outcomes_finalized:
@@ -249,51 +259,35 @@ class LiveCaptureManager:
                 f"Cannot advance shadow state for GW{prior_state.gameweek + 1}: outcomes not finalized"
             )
 
-        # Validate transfer balance
-        if len(new_transfers_in) != len(new_transfers_out):
-            raise ValueError("Transfers in and out count must match")
-
-        current_squad = set(prior_state.owned_fifteen)
-        for out_id in new_transfers_out:
-            if out_id not in current_squad:
-                raise ValueError(f"Player {out_id} transferred out but not owned")
-            current_squad.remove(out_id)
-        for in_id in new_transfers_in:
-            current_squad.add(in_id)
-
-        num_transfers = len(new_transfers_in)
-        free_allowed = prior_state.free_transfers
-        hits_count = max(0, num_transfers - free_allowed)
-        hit_deduction = hits_count * 4
-
-        # Next FTs: 1 added, capped at 5
-        next_fts = min(5, max(1, free_allowed - num_transfers + 1))
-
-        # Score lineup
-        gross_pts = 0.0
-        for pid in lineup_starters:
-            pts = outcomes_by_player.get(pid, 0.0)
-            if pid == captain_id:
-                pts *= 2.0
-            gross_pts += pts
-
-        net_pts = gross_pts - hit_deduction
+        native = prior_state.native_state
+        if native is None or native_decision is None or outcome_batch is None:
+            raise ValueError("Native ReplayState, Decision and finalized OutcomeBatch required; IDs and point totals omit prices, positions, chip history and appearances")
+        if (new_transfers_in or new_transfers_out or lineup_starters or captain_id is not None
+                or vice_id is not None or outcomes_by_player is not None or chip_used is not None):
+            raise ValueError("Pass native decision/outcomes only; legacy shadow inputs are insufficient")
+        if (native.rules_version != prior_state.season or native.deadline != prior_state.gameweek + 1
+                or {p.player_id for p in native.squad} != set(prior_state.owned_fifteen)
+                or native.bank != prior_state.bank_tenths or native.free_transfers != prior_state.free_transfers):
+            raise ValueError("Shadow summary does not match native pre-state")
+        validate_decision_legality(native, native_decision)
+        result = transition(native, native_decision, outcome_batch)
 
         return ShadowReplayState(
             model_role=prior_state.model_role,
             season=prior_state.season,
             gameweek=prior_state.gameweek + 1,
-            owned_fifteen=tuple(sorted(current_squad)),
-            bank_tenths=prior_state.bank_tenths,
-            free_transfers=next_fts,
-            transfers_made=num_transfers,
-            hit_cost=hit_deduction,
-            lineup_starters=tuple(lineup_starters),
-            captain_id=captain_id,
-            vice_id=vice_id,
-            gross_points=float(gross_pts),
-            net_points=float(net_pts),
-            chip_used=chip_used,
+            owned_fifteen=tuple(sorted(p.player_id for p in result.state.squad)),
+            bank_tenths=result.state.bank,
+            free_transfers=result.state.free_transfers,
+            transfers_made=len(native_decision.transfers),
+            hit_cost=result.hit,
+            lineup_starters=native_decision.lineup.starters,
+            captain_id=native_decision.lineup.captain,
+            vice_id=native_decision.lineup.vice,
+            gross_points=float(result.gross + result.captain_increment),
+            net_points=float(result.net),
+            chip_used=native_decision.chip,
+            native_state=result.state,
         )
 
     def evaluate_live_review(

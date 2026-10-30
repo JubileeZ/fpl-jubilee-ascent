@@ -28,6 +28,7 @@ from models.scoring_matrix import EventComponent, Position, event_points
 
 EvaluationPopulation = Literal["all_players", "playable_pool", "starters_xi", "squad_15"]
 MetricDirection = Literal["higher_is_better", "lower_is_better", "zero_is_ideal"]
+GuardStatus = Literal["PASS", "FAIL", "INCONCLUSIVE", "UNASSESSED", "MISSING_EVIDENCE"]
 ComponentStatus = Literal[
     "applicable",
     "inapplicable_season",
@@ -156,12 +157,12 @@ class GuardOutput:
 
     metric_name: str
     passed: bool
-    status: Literal["PASS", "FAIL", "UNASSESSED", "MISSING_EVIDENCE"]
+    status: GuardStatus
     estimate: float
     margin: float
-    standard_error: float
-    ci_lower: float
-    ci_upper: float
+    standard_error: float | None
+    ci_lower: float | None
+    ci_upper: float | None
     coverage: float
     sample_size: int
     direction: MetricDirection
@@ -469,6 +470,22 @@ def evaluate_oracle_minutes_mechanism(
     )
 
 
+def classify_non_inferiority_interval(
+    ci_lower: float,
+    ci_upper: float,
+    margin: float,
+    direction: MetricDirection,
+) -> Literal["PASS", "FAIL", "INCONCLUSIVE"]:
+    """Separate established acceptability, demonstrated harm, and unresolved uncertainty."""
+    if direction == "lower_is_better":
+        return "PASS" if ci_upper <= margin else "FAIL" if ci_lower > margin else "INCONCLUSIVE"
+    if direction == "higher_is_better":
+        return "PASS" if ci_lower >= -margin else "FAIL" if ci_upper < -margin else "INCONCLUSIVE"
+    if direction == "zero_is_ideal":
+        return "PASS" if ci_lower >= -margin and ci_upper <= margin else "FAIL" if ci_lower > margin or ci_upper < -margin else "INCONCLUSIVE"
+    raise ValueError(f"Unknown metric direction: {direction}")
+
+
 def evaluate_non_inferiority_guard(
     candidate_errors: pd.Series | np.ndarray | Sequence[float],
     champion_errors: pd.Series | np.ndarray | Sequence[float],
@@ -488,7 +505,7 @@ def evaluate_non_inferiority_guard(
     For calibration bias (direction == 'zero_is_ideal'):
     Equivalence requires both CI bounds to lie within [-margin, +margin].
 
-    Absence of statistically significant deterioration is insufficient proof of acceptable regression.
+    Uncertainty crossing a bound remains inconclusive; failure requires demonstrated harm.
     """
     if isinstance(candidate_errors, pd.Series) and isinstance(champion_errors, pd.Series):
         aligned = pd.concat([candidate_errors.rename("cand"), champion_errors.rename("champ")], axis=1, join="inner").dropna()
@@ -516,10 +533,29 @@ def evaluate_non_inferiority_guard(
             reason="Missing or empty evaluation samples",
         )
 
+    if not np.isfinite(cand).all() or not np.isfinite(champ).all():
+        raise ValueError("Non-inferiority samples must be finite")
+    if not np.isfinite(meaningful_margin) or meaningful_margin < 0.0 or not 0.0 < alpha < 1.0:
+        raise ValueError("Non-inferiority margin must be finite and nonnegative; alpha must lie between zero and one")
     n = len(cand)
     paired_diff = cand - champ
     estimate = float(np.mean(paired_diff))
-    se = float(stats.sem(paired_diff)) if n > 1 else 0.0
+    if n == 1:
+        return GuardOutput(
+            metric_name=metric_name,
+            passed=False,
+            status="INCONCLUSIVE",
+            estimate=estimate,
+            margin=meaningful_margin,
+            standard_error=None,
+            ci_lower=None,
+            ci_upper=None,
+            coverage=0.0,
+            sample_size=n,
+            direction=direction,
+            reason="One paired observation cannot estimate uncertainty; at least two required",
+        )
+    se = float(stats.sem(paired_diff))
 
     z_crit = float(stats.norm.ppf(1.0 - alpha))
     margin = float(meaningful_margin)
@@ -528,44 +564,30 @@ def evaluate_non_inferiority_guard(
     if direction == "lower_is_better":
         ci_lower = float(estimate - z_crit * se)
         ci_upper = float(estimate + z_crit * se)
-        passed = bool(ci_upper <= margin)
-        reason = (
-            f"Non-inferior: upper {conf_pct}% bound {ci_upper:.4f} <= margin {margin:.4f}"
-            if passed
-            else f"Failed non-inferiority: upper {conf_pct}% bound {ci_upper:.4f} exceeds margin {margin:.4f}"
-        )
     elif direction == "higher_is_better":
         ci_lower = float(estimate - z_crit * se)
         ci_upper = float(estimate + z_crit * se)
-        passed = bool(ci_lower >= -margin)
-        reason = (
-            f"Non-inferior: lower {conf_pct}% bound {ci_lower:.4f} >= -margin {-margin:.4f}"
-            if passed
-            else f"Failed non-inferiority: lower {conf_pct}% bound {ci_lower:.4f} lags beyond margin {-margin:.4f}"
-        )
     else:  # zero_is_ideal (bias)
         z_two_sided = float(stats.norm.ppf(1.0 - alpha / 2.0))
         ci_lower = float(estimate - z_two_sided * se)
         ci_upper = float(estimate + z_two_sided * se)
-        # Equivalence requires the entire two-sided CI to remain within [-margin, +margin]
-        passed = bool(ci_lower >= -margin and ci_upper <= margin)
-        reason = (
-            f"Calibration equivalence verified: {conf_pct}% CI [{ci_lower:.4f}, {ci_upper:.4f}] within margin [{-margin:.4f}, {margin:.4f}]"
-            if passed
-            else f"Calibration equivalence failed: {conf_pct}% CI [{ci_lower:.4f}, {ci_upper:.4f}] exceeds margin [{-margin:.4f}, {margin:.4f}]"
-        )
-
-    status: Literal["PASS", "FAIL", "UNASSESSED", "MISSING_EVIDENCE"] = "PASS" if passed else "FAIL"
+    status = classify_non_inferiority_interval(ci_lower, ci_upper, margin, direction)
+    descriptions = {
+        "PASS": "Non-inferiority established",
+        "FAIL": "Demonstrated harm beyond margin",
+        "INCONCLUSIVE": "Uncertainty spans acceptable and harmful effects",
+    }
+    reason = f"{descriptions[status]}: {conf_pct}% bounds [{ci_lower:.6g}, {ci_upper:.6g}], margin {margin:.6g}, direction {direction}"
 
     return GuardOutput(
         metric_name=metric_name,
-        passed=passed,
+        passed=status == "PASS",
         status=status,
-        estimate=round(estimate, 4),
-        margin=round(margin, 4),
-        standard_error=round(se, 4),
-        ci_lower=round(ci_lower, 4),
-        ci_upper=round(ci_upper, 4),
+        estimate=estimate,
+        margin=margin,
+        standard_error=se,
+        ci_lower=ci_lower,
+        ci_upper=ci_upper,
         coverage=1.0 - alpha,
         sample_size=n,
         direction=direction,
@@ -583,12 +605,12 @@ def evaluate_composite_non_inferiority(
     shows demonstrated harm exceeding its meaningful margin.
     """
     if not primary_guard.passed:
-        return False, f"Primary metric {primary_guard.metric_name} failed non-inferiority: {primary_guard.reason}"
+        return False, f"Primary metric {primary_guard.metric_name} non-inferiority not established: {primary_guard.reason}"
 
     failed_components = [g for g in component_guards if not g.passed and g.status != "UNASSESSED"]
     if failed_components:
         failed_names = ", ".join(f"{g.metric_name} ({g.reason})" for g in failed_components)
-        return False, f"Required component non-inferiority breached: {failed_names}"
+        return False, f"Required component non-inferiority not established: {failed_names}"
 
     return True, "Primary and all required component non-inferiority guards passed."
 

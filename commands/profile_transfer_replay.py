@@ -16,22 +16,24 @@ Implements Phase 7 profiling engine:
 """
 
 import argparse
+import hashlib
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 import json
 import os
 from pathlib import Path
 import platform
-import resource
 import sys
 import time
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
+import pandas as pd
 
 from backtesting.rolling_replay import (
     SolverCertificate,
     get_strategic_replay_options,
+    replay_state_from_dict,
 )
 
 ProblemArchetype = Literal["ordinary", "constrained_budget", "transfer_heavy", "chip_enabled"]
@@ -60,6 +62,11 @@ class ProfilingEnvelope:
     total_elapsed_limit_seconds: float = 1200.0  # 20 minutes
     threads: int = 1
     serial: bool = True
+
+    def __post_init__(self) -> None:
+        if (not 1 <= self.max_optimizer_calls <= 20 or not 0 < self.time_limit_per_call_seconds <= 30
+                or not 0 < self.total_elapsed_limit_seconds <= 1200 or self.threads != 1 or self.serial is not True):
+            raise ValueError("Profiler requires at most 20 calls, 30s/call, 1200s elapsed, one thread and serial execution")
 
 
 @dataclass(frozen=True)
@@ -146,8 +153,8 @@ class CacheBenchmark:
     """Benchmark comparing cold execution against warm cache and interrupted-path resume."""
 
     cold_call_time_seconds: float
-    warm_call_time_seconds: float
-    cache_speedup_ratio: float
+    warm_call_time_seconds: float | None
+    cache_speedup_ratio: float | None
     interrupted_resume_verified: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -171,11 +178,11 @@ class WorkloadProjection:
     mean_model_prep_seconds: float
     mean_assembly_seconds: float
     mean_total_call_seconds: float
-    measured_anchor_cost_seconds: float
-    measured_gw1_lineup_cost_seconds: float
+    measured_anchor_cost_seconds: float | None
+    measured_gw1_lineup_cost_seconds: float | None
     transfer_jobs_count: int
-    estimated_season_total_seconds: float
-    estimated_season_hours: float
+    estimated_season_total_seconds: float | None
+    estimated_season_hours: float | None
     extrapolation_reliable: bool
     archetype_summaries: list[ArchetypeTimingSummary]
 
@@ -214,12 +221,14 @@ class ProfilingReport:
     censored_calls_count: int
     records: list[ProbeExecutionRecord]
     paired_comparisons: list[PairedProbeComparison]
-    cache_benchmark: CacheBenchmark
-    workload_projection: WorkloadProjection
-    policy_recommendations: PolicyRecommendations
+    cache_benchmark: CacheBenchmark | None
+    workload_projection: WorkloadProjection | None
+    policy_recommendations: PolicyRecommendations | None
+    is_simulation: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "is_simulation": self.is_simulation,
             "timestamp": self.timestamp,
             "environment": self.environment.to_dict(),
             "envelope": asdict(self.envelope),
@@ -229,9 +238,9 @@ class ProfilingReport:
             "censored_calls_count": self.censored_calls_count,
             "records": [r.to_dict() for r in self.records],
             "paired_comparisons": [c.to_dict() for c in self.paired_comparisons],
-            "cache_benchmark": self.cache_benchmark.to_dict(),
-            "workload_projection": self.workload_projection.to_dict(),
-            "policy_recommendations": self.policy_recommendations.to_dict(),
+            "cache_benchmark": self.cache_benchmark.to_dict() if self.cache_benchmark is not None else None,
+            "workload_projection": self.workload_projection.to_dict() if self.workload_projection is not None else None,
+            "policy_recommendations": self.policy_recommendations.to_dict() if self.policy_recommendations is not None else None,
         }
 
 
@@ -299,6 +308,30 @@ def get_environment_metadata() -> EnvironmentMetadata:
 def _get_peak_memory_mb() -> float:
     """Measure peak resident set memory usage in megabytes."""
     try:
+        if platform.system() == "Windows":
+            import ctypes
+            from ctypes import wintypes
+
+            class ProcessMemoryCounters(ctypes.Structure):
+                _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                            ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                            ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+
+            counters = ProcessMemoryCounters()
+            counters.cb = ctypes.sizeof(counters)
+            kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel.GetCurrentProcess.restype = wintypes.HANDLE
+            psapi = ctypes.WinDLL("psapi", use_last_error=True)
+            psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(ProcessMemoryCounters), wintypes.DWORD]
+            if not psapi.GetProcessMemoryInfo(kernel.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
+                raise OSError(ctypes.get_last_error(), "GetProcessMemoryInfo failed")
+            return round(counters.PeakWorkingSetSize / (1024.0 * 1024.0), 2)
+        import importlib
+
+        resource = cast(Any, importlib.import_module("resource"))
+
         usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         # Linux ru_maxrss is in kilobytes; macOS is in bytes
         if platform.system() == "Darwin":
@@ -312,8 +345,8 @@ def compute_workload_projection(
     records: list[ProbeExecutionRecord],
     total_gameweeks: int = 38,
     total_planned_probes: int = 8,
-    anchor_cost: float = 0.08,
-    gw1_lineup_cost: float = 0.02,
+    anchor_cost: float | None = None,
+    gw1_lineup_cost: float | None = None,
 ) -> WorkloadProjection:
     """Compute empirical season replay workload projection partitioning complete and censored timings."""
     if not records:
@@ -334,8 +367,8 @@ def compute_workload_projection(
             measured_anchor_cost_seconds=anchor_cost,
             measured_gw1_lineup_cost_seconds=gw1_lineup_cost,
             transfer_jobs_count=total_gameweeks - 1,
-            estimated_season_total_seconds=0.0,
-            estimated_season_hours=0.0,
+            estimated_season_total_seconds=None,
+            estimated_season_hours=None,
             extrapolation_reliable=False,
             archetype_summaries=[],
         )
@@ -387,7 +420,7 @@ def compute_workload_projection(
     transfer_jobs = total_gameweeks - 1
     # Use complete solve times plus average prep/assembly if available; if mostly censored, warn
     effective_job_time = (mean_comp_solve + mean_assembly + mean_model_prep) if complete_solve_times else mean_total_call
-    est_season_total_seconds = anchor_cost + gw1_lineup_cost + transfer_jobs * effective_job_time
+    est_season_total_seconds = None if anchor_cost is None or gw1_lineup_cost is None else anchor_cost + gw1_lineup_cost + transfer_jobs * effective_job_time
 
     coverage_ratio = round(len(records) / total_planned_probes, 4) if total_planned_probes > 0 else 1.0
     unfinished_count = max(0, total_planned_probes - len(records))
@@ -406,12 +439,12 @@ def compute_workload_projection(
         mean_model_prep_seconds=round(mean_model_prep, 4),
         mean_assembly_seconds=round(mean_assembly, 4),
         mean_total_call_seconds=round(mean_total_call, 4),
-        measured_anchor_cost_seconds=round(anchor_cost, 4),
-        measured_gw1_lineup_cost_seconds=round(gw1_lineup_cost, 4),
+        measured_anchor_cost_seconds=round(anchor_cost, 4) if anchor_cost is not None else None,
+        measured_gw1_lineup_cost_seconds=round(gw1_lineup_cost, 4) if gw1_lineup_cost is not None else None,
         transfer_jobs_count=transfer_jobs,
-        estimated_season_total_seconds=round(est_season_total_seconds, 2),
-        estimated_season_hours=round(est_season_total_seconds / 3600.0, 4),
-        extrapolation_reliable=(censored_rate <= 0.10 and len(records) >= 4),
+        estimated_season_total_seconds=round(est_season_total_seconds, 2) if est_season_total_seconds is not None else None,
+        estimated_season_hours=round(est_season_total_seconds / 3600.0, 4) if est_season_total_seconds is not None else None,
+        extrapolation_reliable=(est_season_total_seconds is not None and censored_rate <= 0.10 and len(records) >= 4),
         archetype_summaries=archetype_summaries,
     )
 
@@ -458,6 +491,9 @@ def execute_profiling_experiment(
     model_prep_hook: Callable[[ProfilingProblem], tuple[float, float, float]] | None = None,
     time_fn: Callable[[], float] = time.perf_counter,
     cache_store: dict[str, Any] | None = None,
+    source_id: str = "unbound-adapter-input",
+    protocol_id: str = "unbound-adapter-protocol",
+    simulation: bool = False,
 ) -> ProfilingReport:
     """Execute bounded serial profiling experiment across preselected problem archetypes."""
     env_meta = get_environment_metadata()
@@ -486,32 +522,30 @@ def execute_profiling_experiment(
         call_start = time_fn()
 
         cache_key = f"{problem.problem_id}_{target_gap}"
-        cache_hit = cache_key in cache
+        cache_hit = False
 
         # Measure model prep if hook provided
         if model_prep_hook is not None:
             t_feat, t_fit, t_proj = model_prep_hook(problem)
         else:
-            t_feat, t_fit, t_proj = 0.005, 0.010, 0.005
+            t_feat, t_fit, t_proj = 0.0, 0.0, 0.0
 
         # Assembly measurement
-        t_asm_start = time_fn()
-        _ = get_strategic_replay_options(problem.horizon)
-        assembly_time = max(0.001, time_fn() - t_asm_start)
+        assembly_time = 0.0
 
         # Execute solve under required solver_hook
         cert, action_digest = solver_hook(problem, target_gap, envelope.time_limit_per_call_seconds)
 
         solve_time = cert.runtime_seconds
-        scoring_time = 0.001
+        scoring_time = 0.0
         call_time = time_fn() - call_start
         is_censored = cert.termination_status == "TIMEOUT" or solve_time >= envelope.time_limit_per_call_seconds
 
         rec = ProbeExecutionRecord(
             problem_id=problem.problem_id,
             archetype=problem.archetype,
-            protocol_id="eval-protocol-v1",
-            source_id="synthetic-dev-anchor",
+            protocol_id=protocol_id,
+            source_id=source_id,
             target_gap=target_gap,
             actual_gap=cert.relative_gap,
             actual_absolute_gap=round(cert.absolute_gap, 4),
@@ -566,24 +600,23 @@ def execute_profiling_experiment(
 
     total_elapsed = time_fn() - start_time
     censored_count = sum(1 for r in records if r.is_censored)
-    workload = compute_workload_projection(records, total_planned_probes=total_planned)
-    policy_recs = derive_policy_recommendations(paired_comparisons, workload)
+    workload = None if simulation else compute_workload_projection(records, total_planned_probes=total_planned)
+    policy_recs = derive_policy_recommendations(paired_comparisons, workload) if workload is not None else None
 
     # Cache benchmark & interrupted resume check
     if records:
         cold_time = records[0].total_call_time_seconds
-        warm_time = max(0.0005, cold_time * 0.15)
         cache_bench = CacheBenchmark(
             cold_call_time_seconds=round(cold_time, 4),
-            warm_call_time_seconds=round(warm_time, 4),
-            cache_speedup_ratio=round(cold_time / warm_time, 2),
-            interrupted_resume_verified=True,
+            warm_call_time_seconds=None,
+            cache_speedup_ratio=None,
+            interrupted_resume_verified=False,
         )
     else:
         cache_bench = CacheBenchmark(
             cold_call_time_seconds=0.0,
-            warm_call_time_seconds=0.0,
-            cache_speedup_ratio=1.0,
+            warm_call_time_seconds=None,
+            cache_speedup_ratio=None,
             interrupted_resume_verified=False,
         )
 
@@ -597,9 +630,10 @@ def execute_profiling_experiment(
         censored_calls_count=censored_count,
         records=records,
         paired_comparisons=paired_comparisons,
-        cache_benchmark=cache_bench,
+        cache_benchmark=None if simulation else cache_bench,
         workload_projection=workload,
         policy_recommendations=policy_recs,
+        is_simulation=simulation,
     )
 
 
@@ -609,6 +643,50 @@ def save_profiling_report(report: ProfilingReport, output_path: Path) -> None:
     output_path.write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
 
 
+def native_manifest_adapter(path: Path) -> tuple[tuple[ProfilingProblem, ...], Callable[[ProfilingProblem, float, float], tuple[SolverCertificate, str]], str, str]:
+    """Bind retained synthetic native problems to real optimizer calls; empirical admission remains closed."""
+    from backtesting.native_transfer_solver import native_strategic_solve
+    from backtesting.season_rules import get_rules
+
+    raw = path.read_bytes()
+    data = json.loads(raw)
+    if data.get("version") != 1 or data.get("mode") != "synthetic_diagnostic":
+        raise ValueError("Native profiling manifest requires version=1 and mode=synthetic_diagnostic; empirical inputs require causal admission authority")
+    source_id = "synthetic-native:" + hashlib.sha256(raw).hexdigest()
+    protocol_id = hashlib.sha256(json.dumps({"adapter": "native-v1", "policy": "strategic", "manifest": source_id}, sort_keys=True).encode()).hexdigest()
+    retained: dict[str, tuple[Any, pd.DataFrame, tuple[tuple[int, Any], ...]]] = {}
+    manifest: list[ProfilingProblem] = []
+    for item in data["problems"]:
+        state = replay_state_from_dict(item["state"])
+        get_rules(state.rules_version)
+        problem_id = item["problem_id"]
+        if not isinstance(problem_id, str) or not problem_id.strip() or problem_id in retained:
+            raise ValueError("Native profiling problem IDs must be unique and nonempty")
+        archetype = item["archetype"]
+        if archetype not in ("ordinary", "constrained_budget", "transfer_heavy", "chip_enabled"):
+            raise ValueError("Unknown profiling problem archetype")
+        horizon = item["horizon"]
+        if type(horizon) is not int or not 1 <= horizon <= min(6, 39 - state.deadline):
+            raise ValueError("Native profiling horizon must fit one to six season deadlines")
+        forecasts = pd.DataFrame(item["forecasts"]["rows"])
+        forecasts.attrs = item["forecasts"].get("attrs", {})
+        calendar = tuple((entry[0], entry[1]) for entry in item.get("chip_calendar", ()))
+        retained[problem_id] = state, forecasts, calendar
+        manifest.append(ProfilingProblem(problem_id, archetype, state.deadline, horizon, state.bank, state.free_transfers))
+    if not manifest:
+        raise ValueError("Native profiling manifest has no problems")
+
+    def solve(problem: ProfilingProblem, target_gap: float, time_limit: float) -> tuple[SolverCertificate, str]:
+        state, forecasts, calendar = retained[problem.problem_id]
+        options = get_strategic_replay_options(problem.horizon, rules_version=state.rules_version)
+        options.update(chip_calendar=calendar, target_gap=target_gap, time_limit_seconds=time_limit)
+        decision, certificate = native_strategic_solve(state, problem.horizon, forecasts, options)
+        digest = hashlib.sha256(json.dumps(asdict(decision), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return certificate, digest
+
+    return tuple(manifest), solve, source_id, protocol_id
+
+
 def main(args: Sequence[str] | None = None) -> int:
     """CLI entrypoint for development transfer plan profiling."""
     parser = argparse.ArgumentParser(description="Profile transfer plan replay solves within bounded development envelope.")
@@ -616,6 +694,7 @@ def main(args: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-calls", type=int, default=8, help="Maximum optimizer calls (default 8 for manifest probes).")
     parser.add_argument("--time-limit", type=float, default=30.0, help="Per-call solve timeout in seconds.")
     parser.add_argument("--dry-run", action="store_true", help="Execute synthetic dry run without external solver.")
+    parser.add_argument("--problem-manifest", type=Path, help="Retained synthetic native state/forecasts JSON for real HiGHS profiling.")
     parsed = parser.parse_args(args)
 
     envelope = ProfilingEnvelope(
@@ -642,20 +721,33 @@ def main(args: Sequence[str] | None = None) -> int:
         return cert, f"tr:101_{problem.problem_id}"
 
     if parsed.dry_run:
+        if parsed.problem_manifest is not None:
+            parser.error("--dry-run and --problem-manifest are mutually exclusive")
         print("[profiler] Dry-run enabled: executing synthetic simulation without external solver.")
+        manifest, solve_hook = PREDEFINED_PROFILING_MANIFEST, cli_dry_run_hook
+        source_id, protocol_id = "synthetic-cli-simulation", "synthetic-cli-simulation"
     else:
-        print("[profiler] NOTICE: Operating in dry-run mode (external solver hook not configured for standalone CLI).")
+        if parsed.problem_manifest is None:
+            parser.error("Real profiling requires --problem-manifest with retained native inputs; use --dry-run only for synthetic simulation")
+        try:
+            manifest, solve_hook, source_id, protocol_id = native_manifest_adapter(parsed.problem_manifest)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            parser.error(str(exc))
+        print("[profiler] Real HiGHS measurements on retained synthetic diagnostic inputs; no empirical admission claim.")
 
     print(f"[profiler] Starting bounded development profiling (max {envelope.max_optimizer_calls} calls, {envelope.time_limit_per_call_seconds}s limit)...")
     report = execute_profiling_experiment(
-        manifest=PREDEFINED_PROFILING_MANIFEST,
+        manifest=manifest,
         envelope=envelope,
-        solver_hook=cli_dry_run_hook,
+        solver_hook=solve_hook,
+        simulation=parsed.dry_run,
+        source_id=source_id,
+        protocol_id=protocol_id,
     )
 
     save_profiling_report(report, parsed.output)
     print(f"[profiler] Complete: {report.total_calls_executed} calls executed in {report.total_elapsed_seconds:.2f}s.")
-    print(f"[profiler] Projected season duration: {report.workload_projection.estimated_season_total_seconds:.2f}s (~{report.workload_projection.estimated_season_hours:.2f} hours).")
+    print("[profiler] Season estimate unavailable until anchor and GW1 lineup costs are measured.")
     print(f"[profiler] Report saved to: {parsed.output}")
     return 0
 

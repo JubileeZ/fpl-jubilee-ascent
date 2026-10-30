@@ -27,7 +27,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 - **`inconclusive`**: Uncertainty spans zero or fresh confirmation evidence pending; routes to registered confirmation, NOT 1-year Dead Lever lock.
 - **`invalid`**: Contract breach, execution defect, or inert prototype; does NOT trigger 1-year Dead Lever lock.
 
-**Manual Adoption Authority (ADR 0066):** CLI and CI are strictly read-only. Computed Pass produces verified evidence bundles without configuration mutation. Production Champion adoption requires explicit human approval via `commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref <ref>`.
+**Manual Adoption Authority (ADR 0066):** Evaluation CLI and CI read-only. Legacy smoke/blended-XI comparisons diagnostic only; their `pass` fields cannot authorize promotion or new Dead Lever locks. Shared evaluator reconstructs candidate-bound replay evidence with complete guards and registered confirmation. Production adoption requires empirical admission, finalized registry, explicit approval reference, exact approved bundle hash and expected current Champion; [operator workflow](../testing/operator-workflow.md). Current empirical admission/calibration remains pending; synthetic verification cannot authorize adoption. Bonferroni budget supported; chronological Holm rejected; FWER target requires valid calibrated inference.
 
 **Rejected as promotion primary:** Process-only; Blended without Realized/Process guardrails; single-gameweek unconstrained regret; component MAE; FPL `ep_*`.
 

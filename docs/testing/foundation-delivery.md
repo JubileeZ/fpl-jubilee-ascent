@@ -334,3 +334,39 @@ Validation:
 - Static analysis & lint (`uv run ruff check .`): clean with 0 errors.
 - Type integrity (`uv run pyright`): 0 errors, 0 warnings across all foundation modules, CLIs, and tests.
 - Model Champion `def_xg_shrink_challenger` and sealed holdout `2026-27 GW6+` preserved.
+
+## Correctness review reopened — 2026-10-30
+
+Baseline: `a96af707...64c53547`; user-requested Phase 1–14 review. Initial Standards report: 5 findings. Initial Spec report: 9 findings. Overlap retained within independent axes.
+
+Confirmed defects: legacy proxy gate retains final recommendation authority; adoption accepts unverified/wrong-candidate evidence; default replay performs zero transfers with fabricated certificate; missing guard/confirmation evidence can pass; chronological attempt number incorrectly substitutes for Holm rank; resume ignores complete problem identity; shadow scoring/finances diverge from native transitions; terminal confirmation records/attempt IDs mutable; profiler imports Unix-only module and simulates non-dry runs.
+
+Earlier suite counts and acceptance statements above record historical runs. They do not establish corrected scientific authority. Earlier claim of valid sequential Holm adjustment withdrawn: formula alone does not implement ordered, stopping-rule-aware Holm testing.
+
+Repair scope: statistical admission/registry, shared evaluation/adoption, native rolling replay/live state/profiling. Regression tests and independent re-review pending. No new quantitative protocol approval; no empirical model comparison, archive mutation, sealed-data access or production Champion change.
+
+### Repair implementation and review follow-through
+
+- Statistical admission: complete declared guard inventory; finite valid evidence; approved numerical limits before scientific Pass/Fail; assessed uncertainty remains Inconclusive. Single observations retain unavailable uncertainty rather than invented zero variance. Bonferroni family budget fixed; unsupported chronological Holm rejected. Calendar-derived seasonal and explicit chip-state harm floors.
+- Registry: unique immutable attempt IDs, fixed family budget, retained confirmation score digest and completed schedule, terminal transition graph and no-write idempotent retries.
+- Replay: actual native six-GW HiGHS optimization, historical FT/chip rules, retained acquisition basis, issue-time selling/market metadata and bank. Fixed shared chip calendar; immediate actions only. Evaluation-window end does not truncate planning before GW38. Actual objective/bound/gap; checkpoint model/protocol/solver/forecast/outcome/policy identities and native transition reconstruction. Installed HiGHS version/core binary hash retained.
+- Live/profile: native shadow transitions replace duplicate simplified scoring/finances. Execution-time UTC capture command with immutable capture publication. Windows memory measurement. Retained synthetic problems can drive real measured optimizer calls through profiler manifest; dry-run assessments remain unavailable. No fabricated warm-cache/resume or full-season timing claims.
+- Final authority: shared retained-source evaluator across CLI, smoke and CI; legacy proxy results diagnostic only. Candidate-specific source/parameter/protocol/anchor/forecast/outcome/guard/registry/live-readiness closure reconstructed. Opening prices and persisted solver certificates checked. Development evidence and generation chronology bound before confirmation. Manual adoption requires finalized empirical Pass, exact approved bundle hash and expected Champion. Unit adoption success isolates verifier boundary; actual synthetic lifecycle must refuse production adoption.
+- Projection outcomes: fixture forecasts aggregate into common player/issue/target-GW cells; independently admitted finalized target outcomes include later fixture introductions/postponements. Original known blank cannot silently become observed zero. All measurable native point components guarded with fixed semantics, units, horizon weights and declared native applicability; season/lead bias and calibration diagnostics retained.
+- Final quality/publication hardening: one certificate consistency validator reconciles objective, bound, absolute gap and relative gap, including zero objective. Windows forecast publication retries bounded sharing violations, verifies concurrent destinations and preserves persistent failures/attempt manifests. Retries never replace cache validation.
+
+Focused checkpoints before final combined validation: projection/statistics/registry 105 passes; native replay/live/profiler 64 passes; simulated-profiler suppression 15 passes; CLI/smoke authority 16 passes. Counts overlap. Final source checks and complete suite recorded below when finished.
+
+Static-analysis scope: existing diagnostic smoke harness has 14 pre-existing Pyright diagnostics. Verified by checking exact `64c53547` source with identical interpreter/import paths; current diagnostics match (one line shifted by new routing). No suppression or baseline rewrite. Core evaluator typing repaired; do not infer whole-repository Pyright cleanliness from scoped checks.
+
+### Final repair validation — 2026-10-30
+
+- Independent Standards: 0 remaining confirmed findings; no material smell findings. Final focused recheck includes certificate-gap reconciliation and Windows cache publication.
+- Independent Spec: 0 remaining confirmed findings; no scope creep. Final recheck includes complete target-GW outcomes, registration chronology, solver runtime identity, certificate consistency and bounded publication.
+- Full suite: **1007 passed, 0 failed, 2 existing ConstantInputWarning warnings**, 335.64s. Existing timing benchmark passed; no exception needed for this delivery.
+- Ruff: clean. Changed core/test Pyright: 0 errors, 0 warnings, with actual project interpreter and runtime import search paths. Legacy smoke baseline exception described above, not suppressed.
+- Shared evaluator final focused checks: 53 quick regressions plus 14 retained-source/end-to-end passes. Real synthetic lifecycle reconstructs evidence and refuses production adoption; adoption success unit test explicitly isolates verifier boundary.
+- Portable gate: 29 structural checks passed with active packet. No project test command configured inside gate; full pytest run performed separately above. Cleanup gate recorded after packet removal.
+- Production Champion/config, frozen archives and sealed holdout untouched. No empirical comparison, historical solver run, real HTTP test, numerical approval or production adoption.
+
+Engineering acceptance concerns verified repair scope. Empirical admission/coverage, measured calibration and approved numerical protocol, fresh confirmation and prospective operational evidence remain pending; no claim of achieved FWER or production adoption readiness. Functional local checkpoint followed by task-only cleanup; no push.
