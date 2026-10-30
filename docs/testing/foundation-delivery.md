@@ -370,3 +370,9 @@ Static-analysis scope: existing diagnostic smoke harness has 14 pre-existing Pyr
 - Production Champion/config, frozen archives and sealed holdout untouched. No empirical comparison, historical solver run, real HTTP test, numerical approval or production adoption.
 
 Engineering acceptance concerns verified repair scope. Empirical admission/coverage, measured calibration and approved numerical protocol, fresh confirmation and prospective operational evidence remain pending; no claim of achieved FWER or production adoption readiness. Functional local checkpoint followed by task-only cleanup; no push.
+
+### Cleanup confirmation
+
+Functional checkpoint: `25db911f`. Completed packet `.agents/work-packets/foundation-spec-repairs.md` and three task-only review scratch files deleted. Root `implementation_plan.md`, `walkthrough.md` and old handoff pointer absent; unrelated `.tmp/agent/explore-candidate/` resume state preserved. Durable tracking references updated; no new one-off plan created.
+
+After cleanup: portable structural gate **19 passed, 0 failed**; Ruff clean; diff whitespace check clean. Gate count drops from 29 because completed-packet checks no longer apply. Full-suite result above remains applicable: cleanup changes documentation/tracking only. Local cleanup checkpoint; no push.
