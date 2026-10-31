@@ -154,7 +154,7 @@ def test_solve_cli_arm_flags(capsys: pytest.CaptureFixture[str]) -> None:
         "meta": {"solver_objective": 12.0, "strategic_audit": {"total_slack_penalty": 0.0, "slacks": {}}},
         "summary": "CLI Plan",
     }
-    # 1. Default arm is strategic (scales by default horizon H=6)
+    # 1. Default arm is strategic (scales by default horizon H=10)
     with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}), \
          patch("commands.solve.execute_transfer_plan", return_value=plan) as mock_exec, \
          patch("sys.argv", ["commands.solve", "--target_gw", "6"]):
@@ -164,7 +164,7 @@ def test_solve_cli_arm_flags(capsys: pytest.CaptureFixture[str]) -> None:
         assert opts["weekly_hit_limit"] == 1
         assert opts["strategic_options"]["starter_xmins_floor"] == 65.0
         assert opts["strategic_options"]["def_stack_cap"] == 2
-        assert opts["horizon_scale"] == pytest.approx(1.1196, rel=1e-3)
+        assert opts["horizon_scale"] == pytest.approx(1.4437, rel=1e-3)
         assert "2" in opts["ft_value_list"]
 
     # 1b. At H=5, scale is 1.0 and options equal DEFAULT_STRATEGIC_OPTIONS

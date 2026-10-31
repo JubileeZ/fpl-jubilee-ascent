@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from projections.expected_gw_score import PlayerGw, auto_captain_alternatives, expected_gw_score
+from solver.utils import DEFAULT_PLANNING_HORIZON
 
 ARM_STRATEGIC = "strategic"
 ARM_UNCONSTRAINED = "unconstrained"
@@ -195,7 +196,7 @@ def apply_scenario_arm(
             active_strategic["gk_transfer_friction"] = float(active_strategic["gk_transfer_friction"]) / old_scale
     if strategic_options:
         active_strategic.update(dict(strategic_options))
-    h = int(options.get("horizon", 6)) if horizon is None else int(horizon)
+    h = int(options.get("horizon", DEFAULT_PLANNING_HORIZON)) if horizon is None else int(horizon)
     d = float(options.get("decay_base", 0.85)) if decay_base is None else float(decay_base)
     overrides = scenario_arm_overrides(
         arm,

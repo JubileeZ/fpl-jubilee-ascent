@@ -19,6 +19,8 @@ from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
 from solver.planning import (
     MAX_PLANNING_HORIZON,
+    MIN_PLANNING_HORIZON,
+    RECOMMENDED_MAX_HORIZON,
     available_chips,
     clamp_planning_horizon,
     planning_gameweeks,
@@ -492,7 +494,7 @@ def main() -> None:
         "--horizon",
         type=int,
         default=DEFAULT_PLANNING_HORIZON,
-        help="Planning Horizon length (1-10, default 6)",
+        help=f"Planning Horizon length ({MIN_PLANNING_HORIZON}-{MAX_PLANNING_HORIZON}, default {DEFAULT_PLANNING_HORIZON})",
     )
     parser.add_argument(
         "--model",
@@ -653,6 +655,12 @@ def main() -> None:
             args.horizon,
             MAX_PLANNING_HORIZON,
             clamped_horizon,
+        )
+    if clamped_horizon > RECOMMENDED_MAX_HORIZON and (args.gap is None or args.gap == 0.0):
+        logger.info(
+            "Planning horizon %s exceeds recommended boundary (%s GW). Consider --gap 0.002 to reduce solve time.",
+            clamped_horizon,
+            RECOMMENDED_MAX_HORIZON,
         )
     options["horizon"] = clamped_horizon
     raw_model = None if args.champion else args.model

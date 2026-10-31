@@ -188,13 +188,13 @@ def test_explorer_full_season_includes_gws_outside_planning_horizon(tmp_path: Pa
         processed_dir=processed_dir,
         predictions_df=predictions,
         target_gw=1,
-        horizon=11,
+        horizon=25,
     )
-    assert clamped["meta"]["horizon"] == 10
-    assert clamped["meta"]["max_horizon"] == 10
-    assert clamped["meta"]["planning_gw_ids"] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert clamped["meta"]["horizon"] == 19
+    assert clamped["meta"]["max_horizon"] == 19
+    assert clamped["meta"]["planning_gw_ids"] == list(range(1, 20))
     assert clamped["meta"]["horizon_start"] == 1
-    assert clamped["meta"]["horizon_end"] == 10
+    assert clamped["meta"]["horizon_end"] == 19
     assert clamped["meta"]["unfinished_gameweeks"][:10] == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     ten = build_dashboard_dataset(
         processed_dir=processed_dir,

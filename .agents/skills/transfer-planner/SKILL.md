@@ -121,8 +121,8 @@ Before solving, apply the protective guard layer on top of all baselines:
 
 Resolve default parameters:
 - **Target Gameweek**: First open deadline GW (`deadline_time > now_utc`, e.g. GW9).
-- **Default Planning Horizon**: 8–10 Gameweeks (clamped to max 10; dynamic expansion if chips booked e.g. Free Hit on GW16).
-  - *Long-horizon warning*: If `horizon > 10`, warn user that solving to gap 0.0 beyond 10 GWs requires `--gap 0.002` (0.2%).
+- **Default Planning Horizon**: 10 Gameweeks (recommended: ≤ 12 Gameweeks; hard cap: 19 Gameweeks).
+  - *Long-horizon warning*: If `horizon > 12`, advise user that solving beyond 12 GWs up to the 19-GW half-season hard cap should use `--gap 0.002` (0.2%) to prevent prolonged branch-and-bound runtimes on large formulations.
 - **Solver Mode**: Strategic (`--arm strategic`, default).
   - *Strategic Variance Controls*:
     - Paid hit hurdle: +1.8 net pts required over free transfer.

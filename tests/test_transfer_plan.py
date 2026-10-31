@@ -134,10 +134,10 @@ def test_serialize_transfer_plan_records_an_unproven_solver_objective() -> None:
     assert plan["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
 
 
-def test_load_settings_defaults_planning_horizon_to_six(tmp_path: Path, monkeypatch: Any) -> None:
+def test_load_settings_defaults_planning_horizon_to_ten(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
-    assert DEFAULT_PLANNING_HORIZON == 6
-    assert load_settings()["horizon"] == 6
+    assert DEFAULT_PLANNING_HORIZON == 10
+    assert load_settings()["horizon"] == 10
 
 
 def test_execute_transfer_plan_writes_json_safe_plan(tmp_path: Path) -> None:

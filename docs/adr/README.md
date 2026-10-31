@@ -52,7 +52,7 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | ADR | Title | Status | Summary |
 |-----|-------|--------|---------|
 | [0020](0020-transfer-plan-walk-forward-first-half.md) | Transfer Plan Walk-Forward First-Half Strategy | Accepted | Simulates multi-period transfer decisions under expanding-horizon evidence. |
-| [0029](0029-planning-horizon-cap-10.md) | Planning Horizon Cap is 10 | Accepted | Caps transfer planning horizon at 10 gameweeks for solver stability and memory bounds. |
+| [0029](0029-planning-horizon-cap-10.md) | Planning Horizon Cap is 10 | Superseded | Superseded by ADR 0067. |
 | [0030](0030-vendor-open-fpl-solver-highspy.md) | Vendor open-fpl-solver with HiGHS | Accepted | Vendors the open-fpl-solver MILP core using highspy; keeps custom planning logic in our layer. |
 | [0031](0031-transfer-plan-start-open-deadline.md) | Transfer Plan Start Binds to Open Deadline | Accepted | Solver planning always roots from the next unexpired deadline. |
 | [0033](0033-transfer-plan-hits-until-champion-bias.md) | Transfer Plan Hits Until Champion Bias Measured | Accepted | Retains paid transfers in plan until empirical Champion signed bias is verified. |
@@ -62,6 +62,7 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | [0057](0057-zero-gap-digest-caching-3-arm-transfer-plan.md) | Zero-Gap Default and Deterministic Digest Caching | Accepted | Enforces exact 0.0% MILP optimality gap with SHA-256 digest solve caching. Supersedes ADR 0043. |
 | [0061](0061-strategic-variance-scenario-and-unconstrained-rename.md) | Strategic Variance Scenario Arm & Unconstrained Rename | Accepted | Replaces conservative heuristics with 5 mathematical MILP slack constraints; renames optimal to unconstrained. |
 | [0065](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) | Strategic Horizon Penalty Scaling & FT Schedule | Accepted | Discounted horizon scaling for hit/GK friction and diminishing emergency free transfer buffer. |
+| [0067](0067-planning-horizon-architecture.md) | Planning Horizon Architecture: 10-GW Default, 12-GW Recommended Boundary, and 19-GW Half-Season Hard Cap | Accepted | Establishes 10-GW solver default, 12-GW recommended limit, and 19-GW half-season hard cap. Supersedes ADR 0029. |
 
 ---
 

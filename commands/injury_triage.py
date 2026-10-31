@@ -16,6 +16,7 @@ from features.injury_triage import (
     select_scouting_targets,
     synthesize_xmins_override,
 )
+from solver.utils import DEFAULT_PLANNING_HORIZON
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,12 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     parser = argparse.ArgumentParser(description="FPL Injury & Availability Triage")
     parser.add_argument("--target_gw", type=int, default=None, help="Target gameweek")
-    parser.add_argument("--horizon", type=int, default=8, help="Planning horizon length")
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=DEFAULT_PLANNING_HORIZON,
+        help=f"Planning horizon length (default {DEFAULT_PLANNING_HORIZON})",
+    )
     parser.add_argument("--base-csv", type=str, default=None, help="Path to base external xMins CSV")
     parser.add_argument(
         "--set",

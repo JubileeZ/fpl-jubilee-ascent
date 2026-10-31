@@ -6,13 +6,15 @@ from typing import Any
 from uuid import uuid4
 
 from dashboard.planner_service import PlannerPaths, source_digest
+from solver.planning import MAX_PLANNING_HORIZON
+from solver.utils import DEFAULT_PLANNING_HORIZON
 
 
 def strategy_errors(start: int, options: dict[str, Any], names: dict[int, str] | None = None) -> list[str]:
     errors = []
-    horizon = int(options.get("horizon", 6))
-    if not 1 <= start <= 38 or not 1 <= horizon <= min(10, 39 - start):
-        errors.append("Strategy horizon must contain 1–10 Gameweeks within GW1–38.")
+    horizon = int(options.get("horizon", DEFAULT_PLANNING_HORIZON))
+    if not 1 <= start <= 38 or not 1 <= horizon <= min(MAX_PLANNING_HORIZON, 39 - start):
+        errors.append(f"Strategy horizon must contain 1–{MAX_PLANNING_HORIZON} Gameweeks within GW1–38.")
     booked: dict[int, list[str]] = {}
     for chip, label in (("wc", "Wildcard"), ("fh", "Free Hit"), ("bb", "Bench Boost"), ("tc", "Triple Captain")):
         for gw in options.get(f"use_{chip}", []):

@@ -14,7 +14,8 @@ from uuid import uuid4
 
 from projections.expected_gw_score import expected_gw_score, player_gw_from_dashboard
 from solver.scenarios import ARM_NAMES, DEFAULT_STRATEGIC_OPTIONS, normalize_arm_key, normalize_strategic_options
-from solver.planning import chip_set_for_gw, normalize_chip_key
+from solver.planning import MAX_PLANNING_HORIZON, chip_set_for_gw, normalize_chip_key
+from solver.utils import DEFAULT_PLANNING_HORIZON
 
 SHAPES = ((3, 4, 3), (3, 5, 2), (4, 3, 3), (4, 4, 2), (4, 5, 1), (5, 2, 3), (5, 3, 2), (5, 4, 1))
 SQUAD_COUNTS = {1: 2, 2: 5, 3: 5, 4: 3}
@@ -62,9 +63,17 @@ class Planner:
         self.data_digest = digest(dataset)
         meta = dataset.get("meta") or {}
         start = int(meta.get("transfer_plan_start", 1))
+        proj_gws = [
+            int(k[2:])
+            for player in dataset.get("players", [])[:1]
+            for k in player.get("projections", {}).keys()
+            if k.startswith("gw") and k[2:].isdigit()
+        ]
+        max_proj = max(proj_gws) if proj_gws else 38
+        default_end = min(start + DEFAULT_PLANNING_HORIZON - 1, max_proj, 38)
         default_strat = dict(DEFAULT_STRATEGIC_OPTIONS)
         self.state = copy.deepcopy(state) if state else {
-            "version": 1, "start": start, "end": min(start + 5, 38),
+            "version": 1, "start": start, "end": default_end,
             "scenario": "strategic", "base_ids": meta.get("owned_squad_ids", []),
             "base_bank": float(meta.get("itb", 0)), "base_ft": int(meta.get("free_transfers", 1)),
             "data_digest": self.data_digest, "edits": {}, "overrides": {}, "chips": {},
@@ -90,8 +99,8 @@ class Planner:
 
     def change_horizon(self, start: int, end: int) -> None:
         deadline = int(self.dataset.get("meta", {}).get("transfer_plan_start", 1))
-        if start != deadline or not start <= end <= min(start + 9, 38):
-            raise ValueError("Plan starts at upcoming open deadline and spans 1–10 Gameweeks.")
+        if start != deadline or not start <= end <= min(start + MAX_PLANNING_HORIZON - 1, 38):
+            raise ValueError(f"Plan starts at upcoming open deadline and spans 1–{MAX_PLANNING_HORIZON} Gameweeks.")
         self.state.update(start=start, end=end)
         self.state["edits"] = {key: value for key, value in self.state["edits"].items() if start <= int(key) <= end}
         self.state["overrides"] = {key: value for key, value in self.state["overrides"].items() if start <= int(key) <= end}

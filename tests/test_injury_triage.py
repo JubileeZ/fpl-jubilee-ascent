@@ -60,12 +60,12 @@ def test_build_broad_pool_shield():
     assert shield.get((516, 10)) == 20.0
     assert shield.get((516, 11)) == 65.0
 
-    # Unknown return date + status 'i' (Szoboszlai ID 368)
+    # Unknown return date + status 'i' (Saka ID 12)
     # Zeroed out across the entire planning horizon
-    assert shield.get((368, 8)) == 0.0
-    assert shield.get((368, 9)) == 0.0
-    assert shield.get((368, 10)) == 0.0
-    assert shield.get((368, 11)) == 0.0
+    assert shield.get((12, 8)) == 0.0
+    assert shield.get((12, 9)) == 0.0
+    assert shield.get((12, 10)) == 0.0
+    assert shield.get((12, 11)) == 0.0
 
 
 def test_select_scouting_targets():
