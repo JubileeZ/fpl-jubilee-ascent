@@ -5,8 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
 from models.base import resolve_asof_target_gw
+from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.ml_panel_features import positional_price_tier_prior
 from models.scoring_matrix import event_points
 
@@ -77,7 +77,7 @@ def compute_change_factors(
     return factors[0], factors[1]
 
 
-class AttackChangeDetectionModel(AdaptiveCausalChallengerModel):
+class AttackChangeDetectionModel(DefXgShrinkChallengerModel):
     change_hazard: float = 1.0 / 48.0
     dispersion: float = 1.0
 

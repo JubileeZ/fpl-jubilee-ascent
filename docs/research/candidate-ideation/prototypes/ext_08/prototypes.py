@@ -5,8 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel
 from models.base import resolve_asof_target_gw
+from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 from models.ml_panel_features import positional_price_tier_prior
 from models.scoring_matrix import event_points
 
@@ -27,8 +27,10 @@ def joint_factors(
     rate = (12.0 * prior_total + total) / (12.0 + exposure)
     share = (k_mix * prior_goals / prior_total + goals) / (k_mix + total)
     joint = (rate * share, rate * (1.0 - share))
-    independent = ((12.0 * prior_goals + goals) / (12.0 + exposure),
-                   (12.0 * prior_assists + assists) / (12.0 + exposure))
+    independent = (
+        (12.0 * prior_goals + goals) / (12.0 + exposure),
+        (12.0 * prior_assists + assists) / (12.0 + exposure),
+    )
     bound = math.log(1.10)
     factors: list[float] = []
     for coupled, reference in zip(joint, independent, strict=True):
@@ -39,7 +41,7 @@ def joint_factors(
     return factors[0], factors[1]
 
 
-class JointAllocationModel(AdaptiveCausalChallengerModel):
+class JointAllocationModel(DefXgShrinkChallengerModel):
     k_mix: float = 2.0
 
     def __init__(self) -> None:
@@ -93,9 +95,13 @@ class JointAllocationModel(AdaptiveCausalChallengerModel):
                 continue
             totals = sums.loc[player]
             factors[(player, fixture)] = joint_factors(
-                float(totals["weighted_xg"]), float(totals["weighted_xa"]), float(totals["exposure90"]),
+                float(totals["weighted_xg"]),
+                float(totals["weighted_xa"]),
+                float(totals["exposure90"]),
                 positional_price_tier_prior(position, price, metric="xg90"),
-                positional_price_tier_prior(position, price, metric="xa90"), self.k_mix, alpha,
+                positional_price_tier_prior(position, price, metric="xa90"),
+                self.k_mix,
+                alpha,
             )
         return factors
 
@@ -104,12 +110,20 @@ class JointAllocationModel(AdaptiveCausalChallengerModel):
         return super().predict(features_df, horizon)
 
     def _project_event_components(
-        self, row: pd.Series, position: str, expected_minutes: float,
-        *, clean_sheet_minutes: float, p_sixty_mins: float,
+        self,
+        row: pd.Series,
+        position: str,
+        expected_minutes: float,
+        *,
+        clean_sheet_minutes: float,
+        p_sixty_mins: float,
     ) -> dict[str, float]:
         components = super()._project_event_components(
-            row, position, expected_minutes,
-            clean_sheet_minutes=clean_sheet_minutes, p_sixty_mins=p_sixty_mins,
+            row,
+            position,
+            expected_minutes,
+            clean_sheet_minutes=clean_sheet_minutes,
+            p_sixty_mins=p_sixty_mins,
         )
         factors = self._joint_factors.get((int(row["player_id"]), int(row["fixture_id"])))
         if factors is None:
@@ -146,9 +160,20 @@ PROTOTYPES = {
     "ext_08_k16": JointAllocationK16Model,
 }
 _MANIFEST = (
-    "features.player_id", "features.fixture_id", "features.gameweek_id", "features.position_id",
-    "history.player_id", "history.fixture_id", "history.gameweek_id", "history.minutes",
-    "history.expected_goals", "history.expected_assists", "history.price",
-    "history.weighted_xg", "history.weighted_xa", "history.exposure90", "local.xbps",
+    "features.player_id",
+    "features.fixture_id",
+    "features.gameweek_id",
+    "features.position_id",
+    "history.player_id",
+    "history.fixture_id",
+    "history.gameweek_id",
+    "history.minutes",
+    "history.expected_goals",
+    "history.expected_assists",
+    "history.price",
+    "history.weighted_xg",
+    "history.weighted_xa",
+    "history.exposure90",
+    "local.xbps",
 )
 FEATURES = {name: _MANIFEST for name in PROTOTYPES}

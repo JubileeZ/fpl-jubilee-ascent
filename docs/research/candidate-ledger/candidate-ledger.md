@@ -140,13 +140,14 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Late-season joint p_start and duration ML minutes heads (H1+H3 without goals or assists ML) | smoke `track_a_mins_h1_h3` | DXS | dev 2025-26 FAIL: combined -0.5026, 0/3 segments, boot P 0.504; catastrophic late regression -1.005 < -0.13; guardrails fail; no confirmation | 2026-10-29 | 2027-10-29 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=track_a_mins_h1_h3` |
 | Coherent event exposure replay with joint p_start and duration ML minutes (H1+H3 coherent replay) | smoke `track_a_mins_h1_h3_coherent` | DXS | dev 2025-26 FAIL: combined -1.5839, 0/3 segments, boot P 0.042; catastrophic late regression -3.168 < -0.13; guardrails fail; no confirmation | 2026-10-29 | 2027-10-29 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=track_a_mins_h1_h3_coherent` |
 | Combined minutes ML and LOO assists with goals ML excluded (H1+H3+Group B) | smoke `track_a_no_goals_h1_h3_b` | DXS | dev 2025-26 FAIL: combined -0.2761, 0/3 segments, boot P 0.700; catastrophic late regression -0.552 < -0.13; guardrails fail; no confirmation | 2026-10-29 | 2027-10-29 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=track_a_no_goals_h1_h3_b` |
+| Joint own-xG/xA process intensity and allocation likelihood (Gamma total, Beta shooter share, bounded coupling correction) | smoke `ext_08_*` (4) | DXS | dev 2025-26 FAIL: best `ext_08_k8`/`k16` delta +0.0280, 0/3 segments, boot P 0.000 (all 4 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-01 | 2027-11-01 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_08` |
+| Sequential attacking opportunity change detection (compound Poisson-Gamma Tweedie likelihood with discrete-grid change-point filtering) | smoke `ext_12_*` (4) | DXS | dev 2025-26 FAIL: delta +0.0000, 0/3 segments, boot P 0.000 (all 4 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-01 | 2027-11-01 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_12` |
 
 ## Open (next-lever pool; not proven dead)
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Joint own-xG/xA process intensity and allocation likelihood (Gamma total, Beta shooter share, bounded coupling correction) | Open (confounded on ACC; reopened on DXS) | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_08` | Subclass `DefXgShrinkChallengerModel`, decouple from ACC late-season ML goal scaling |
-| Sequential attacking opportunity change detection (compound Poisson-Gamma Tweedie likelihood with discrete-grid change-point filtering) | Open (confounded on ACC; reopened on DXS) | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_12` | Subclass `DefXgShrinkChallengerModel`, decouple from ACC late-season ML goal scaling |
+| (None currently open; ideation queue fully exhausted) | — | — | Run ideate-candidate to ingest fresh hypothesis dossiers |
 
 
 ## Agent Prompt

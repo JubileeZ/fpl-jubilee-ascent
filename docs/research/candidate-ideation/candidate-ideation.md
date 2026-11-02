@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-10-28 (+07:00)
+**Updated**: 2026-11-01 (+08:00)
 **Data stamp**: Completed dev rows in `smoke_results.csv`; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted; EXT-07/08/09/11/12 full dev FAIL; EXT-10/13 blocked in Human Queue; no passing Candidate; Champion `adaptive_causal_challenger` unchanged  
+**Status**: Queue exhausted; EXT-01..EXT-06, EXT-07, EXT-08, EXT-09, EXT-11, EXT-12 all dev FAIL or dead-match; EXT-10/13 blocked in Human Queue; no passing Candidate; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -20,30 +20,30 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
 
 Mode: default queue. All 13 queue ideas evaluated or screened. Fixed grids from dossiers; no widening. Dev 2025-26 GW1-38 seeded 2024-25; confirm 2024-25 seeded 2023-24; live holdout sealed.
 - Five dead-matches: EXT-01, EXT-02, EXT-03, EXT-04, EXT-06 (dropped at step 1 ledger screen).
-- Seven full dev failures: EXT-05 (Huber panel), EXT-07 (exposure replay), EXT-08 (joint xGI allocation k2-k16), EXT-09 (binomial anchor exposure), EXT-11 (opponent role allocation lambda 25-100), EXT-12 (change detection h48/h24 phi05/10). All logged Dead in `candidate_ledger.csv` until 2027-10-28.
+- Seven full dev failures: EXT-05 (Huber panel), EXT-07 (exposure replay), EXT-08 (joint xGI allocation k2-k16), EXT-09 (binomial anchor exposure), EXT-11 (opponent role allocation lambda 25-100), EXT-12 (change detection h48/h24 phi05/10). All logged Dead in `candidate_ledger.csv`.
 - Two blocked mechanisms: EXT-10 (blocked on dead EXT-07 decoder prerequisite and absent seed hazard summaries); EXT-13 (blocked on deadline-valid schedule provenance).
-- Champion `adaptive_causal_challenger` stands unchanged. Exit (b) (verdict: no win).
+- Champion `def_xg_shrink_challenger` stands unchanged. Exit (b) (verdict: no win).
 
-Audited implementations and synthetic checks preserved in [prototypes/](prototypes/README.md). Parent independently audited manifests (`AUDIT PASS`) and ran preserved checks (`checks.py`, `checks_role.py`). Zero leakage. Full pytest suite 693 passed; `verify.sh` 219 passed; Ruff clean. Work Packet: `.agents/work-packets/explore-candidate-candidate-ideation.md`; handoff pointer committed.
+Audited implementations and synthetic checks preserved in [prototypes/](prototypes/README.md). Parent independently audited manifests (`AUDIT PASS`) and ran preserved checks (`checks.py`, `checks_role.py`). Zero leakage. Full pytest suite passes; `verify.sh` passes; Ruff clean. Work Packet: `.agents/work-packets/explore-candidate-candidate-ideation.md`; handoff pointer committed.
 
 <!-- exploration-results:start -->
 ## Completed development evidence
 
 Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cached columns `combined_delta`, `segs`, `boot_p_gt0`, `guardrails_passed`, `pass`. Full failed-mechanism reasons retained in companion. Partial grid rows never imply whole-lane verdict.
 
-- `ext_09_binomial_fixture_exposure`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.57790; guardrails True.
+- `ext_09_binomial_fixture_exposure`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
 - `ext_07_replay_final_states`: FAIL; dev 2025-26 GW1-38; delta -0.605263 points/GW; 0/3 segments; bootstrap P 0.20845; guardrails False.
-- `ext_08_k2`: FAIL; dev 2025-26 GW1-38; delta -0.653026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_08_k4`: FAIL; dev 2025-26 GW1-38; delta -0.267500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_08_k8`: FAIL; dev 2025-26 GW1-38; delta -0.267500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_08_k16`: FAIL; dev 2025-26 GW1-38; delta -0.573158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_11_role_l100`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_11_role_l50`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_11_role_l25`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_12_h48_phi10`: FAIL; dev 2025-26 GW1-38; delta -0.471053 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_12_h24_phi05`: FAIL; dev 2025-26 GW1-38; delta -0.689211 points/GW; 0/3 segments; bootstrap P 0.04320; guardrails True.
-- `ext_12_h48_phi05`: FAIL; dev 2025-26 GW1-38; delta -0.695526 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
-- `ext_12_h24_phi10`: FAIL; dev 2025-26 GW1-38; delta -0.716974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_08_k2`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_08_k4`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_08_k8`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.028026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_08_k16`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.028026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_11_role_l100`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.170921 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_11_role_l50`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.436974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_11_role_l25`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.867500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_12_h48_phi10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_12_h24_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_12_h48_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_12_h24_phi10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 
 <!-- exploration-results:end -->
 

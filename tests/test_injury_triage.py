@@ -34,11 +34,57 @@ def test_parse_fpl_return_date():
     assert d5 is None
 
 
-def test_build_broad_pool_shield():
-    proc = resolve_operational_processed_dir(Path("."))
+def test_build_broad_pool_shield(tmp_path: Path):
     # Pass deterministic reference date before GW8 (e.g. 20 Oct 2026)
     ref = date(2026, 10, 20)
-    shield = build_broad_pool_shield(proc, target_gw=8, horizon=4, reference_date=ref)
+
+    # Hermetic synthetic fixture & player records
+    df_players = pd.DataFrame([
+        {
+            "id": 63,
+            "web_name": "Milosavljević",
+            "club_id": 1,
+            "position_id": 3,
+            "now_cost": 60,
+            "status": "i",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Thigh injury - Expected back 31 Oct",
+        },
+        {
+            "id": 516,
+            "web_name": "Bentancur",
+            "club_id": 2,
+            "position_id": 3,
+            "now_cost": 60,
+            "status": "s",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Suspended until 7 Nov",
+        },
+        {
+            "id": 12,
+            "web_name": "Saka",
+            "club_id": 1,
+            "position_id": 3,
+            "now_cost": 100,
+            "status": "i",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Thigh injury - Unknown return date",
+        },
+    ])
+    df_players.to_parquet(tmp_path / "players.parquet")
+
+    df_fixtures = pd.DataFrame([
+        {"id": 1, "gameweek_id": 8, "home_club_id": 1, "away_club_id": 3, "kickoff_time": "2026-10-24T14:00:00Z"},
+        {"id": 2, "gameweek_id": 8, "home_club_id": 2, "away_club_id": 4, "kickoff_time": "2026-10-24T16:30:00Z"},
+        {"id": 3, "gameweek_id": 9, "home_club_id": 1, "away_club_id": 4, "kickoff_time": "2026-10-31T14:00:00Z"},
+        {"id": 4, "gameweek_id": 9, "home_club_id": 2, "away_club_id": 3, "kickoff_time": "2026-10-31T16:30:00Z"},
+        {"id": 5, "gameweek_id": 10, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-11-07T14:00:00Z"},
+        {"id": 6, "gameweek_id": 11, "home_club_id": 3, "away_club_id": 1, "kickoff_time": "2026-11-14T14:00:00Z"},
+        {"id": 7, "gameweek_id": 11, "home_club_id": 4, "away_club_id": 2, "kickoff_time": "2026-11-14T16:30:00Z"},
+    ])
+    df_fixtures.to_parquet(tmp_path / "fixtures.parquet")
+
+    shield = build_broad_pool_shield(tmp_path, target_gw=8, horizon=4, reference_date=ref)
 
     # Milosavljević (ID 63) is injured until 31 Oct (GW9 fixture is 31 Oct)
     # GW8: 0.0 (injured)
