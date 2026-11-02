@@ -6,15 +6,26 @@ You are a Principal Quantitative Sports Modeler and Machine Learning Engineer sp
 Use model-neutral language for the LLM producing this proposal: identify the source by specialist role and date, without LLM provider, product, version, or model names. Preserve exact FPL projection-model identifiers when discussing evaluated code.
 
 ### Context & System Environment
-You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The engine runs on Python 3.14, using an expanding-window causal feature store, empirical Bayes scoring models, and a vendored HiGHS Mixed-Integer Linear Programming (MILP) solver.
+You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The codebase is publicly available on GitHub at:
+https://github.com/JubileeZ/fpl-jubilee-ascent
+
+If you have web browsing capabilities, you may inspect the public repository to verify exact interfaces, prior constants, feature contracts, and ADR specifications:
+- **Repository Root**: https://github.com/JubileeZ/fpl-jubilee-ascent
+- **Active Model Champion**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/models/def_xg_shrink_challenger.py
+- **Feature Contract & Processor**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/features/builder.py and https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/features/processor.py
+- **Authoritative Candidate Ledger**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/docs/research/candidate-ledger/candidate_ledger.csv
+- **Promotion Foundation (ADR 0066)**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/docs/adr/0066-backtesting-and-promotion-foundation.md
+- **Constrained XI Gate & Evaluation Rigor (ADR 0064)**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/docs/adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md
+- **Archive Testing & Leakage Boundary**: https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/docs/testing/archive-testing.md
 
 We operate under strict empirical model governance:
 - **Active Model Champion**: `def_xg_shrink_challenger` (provisional). It operates across all 38 Gameweeks using Empirical Bayes shrinkage on defender xG ($K_{\text{DEF}}=2400$) combined with learned start probabilities, three-state participation modeling, calibrated opponent matchup shares ($s=0.40$), and face-value attack weights ($1.0 \times xG$, $1.0 \times xA$).
 - **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0066 & ADR 0064)**: Any new model ("Candidate") must pass our multi-season evaluation: primary Rolling Transfer Plan Net Score from neutral GW1 ownership anchor, paired non-wrapping Moving Block Bootstrap ($L=5$, $B=20,000$) with search-wide family-wise error control ($\text{FWER} \le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and Constrained Legal Formation XI diagnostic screen (£83.5m cap, $\le 3$ per club, squad churn $\le \text{Champ} + 0.50$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
-- **Historical Ledger**: 104 candidate model levers recorded. 92 have failed or been logged dead (92 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
-- **Evaluation Boundary**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
+- **Historical Ledger**: 104 candidate model levers recorded. 94 have failed or been logged dead (94 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
+- **Evaluation Boundary & Sealed Window**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
+  - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/2026-27/` or any live 2026-27 performance files in the public repository. All proposals must derive strictly from 2025–26 developmental principles.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat `def_xg_shrink_challenger` under the ADR 0066 Historical Promotion Gate.
@@ -61,11 +72,11 @@ Screen every proposal against these current ledger mechanisms, including continu
 - **Apex Predator Challenger (Composite ML p_start + start duration + shrunk xG goals + LOO assist finishing with GW1-9 Champion stability and schedule congestion)** (tried as: `apex_predator_challenger`, result: `dev 2025-26 PASS +0.840 2/3 boot P 0.992; confirm 2024-25 FAIL -0.153 1/3 boot P 0.376 (early_mid regression -0.959 < -0.15)`, locked until 2027-10-21)
 - **Price-Stratified Huber-Regularized Continuous-N_eff Causal Panel (price-tier centering, Huber duration, continuous N_eff ramp)** (tried as: `smoke ext_05_* (4 variants)`, result: `dev 2025-26 FAIL: combined -1.004 1/3 segs boot P 0.012; early_mid catastrophic regression -2.643 < -0.15; guardrails failed`, locked until 2027-10-26)
 
-### Active Dead Levers by Subsystem Summary (92 Locked Levers)
-92 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
+### Active Dead Levers by Subsystem Summary (94 Locked Levers)
+94 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
 - **Participation & Minutes (20 dead levers)**: e.g. Beta-Binomial P(60|state), starter tenure decay, naive nailed-starter multipliers.
-- **Goals & Finishing (18 dead levers)**: e.g. high-K finishing pools ($K \ge 3600$), unsharp xG slope flattening, flat position goal scales.
-- **Key Passes & Assists (13 dead levers)**: e.g. pooled assist finishing offsets, uncalibrated raw xA.
+- **Goals & Finishing (19 dead levers)**: e.g. high-K finishing pools ($K \ge 3600$), unsharp xG slope flattening, flat position goal scales.
+- **Key Passes & Assists (14 dead levers)**: e.g. pooled assist finishing offsets, uncalibrated raw xA.
 - **Goalkeepers & Saves (3 dead levers)**: e.g. club SoT volume x pooled save rate, slot probability softmax.
 - **Defense & Clean Sheets (7 dead levers)**: e.g. defcon venue/opposition pressure, post-link CS inflation, club-pooled per90 GC.
 - **Bonus Points / BPS (11 dead levers)**: e.g. BPS pool saturation caps, softmax temperature retuning.
@@ -139,6 +150,8 @@ flowchart TD
 ```
 
 ### 1. The Active Model Champion: `def_xg_shrink_challenger` (provisional)
+
+Source: [`def_xg_shrink_challenger.py`](https://github.com/JubileeZ/fpl-jubilee-ascent/blob/main/models/def_xg_shrink_challenger.py)
 
 The active Champion uses an object-oriented inheritance lineage terminating in `DefXgShrinkChallengerModel`:
 

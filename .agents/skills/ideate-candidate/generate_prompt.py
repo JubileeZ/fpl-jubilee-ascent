@@ -49,6 +49,7 @@ from solver.scenarios import (  # noqa: E402
     LIVE_HIT_COST,
 )
 
+REPO_URL = "https://github.com/JubileeZ/fpl-jubilee-ascent"
 DEFAULT_OUT = REPO_ROOT / "docs" / "research" / "candidate-ideation" / "candidate_model_ideation_prompt.md"
 MODEL_SELECTION_PATH = REPO_ROOT / "config" / "model_selection.json"
 LEDGER_PATH = REPO_ROOT / "docs" / "research" / "candidate-ledger" / "candidate_ledger.csv"
@@ -348,7 +349,17 @@ You are a Principal Quantitative Sports Modeler and Machine Learning Engineer sp
 Use model-neutral language for the LLM producing this proposal: identify the source by specialist role and date, without LLM provider, product, version, or model names. Preserve exact FPL projection-model identifiers when discussing evaluated code.
 
 ### Context & System Environment
-You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The engine runs on Python 3.14, using an expanding-window causal feature store, empirical Bayes scoring models, and a vendored HiGHS Mixed-Integer Linear Programming (MILP) solver.
+You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The codebase is publicly available on GitHub at:
+{REPO_URL}
+
+If you have web browsing capabilities, you may inspect the public repository to verify exact interfaces, prior constants, feature contracts, and ADR specifications:
+- **Repository Root**: {REPO_URL}
+- **Active Model Champion**: {REPO_URL}/blob/main/models/{champ_name}.py
+- **Feature Contract & Processor**: {REPO_URL}/blob/main/features/builder.py and {REPO_URL}/blob/main/features/processor.py
+- **Authoritative Candidate Ledger**: {REPO_URL}/blob/main/docs/research/candidate-ledger/candidate_ledger.csv
+- **Promotion Foundation (ADR 0066)**: {REPO_URL}/blob/main/docs/adr/0066-backtesting-and-promotion-foundation.md
+- **Constrained XI Gate & Evaluation Rigor (ADR 0064)**: {REPO_URL}/blob/main/docs/adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md
+- **Archive Testing & Leakage Boundary**: {REPO_URL}/blob/main/docs/testing/archive-testing.md
 
 We operate under strict empirical model governance:
 {champ_desc}
@@ -356,7 +367,8 @@ We operate under strict empirical model governance:
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0066 & ADR 0064)**: Any new model ("Candidate") must pass our multi-season evaluation: primary Rolling Transfer Plan Net Score from neutral GW1 ownership anchor, paired non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$) with search-wide family-wise error control ($\\text{{FWER}} \\le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and Constrained Legal Formation XI diagnostic screen (£83.5m cap, $\\le 3$ per club, squad churn $\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
 - **Historical Ledger**: {total_trials} candidate model levers recorded. {dead_count} have failed or been logged dead ({len(active_dead)} currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
-- **Evaluation Boundary**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
+- **Evaluation Boundary & Sealed Window**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
+  - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/2026-27/` or any live 2026-27 performance files in the public repository. All proposals must derive strictly from 2025–26 developmental principles.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat {mission_target} under the ADR 0066 Historical Promotion Gate.
@@ -432,6 +444,8 @@ flowchart TD
 ```
 
 ### 1. The Active Model Champion: `{champ_name}` ({champ_status})
+
+Source: [`{champ_name}.py`]({REPO_URL}/blob/main/models/{champ_name}.py)
 
 The active Champion uses an object-oriented inheritance lineage terminating in `{exemplar_base}`:
 

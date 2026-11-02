@@ -183,6 +183,7 @@ class AsymmetricSubModel(BaseModel):
 
 def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
     gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    champ_name, _ = gen.load_champion_info()
     for focus in ("general", "minutes", "budget-enablers"):
         md = gen.build_prompt_markdown(focus)
         assert "# FPL Candidate Model Ideation Prompt Brief" in md
@@ -190,6 +191,11 @@ def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
         assert "BOOTSTRAP_BLOCK_GWS = 5" in md
         assert "POOLED_BOOTSTRAP_MIN_P = 0.85" in md
         assert "### Candidate <N>: <Concise Name>" in md
+        assert "https://github.com/JubileeZ/fpl-jubilee-ascent" in md
+        assert f"{champ_name}.py" in md
+        assert "candidate_ledger.csv" in md
+        assert "CRITICAL FOR WEB-BROWSING MODELS" in md
+        assert "data/archive/2026-27/" in md
 
 
 def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance() -> None:

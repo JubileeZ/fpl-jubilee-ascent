@@ -44,9 +44,11 @@ Generated output is written to [`docs/research/candidate-ideation/candidate_mode
 
 ### 2. Dispatch to External Model
 
-Copy the generated prompt block from `candidate_model_ideation_prompt.md` into a current frontier language model available to the user.
+Copy generated prompt block from `candidate_model_ideation_prompt.md` into available frontier language model.
 
-Keep reusable prompts, report titles, filenames, and documentation model-neutral: no fixed LLM provider, product, version, or model-ID recommendations. Identify reports by specialist role, date, and source artifact. Preserve exact FPL projection-model identifiers; those describe evaluated code.
+- **Public Repository Ground Truth**: Codebase public at `https://github.com/JubileeZ/fpl-jubilee-ascent`. Generated prompts include direct GitHub permalinks to active Champion, Feature Contract, Candidate Ledger, and ADRs for web-browsing models. Prompts remain 100% self-contained for offline models.
+- **Sealed Window Boundary**: Prompts explicitly bar browsing-enabled models from reading or mining `data/archive/2026-27/`, protecting 2026-27 GW6+ sealed evaluation window.
+- **Model Neutrality**: Keep reusable prompts, report titles, filenames, and documentation model-neutral: no fixed LLM provider, product, version, or model-ID recommendations. Identify reports by specialist role, date, and source artifact. Preserve exact FPL projection-model identifiers describing evaluated code.
 
 ### 3. Ingest Proposals into `idea_queue.csv` and `ideas/` Dossiers
 
