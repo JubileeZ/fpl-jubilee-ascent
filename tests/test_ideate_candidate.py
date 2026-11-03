@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import sys
 from types import ModuleType
 
 import pandas as pd
@@ -187,6 +188,8 @@ def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
     for focus in ("general", "minutes", "budget-enablers"):
         md = gen.build_prompt_markdown(focus)
         assert "# FPL Candidate Model Ideation Prompt Brief" in md
+        assert "Critical Operational Directive" in md
+        assert "Execute this task immediately in a single comprehensive response" in md
         assert gen.FOCUS_PROMPTS[focus] in md
         assert "BOOTSTRAP_BLOCK_GWS = 5" in md
         assert "POOLED_BOOTSTRAP_MIN_P = 0.85" in md
@@ -388,5 +391,32 @@ class CustomPyFenceModel(AdaptiveCausalChallengerModel):
     assert "class CustomPyFenceModel(AdaptiveCausalChallengerModel):" in content
     assert "def custom_method(self):" in content
     assert "(Auto-Scaffolded)" not in content
+
+
+def test_generate_prompt_supports_artifact_out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    out_file = tmp_path / "prompt.md"
+    artifact_file = tmp_path / "artifact_prompt.md"
+
+    test_args = [
+        "generate_prompt.py",
+        "--focus",
+        "general",
+        "--out",
+        str(out_file),
+        "--artifact-out",
+        str(artifact_file),
+    ]
+    monkeypatch.setattr(sys, "argv", test_args)
+    gen.main()
+
+    assert out_file.exists()
+    assert artifact_file.exists()
+    out_content = out_file.read_text(encoding="utf-8")
+    art_content = artifact_file.read_text(encoding="utf-8")
+    assert out_content == art_content
+    assert "Critical Operational Directive" in art_content
+    assert "```markdown\nYou are a Principal" not in art_content
+
 
 

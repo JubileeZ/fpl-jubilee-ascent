@@ -1,9 +1,11 @@
 # FPL Candidate Model Ideation Prompt Brief
 
-```markdown
 You are a Principal Quantitative Sports Modeler and Machine Learning Engineer specializing in association football (soccer) analytics and combinatorial lineup optimization for Fantasy Premier League (FPL).
 
 Use model-neutral language for the LLM producing this proposal: identify the source by specialist role and date, without LLM provider, product, version, or model names. Preserve exact FPL projection-model identifiers when discussing evaluated code.
+
+### Critical Operational Directive
+Execute this task immediately in a single comprehensive response. Do NOT ask clarifying questions, request permission, or provide conversational pleasantries. Output your candidate slate directly, beginning immediately with `### Candidate 1: <Name>`.
 
 ### Context & System Environment
 You are advising the core quantitative modeling team of `fpl-jubilee-ascent`, an open-source FPL projection and combinatorial optimization engine. The codebase is publicly available on GitHub at:
@@ -120,8 +122,7 @@ class GamePaceElasticityChallengerModel(DefXgShrinkChallengerModel):
         self.beta_margin = float(beta_margin)
 ```
 
-Review the complete technical specification below before generating candidate recommendations.
-```
+Review the complete technical architecture and system specification below before generating candidate recommendations.
 
 ---
 
