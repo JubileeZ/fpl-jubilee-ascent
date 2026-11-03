@@ -1,22 +1,6 @@
 {
   "fixtures": [
     {
-      "id": 87,
-      "code": 2645281,
-      "team_h": 14,
-      "team_h_score": null,
-      "team_a": 1,
-      "team_a_score": null,
-      "event": 9,
-      "finished": false,
-      "minutes": 0,
-      "provisional_start_time": false,
-      "kickoff_time": "2026-11-01T16:30:00Z",
-      "event_name": "Gameweek 9",
-      "is_home": true,
-      "difficulty": 4
-    },
-    {
       "id": 93,
       "code": 2645287,
       "team_h": 8,
@@ -30,7 +14,7 @@
       "kickoff_time": "2026-11-08T14:00:00Z",
       "event_name": "Gameweek 10",
       "is_home": false,
-      "difficulty": 3
+      "difficulty": 2
     },
     {
       "id": 107,
@@ -46,7 +30,7 @@
       "kickoff_time": "2026-11-22T16:30:00Z",
       "event_name": "Gameweek 11",
       "is_home": true,
-      "difficulty": 4
+      "difficulty": 3
     },
     {
       "id": 114,
@@ -78,7 +62,7 @@
       "kickoff_time": "2026-12-02T19:30:00Z",
       "event_name": "Gameweek 13",
       "is_home": true,
-      "difficulty": 3
+      "difficulty": 2
     },
     {
       "id": 134,
@@ -126,7 +110,7 @@
       "kickoff_time": "2026-12-19T17:30:00Z",
       "event_name": "Gameweek 16",
       "is_home": true,
-      "difficulty": 2
+      "difficulty": 3
     },
     {
       "id": 166,
@@ -222,7 +206,7 @@
       "kickoff_time": "2027-01-23T15:00:00Z",
       "event_name": "Gameweek 22",
       "is_home": false,
-      "difficulty": 4
+      "difficulty": 3
     },
     {
       "id": 227,
@@ -382,7 +366,7 @@
       "kickoff_time": "2027-04-17T14:00:00Z",
       "event_name": "Gameweek 32",
       "is_home": false,
-      "difficulty": 3
+      "difficulty": 2
     },
     {
       "id": 326,
@@ -830,14 +814,14 @@
       "element": 381,
       "fixture": 87,
       "opponent_team": 1,
-      "total_points": 0,
+      "total_points": 1,
       "was_home": true,
       "kickoff_time": "2026-11-01T16:30:00Z",
-      "team_h_score": null,
-      "team_a_score": null,
+      "team_h_score": 0,
+      "team_a_score": 1,
       "round": 9,
       "modified": false,
-      "minutes": 0,
+      "minutes": 9,
       "goals_scored": 0,
       "assists": 0,
       "clean_sheets": 0,
@@ -849,15 +833,15 @@
       "red_cards": 0,
       "saves": 0,
       "bonus": 0,
-      "bps": 0,
-      "influence": "0.0",
-      "creativity": "0.0",
+      "bps": 4,
+      "influence": "2.2",
+      "creativity": "0.7",
       "threat": "0.0",
-      "ict_index": "0.0",
+      "ict_index": "0.3",
       "clearances_blocks_interceptions": 0,
-      "recoveries": 0,
-      "tackles": 0,
-      "defensive_contribution": 0,
+      "recoveries": 3,
+      "tackles": 1,
+      "defensive_contribution": 4,
       "starts": 0,
       "expected_goals": "0.00",
       "expected_assists": "0.00",
