@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-01 (+08:00)
+**Updated**: 2026-11-03 (+08:00)
 **Data stamp**: Completed dev rows in `smoke_results.csv`; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted; EXT-01..EXT-06, EXT-07, EXT-08, EXT-09, EXT-11, EXT-12 all dev FAIL or dead-match; EXT-10/13 blocked in Human Queue; no passing Candidate; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue replenished with Batch 3 (EXT-14 through EXT-19; 4 untested, 2 dead-matches awaiting audit); EXT-01..EXT-06, EXT-07, EXT-08, EXT-09, EXT-11, EXT-12 all dev FAIL or dead-match; EXT-10/13 blocked in Human Queue; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -13,6 +13,27 @@
 **Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md); frontier language-model review, 2026-10-28.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
+
+---
+
+## Agent Ideation Review (Batch 3: 2026-11-03)
+
+Six candidate proposals generated against Champion `def_xg_shrink_challenger`, ADR 0066/0064 promotion gates, and 94 active Candidate Ledger dead levers. Ingested into `idea_queue.csv` and `ideas/` dossiers:
+
+1. **EXT-14: Continuous Match-Tempo & Counter-Transition Attack Elasticity** (`xp_goals`, `xp_assists`): Point-in-time EB club tempo index + player directness score, zero-centered across active outfielders per GW. Status: `untested`.
+2. **EXT-15: Territorial Possession-Tilt & Deep-Block Defcon Elasticity** (`xp_defcon`): Player-level EB defcon shrinkage ($K_{\text{defcon}} \in [900, 1500]$) combined with opponent-vs-own creative siege tilt. Status: `untested`.
+3. **EXT-16: Co-Starter Playmaker Gravity & Non-Zero-Sum Space-Creation Synergy** (`xp_goals`): Strictly complementary playmaker availability synergy; reduces teammate xG when playmakers ruled out ($p_{\text{start}}=0$). Flagged dead-match on ledger row 55; pending audit.
+4. **EXT-17: Position-Conditioned Exponential Micro-Cycle Fatigue & Ironman Stamina Resistance** (`xp_minutes`): Acute workload exponential kernel with player ironman resistance index; flagged dead-match on ledger row 52 / schedule provenance.
+5. **EXT-18: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers** (`xp_goals`, `xp_assists`): Role-conditioned creative-share xG prior ($K_{\text{ATK}} \in [450, 720]$) for MID/FWD while locking $K_{\text{DEF}}=2400$. Status: `untested`.
+6. **EXT-19: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity** (`xp_saves`): Restores opponent shot-threat modulation to individual goalkeeper `per90_saves` baseline. Status: `untested`.
+
+Queue dossiers:
+- [EXT-14: Continuous Match-Tempo Elasticity](ideas/EXT-14-continuous-match-tempo-counter-transition-attack-elasticity.md)
+- [EXT-15: Territorial Defcon Elasticity](ideas/EXT-15-territorial-possession-tilt-deep-block-defcon-elasticity.md)
+- [EXT-16: Playmaker Gravity Synergy](ideas/EXT-16-co-starter-playmaker-gravity-non-zero-sum-space-creation-synergy.md)
+- [EXT-17: Micro-Cycle Fatigue Recovery](ideas/EXT-17-position-conditioned-exponential-micro-cycle-fatigue-ironman-stamina-resistance.md)
+- [EXT-18: Budget Role Prior Persistence](ideas/EXT-18-starter-role-conditioning-set-piece-share-persistence-for-budget-enablers.md)
+- [EXT-19: Goalkeeper Save Opportunity Elasticity](ideas/EXT-19-opponent-speculative-shot-volume-goalkeeper-save-floor-elasticity.md)
 
 ---
 

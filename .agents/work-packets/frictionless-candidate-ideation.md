@@ -8,7 +8,7 @@
 ## Work Packet (SFDBN)
 
 - **Status:** In Progress
-- **Files:** `.agents/skills/ideate-candidate/SKILL.md`, `.agents/skills/ideate-candidate/generate_prompt.py`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `tests/test_ideate_candidate.py`, `docs/agents/current-state.md`
+- **Files:** `.agents/skills/ideate-candidate/SKILL.md`, `.agents/skills/ideate-candidate/generate_prompt.py`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `tests/test_ideate_candidate.py`, `docs/agents/current-state.md`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/ideas/`
 - **Decisions:**
   - Removed outer markdown code fence from Part 1 to unify entire prompt into single 1-click copyable document.
   - Added imperative `### Critical Operational Directive` at prompt head for single-turn output without conversational stalling.
@@ -16,11 +16,13 @@
   - Added 1-line raw GitHub URL dispatch prompt in `SKILL.md` for web-browsing frontier models.
   - Established direct chat pasting as primary ingestion path (zero terminal/file-saving required).
   - Maintained model neutrality in skill comments; refactored test harness to use pytest `monkeypatch`.
+  - Dispatched brief to quantitative modeler subagent; ingested Batch 3 proposals (EXT-14 through EXT-19) into `idea_queue.csv` and `ideas/` dossiers.
 - **Blocked:** None
-- **Next:** Commit and push checkpoint.
+- **Next:** Commit ingested ideas or proceed to `/explore-candidate`.
 
 ## Todo
 - [x] Unify prompt brief and add immediate execution directive
 - [x] Add `--artifact-out` dual-write support and test coverage
 - [x] Establish model-neutral 1-line URL dispatch and chat-pasting ingestion in SKILL.md
-- [ ] Next ideation cycle: dispatch brief to external frontier model and ingest proposals
+- [x] Next ideation cycle: dispatch brief to external frontier model and ingest proposals
+- [ ] Evaluate candidate queue via /explore-candidate or review flagged dead-match rows
