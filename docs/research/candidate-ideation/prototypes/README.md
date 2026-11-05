@@ -1,11 +1,15 @@
 # Candidate prototype sources
 
-Source snapshots from fixed grids; models unregistered, Champion unchanged. EXT-07/09 failed dev; EXT-08 k2/k4 failed, k8/k16 unfinished. EXT-11 preparation only, not evaluated. No confirmation runs here.
+Source snapshots from fixed grids; models unregistered, Champion unchanged. EXT-07/08/09/11/12/14/18/19 failed dev; no confirmation runs here.
 
 - `ext_07`: deterministic final-state event replay; inherited parameters unchanged.
 - `ext_08`: joint own-xG/xA intensity/allocation; k_mix 2, 4, 8, 16.
 - `ext_09`: grouped-binomial fixture-exposure likelihood in inherited start anchor.
-- `ext_11`: prepared opponent-role allocation source/checks; audit/tests pending.
+- `ext_11`: opponent-role allocation source/checks; lambda 25, 50, 100.
+- `ext_12`: sequential attacking opportunity change detection; h 1/48, 1/24; phi 0.5, 1.0.
+- `ext_14`: continuous match-tempo and counter-transition attack elasticity; 6 variants (`alpha_tempo`, `beta_trans`).
+- `ext_18`: starter-role conditioning and creative-share xG shrinkage for budget enablers; 6 variants (`k_atk`, `gamma_role`).
+- `ext_19`: opponent speculative shot-volume and goalkeeper save-floor elasticity; 6 variants (`k_gk`, `xi_saves`).
 
 Session resume: `ext_08/resume_smoke.csv` preserves two completed rows. Use exact command in `.agents/work-packets/explore-candidate-candidate-ideation.md`; harness skips completed k2/k4. Unfinished variants have no verdict. Continue remaining grid before EXT-11/12 evaluation.
 

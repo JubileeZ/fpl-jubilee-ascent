@@ -3,7 +3,7 @@ idea_id: EXT-14
 name: "Continuous Match-Tempo & Counter-Transition Attack Elasticity"
 tier: P1
 component: xp_goals
-status: untested
+status: fail
 replaces: "DefXgShrinkChallengerModel.predict and CalibratedMatchupHybridModel._project_event_components (preserving DefXgShrinkChallengerModel $K_{\\text{DEF}}=2400$ shrinkage and MultiFeatureAssistChallengerModel GLM assist baseline)."
 grid: "alpha_tempo=0.10,beta_trans=0.08; alpha_tempo=0.14,beta_trans=0.10; alpha_tempo=0.18,beta_trans=0.12; alpha_tempo=0.12,beta_trans=0.15; alpha_tempo=0.08,beta_trans=0.12; alpha_tempo=0.15,beta_trans=0.06"
 inputs: features.player_id; features.club_id; features.opponent_id; features.position_id; features.fixture_id; features.gameweek_id; features.per90_xg; features.per90_xa; features.per90_threat; features.per90_creativity; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.was_home; history.minutes; history.expected_goals; history.expected_goals_conceded; history.threat; history.creativity

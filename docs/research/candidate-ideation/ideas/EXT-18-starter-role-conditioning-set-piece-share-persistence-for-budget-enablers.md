@@ -3,7 +3,7 @@ idea_id: EXT-18
 name: "Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers"
 tier: P1
 component: xp_goals
-status: untested
+status: fail
 replaces: "DefXgShrinkChallengerModel.predict (shrunk_xg_rates generalized to role-conditioned attacker prior while preserving _POSITION_K = {2: 2400.0})."
 grid: "k_atk=540,gamma_role=0.15; k_atk=540,gamma_role=0.22; k_atk=630,gamma_role=0.18; k_atk=720,gamma_role=0.20; k_atk=450,gamma_role=0.15; k_atk=630,gamma_role=0.12"
 inputs: features.player_id; features.club_id; features.position_id; features.now_cost; features.per90_xg; features.per90_creativity; history.player_id; history.gameweek_id; history.minutes; history.starts; history.expected_goals; history.creativity

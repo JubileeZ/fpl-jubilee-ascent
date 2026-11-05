@@ -1,7 +1,7 @@
 # Legacy Verdicts Audit Report
 
-**Updated**: 2026-10-29T22:30:00+07:00  
-**Data stamp**: docs/research/candidate-ledger/candidate_ledger.csv (104 rows)  
+**Updated**: 2026-11-05T06:35:00Z  
+**Data stamp**: docs/research/candidate-ledger/candidate_ledger.csv (107 rows)  
 **Season**: Multi-season  
 **Status**: Active  
 **Purpose**: Audit historical candidate evaluations from candidate_ledger.csv against the 4-verdict foundation protocol without rerunning models, backtests, or solvers.  
@@ -10,7 +10,7 @@
 
 ## Sources
 
-- **Repository data**: `docs/research/candidate-ledger/candidate_ledger.csv` — historical candidate log (104 records)
+- **Repository data**: `docs/research/candidate-ledger/candidate_ledger.csv` — historical candidate log (107 records)
 
 ## Method
 
@@ -20,19 +20,19 @@ Classify recorded attempts against 4-verdict taxonomy (`pass`, `fail`, `inconclu
 
 ### Summary Metrics
 
-- **Total Rows Audited**: 104
+- **Total Rows Audited**: 107
 - **Pass (Shipped / Confirmed)**: 10
-- **Demonstrated Fail**: 62
+- **Demonstrated Fail**: 67
 - **Inconclusive**: 29
-- **Invalid (Defect / Missing)**: 3
-- **Active Dead Lever Locks Preserved**: 92
+- **Invalid (Defect / Missing)**: 1
+- **Active Dead Lever Locks Preserved**: 97
 
 ### Breakdown by Audit Category
 
 - `shipped_accepted`: 10
-- `valid_negative`: 62
+- `valid_negative`: 67
 - `execution_defect`: 1
-- `missing_evidence`: 2
+- `missing_evidence`: 0
 - `unsupported_inference`: 29
 
 ## Decision

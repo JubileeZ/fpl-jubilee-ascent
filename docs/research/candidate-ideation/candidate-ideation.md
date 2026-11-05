@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-03 (+08:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv`; no confirmation or holdout results
+**Updated**: 2026-11-05 (+00:00)
+**Data stamp**: Completed dev rows in `smoke_results.csv` (53 rows); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue replenished with Batch 3 (EXT-14 through EXT-19; 4 untested, 2 dead-matches awaiting audit); EXT-01..EXT-06, EXT-07, EXT-08, EXT-09, EXT-11, EXT-12 all dev FAIL or dead-match; EXT-10/13 blocked in Human Queue; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue exhausted across all 19 ideas (Batch 1..Batch 3 complete; Exit b: no win); EXT-14, EXT-18, EXT-19 failed Tier 2 Oracle Event Gate on Dev 2025-26 (`boot_p_gt0 = 0.000`); EXT-15, EXT-16, EXT-17 flagged `dead-match`; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -13,6 +13,22 @@
 **Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md); frontier language-model review, 2026-10-28.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
+
+---
+
+## Batch 3 Exploration Execution (2026-11-05, completed)
+
+**Verdict:** Queue exhausted (Exit b: no win); Model Champion `def_xg_shrink_challenger` stands unchanged.
+
+Evaluated Batch 3 (`EXT-14` through `EXT-19`) against Champion `def_xg_shrink_challenger` on Dev 2025-26 (GW1-38, seed 2024-25):
+- **Ledger Screen (`dead-match`)**:
+  - `EXT-15` (Territorial Possession-Tilt & Deep-Block Defcon Elasticity): Matched active Dead Lever Row 81 (`Defcon venue and opposition pressure scaling`, `revisit_after = 2027-09-30`); dropped at Step 1 and queued in Human Queue (default: no override).
+  - `EXT-16` (Co-Starter Playmaker Gravity & Non-Zero-Sum Space-Creation Synergy): Matched active Dead Lever Row 56 (`Start vs sub attack intensity`, `revisit_after = 2027-09-29`); queued in Human Queue (default: no override).
+  - `EXT-17` (Position-Conditioned Exponential Micro-Cycle Fatigue & Ironman Stamina Resistance): Matched active Dead Lever Row 53 / Row 83 (`Learned participation variants` / `Schedule-congestion start shift`, `revisit_after = 2027-09-28` / `2027-09-30`); queued in Human Queue (default: no override).
+- **Smoke Evaluation (`ext_14`, `ext_18`, `ext_19` — 18 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+  - **Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.6045` to `-0.8001`). Best variant: `ext_14_a15_b06` (`alpha_tempo=0.15, beta_trans=0.06`, `combined_delta = -0.6045`). Increasing `beta_trans` monotonically degraded Oracle Formation XI regret as demeaned tempo/transition elasticity distorted attacker rankings relative to Champion `def_xg_shrink_challenger`. Logged Dead until `2027-11-05`.
+  - **Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.2407` to `-1.1320`). Best variant: `ext_18_k540_g015` (`k_atk=540, gamma_role=0.15`, `combined_delta = -0.2407`). Stronger attacker shrinkage ($K_{\text{ATK}} \in \{630, 720\}$) and creative-share prior conditioning over-compressed attacking differentials and inflated high-creativity deep playmakers whose set-piece volume does not translate into direct goal threat (xG). Logged Dead until `2027-11-05`.
+  - **Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.1279` to `-0.4712`). Best variant: `ext_19_k900_xi035` (`k_gk=900, xi_saves=0.35`, `combined_delta = -0.1279`). Scaling GKP `per90_saves` upward against high-threat opponents over-projected GKP returns in fixtures where high opponent threat converted into goals conceded rather than net fantasy points. Logged Dead until `2027-11-05`.
 
 ---
 
@@ -65,6 +81,24 @@ Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cache
 - `ext_12_h24_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 - `ext_12_h48_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 - `ext_12_h24_phi10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a15_b06`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.604474 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a10_b08`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.627763 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a08_b12`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.668158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a14_b10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a18_b12`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_14_a12_b15`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k540_g015`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.240658 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k540_g022`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.325789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k450_g015`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.370789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k630_g018`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.626579 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k630_g012`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.999079 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_18_k720_g020`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -1.131974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k900_xi035`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.127895 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k900_xi050`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.217368 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k720_xi030`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.267632 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k540_xi035`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.278158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k720_xi045`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.357105 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_19_k1080_xi040`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.471184 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 
 <!-- exploration-results:end -->
 

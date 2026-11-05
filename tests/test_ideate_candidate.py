@@ -228,6 +228,7 @@ def test_load_active_dead_levers_filters_unlocked_and_active() -> None:
             "saves_gkp",
             "defense_cs",
             "bonus",
+            "budget",
             "structural",
         }
 

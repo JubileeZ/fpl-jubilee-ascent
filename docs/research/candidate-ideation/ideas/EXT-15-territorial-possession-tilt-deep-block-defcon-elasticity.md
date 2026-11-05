@@ -3,11 +3,11 @@ idea_id: EXT-15
 name: "Territorial Possession-Tilt & Deep-Block Defcon Elasticity"
 tier: P1
 component: xp_defcon
-status: untested
+status: dead-match
 replaces: DefXgShrinkChallengerModel.predict (modifying per90_defensive_contribution prior to CalibratedMatchupHybridModel._project_event_components).
 grid: "k_defcon=900,gamma_siege=0.18; k_defcon=1200,gamma_siege=0.18; k_defcon=1200,gamma_siege=0.25; k_defcon=1500,gamma_siege=0.22; k_defcon=900,gamma_siege=0.25; k_defcon=1500,gamma_siege=0.15"
 inputs: features.player_id; features.club_id; features.opponent_id; features.position_id; features.fixture_id; features.gameweek_id; features.per90_defensive_contribution; features.n_starts_historical; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.minutes; history.defensive_contribution; history.creativity
-nearest_ledger_row: null
+nearest_ledger_row: "Defcon venue and opposition pressure scaling (Away/home venue multiplier + opp attack/team defence ratio beta 0.1-0.5)"
 spec_path: ideas/EXT-15-territorial-possession-tilt-deep-block-defcon-elasticity.md
 ---
 

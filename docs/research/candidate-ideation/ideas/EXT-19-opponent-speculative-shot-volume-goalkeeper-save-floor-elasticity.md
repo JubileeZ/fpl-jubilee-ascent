@@ -3,7 +3,7 @@ idea_id: EXT-19
 name: "Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity"
 tier: P1
 component: xp_saves
-status: untested
+status: fail
 replaces: "DefXgShrinkChallengerModel.predict (updating per90_saves for position_id == 1 prior to CalibratedMatchupHybridModel._project_event_components)."
 grid: "k_gk=720,xi_saves=0.30; k_gk=720,xi_saves=0.45; k_gk=900,xi_saves=0.35; k_gk=900,xi_saves=0.50; k_gk=540,xi_saves=0.35; k_gk=1080,xi_saves=0.40"
 inputs: features.player_id; features.club_id; features.opponent_id; features.position_id; features.fixture_id; features.gameweek_id; features.per90_saves; features.n_starts_historical; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.minutes; history.saves; history.threat

@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-10-28 (+07:00)
+**Updated**: 2026-11-05 (+00:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -142,6 +142,9 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Combined minutes ML and LOO assists with goals ML excluded (H1+H3+Group B) | smoke `track_a_no_goals_h1_h3_b` | DXS | dev 2025-26 FAIL: combined -0.2761, 0/3 segments, boot P 0.700; catastrophic late regression -0.552 < -0.13; guardrails fail; no confirmation | 2026-10-29 | 2027-10-29 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `variant=track_a_no_goals_h1_h3_b` |
 | Joint own-xG/xA process intensity and allocation likelihood (Gamma total, Beta shooter share, bounded coupling correction) | smoke `ext_08_*` (4) | DXS | dev 2025-26 FAIL: best `ext_08_k8`/`k16` delta +0.0280, 0/3 segments, boot P 0.000 (all 4 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-01 | 2027-11-01 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_08` |
 | Sequential attacking opportunity change detection (compound Poisson-Gamma Tweedie likelihood with discrete-grid change-point filtering) | smoke `ext_12_*` (4) | DXS | dev 2025-26 FAIL: delta +0.0000, 0/3 segments, boot P 0.000 (all 4 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-01 | 2027-11-01 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_12` |
+| Continuous match-tempo and counter-transition attack elasticity (point-in-time EB club tempo + player threat/creativity directness, outfield demeaned) | smoke `ext_14_*` (6) | DXS | dev 2025-26 FAIL: best `ext_14_a15_b06` delta -0.6045, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_14` |
+| Starter-role conditioning and set-piece creative-share xG shrinkage for budget enablers (MID/FWD K_ATK 450-720 toward creative-share prior; DEF K=2400 preserved) | smoke `ext_18_*` (6) | DXS | dev 2025-26 FAIL: best `ext_18_k540_g015` delta -0.2407, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_18` |
+| Opponent speculative shot-volume and goalkeeper save-floor elasticity (GKP EB save shrink K_GK 540-1080 modulated by opponent shrunk threat volume) | smoke `ext_19_*` (6) | DXS | dev 2025-26 FAIL: best `ext_19_k900_xi035` delta -0.1279, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_19` |
 
 ## Open (next-lever pool; not proven dead)
 
