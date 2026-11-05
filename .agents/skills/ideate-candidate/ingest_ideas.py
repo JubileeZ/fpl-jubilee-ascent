@@ -16,6 +16,12 @@ import sys
 
 import pandas as pd
 
+CURRENT_DIR = Path(__file__).resolve().parent
+if str(CURRENT_DIR) not in sys.path:
+    sys.path.insert(0, str(CURRENT_DIR))
+
+from schema import validate_inputs_manifest
+
 
 def find_repo_root() -> Path:
     current = Path(__file__).resolve().parent
@@ -250,7 +256,11 @@ def _scaffold_python_skeleton(idea: dict[str, str]) -> str:
     )
 
 
-def build_dossier_markdown(idea: dict[str, str], matched_dead: str = "") -> str:
+def build_dossier_markdown(
+    idea: dict[str, str],
+    matched_dead: str = "",
+    invalid_inputs: list[str] | None = None,
+) -> str:
     """Generate structured markdown dossier with YAML frontmatter."""
     raw_body = idea.get("raw_body", "").strip()
 
@@ -298,7 +308,14 @@ def build_dossier_markdown(idea: dict[str, str], matched_dead: str = "") -> str:
         f"# {idea['idea_id']}: {idea['name']}\n\n"
         f"{formatted_body}\n"
     )
-    if matched_dead:
+    if invalid_inputs:
+        frontmatter += (
+            "\n## Input Covariate Validation Block\n"
+            "- **Validation Result**: Blocked by Operational Data Catalog\n"
+            f"- **Unsupported Inputs**: `{'; '.join(invalid_inputs)}`\n"
+            "- **Action Required**: Reformulate candidate inputs strictly using verified `features.<col>` or `history.<col>` primitives.\n"
+        )
+    elif matched_dead:
         frontmatter += (
             "\n## Ledger Audit & Revisit Justification\n"
             f"- **Flagged Match**: `{matched_dead}`\n"
@@ -348,6 +365,13 @@ def parse_markdown_response(content: str) -> list[dict[str, str]]:
         grid = _extract_field(body, r"Parameter Sweep Grid|Sweep Grid|Grid") or "default"
         raw_inputs = _extract_field(body, r"Point-in-Time Feature|Feature|Inputs|Covariates")
         inputs = raw_inputs.replace("\n", "; ") if raw_inputs else "history.minutes; features.position_id"
+        _, invalid_inputs = validate_inputs_manifest(inputs)
+        initial_status = "blocked" if invalid_inputs else "untested"
+        ledger_res = (
+            f"Blocked: unsupported input covariates ({'; '.join(invalid_inputs)})"
+            if invalid_inputs
+            else ""
+        )
 
         ideas.append({
             "idea_id": idea_id,
@@ -361,9 +385,9 @@ def parse_markdown_response(content: str) -> list[dict[str, str]]:
             "confirm_informative": "informative",
             "grid": grid,
             "conflicts_with": "",
-            "status": "untested",
+            "status": initial_status,
             "spec_path": "",
-            "ledger_result": "",
+            "ledger_result": ledger_res,
             "raw_body": body,
         })
 
@@ -405,8 +429,17 @@ def ingest_file(
 
     new_rows: list[dict[str, str | int]] = []
     for idea in parsed_ideas:
+        _, invalid_inputs = validate_inputs_manifest(str(idea.get("inputs", "")))
         matched_dead = check_dead_lever_match(idea["name"], idea["mechanism"], dead_levers)
-        if matched_dead:
+
+        if invalid_inputs:
+            err_msg = f"Blocked: unsupported input covariates ({'; '.join(invalid_inputs)})"
+            print(f"  [X] Blocked: Idea '{idea['name']}' requires unobserved data: {err_msg}")
+            idea["status"] = "blocked"
+            idea["ledger_result"] = err_msg
+            if matched_dead:
+                idea["nearest_ledger_row"] = matched_dead
+        elif matched_dead:
             print(f"  [!] Warning: Idea '{idea['name']}' matches dead lever: {matched_dead}")
             idea["nearest_ledger_row"] = matched_dead
             idea["status"] = "dead-match"
@@ -425,7 +458,9 @@ def ingest_file(
         spec_path = f"ideas/{spec_filename}"
         idea["spec_path"] = spec_path
 
-        dossier_content = build_dossier_markdown(idea, matched_dead=matched_dead)
+        dossier_content = build_dossier_markdown(
+            idea, matched_dead=matched_dead, invalid_inputs=invalid_inputs
+        )
         dossier_file = ideas_dir / spec_filename
         dossier_file.write_text(dossier_content, encoding="utf-8")
 

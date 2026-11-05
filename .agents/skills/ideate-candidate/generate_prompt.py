@@ -14,6 +14,12 @@ import sys
 
 import pandas as pd
 
+CURRENT_DIR = Path(__file__).resolve().parent
+if str(CURRENT_DIR) not in sys.path:
+    sys.path.insert(0, str(CURRENT_DIR))
+
+from schema import FEATURE_SCHEMA, FORBIDDEN_TELEMETRY, HISTORY_SCHEMA
+
 
 def find_repo_root() -> Path:
     current = Path(__file__).resolve().parent
@@ -78,9 +84,10 @@ FOCUS_PROMPTS: dict[str, str] = {
         "opponent shot distance / volume-to-danger ratios, separating high-volume mid-table shot stoppers from elite low-event GKs."
     ),
     "budget-enablers": (
-        "Focus specifically on Budget Enabler Pricing Efficiency (£4.5m–£5.5m outfield starters). Under our £83.5m "
-        "Constrained Legal Formation XI budget cap, identifying accurate budget starters with high points-per-million "
-        "yields massive primary delta over premium-heavy models."
+        "Focus specifically on Budget Enabler Pricing Efficiency (£4.5m–£5.5m outfield starters). In our 15-player £100.0m "
+        "squad rolling transfer plan replay (ADR 0066), identifying accurate budget starters with high points-per-million "
+        "frees up critical bank budget for premium talismans (Haaland, Salah) and yields massive primary delta over "
+        "premium-heavy models without squad churn."
     ),
 }
 
@@ -273,6 +280,36 @@ def format_dead_levers_for_prompt(active_dead: list[dict[str, str]], focus: str)
     return "\n".join(lines)
 
 
+def format_data_catalog_markdown() -> str:
+    """Format the observed operational data catalog and forbidden telemetry into markdown."""
+    lines: list[str] = [
+        "### Observed Operational Data Catalog & Permitted Input Covariates",
+        "Every proposed Candidate model must strictly derive from the following verified data sources.",
+        "In Section 8, all input variables must be prefixed with `features.<col>` or `history.<col>`:\n",
+        "#### 1. Target Gameweek Pre-Match Features (`features.<col>`)",
+        "Computed point-in-time for target fixture $g$ prior to deadline $\\mathcal{H}_{<g}$:",
+    ]
+    for category, fields in FEATURE_SCHEMA.items():
+        field_strs = [f"`{col}` ({desc})" for col, desc in fields.items()]
+        lines.append(f"- **{category}**: {'; '.join(field_strs)}")
+
+    lines.append("\n#### 2. Historical Match Performance Primitives (`history.<col>`)")
+    lines.append(
+        "Historical records from observed fixtures prior to target deadline $\\mathcal{H}_{<g}$. Candidates may propose "
+        "new causal aggregations (EWM, Empirical Bayes shrinkage, Leave-One-Out club sums) computed strictly over these base primitives:"
+    )
+    for category, fields in HISTORY_SCHEMA.items():
+        field_strs = [f"`{col}` ({desc})" for col, desc in fields.items()]
+        lines.append(f"- **{category}**: {'; '.join(field_strs)}")
+
+    lines.append("\n### Strict Negative Data Constraints (Forbidden / Unobserved Telemetry — DO NOT PROPOSE)")
+    lines.append("Proposals requiring any of the following unobserved data sources will be **automatically blocked and rejected at ingestion**:\n")
+    for i, (title, desc) in enumerate(FORBIDDEN_TELEMETRY, 1):
+        lines.append(f"{i}. **{title}**: {desc}")
+
+    return "\n".join(lines)
+
+
 def build_prompt_markdown(focus: str) -> str:
     champ_name, champ_status = load_champion_info()
     total_trials, dead_count = load_ledger_stats()
@@ -280,6 +317,7 @@ def build_prompt_markdown(focus: str) -> str:
     focus_guidance = FOCUS_PROMPTS.get(focus, FOCUS_PROMPTS["general"])
     mae_mult = 1.0 + GUARDRAIL_REL_TOL
     dead_constraints_block = format_dead_levers_for_prompt(active_dead, focus)
+    data_catalog_block = format_data_catalog_markdown()
     hit_friction: float = float(DEFAULT_STRATEGIC_OPTIONS["hit_friction"])
     gk_friction: float = float(DEFAULT_STRATEGIC_OPTIONS["gk_transfer_friction"])
     ft_schedule: str = ", ".join(f'"{bank}": {value:.1f}' for bank, value in DEFAULT_STRATEGIC_FT_SCHEDULE.items())
@@ -365,9 +403,9 @@ If you have web browsing capabilities, you may inspect the public repository to 
 
 We operate under strict empirical model governance:
 {champ_desc}
-- **Critical ADR 0064 Finding**: Under our reformed **Constrained Legal Formation XI** (£83.5m starting budget cap, $\\le 3$ per club), `def_xg_shrink_challenger` actually outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of `adaptive_causal_challenger` was an artifact of selecting £100m+ illegal squads. True predictive alpha requires accurately valuing budget enablers under strict team constraints, rather than over-indexing on expensive premium assets.
+- **Critical ADR 0066 & ADR 0064 Finding**: Under realistic squad constraints, `def_xg_shrink_challenger` decisively outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of earlier ML models was an artifact of selecting £110m+ illegal squads of all premiums. True predictive alpha in FPL requires accurately valuing £4.5m–£5.5m budget enablers within the 15-player £100.0m squad to fund premium assets, rather than over-indexing on expensive premiums with fragile rotation bench cover.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
-- **Promotion Gate (ADR 0066 & ADR 0064)**: Any new model ("Candidate") must pass our multi-season evaluation: primary Rolling Transfer Plan Net Score from neutral GW1 ownership anchor, paired non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$) with search-wide family-wise error control ($\\text{{FWER}} \\le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and Constrained Legal Formation XI diagnostic screen (£83.5m cap, $\\le 3$ per club, squad churn $\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
+- **Promotion Gate (ADR 0066 Foundation & ADR 0064 Standards)**: Any new model ("Candidate") must pass our multi-season evaluation: **Primary Estimand is Rolling Transfer Plan Net FPL Points** under an independent 6-GW Strategic transfer plan replay initialized from the neutral GW1 ownership anchor (15-player £100.0m squad, bank balance, rolling transfers, hit deductions, bench cover). Evaluated via paired non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$) with family-wise error control ($\\text{{FWER}} \\le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and supporting diagnostic screens (including Constrained Legal Formation XI £83.5m cap and rolling squad churn $\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
 - **Historical Ledger**: {total_trials} candidate model levers recorded. {dead_count} have failed or been logged dead ({len(active_dead)} currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
 - **Evaluation Boundary & Sealed Window**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
   - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/2026-27/` or any live 2026-27 performance files in the public repository. All proposals must derive strictly from 2025–26 developmental principles.
@@ -379,6 +417,8 @@ Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW
 
 {dead_constraints_block}
 
+{data_catalog_block}
+
 ### Required Output Structure for Each Candidate Idea
 Format each proposed candidate with a level-3 markdown heading `### Candidate <N>: <Concise Name>` followed by these exact numbered sections (parsed directly by our queue ingestion tool):
 1. **Concept & Football Hypothesis**: Concrete statement of the physical football phenomenon or market inefficiency captured, and why existing Champion mechanisms miss it.
@@ -387,33 +427,33 @@ Format each proposed candidate with a level-3 markdown heading `### Candidate <N
 4. **Replaces / Integration Hook**: Exact Champion method or component hook this mechanism replaces or modifies.
 5. **Parameter Sweep Grid**: Semicolon-separated list of $\\le 6$ concrete hyperparameter variants for smoke testing (e.g. `K=600; K=1200; K=1800`).
 6. **Small-Sample & Cold-Start Strategy**: How does it integrate with warm historical seeding ($N_{{\\text{{prior}}}}=1$) and continuous $N_{{\\text{{eff}}}}$ sample shrinkage ($N_{{\\min}}=3500, N_{{\\text{{full}}}}=7500$), avoiding Nickell bias and early-season over-regularization?
-7. **Budget-Constrained Optimizer Interaction**: Why does this proposed profile resist the Optimizer's Curse under the £83.5m Constrained Legal Formation XI and rolling squad churn guardrail ($\\le {CHURN_GUARDRAIL_TOL:.2f}$ players/GW)?
-8. **Point-in-Time Feature Requirements**: Semicolon-separated manifest of point-in-time covariates needed (`features.<col>` / `history.<col>`, strictly pre-match deadline $\\mathcal{{H}}_{{<g}}$; zero terminal leakage).
+7. **Full Squad & Budget-Constrained Optimizer Interaction**: Why does this proposed profile resist the Optimizer's Curse under the 15-player £100.0m squad rolling transfer plan replay and rolling squad churn guardrail ($\\le {CHURN_GUARDRAIL_TOL:.2f}$ players/GW)? How does accurately valuing £4.5m–£5.5m starters fund premium talismans without triggering costly transfer hits?
+8. **Point-in-Time Feature Requirements**: Semicolon-separated manifest of point-in-time covariates needed (must use strictly permitted fields from our Observed Data Catalog, prefixed with `features.<col>` or `history.<col>`, strictly pre-match deadline $\\mathcal{{H}}_{{<g}}$; zero terminal leakage; no unobserved telemetry).
 9. **Python Code Skeleton (Optional)**: Class definition stub conforming to `{exemplar_base}` or `BaseModel`. If response length is constrained, this can be an abbreviated stub or omitted if mathematical formulation and parameter sweep grid are fully specified; our tooling will auto-scaffold class skeletons.
 
 ### 1-Shot Concrete Exemplar
 
-### Candidate 1: Continuous Game-Pace & Match-State Elasticity
-1. **Concept & Football Hypothesis**: Trailing scorelines and match tempo significantly alter shot generation, transition volume, and defensive block depth. Center-backs face fewer defensive clearances/tackles when leading comfortably, while attacking wingers gain high-xG counter-attack opportunities in trailing game states.
+### Candidate 1: Expected Goal Involvement (xGI) Market Asymmetry for Budget Starters
+1. **Concept & Football Hypothesis**: Under the 15-player £100.0m squad constraint, identifying accurate budget starters (£4.5m–£5.5m) is the primary determinant of transfer plan success because it frees bank capacity for premium talismans (Haaland/Salah). However, current attack projections apply uniform shrinkage ($K=360$) and face-value weighting ($1.0 \\times xG, 1.0 \\times xA$) across all price tiers. Budget starters with high underlying per-minute xGI who play on lower-table sides have their finishing expectations excessively depressed by club-wide attack priors, creating an exploitable market inefficiency.
 2. **Mathematical Formulation**:
-   $$\\lambda_{{xG, i}}(g) = \\lambda_{{xG, i}}^0 \\cdot \\exp\\left(\\alpha_{{\\text{{pace}}}} \\cdot (\\bar{{P}}_{{\\text{{pace}}, o}} - 1.0) + \\beta_{{\\text{{margin}}}} \\cdot \\mathbb{{E}}[\\Delta \\text{{Score}}_{{c, o}}]\\right)$$
-   $$\\lambda_{{xA, i}}(g) = \\lambda_{{xA, i}}^0 \\cdot \\exp\\left(\\alpha_{{\\text{{pace}}}} \\cdot (\\bar{{P}}_{{\\text{{pace}}, o}} - 1.0) + \\beta_{{\\text{{margin}}}} \\cdot \\mathbb{{E}}[\\Delta \\text{{Score}}_{{c, o}}]\\right)$$
-   where $\\bar{{P}}_{{\\text{{pace}}, o}}$ is opponent match-pace factor shrunk toward 1.0, and $\\Delta \\text{{Score}}_{{c, o}}$ is expected scoreline margin from bookmaker spreads.
+   $$\\lambda_{{xG, i}}^*(g) = \\hat{{\\lambda}}_{{xG, i}} \\cdot \\left(1.0 + \\gamma_{{\\text{{cost}}}} \\cdot \\max\\left(0.0, \\frac{{55.0 - \\text{{Cost}}_i}}{{10.0}}\\right) \\cdot \\frac{{\\text{{xGI}}_{{90, i}} - \\bar{{\\mu}}_{{\\text{{xGI}}, \\text{{pos}}}}}}{{\\bar{{\\sigma}}_{{\\text{{xGI}}, \\text{{pos}}}} + \\epsilon}}\\right)$$
+   $$\\lambda_{{xA, i}}^*(g) = \\hat{{\\lambda}}_{{xA, i}} \\cdot \\left(1.0 + \\gamma_{{\\text{{cost}}}} \\cdot \\max\\left(0.0, \\frac{{55.0 - \\text{{Cost}}_i}}{{10.0}}\\right) \\cdot \\frac{{\\text{{xGI}}_{{90, i}} - \\bar{{\\mu}}_{{\\text{{xGI}}, \\text{{pos}}}}}}{{\\bar{{\\sigma}}_{{\\text{{xGI}}, \\text{{pos}}}} + \\epsilon}}\\right)$$
+   where $\\text{{Cost}}_i$ is `now_cost` in £0.1m, and $\\gamma_{{\\text{{cost}}}} \\in [0.10, 0.25]$ scales the responsiveness for players priced $\\le £5.5\\text{{m}}$.
 3. **Decoupled Architecture Placement**: Operates in $M_{{\\text{{events}}}}$ (`xp_goals`, `xp_assists`).
 4. **Replaces / Integration Hook**: `CalibratedMatchupHybridModel._project_event_components`
-5. **Parameter Sweep Grid**: `alpha_pace=0.15,beta_margin=-0.08; alpha_pace=0.25,beta_margin=-0.08; alpha_pace=0.20,beta_margin=-0.12; alpha_pace=0.15,beta_margin=-0.05`
-6. **Small-Sample & Cold-Start Strategy**: Opponent pace and margin coefficients are anchored to zero at season start ($N_{{\\text{{eff}}}} < 3500$) and smoothly ramped to full weight via continuous $N_{{\\text{{eff}}}}$ sample shrinkage, preventing early-season over-reaction.
-7. **Budget-Constrained Optimizer Interaction**: Rewards counter-attacking £5.0m midfielders against high-possession heavy favorites without triggering erratic squad churn.
-8. **Point-in-Time Feature Requirements**: `features.opponent_id`; `history.opp_pace_per90_eb`; `history.exp_goal_diff_eb`
+5. **Parameter Sweep Grid**: `gamma_cost=0.10,k_budget=360; gamma_cost=0.15,k_budget=540; gamma_cost=0.20,k_budget=540; gamma_cost=0.15,k_budget=720; gamma_cost=0.25,k_budget=360`
+6. **Small-Sample & Cold-Start Strategy**: $\\text{{xGI}}_{{90, i}}$ is shrunk toward position baseline via Empirical Bayes pseudo-minutes ($K_{{\\text{{budget}}}} \\in [360, 720]$) using warm historical seed data ($N_{{\\text{{prior}}}}=1$), preventing small-sample cameo noise from inflating unproven enablers.
+7. **Full Squad & Budget-Constrained Optimizer Interaction**: Increases projection confidence on legitimate budget talisman starters (e.g. £5.0m–£5.5m attacking midfielders), enabling the HiGHS MILP to lock them as stable 11th starters without taking transfer hits, leaving the remaining £89m+ budget for two premium talismans.
+8. **Point-in-Time Feature Requirements**: `features.now_cost; features.position_id; features.per90_xg; features.per90_xa; features.team_attack_strength; history.minutes; history.starts; history.expected_goals; history.expected_assists`
 9. **Python Code Skeleton (Optional)**:
 ```python
 {exemplar_import}
 
-class GamePaceElasticityChallengerModel({exemplar_base}):
-    def __init__(self, alpha_pace: float = 0.20, beta_margin: float = -0.08, **kwargs: object) -> None:
+class BudgetXgiAsymmetryChallengerModel({exemplar_base}):
+    def __init__(self, gamma_cost: float = 0.15, k_budget: float = 540.0, **kwargs: object) -> None:
         super().__init__(**kwargs)
-        self.alpha_pace = float(alpha_pace)
-        self.beta_margin = float(beta_margin)
+        self.gamma_cost = float(gamma_cost)
+        self.k_budget = float(k_budget)
 ```
 
 Review the complete technical architecture and system specification below before generating candidate recommendations.
@@ -439,7 +479,7 @@ flowchart TD
     end
     
     Matrix --> Contract["projections/contract.py (ProjectionContract: xP, xP/GW)"]
-    Contract --> Gate["Reformed Promotion Gate (ADR 0064)\\nConstrained XI (£83.5m) + Non-wrapping Bootstrap (L=5)"]
+    Contract --> Gate["Authoritative Promotion Gate (ADR 0066)\\n15-Player £100m Rolling Replay (HiGHS MILP) + MBB (L=5)\\nSupporting Screen: ADR 0064 Constrained Formation XI (£83.5m)"]
     Contract --> Solver["solver/solver.py (HiGHS MILP 5 Strategic Constraints)"]
     Solver --> Output["Transfer Plans (data/solution.json) & Lineup Cards"]
 ```
@@ -535,10 +575,13 @@ POOLED_BOOTSTRAP_MIN_P = {POOLED_BOOTSTRAP_MIN_P}  # Pooled 2-season stratified 
 CHURN_GUARDRAIL_TOL = {CHURN_GUARDRAIL_TOL}  # Max excess squad churn players/GW
 ```
 
-#### Requirement 1: Constrained Legal Formation XI Primary Delta
-Primary metric is **Constrained Legal Formation XI Regret** (`select_legal_formation_xi`), solved via HiGHS/scipy MILP enforcing:
+#### Requirement 1: Authoritative Rolling Transfer Plan Net Points Primary (ADR 0066)
+The primary promotion estimand is the **actual cumulative net FPL points** achieved under an independent rolling 6-Gameweek Strategic transfer plan replay (`backtesting/rolling_replay.py`), initialized from the neutral GW1 ownership anchor (15-player £100.0m squad).
+
+#### Supporting Diagnostic Screen: Constrained Legal Formation XI Regret (ADR 0064)
+Fast single-gameweek diagnostic screen using `select_legal_formation_xi`, solved via HiGHS/scipy MILP enforcing:
 - $\\le 3$ players per club.
-- Starting XI budget cap: $B_{{\\text{{XI}}}} \\le £83.5\\text{{m}}$ ($835.0$ in FPL 0.1m units).
+- Starting XI budget cap: $B_{{\\text{{XI}}}} \\le £83.5\\text{{m}}$ ($835.0$ in FPL 0.1m units, reflecting ~£16.5m bench allocation).
 - Deterministic tie-breaking: `[pred DESC, cost ASC, id ASC]`.
 - Combined Primary Delta: $\\bar{{\\Delta}} = \\overline{{\\text{{Regret}}}}_{{\\text{{champ}}}} - \\overline{{\\text{{Regret}}}}_{{\\text{{cand}}}} > 0.0$ pts/GW.
 
@@ -592,16 +635,16 @@ Evaluated across both full season (38 GWs) and active gameweeks $\\mathcal{{G}}_
 ### 5. High-Priority Exploration Vectors (Grounded in Technical Feasibility)
 
 Candidates are strongly encouraged to explore mechanisms within these unreserved design spaces:
-1. **Continuous Match-Pace & Transition Threat Elasticity ($M_{{\\text{{events}}}}$)**:
-   - Trailing game-state margins and opponent match-tempo significantly alter shot generation, counter-attack frequency, and defensive block depth. Modeling continuous scoreline pace elasticity conditioned on game-state expectation without static logit shifts.
-2. **Dynamic Defensive Block Depth & Tackles Demand ($M_{{\\text{{events}}}}$)**:
-   - High-possession clubs suppress opponent tackle volume while conceding transition counters. Modeling possession-adjusted defensive contribution elasticity without inflating fluke clean sheets.
-3. **Continuous Teammate Tactical Synergy & Space Creation ($M_{{\\text{{events}}}}$)**:
-   - Gravity of talisman creators opens space for secondary runners. Modeling synergy effects without zero-sum talisman absence redistribution.
-4. **Position-Conditioned Micro-Cycle Fatigue Recovery ($M_{{\\text{{mins}}}}$)**:
-   - Nailed outfielders face non-linear stamina decay across dense 3-day fixture turnarounds. Modeling continuous exponential recovery dynamics rather than discrete static logit congestion penalties.
-5. **Budget Enabler Efficiency & Marginal Value Modeling ($M_{{\\text{{events}}}} / M_{{\\text{{mins}}}}$ under £83.5m cap)**:
-   - The £83.5m starting budget cap elevates the importance of accurate projections for £4.5m–£5.5m outfield starters. Models that eliminate residual bias and accurately rank budget enablers gain substantial legal formation XI points over models tuned solely for premium assets.
+1. **Budget Enabler Pricing Efficiency under £100m Squad Cap ($M_{{\\text{{events}}}} / M_{{\\text{{mins}}}}$)**:
+   - Under the 15-player £100.0m squad rolling replay, identifying stable £4.5m–£5.5m outfield starters with high underlying event generation enables funding premium captaincy assets. Modeling decoupled price-band shrinkage and role persistence using `now_cost`, `per90_xg`, `per90_xa`, and `p_start`.
+2. **Opta Event Finishing Volatility & Venue Gradients ($M_{{\\text{{events}}}}$)**:
+   - Attackers exhibit distinct home/away finishing efficiency and xG conversion rates. Modeling venue-conditioned Empirical Bayes finishing offsets using `expected_goals`, `expected_assists`, `goals_scored`, `assists`, and `is_home` without raw FDR multipliers.
+3. **Defcon Action Demand & Opponent Strength Gradients ($M_{{\\text{{events}}}}$)**:
+   - Defensive action volume (tackles won + CBI) increases when defending against high-possession/high-attack clubs. Modeling Defcon threshold probabilities conditioned on `opponent_attack_strength` and `team_defence_strength` using observed `defensive_contribution`.
+4. **Goalkeeper Save Volume Floor conditioned on Opponent Attack/Defence Gradients ($M_{{\\text{{events}}}}$)**:
+   - Mid-table goalkeepers facing high-threat attacks generate high save volume despite conceding goals. Modeling save expectation conditioned on opponent strength ratio `opponent_attack_strength / team_defence_strength` using `per90_saves` and historical `saves`.
+5. **Position-Conditioned Micro-Cycle Minutes Hazard ($M_{{\\text{{mins}}}}$)**:
+   - High-sprint outfielders (wingers, fullbacks) face non-linear substitution risks and rotation across 3-day fixture turnarounds. Modeling position-specific participation hazards using `kickoff_time`, `starts`, `minutes`, `n_starts_historical`, and `chance_of_playing` without external fitness telemetry.
 """
 
 

@@ -851,3 +851,16 @@ _Avoid_: Global mean, API benchmark, game average
 **Net Gameweek Points**:
 Realized Gameweek points minus `event_transfers_cost` (Hits). Used for benchmark deltas and chip timing differentials.
 _Avoid_: Raw points, gross score, match points
+
+**Operational Data Space**:
+The strictly bounded input data universe available to candidate projection models. Defined as the union of pre-match target Gameweek features $\mathcal{F}_g$ (`features.<col>`) emitted by `build_features()` and pre-deadline fixture performance history $\mathcal{H}_{<g}$ (`history.<col>`) emitted by `completed_performance_rows()` from `player_performances.parquet`. Candidate hypotheses must derive strictly from this space.
+_Avoid_: External data feeds, untracked covariates, live streaming telemetry
+
+**Forbidden Telemetry**:
+Data fields and event streams explicitly unobserved in the Operational Data Space and forbidden in candidate proposals: player tracking/spatial XY coordinates, sprint speeds, pass completion maps, aerial duel rates, team possession %, PPDA, betting market odds/spreads, weather conditions, referee statistics, and minute-level live event feeds. Proposals requiring forbidden telemetry are blocked at ingestion.
+_Avoid_: Hallucinated inputs, bookmaker spreads, tempo telemetry
+
+**Causal Historical Derivation**:
+Mathematical transformation (e.g. exponential moving average, Empirical Bayes shrinkage, Leave-One-Out club sums) computed strictly over pre-deadline performance history $\mathcal{H}_{<g}$ without external or future leakage. Permitted in candidate proposals when base primitives belong to `history.<col>`.
+_Avoid_: Leaked future statistics, post-deadline actuals, ungrounded external rates
+

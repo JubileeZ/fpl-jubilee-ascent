@@ -34,7 +34,7 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py path/to/external_r
 Run `generate_prompt.py` to assemble fresh prompt reflecting active repo reality:
 - Active Champion from `config/model_selection.json`
 - Active dead levers dynamically filtered from `docs/research/candidate-ledger/candidate_ledger.csv` by subsystem focus area (`revisit_after > today` or `never`), enforcing 1-year retest moratorium
-- Promotion Gate standards from `backtesting/rolling_replay.py` and `backtesting/evidence_statistics.py` (ADR 0066: actual rolling transfer plan net score primary, paired non-wrapping MBB $L=5$ with $\text{FWER} \le 0.05$, substantive projection non-inferiority guards, and ADR 0064 £83.5m Constrained Formation XI screen)
+- Promotion Gate standards from `backtesting/rolling_replay.py` and `backtesting/evidence_statistics.py` (ADR 0066: actual rolling transfer plan net score primary on 15-player £100.0m squad, paired non-wrapping MBB $L=5$ with $\text{FWER} \le 0.05$, substantive projection non-inferiority guards, and ADR 0064 Constrained Formation XI £83.5m supporting screen)
 
 Supported `--focus` modes:
 - `general`: Comprehensive architectural sweep across minutes and event rates, with cross-cutting structural dead levers and active dead summary counts.
@@ -42,7 +42,7 @@ Supported `--focus` modes:
 - `events`: Focuses on rate decomposition conditioned on minutes ($xG/90$, $xA/90$, $xCS$) with match event dead levers.
 - `assists`: Focuses on recipient finishing skill and key pass conversion with assist dead levers.
 - `goalkeepers`: Focuses on shot threat distance vs. save volume and clean-sheet variance with goalkeeper/defensive dead levers.
-- `budget-enablers`: Focuses on £4.5m–£5.5m asset valuation under £83.5m team cap with structural/valuation dead levers.
+- `budget-enablers`: Focuses on £4.5m–£5.5m asset valuation under the 15-player £100.0m squad rolling replay (ADR 0066) to fund premium talismans without squad churn.
 
 Generated output written to [`docs/research/candidate-ideation/candidate_model_ideation_prompt.md`](docs/research/candidate-ideation/candidate_model_ideation_prompt.md) (and optional `--artifact-out` path / native UI Artifact in interactive sessions).
 
@@ -64,10 +64,11 @@ Prompt characteristics:
 #### Path A: Direct Chat Pasting (Zero Terminal / Primary Path)
 Paste raw model response directly into conversation chat. Handling:
 1. Parse 9 candidate sections and hyperparameter grids.
-2. Check against `candidate_ledger.csv` active dead levers (tagging `dead-match` when matching known archetypes).
-3. Auto-scaffold Python code skeletons if Section 9 omitted.
-4. Atomically dual-write markdown dossiers to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](docs/research/candidate-ideation/ideas/).
-5. Append rows (`status: untested` or `status: dead-match`) to [`docs/research/candidate-ideation/idea_queue.csv`](docs/research/candidate-ideation/idea_queue.csv).
+2. Validate input covariates against the Operational Data Catalog (`features.<col>` and `history.<col>`), flagging unobserved telemetry as `status: blocked`.
+3. Check against `candidate_ledger.csv` active dead levers (tagging `dead-match` when matching known archetypes).
+4. Auto-scaffold Python code skeletons if Section 9 omitted.
+5. Atomically dual-write markdown dossiers to [`docs/research/candidate-ideation/ideas/<idea_id>-<slug>.md`](docs/research/candidate-ideation/ideas/).
+6. Append rows (`status: untested`, `status: dead-match`, or `status: blocked`) to [`docs/research/candidate-ideation/idea_queue.csv`](docs/research/candidate-ideation/idea_queue.csv).
 
 #### Path B: Headless CLI Ingest (Scripted)
 Save raw response to file and run:

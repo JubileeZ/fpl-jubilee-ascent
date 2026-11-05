@@ -206,7 +206,8 @@ def test_generate_prompt_includes_one_shot_exemplar_and_optional_code_guidance()
     md = gen.build_prompt_markdown("general")
     assert "### 1-Shot Concrete Exemplar" in md
     assert "Python Code Skeleton (Optional" in md
-    assert "### Candidate 1: Continuous Game-Pace & Match-State Elasticity" in md
+    assert "### Candidate 1: Expected Goal Involvement (xGI) Market Asymmetry for Budget Starters" in md
+    assert "Continuous Game-Pace & Match-State Elasticity" not in md
     assert "Asymmetric Substitution Hazard & Beta-Binomial Survival" not in md
     assert "def_xg_shrink_challenger" in md
     assert "DefXgShrinkChallengerModel" in md
@@ -319,7 +320,7 @@ def test_ingest_file_auto_scaffolds_python_skeleton_when_code_missing(tmp_path: 
 5. **Parameter Sweep Grid**: `K_dc=1350,s_dc=0.25; K_dc=1800,s_dc=0.35`
 6. **Small-Sample & Cold-Start Strategy**: Anchors to league average defcon rate.
 7. **Budget-Constrained Optimizer Interaction**: Rewards low-cost defenders in high-tackle fixtures.
-8. **Point-in-Time Feature Requirements**: `features.position`; `features.opponent_id`; `history.defcon_per90_eb`
+8. **Point-in-Time Feature Requirements**: `features.position`; `features.opponent_id`; `history.defensive_contribution`
 9. **Python Code Skeleton**: (Omitted; mathematical formulation and parameter grid fully specified above)
 """,
         encoding="utf-8",
@@ -417,6 +418,100 @@ def test_generate_prompt_supports_artifact_out(tmp_path: Path, monkeypatch: pyte
     assert out_content == art_content
     assert "Critical Operational Directive" in art_content
     assert "```markdown\nYou are a Principal" not in art_content
+
+
+def test_prompt_contains_data_catalog_and_adr0066_alignment() -> None:
+    gen = _load_skill_module("generate_prompt", "generate_prompt.py")
+    prompt_text = gen.build_prompt_markdown("general")
+
+    # Data catalog and negative constraints present
+    assert "### Observed Operational Data Catalog & Permitted Input Covariates" in prompt_text
+    assert "#### 1. Target Gameweek Pre-Match Features (`features.<col>`)" in prompt_text
+    assert "#### 2. Historical Match Performance Primitives (`history.<col>`)" in prompt_text
+    assert "### Strict Negative Data Constraints (Forbidden / Unobserved Telemetry — DO NOT PROPOSE)" in prompt_text
+    assert "Tracking & Spatial Data" in prompt_text
+    assert "Betting Markets & Odds" in prompt_text
+
+    # Consistent ADR 0066 15-player £100m squad framing
+    assert "15-player £100.0m squad" in prompt_text
+    assert "Rolling Transfer Plan Net FPL Points" in prompt_text
+    assert "Expected Goal Involvement (xGI) Market Asymmetry for Budget Starters" in prompt_text
+
+    # Hallucinated telemetry purged from exemplar and vectors
+    assert "opp_pace_per90_eb" not in prompt_text
+    assert "exp_goal_diff_eb" not in prompt_text
+    assert "bookmaker spreads" not in prompt_text
+
+
+def test_validate_inputs_manifest() -> None:
+    schema = _load_skill_module("schema", "schema.py")
+
+    # Valid combinations with aliases and parenthetical qualifiers
+    valid_inputs = (
+        "features.now_cost; features.position_id; features.team_id; "
+        "history.minutes (rolling 5-GW EWM); history.expected_goals; history.xg; "
+        "features.per90_xg * features.team_attack_strength"
+    )
+    valid_list, invalid_list = schema.validate_inputs_manifest(valid_inputs)
+    assert not invalid_list
+    assert len(valid_list) >= 5
+
+    # Invalid covariates with forbidden telemetry
+    invalid_inputs = "history.opp_pace_per90_eb; features.betting_odds; history.possession_pct; tracking_speed; features.fake_stat"
+    _, invalid_res = schema.validate_inputs_manifest(invalid_inputs)
+    assert len(invalid_res) == 5
+    assert any("pace" in r for r in invalid_res)
+    assert any("odds" in r for r in invalid_res)
+    assert any("possession" in r for r in invalid_res)
+    assert any("tracking" in r for r in invalid_res)
+    assert any("fake_stat" in r for r in invalid_res)
+
+
+def test_ingest_blocks_unsupported_inputs(tmp_path: Path) -> None:
+    ingest = _load_skill_module("ingest_ideas", "ingest_ideas.py")
+    response_file = tmp_path / "response_blocked.md"
+    queue_file = tmp_path / "idea_queue.csv"
+    ideas_dir = tmp_path / "ideas"
+
+    response_file.write_text(
+        r"""
+### Candidate 1: Real Grounded Model
+1. **Concept & Football Hypothesis**: Grounded budget attacker mechanism.
+3. **Decoupled Architecture Placement**: $M_{\text{events}}$
+4. **Replaces / Integration Hook**: `CalibratedMatchupHybridModel._project_event_components`
+8. **Point-in-Time Feature Requirements**: `features.now_cost; history.minutes; features.per90_xg`
+
+### Candidate 2: Hallucinated Telemetry Model
+1. **Concept & Football Hypothesis**: Uses non-existent tracking and bookmaker spreads.
+3. **Decoupled Architecture Placement**: $M_{\text{events}}$
+4. **Replaces / Integration Hook**: `CalibratedMatchupHybridModel._project_event_components`
+8. **Point-in-Time Feature Requirements**: `features.betting_spread; history.opp_pace_per90_eb; tracking_coordinates`
+""",
+        encoding="utf-8",
+    )
+
+    rc = ingest.ingest_file(response_file, queue_path=queue_file, ideas_dir=ideas_dir)
+    assert rc == 0
+    df = pd.read_csv(queue_file)
+    assert len(df) == 2
+
+    # First idea: valid and untested
+    assert df.loc[0, "name"] == "Real Grounded Model"
+    assert df.loc[0, "status"] == "untested"
+    assert df.loc[0, "ledger_result"] == "" or pd.isna(df.loc[0, "ledger_result"])
+
+    # Second idea: blocked at ingestion
+    assert df.loc[1, "name"] == "Hallucinated Telemetry Model"
+    assert df.loc[1, "status"] == "blocked"
+    assert "Blocked: unsupported input covariates" in str(df.loc[1, "ledger_result"])
+
+    # Check dossier contents for block message
+    spec_path_2 = df.loc[1, "spec_path"]
+    dossier_2 = ideas_dir / Path(spec_path_2).name
+    dossier_content = dossier_2.read_text(encoding="utf-8")
+    assert "Input Covariate Validation Block" in dossier_content
+    assert "Blocked by Operational Data Catalog" in dossier_content
+
 
 
 
