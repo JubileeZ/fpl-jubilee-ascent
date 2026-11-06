@@ -578,10 +578,10 @@ CHURN_GUARDRAIL_TOL = {CHURN_GUARDRAIL_TOL}  # Max excess squad churn players/GW
 #### Requirement 1: Authoritative Rolling Transfer Plan Net Points Primary (ADR 0066)
 The primary promotion estimand is the **actual cumulative net FPL points** achieved under an independent rolling 6-Gameweek Strategic transfer plan replay (`backtesting/rolling_replay.py`), initialized from the neutral GW1 ownership anchor (15-player £100.0m squad).
 
-#### Supporting Diagnostic Screen: Constrained Legal Formation XI Regret (ADR 0064)
-Fast single-gameweek diagnostic screen using `select_legal_formation_xi`, solved via HiGHS/scipy MILP enforcing:
-- $\\le 3$ players per club.
-- Starting XI budget cap: $B_{{\\text{{XI}}}} \\le £83.5\\text{{m}}$ ($835.0$ in FPL 0.1m units, reflecting ~£16.5m bench allocation).
+#### Supporting Diagnostic Screen: £100.0m 15-Player Squad + Legal Formation XI Regret (`select_squad_and_formation_xi`)
+Fast single-gameweek diagnostic screen using `select_squad_and_formation_xi`, solved via HiGHS/scipy MILP enforcing:
+- $\\le 3$ players per club across a legal 15-player squad (`2 GKP, 5 DEF, 5 MID, 3 FWD`).
+- Full 15-player squad budget cap: $B_{{\\text{{squad}}}} \\le £100.0\\text{{m}}$ ($1000.0$ in FPL 0.1m units), partitioned into 11 legal starters ($1.0\\times$ weight) and 4 ordered bench players ($0.10\\times$ weight) scored with official FPL automatic bench substitutions (`resolve_autosubs`).
 - Deterministic tie-breaking: `[pred DESC, cost ASC, id ASC]`.
 - Combined Primary Delta: $\\bar{{\\Delta}} = \\overline{{\\text{{Regret}}}}_{{\\text{{champ}}}} - \\overline{{\\text{{Regret}}}}_{{\\text{{cand}}}} > 0.0$ pts/GW.
 

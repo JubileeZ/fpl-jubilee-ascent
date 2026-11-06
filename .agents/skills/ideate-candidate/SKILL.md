@@ -34,7 +34,7 @@ uv run python .agents/skills/ideate-candidate/ingest_ideas.py path/to/external_r
 Run `generate_prompt.py` to assemble fresh prompt reflecting active repo reality:
 - Active Champion from `config/model_selection.json`
 - Active dead levers dynamically filtered from `docs/research/candidate-ledger/candidate_ledger.csv` by subsystem focus area (`revisit_after > today` or `never`), enforcing 1-year retest moratorium
-- Promotion Gate standards from `backtesting/rolling_replay.py` and `backtesting/evidence_statistics.py` (ADR 0066: actual rolling transfer plan net score primary on 15-player £100.0m squad, paired non-wrapping MBB $L=5$ with $\text{FWER} \le 0.05$, substantive projection non-inferiority guards, and ADR 0064 Constrained Formation XI £83.5m supporting screen)
+- Promotion Gate standards from `backtesting/rolling_replay.py` and `backtesting/evidence_statistics.py` (ADR 0066: actual rolling transfer plan net score primary on 15-player £100.0m squad, paired non-wrapping MBB $L=5$ with $\text{FWER} \le 0.05$, substantive projection non-inferiority guards, and £100.0m 15-player Squad + Formation XI with bench auto-subs supporting screen)
 
 Supported `--focus` modes:
 - `general`: Comprehensive architectural sweep across minutes and event rates, with cross-cutting structural dead levers and active dead summary counts.

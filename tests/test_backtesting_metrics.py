@@ -228,3 +228,136 @@ def test_top_15_squad_selection_and_churn() -> None:
     assert churn.iloc[0] >= 0.0
 
 
+def test_select_squad_and_formation_xi_enforces_100m_15_player_constraints_and_bench_order() -> None:
+    from backtesting.metrics import select_squad_and_formation_xi
+
+    players = [
+        # 3 GKPs: 1 premium (55.0), 1 mid (50.0), 1 budget fodder (40.0)
+        {"player_id": 1, "position_id": 1, "club_id": 1, "now_cost": 55.0, "projected_points": 5.5},
+        {"player_id": 2, "position_id": 1, "club_id": 2, "now_cost": 50.0, "projected_points": 5.2},
+        {"player_id": 3, "position_id": 1, "club_id": 3, "now_cost": 40.0, "projected_points": 1.0},
+        # 6 DEFs
+        {"player_id": 11, "position_id": 2, "club_id": 1, "now_cost": 65.0, "projected_points": 6.0},
+        {"player_id": 12, "position_id": 2, "club_id": 2, "now_cost": 60.0, "projected_points": 5.5},
+        {"player_id": 13, "position_id": 2, "club_id": 3, "now_cost": 55.0, "projected_points": 5.0},
+        {"player_id": 14, "position_id": 2, "club_id": 4, "now_cost": 50.0, "projected_points": 4.5},
+        {"player_id": 15, "position_id": 2, "club_id": 5, "now_cost": 45.0, "projected_points": 3.5},
+        {"player_id": 16, "position_id": 2, "club_id": 6, "now_cost": 40.0, "projected_points": 2.0},
+        # 6 MIDs
+        {"player_id": 21, "position_id": 3, "club_id": 1, "now_cost": 125.0, "projected_points": 8.5},
+        {"player_id": 22, "position_id": 3, "club_id": 2, "now_cost": 105.0, "projected_points": 7.8},
+        {"player_id": 23, "position_id": 3, "club_id": 4, "now_cost": 85.0, "projected_points": 6.8},
+        {"player_id": 24, "position_id": 3, "club_id": 5, "now_cost": 65.0, "projected_points": 5.6},
+        {"player_id": 25, "position_id": 3, "club_id": 6, "now_cost": 50.0, "projected_points": 4.0},
+        {"player_id": 26, "position_id": 3, "club_id": 7, "now_cost": 45.0, "projected_points": 2.5},
+        # 4 FWDs
+        {"player_id": 31, "position_id": 4, "club_id": 7, "now_cost": 140.0, "projected_points": 9.2},
+        {"player_id": 32, "position_id": 4, "club_id": 8, "now_cost": 80.0, "projected_points": 6.4},
+        {"player_id": 33, "position_id": 4, "club_id": 9, "now_cost": 60.0, "projected_points": 5.1},
+        {"player_id": 34, "position_id": 4, "club_id": 10, "now_cost": 45.0, "projected_points": 2.2},
+    ]
+    df = pd.DataFrame(players)
+
+    starters, bench = select_squad_and_formation_xi(
+        df, "projected_points", squad_budget=1000.0, bench_weight=0.10, max_per_club=3
+    )
+    assert len(starters) == 11
+    assert len(bench) == 4
+    assert set(starters["player_id"]).isdisjoint(set(bench["player_id"]))
+
+    squad = pd.concat([starters, bench], ignore_index=True)
+    assert len(squad) == 15
+    assert squad["now_cost"].sum() <= 1000.0
+    assert squad["position_id"].value_counts().to_dict() == {1: 2, 2: 5, 3: 5, 4: 3}
+    assert (squad["club_id"].value_counts() <= 3).all()
+
+    starter_pos = starters["position_id"].value_counts().to_dict()
+    assert starter_pos[1] == 1
+    assert 3 <= starter_pos[2] <= 5
+    assert 2 <= starter_pos[3] <= 5
+    assert 1 <= starter_pos[4] <= 3
+
+    # Bench order: [GKP, outfield_1, outfield_2, outfield_3] sorted by projected_points DESC
+    assert bench.iloc[0]["position_id"] == 1
+    outfield_bench_xp = bench.iloc[1:]["projected_points"].tolist()
+    assert outfield_bench_xp == sorted(outfield_bench_xp, reverse=True)
+
+    # Row-order invariance
+    starters_shuf, bench_shuf = select_squad_and_formation_xi(
+        df.sample(frac=1.0, random_state=7),
+        "projected_points",
+        squad_budget=1000.0,
+        bench_weight=0.10,
+        max_per_club=3,
+    )
+    assert starters_shuf["player_id"].tolist() == starters["player_id"].tolist()
+    assert bench_shuf["player_id"].tolist() == bench["player_id"].tolist()
+
+
+def _base_15_player_pool() -> pd.DataFrame:
+    return pd.DataFrame([
+        {"player_id": 1, "gameweek": 1, "position_id": 1, "club_id": 1, "now_cost": 50.0, "projected_points": 5.0, "actual_points": 4.0, "actual_minutes": 90.0},
+        {"player_id": 2, "gameweek": 1, "position_id": 1, "club_id": 2, "now_cost": 40.0, "projected_points": 1.0, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 11, "gameweek": 1, "position_id": 2, "club_id": 1, "now_cost": 55.0, "projected_points": 5.5, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 12, "gameweek": 1, "position_id": 2, "club_id": 2, "now_cost": 55.0, "projected_points": 5.2, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 13, "gameweek": 1, "position_id": 2, "club_id": 3, "now_cost": 50.0, "projected_points": 5.0, "actual_points": 0.0, "actual_minutes": 0.0},
+        {"player_id": 14, "gameweek": 1, "position_id": 2, "club_id": 4, "now_cost": 45.0, "projected_points": 3.2, "actual_points": 5.0, "actual_minutes": 90.0},
+        {"player_id": 15, "gameweek": 1, "position_id": 2, "club_id": 5, "now_cost": 40.0, "projected_points": 2.0, "actual_points": 1.0, "actual_minutes": 90.0},
+        {"player_id": 21, "gameweek": 1, "position_id": 3, "club_id": 3, "now_cost": 80.0, "projected_points": 7.0, "actual_points": 7.0, "actual_minutes": 90.0},
+        {"player_id": 22, "gameweek": 1, "position_id": 3, "club_id": 4, "now_cost": 75.0, "projected_points": 6.8, "actual_points": 7.0, "actual_minutes": 90.0},
+        {"player_id": 23, "gameweek": 1, "position_id": 3, "club_id": 5, "now_cost": 70.0, "projected_points": 6.5, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 24, "gameweek": 1, "position_id": 3, "club_id": 6, "now_cost": 65.0, "projected_points": 6.2, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 25, "gameweek": 1, "position_id": 3, "club_id": 7, "now_cost": 60.0, "projected_points": 6.0, "actual_points": 6.0, "actual_minutes": 90.0},
+        {"player_id": 31, "gameweek": 1, "position_id": 4, "club_id": 6, "now_cost": 90.0, "projected_points": 8.0, "actual_points": 8.0, "actual_minutes": 90.0},
+        {"player_id": 32, "gameweek": 1, "position_id": 4, "club_id": 7, "now_cost": 75.0, "projected_points": 6.1, "actual_points": 5.0, "actual_minutes": 90.0},
+        {"player_id": 33, "gameweek": 1, "position_id": 4, "club_id": 8, "now_cost": 55.0, "projected_points": 3.8, "actual_points": 9.0, "actual_minutes": 90.0},
+    ])
+
+
+def test_formation_xi_regret_autosubs_zero_minute_starter_preserving_formation() -> None:
+    from backtesting.metrics import evaluate_predictions, formation_xi_regret_by_gameweek
+
+    # 15-player pool (2 GKP, 5 DEF, 5 MID, 3 FWD), £100m total cost <= 1000.0
+    # Model starts 3 DEFs, 5 MIDs, 2 FWDs (3-5-2).
+    # One starting DEF (player_id 13) gets rotated (actual_minutes=0, actual_points=0).
+    # Bench order by projected_points:
+    #   slot 0: GKP 2 (xp=1.0, actual_minutes=90, actual_points=6.0) -> cannot sub for outfielder
+    #   slot 1: FWD 33 (xp=3.8, actual_minutes=90, actual_points=9.0) -> would make 2 DEF (illegal 2-5-3!)
+    #   slot 2: DEF 14 (xp=3.2, actual_minutes=90, actual_points=5.0) -> legal 3-5-2 replacement!
+    #   slot 3: DEF 15 (xp=2.0, actual_minutes=90, actual_points=1.0)
+    df = _base_15_player_pool()
+
+    # Without auto-sub: raw starting XI actual_points = 4 + (6+6+0) + (7+7+6+6+6) + (8+5) = 61.0
+    # With legal auto-sub: DEF 14 (5.0 pts) replaces DEF 13 (0 mins) -> model XI scores 66.0!
+    # (FWD 33 has higher bench priority, 3.8 > 3.2, but subbing FWD 33 for DEF 13 would leave 2 DEFs, which is illegal.)
+    # Hindsight oracle XI (1 GKP=2[6], 3 DEF=11,12,14[17], 5 MID=21..25[32], 2 FWD=31,33[17]) = 72.0
+    # Expected regret = 72.0 - 66.0 = 6.0 (whereas benchless regret was 72.0 - 61.0 = 11.0)
+    gw_regret = formation_xi_regret_by_gameweek(df, target_column="actual_points")
+    assert gw_regret.loc[1] == pytest.approx(6.0)
+
+    metrics = evaluate_predictions(df, target_column="actual_points")
+    assert metrics["formation_xi_regret"] == pytest.approx(6.0)
+
+
+def test_captain_regret_falls_back_to_vice_captain_when_captain_plays_zero_minutes() -> None:
+    from backtesting.metrics import evaluate_predictions
+
+    # 15-player pool where top projected starter (FWD 31, xp=9.5) plays 0 actual minutes (0.0 pts),
+    # and 2nd highest projected starter (MID 21, xp=8.2, vice-captain) plays 90 minutes and scores 10.0 pts
+    # (which is also the max actual_points in the realized XI).
+    df = _base_15_player_pool()
+    df.loc[df["player_id"] == 13, ["actual_points", "actual_minutes"]] = [5.0, 90.0]
+    df.loc[df["player_id"] == 21, ["projected_points", "actual_points"]] = [8.2, 10.0]
+    df.loc[df["player_id"] == 31, ["projected_points", "actual_points", "actual_minutes"]] = [9.5, 0.0, 0.0]
+    df.loc[df["player_id"] == 33, "actual_points"] = 4.0
+
+    # Captain (player 31) had 0 minutes -> Vice-Captain (player 21, 10.0 pts) receives armband.
+    # Max target in realized XI is 10.0, so captain_regret should be 10.0 - 10.0 = 0.0 (not 10.0 - 0.0 = 10.0).
+    metrics = evaluate_predictions(df, target_column="actual_points")
+    assert metrics["captain_regret"] == pytest.approx(0.0)
+
+
+
+
+
+
