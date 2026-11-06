@@ -8,7 +8,7 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Step 8 — Exit (b): Queue exhausted across all 20 ideas (no win); Champion `def_xg_shrink_challenger` unchanged
-- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ledger/candidate-ledger.md`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.md`, `commands/audit_legacy_verdicts.py`, `tests/test_audit_legacy_verdicts.py`
+- **Files:** `.agents/skills/explore-candidate/smoke.py`, `tests/test_explore_candidate_smoke.py`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/refresh_evidence.py`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ledger/candidate-ledger.md`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.md`, `commands/audit_legacy_verdicts.py`, `tests/test_audit_legacy_verdicts.py`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
@@ -22,7 +22,7 @@
     - Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_14_a15_b06` (`combined_delta = -0.6045`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
     - Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_18_k540_g015` (`combined_delta = -0.2407`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
     - Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_19_k900_xi035` (`combined_delta = -0.1279`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
-    - Lane `ext_20` (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders, 6 variants): `AUDIT PASS`, 5/6 variants positive mean delta (best `ext_20_t18_k800` `combined_delta = +0.2529`, `ext_20_t18_k1200` `+0.2489`, `ext_20_t15_k1200` `+0.2463`, `ext_20_t12_k1200` `+0.2143`), 0/6 passed Tier 2 Oracle Event Gate due to Moving Block Bootstrap win probability (`boot_p_gt0 = 0.000 < 0.65`). Logged Dead until `2027-11-06`.
+    - Lane `ext_20` (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders, 6 variants): `AUDIT PASS`, 5/6 variants positive mean Oracle delta (best `ext_20_t18_k800` `oracle_delta = +0.2529`, `boot P = 0.918`; 4/6 passed Tier 2 Oracle Event Gate after `smoke.py` bootstrap fix), 0/4 passed Tier 3 full walkforward (best `ext_20_t18_k800` `combined_delta = -0.2153`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-06`.
 - **Blocked:** None
 - **Next:** Ingest fresh candidate ideas via `/ideate-candidate`.
 
@@ -44,7 +44,7 @@
 - `ext_14` · Continuous Match-Tempo & Counter-Transition Attack Elasticity (`xp_goals`/`xp_assists`) · best `ext_14_a15_b06` · `combined_delta = -0.6045` · `0/3` segs · `boot P = 0.000` (`tier2_oracle_fail`)
 - `ext_18` · Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers (`xp_goals`) · best `ext_18_k540_g015` · `combined_delta = -0.2407` · `0/3` segs · `boot P = 0.000` (`tier2_oracle_fail`)
 - `ext_19` · Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity (`xp_saves`) · best `ext_19_k900_xi035` · `combined_delta = -0.1279` · `0/3` segs · `boot P = 0.000` (`tier2_oracle_fail`)
-- `ext_20` · Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders (`xp_goals`) · best `ext_20_t18_k800` · `combined_delta = +0.2529` · `0/3` segs · `boot P = 0.000` (`tier2_oracle_fail`)
+- `ext_20` · Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders (`xp_goals`) · best `ext_20_t18_k800` · Tier 2 PASS (`oracle_delta = +0.2529`, `boot P = 0.918`) · Tier 3 FAIL (`combined_delta = -0.2153`, `0/3` segs, `boot P = 0.000`)
 **Audit:** all 24 prototypes across `ext_14`, `ext_18`, `ext_19`, `ext_20` `AUDIT PASS`, no `LEAKAGE FAIL`
 **Ledger:** 4 rows added (`ext_14_*`, `ext_18_*`, `ext_19_*`, `ext_20_*`); `EXT-15` marked `dead-match` against Row 81 (`2027-09-30`)
 

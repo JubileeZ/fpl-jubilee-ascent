@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-06 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (59 rows); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (69 rows, 47 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted across all 20 ideas (Batch 1..Batch 4 complete; Exit b: no win); EXT-20 achieved positive mean delta (+0.2529 pts/GW on best ext_20_t18_k800; 5/6 variants positive) but failed Tier 2 Oracle Event Gate on block bootstrap (`boot_p_gt0 = 0.000 < 0.65`); Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue exhausted across all 20 ideas (Batch 1..Batch 4 complete; Exit b: no win); EXT-20 and EXT-08 re-adjudicated following smoke.py Tier 2 oracle bootstrap indexing bug fix; 4 of 6 EXT-20 variants and 2 of 4 EXT-08 variants passed Tier 2 Oracle Event Gate; all failed Tier 3 full walkforward; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -24,8 +24,9 @@ Evaluated Batch 4 (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-A
 - **Smoke Evaluation (`ext_20` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
   - **Lane `ext_20` (6 variants: $\tau_{\text{threat}} \in [12.0, 18.0], K_{\text{OOP}} \in [800, 1600], \gamma_{\text{oop}} \in [0.15, 0.25]$)**:
     - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW), `ext_20_t15_k800` ($\Delta = +0.0668$ pts/GW); one variant negative (`ext_20_t12_k1600` $\Delta = -0.2155$ pts/GW).
-    - All 6 variants failed the Tier 2 Oracle Event Gate due to non-wrapping Moving Block Bootstrap win probability (`boot_p_gt0 = 0.000 < 0.65`). Because OOP defender returns are highly episodic and concentrated in a small subset of fixtures, weekly deltas have high variance across 5-GW blocks, falling short of the required $P \ge 0.65$ consistency threshold.
-    - Lever logged in `docs/research/candidate-ledger/candidate_ledger.csv` (`revisit_after = 2027-11-06`).
+    - 4 of 6 variants passed Tier 2 Oracle Event Gate after resolving the `smoke.py` per-GW regret lookup bug: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW, $P = 0.918$), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW, $P = 0.917$), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW, $P = 0.845$), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW, $P = 0.723$); `ext_20_t15_k800` failed Tier 2 ($\Delta = +0.0668$, $P = 0.599 < 0.65$); `ext_20_t12_k1600` failed Tier 2 ($\Delta = -0.2155$, $P = 0.123$).
+    - All 4 Tier 2 passers subsequently failed the Tier 3 full walkforward gate due to negative primary metric deltas and catastrophic late segment regressions (best `ext_20_t18_k800` $\Delta = -0.2153$, 0/3 segs, boot $P = 0.000 < 0.75$).
+    - Lever logged dead in `docs/research/candidate-ledger/candidate_ledger.csv` (`revisit_after = 2027-11-06`, re-adjudicated after `smoke.py` bootstrap fix).
 
 ---
 
@@ -92,43 +93,53 @@ Audited implementations and synthetic checks preserved in [prototypes/](prototyp
 
 Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cached columns `combined_delta`, `segs`, `boot_p_gt0`, `guardrails_passed`, `pass`. Full failed-mechanism reasons retained in companion. Partial grid rows never imply whole-lane verdict.
 
-- `ext_09_binomial_fixture_exposure`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_05_n3000_n7000_d120_l100`: FAIL; dev 2025-26 GW1-38; delta -1.003553 points/GW; 1/3 segments; bootstrap P 0.01160; guardrails False.
+- `ext_05_n3500_n7500_d150_l100`: FAIL; dev 2025-26 GW1-38; delta -1.003553 points/GW; 1/3 segments; bootstrap P 0.01160; guardrails False.
+- `ext_05_n3500_n7500_d135_l50`: FAIL; dev 2025-26 GW1-38; delta -1.003553 points/GW; 1/3 segments; bootstrap P 0.01160; guardrails False.
+- `ext_05_n4000_n8000_d135_l75`: FAIL; dev 2025-26 GW1-38; delta -1.003553 points/GW; 1/3 segments; bootstrap P 0.01160; guardrails False.
+- `ext_09_binomial_fixture_exposure`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
 - `ext_07_replay_final_states`: FAIL; dev 2025-26 GW1-38; delta -0.605263 points/GW; 0/3 segments; bootstrap P 0.20845; guardrails False.
-- `ext_08_k2`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_08_k4`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_08_k8`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.028026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_08_k16`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.028026 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_11_role_l100`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.170921 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_11_role_l50`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.436974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_11_role_l25`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.867500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_12_h48_phi10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_12_h24_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_12_h48_phi05`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_12_h24_phi10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a15_b06`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.604474 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a10_b08`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.627763 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a08_b12`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.668158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a14_b10`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a18_b12`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_14_a12_b15`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k540_g015`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.240658 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k540_g022`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.325789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k450_g015`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.370789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k630_g018`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.626579 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k630_g012`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.999079 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_18_k720_g020`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -1.131974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k900_xi035`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.127895 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k900_xi050`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.217368 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k720_xi030`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.267632 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k540_xi035`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.278158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k720_xi045`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.357105 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_19_k1080_xi040`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.471184 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t18_k800`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.252895 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t18_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.248947 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t15_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.246316 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t12_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.214342 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t15_k800`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.066842 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
-- `ext_20_t12_k1600`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.215526 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_11_role_l100`: FAIL; dev 2025-26 GW1-38; delta -0.170921 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_11_role_l50`: FAIL; dev 2025-26 GW1-38; delta -0.436974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_11_role_l25`: FAIL; dev 2025-26 GW1-38; delta -0.867500 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_12_h48_phi10`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_12_h24_phi05`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_12_h48_phi05`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_12_h24_phi10`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `track_a_h1_only`: FAIL; dev 2025-26 GW1-38; delta -0.285921 points/GW; 0/3 segments; bootstrap P 0.74215; guardrails False.
+- `track_a_h3_only`: FAIL; dev 2025-26 GW1-38; delta -0.137763 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `track_a_mins_h1_h3`: FAIL; dev 2025-26 GW1-38; delta -0.502632 points/GW; 0/3 segments; bootstrap P 0.50385; guardrails False.
+- `track_a_group_b_assists`: PASS; dev 2025-26 GW1-38; delta +0.287500 points/GW; 1/3 segments; bootstrap P 0.78905; guardrails True.
+- `track_a_mins_h1_h3_coherent`: FAIL; dev 2025-26 GW1-38; delta -1.583947 points/GW; 0/3 segments; bootstrap P 0.04190; guardrails False.
+- `track_a_no_goals_h1_h3_b`: FAIL; dev 2025-26 GW1-38; delta -0.276053 points/GW; 0/3 segments; bootstrap P 0.69955; guardrails False.
+- `ext_14_a10_b08`: FAIL; dev 2025-26 GW1-38; delta -0.627763 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_14_a14_b10`: FAIL; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_14_a18_b12`: FAIL; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_14_a12_b15`: FAIL; dev 2025-26 GW1-38; delta -0.800132 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_14_a08_b12`: FAIL; dev 2025-26 GW1-38; delta -0.668158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_14_a15_b06`: FAIL; dev 2025-26 GW1-38; delta -0.604474 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k540_g022`: FAIL; dev 2025-26 GW1-38; delta -0.325789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k540_g015`: FAIL; dev 2025-26 GW1-38; delta -0.240658 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k630_g018`: FAIL; dev 2025-26 GW1-38; delta -0.626579 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k720_g020`: FAIL; dev 2025-26 GW1-38; delta -1.131974 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k450_g015`: FAIL; dev 2025-26 GW1-38; delta -0.370789 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_18_k630_g012`: FAIL; dev 2025-26 GW1-38; delta -0.999079 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k720_xi030`: FAIL; dev 2025-26 GW1-38; delta -0.267632 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k720_xi045`: FAIL; dev 2025-26 GW1-38; delta -0.357105 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k900_xi035`: FAIL; dev 2025-26 GW1-38; delta -0.127895 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k900_xi050`: FAIL; dev 2025-26 GW1-38; delta -0.217368 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k540_xi035`: FAIL; dev 2025-26 GW1-38; delta -0.278158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_19_k1080_xi040`: FAIL; dev 2025-26 GW1-38; delta -0.471184 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_20_t12_k1600`: FAIL; dev 2025-26 GW1-38; delta -0.215526 points/GW; 0/3 segments; bootstrap P 0.12340; guardrails False.
+- `ext_20_t15_k800`: FAIL; dev 2025-26 GW1-38; delta +0.066842 points/GW; 0/3 segments; bootstrap P 0.59890; guardrails False.
+- `ext_20_t12_k1200`: FAIL; dev 2025-26 GW1-38; delta -0.777632 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_20_t18_k1200`: FAIL; dev 2025-26 GW1-38; delta -0.215263 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_20_t18_k800`: FAIL; dev 2025-26 GW1-38; delta -0.215263 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails True.
+- `ext_20_t15_k1200`: FAIL; dev 2025-26 GW1-38; delta -0.365921 points/GW; 0/3 segments; bootstrap P 0.00110; guardrails True.
+- `ext_08_k2`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_08_k4`: FAIL; dev 2025-26 GW1-38; delta +0.000000 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False.
+- `ext_08_k8`: FAIL; dev 2025-26 GW1-38; delta -0.042500 points/GW; 0/3 segments; bootstrap P 0.66535; guardrails True.
+- `ext_08_k16`: FAIL; dev 2025-26 GW1-38; delta -0.231974 points/GW; 0/3 segments; bootstrap P 0.03445; guardrails True.
 
 <!-- exploration-results:end -->
 

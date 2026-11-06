@@ -13,7 +13,14 @@ END = "<!-- exploration-results:end -->"
 
 def main() -> None:
     with (TOPIC / "smoke_results.csv").open(newline="", encoding="utf-8-sig") as handle:
-        rows = [row for row in csv.DictReader(handle) if row["lane"] in {"ext_07", "ext_08", "ext_09", "ext_11", "ext_12"} and row["season"] == "dev"]
+        all_rows = [
+            row for row in csv.DictReader(handle)
+            if row["season"] == "dev" and "[invalid:" not in row.get("reasons", "")
+        ]
+    latest_by_variant: dict[str, dict[str, str]] = {}
+    for r in all_rows:
+        latest_by_variant[r["variant"]] = r
+    rows = list(latest_by_variant.values())
     lines = [
         START, "## Completed development evidence", "",
         "Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cached columns `combined_delta`, `segs`, `boot_p_gt0`, `guardrails_passed`, `pass`. Full failed-mechanism reasons retained in companion. Partial grid rows never imply whole-lane verdict.", "",

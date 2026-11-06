@@ -9,6 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import pandas as pd
+import pytest
+
 SMOKE_PATH = Path(__file__).resolve().parents[1] / ".agents/skills/explore-candidate/smoke.py"
 
 
@@ -99,3 +102,55 @@ def test_confirm_allowed_for_new_model(tmp_path: Path) -> None:
     smoke = _smoke()
     issues = smoke.confirm_violations(["zz_never_confirmed"], None, tmp_path / "fresh" / "candidate_gate.csv", True, "2024-25", prior_gates=[])
     assert issues == []
+
+
+def test_oracle_gw_deltas_keyed_by_gameweek(monkeypatch: pytest.MonkeyPatch) -> None:
+    smoke = _smoke()
+    champ_regrets = pd.Series({1: 5.0, 2: 6.0, 3: 4.0})
+    cand_regrets = pd.Series({1: 4.5, 2: 6.5, 3: 3.0})
+
+    def fake_formation_regret(df: pd.DataFrame, *, target_column: str = "actual_points") -> pd.Series:
+        if "is_cand" in df.columns:
+            return cand_regrets
+        return champ_regrets
+
+    monkeypatch.setattr(smoke, "formation_xi_regret_by_gameweek", fake_formation_regret)
+
+    df_champ = pd.DataFrame({"gameweek": [1, 2, 3]})
+    df_cand = pd.DataFrame({"gameweek": [1, 2, 3], "is_cand": [True, True, True]})
+
+    all_gws, gw_deltas = smoke.oracle_gw_deltas(df_champ, df_cand, target_column="blended_points")
+    assert all_gws == [1, 2, 3]
+    assert gw_deltas == pytest.approx([0.5, -0.5, 1.0])
+
+
+def test_oracle_gw_deltas_mean_matches_oracle_delta(monkeypatch: pytest.MonkeyPatch) -> None:
+    smoke = _smoke()
+    champ_regrets = pd.Series({1: 10.0, 2: 12.0, 3: 14.0})
+    cand_regrets = pd.Series({1: 9.0, 2: 11.5, 3: 13.0})
+
+    monkeypatch.setattr(smoke, "formation_xi_regret_by_gameweek", lambda df, **k: cand_regrets if "is_cand" in df.columns else champ_regrets)
+
+    df_champ = pd.DataFrame({"gameweek": [1, 2, 3]})
+    df_cand = pd.DataFrame({"gameweek": [1, 2, 3], "is_cand": [True, True, True]})
+
+    all_gws, gw_deltas = smoke.oracle_gw_deltas(df_champ, df_cand, target_column="blended_points")
+    expected_mean = float(champ_regrets.mean() - cand_regrets.mean())
+    assert float(pd.Series(gw_deltas).mean()) == pytest.approx(expected_mean)
+
+
+def test_oracle_gw_deltas_uses_target_column(monkeypatch: pytest.MonkeyPatch) -> None:
+    smoke = _smoke()
+    recorded_targets: list[str] = []
+
+    def fake_formation_regret(df: pd.DataFrame, *, target_column: str = "actual_points") -> pd.Series:
+        recorded_targets.append(target_column)
+        return pd.Series({1: 1.0})
+
+    monkeypatch.setattr(smoke, "formation_xi_regret_by_gameweek", fake_formation_regret)
+
+    df_champ = pd.DataFrame({"gameweek": [1]})
+    df_cand = pd.DataFrame({"gameweek": [1]})
+
+    smoke.oracle_gw_deltas(df_champ, df_cand, target_column="blended_points")
+    assert recorded_targets == ["blended_points", "blended_points"]

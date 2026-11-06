@@ -59,6 +59,7 @@ ROLES = ("dev", "confirm")
 LEDGER_CSV = ROOT / "docs/research/candidate-ledger/candidate_ledger.csv"
 DEFAULT_OUT = ROOT / ".tmp/agent/explore-candidate/smoke_results.csv"
 BANNED_SOURCE = ("players.parquet", "read_parquet", "read_csv", "open(", "data/archive")
+EVAL_TARGET = "blended_points"
 
 
 @dataclass(frozen=True)
@@ -222,7 +223,7 @@ def _run(job: tuple[str, Season, int, int] | tuple[str, Season, int, int, bool])
         start_gw=start_gw,
         end_gw=end_gw,
         seed_processed_dir=season.seed_dir,
-        eval_target="blended_points",
+        eval_target=EVAL_TARGET,
         oracle_minutes=oracle_minutes,
     )
     return name, run_walkforward_backtest(config)
@@ -299,6 +300,18 @@ def confirm_violations(
         if name in done_out or any(name in r["tried_as"] and f"confirm {season}" in r["result"].lower() for r in ledger):
             issues.append(f"{name}: confirm {season} already run (ADR 0047: one run per frozen Candidate)")
     return issues
+
+
+def oracle_gw_deltas(
+    champion_eval: pd.DataFrame,
+    candidate_eval: pd.DataFrame,
+    *,
+    target_column: str = EVAL_TARGET,
+) -> tuple[list[int], list[float]]:
+    champ = formation_xi_regret_by_gameweek(champion_eval, target_column=target_column)
+    cand = formation_xi_regret_by_gameweek(candidate_eval, target_column=target_column)
+    gws = sorted(set(champ.index) | set(cand.index))
+    return gws, [float(champ.get(g, 0.0) - cand.get(g, 0.0)) for g in gws]
 
 
 def main() -> int:
@@ -415,10 +428,11 @@ def main() -> int:
                         print(f"LEAKAGE FAIL (Champion oracle reference): {error}")
                         return 2
 
-                gw_reg_champ = formation_xi_regret_by_gameweek(base_oracle.df_eval)
-                gw_reg_cand = formation_xi_regret_by_gameweek(result.df_eval)
-                all_gws = sorted(set(gw_reg_champ).union(gw_reg_cand))
-                gw_oracle_deltas = [gw_reg_champ.get(g, 0.0) - gw_reg_cand.get(g, 0.0) for g in all_gws]
+                all_gws, gw_oracle_deltas = oracle_gw_deltas(
+                    base_oracle.df_eval,
+                    result.df_eval,
+                    target_column=EVAL_TARGET,
+                )
                 c_delta = float(np.mean(gw_oracle_deltas)) if gw_oracle_deltas else 0.0
 
                 if name in prototype_names:
