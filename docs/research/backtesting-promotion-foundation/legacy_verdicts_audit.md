@@ -22,18 +22,18 @@ Classify recorded attempts against 4-verdict taxonomy (`pass`, `fail`, `inconclu
 
 - **Total Rows Audited**: 108
 - **Pass (Shipped / Confirmed)**: 10
-- **Demonstrated Fail**: 68
-- **Inconclusive**: 29
+- **Demonstrated Fail**: 66
+- **Inconclusive**: 31
 - **Invalid (Defect / Missing)**: 1
-- **Active Dead Lever Locks Preserved**: 98
+- **Active Dead Lever Locks Preserved**: 96
 
 ### Breakdown by Audit Category
 
 - `shipped_accepted`: 10
-- `valid_negative`: 68
+- `valid_negative`: 66
 - `execution_defect`: 1
 - `missing_evidence`: 0
-- `unsupported_inference`: 29
+- `unsupported_inference`: 31
 
 ## Decision
 

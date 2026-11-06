@@ -79,6 +79,13 @@ def classify_legacy_row(row: dict[str, str], index: int) -> LegacyAuditRow:
         reopen = "locked_dead_lever" if revisit_after else "none"
         notes = "Blocked attempt due to missing seed, absent schedule provenance, or execution defect."
 
+    elif status == "open":
+        verdict = "inconclusive"
+        category = "unsupported_inference"
+        conf = "high"
+        reopen = "none"
+        notes = "Reopened candidate lever undergoing active re-evaluation per user explicit directive."
+
     elif status == "dead":
         reopen = "locked_dead_lever"
 

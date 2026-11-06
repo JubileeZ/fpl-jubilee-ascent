@@ -28,6 +28,23 @@ def test_classify_legacy_row_shipped() -> None:
     assert audited.reopening_proposal_status == "none"
 
 
+def test_classify_legacy_row_open() -> None:
+    row = {
+        "status": "open",
+        "lever": "Test Open Lever",
+        "tried_as": "cand_open",
+        "baseline": "champ",
+        "result": "reopened per user explicit directive",
+        "evidence_date": "2026-11-06",
+        "revisit_after": "",
+        "evidence_path": "path/to/evidence.csv",
+    }
+    audited = classify_legacy_row(row, 1)
+    assert audited.audit_verdict == "inconclusive"
+    assert audited.audit_category == "unsupported_inference"
+    assert audited.reopening_proposal_status == "none"
+
+
 def test_classify_legacy_row_dead_fail() -> None:
     row = {
         "status": "dead",

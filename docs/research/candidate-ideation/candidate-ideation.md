@@ -3,7 +3,7 @@
 **Updated**: 2026-11-06 (+00:00)
 **Data stamp**: Completed dev rows in `smoke_results.csv` (69 rows, 47 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted across all 20 ideas (Batch 1..Batch 4 complete; Exit b: no win); EXT-20 and EXT-08 re-adjudicated following smoke.py Tier 2 oracle bootstrap indexing bug fix; 4 of 6 EXT-20 variants and 2 of 4 EXT-08 variants passed Tier 2 Oracle Event Gate; all failed Tier 3 full walkforward; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: EXT-20 and EXT-08 revived per user explicit directive (2026-11-06) following reconciliation of formation_xi_regret with ADR 0066 £100m 15-player squad + bench auto-subs; queued as untested for explore-candidate; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -18,15 +18,15 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
 
 ## Batch 4 Exploration Execution (2026-11-06, completed)
 
-**Verdict:** Queue exhausted (Exit b: no win); Model Champion `def_xg_shrink_challenger` stands unchanged.
+**Verdict:** Active re-evaluation queued (EXT-20 and EXT-08 reopened per user explicit directive); Model Champion `def_xg_shrink_challenger` stands unchanged.
 
 Evaluated Batch 4 (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders) against Champion `def_xg_shrink_challenger` on Dev 2025-26 (GW1-38, seed 2024-25):
 - **Smoke Evaluation (`ext_20` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
   - **Lane `ext_20` (6 variants: $\tau_{\text{threat}} \in [12.0, 18.0], K_{\text{OOP}} \in [800, 1600], \gamma_{\text{oop}} \in [0.15, 0.25]$)**:
     - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW), `ext_20_t15_k800` ($\Delta = +0.0668$ pts/GW); one variant negative (`ext_20_t12_k1600` $\Delta = -0.2155$ pts/GW).
     - 4 of 6 variants passed Tier 2 Oracle Event Gate after resolving the `smoke.py` per-GW regret lookup bug: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW, $P = 0.918$), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW, $P = 0.917$), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW, $P = 0.845$), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW, $P = 0.723$); `ext_20_t15_k800` failed Tier 2 ($\Delta = +0.0668$, $P = 0.599 < 0.65$); `ext_20_t12_k1600` failed Tier 2 ($\Delta = -0.2155$, $P = 0.123$).
-    - All 4 Tier 2 passers subsequently failed the Tier 3 full walkforward gate due to negative primary metric deltas and catastrophic late segment regressions (best `ext_20_t18_k800` $\Delta = -0.2153$, 0/3 segs, boot $P = 0.000 < 0.75$).
-    - Lever logged dead in `docs/research/candidate-ledger/candidate_ledger.csv` (`revisit_after = 2027-11-06`, re-adjudicated after `smoke.py` bootstrap fix).
+    - All 4 Tier 2 passers subsequently failed the Tier 3 full walkforward gate due to negative primary metric deltas and late segment regressions under the legacy benchless £83.5m formation XI metric (best `ext_20_t18_k800` $\Delta = -0.2153$, 0/3 segs, boot $P = 0.000 < 0.75$).
+    - **Reopening (2026-11-06):** Following reconciliation of weekly lineup evaluation with ADR 0066 (£100.0m 15-player squad + bench auto-subs in commit `da445aa8`), the Tier 3 failure on legacy benchless £83.5m XI was invalidated. Reopened per user explicit directive in `candidate_ledger.csv` (status: `open`, cleared `revisit_after`) and `idea_queue.csv` (status: `untested`) for re-evaluation.
 
 ---
 
@@ -82,7 +82,7 @@ Queue dossiers:
 
 Mode: default queue. All 13 queue ideas evaluated or screened. Fixed grids from dossiers; no widening. Dev 2025-26 GW1-38 seeded 2024-25; confirm 2024-25 seeded 2023-24; live holdout sealed.
 - Five dead-matches: EXT-01, EXT-02, EXT-03, EXT-04, EXT-06 (dropped at step 1 ledger screen).
-- Seven full dev failures: EXT-05 (Huber panel), EXT-07 (exposure replay), EXT-08 (joint xGI allocation k2-k16), EXT-09 (binomial anchor exposure), EXT-11 (opponent role allocation lambda 25-100), EXT-12 (change detection h48/h24 phi05/10). All logged Dead in `candidate_ledger.csv`.
+- Seven dev failures: EXT-05 (Huber panel), EXT-07 (exposure replay), EXT-08 (joint xGI allocation k2-k16; reopened 2026-11-06 per user directive), EXT-09 (binomial anchor exposure), EXT-11 (opponent role allocation lambda 25-100), EXT-12 (change detection h48/h24 phi05/10). All logged Dead in `candidate_ledger.csv` (EXT-08 now open).
 - Two blocked mechanisms: EXT-10 (blocked on dead EXT-07 decoder prerequisite and absent seed hazard summaries); EXT-13 (blocked on deadline-valid schedule provenance).
 - Champion `def_xg_shrink_challenger` stands unchanged. Exit (b) (verdict: no win).
 

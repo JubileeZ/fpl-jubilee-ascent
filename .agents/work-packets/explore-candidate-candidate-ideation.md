@@ -7,24 +7,18 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Step 8 — Exit (b): Queue exhausted across all 20 ideas (no win); Champion `def_xg_shrink_challenger` unchanged
+- **Status:** In Progress — EXT-20 and EXT-08 revived per user explicit directive (2026-11-06)
 - **Files:** `backtesting/metrics.py`, `tests/test_backtesting_metrics.py`, `.agents/skills/ideate-candidate/SKILL.md`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/explore-candidate/smoke.py`, `tests/test_explore_candidate_smoke.py`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/refresh_evidence.py`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ledger/candidate-ledger.md`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.md`, `commands/audit_legacy_verdicts.py`, `tests/test_audit_legacy_verdicts.py`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Ledger screen (Step 1):
-    - `EXT-15` (Territorial Possession-Tilt & Deep-Block Defcon Elasticity): Dead match vs Ledger Row 81 (`Defcon venue and opposition pressure scaling`, `revisit_after = 2027-09-30`) → user resolved: keep Dead lock intact, marked `dead-match`
-    - `EXT-16` (Co-Starter Playmaker Gravity): Dead match (`revisit_after = 2027-09-29`) → user resolved: keep Dead lock intact
-    - `EXT-17` (Micro-Cycle Fatigue & Ironman Stamina): Dead match (`revisit_after = 2027-09-28` / `2027-09-30`) → user resolved: keep Dead lock intact
-  - Verified Smoke Results (Step 4 & Step 5):
-    - Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_14_a15_b06` (`combined_delta = -0.6045`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
-    - Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_18_k540_g015` (`combined_delta = -0.2407`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
-    - Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants): `AUDIT PASS`, 0/6 passed Tier 2 Oracle Event Gate; best `ext_19_k900_xi035` (`combined_delta = -0.1279`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-05`.
-    - Lane `ext_20` (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders, 6 variants): `AUDIT PASS`, 5/6 variants positive mean Oracle delta (best `ext_20_t18_k800` `oracle_delta = +0.2529`, `boot P = 0.918`; 4/6 passed Tier 2 Oracle Event Gate after `smoke.py` bootstrap fix), 0/4 passed Tier 3 full walkforward (best `ext_20_t18_k800` `combined_delta = -0.2153`, `segs = 0/3`, `boot_p_gt0 = 0.000`). Logged Dead until `2027-11-06`.
+  - Reopening (2026-11-06): User explicitly directed reviving all ideas that won in delta but failed bootstrap / Tier 3 due to earlier buggy testing (Tier 2 bootstrap Series indexing bug and legacy £83.5m benchless formation XI).
+    - `EXT-20`: Revived to `status: untested` in `idea_queue.csv`; unlocked in `candidate_ledger.csv` (`status: open`, cleared `revisit_after`).
+    - `EXT-08`: Revived to `status: untested` in `idea_queue.csv`; unlocked in `candidate_ledger.csv` (`status: open`, cleared `revisit_after`).
 - **Blocked:** None
-- **Next:** Ingest fresh candidate ideas via `/ideate-candidate`.
+- **Next:** Ready to execute `explore-candidate` on `EXT-20` and `EXT-08` under £100m 15-player squad + bench auto-subs metric (awaiting user execution prompt; no tests run yet per directive).
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)

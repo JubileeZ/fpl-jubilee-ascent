@@ -3,7 +3,7 @@ idea_id: EXT-08
 name: Joint xGI Intensity and Allocation
 tier: P1
 component: xp_goals
-status: in-progress-b2
+status: untested
 replaces: Add coupling correction after inherited MultiFeatureAssistChallengerModel._project_event_components count calculation and before inherited bonus allocation. Cache one factor pair per player/fixture. Preserve active MLComponentChallengerModel.predict Group A/B and all existing finishing parameters. Shared helper must use one causal implementation for training contexts and current prediction contexts; no new implicit archive reads.
 grid: "k_mix=2.0; k_mix=4.0; k_mix=8.0; k_mix=16.0"
 inputs: "Existing: features.player_id; features.position_id; features.fixture_id; features.gameweek_id; history.player_id; history.gameweek_id; history.minutes; history.expected_goals; history.expected_assists; history.price. Existing helper: positional_price_tier_prior. Derived to implement: derived.weighted_xg; derived.weighted_xa; derived.exposure90; derived.joint_rate_g; derived.joint_rate_a; derived.independent_reference_g; derived.independent_reference_a. Unavailable/not used: event recipient links, shot tags, terminal set-piece orders, future price. Derived names are proposed internal fields, absent from current FeatureContract."

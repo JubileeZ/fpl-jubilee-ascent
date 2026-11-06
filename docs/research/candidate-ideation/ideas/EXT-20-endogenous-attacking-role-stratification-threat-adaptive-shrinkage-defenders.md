@@ -3,7 +3,7 @@ idea_id: EXT-20
 name: "Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders"
 tier: P1
 component: xp_goals
-status: fail
+status: untested
 replaces: "DefXgShrinkChallengerModel.predict (shrunk_xg_rates generalized to threat-adaptive defender shrinkage while preserving _BASE_K = 360.0 for MID/FWD and _POSITION_K = {2: 2400.0} for traditional defenders)."
 grid: "tau_threat=12.0,k_oop=1600,gamma_oop=0.15; tau_threat=12.0,k_oop=1200,gamma_oop=0.15; tau_threat=15.0,k_oop=1200,gamma_oop=0.20; tau_threat=15.0,k_oop=800,gamma_oop=0.20; tau_threat=18.0,k_oop=1200,gamma_oop=0.25; tau_threat=18.0,k_oop=800,gamma_oop=0.25"
 inputs: features.player_id; features.club_id; features.position_id; features.per90_xg; features.per90_threat; history.player_id; history.gameweek_id; history.minutes; history.expected_goals; history.threat
