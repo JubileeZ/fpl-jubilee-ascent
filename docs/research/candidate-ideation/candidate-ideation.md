@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-05 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (53 rows); no confirmation or holdout results
+**Updated**: 2026-11-06 (+00:00)
+**Data stamp**: Completed dev rows in `smoke_results.csv` (59 rows); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted across all 19 ideas (Batch 1..Batch 3 complete; Exit b: no win); EXT-14, EXT-18, EXT-19 failed Tier 2 Oracle Event Gate on Dev 2025-26 (`boot_p_gt0 = 0.000`); EXT-15, EXT-16, EXT-17 flagged `dead-match`; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue exhausted across all 20 ideas (Batch 1..Batch 4 complete; Exit b: no win); EXT-20 achieved positive mean delta (+0.2529 pts/GW on best ext_20_t18_k800; 5/6 variants positive) but failed Tier 2 Oracle Event Gate on block bootstrap (`boot_p_gt0 = 0.000 < 0.65`); Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -13,6 +13,19 @@
 **Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md); frontier language-model review, 2026-10-28.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
+
+---
+
+## Batch 4 Exploration Execution (2026-11-06, completed)
+
+**Verdict:** Queue exhausted (Exit b: no win); Model Champion `def_xg_shrink_challenger` stands unchanged.
+
+Evaluated Batch 4 (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders) against Champion `def_xg_shrink_challenger` on Dev 2025-26 (GW1-38, seed 2024-25):
+- **Smoke Evaluation (`ext_20` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+  - **Lane `ext_20` (6 variants: $\tau_{\text{threat}} \in [12.0, 18.0], K_{\text{OOP}} \in [800, 1600], \gamma_{\text{oop}} \in [0.15, 0.25]$)**:
+    - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW), `ext_20_t15_k800` ($\Delta = +0.0668$ pts/GW); one variant negative (`ext_20_t12_k1600` $\Delta = -0.2155$ pts/GW).
+    - All 6 variants failed the Tier 2 Oracle Event Gate due to non-wrapping Moving Block Bootstrap win probability (`boot_p_gt0 = 0.000 < 0.65`). Because OOP defender returns are highly episodic and concentrated in a small subset of fixtures, weekly deltas have high variance across 5-GW blocks, falling short of the required $P \ge 0.65$ consistency threshold.
+    - Lever logged in `docs/research/candidate-ledger/candidate_ledger.csv` (`revisit_after = 2027-11-06`).
 
 ---
 
@@ -29,6 +42,17 @@ Evaluated Batch 3 (`EXT-14` through `EXT-19`) against Champion `def_xg_shrink_ch
   - **Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.6045` to `-0.8001`). Best variant: `ext_14_a15_b06` (`alpha_tempo=0.15, beta_trans=0.06`, `combined_delta = -0.6045`). Increasing `beta_trans` monotonically degraded Oracle Formation XI regret as demeaned tempo/transition elasticity distorted attacker rankings relative to Champion `def_xg_shrink_challenger`. Logged Dead until `2027-11-05`.
   - **Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.2407` to `-1.1320`). Best variant: `ext_18_k540_g015` (`k_atk=540, gamma_role=0.15`, `combined_delta = -0.2407`). Stronger attacker shrinkage ($K_{\text{ATK}} \in \{630, 720\}$) and creative-share prior conditioning over-compressed attacking differentials and inflated high-creativity deep playmakers whose set-piece volume does not translate into direct goal threat (xG). Logged Dead until `2027-11-05`.
   - **Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.1279` to `-0.4712`). Best variant: `ext_19_k900_xi035` (`k_gk=900, xi_saves=0.35`, `combined_delta = -0.1279`). Scaling GKP `per90_saves` upward against high-threat opponents over-projected GKP returns in fixtures where high opponent threat converted into goals conceded rather than net fantasy points. Logged Dead until `2027-11-05`.
+
+---
+
+## Candidate Ideation Review (Batch 4: 2026-11-06)
+
+One targeted candidate proposal generated to resolve Defender Out-of-Position (OOP) attacking suppression under Champion `def_xg_shrink_challenger` ($K_{\text{DEF}} = 2400$):
+
+1. **EXT-20: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders** (`xp_goals`): Stratifies defenders based on pre-deadline in-game threat volume ($\hat{\Theta}_i(g) \ge \tau_{\text{threat}}$); traditional defenders retain $K_{\text{DEF}}=2400$, while OOP attacking defenders adapt to $K_{\text{OOP}} \in [450, 900]$ and threat-elevated xG prior. Status: `untested`.
+
+Queue dossier:
+- [EXT-20: Threat-Adaptive Defender Shrinkage](ideas/EXT-20-endogenous-attacking-role-stratification-threat-adaptive-shrinkage-defenders.md)
 
 ---
 
@@ -99,6 +123,12 @@ Generated from [smoke_results.csv](smoke_results.csv), keyed by `variant`; cache
 - `ext_19_k540_xi035`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.278158 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 - `ext_19_k720_xi045`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.357105 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 - `ext_19_k1080_xi040`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.471184 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t18_k800`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.252895 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t18_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.248947 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t15_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.246316 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t12_k1200`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.214342 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t15_k800`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta +0.066842 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
+- `ext_20_t12_k1600`: FAIL vs `def_xg_shrink_challenger`; dev 2025-26 GW1-38; delta -0.215526 points/GW; 0/3 segments; bootstrap P 0.00000; guardrails False (tier2_oracle_fail).
 
 <!-- exploration-results:end -->
 

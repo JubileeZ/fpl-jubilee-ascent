@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-05 (+00:00)
+**Updated**: 2026-11-06 (+00:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -145,6 +145,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Continuous match-tempo and counter-transition attack elasticity (point-in-time EB club tempo + player threat/creativity directness, outfield demeaned) | smoke `ext_14_*` (6) | DXS | dev 2025-26 FAIL: best `ext_14_a15_b06` delta -0.6045, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_14` |
 | Starter-role conditioning and set-piece creative-share xG shrinkage for budget enablers (MID/FWD K_ATK 450-720 toward creative-share prior; DEF K=2400 preserved) | smoke `ext_18_*` (6) | DXS | dev 2025-26 FAIL: best `ext_18_k540_g015` delta -0.2407, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_18` |
 | Opponent speculative shot-volume and goalkeeper save-floor elasticity (GKP EB save shrink K_GK 540-1080 modulated by opponent shrunk threat volume) | smoke `ext_19_*` (6) | DXS | dev 2025-26 FAIL: best `ext_19_k900_xi035` delta -0.1279, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_19` |
+| Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (DEF EB xG shrink K_OOP 800-1600 for threat >= tau; K=2400 preserved for traditional DEFs) | smoke `ext_20_*` (6) | DXS | dev 2025-26 FAIL: best `ext_20_t18_k800` delta +0.2529, 0/3 segments, boot P 0.000 (all 6 variants tier2_oracle_fail; 5/6 positive mean delta) vs def_xg_shrink_challenger; no confirmation | 2026-11-06 | 2027-11-06 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_20` |
 
 ## Open (next-lever pool; not proven dead)
 
