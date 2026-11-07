@@ -52,6 +52,7 @@ def test_strategic_applies_variance_defaults_and_hit_hurdle() -> None:
     assert "no_transfer_gws" not in overrides
     assert overrides["weekly_hit_limit"] == 1
     assert overrides["hit_cost"] == 4.0
+    assert overrides["ft_use_penalty"] == 0.5
     assert overrides["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
     assert overrides["ft_value_list"] == DEFAULT_STRATEGIC_FT_SCHEDULE
 
@@ -112,9 +113,14 @@ def test_apply_scenario_arm_idempotent_scaling_and_isolation() -> None:
     second_pass = apply_scenario_arm(first_pass, ARM_STRATEGIC)
     assert second_pass["strategic_options"]["hit_friction"] == pytest.approx(first_hit, rel=1e-5)
 
-    # Re-applying unconstrained onto strategic options must clear ft_value_list
+    # Re-applying unconstrained or no_hit onto strategic options must clear ft_value_list and restore default ft_use_penalty
     unconstrained = apply_scenario_arm(second_pass, ARM_UNCONSTRAINED)
     assert "ft_value_list" not in unconstrained or unconstrained["ft_value_list"] is None
+    assert unconstrained["ft_use_penalty"] == 0.2
+
+    no_hit = apply_scenario_arm(second_pass, ARM_NO_HIT)
+    assert "ft_value_list" not in no_hit or no_hit["ft_value_list"] is None
+    assert no_hit["ft_use_penalty"] == 0.2
 
 
 def test_unknown_arm_raises() -> None:

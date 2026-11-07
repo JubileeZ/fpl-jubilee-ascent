@@ -433,3 +433,113 @@ def test_solve_request_planner_service_runs_all_3_arms(tmp_path: Path) -> None:
         result = solve_request(req, paths)
     assert set(result["plans"].keys()) == {"strategic", "unconstrained", "no_hit"}
     assert result["errors"] == {}
+
+
+def test_strategic_post_transfer_ft_valuation_and_roll_hurdle(tmp_path: Path) -> None:
+    data = dataset()
+    # Add two unowned forwards (id=16, id=17) on Club 0 at price 5.0 matching owned FWD id=15 (price 5.0)
+    for extra_id in (16, 17):
+        data["players"].append(
+            {
+                "id": extra_id,
+                "name": f"Player {extra_id}",
+                "pos_id": 4,
+                "pos": "F",
+                "team_id": 0,
+                "price": 5.0,
+                "selling_price": 5.0,
+                "projections": {
+                    "gw6": {"total_xp": 6.0, "xmins": 90.0, "p_appear": 1.0},
+                    "gw7": {"total_xp": 6.0, "xmins": 90.0, "p_appear": 1.0},
+                },
+            }
+        )
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    players = [{"id": row["id"], "position_id": row["pos_id"], "now_cost": 50} for row in data["players"]]
+    pd.DataFrame(players).to_parquet(processed / "players.parquet")
+
+    bootstrap: dict[str, Any] = {
+        "elements": [
+            {
+                "id": row["id"],
+                "web_name": row["name"],
+                "team": row["team_id"],
+                "element_type": row["pos_id"],
+                "now_cost": 50,
+            }
+            for row in data["players"]
+        ],
+        "teams": [{"id": club, "name": f"Club{club}", "short_name": f"C{club}"} for club in range(5)],
+        "events": [
+            {"id": 6, "is_next": True, "finished": False},
+            {"id": 7, "is_next": False, "finished": False},
+        ],
+        "element_types": [
+            {"id": pos, "singular_name_short": label, "squad_min_play": low, "squad_max_play": high, "squad_select": count}
+            for pos, label, low, high, count in [(1, "GKP", 1, 1, 2), (2, "DEF", 3, 5, 5), (3, "MID", 2, 5, 5), (4, "FWD", 1, 3, 3)]
+        ],
+    }
+
+    def _solve_scenario(gw6_16: float, gw7_16: float, gw6_17: float = 6.0, gw7_17: float = 6.0, horizon: int = 1, ft: int = 1) -> dict[str, Any]:
+        planner = Planner(data)
+        planner.change_horizon(6, 6 + horizon - 1)
+        paths = PlannerPaths(tmp_path / "dataset.json", processed, tmp_path / "storage")
+        opts = solver_options(planner, paths)
+        opts["parent_state"]["free_transfers"] = ft
+
+        proj_rows = []
+        for row in data["players"]:
+            pid = int(row["id"])
+            base_pts = 10.0 if pid == 13 else (9.0 if pid == 14 else 6.0)
+            p6 = gw6_16 if pid == 16 else (gw6_17 if pid == 17 else base_pts)
+            p7 = gw7_16 if pid == 16 else (gw7_17 if pid == 17 else base_pts)
+            proj_rows.append(
+                {
+                    "ID": pid,
+                    "Name": row["name"],
+                    "Pos": row["pos"],
+                    "Price": row["price"],
+                    "Team": f"Club{row['team_id']}",
+                    "6_Pts": p6,
+                    "6_xMins": 90.0,
+                    "7_Pts": p7,
+                    "7_xMins": 90.0,
+                }
+            )
+        proj_path = tmp_path / f"proj_h{horizon}_ft{ft}_{gw6_16}_{gw7_16}_{gw7_17}.csv"
+        pd.DataFrame(proj_rows).to_csv(proj_path, index=False)
+        opts.update(
+            fpl_bootstrap=bootstrap,
+            fpl_fixtures=[],
+            projections_path=str(proj_path),
+            override_next_gw=6,
+            horizon=horizon,
+            xmin_lb=0,
+            keep_top_ev_percent=100,
+            secs=5,
+            verbose=False,
+        )
+        opts = apply_scenario_arm(opts, ARM_STRATEGIC, horizon=horizon)
+        my_data = build_my_data_from_parent_state(opts["parent_state"], processed)
+        sol = solve_multi_period_fpl(prep_data(my_data, opts), opts)[0]
+        return serialize_transfer_plan(sol, champion="test_model", horizon=horizon, next_gw=6, decay_base=0.85)
+
+    # (a) H=1 with 1 FT: marginal +0.8 xP upgrade (6.8 vs 6.0) is rolled to build 2-FT buffer; +2.5 xP upgrade (8.5 vs 6.0) is bought
+    plan_h1_marginal = _solve_scenario(gw6_16=6.8, gw7_16=6.0, horizon=1, ft=1)
+    assert plan_h1_marginal["weeks"][0]["transfer_count"] == 0.0
+
+    plan_h1_strong = _solve_scenario(gw6_16=8.5, gw7_16=6.0, horizon=1, ft=1)
+    assert plan_h1_strong["weeks"][0]["transfer_count"] == 1.0
+
+    # (b) H=2 with 1 FT: Player 16 has +0.8 xP in GW6 and +4.0 xP in GW7 -> roll in GW6 (0 transfers), buy in GW7 (1 transfer)
+    plan_h2_roll = _solve_scenario(gw6_16=6.8, gw7_16=10.0, horizon=2, ft=1)
+    assert plan_h2_roll["weeks"][0]["transfer_count"] == 0.0
+    assert plan_h2_roll["weeks"][1]["transfer_count"] == 1.0
+
+    # (c) Horizon boundary (final week w=H) with 2 FTs: one strong upgrade (+4.0 xP) and one tiny upgrade (+0.6 xP)
+    # Solver must NOT dump both FTs at horizon end; it spends 1 FT (keeping post-transfer bank at 2 FTs)
+    plan_boundary = _solve_scenario(gw6_16=6.0, gw7_16=10.0, gw6_17=6.0, gw7_17=6.6, horizon=2, ft=1)
+    assert plan_boundary["weeks"][0]["transfer_count"] == 0.0
+    assert plan_boundary["weeks"][1]["transfer_count"] == 1.0
+

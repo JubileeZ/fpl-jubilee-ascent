@@ -36,6 +36,8 @@ LEGACY_ARM_MAP: dict[str, str] = {
 LIVE_WEEKLY_HIT_LIMIT = 1
 LIVE_HIT_COST = 4.0
 NO_HIT_WEEKLY_HIT_LIMIT = 0
+DEFAULT_FT_USE_PENALTY = 0.2
+DEFAULT_STRATEGIC_FT_USE_PENALTY = 0.5
 
 DEFAULT_STRATEGIC_OPTIONS: dict[str, Any] = {
     "hit_friction": 1.8,
@@ -130,6 +132,7 @@ def scenario_arm_overrides(
         return {
             "weekly_hit_limit": NO_HIT_WEEKLY_HIT_LIMIT,
             "hit_cost": LIVE_HIT_COST,
+            "ft_use_penalty": DEFAULT_FT_USE_PENALTY,
             "strategic_mode": False,
             "strategic_options": None,
             "ft_value_list": None,
@@ -138,6 +141,7 @@ def scenario_arm_overrides(
         return {
             "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
             "hit_cost": LIVE_HIT_COST,
+            "ft_use_penalty": DEFAULT_FT_USE_PENALTY,
             "strategic_mode": False,
             "strategic_options": None,
             "ft_value_list": None,
@@ -161,6 +165,7 @@ def scenario_arm_overrides(
     return {
         "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
         "hit_cost": LIVE_HIT_COST,
+        "ft_use_penalty": DEFAULT_STRATEGIC_FT_USE_PENALTY,
         "strategic_mode": True,
         "strategic_options": strat_scaled,
         "ft_value_list": scaled_ft_schedule,

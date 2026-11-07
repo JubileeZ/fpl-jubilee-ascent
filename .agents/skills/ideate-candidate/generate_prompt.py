@@ -51,6 +51,7 @@ from backtesting.promotion import (  # noqa: E402
 from solver.scenarios import (  # noqa: E402
     BASE_STRATEGIC_HORIZON,
     DEFAULT_STRATEGIC_FT_SCHEDULE,
+    DEFAULT_STRATEGIC_FT_USE_PENALTY,
     DEFAULT_STRATEGIC_OPTIONS,
     LIVE_HIT_COST,
 )
@@ -557,7 +558,7 @@ $$s(H) = \\frac{{\\sum_{{k=0}}^{{H-1}} \\delta^k}}{{\\sum_{{k=0}}^{{{BASE_STRATE
    $$-{gk_friction:.1f} \\cdot s(H)\\text{{ pt objective penalty on non-Wildcard/non-Free-Hit GKP transfer-in}}.$$
 
 #### Emergency Free Transfer Value (ADR 0065)
-Strategic marginal FT values for bank states 2-5: `ft_value_list = {{{ft_schedule}}} * s(H)`. First spare FT receives highest emergency value; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = 0.2` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
+Strategic marginal FT values for post-transfer carried bank states 2-5 (`fts[w + 1]`): `ft_value_list = {{{ft_schedule}}} * s(H)`. First spare FT receives highest emergency value plus weekly holding buffer credit; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = {DEFAULT_STRATEGIC_FT_USE_PENALTY:.1f}` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
 
 ---
 

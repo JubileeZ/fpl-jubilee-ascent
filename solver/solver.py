@@ -361,6 +361,7 @@ def solve_multi_period_fpl(data, options):
         horizon = MAX_GAMEWEEK + 1 - next_gw
     gws = list(range(next_gw, last_gw + 1))
     all_gw = [next_gw - 1, *gws]
+    ft_gws = [*gws, last_gw + 1]
     order = [0, 1, 2, 3]
     price_modified_players = data["price_modified_players"]
     ft_states = [0, 1, 2, 3, 4, 5]
@@ -400,10 +401,10 @@ def solve_multi_period_fpl(data, options):
         (p, w): transfer_out_regular[p, w] + (transfer_out_first[p, w] if p in price_modified_players else 0) for p in players for w in gws
     }
     in_the_bank = cont_vars(all_gw, name="itb", lb=0)
-    fts = int_vars(all_gw, name="ft", lb=0, ub=5)
+    fts = int_vars([*all_gw, last_gw + 1], name="ft", lb=0, ub=5)
     ft_above_ub = bin_vars(gws, name="ft_above")
     ft_below_lb = bin_vars(gws, name="ft_below")
-    fts_state = bin_vars(gws, ft_states, name="ft_state")
+    fts_state = bin_vars(ft_gws, ft_states, name="ft_state")
     penalized_transfers = int_vars(gws, name="pt", lb=0)
     aux = bin_vars(gws, name="aux")
     transfer_count = int_vars(gws, name="trc", lb=0, ub=SQUAD_SIZE)
@@ -518,19 +519,19 @@ def solve_multi_period_fpl(data, options):
     # Clamp the raw count into [1, 5] to get the FTs actually available next week.
 
     # ft_above_ub[w] == 1  =>  fts[w + 1] == 5
-    m.addConstrs([fts[w + 1] <= 5 + big_m * (1 - ft_above_ub[w]) for w in gws if w + 1 in gws])
-    m.addConstrs([fts[w + 1] >= 5 - big_m * (1 - ft_above_ub[w]) for w in gws if w + 1 in gws])
+    m.addConstrs([fts[w + 1] <= 5 + big_m * (1 - ft_above_ub[w]) for w in gws])
+    m.addConstrs([fts[w + 1] >= 5 - big_m * (1 - ft_above_ub[w]) for w in gws])
 
     # ft_below_lb[w] == 1  =>  fts[w + 1] == 1
-    m.addConstrs([fts[w + 1] <= 1 + big_m * (1 - ft_below_lb[w]) for w in gws if w + 1 in gws])
-    m.addConstrs([fts[w + 1] >= 1 - big_m * (1 - ft_below_lb[w]) for w in gws if w + 1 in gws])
+    m.addConstrs([fts[w + 1] <= 1 + big_m * (1 - ft_below_lb[w]) for w in gws])
+    m.addConstrs([fts[w + 1] >= 1 - big_m * (1 - ft_below_lb[w]) for w in gws])
 
     # Neither indicator set  =>  fts[w + 1] == raw_gw_ft[w], i.e. the raw count was already in range
-    m.addConstrs([fts[w + 1] - raw_gw_ft[w] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws if w + 1 in gws])
-    m.addConstrs([raw_gw_ft[w] - fts[w + 1] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws if w + 1 in gws])
+    m.addConstrs([fts[w + 1] - raw_gw_ft[w] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
+    m.addConstrs([raw_gw_ft[w] - fts[w + 1] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
 
-    m.addConstrs([fts[w] == sum_(fts_state[w, s] * s for s in ft_states) for w in gws])
-    m.addConstrs([sum_(fts_state[w, s] for s in ft_states) == 1 for w in gws])
+    m.addConstrs([fts[w] == sum_(fts_state[w, s] * s for s in ft_states) for w in ft_gws])
+    m.addConstrs([sum_(fts_state[w, s] for s in ft_states) == 1 for w in ft_gws])
 
     m.addConstrs([penalized_transfers[w] >= transfer_diff[w] for w in gws])
 
@@ -843,14 +844,28 @@ def solve_multi_period_fpl(data, options):
         print("OC - No TRS except WC")
         m.addConstrs([num_transfers[w] <= SQUAD_SIZE * use_wc[w] for w in gws])
 
-    # FT gain
+    # FT gain (evaluated on post-transfer carried bank fts[w + 1] vs pre-transfer fts[w])
     ft_state_value = {}
     for s in ft_states:
         ft_state_value[s] = ft_state_value.get(s - 1, 0) + ft_value_list.get(str(s), ft_value)
     # print(f"Using FT state values of {ft_state_value}")
     print(f"Using FT values of {ft_value_list}")
-    gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in gws}
-    gw_ft_gain = {w: gw_ft_value[w] - gw_ft_value.get(w - 1, 0) for w in gws}
+    gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in ft_gws}
+    ft_scale = float(options.get("horizon_scale") or 1.0) or 1.0
+    spare_ft_hold_weight = 0.325
+    ft_hold_weights = {
+        s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1]) / ft_scale
+        for s in ft_states
+    }
+    gw_ft_hold = {
+        w: (
+            sum_(ft_hold_weights[s] * fts_state[w + 1, s] for s in ft_states if s >= 2)
+            if ft_value_list and w < last_gw
+            else 0
+        )
+        for w in gws
+    }
+    gw_ft_gain = {w: gw_ft_value[w + 1] - gw_ft_value[w] + gw_ft_hold[w] for w in gws}
 
     # Strategic Variance Constraints (ADR 0061, docs/research/milp-variance-constraints)
     strategic_opts = dict(options.get("strategic_options") or {})

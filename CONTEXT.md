@@ -539,8 +539,8 @@ Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. 
 _Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
 
 **Free Transfer Value**:
-Solver Objective credit per Free Transfer held in Free Transfer Bank. Marginal value may differ by bank size (spare Free Transfer kept as injury cover worth more than fifth). Not part of Expected GW Score.
-_Avoid_: FT bank, rollover bonus, treating Free Transfer Value as xP
+Solver Objective credit per Free Transfer held in post-transfer carried Free Transfer Bank (`fts[w + 1]`). Marginal value differs by bank size in Strategic arm (first spare Free Transfer kept as precautionary injury cover worth more than fifth, plus weekly holding buffer credit and `ft_use_penalty = 0.5`; ADR 0065). Not part of Expected GW Score.
+_Avoid_: FT bank, rollover bonus, pre-transfer terminal double-count, treating Free Transfer Value as xP
 
 **ITB**:
 Unused cash of the User Squad in £m (official "in the bank"). Squad What-If ITB = current ITB + Selling Prices of Players out − Prices of Players in. Distinct from Free Transfer Bank.

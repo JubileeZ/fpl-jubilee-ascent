@@ -11,12 +11,13 @@ Transfer Plan Scenarios refine the **Strategic** arm (ADR 0061) by scaling one-o
    - Yields $\text{scale}(1) \approx 0.27$, $\text{scale}(5) = 1.00$, $\text{scale}(6) \approx 1.12$, and $\text{scale}(10) \approx 1.44$.
    - Weekly per-round variance constraints (Starter xMins floor, First-Bench cover, Defensive stack cap) remain unscaled because their slack penalties scale naturally with weekly objective sums.
 
-2. **Emergency Free Transfer Value Schedule**:
-   - The Strategic arm replaces the flat linear credit ($1.5\text{ pts}$ per FT held) with a diminishing schedule reflecting emergency insurance value:
+2. **Emergency Free Transfer Value Schedule & Post-Transfer Bank Valuation**:
+   - Strategic arm replaces flat linear credit ($1.5\text{ pts}$ per FT held) with diminishing schedule reflecting emergency insurance value:
      $$\text{ft\_value\_list} = \{ \text{"2"}: 2.0 \times \text{scale}(H), \; \text{"3"}: 1.2 \times \text{scale}(H), \; \text{"4"}: 0.6 \times \text{scale}(H), \; \text{"5"}: 0.2 \times \text{scale}(H) \}$$
-   - Bank state 2 (the first spare Free Transfer) receives the highest marginal valuation ($2.0\text{ pts}$ base), creating a mathematical incentive to bank a transfer as insurance against unexpected multi-player injuries.
-   - Bank states 4 and 5 diminish sharply to prevent passive rollover when approaching the 5-FT cap.
-   - The per-transfer friction `ft_use_penalty = 0.2` remains unscaled.
+   - Evaluated on post-transfer carried bank (`fts[w + 1]` clamped to $[1, 5]$ across `ft_gws = [*gws, last_gw + 1]`) vs pre-transfer bank (`fts[w]`), eliminating final-week ($w = H$) hoard-and-dump double-counting and $H=1$ roll blind spots.
+   - Intermediate weeks ($w < \text{last\_gw}$) credit unscaled weekly spare-FT holding buffer ($0.325 \times$ unscaled spare FT value above 1 FT, $+0.65\text{ pts/GW}$ at 2 FT) alongside `ft_use_penalty = 0.5` (`DEFAULT_STRATEGIC_FT_USE_PENALTY`), preventing $85\%$ telescoping cancellation from burning 1st FT on $<1.0\text{ xP}$ single-week noise.
+   - Bank states 4 and 5 diminish sharply to prevent passive rollover near 5-FT cap.
+   - `unconstrained` and `no_hit` arms retain `ft_use_penalty = 0.2` and cleared `ft_value_list`.
 
 3. **Unconstrained and No Hit Arm Isolation**:
    - `unconstrained` and `no_hit` arms remain unaltered, preserving pure-points and strict zero-hit baselines.
