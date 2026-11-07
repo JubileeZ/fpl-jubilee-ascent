@@ -46,21 +46,53 @@ flowchart TD
 Always refresh data first to ensure planning operates on the true real-world state:
 
 1. **Execute Live Ingest & Squad Sync**:
-   Run the refresh pipeline to sync official FPL bootstrap, fixtures, player availability, and authenticated User Squad:
+   Run the refresh pipeline to sync official FPL bootstrap, fixtures, player availability, and User Squad:
    ```bash
-   uv run python -m commands.refresh_data
+   uv run python -m commands.refresh_data [--entry-id <entry_id>]
    ```
-   - Automatically authenticates via `.env` credentials (`FPL_EMAIL` and `FPL_PASSWORD`) to download live User Squad into `data/processed/user_picks.parquet`.
-   - If offline or credentials are missing, gracefully falls back to existing local parquet cache with a clear note.
+   - **With Credentials**: If `.env` contains `FPL_EMAIL` and `FPL_PASSWORD`, it automatically logs in via Playwright to retrieve live bank, chips, and pending mid-week transfers into `data/processed/user_picks.parquet`.
+   - **Without Credentials (`.env` missing or login fails)**:
+     - **Never silently guess or assume Entry ID** from git commit authors, repo owners, or test fixtures (the current user may be a different manager).
+     - **Check Prompt & Saved Preference**:
+       - If the user provided an Entry ID or User Squad in their prompt, use that directly.
+       - Otherwise, check `data/planner/preferences.json` or `FPL_ENTRY_ID` in `.env`:
+         - If a saved Entry ID exists, ask for confirmation:
+           > *"No FPL credentials in `.env`. Found saved Entry ID: #{id}. Would you like to use this Entry ID, enter a different Entry ID, or provide your User Squad directly?"*
+         - If no saved Entry ID exists, prompt the user:
+           > *"FPL credentials (.env) are not configured. To load your User Squad, please provide either:*
+           > *1. Your **FPL Entry ID** (found in your team URL on the FPL site: `fantasy.premierleague.com/entry/{id}/event/...`), or*
+           > *2. Your **User Squad details directly** (list of 15 players / IDs, plus optional Bank ITB, Free Transfers, and selling prices)."*
 
-2. **Strict Open-Deadline Target Gameweek Detection**:
+2. **Resolving User Squad from User Response**:
+   - **Option A: User provides Entry ID**:
+     - Run `uv run python -m commands.refresh_data --entry-id <entry_id>`.
+     - Automatically reconstructs User Squad picks from the latest locked deadline, replaying public transfer history and `cost_change_start` to compute purchase prices, selling prices, Chip Set 1/2 inventories, and accrued Free Transfers.
+     - **Confirm Reconstructed User Squad & Overrides**: Present reconstructed squad picks, selling prices, bank, and FTs, and ask if any post-deadline transfers or overrides should be applied:
+       ```markdown
+       👤 **Reconstructed User Squad** (Entry #{entry_id} · {entry_name} by {player_name}):
+       • 15 Picks & Selling Prices: {player_name (£sell_price_m), ...}
+       • Bank: £{bank}m ITB · Free Transfers: {ft} · Squad Value: £{value}m
+       👉 *Note: If you made any transfers after the last deadline or want to override Bank, Free Transfers, or any player's selling price, state them now; otherwise reply "proceed" to use these values.*
+       ```
+   - **Option B: User provides User Squad directly**:
+     - Parse player names or IDs into 15 squad picks (2 GKP, 5 DEF, 5 MID, 3 FWD).
+     - **Missing Details Confirmation**: If the user omits Bank ITB, Free Transfers, or custom selling prices, **always ask to confirm before proceeding**:
+       > *"You provided your 15 User Squad players, but didn't specify Bank ITB, Free Transfers, or custom selling prices. Would you like to provide those? (e.g. 'Bank: £0.5m, FT: 2, Saka sell price: £9.8m')*
+       > *If not provided, we will assume standard defaults:*
+       > *• Bank: £0.0m ITB*
+       > *• Free Transfers: 1 FT*
+       > *• Selling prices: current market price (`now_cost`) for all players.*
+       > *Reply with your values, or reply 'proceed' to use these defaults."*
+     - Once confirmed, format into `data/raw/my_team_0.json` and `data/raw/me.json` (`{"player": {"entry": 0}}`, using integer `0` as the synthetic `entry_id` so `features.processor.process_directory` selects and parses `int(selected_team_file.stem.split("_")[-1])` cleanly) and run `process_directory` to write `user_picks.parquet`, `user_state.parquet`, and `user_chips.parquet`.
+
+3. **Strict Open-Deadline Target Gameweek Detection**:
    Inspect `data/processed/gameweeks.parquet`:
    - Checks `deadline_time` against current UTC time (`deadline_time > now_utc`).
    - Any in-flight or passed Gameweek (e.g. GW8 when deadline passed Oct 23) is locked and cannot receive transfers.
    - Automatically sets **Transfer Plan Start** (`target_gw`) to the **first Gameweek with an open, future deadline** (e.g. GW9).
    - Announces live lock state if a passed/in-play Gameweek was detected.
 
-3. **Present Live Sync Card**:
+4. **Present Live Sync Card**:
    ```markdown
    🔄 **Live FPL Sync**:
    • Data Status: Bootstrap & fixtures updated to current live state
