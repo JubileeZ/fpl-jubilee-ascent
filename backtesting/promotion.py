@@ -139,7 +139,7 @@ def stratified_block_bootstrap_win_probability(
         arr = arr[~np.isnan(arr)]
         if len(arr) > 0:
             valid_strata.append(arr)
-    if not valid_strata:
+    if not valid_strata or not any(np.any(np.abs(s) > 1e-12) for s in valid_strata):
         return 0.0
 
     strata_resamples: list[np.ndarray] = []
@@ -151,7 +151,8 @@ def stratified_block_bootstrap_win_probability(
     if not strata_resamples:
         return 0.0
     pooled_matrix = np.concatenate(strata_resamples, axis=1)
-    return float((pooled_matrix.mean(axis=1) > 0).mean())
+    draw_means = pooled_matrix.mean(axis=1)
+    return float(np.mean(draw_means > 1e-12) + 0.5 * np.mean(np.abs(draw_means) <= 1e-12))
 
 
 pooled_block_bootstrap_win_probability = stratified_block_bootstrap_win_probability

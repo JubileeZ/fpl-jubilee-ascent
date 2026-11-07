@@ -879,6 +879,12 @@ def test_evaluate_oracle_event_gate() -> None:
     assert any("captaincy regret regressed" in r for r in verdict_fail_cap.reasons)
 
 
+def test_block_bootstrap_win_probability_neutralizes_zero_tie_draws() -> None:
+    """Targeted lever with 1 active win and 0 losses gets 0.5 credit on all-zero draws, while pure no-op returns 0.0."""
+    sparse_deltas = [0.0] * 18 + [1.0] + [0.0] * 19
+    p_sparse = block_bootstrap_win_probability(sparse_deltas, draws=5000, block=5, seed=42)
+    assert p_sparse >= 0.80
 
-
+    noop_deltas = [0.0] * 38
+    assert block_bootstrap_win_probability(noop_deltas, draws=1000, block=5, seed=42) == 0.0
 

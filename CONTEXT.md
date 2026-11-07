@@ -666,8 +666,12 @@ _Avoid_: Compare model, overlay model, Compare Models checkbox
 Model comparison hierarchy that prioritizes Decision Regret, falls back to xP MAE when Decision Regret is unavailable, and treats xMins MAE, bias, and rank correlation as guardrails.
 _Avoid_: Prediction-only evaluation, aggregate score
 
+**Development Screen**:
+Stage 1 diagnostic filter on Development season (2025-26, seed 2024-25) evaluating parameter grids before Candidate freeze and Confirmation registration (ADR 0064, ADR 0066). Tier 1 checks minutes metrics; Tier 2 checks Oracle Minutes event gate ($P \ge 0.65$); Tier 3 evaluates £100m 15-player squad + bench auto-subs walk-forward ($P \ge 0.75$, $\text{min\_effect} = 0.0$, neutral `0.5` tie credit on exact zero-delta bootstrap draws, segment loss floors, guardrails, and `grid_positives` diagnostic). Holds zero final promotion or Dead Lever authority.
+_Avoid_: Dev gate, paper win, smoke gate
+
 **Historical Promotion Gate**:
-Multi-season evaluation protocol (ADR 0047, ADR 0064, ADR 0066). Evaluates whether a Candidate achieves scientific verdict PASS over Model Champion based on primary Rolling Replay Net Score (gross points minus official hit deductions under rolling 6-GW Strategic transfer plans from neutral GW1 ownership anchor); non-wrapping Moving Block Bootstrap ($L=5$) with search-wide family-wise error control ($\text{FWER} \le 0.05$ via Bonferroni/Holm); non-catastrophic seasonal segment loss floors; and substantive player projection non-inferiority guards (total, minutes, components). Evaluated on Development (2025-26, seed 2024-25) and un-tuned registered Confirmation (2024-25, seed 2023-24).
+Multi-season evaluation protocol (ADR 0047, ADR 0064, ADR 0066). Evaluates whether a Candidate achieves scientific verdict PASS over Model Champion based on primary Rolling Replay Net Score (gross points minus official hit deductions under rolling 6-GW Strategic transfer plans from neutral GW1 ownership anchor); non-wrapping Moving Block Bootstrap ($L=5$) with search-wide family-wise error control ($\text{FWER} \le 0.05$ via Bonferroni with default single-finalist budget $M=1$, one-sided superiority $p \le \alpha_{\text{adj}}$, and neutral `0.5` tie credit on exact zero-delta draws); non-catastrophic seasonal segment loss floors; and substantive player projection non-inferiority guards (total, minutes, components). Evaluated on Development (2025-26, seed 2024-25) and un-tuned registered Confirmation (2024-25, seed 2023-24).
 _Avoid_: Single-gameweek proxy as promotion primary, automatic promotion without human approval, unseeded confirmation evaluation, unconstrained lineup evaluation
 
 **Rolling Replay Net Score**:

@@ -154,3 +154,40 @@ def test_oracle_gw_deltas_uses_target_column(monkeypatch: pytest.MonkeyPatch) ->
 
     smoke.oracle_gw_deltas(df_champ, df_cand, target_column="blended_points")
     assert recorded_targets == ["blended_points", "blended_points"]
+
+
+def test_count_grid_positives_reports_lane_positives_without_blocking_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    smoke, out = _smoke(), tmp_path / "smoke.csv"
+    _fake_main(smoke, monkeypatch, tmp_path, leaky=set())
+
+    deltas = {"a": 0.12, "b": -0.20, "c": -0.05}
+
+    def fake_compare(_base: str, cand: str, **_k: object) -> SimpleNamespace:
+        d = deltas[cand]
+        return SimpleNamespace(
+            passed=d > 0,
+            combined_primary_delta=d,
+            min_effect=0.0,
+            segment_wins=2 if d > 0 else 0,
+            bootstrap_p=0.82 if d > 0 else 0.10,
+            guardrails_passed=True,
+            reasons=[],
+        )
+
+    monkeypatch.setattr(smoke, "compare_to_reference", fake_compare)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["smoke.py", "--model", "a", "--model", "b", "--model", "c", "--out", str(out), "--workers", "1"],
+    )
+    assert smoke.main() == 0
+    captured = capsys.readouterr().out
+    assert "grid_positives=1/3" in captured
+    assert smoke.count_grid_positives(
+        out, season="dev", data_season="2025-26", champion="champ", gw_range="1-38", variants=["a", "b", "c"]
+    ) == 1
+    rows = {r["variant"]: r for r in csv.DictReader(out.read_text().splitlines())}
+    assert rows["a"]["pass"] == "True"
+

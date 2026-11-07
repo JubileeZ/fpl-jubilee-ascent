@@ -7,29 +7,31 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — EXT-20 and EXT-08 revived per user explicit directive (2026-11-06)
-- **Files:** `backtesting/metrics.py`, `tests/test_backtesting_metrics.py`, `.agents/skills/ideate-candidate/SKILL.md`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/explore-candidate/smoke.py`, `tests/test_explore_candidate_smoke.py`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/refresh_evidence.py`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ledger/candidate-ledger.md`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.csv`, `docs/research/backtesting-promotion-foundation/legacy_verdicts_audit.md`, `commands/audit_legacy_verdicts.py`, `tests/test_audit_legacy_verdicts.py`
+- **Status:** In Progress — Development Screen & ADR 0066 FWER calibration implemented (2026-11-07)
+- **Files:** `backtesting/promotion.py`, `backtesting/evidence_statistics.py`, `.agents/skills/explore-candidate/smoke.py`, `.agents/skills/explore-candidate/SKILL.md`, `tests/test_promotion.py`, `tests/test_evidence_statistics.py`, `tests/test_explore_candidate_smoke.py`, `CONTEXT.md`, `docs/adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md`, `docs/adr/0066-backtesting-and-promotion-foundation.md`, `docs/agents/current-state.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Reopening (2026-11-06): User explicitly directed reviving all ideas that won in delta but failed bootstrap / Tier 3 due to earlier buggy testing (Tier 2 bootstrap Series indexing bug and legacy £83.5m benchless formation XI).
-    - `EXT-20`: Revived to `status: untested` in `idea_queue.csv`; unlocked in `candidate_ledger.csv` (`status: open`, cleared `revisit_after`).
-    - `EXT-08`: Revived to `status: untested` in `idea_queue.csv`; unlocked in `candidate_ledger.csv` (`status: open`, cleared `revisit_after`).
+  - Gate Calibration (2026-11-07):
+    - Stage 1 (`Development Screen`, `backtesting/promotion.py`): Retain `BOOTSTRAP_MIN_P = 0.75`, Tier 2 `0.65`, `MIN_EFFECT_SHARE = 0.0`; credit `0.5` on exact zero-mean bootstrap draws when active differences exist.
+    - Stage 2 (`Historical Promotion Gate`, `backtesting/evidence_statistics.py`): Default `max_family_attempts = 1` ($\alpha_{\text{adj}} = 0.05$), one-sided superiority (`p_value_superiority <= adjusted_alpha` or `ci_lower > 0.0`), and `0.5` tie credit on zero-mean bootstrap draws.
+    - Sparse Grids (`smoke.py` & `SKILL.md`): Report `grid_positives` diagnostic without blocking `pass=True`; Step 5 runs 2-variant type-safe local perturbation check when `grid_positives == 1`.
+  - Candidate Status: `EXT-20` and `EXT-08` remain `untested` in `idea_queue.csv` and `open` in `candidate_ledger.csv`.
 - **Blocked:** None
-- **Next:** Ready to execute `explore-candidate` on `EXT-20` and `EXT-08` under £100m 15-player squad + bench auto-subs metric (awaiting user execution prompt; no tests run yet per directive).
+- **Next:** Run code review and commit calibrated gate changes, or resume `/explore-candidate` on `EXT-20` and `EXT-08` when requested.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
 - [x] 1. Ledger screen
 - [x] 2. Lane plan
-- [x] 3. Dispatch subagents
-- [x] 4. Audit + verify results
-- [x] 5. Iterate to paper win
-- [x] 6. Build Candidate (skipped: no dev winner)
-- [x] 7. Adopt gate (skipped: no dev winner)
-- [x] 8. Record + Exit
+- [ ] 3. Dispatch subagents
+- [ ] 4. Audit + verify results
+- [ ] 5. Iterate to paper win
+- [ ] 6. Build Candidate
+- [ ] 7. Adopt gate
+- [ ] 8. Record + Exit
 
 ## Report
 

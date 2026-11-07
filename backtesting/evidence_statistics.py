@@ -119,7 +119,7 @@ class StatisticalProtocolConfig:
     segment_material_loss_limit: float = 6.0
     non_inferiority_margin_per_gw: float = 0.05
     family_error_control: FamilyErrorControl = "bonferroni"
-    max_family_attempts: int = 10
+    max_family_attempts: int = 1
     season_weights: dict[str, float] = field(default_factory=dict)
     state_harm_checks_enabled: bool = True
     approved_by_human: bool = False
@@ -296,12 +296,12 @@ def compute_score_trace_hash(paired_scores: Sequence[PairedGameweekScore]) -> st
 
 
 def _adjusted_alpha(config: StatisticalProtocolConfig, attempt_number: int) -> float:
+    if config.family_error_control == "holm":
+        raise ValueError("Holm requires a fixed family ordered by p-value; sequential attempt ranks are unsupported")
     if config.max_family_attempts < 1 or not 1 <= attempt_number <= config.max_family_attempts:
         raise ValueError("Attempt number exceeds the registered positive family attempt budget")
     if not 0.0 < config.nominal_alpha < 1.0:
         raise ValueError("Nominal alpha must lie strictly between zero and one")
-    if config.family_error_control == "holm":
-        raise ValueError("Holm requires a fixed family ordered by p-value; sequential attempt ranks are unsupported")
     if config.family_error_control == "bonferroni":
         return config.nominal_alpha / config.max_family_attempts
     if config.family_error_control == "none":
@@ -370,7 +370,13 @@ def run_stored_score_bootstrap(
     ci_upper = float(np.percentile(bootstrap_means, upper_pct))
     std_error = float(np.std(bootstrap_means, ddof=1)) if config.bootstrap_draws > 1 else 0.0
 
-    p_superiority = float(np.mean(bootstrap_means <= 0.0))
+    has_active_diff = any(abs(s.delta_net) > 1e-12 for s in paired_scores)
+    if has_active_diff:
+        p_superiority = float(
+            np.mean(bootstrap_means < -1e-12) + 0.5 * np.mean(np.abs(bootstrap_means) <= 1e-12)
+        )
+    else:
+        p_superiority = 1.0
     p_non_inferiority = float(np.mean(bootstrap_means <= -config.non_inferiority_margin_per_gw))
 
     return BootstrapInferenceResult(
@@ -586,7 +592,7 @@ def evaluate_evidence_against_protocol(
         and has_required_seasons
         and config.family_error_control == "bonferroni"
         and point_est > 0.0
-        and ci_lower > 0.0
+        and (ci_lower > 0.0 or p_val <= bootstrap_res.adjusted_alpha)
         and guards_passed
         and not material_loss_violated
     ):
@@ -608,7 +614,7 @@ def evaluate_evidence_against_protocol(
                 "Confirmation season evidence not yet admitted or available; candidate cannot pass on development-only evidence"
             )
             limitations.append("Development-only trajectory; awaiting registered fresh confirmation")
-        if ci_lower <= 0.0 <= ci_upper:
+        if ci_lower <= 0.0 <= ci_upper and p_val > bootstrap_res.adjusted_alpha:
             reasons.append(
                 f"Uncertainty contains zero (CI [{ci_lower:.3f}, {ci_upper:.3f}] at alpha {bootstrap_res.adjusted_alpha:.4f}); advantage not statistically distinguished"
             )

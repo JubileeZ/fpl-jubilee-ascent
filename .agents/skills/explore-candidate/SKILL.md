@@ -87,7 +87,7 @@ Record resolved names in packet at step 0. Season completion alone cannot assign
 - [ ] 2. Lane plan
 - [ ] 3. Dispatch subagents
 - [ ] 4. Audit + verify results
-- [ ] 5. Iterate to paper win
+- [ ] 5. Iterate to Development Screen win
 - [ ] 6. Build Candidate
 - [ ] 7. Adopt gate
 - [ ] 8. Record + Exit
@@ -170,9 +170,10 @@ Subagent reports = claims. Orchestrator re-runs `--audit_only` on every `prototy
 - `local.*` = config keys only, never data.
 Smoke row counts only with AUDIT PASS and no `LEAKAGE FAIL`. Winner claims → re-run winning variant yourself. Record verified rows in packet.
 
-### 5. Iterate to paper win
+### 5. Iterate to Development Screen win
 
-Paper win = verified smoke row `pass=True` (development diagnostic; no final gate authority).
+Development Screen win = verified smoke row `pass=True` (development diagnostic; no final gate authority).
+- **Isolated winner check (`grid_positives == 1` on a multi-variant tunable grid):** `smoke.py` never blocks `pass=True` on coarse grid neighbours and reports `grid_positives=<pos>/<total>`. When a single variant passes Tier 3 (`pass=True`) and `grid_positives == 1` on a tunable parameter, run a 2-variant local perturbation check (`±10%` around the winner, strictly respecting dossier parameter types: `int` stays `int`, non-negative, probability bounds, ordering invariants) before Step 6. If both local perturbations collapse ($\Delta < 0$), treat as a brittle spike rather than freezing Step 6.
 - No win: read `reasons` + segment deltas; next round = new mechanism inside scope (Scoped) or inside lane (Dual-lane), fresh pre-declared grid. Record diagnostic failure without inventing demonstrated scientific harm or a new Dead Lever lock. Apply progress guard.
 - All lanes closed → step 8, Exit (b).
 

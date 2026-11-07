@@ -703,3 +703,66 @@ def test_simulation_calibration_diagnostic() -> None:
     assert res["num_simulations"] == 10.0
     assert 0.0 <= res["empirical_coverage"] <= 1.0
     assert 0.0 <= res["empirical_rejection_rate"] <= 1.0
+
+
+def test_default_single_attempt_fwer_and_one_sided_superiority_and_zero_ties(tmp_path: Path) -> None:
+    """Default config uses M=1 (alpha=0.05), passes one-sided 95% superiority, and credits 0.5 on zero-tie draws."""
+    default_cfg = StatisticalProtocolConfig()
+    assert default_cfg.max_family_attempts == 1
+
+    # Sparse positive trajectory: 1 positive GW (+2.0), 37 zero GWs -> ~28% all-zero draws get 0.5 tie credit
+    sparse_scores = [
+        PairedGameweekScore(
+            season="2025-26",
+            gameweek=gw,
+            candidate_net_points=62.0 if gw == 19 else 60.0,
+            champion_net_points=60.0,
+            candidate_gross_points=62.0 if gw == 19 else 60.0,
+            champion_gross_points=60.0,
+            candidate_hits_deducted=0,
+            champion_hits_deducted=0,
+            segment=assign_gameweek_segment(gw),
+        )
+        for gw in range(1, 39)
+    ]
+    boot_sparse = run_stored_score_bootstrap(sparse_scores, default_cfg, seed=42)
+    assert boot_sparse.adjusted_alpha == pytest.approx(0.05)
+    assert boot_sparse.p_value_superiority < 0.20
+
+    # Pure zero-diff trajectory still has p_value_superiority == 1.0
+    zero_scores = [
+        PairedGameweekScore("2025-26", gw, 60.0, 60.0, 60.0, 60.0, 0, 0, segment=assign_gameweek_segment(gw))
+        for gw in range(1, 39)
+    ]
+    assert run_stored_score_bootstrap(zero_scores, default_cfg, seed=42).p_value_superiority == 1.0
+
+    # Trajectory with p_value_superiority ~ 0.035 (<= 0.05 one-sided, but > 0.025 two-sided so ci_lower <= 0)
+    borderline_scores = _make_paired_scores(
+        season="2025-26", gameweek_count=38, mean_cand=60.105, mean_champ=60.0, noise_std=1.0, seed=42
+    ) + _make_paired_scores(
+        season="2024-25", gameweek_count=38, mean_cand=60.105, mean_champ=60.0, noise_std=1.0, seed=42
+    )
+    cfg = StatisticalProtocolConfig(
+        nominal_alpha=0.05,
+        bootstrap_draws=2_000,
+        family_error_control="bonferroni",
+        approved_by_human=True,
+        approval_reference="ONE-SIDED-SUPERIORITY-APPROVAL",
+        required_projection_guards=("minutes_mae",),
+    )
+    boot_border = run_stored_score_bootstrap(borderline_scores, cfg, seed=42)
+    assert 0.025 < boot_border.p_value_superiority <= 0.05
+    assert boot_border.confidence_interval[0] <= 0.0
+
+    registry, attempt_id = _register_confirmation(tmp_path, borderline_scores, cfg)
+    eval_res = evaluate_evidence_against_protocol(
+        borderline_scores,
+        [_passing_guard()],
+        cfg,
+        is_confirmation_available=True,
+        confirmation_registry=registry,
+        confirmation_attempt_id=attempt_id,
+        seed=42,
+    )
+    assert eval_res.verdict == "pass"
+

@@ -283,6 +283,31 @@ def done_variants(out: Path, *, season: str, data_season: str, champion: str, gw
     return {r["variant"] for r in _read_rows(out) if (r.get("season"), r.get("data_season"), r.get("champion"), r.get("gw_range")) == key}
 
 
+def count_grid_positives(
+    out: Path,
+    *,
+    season: str,
+    data_season: str,
+    champion: str,
+    gw_range: str,
+    variants: list[str] | tuple[str, ...] | set[str] | None = None,
+) -> int:
+    key = (season, data_season, champion, gw_range)
+    allowed = set(variants) if variants is not None else None
+    latest: dict[str, float] = {}
+    for row in _read_rows(out):
+        if (row.get("season"), row.get("data_season"), row.get("champion"), row.get("gw_range")) != key:
+            continue
+        variant = row.get("variant", "")
+        if allowed is not None and variant not in allowed:
+            continue
+        try:
+            latest[variant] = float(row.get("combined_delta", 0.0))
+        except (TypeError, ValueError):
+            latest[variant] = 0.0
+    return sum(1 for delta in latest.values() if delta > 0.0)
+
+
 def confirm_violations(
     models: list[str], prototypes: Path | None, out: Path, full_season: bool, season: str, prior_gates: list[Path] | None = None
 ) -> list[str]:
@@ -509,7 +534,8 @@ def main() -> int:
                 boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
                 print(f"{name}: {'SCREEN_PASS' if is_pass else 'SCREEN_NOT_PASSED'} delta {verdict.combined_primary_delta:+.4f} "
                       f"(min {verdict.min_effect:.4f}) segs {verdict.segment_wins}/3 boot P {boot} {'; '.join(reasons_list)}", flush=True)
-    print(f"Wrote {written} rows -> {args.out}")
+    pos = count_grid_positives(args.out, season=args.season, data_season=season.name, champion=champion, gw_range=gw_range, variants=challengers)
+    print(f"Wrote {written} rows -> {args.out} (grid_positives={pos}/{len(challengers)})")
     return 2 if leaked else 0
 
 

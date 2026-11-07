@@ -45,8 +45,8 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
   - Explicit oracle-minutes diagnostics permitted for mechanism attribution but prohibited from promotion justification.
 
 ### 3. Numerical & Statistical Evaluation Protocol
-- Paired calendar dependence evaluated via **non-wrapping Moving Block Bootstrap (MBB, $L=5$)** on stored score traces (`backtesting/evidence_statistics.py`). Re-solving the MILP inside bootstrap draws is strictly prohibited.
-- Search-wide family-wise error control (Q17) enforces $\text{FWER} \le 0.05$ across registered attempts within a mechanism family using Bonferroni or Holm-Bonferroni step-down adjustments.
+- Paired calendar dependence evaluated via **non-wrapping Moving Block Bootstrap (MBB, $L=5$)** on stored score traces (`backtesting/evidence_statistics.py`). Re-solving the MILP inside bootstrap draws is strictly prohibited. When active differences exist ($\exists t : |\Delta_t| > 10^{-12}$), exact zero-mean resampled draws ($|\bar{\Delta}^*| \le 10^{-12}$) receive neutral `0.5` tie credit in `p_value_superiority`; pure no-op trajectories return `p_value_superiority = 1.0`.
+- Search-wide family-wise error control (Q17) enforces $\text{FWER} \le 0.05$ across registered attempts within a mechanism family using Bonferroni (`default max_family_attempts = 1` for single-finalist confirmation, $\alpha_{\text{adj}} = \alpha_{\text{nominal}} / M$) and one-sided superiority evaluation (`p_value_superiority <= adjusted_alpha` or `ci_lower > 0.0`, yielding a 95% two-season bar for $M=1$ at $\alpha = 0.05$).
 - Continuous multi-season normalized weighting across Development (2025-26, seed 2024-25) and un-tuned Confirmation (2024-25, seed 2023-24).
 - Formal four-way scientific verdicts:
   - **`pass`**: Statistically significant positive net score delta meeting bootstrap bar, material-loss floors, and substantive guards.

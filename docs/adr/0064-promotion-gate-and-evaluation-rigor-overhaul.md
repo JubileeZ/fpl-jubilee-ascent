@@ -50,9 +50,10 @@ Wayfinder Map #166 resolved these distortions across seven decision tickets:
 - Implemented non-wrapping Moving Block Bootstrap restricting start indices to $0 \le s \le n - L$, evaluating complete blocks of length $L$ without boundary wrapping or terminal truncation.
 - Increased default block length from $L=3$ to $L=5$ (`BOOTSTRAP_BLOCK_GWS = 5`) to span 4–6 week Premier League fixture swings.
 - Formulated Pooled 2-Season Stratified Bootstrap Gate (`evaluate_two_season_gate`):
-  - Dev Season: $P_{\text{dev}}(\bar{\Delta}^* > 0) \ge 0.75$ (`BOOTSTRAP_MIN_P = 0.75`, raised from 0.60)
+  - Dev Season (**Development Screen**): $P_{\text{dev}}(\bar{\Delta}^* > 0) \ge 0.75$ (`BOOTSTRAP_MIN_P = 0.75`, raised from 0.60); `MIN_EFFECT_SHARE = 0.0` preserved so targeted domain concepts remain eligible.
   - Confirmation Season (warm-seeded): $P_{\text{conf}}(\bar{\Delta}^* > 0) \ge 0.65$ (`CONFIRMATION_BOOTSTRAP_MIN_P = 0.65`)
   - Pooled 2-Season Stratified: $P_{\text{pooled}}(\bar{\Delta}^* > 0) \ge 0.85$ (`POOLED_BOOTSTRAP_MIN_P = 0.85`).
+- Zero-tie bootstrap draw neutralization: when active differences exist ($\exists t : |\Delta_t| > 10^{-12}$), exact zero-mean resampled draws ($|\bar{\Delta}^*| \le 10^{-12}$, sampling only unchanged-squad weeks) receive neutral `0.5` tie credit; pure no-op clones ($\forall t : |\Delta_t| \le 10^{-12}$) return `0.0`.
 
 ### 6. $\sqrt{n_s}$-Scaled Seasonal Segment Loss Floors (Issue #172)
 - Standardized statistical confidence intervals across asymmetric seasonal windows to uniform stringency ($z \approx -0.23$ to $-0.26 \times \text{SE}_s$ under $\sigma_\Delta \approx 2.20$ pts/GW):
