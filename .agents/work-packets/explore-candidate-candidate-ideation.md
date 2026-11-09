@@ -1,23 +1,23 @@
 # Active Task: explore-candidate-candidate-ideation
 
 - **Status:** In Progress
-- **Objective:** `explore-candidate candidate-ideation`: frozen Candidate with verified ADR 0066 evidence and registered confirmation, adoption queued in Human Queue — or scope exhausted with every attempt recorded. Smoke diagnostics alone cannot satisfy gate. State: `.agents/work-packets/explore-candidate-candidate-ideation.md`
-- **Acceptance:** All Batch 3 & 4 queue rows (`EXT-14`..`EXT-20`) screened and evaluated against Champion `def_xg_shrink_challenger`; verified results recorded in `smoke_results.csv`, `idea_queue.csv`, `candidate_ledger.csv`, and topic note.
+- **Objective:** `explore-candidate candidate-ideation` (/goal): Run explore-candidate in Queue mode across all remaining ideas (EXT-21 through EXT-31), updating idea_queue.csv and making git commit checkpoints after each lane/batch. If a candidate achieves verified PASS on Dev (2025-26) and Confirmation (2024-25) seasons, freeze the candidate, adopt it as Champion in config/model_selection.json, and draft the Champion-change ADR, continuing until the queue is completely exhausted. State: `.agents/work-packets/explore-candidate-candidate-ideation.md`
+- **Acceptance:** All remaining queue rows (`EXT-21`..`EXT-31`) screened and evaluated against Champion `def_xg_shrink_challenger`; verified results recorded in `smoke_results.csv`, `idea_queue.csv`, `candidate_ledger.csv`, and topic note; checkpoint commits per batch/lane; adoption executed if confirmed PASS.
 - **Issue/Ticket:** `docs/research/candidate-ideation/idea_queue.csv`
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Batch 4 Re-evaluation (EXT-08, EXT-20) completed (all variants failed dev screen under £100m 15-player metric); Batch 5 (EXT-21 to EXT-25) ready to execute
+- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Lane ext_21 running in background (task-225)
 - **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Batch 4 Re-evaluation Verdict: Completed 2026-11-09. Both reopened candidates failed Dev under £100m 15-player squad + auto-subs metric without new Dead Lever locks (`status: fail`). EXT-08 (all 4 variants failed Tier 2 $\Delta = +0.0000$ to $-0.0953$, $P = 0.000$ to $0.077$). EXT-20 (4 of 6 variants passed Tier 2 $\Delta = +0.2745$ to $+0.3916$, $P = 0.856$ to $0.995$; all 6 failed Tier 3, best `ext_20_t15_k800` $\Delta = +0.0563$, $P = 0.671 < 0.75$, segs 1/3; `ext_20_t18_k800` $\Delta = -0.0875$, late regression $-0.230 < -0.13$).
-  - Next Batch: Batch 5 (`EXT-21` through `EXT-25`) targeting fixture difficulty and venue gradients.
+  - Active Batch: Batch 5 (`EXT-21` to `EXT-25`) actively executing; Batch 6 (`EXT-26` to `EXT-31`) queued.
+  - Lane ext_21: Bounded Soft-Saturating Matchup Factor on Open-Play Goal Expectancy (6 variants) actively running (`task-225`).
 - **Blocked:** None
-- **Next:** Ledger screen and lane plan for Batch 5 (EXT-21 to EXT-25).
+- **Next:** Await task-225 completion, record verified results, commit checkpoint, and advance to Lane ext_22.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
