@@ -7,31 +7,37 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27 to EXT-31) fixture impact candidates ingested; EXT-27, EXT-28, EXT-31 queued as untested; EXT-29, EXT-30 dead-matched (2026-11-09)
-- **Files:** `solver/scenarios.py`, `solver/solver.py`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/ideate-candidate/SKILL.md`, `tests/test_ideate_candidate.py`, `docs/research/candidate-ideation/fixtures-ideation-response.md`, `docs/research/candidate-ideation/external-fixtures-ideation-response.md`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `docs/research/INDEX.md`
+- **Status:** In Progress — Batch 4 Re-evaluation (EXT-08, EXT-20) completed (all variants failed dev screen under £100m 15-player metric); Batch 5 (EXT-21 to EXT-25) ready to execute
+- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Fixture Impact Ideation (2026-11-09): Added `--focus fixtures` to `generate_prompt.py`; generated Batch 5 (EXT-21 to EXT-26) targeting soft-saturating open-play elasticity, venue dynamics, log-linear CS decay, budget fixture sensitivity, adversary style contrast, and playing duration trim; all 6 passed data catalog validation and dead-lever screen, queued as `untested`.
-  - Batch 6 Ingest (2026-11-09): External frontier model response ingested as EXT-27 through EXT-31. EXT-27 (venue-decoupled home advantage) and EXT-28 (schedule-neutralized attack baselines) audited and cleared of keyword dead-lever false positives, queued as `untested`. EXT-31 (opponent-sample-reliability matchup share) passed clean as `untested`. EXT-29 (opponent positional concession share) matched active dead lever EXT-11 (`2027-10-28`). EXT-30 (component-specific matchup elasticity) matched active dead lever Row 21 (`2027-09-24`).
-  - Candidate Status: `EXT-20`, `EXT-08`, Batch 5 (`EXT-21`..`EXT-26`), and Batch 6 (`EXT-27`, `EXT-28`, `EXT-31`) remain `untested` in `idea_queue.csv`.
+  - Batch 4 Re-evaluation Verdict: Completed 2026-11-09. Both reopened candidates failed Dev under £100m 15-player squad + auto-subs metric without new Dead Lever locks (`status: fail`). EXT-08 (all 4 variants failed Tier 2 $\Delta = +0.0000$ to $-0.0953$, $P = 0.000$ to $0.077$). EXT-20 (4 of 6 variants passed Tier 2 $\Delta = +0.2745$ to $+0.3916$, $P = 0.856$ to $0.995$; all 6 failed Tier 3, best `ext_20_t15_k800` $\Delta = +0.0563$, $P = 0.671 < 0.75$, segs 1/3; `ext_20_t18_k800` $\Delta = -0.0875$, late regression $-0.230 < -0.13$).
+  - Next Batch: Batch 5 (`EXT-21` through `EXT-25`) targeting fixture difficulty and venue gradients.
 - **Blocked:** None
-- **Next:** Run `/explore-candidate` on queued candidates.
+- **Next:** Ledger screen and lane plan for Batch 5 (EXT-21 to EXT-25).
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
-- [x] 1. Ledger screen
-- [x] 2. Lane plan
-- [ ] 3. Dispatch subagents
-- [ ] 4. Audit + verify results
-- [ ] 5. Iterate to paper win
+- [x] 1. Ledger screen (Batch 4r complete)
+- [x] 2. Lane plan (Batch 4r complete)
+- [x] 3. Dispatch smoke (Batch 4r complete)
+- [x] 4. Audit + verify results (Batch 4r complete)
+- [ ] 5. Iterate to Development Screen win (Dispatch Batch 5: EXT-21..EXT-25)
 - [ ] 6. Build Candidate
 - [ ] 7. Adopt gate
 - [ ] 8. Record + Exit
 
 ## Report
+
+**Verdict:** Batch 4 Re-evaluation: no win (both reopened candidates failed dev screen under £100m 15-player metric); Model Champion `def_xg_shrink_challenger` stands unchanged.
+**Lanes:**
+- `ext_08` · Joint own-xG/xA process intensity and allocation likelihood (`xp_goals`/`xp_assists`) · best `k4`/`k8`/`k16` · `combined_delta = +0.0000` · `0/3` segs · `boot P = 0.000` (`tier2_oracle_fail`)
+- `ext_20` · Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders (`xp_goals`) · best `ext_20_t15_k800` · Tier 2 PASS ($\Delta = +0.2745, P = 0.856$) · Tier 3 FAIL (`combined_delta = +0.0563`, `1/3` segs, `boot P = 0.671 < 0.75`); best Tier 2 `ext_20_t18_k800` ($\Delta = +0.3916, P = 0.995$) Tier 3 FAIL ($\Delta = -0.0875$, late regression $-0.230 < -0.13$)
+**Audit:** all 10 prototypes across `ext_08` and `ext_20` `AUDIT PASS`, no `LEAKAGE FAIL`
+**Ledger:** `candidate_ledger.csv` rows 97 and 109 updated with re-eval diagnostic evidence (status `open` preserved; no new Dead lock)
 
 **Verdict:** no win (Queue exhausted across all 20 ideas; Champion `def_xg_shrink_challenger` stands unchanged)
 **Lanes:**

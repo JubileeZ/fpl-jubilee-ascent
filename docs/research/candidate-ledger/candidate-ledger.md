@@ -149,8 +149,8 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (EXT-20) | Reopened per user explicit directive (2026-11-06) | Tier 2 Oracle Regret Delta +0.2529 pts/GW (boot P = 0.918); prior failure on legacy £83.5m benchless metric invalidated | Queued for explore-candidate re-evaluation under £100.0m 15-player squad + bench auto-subs metric |
-| Joint own-xG/xA process intensity and allocation likelihood (EXT-08) | Reopened per user explicit directive (2026-11-06) | Tier 2 Oracle Regret Delta +0.0280 pts/GW (boot P = 0.724/0.842); prior failure on legacy £83.5m benchless metric invalidated | Queued for explore-candidate re-evaluation under £100.0m 15-player squad + bench auto-subs metric |
+| Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (EXT-20) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: best `ext_20_t15_k800` delta +0.0563, 1/3 segs, boot P 0.671 < 0.75 (4/6 passed Tier 2, all 6 failed Tier 3 under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
+| Joint own-xG/xA process intensity and allocation likelihood (EXT-08) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: delta +0.0000, 0/3 segs, boot P 0.000 (all 4 variants tier2_oracle_fail under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 
 
 ## Agent Prompt

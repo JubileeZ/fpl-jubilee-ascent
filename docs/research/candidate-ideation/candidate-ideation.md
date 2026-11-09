@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (69 rows, 47 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (79 rows, 47 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27, EXT-28, EXT-31) fixture impact candidates untested; EXT-29 and EXT-30 dead-matched; EXT-20 and EXT-08 queued; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27, EXT-28, EXT-31) fixture impact candidates untested; EXT-29 and EXT-30 dead-matched; EXT-20 and EXT-08 re-evaluated (failed dev screen under £100m metric); Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -16,17 +16,17 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
 
 ---
 
-## Batch 4 Exploration Execution (2026-11-06, completed)
+## Batch 4 Re-evaluation Execution (2026-11-09, completed)
 
-**Verdict:** Active re-evaluation queued (EXT-20 and EXT-08 reopened per user explicit directive); Model Champion `def_xg_shrink_challenger` stands unchanged.
+**Verdict:** Batch 4 re-evaluation completed (both reopened candidates `EXT-08` and `EXT-20` failed Dev under £100.0m 15-player squad + bench auto-subs metric); Model Champion `def_xg_shrink_challenger` stands unchanged.
 
-Evaluated Batch 4 (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders) against Champion `def_xg_shrink_challenger` on Dev 2025-26 (GW1-38, seed 2024-25):
-- **Smoke Evaluation (`ext_20` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
-  - **Lane `ext_20` (6 variants: $\tau_{\text{threat}} \in [12.0, 18.0], K_{\text{OOP}} \in [800, 1600], \gamma_{\text{oop}} \in [0.15, 0.25]$)**:
-    - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW), `ext_20_t15_k800` ($\Delta = +0.0668$ pts/GW); one variant negative (`ext_20_t12_k1600` $\Delta = -0.2155$ pts/GW).
-    - 4 of 6 variants passed Tier 2 Oracle Event Gate after resolving the `smoke.py` per-GW regret lookup bug: `ext_20_t18_k800` ($\Delta = +0.2529$ pts/GW, $P = 0.918$), `ext_20_t18_k1200` ($\Delta = +0.2489$ pts/GW, $P = 0.917$), `ext_20_t15_k1200` ($\Delta = +0.2463$ pts/GW, $P = 0.845$), `ext_20_t12_k1200` ($\Delta = +0.2143$ pts/GW, $P = 0.723$); `ext_20_t15_k800` failed Tier 2 ($\Delta = +0.0668$, $P = 0.599 < 0.65$); `ext_20_t12_k1600` failed Tier 2 ($\Delta = -0.2155$, $P = 0.123$).
-    - All 4 Tier 2 passers subsequently failed the Tier 3 full walkforward gate due to negative primary metric deltas and late segment regressions under the legacy benchless £83.5m formation XI metric (best `ext_20_t18_k800` $\Delta = -0.2153$, 0/3 segs, boot $P = 0.000 < 0.75$).
-    - **Reopening (2026-11-06):** Following reconciliation of weekly lineup evaluation with ADR 0066 (£100.0m 15-player squad + bench auto-subs in commit `da445aa8`), the Tier 3 failure on legacy benchless £83.5m XI was invalidated. Reopened per user explicit directive in `candidate_ledger.csv` (status: `open`, cleared `revisit_after`) and `idea_queue.csv` (status: `untested`) for re-evaluation.
+Evaluated Batch 4 reopened candidates (`EXT-08` and `EXT-20`) against Champion `def_xg_shrink_challenger` on Dev 2025-26 (GW1-38, seed 2024-25) under aligned £100.0m 15-player squad + auto-subs metric:
+- **Smoke Evaluation (`ext_08`, `ext_20` — 10 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+  - **Lane `ext_08` (`EXT-08`: Joint own-xG/xA Process Intensity & Allocation Likelihood, 4 variants: $K_{\text{mix}} \in [2.0, 16.0]$)**:
+    - All 4 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000` to `0.077`, `combined_delta` `-0.0953` to `+0.0000`). Best variants: `k4`, `k8`, `k16` ($\Delta = +0.0000$, $P = 0.000$); `k2` ($\Delta = -0.0953$, $P = 0.077$). Coupling xG and xA did not improve £100.0m lineup selection. Diagnostic failure; no new Dead Lever lock; `status: fail` in queue.
+  - **Lane `ext_20` (`EXT-20`: Endogenous Attacking-Role Stratification & Threat-Adaptive Shrinkage for Out-of-Position Defenders, 6 variants: $\tau_{\text{threat}} \in [12.0, 18.0], K_{\text{OOP}} \in [800, 1600], \gamma_{\text{oop}} \in [0.15, 0.25]$)**:
+    - 4 of 6 variants passed Tier 2 Oracle Event Gate under £100m metric: `ext_20_t18_k800` ($\Delta = +0.3916$, $P = 0.995$), `ext_20_t18_k1200` ($\Delta = +0.3876$, $P = 0.995$), `ext_20_t15_k1200` ($\Delta = +0.2745$, $P = 0.856$), `ext_20_t15_k800` ($\Delta = +0.2745$, $P = 0.856$); `ext_20_t12_k1600` failed Tier 2 ($\Delta = +0.0258$, $P = 0.481 < 0.65$); `ext_20_t12_k1200` failed Tier 2 ($\Delta = -0.2107$, $P = 0.150$).
+    - All 4 Tier 2 passers failed Tier 3 full walkforward: best variant `ext_20_t15_k800` achieved positive delta $\Delta = +0.0563$ pts/GW, but bootstrap $P(\Delta > 0) = 0.671 < 0.75$ and won 1/3 segments; `ext_20_t18_k800` and `t18_k1200` regressed to $\Delta = -0.0875$ (late segment catastrophic regression $-0.230 < -0.13$); `ext_20_t15_k1200` regressed to $\Delta = -0.2005$ ($P = 0.046$). All 6 variants failed the Development Screen (`pass=False`). Diagnostic failure; no new Dead Lever lock; `status: fail` in queue.
 
 ---
 

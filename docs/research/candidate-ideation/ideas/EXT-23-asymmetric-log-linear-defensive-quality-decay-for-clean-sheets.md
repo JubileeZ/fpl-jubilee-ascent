@@ -2,7 +2,7 @@
 idea_id: EXT-23
 name: Asymmetric Log-Linear Defensive Quality Decay for Clean Sheets
 tier: P1
-component: xp_minutes
+component: xp_clean_sheets
 status: untested
 replaces: CalibratedMatchupHybridModel._project_event_components (modifying per90_goals_conceded before Poisson/NegBin evaluation).
 grid: "alpha_cs=0.12,k_cs=4.0; alpha_cs=0.16,k_cs=4.0; alpha_cs=0.20,k_cs=4.0; alpha_cs=0.15,k_cs=6.0; alpha_cs=0.18,k_cs=6.0; alpha_cs=0.24,k_cs=6.0"
