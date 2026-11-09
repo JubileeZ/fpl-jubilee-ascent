@@ -1,16 +1,16 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-06 (+00:00)
+**Updated**: 2026-11-09 (+00:00)
 **Data stamp**: Completed dev rows in `smoke_results.csv` (69 rows, 47 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: EXT-20 and EXT-08 revived per user explicit directive (2026-11-06) following reconciliation of formation_xi_regret with ADR 0066 £100m 15-player squad + bench auto-subs; queued as untested for explore-candidate; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 (EXT-21 to EXT-26 fixture impact & matchup elasticity) ingested as untested; EXT-20 and EXT-08 queued as untested; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
 **Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` / `spec_path` — primary candidate work queue index.  
 **Dossiers**: [ideas/](ideas/) — full LaTeX formulations, cold-start strategies, and Python code skeletons.  
 **Smoke Results**: [smoke_results.csv](smoke_results.csv) — empirical dev-season gate runs across prototype variants.
-**Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md); frontier language-model review, 2026-10-28.
+**Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md) · [Fixtures](fixtures-ideation-response.md); frontier language-model review, 2026-11-09.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
 
@@ -43,6 +43,27 @@ Evaluated Batch 3 (`EXT-14` through `EXT-19`) against Champion `def_xg_shrink_ch
   - **Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.6045` to `-0.8001`). Best variant: `ext_14_a15_b06` (`alpha_tempo=0.15, beta_trans=0.06`, `combined_delta = -0.6045`). Increasing `beta_trans` monotonically degraded Oracle Formation XI regret as demeaned tempo/transition elasticity distorted attacker rankings relative to Champion `def_xg_shrink_challenger`. Logged Dead until `2027-11-05`.
   - **Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.2407` to `-1.1320`). Best variant: `ext_18_k540_g015` (`k_atk=540, gamma_role=0.15`, `combined_delta = -0.2407`). Stronger attacker shrinkage ($K_{\text{ATK}} \in \{630, 720\}$) and creative-share prior conditioning over-compressed attacking differentials and inflated high-creativity deep playmakers whose set-piece volume does not translate into direct goal threat (xG). Logged Dead until `2027-11-05`.
   - **Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.1279` to `-0.4712`). Best variant: `ext_19_k900_xi035` (`k_gk=900, xi_saves=0.35`, `combined_delta = -0.1279`). Scaling GKP `per90_saves` upward against high-threat opponents over-projected GKP returns in fixtures where high opponent threat converted into goals conceded rather than net fantasy points. Logged Dead until `2027-11-05`.
+
+---
+
+## Candidate Ideation Review (Batch 5: 2026-11-09)
+
+Six targeted candidate proposals generated to ensure fixture difficulty and venue gradients exert a calibrated, principled impact on player projections without repeating raw multiplier overprediction (ARCH-05) or collapsing to flat neutral multipliers. Ingested into `idea_queue.csv` and `ideas/` dossiers:
+
+1. **EXT-21: Bounded Soft-Saturating Matchup Factor on Open-Play Goal Expectancy** (`xp_goals`): Hyperbolic tangent saturating elasticity factor ($\gamma_{\text{fix}} \in [0.10, 0.22]$) on open-play xG conditioned on rival xGC gap, with invariant penalty baseline ($0.15$ xG/90). Status: `untested`.
+2. **EXT-22: Venue-Conditioned Empirical Bayes Attacking Output Dynamics** (`xp_goals`, `xp_assists`): Empirical Bayes home-away coefficient ($\beta_{\text{venue}} \in [0.06, 0.14]$) capturing the ~24% Premier League home goal advantage with geometric mean unity across balanced schedules. Status: `untested`.
+3. **EXT-23: Asymmetric Log-Linear Defensive Quality Decay for Clean Sheets** (`xp_clean_sheet`, `xp_conceded`): Log-linear hazard multiplier ($\alpha_{\text{cs}} \in [0.12, 0.24]$) on pitch goal-concession intensity replacing flat linear shifts, collapsing clean-sheet probabilities non-linearly against top-tier attacks. Status: `untested`.
+4. **EXT-24: Price-Conditioned Fixture Sensitivity for Budget Midfielders and Forwards** (`xp_goals`, `xp_assists`): Inverse price-band elasticity ($\le £6.0\text{m}$) elevating budget starters in favorable fixtures (+15%–30%) while preserving premium talisman projections. Status: `untested`.
+5. **EXT-25: Adversary Concession Profiling by Outfielder Style Contrast** (`xp_goals`, `xp_assists`): Attacking style index ($\text{xG} / (\text{xG}+\text{xA})$) matched against opponent concession modality (threat vs creativity conceded) via bounded contrast adjustment. Status: `untested`.
+6. **EXT-26: Projected Goal Margin Minutes Trim Modulation** (`xp_minutes`): Non-linear blowout hazard offset ($\psi_{\text{margin}} \in [1.5, 4.0]$ mins) trimming expected playing duration in heavily favored matches without altering $p_{\text{start}}$. Status: `untested`.
+
+Queue dossiers:
+- [EXT-21: Soft-Saturating Matchup Factor](ideas/EXT-21-bounded-soft-saturating-matchup-factor-on-open-play-goal-expectancy.md)
+- [EXT-22: Venue-Conditioned Dynamics](ideas/EXT-22-venue-conditioned-empirical-bayes-attacking-output-dynamics.md)
+- [EXT-23: Log-Linear Defensive Quality Decay](ideas/EXT-23-asymmetric-log-linear-defensive-quality-decay-for-clean-sheets.md)
+- [EXT-24: Budget Price-Conditioned Sensitivity](ideas/EXT-24-price-conditioned-fixture-sensitivity-for-budget-midfielders-and-forwards.md)
+- [EXT-25: Adversary Concession Profiling](ideas/EXT-25-adversary-concession-profiling-by-outfielder-style-contrast.md)
+- [EXT-26: Goal Margin Playing Duration Trim](ideas/EXT-26-projected-goal-margin-minutes-trim-modulation.md)
 
 ---
 

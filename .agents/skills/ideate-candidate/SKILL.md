@@ -14,9 +14,10 @@ Orchestrates external frontier model ideation for FPL projection candidates. Dyn
 uv run python .agents/skills/ideate-candidate/generate_prompt.py
 uv run python .agents/skills/ideate-candidate/generate_prompt.py --artifact-out path/to/artifact_prompt.md
 
-# Generate targeted subsystem prompt (e.g. minutes, assists, budget-enablers)
+# Generate targeted subsystem prompt (e.g. minutes, assists, budget-enablers, fixtures)
 uv run python .agents/skills/ideate-candidate/generate_prompt.py --focus minutes
 uv run python .agents/skills/ideate-candidate/generate_prompt.py --focus budget-enablers
+uv run python .agents/skills/ideate-candidate/generate_prompt.py --focus fixtures
 
 # Web-browsing model 1-line dispatch (paste directly into external frontier model):
 # "Read and execute the complete FPL candidate model ideation brief at https://raw.githubusercontent.com/JubileeZ/fpl-jubilee-ascent/main/docs/research/candidate-ideation/candidate_model_ideation_prompt.md. Output 5 to 7 structured candidate models adhering strictly to its 9-section format and dead-lever constraints."
@@ -43,6 +44,7 @@ Supported `--focus` modes:
 - `assists`: Focuses on recipient finishing skill and key pass conversion with assist dead levers.
 - `goalkeepers`: Focuses on shot threat distance vs. save volume and clean-sheet variance with goalkeeper/defensive dead levers.
 - `budget-enablers`: Focuses on £4.5m–£5.5m asset valuation under the 15-player £100.0m squad rolling replay (ADR 0066) to fund premium talismans without squad churn.
+- `fixtures`: Focuses on fixture difficulty context, venue gradients, and opponent strength elasticity ($M_{\text{events}} / M_{\text{mins}}$) to ensure fixtures impact player projections without over-inflating green matches (ARCH-05).
 
 Generated output written to [`docs/research/candidate-ideation/candidate_model_ideation_prompt.md`](docs/research/candidate-ideation/candidate_model_ideation_prompt.md) (and optional `--artifact-out` path / native UI Artifact in interactive sessions).
 

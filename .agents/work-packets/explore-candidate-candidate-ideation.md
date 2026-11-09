@@ -7,22 +7,17 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Strategic arm post-transfer FT bank valuation & roll hurdle calibration + Transfer Planner Entry ID fallback + Gate calibration implemented (2026-11-07)
-- **Files:** `solver/scenarios.py`, `solver/solver.py`, `.agents/skills/ideate-candidate/generate_prompt.py`, `tests/test_transfer_plan_scenarios.py`, `tests/test_strategic_solver.py`, `docs/adr/0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md`, `commands/refresh_data.py`, `tests/test_refresh_data.py`, `.agents/skills/transfer-planner/SKILL.md`, `AGENTS.md`, `.env.example`, `backtesting/promotion.py`, `backtesting/evidence_statistics.py`, `.agents/skills/explore-candidate/smoke.py`, `.agents/skills/explore-candidate/SKILL.md`, `tests/test_promotion.py`, `tests/test_evidence_statistics.py`, `tests/test_explore_candidate_smoke.py`, `CONTEXT.md`, `docs/adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md`, `docs/adr/0066-backtesting-and-promotion-foundation.md`, `docs/agents/current-state.md`
+- **Status:** In Progress — Batch 5 fixture impact candidates (EXT-21 to EXT-26) ingested into idea_queue.csv as untested (2026-11-09)
+- **Files:** `solver/scenarios.py`, `solver/solver.py`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/ideate-candidate/SKILL.md`, `tests/test_ideate_candidate.py`, `docs/research/candidate-ideation/fixtures-ideation-response.md`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `docs/research/INDEX.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Strategic FT Post-Transfer Valuation & Roll Hurdle (2026-11-07): Evaluated `gw_ft_value` on post-transfer carried bank (`fts[w + 1]` across `ft_gws = [*gws, last_gw + 1]`) vs pre-transfer `fts[w]`, added unscaled weekly spare-FT holding buffer credit (`0.325 * spare_ft_value`) for intermediate weeks $w < \text{last\_gw}$, and increased Strategic `ft_use_penalty` to `0.5` (`DEFAULT_STRATEGIC_FT_USE_PENALTY`), eliminating $w = H$ hoard-and-dump double-counting and $H=1$ blind spots while raising 1-week roll hurdle to $\sim 1.0\text{ xP}$.
-  - Transfer Planner Squad Fallback (2026-11-07): Added `--entry-id` public squad reconstruction to `commands/refresh_data.py` and updated `transfer-planner` skill to prompt for Entry ID or direct User Squad when `.env` credentials are absent, confirming selling prices, Bank, and Free Transfers before solving.
-  - Gate Calibration (2026-11-07):
-    - Stage 1 (`Development Screen`, `backtesting/promotion.py`): Retain `BOOTSTRAP_MIN_P = 0.75`, Tier 2 `0.65`, `MIN_EFFECT_SHARE = 0.0`; credit `0.5` on exact zero-mean bootstrap draws when active differences exist.
-    - Stage 2 (`Historical Promotion Gate`, `backtesting/evidence_statistics.py`): Default `max_family_attempts = 1` ($\alpha_{\text{adj}} = 0.05$), one-sided superiority (`p_value_superiority <= adjusted_alpha` or `ci_lower > 0.0`), and `0.5` tie credit on zero-mean bootstrap draws.
-    - Sparse Grids (`smoke.py` & `SKILL.md`): Report `grid_positives` diagnostic without blocking `pass=True`; Step 5 runs 2-variant type-safe local perturbation check when `grid_positives == 1`.
-  - Candidate Status: `EXT-20` and `EXT-08` remain `untested` in `idea_queue.csv` and `open` in `candidate_ledger.csv`.
+  - Fixture Impact Ideation (2026-11-09): Added `--focus fixtures` to `generate_prompt.py`; generated Batch 5 (EXT-21 to EXT-26) targeting soft-saturating open-play elasticity, venue dynamics, log-linear CS decay, budget fixture sensitivity, adversary style contrast, and playing duration trim; all 6 passed data catalog validation and dead-lever screen, queued as `untested`.
+  - Candidate Status: `EXT-20`, `EXT-08`, and Batch 5 (`EXT-21`..`EXT-26`) remain `untested` in `idea_queue.csv`.
 - **Blocked:** None
-- **Next:** Resume `/explore-candidate` on `EXT-20` and `EXT-08` when requested.
+- **Next:** Run `/explore-candidate` on queued candidates.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)

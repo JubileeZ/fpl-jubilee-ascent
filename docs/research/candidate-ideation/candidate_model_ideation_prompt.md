@@ -25,14 +25,14 @@ We operate under strict empirical model governance:
 - **Critical ADR 0066 & ADR 0064 Finding**: Under realistic squad constraints, `def_xg_shrink_challenger` decisively outperformed `adaptive_causal_challenger` on the 2025–26 Dev season ($\Delta = +0.8947$ pts/GW). The apparent unconstrained margin of earlier ML models was an artifact of selecting £110m+ illegal squads of all premiums. True predictive alpha in FPL requires accurately valuing £4.5m–£5.5m budget enablers within the 15-player £100.0m squad to fund premium assets, rather than over-indexing on expensive premiums with fragile rotation bench cover.
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0066 Foundation & ADR 0064 Standards)**: Any new model ("Candidate") must pass our multi-season evaluation: **Primary Estimand is Rolling Transfer Plan Net FPL Points** under an independent 6-GW Strategic transfer plan replay initialized from the neutral GW1 ownership anchor (15-player £100.0m squad, bank balance, rolling transfers, hit deductions, bench cover). Evaluated via paired non-wrapping Moving Block Bootstrap ($L=5$, $B=20,000$) with family-wise error control ($\text{FWER} \le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and supporting diagnostic screens (including Constrained Legal Formation XI £83.5m cap and rolling squad churn $\le \text{Champ} + 0.50$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
-- **Historical Ledger**: 104 candidate model levers recorded. 94 have failed or been logged dead (94 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
+- **Historical Ledger**: 108 candidate model levers recorded. 96 have failed or been logged dead (96 currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
 - **Evaluation Boundary & Sealed Window**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
   - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/2026-27/` or any live 2026-27 performance files in the public repository. All proposals must derive strictly from 2025–26 developmental principles.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat `def_xg_shrink_challenger` under the ADR 0066 Historical Promotion Gate.
 
-**Focus Area**: Focus on comprehensive architectural breakthroughs across both participation/minutes ($M_{\text{mins}}$) and event rates conditioned on minutes ($M_{\text{events}}$).
+**Focus Area**: Focus specifically on Fixture Context, Opponent Gradients, and Matchup Elasticity ($M_{\text{events}} / M_{\text{mins}}$). Investigate principled mechanisms ensuring fixture difficulty and venue gradients have an impactful, calibrated influence on player projections—overcoming the flat neutral collapse without breaching playable pool bias or repeating raw multiplier overprediction (ARCH-05).
 
 ### Strict Negative Constraints (Cross-Cutting Structural Dead Levers — DO NOT PROPOSE)
 1. **Club 11-Man Mass Conservation** ($\sum_{{\text{{club}}}} p_{{\text{{start}}}} = 11.0$): Rotating squads rotate ~12.5 starting mass across competitions; forcing 11.0 starves elite starters while inflating unplayable bench fodder ($\Delta = -3.14 \dots -4.13$ pts/GW, 0/3 segs).
@@ -74,16 +74,20 @@ Screen every proposal against these current ledger mechanisms, including continu
 - **Apex Predator Challenger (Composite ML p_start + start duration + shrunk xG goals + LOO assist finishing with GW1-9 Champion stability and schedule congestion)** (tried as: `apex_predator_challenger`, result: `dev 2025-26 PASS +0.840 2/3 boot P 0.992; confirm 2024-25 FAIL -0.153 1/3 boot P 0.376 (early_mid regression -0.959 < -0.15)`, locked until 2027-10-21)
 - **Price-Stratified Huber-Regularized Continuous-N_eff Causal Panel (price-tier centering, Huber duration, continuous N_eff ramp)** (tried as: `smoke ext_05_* (4 variants)`, result: `dev 2025-26 FAIL: combined -1.004 1/3 segs boot P 0.012; early_mid catastrophic regression -2.643 < -0.15; guardrails failed`, locked until 2027-10-26)
 
-### Active Dead Levers by Subsystem Summary (94 Locked Levers)
-94 candidate levers are currently locked under the 1-year moratorium. Proposals matching any of these archetypes will be rejected:
-- **Participation & Minutes (20 dead levers)**: e.g. Beta-Binomial P(60|state), starter tenure decay, naive nailed-starter multipliers.
-- **Goals & Finishing (19 dead levers)**: e.g. high-K finishing pools ($K \ge 3600$), unsharp xG slope flattening, flat position goal scales.
-- **Key Passes & Assists (14 dead levers)**: e.g. pooled assist finishing offsets, uncalibrated raw xA.
-- **Goalkeepers & Saves (3 dead levers)**: e.g. club SoT volume x pooled save rate, slot probability softmax.
-- **Defense & Clean Sheets (7 dead levers)**: e.g. defcon venue/opposition pressure, post-link CS inflation, club-pooled per90 GC.
-- **Bonus Points / BPS (11 dead levers)**: e.g. BPS pool saturation caps, softmax temperature retuning.
-- **Budget & Valuation (0 dead levers)**: pricing and budget mechanisms.
-- **Structural & Cross-Cutting (20 dead levers)**: full current list above.
+### Active Dead Levers (Fixture Swings & Matchup Multipliers Subsystem — Locked Until 1-Year Revisit Date)
+The following fixture-scaling mechanisms were empirically evaluated and failed promotion or guardrails. They are under a mandatory 1-year freeze and MUST NOT be proposed:
+- **Fixture swing multiplicative (s_att) and additive arms** (tried as: `fixture-swing-candidates`, result: `mult breached easy cap +0.681; additive worse easy bias`, locked until 2027-09-24)
+- **Raw FDR as attack/defence multiplier fallback** (tried as: `dual-vector-fdr-regime`, result: `easy MID/FWD bias ~ +0.75`, locked until 2027-09-22)
+- **Opponent-relative team Poisson lambda rate multiplier** (tried as: `team-poisson-lambda`, result: `over-predicts easy fixtures`, locked until 2027-09-22)
+- **Uncalibrated Matchup Share** (tried as: `matchup-share-addon`, result: `all-pool worse than neutral`, locked until 2027-09-22)
+- **Fixture downside attack scale** (tried as: `smoke a2_down_* (6)`, result: `gated: best a2_down_all_f70 +0.179 2/3 P 0.664; goals-only/assists-only negative`, locked until 2027-09-28)
+- **xMins-side fixture effects** (tried as: `smoke a2r2_* (6): expected-margin xmins_if_start trim`, result: `all <= 0 (-0.25..-0.46); trail_def 0.000`, locked until 2027-09-28)
+- **Club-coherent assist mass (club-fixture factor (1-w)+w*rho*club goals/club assists; rho as-of league assists/goals; w 0.5)** (tried as: `smoke atk_02_w05_real (ATK-02; w0.25 / blended / mass-neutral variants all fail)`, result: `dev 2025-26 FAIL vs Champion CDP: all negative -0.33..-1.20 0-1/3 boot P <= 0.330; best atk_02_w05_real -0.334; MAE guardrail fail`, locked until 2027-09-30)
+- **GKP club-fixture slot accounting (Softmax GKP start prob per club fixture sums to 1; excess to DNP; or linear scale / 11-cap)** (tried as: `smoke min_05_gkp_softmax min_05_gkp_scale min_05_gkp_11cap min_05_gkp_50redist min_05_gkp_scale_50redist (5)`, result: `all negative -0.11..-1.21 1/3 boot P <= 0.239; best min_05_gkp_scale -0.108 1/3 P 0.239`, locked until 2027-09-29)
+- **Fitted Plackett-Luce BPS rank model (Ridge utility on observed fixture-level BPS; lambda 10/50 with/without history bps)** (tried as: `smoke bon_04_lam10_with_bps bon_04_lam10_no_bps bon_04_lam50_with_bps bon_04_lam50_no_bps (4)`, result: `all negative -1.44..-1.81 0/3 boot P <= 0.044; best bon_04_lam10_no_bps -1.443 0/3 P 0.044`, locked until 2027-09-29)
+- **Schedule-congestion start shift (logit shift -0.2 on learned p_start for fixtures <3.5 days after previous kickoff)** (tried as: `schedule_congestion_challenger (smoke min_07_shift_m02_raw)`, result: `dev 2025-26 PASS +0.063 2/3 boot P 0.967; confirm 2024-25 FAIL -0.105 0/3 boot P 0.000`, locked until 2027-09-30)
+- **Plackett-Luce bonus pool saturation (B_max 1.20-1.50) with zero-sum fixture redistribution to starters** (tried as: `smoke bon_bmax120 bon_bmax130 bon_bmax140 bon_bmax130_nosave bon_bmax150 (5)`, result: `all negative -0.16..-0.38 0-1/3 segs boot P <= 0.377; forwards starved of expected value`, locked until 2027-10-01)
+- **Binomial fixture-exposure likelihood for inherited learned-start anchor (DGW starts/trials, predictors and mass fixed)** (tried as: `smoke ext_09_binomial_fixture_exposure`, result: `dev 2025-26 FAIL: delta +0.0000 0/3 segs boot P 0.000 vs def_xg_shrink_challenger; guardrails pass; no confirmation`, locked until 2027-10-28)
 
 ### Observed Operational Data Catalog & Permitted Input Covariates
 Every proposed Candidate model must strictly derive from the following verified data sources.
@@ -269,7 +273,7 @@ $$s(H) = \frac{\sum_{k=0}^{H-1} \delta^k}{\sum_{k=0}^{4} \delta^k}$$
    $$-1.5 \cdot s(H)\text{ pt objective penalty on non-Wildcard/non-Free-Hit GKP transfer-in}.$$
 
 #### Emergency Free Transfer Value (ADR 0065)
-Strategic marginal FT values for bank states 2-5: `ft_value_list = {"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * s(H)`. First spare FT receives highest emergency value; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = 0.2` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
+Strategic marginal FT values for post-transfer carried bank states 2-5 (`fts[w + 1]`): `ft_value_list = {"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * s(H)`. First spare FT receives highest emergency value plus weekly holding buffer credit; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = 0.5` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
 
 ---
 
@@ -290,10 +294,10 @@ CHURN_GUARDRAIL_TOL = 0.5  # Max excess squad churn players/GW
 #### Requirement 1: Authoritative Rolling Transfer Plan Net Points Primary (ADR 0066)
 The primary promotion estimand is the **actual cumulative net FPL points** achieved under an independent rolling 6-Gameweek Strategic transfer plan replay (`backtesting/rolling_replay.py`), initialized from the neutral GW1 ownership anchor (15-player £100.0m squad).
 
-#### Supporting Diagnostic Screen: Constrained Legal Formation XI Regret (ADR 0064)
-Fast single-gameweek diagnostic screen using `select_legal_formation_xi`, solved via HiGHS/scipy MILP enforcing:
-- $\le 3$ players per club.
-- Starting XI budget cap: $B_{\text{XI}} \le £83.5\text{m}$ ($835.0$ in FPL 0.1m units, reflecting ~£16.5m bench allocation).
+#### Supporting Diagnostic Screen: £100.0m 15-Player Squad + Legal Formation XI Regret (`select_squad_and_formation_xi`)
+Fast single-gameweek diagnostic screen using `select_squad_and_formation_xi`, solved via HiGHS/scipy MILP enforcing:
+- $\le 3$ players per club across a legal 15-player squad (`2 GKP, 5 DEF, 5 MID, 3 FWD`).
+- Full 15-player squad budget cap: $B_{\text{squad}} \le £100.0\text{m}$ ($1000.0$ in FPL 0.1m units), partitioned into 11 legal starters ($1.0\times$ weight) and 4 ordered bench players ($0.10\times$ weight) scored with official FPL automatic bench substitutions (`resolve_autosubs`).
 - Deterministic tie-breaking: `[pred DESC, cost ASC, id ASC]`.
 - Combined Primary Delta: $\bar{\Delta} = \overline{\text{Regret}}_{\text{champ}} - \overline{\text{Regret}}_{\text{cand}} > 0.0$ pts/GW.
 
@@ -324,7 +328,7 @@ Evaluated across both full season (38 GWs) and active gameweeks $\mathcal{G}_{\t
 
 ---
 
-### 4. Verified Dead-Lever Archetypes (from 104 Historical Trials)
+### 4. Verified Dead-Lever Archetypes (from 108 Historical Trials)
 
 | Archetype ID | Tested Hypotheses | Empirical Fate | Mathematical Cause of Failure |
 |---|---|---|---|

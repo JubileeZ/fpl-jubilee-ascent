@@ -185,7 +185,7 @@ class AsymmetricSubModel(BaseModel):
 def test_generate_prompt_incorporates_focus_and_gate_constants() -> None:
     gen = _load_skill_module("generate_prompt", "generate_prompt.py")
     champ_name, _ = gen.load_champion_info()
-    for focus in ("general", "minutes", "budget-enablers"):
+    for focus in ("general", "minutes", "budget-enablers", "fixtures"):
         md = gen.build_prompt_markdown(focus)
         assert "# FPL Candidate Model Ideation Prompt Brief" in md
         assert "Critical Operational Directive" in md

@@ -90,6 +90,12 @@ FOCUS_PROMPTS: dict[str, str] = {
         "frees up critical bank budget for premium talismans (Haaland, Salah) and yields massive primary delta over "
         "premium-heavy models without squad churn."
     ),
+    "fixtures": (
+        "Focus specifically on Fixture Context, Opponent Gradients, and Matchup Elasticity ($M_{\\text{events}} / M_{\\text{mins}}$). "
+        "Investigate principled mechanisms ensuring fixture difficulty and venue gradients have an impactful, calibrated "
+        "influence on player projections—overcoming the flat neutral collapse without breaching playable pool bias "
+        "or repeating raw multiplier overprediction (ARCH-05)."
+    ),
 }
 
 
@@ -264,6 +270,14 @@ def format_dead_levers_for_prompt(active_dead: list[dict[str, str]], focus: str)
         lines.append("\n### Active Dead Levers (Budget Enablers & Valuation Subsystem — Locked Until 1-Year Revisit Date)")
         lines.append("The following valuation and enabler mechanisms were empirically evaluated and failed promotion or guardrails. They are under a mandatory 1-year freeze and MUST NOT be proposed:")
         lines.append(_render_list(budget_levers or structural_levers))
+    elif focus == "fixtures":
+        lines.append("\n### Active Dead Levers (Fixture Swings & Matchup Multipliers Subsystem — Locked Until 1-Year Revisit Date)")
+        lines.append("The following fixture-scaling mechanisms were empirically evaluated and failed promotion or guardrails. They are under a mandatory 1-year freeze and MUST NOT be proposed:")
+        fixture_dead = [
+            r for r in active_dead
+            if any(k in f"{r['lever']} {r['tried_as']}".lower() for k in ("fixture", "matchup", "poisson lambda", "fdr", "neutral fixture"))
+        ]
+        lines.append(_render_list(fixture_dead or structural_levers))
     else:  # general
         lines.append(f"\n### Active Dead Levers by Subsystem Summary ({len(active_dead)} Locked Levers)")
         lines.append(
@@ -653,7 +667,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate point-in-time candidate ideation prompt.")
     parser.add_argument(
         "--focus",
-        choices=["general", "minutes", "events", "assists", "goalkeepers", "budget-enablers"],
+        choices=["general", "minutes", "events", "assists", "goalkeepers", "budget-enablers", "fixtures"],
         default="general",
         help="Subsystem focus area for targeted ideation.",
     )
