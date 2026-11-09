@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (79 rows, 47 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (85 rows, 53 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27, EXT-28, EXT-31) fixture impact candidates untested; EXT-29 and EXT-30 dead-matched; EXT-20 and EXT-08 re-evaluated (failed dev screen under £100m metric); Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 actively executing (EXT-21 failed dev screen; EXT-22 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -13,6 +13,20 @@
 **Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md) · [Fixtures](fixtures-ideation-response.md); frontier language-model review, 2026-11-09.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
+
+---
+
+## Batch 5 Exploration Execution (2026-11-09, in progress)
+
+**Verdict:** In progress across fixture impact candidates; Lane `ext_21` completed (dev FAIL); Model Champion `def_xg_shrink_challenger` stands unchanged.
+
+- **Smoke Evaluation (`ext_21` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+  - **Lane `ext_21` (`EXT-21`: Bounded Soft-Saturating Matchup Factor on Open-Play Goal Expectancy, 6 variants: $\gamma_{\text{fix}} \in [0.10, 0.22], \kappa_{\text{scale}} \in [0.8, 1.2]$)**:
+    - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_21_g22_k12` ($\Delta = +1.1651$), `ext_21_g20_k10` ($\Delta = +1.0455$), `ext_21_g18_k08` ($\Delta = +0.8525$), `ext_21_g15_k12` ($\Delta = +0.3370$), `ext_21_g15_k10` ($\Delta = +0.3041$), `ext_21_g10_k08` ($\Delta = +0.0900$).
+    - However, 4 variants failed Tier 2 due to captaincy regret degradation ($+0.1720$ to $+0.2397 > +0.1500$ guardrail) or insufficient bootstrap probability ($P = 0.268$ to $0.577 < 0.65$).
+    - Only `ext_21_g22_k12` passed Tier 2 ($\Delta = +1.1651, P = 0.728$).
+    - Under Tier 3 full walkforward with predicted minutes, `ext_21_g22_k12` failed the Development Screen: $\Delta = -0.4082$ pts/GW, boot $P = 0.418 < 0.75$, segs 1/3, with cold-start regression ($-1.774 < -0.25$) and catastrophic early-mid regression ($-0.796 < -0.15$).
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
 
