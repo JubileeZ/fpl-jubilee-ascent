@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (115 rows, 83 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (121 rows, 89 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 6 actively executing (EXT-26 failed dev screen; EXT-27, EXT-28, EXT-31 next; EXT-29 & EXT-30 dead-match); Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 6 actively executing (EXT-26 & EXT-27 failed dev screen; EXT-28 & EXT-31 next; EXT-29 & EXT-30 dead-match); Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -25,6 +25,11 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
     - All 6 variants failed Tier 1 Minutes Gate (`pass=False`): Candidate MAE degraded on Champion (13.728..13.753 vs 13.704 baseline), with bootstrap win probability 0.000 (< 0.65 threshold).
     - Under Tier 3 walkforward evaluation, all variants produced negative combined primary delta ($\Delta = -0.1046$ to $-0.3317$, $P = 0.031$ to $0.358$), with severe regressions in early-mid segment ($-0.840$ to $-1.816 < -0.15$). Best variant: `ext_26_p40_t10` ($\Delta = -0.1046$, segs 1/3, boot $P = 0.358$).
     - Trimming starting minutes based on team-opponent goal margin harmed both minutes calibration and transfer/lineup decisions.
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_27` (`EXT-27`: Venue-Decoupled Home Advantage, 6 variants: $\eta \in [0.50, 1.00]$, scope $\in \{\text{all}, \text{att}, \text{def}\}$)**:
+    - 5 of 6 variants recorded non-positive Oracle Regret Delta ($\Delta = -1.1543$ to $+0.0000, P = 0.000$ to $0.476$).
+    - Variant `ext_27_e100_all` achieved positive raw delta ($\Delta = +0.2357$), but failed the bootstrap confidence threshold ($P = 0.504 < 0.65$).
+    - Decoupling venue scaling from official ratings did not improve lineup or transfer efficiency over the Champion.
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---

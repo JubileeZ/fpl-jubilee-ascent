@@ -157,6 +157,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Price-conditioned fixture sensitivity for budget midfielders and forwards (EXT-24) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_24_g30_c55` delta +0.1247, 0/3 segs, boot P 0.606 < 0.65 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Adversary concession profiling by outfielder style contrast (EXT-25) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_25_x08_k360` delta -0.0078, 0/3 segs, boot P 0.162 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Projected goal margin minutes trim modulation (EXT-26) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_26_p40_t10` delta -0.1046, 1/3 segs, boot P 0.358 (all 6 variants tier1_minutes_fail: MAE regressed 13.728..13.753 vs 13.704) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
+| Venue-decoupled home advantage (EXT-27) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_27_e100_all` delta +0.2357, 0/3 segs, boot P 0.504 < 0.65 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 
 
 ## Agent Prompt

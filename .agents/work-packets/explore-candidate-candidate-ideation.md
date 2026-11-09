@@ -7,7 +7,7 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Batch 5 complete; Batch 6 Lane ext_26 complete (dev FAIL); Lane ext_27 next
+- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Batch 5 complete; Batch 6 Lanes ext_26, ext_27 complete (dev FAIL); Lane ext_28 running
 - **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
@@ -21,8 +21,10 @@
   - Lane ext_24: Completed 2026-11-09. 5/6 non-positive delta, 1/6 positive (`ext_24_g30_c55` $\Delta = +0.1247$) but failed bootstrap threshold ($P = 0.606 < 0.65$). All 6 variants failed Tier 2 Oracle Event Gate. Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_25: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.0078$ to $-0.6484$, $P = 0.010$ to $0.162$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_26: Completed 2026-11-09. All 6 variants failed Tier 1 Minutes Gate (MAE regressed from 13.704 to 13.728..13.753) and failed Tier 3 walkforward regret ($\Delta = -0.1046$ to $-0.3317$, early-mid segment regression $-0.840$ to $-1.816 < -0.15$). Logged in `idea_queue.csv` (`status: fail`).
+  - Lane ext_27: Completed 2026-11-09. 5/6 non-positive delta ($\Delta = -1.1543$ to $+0.0000$), 1/6 positive (`ext_27_e100_all` $\Delta = +0.2357$) but failed bootstrap threshold ($P = 0.504 < 0.65$). All 6 variants failed Tier 2 Oracle Event Gate. Logged in `idea_queue.csv` (`status: fail`).
+  - Lane ext_28: Schedule-Neutralized Attack Baselines (6 variants) running in background.
 - **Blocked:** None
-- **Next:** Launch Batch 6 Lane ext_27 (Venue-Decoupled Home Advantage).
+- **Next:** Await smoke test for Lane ext_28.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
