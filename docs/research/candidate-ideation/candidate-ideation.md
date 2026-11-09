@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (103 rows, 71 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (109 rows, 77 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 actively executing (EXT-21, EXT-22, EXT-23, EXT-24 failed dev screen; EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 completed (all 5 ideas failed dev screen: EXT-21 through EXT-25); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) next; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -16,11 +16,11 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
 
 ---
 
-## Batch 5 Exploration Execution (2026-11-09, in progress)
+## Batch 5 Exploration Execution (2026-11-09, completed)
 
-**Verdict:** In progress across fixture impact candidates; Lane `ext_21` completed (dev FAIL); Model Champion `def_xg_shrink_challenger` stands unchanged.
+**Verdict:** Batch 5 completed: no win (all 5 fixture impact candidates EXT-21 through EXT-25 failed the Development Screen); Model Champion `def_xg_shrink_challenger` stands unchanged.
 
-- **Smoke Evaluation (`ext_21` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+- **Smoke Evaluation (`ext_21` through `ext_25` — 30 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
   - **Lane `ext_21` (`EXT-21`: Bounded Soft-Saturating Matchup Factor on Open-Play Goal Expectancy, 6 variants: $\gamma_{\text{fix}} \in [0.10, 0.22], \kappa_{\text{scale}} \in [0.8, 1.2]$)**:
     - 5 of 6 variants achieved positive mean Oracle Regret Delta: `ext_21_g22_k12` ($\Delta = +1.1651$), `ext_21_g20_k10` ($\Delta = +1.0455$), `ext_21_g18_k08` ($\Delta = +0.8525$), `ext_21_g15_k12` ($\Delta = +0.3370$), `ext_21_g15_k10` ($\Delta = +0.3041$), `ext_21_g10_k08` ($\Delta = +0.0900$).
     - However, 4 variants failed Tier 2 due to captaincy regret degradation ($+0.1720$ to $+0.2397 > +0.1500$ guardrail) or insufficient bootstrap probability ($P = 0.268$ to $0.577 < 0.65$).
@@ -38,6 +38,10 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
   - **Lane `ext_24` (`EXT-24`: Price-Conditioned Fixture Sensitivity for Budget Midfielders and Forwards, 6 variants: $\gamma_{\text{budget}} \in [0.15, 0.35], \text{cutoff} \in [55.0, 60.0]$)**:
     - 5 of 6 variants exhibited non-positive oracle regret delta ($\Delta = +0.0000$ to $-0.4061, P = 0.000$ to $0.139$).
     - Variant `ext_24_g30_c55` achieved positive oracle delta ($\Delta = +0.1247$), but failed the bootstrap confidence threshold ($P = 0.606 < 0.65$).
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_25` (`EXT-25`: Adversary Concession Profiling by Outfielder Style Contrast, 6 variants: $\xi_{\text{modality}} \in [0.08, 0.18], K_{\text{modality}} \in [360, 540]$)**:
+    - All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.010` to `0.162`, `combined_delta` `-0.0078` to `-0.6484`). Best variant: `ext_25_x08_k360` ($\Delta = -0.0078, P = 0.162$).
+    - Shifting attacking expectancy between xG and xA based on fixture difficulty degraded formation XI lineup selection across all variants.
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
