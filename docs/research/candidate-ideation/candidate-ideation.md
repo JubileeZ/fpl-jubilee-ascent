@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (91 rows, 59 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (97 rows, 65 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 actively executing (EXT-21 & EXT-22 failed dev screen; EXT-23 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 actively executing (EXT-21, EXT-22, EXT-23 failed dev screen; EXT-24 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -30,6 +30,10 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
   - **Lane `ext_22` (`EXT-22`: Venue-Conditioned Empirical Bayes Attacking Output Dynamics, 6 variants: $\beta_{\text{venue}} \in [0.06, 0.14], K_{\text{venue}} \in [4.0, 8.0]$)**:
     - All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.030` to `0.176`, `combined_delta` `-0.6420` to `-1.5578`). Best variant: `ext_22_b06_k4` ($\Delta = -0.6420, P = 0.156$).
     - Multiplying player attacking rates by venue coefficients degraded formation XI lineup selection as home advantage is already implicitly absorbed in baseline outputs and match difficulty ratings.
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_23` (`EXT-23`: Asymmetric Log-Linear Defensive Quality Decay for Clean Sheets, 6 variants: $\alpha_{\text{cs}} \in [0.12, 0.24], K_{\text{cs}} \in [4.0, 6.0]$)**:
+    - All 6 variants achieved positive mean Oracle Regret Delta: `ext_23_a18_k6` ($\Delta = +0.6257$), `ext_23_a20_k4` ($\Delta = +0.4372$), `ext_23_a16_k4` ($\Delta = +0.2739$), `ext_23_a15_k6` ($\Delta = +0.2103$), `ext_23_a12_k4` ($\Delta = +0.0363$), `ext_23_a24_k6` ($\Delta = +0.0183$).
+    - However, all 6 variants failed Tier 2 Oracle Event Gate due to severe captaincy regret degradation ($+0.2850$ to $+0.3495 > +0.1500$ guardrail) and insufficient bootstrap probability ($P = 0.414$ to $0.646 < 0.65$).
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
