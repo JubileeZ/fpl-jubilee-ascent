@@ -3,7 +3,7 @@
 **Updated**: 2026-11-09 (+00:00)
 **Data stamp**: Completed dev rows in `smoke_results.csv` (69 rows, 47 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 (EXT-21 to EXT-26 fixture impact & matchup elasticity) ingested as untested; EXT-20 and EXT-08 queued as untested; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27, EXT-28, EXT-31) fixture impact candidates untested; EXT-29 and EXT-30 dead-matched; EXT-20 and EXT-08 queued; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -43,6 +43,25 @@ Evaluated Batch 3 (`EXT-14` through `EXT-19`) against Champion `def_xg_shrink_ch
   - **Lane `ext_14` (`EXT-14`: Continuous Match-Tempo & Counter-Transition Attack Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.6045` to `-0.8001`). Best variant: `ext_14_a15_b06` (`alpha_tempo=0.15, beta_trans=0.06`, `combined_delta = -0.6045`). Increasing `beta_trans` monotonically degraded Oracle Formation XI regret as demeaned tempo/transition elasticity distorted attacker rankings relative to Champion `def_xg_shrink_challenger`. Logged Dead until `2027-11-05`.
   - **Lane `ext_18` (`EXT-18`: Starter-Role Conditioning & Set-Piece Share Persistence for Budget Enablers, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.2407` to `-1.1320`). Best variant: `ext_18_k540_g015` (`k_atk=540, gamma_role=0.15`, `combined_delta = -0.2407`). Stronger attacker shrinkage ($K_{\text{ATK}} \in \{630, 720\}$) and creative-share prior conditioning over-compressed attacking differentials and inflated high-creativity deep playmakers whose set-piece volume does not translate into direct goal threat (xG). Logged Dead until `2027-11-05`.
   - **Lane `ext_19` (`EXT-19`: Opponent Speculative Shot-Volume & Goalkeeper Save-Floor Elasticity, 6 variants)**: All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.000`, `combined_delta` `-0.1279` to `-0.4712`). Best variant: `ext_19_k900_xi035` (`k_gk=900, xi_saves=0.35`, `combined_delta = -0.1279`). Scaling GKP `per90_saves` upward against high-threat opponents over-projected GKP returns in fixtures where high opponent threat converted into goals conceded rather than net fantasy points. Logged Dead until `2027-11-05`.
+
+---
+
+## Candidate Ideation Review (Batch 6: 2026-11-09)
+
+Five candidate proposals received from external frontier model collaboration evaluating fixture difficulty and venue impact across scoring components:
+
+1. **EXT-27: Venue-Decoupled Home Advantage** (`xp_goals`, `xp_assists`, `xp_clean_sheets`): Decouples league-wide home advantage factor from team-strength ratio shrinkage ($s=0.40$), preventing double-attenuation of home advantage across all clubs. Screened against dead lever `Defcon venue and opposition pressure scaling` (cleared as false positive; Defcon-specific). Status: `untested`.
+2. **EXT-28: Schedule-Neutralized Attack Baselines** (`xp_goals`, `xp_assists`): De-biases historical per-90 xG/xA by dividing completed fixture output by pre-match attacking multiplier ($\tilde x = x / (1 + \phi(m-1))$), preventing double-counting easy fixture runs in shrunk baselines. Screened against dead lever `Penalty-taker signal from per90 only` (cleared as false positive; taker-specific). Status: `untested`.
+3. **EXT-29: Opponent Positional Concession Share (Mean-Preserving)** (`xp_goals`, `xp_assists`): Opponent concession contrasts by MID/FWD profile normalized to zero-sum position weights. Matched active Dead Lever `Opponent conditional attacking role allocation (EXT-11)` (locked until `2027-10-28`). Status: `dead-match`.
+4. **EXT-30: Component-Specific Matchup Elasticity from Team-Level Calibration Slopes** (`xp_goals`, `xp_assists`, `xp_clean_sheets`): Estimates independent $s_{\text{att}}$ and $s_{\text{def}}$ from team-level log-link regressions, capped at 0.60. Matched active Dead Lever Row 21 `Fixture swing multiplicative (s_att) and additive arms` (locked until `2027-09-24`). Status: `dead-match`.
+5. **EXT-31: Opponent-Sample-Reliability Matchup Share (Promoted-Club Cold Start)** (`xp_goals`, `xp_assists`, `xp_clean_sheets`): Cold-start attenuation dampening matchup multiplier ($s_{\text{eff}} = s \cdot \hat w_{\text{pair}}$) for low-sample/promoted clubs early in season without altering established club projections. Status: `untested`.
+
+Queue dossiers:
+- [EXT-27: Venue-Decoupled Home Advantage](ideas/EXT-27-venue-decoupled-home-advantage.md)
+- [EXT-28: Schedule-Neutralized Attack Baselines](ideas/EXT-28-schedule-neutralized-attack-baselines.md)
+- [EXT-29: Opponent Positional Concession Share](ideas/EXT-29-opponent-positional-concession-share-mean-preserving.md)
+- [EXT-30: Component-Specific Matchup Elasticity](ideas/EXT-30-component-specific-matchup-elasticity-from-team-level-calibration-slopes.md)
+- [EXT-31: Opponent-Sample-Reliability Matchup Share](ideas/EXT-31-opponent-sample-reliability-matchup-share-promoted-club-cold-start.md)
 
 ---
 

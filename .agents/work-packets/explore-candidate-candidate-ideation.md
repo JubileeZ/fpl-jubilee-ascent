@@ -7,15 +7,16 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Batch 5 fixture impact candidates (EXT-21 to EXT-26) ingested into idea_queue.csv as untested (2026-11-09)
-- **Files:** `solver/scenarios.py`, `solver/solver.py`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/ideate-candidate/SKILL.md`, `tests/test_ideate_candidate.py`, `docs/research/candidate-ideation/fixtures-ideation-response.md`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `docs/research/INDEX.md`
+- **Status:** In Progress — Batch 5 (EXT-21 to EXT-26) and Batch 6 (EXT-27 to EXT-31) fixture impact candidates ingested; EXT-27, EXT-28, EXT-31 queued as untested; EXT-29, EXT-30 dead-matched (2026-11-09)
+- **Files:** `solver/scenarios.py`, `solver/solver.py`, `.agents/skills/ideate-candidate/generate_prompt.py`, `.agents/skills/ideate-candidate/SKILL.md`, `tests/test_ideate_candidate.py`, `docs/research/candidate-ideation/fixtures-ideation-response.md`, `docs/research/candidate-ideation/external-fixtures-ideation-response.md`, `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `docs/research/candidate-ideation/candidate_model_ideation_prompt.md`, `docs/research/INDEX.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
   - Fixture Impact Ideation (2026-11-09): Added `--focus fixtures` to `generate_prompt.py`; generated Batch 5 (EXT-21 to EXT-26) targeting soft-saturating open-play elasticity, venue dynamics, log-linear CS decay, budget fixture sensitivity, adversary style contrast, and playing duration trim; all 6 passed data catalog validation and dead-lever screen, queued as `untested`.
-  - Candidate Status: `EXT-20`, `EXT-08`, and Batch 5 (`EXT-21`..`EXT-26`) remain `untested` in `idea_queue.csv`.
+  - Batch 6 Ingest (2026-11-09): External frontier model response ingested as EXT-27 through EXT-31. EXT-27 (venue-decoupled home advantage) and EXT-28 (schedule-neutralized attack baselines) audited and cleared of keyword dead-lever false positives, queued as `untested`. EXT-31 (opponent-sample-reliability matchup share) passed clean as `untested`. EXT-29 (opponent positional concession share) matched active dead lever EXT-11 (`2027-10-28`). EXT-30 (component-specific matchup elasticity) matched active dead lever Row 21 (`2027-09-24`).
+  - Candidate Status: `EXT-20`, `EXT-08`, Batch 5 (`EXT-21`..`EXT-26`), and Batch 6 (`EXT-27`, `EXT-28`, `EXT-31`) remain `untested` in `idea_queue.csv`.
 - **Blocked:** None
 - **Next:** Run `/explore-candidate` on queued candidates.
 
