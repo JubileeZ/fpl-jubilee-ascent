@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (121 rows, 89 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (127 rows, 95 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 6 actively executing (EXT-26 & EXT-27 failed dev screen; EXT-28 & EXT-31 next; EXT-29 & EXT-30 dead-match); Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 6 actively executing (EXT-26, EXT-27, EXT-28 failed dev screen; EXT-31 in progress; EXT-29 & EXT-30 dead-match); Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -30,6 +30,11 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
     - 5 of 6 variants recorded non-positive Oracle Regret Delta ($\Delta = -1.1543$ to $+0.0000, P = 0.000$ to $0.476$).
     - Variant `ext_27_e100_all` achieved positive raw delta ($\Delta = +0.2357$), but failed the bootstrap confidence threshold ($P = 0.504 < 0.65$).
     - Decoupling venue scaling from official ratings did not improve lineup or transfer efficiency over the Champion.
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_28` (`EXT-28`: Schedule-Neutralized Attack Baselines, 6 variants: $\phi \in [0.50, 1.00]$, mode $\in \{\text{all}, \text{xg}, \text{xa}, \text{in\_season}\}$)**:
+    - 5 of 6 variants recorded non-positive Oracle Regret Delta ($\Delta = -0.0657$ to $-0.5032, P = 0.100$ to $0.237$).
+    - Variant `ext_28_phi050` achieved positive raw delta ($\Delta = +0.0142$), but failed the bootstrap confidence threshold ($P = 0.486 < 0.65$).
+    - De-biasing historical player attacking rates by opponent concession intensity did not improve formation XI lineup selection.
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
