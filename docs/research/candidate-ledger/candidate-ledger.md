@@ -154,6 +154,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Bounded soft-saturating matchup factor on open-play goal expectancy (EXT-21) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_21_g22_k12` delta -0.4082, 1/3 segs, boot P 0.418 (1/6 passed Tier 2, all 6 failed Tier 3 dev screen) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Venue-conditioned empirical Bayes attacking output dynamics (EXT-22) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_22_b06_k4` delta -0.6420, 0/3 segs, boot P 0.156 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Asymmetric log-linear defensive quality decay for clean sheets (EXT-23) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_23_a18_k6` delta +0.6257, 0/3 segs, boot P 0.646 (all 6 variants tier2_oracle_fail: captaincy regret regressed +0.285..+0.350 > +0.150) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
+| Price-conditioned fixture sensitivity for budget midfielders and forwards (EXT-24) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_24_g30_c55` delta +0.1247, 0/3 segs, boot P 0.606 < 0.65 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 
 
 ## Agent Prompt

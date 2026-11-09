@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (97 rows, 65 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (103 rows, 71 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 actively executing (EXT-21, EXT-22, EXT-23 failed dev screen; EXT-24 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 actively executing (EXT-21, EXT-22, EXT-23, EXT-24 failed dev screen; EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -34,6 +34,10 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
   - **Lane `ext_23` (`EXT-23`: Asymmetric Log-Linear Defensive Quality Decay for Clean Sheets, 6 variants: $\alpha_{\text{cs}} \in [0.12, 0.24], K_{\text{cs}} \in [4.0, 6.0]$)**:
     - All 6 variants achieved positive mean Oracle Regret Delta: `ext_23_a18_k6` ($\Delta = +0.6257$), `ext_23_a20_k4` ($\Delta = +0.4372$), `ext_23_a16_k4` ($\Delta = +0.2739$), `ext_23_a15_k6` ($\Delta = +0.2103$), `ext_23_a12_k4` ($\Delta = +0.0363$), `ext_23_a24_k6` ($\Delta = +0.0183$).
     - However, all 6 variants failed Tier 2 Oracle Event Gate due to severe captaincy regret degradation ($+0.2850$ to $+0.3495 > +0.1500$ guardrail) and insufficient bootstrap probability ($P = 0.414$ to $0.646 < 0.65$).
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_24` (`EXT-24`: Price-Conditioned Fixture Sensitivity for Budget Midfielders and Forwards, 6 variants: $\gamma_{\text{budget}} \in [0.15, 0.35], \text{cutoff} \in [55.0, 60.0]$)**:
+    - 5 of 6 variants exhibited non-positive oracle regret delta ($\Delta = +0.0000$ to $-0.4061, P = 0.000$ to $0.139$).
+    - Variant `ext_24_g30_c55` achieved positive oracle delta ($\Delta = +0.1247$), but failed the bootstrap confidence threshold ($P = 0.606 < 0.65$).
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
