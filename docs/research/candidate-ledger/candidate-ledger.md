@@ -152,6 +152,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (EXT-20) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: best `ext_20_t15_k800` delta +0.0563, 1/3 segs, boot P 0.671 < 0.75 (4/6 passed Tier 2, all 6 failed Tier 3 under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Joint own-xG/xA process intensity and allocation likelihood (EXT-08) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: delta +0.0000, 0/3 segs, boot P 0.000 (all 4 variants tier2_oracle_fail under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Bounded soft-saturating matchup factor on open-play goal expectancy (EXT-21) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_21_g22_k12` delta -0.4082, 1/3 segs, boot P 0.418 (1/6 passed Tier 2, all 6 failed Tier 3 dev screen) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
+| Venue-conditioned empirical Bayes attacking output dynamics (EXT-22) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_22_b06_k4` delta -0.6420, 0/3 segs, boot P 0.156 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 
 
 ## Agent Prompt

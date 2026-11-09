@@ -7,7 +7,7 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Lane ext_21 completed (all 6 variants failed dev screen); Lane ext_22 ready to launch
+- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Lane ext_21 and ext_22 completed (dev FAIL); Lane ext_23 ready to launch
 - **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
@@ -15,10 +15,11 @@
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
   - Active Batch: Batch 5 (`EXT-21` to `EXT-25`) actively executing; Batch 6 (`EXT-26` to `EXT-31`) queued.
-  - Lane ext_21: Completed 2026-11-09. All 6 variants failed dev screen (1 passed Tier 2 $\Delta = +1.1651, P = 0.728$; failed Tier 3 $\Delta = -0.4082$, boot $P = 0.418$, cold-start $-1.774 < -0.25$, early-mid $-0.796 < -0.15$). Logged in `idea_queue.csv` (`status: fail`).
-  - Lane ext_22: Venue-Conditioned Empirical Bayes Attacking Output Dynamics (6 variants: $\beta_{\text{venue}} \in [0.06, 0.14], K_{\text{venue}} \in [4, 8]$) ready to launch.
+  - Lane ext_21: Completed 2026-11-09. All 6 variants failed dev screen (1 passed Tier 2 $\Delta = +1.1651, P = 0.728$; failed Tier 3 $\Delta = -0.4082$, boot $P = 0.418$). Logged in `idea_queue.csv` (`status: fail`).
+  - Lane ext_22: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.6420$ to $-1.5578$, $P = 0.030$ to $0.176$). Logged in `idea_queue.csv` (`status: fail`).
+  - Lane ext_23: Asymmetric Log-Linear Defensive Quality Decay for Clean Sheets (6 variants: $\alpha_{\text{cs}} \in [0.12, 0.24], K_{\text{cs}} \in [4, 6]$) ready to launch.
 - **Blocked:** None
-- **Next:** Dispatch smoke test for Lane ext_22.
+- **Next:** Dispatch smoke test for Lane ext_23.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)

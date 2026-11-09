@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (85 rows, 53 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (91 rows, 59 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 5 actively executing (EXT-21 failed dev screen; EXT-22 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue active: Batch 5 actively executing (EXT-21 & EXT-22 failed dev screen; EXT-23 to EXT-25 in-progress); Batch 6 (EXT-26, EXT-27, EXT-28, EXT-31) untested; Champion `def_xg_shrink_challenger` unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -26,6 +26,10 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
     - However, 4 variants failed Tier 2 due to captaincy regret degradation ($+0.1720$ to $+0.2397 > +0.1500$ guardrail) or insufficient bootstrap probability ($P = 0.268$ to $0.577 < 0.65$).
     - Only `ext_21_g22_k12` passed Tier 2 ($\Delta = +1.1651, P = 0.728$).
     - Under Tier 3 full walkforward with predicted minutes, `ext_21_g22_k12` failed the Development Screen: $\Delta = -0.4082$ pts/GW, boot $P = 0.418 < 0.75$, segs 1/3, with cold-start regression ($-1.774 < -0.25$) and catastrophic early-mid regression ($-0.796 < -0.15$).
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_22` (`EXT-22`: Venue-Conditioned Empirical Bayes Attacking Output Dynamics, 6 variants: $\beta_{\text{venue}} \in [0.06, 0.14], K_{\text{venue}} \in [4.0, 8.0]$)**:
+    - All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.030` to `0.176`, `combined_delta` `-0.6420` to `-1.5578`). Best variant: `ext_22_b06_k4` ($\Delta = -0.6420, P = 0.156$).
+    - Multiplying player attacking rates by venue coefficients degraded formation XI lineup selection as home advantage is already implicitly absorbed in baseline outputs and match difficulty ratings.
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---
