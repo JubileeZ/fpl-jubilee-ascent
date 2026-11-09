@@ -7,21 +7,22 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Batch 5 complete (all 5 failed dev screen); Batch 6 ready to launch
+- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Batch 5 complete; Batch 6 Lane ext_26 complete (dev FAIL); Lane ext_27 next
 - **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Active Batch: Batch 5 completed; advancing to Batch 6 (`EXT-26`, `EXT-27`, `EXT-28`, `EXT-31`). Note: `EXT-29` and `EXT-30` are marked `dead-match`.
+  - Active Batch: Batch 6 (`EXT-26`, `EXT-27`, `EXT-28`, `EXT-31`). Note: `EXT-29` and `EXT-30` are marked `dead-match`.
   - Lane ext_21: Completed 2026-11-09. All 6 variants failed dev screen (1 passed Tier 2 $\Delta = +1.1651, P = 0.728$; failed Tier 3 $\Delta = -0.4082$, boot $P = 0.418$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_22: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.6420$ to $-1.5578$, $P = 0.030$ to $0.176$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_23: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate due to captaincy regret degradation ($+0.285$ to $+0.350 > +0.150$ guardrail) and insufficient bootstrap ($P = 0.414$ to $0.646 < 0.65$; best `ext_23_a18_k6` $\Delta = +0.6257, P = 0.646$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_24: Completed 2026-11-09. 5/6 non-positive delta, 1/6 positive (`ext_24_g30_c55` $\Delta = +0.1247$) but failed bootstrap threshold ($P = 0.606 < 0.65$). All 6 variants failed Tier 2 Oracle Event Gate. Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_25: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.0078$ to $-0.6484$, $P = 0.010$ to $0.162$). Logged in `idea_queue.csv` (`status: fail`).
+  - Lane ext_26: Completed 2026-11-09. All 6 variants failed Tier 1 Minutes Gate (MAE regressed from 13.704 to 13.728..13.753) and failed Tier 3 walkforward regret ($\Delta = -0.1046$ to $-0.3317$, early-mid segment regression $-0.840$ to $-1.816 < -0.15$). Logged in `idea_queue.csv` (`status: fail`).
 - **Blocked:** None
-- **Next:** Launch Batch 6: Lane ext_26 (Projected Goal Margin Minutes Trim Modulation).
+- **Next:** Launch Batch 6 Lane ext_27 (Venue-Decoupled Home Advantage).
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
