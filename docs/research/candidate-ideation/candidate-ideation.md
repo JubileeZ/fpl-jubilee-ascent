@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-09 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (127 rows, 95 unique variants); no confirmation or holdout results
+**Updated**: 2026-11-10 (+00:00)
+**Data stamp**: Completed dev rows in `smoke_results.csv` (133 rows, 101 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue active: Batch 6 actively executing (EXT-26, EXT-27, EXT-28 failed dev screen; EXT-31 in progress; EXT-29 & EXT-30 dead-match); Champion `def_xg_shrink_challenger` unchanged  
+**Status**: Queue exhausted: all 31 candidate ideas evaluated/screened (EXT-01 through EXT-31); zero promotions; Model Champion `def_xg_shrink_challenger` stands unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -16,11 +16,11 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
 
 ---
 
-## Batch 6 Exploration Execution (2026-11-09, in progress)
+## Batch 6 Exploration Execution (2026-11-10, completed)
 
-**Verdict:** In progress; Lane `ext_26` completed (dev FAIL); Model Champion `def_xg_shrink_challenger` stands unchanged.
+**Verdict:** Batch 6 completed: no win (all tested candidates EXT-26, EXT-27, EXT-28, EXT-31 failed the Development Screen; EXT-29 & EXT-30 dead-match); entire 31-idea candidate ideation queue exhausted; Model Champion `def_xg_shrink_challenger` stands unchanged.
 
-- **Smoke Evaluation (`ext_26` — 6 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+- **Smoke Evaluation (`ext_26`, `ext_27`, `ext_28`, `ext_31` — 24 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
   - **Lane `ext_26` (`EXT-26`: Projected Goal Margin Minutes Trim Modulation, 6 variants: $\psi_{\text{margin}} \in [1.5, 4.0], \tau_{\text{margin}} \in [0.5, 1.0]$)**:
     - All 6 variants failed Tier 1 Minutes Gate (`pass=False`): Candidate MAE degraded on Champion (13.728..13.753 vs 13.704 baseline), with bootstrap win probability 0.000 (< 0.65 threshold).
     - Under Tier 3 walkforward evaluation, all variants produced negative combined primary delta ($\Delta = -0.1046$ to $-0.3317$, $P = 0.031$ to $0.358$), with severe regressions in early-mid segment ($-0.840$ to $-1.816 < -0.15$). Best variant: `ext_26_p40_t10` ($\Delta = -0.1046$, segs 1/3, boot $P = 0.358$).
@@ -35,6 +35,10 @@ LLM references: capability-neutral; specialist role, date, source artifact for p
     - 5 of 6 variants recorded non-positive Oracle Regret Delta ($\Delta = -0.0657$ to $-0.5032, P = 0.100$ to $0.237$).
     - Variant `ext_28_phi050` achieved positive raw delta ($\Delta = +0.0142$), but failed the bootstrap confidence threshold ($P = 0.486 < 0.65$).
     - De-biasing historical player attacking rates by opponent concession intensity did not improve formation XI lineup selection.
+    - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
+  - **Lane `ext_31` (`EXT-31`: Opponent-Sample-Reliability Matchup Share: Promoted-Club Cold Start, 6 variants: $K_t \in [10, 38]$, rule $\in \{\text{geo}, \text{min}\}$, $w_{\text{floor}} \in [0.0, 0.25]$)**:
+    - All 6 variants failed Tier 2 Oracle Event Gate (`pass=False`, `segs=0/3`, `boot_p_gt0=0.394`, `combined_delta` `-0.1745` to `-0.2503`).
+    - Attenuating fixture swing multipliers for newly promoted clubs degraded formation XI selection, as official pre-season club ratings already capture baseline concession differentials well enough that dampening them deprives the optimizer of actionable fixture contrast.
     - All 6 variants failed the Development Screen (`pass=False`). Logged as diagnostic failure in `idea_queue.csv` (`status: fail`); no new Dead lock.
 
 ---

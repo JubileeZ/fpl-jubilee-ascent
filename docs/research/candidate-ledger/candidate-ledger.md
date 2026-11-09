@@ -159,6 +159,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Projected goal margin minutes trim modulation (EXT-26) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_26_p40_t10` delta -0.1046, 1/3 segs, boot P 0.358 (all 6 variants tier1_minutes_fail: MAE regressed 13.728..13.753 vs 13.704) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Venue-decoupled home advantage (EXT-27) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_27_e100_all` delta +0.2357, 0/3 segs, boot P 0.504 < 0.65 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Schedule-neutralized attack baselines (EXT-28) | Evaluated (2026-11-10) | dev 2025-26 FAIL: best `ext_28_phi050` delta +0.0142, 0/3 segs, boot P 0.486 < 0.65 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
+| Opponent-sample-reliability matchup share (EXT-31) | Evaluated (2026-11-10) | dev 2025-26 FAIL: best `ext_31_k10/k19/k38` delta -0.1745, 0/3 segs, boot P 0.394 (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 
 
 ## Agent Prompt

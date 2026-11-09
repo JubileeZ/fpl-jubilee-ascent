@@ -7,14 +7,14 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; Batch 5 complete; Batch 6 Lanes ext_26, ext_27, ext_28 complete (dev FAIL); Lane ext_31 running
+- **Status:** In Progress — Armed /goal execution across EXT-21 through EXT-31; all batches complete (EXT-01 through EXT-31 exhausted); zero promotions; preparing goal completion
 - **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `docs/research/candidate-ideation/candidate-ideation.md`, `.agents/work-packets/explore-candidate-candidate-ideation.md`
 - **Decisions:**
   - Mode: Queue (`docs/research/candidate-ideation/idea_queue.csv`)
   - Champion: `def_xg_shrink_challenger` (`models/def_xg_shrink_challenger.py`)
   - Lineage (Shipped): `def_xg_shrink_challenger`, `club_def_prior_challenger`, `learned_start_challenger`, `multi_feature_assist_challenger`, `face_value_challenger`, `calibrated_matchup_hybrid`, `participation_state_hybrid`
   - Seasons: dev = `2025-26` (GW1-38, seed `2024-25`), confirm = `2024-25` (GW1-38, seed `2023-24`), holdout = `2026-27` (sealed live season)
-  - Active Batch: Batch 6 (`EXT-26`, `EXT-27`, `EXT-28`, `EXT-31`). Note: `EXT-29` and `EXT-30` are marked `dead-match`.
+  - Active Batch: All batches completed. Entire 31-idea queue exhausted without a promotion winner.
   - Lane ext_21: Completed 2026-11-09. All 6 variants failed dev screen (1 passed Tier 2 $\Delta = +1.1651, P = 0.728$; failed Tier 3 $\Delta = -0.4082$, boot $P = 0.418$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_22: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.6420$ to $-1.5578$, $P = 0.030$ to $0.176$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_23: Completed 2026-11-09. All 6 variants failed Tier 2 Oracle Event Gate due to captaincy regret degradation ($+0.285$ to $+0.350 > +0.150$ guardrail) and insufficient bootstrap ($P = 0.414$ to $0.646 < 0.65$; best `ext_23_a18_k6` $\Delta = +0.6257, P = 0.646$). Logged in `idea_queue.csv` (`status: fail`).
@@ -23,9 +23,9 @@
   - Lane ext_26: Completed 2026-11-09. All 6 variants failed Tier 1 Minutes Gate (MAE regressed from 13.704 to 13.728..13.753) and failed Tier 3 walkforward regret ($\Delta = -0.1046$ to $-0.3317$, early-mid segment regression $-0.840$ to $-1.816 < -0.15$). Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_27: Completed 2026-11-09. 5/6 non-positive delta ($\Delta = -1.1543$ to $+0.0000$), 1/6 positive (`ext_27_e100_all` $\Delta = +0.2357$) but failed bootstrap threshold ($P = 0.504 < 0.65$). All 6 variants failed Tier 2 Oracle Event Gate. Logged in `idea_queue.csv` (`status: fail`).
   - Lane ext_28: Completed 2026-11-10. 5/6 non-positive delta ($\Delta = -0.0657$ to $-0.5032$), 1/6 positive (`ext_28_phi050` $\Delta = +0.0142$) but failed bootstrap threshold ($P = 0.486 < 0.65$). All 6 variants failed Tier 2 Oracle Event Gate. Logged in `idea_queue.csv` (`status: fail`).
-  - Lane ext_31: Opponent-Sample-Reliability Matchup Share (6 variants) running in background.
+  - Lane ext_31: Completed 2026-11-10. All 6 variants failed Tier 2 Oracle Event Gate ($\Delta = -0.1745$ to $-0.2503$, $P = 0.394$). Logged in `idea_queue.csv` (`status: fail`).
 - **Blocked:** None
-- **Next:** Await smoke test for Lane ext_31 (final idea in the queue).
+- **Next:** Clean up scratch artifacts, run full verify, and emit final goal report.
 
 ## Todo
 - [x] 0. Ground (arm goal, packet)
@@ -33,10 +33,10 @@
 - [x] 2. Lane plan (Batch 4r complete)
 - [x] 3. Dispatch smoke (Batch 4r complete)
 - [x] 4. Audit + verify results (Batch 4r complete)
-- [ ] 5. Iterate to Development Screen win (Dispatch Batch 5: EXT-21..EXT-25)
-- [ ] 6. Build Candidate
-- [ ] 7. Adopt gate
-- [ ] 8. Record + Exit
+- [x] 5. Iterate to Development Screen win (Dispatch Batches 5 & 6: EXT-21..EXT-31 screened)
+- [ ] 6. Build Candidate (no candidate passed Development Screen)
+- [ ] 7. Adopt gate (no candidate passed Development Screen)
+- [x] 8. Record + Exit (Exit b: queue exhausted, Champion unchanged)
 
 ## Report
 
