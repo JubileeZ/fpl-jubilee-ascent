@@ -7,15 +7,13 @@
 
 ## Work Packet (SFDBN)
 
-- **Status:** Audit completed across all 31 proposals. 8 ideas revived in idea_queue.csv with fix and retest plans documented.
-- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `.agents/work-packets/candidate-prototype-integrity-audit.md`, `implementation_plan.md`, `.agents/handoff-pointer`
+- **Status:** In Progress — Phase 1 retests active: EXT-23 patched, two-axis reviewed, and retested (dev FAIL); EXT-24 next.
+- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `docs/research/candidate-ideation/prototypes/ext_23/prototypes.py`, `docs/research/candidate-ideation/smoke_results.csv`, `docs/research/candidate-ledger/candidate_ledger.csv`, `.agents/work-packets/candidate-prototype-integrity-audit.md`
 - **Decisions:** 
-  1. Revived EXT-21, EXT-22, EXT-23, EXT-24, EXT-25, EXT-27, EXT-28, and EXT-31 in idea_queue.csv due to verified prototype implementation defects (omitted penalty isolation, unused EB parameters, silent assist overwrites in MultiFeatureAssistChallenger, home advantage sign inversions, and GW2-38 matchup share multiplier no-ops).
-  2. Confirmed EXT-01..04, EXT-06, EXT-15..17, EXT-29, and EXT-30 as LEGIT dead-matches.
-  3. Confirmed EXT-05, EXT-07..09, EXT-11..12, EXT-14, EXT-18..20, and EXT-26 as LEGIT evaluations (flawless prototype math or genuine statistical failures).
-  4. Retests deferred pending user confirmation and prototype patch implementation.
+  1. Revived EXT-21, EXT-22, EXT-23, EXT-24, EXT-25, EXT-27, EXT-28, and EXT-31 in idea_queue.csv due to verified prototype implementation defects.
+  2. EXT-23: Implemented Empirical Bayes club attacking rates with K_cs shrinkage, overrode _apply_hard_fixture_defence to eliminate double-penalty, passed parallel Spec/Math and Standards code-reviews, and completed smoke retest on Dev 2025-26. 5/6 passed Tier 2, best ext_23_a20_k4 delta +0.2338, failed Tier 3 on early_mid regression (-0.693 < -0.15). Logged diagnostic fail in idea_queue.csv with open status in candidate_ledger.csv.
 - **Blocked:** None
-- **Next:** Await user direction to implement prototype bug fixes and trigger retests.
+- **Next:** Implement prototype bug-fixes and run two-axis review for EXT-24 (Price-Conditioned Fixture Sensitivity for Budget MID/FWD).
 
 ## Todo
 - [x] Audit evaluation harness smoke.py and Tier 1/2/3 gating mechanics
@@ -25,7 +23,15 @@
 - [x] Revive compromised ideas in idea_queue.csv
 - [x] Formulate comprehensive fix plan and retest plan per revived idea
 - [ ] Implement prototype patches for revived ideas upon user authorization
-- [ ] Execute smoke retests for revived ideas across Dev 2025-26
+  - [x] EXT-23: Patched, two-axis reviewed (PASS), and retested on Dev 2025-26
+  - [ ] EXT-24: Implement budget MID/FWD event components hook
+  - [ ] EXT-27: Correct home advantage sign inversion and venue multiplier
+  - [ ] EXT-21: Isolate penalty xG from open-play saturation
+  - [ ] EXT-22: Wire K_venue Empirical Bayes shrinkage
+  - [ ] EXT-25: Aggregate concession modality and balance xG/xA adjustments
+  - [ ] EXT-28: Fix assist history and fixture de-biasing
+  - [ ] EXT-31: Attenuate additive matchup share addons across GW2-38
+- [ ] Execute smoke retests for remaining revived ideas across Dev 2025-26
 
 ## Blockers / Notes
 - Do not execute retest runs until user authorizes bug-fix patches.
