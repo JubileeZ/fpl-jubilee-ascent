@@ -1,18 +1,47 @@
 # Candidate Ideation & External Model Collaboration
 
 **Updated**: 2026-11-10 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (133 rows, 101 unique variants); no confirmation or holdout results
+**Data stamp**: Completed dev rows in `smoke_results.csv` (151 rows, 119 unique variants); no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted: all 31 candidate ideas evaluated/screened (EXT-01 through EXT-31); zero promotions; Model Champion `def_xg_shrink_challenger` stands unchanged  
+**Status**: Queue exhausted: all 34 candidate ideas evaluated/screened (EXT-01 through EXT-34); zero promotions; Model Champion `def_xg_shrink_challenger` stands unchanged  
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
-**Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
+**Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0068](../../adr/0068-two-axis-pre-execution-candidate-review.md) · [ADR 0066](../../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
 **Artifact**: [idea_queue.csv](idea_queue.csv) `order` / `idea_id` / `tier` / `status` / `spec_path` — primary candidate work queue index.  
 **Dossiers**: [ideas/](ideas/) — full LaTeX formulations, cold-start strategies, and Python code skeletons.  
 **Smoke Results**: [smoke_results.csv](smoke_results.csv) — empirical dev-season gate runs across prototype variants.
 **Agent Reports**: [Minutes](minutes-ideation-response.md) · [Attack](attack-ideation-response.md) · [Defense](defense-ideation-response.md) · [Fixtures](fixtures-ideation-response.md); frontier language-model review, 2026-11-09.
 
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
+
+---
+
+## Batch 7 Exploration Execution (2026-11-10, completed)
+
+**Verdict:** Batch 7 completed under ADR 0068 Two-Axis Pre-Execution Candidate Review Protocol: no win (all tested candidates EXT-32, EXT-33, EXT-34 passed dual-axis review and demonstrated positive Tier 2 Oracle signals, but failed the Tier 3 Development Screen); entire 34-idea candidate ideation queue exhausted; Model Champion `def_xg_shrink_challenger` stands unchanged.
+
+- **Smoke Evaluation (`ext_32`, `ext_33`, `ext_34` — 18 variants total, all `AUDIT PASS`, zero `LEAKAGE FAIL`)**:
+  - **Lane `ext_32` (`EXT-32`: Smooth Sigmoid Attacking-Role Stratification for Fullbacks, 6 variants: $\tau_{\text{threat}} \in [14.0, 18.0], K_{\text{OOP}} \in [600, 1000], M_0 \in [360, 450], \gamma_{\text{oop}} \in [0.20, 0.25], s_{\text{threat}} \in [2.5, 3.5]$)**:
+    - Passed ADR 0068 Two-Axis Review Gate (Reviewer A Spec/Math PASS, Reviewer B Standards/Arch PASS).
+    - All 6 variants passed Tier 2 Oracle Event Gate ($\Delta = +0.1889$ to $+0.2164$, $P = 0.778$ to $0.826$), confirming oracle-level event ranking improvement.
+    - Under Tier 3 walkforward evaluation with predicted minutes, all variants failed the Development Screen: $\Delta = -0.0187$ to $-0.3521$, $P = 0.137$ to $0.514$, segs 1/3, with late-season segment regression ($-0.202$ to $-0.838 < -0.13$).
+    - Best variant: `ext_32_t18_k800_m360` ($\Delta = -0.0187$, segs 1/3, boot $P = 0.514$).
+    - Eliminating threshold chatter improved stability vs EXT-20, but full-season walkforward under predicted minutes does not beat Champion.
+    - Diagnostic failure; `open` status preserved in `candidate_ledger.csv`; no new Dead lock.
+  - **Lane `ext_33` (`EXT-33`: Truly Asymmetric Convex-Balanced Clean Sheet Hazard, 6 variants: $\alpha_{\text{cs}} \in [0.18, 0.26], \rho_{\text{cs}} \in [0.20, 0.33], K_{\text{cs}} \in [6.0, 10.0]$)**:
+    - Passed ADR 0068 Two-Axis Review Gate (Reviewer A Spec/Math PASS, Reviewer B Standards/Arch PASS).
+    - 4 of 6 variants passed Tier 2 Oracle Event Gate ($\Delta = +0.3957$ to $+0.5386$, $P = 0.826$ to $0.937$); 2 variants failed Tier 2 captaincy regret guardrail ($+0.2691 > +0.1500$).
+    - Under Tier 3 walkforward evaluation with predicted minutes, all 4 Tier 2 passers failed the Development Screen: $\Delta = -0.0371$ to $-0.3092$, $P = 0.143$ to $0.292$, segs 1/3, with cold-start regression ($-0.787 < -0.25$) and early-mid segment regression ($-0.611$ to $-0.944 < -0.15$).
+    - Best variant: `ext_33_a18_r33_k6` ($\Delta = -0.0371$, segs 1/3, boot $P = 0.229$).
+    - Asymmetric hazard decay protects green fixtures vs EXT-23, but match-level xG uncertainty still induces early-mid season drag.
+    - Diagnostic failure; `open` status preserved in `candidate_ledger.csv`; no new Dead lock.
+  - **Lane `ext_34` (`EXT-34`: Unified Fullback Attacking-Role and Matchup Clean-Sheet Hazard, 6 variants: $\tau_{\text{threat}} \in [15.0, 18.0], K_{\text{OOP}} \in [600, 800], \alpha_{\text{cs}} \in [0.18, 0.22]$)**:
+    - Passed ADR 0068 Two-Axis Review Gate (Reviewer A Spec/Math PASS, Reviewer B Standards/Arch PASS).
+    - All 6 variants passed Tier 2 Oracle Event Gate with exceptionally strong deltas ($\Delta = +0.6137$ to $+0.9109$, $P = 0.961$ to $0.995$), confirming massive positive signal when playing time is known.
+    - Under Tier 3 walkforward evaluation with predicted minutes, all variants failed the Development Screen: $\Delta = -0.0988$ to $-0.7011$, $P = 0.048$ to $0.427$, segs 0/3 to 1/3, with cold-start regression ($-0.787 < -0.25$) and early-mid segment regression ($-0.350$ to $-0.542 < -0.15$).
+    - Best variants: `ext_34_t18_k600_a22` and `ext_34_t18_k800_a22` ($\Delta = -0.0988$, segs 1/3, boot $P = 0.427$).
+    - Synergistic combination retains strong event signal but is constrained by interaction with predicted minutes.
+    - Diagnostic failure; `open` status preserved in `candidate_ledger.csv`; no new Dead lock.
 
 ---
 
