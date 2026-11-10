@@ -8,7 +8,7 @@
 ## Work Packet (SFDBN)
 
 - **Status:** Audit completed across all 31 proposals. 8 ideas revived in idea_queue.csv with fix and retest plans documented.
-- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `.agents/work-packets/candidate-prototype-integrity-audit.md`
+- **Files:** `docs/research/candidate-ideation/idea_queue.csv`, `.agents/work-packets/candidate-prototype-integrity-audit.md`, `implementation_plan.md`, `.agents/handoff-pointer`
 - **Decisions:** 
   1. Revived EXT-21, EXT-22, EXT-23, EXT-24, EXT-25, EXT-27, EXT-28, and EXT-31 in idea_queue.csv due to verified prototype implementation defects (omitted penalty isolation, unused EB parameters, silent assist overwrites in MultiFeatureAssistChallenger, home advantage sign inversions, and GW2-38 matchup share multiplier no-ops).
   2. Confirmed EXT-01..04, EXT-06, EXT-15..17, EXT-29, and EXT-30 as LEGIT dead-matches.
