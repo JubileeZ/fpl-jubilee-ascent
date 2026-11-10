@@ -29,10 +29,10 @@ LLM references in prompts, reports, filenames, and documentation: specialist rol
   3. Queue rows `status` = `in-progress-b<N>` = resume batch N first, before new rows.
   4. Champion (`config/model_selection.json`) differs from packet's recorded Champion → prior smoke rows = hints only; re-smoke on new Champion.
 - **Never block mid-run.** No `AskQuestion` before Exit. Decision needing human → append to `## Human Queue` (question · options · default taken · evidence path) → take default → continue. Harness/gate crash (traceback, not verdict) ≠ FAIL: queue traceback + command, no ledger verdict; blocks that step only.
-- **Human Gates** (queue only; AFK never executes): `config/model_selection.json` edit · `commands.evaluate_model_promotion --adopt` · Dead-row override · commit / push · Champion-change ADR acceptance (draft allowed, status Proposed).
+- **Human Gates & Checkpoints** (AFK never executes without explicit user prompt): `config/model_selection.json` edit · `commands.evaluate_model_promotion --adopt` · Dead-row override · `git push` · Champion-change ADR acceptance (draft allowed, status Proposed). Note: Local atomic Git commit checkpoints per candidate lane (`chore(candidate): ...`) are explicitly authorized after `bash tests/verify.sh` passes (ADR 0068).
 - **Progress guard.** Lane closes after 2 consecutive rounds with no new best `combined_delta`. Mechanism already in lane CSVs or ledger never re-smoked. All lanes closed → Exit.
 - **Exit.**
-  - (a) Candidate frozen + dev PASS + confirm PASS → Human Queue holds adoption → goal complete.
+  - (a) Candidate frozen + dev PASS + confirm PASS → draft Champion-change ADR Proposed, queue adoption in Human Queue → halt loop immediately for operator adoption (ADR 0068).
   - (b) Scope exhausted, every attempt in ledger → goal complete (verdict: no win).
   - (c) Only Human Queue items remain (e.g. every scoped mechanism Dead) → BLOCKED; goal stays active.
   - At Exit: write report (template below) into packet + topic note; write packet id to `.agents/handoff-pointer`; run goal completion audit, `UpdateGoal complete` for (a)/(b); final turn presents Human Queue via `AskQuestion`.
@@ -58,7 +58,7 @@ Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_i
 - **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict. Base for `after:` row = current Champion; `<id>` `confirm-pass` unpromoted → row waits. Grid entry naming another row (`+ <id>`) = implicit `after:<id>`; grid token `best` = second smoke round same lane, counts toward ≤6. Deferred rows wait for next batch.
 - **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
 - **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
-- **Per batch:** steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; if row provides `spec_path`, subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`) providing full mathematical formulation, cold-start strategy, and Python code skeleton. Step 5 Stack protocol on batch winners (stack/verify runs under `.tmp/agent/explore-candidate/stack_b<N>/`). Then steps 6–7 on frozen result.
+- **Per batch (ADR 0068):** Lanes execute **serially** (one candidate at a time) using the **3-subagent team** (`Implementer` + `Reviewer A Spec/Math` + `Reviewer B Standards/Arch`). Steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`). Review-repair loop is capped at max 3 iterations. Purge stale lane rows from `smoke_results.csv` before `smoke.py`. Post-retest: atomic local Git commit checkpoint (`chore(candidate): ...`) upon `bash tests/verify.sh` pass. If a candidate achieves PASS on dev and confirm, freeze prototype, draft ADR Proposed, queue adoption in Human Queue, and halt loop immediately.
 - **Row verdict = one atomic edit:** Record diagnostic metrics with diagnostic scope; final `pass`/`fail` requires shared scientific evidence. `inconclusive`/`invalid` never creates a new Dead Lever lock. Persist evidence → ledger record → queue status; never mark `confirm-pass` from legacy smoke or unregistered historical inspection.
 - **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
 - **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
@@ -109,66 +109,90 @@ Done when every lever has row verdict or "new" in packet.
 
 ### 2. Lane plan
 
-≤5 lanes total, one subagent each.
-- Scoped: split idea across pipeline steps it touches — inputs (as-of features), minutes/participation, event rates, fixture scaling, scoring/bonus, ordering/calibration. Step idea does not touch → no lane.
-- Dual-lane: ~3 Lane A + ~2 Lane B.
-- Queue: one lane per batch row (Queue mode); Dead match at step 1 → row `dead-match`, backfill batch from next eligible row.
+Lanes represent distinct candidate hypotheses.
+- **Queue mode (ADR 0068 default):** Lanes execute **serially** (one candidate row at a time) to prevent API 429 quota exhaustion and preserve clean per-candidate Git checkpoints.
+- **Scoped mode:** Split idea across pipeline steps it touches (inputs, minutes, event rates, fixture scaling, scoring).
+- **Dual-lane mode:** ~3 Lane A (stack/lineage) + ~2 Lane B (alternative architecture).
 
-Each lane brief pre-declares: mechanism, pipeline step, tiny grid (≤6 variants), expected sign. Grid fixed in packet before first smoke run — no post-hoc grid widening.
+Each lane brief pre-declares: mechanism, pipeline step, fixed grid (≤6 variants), expected sign, and specification dossier path (`docs/research/<topic slug>/<spec_path>`).
 
-### 3. Dispatch subagents
+---
 
-Spawn all lanes in parallel via `Task` (`generalPurpose`). Brief template:
+### 3. The 3-Subagent Review & Execution Engine (ADR 0068)
 
-```text
-Lane <id> of explore-candidate. Mechanism: <m>. Pipeline step: <s>. Scope: <idea or lane A/B>.
-Specification dossier: docs/research/<topic slug>/<spec_path> (if present; contains LaTeX math & Python skeleton).
-Grid (fixed): <variants>. Champion: <name> (models/<file>.py).
-Forbidden (Dead ledger rows): <mechanisms>.
-Write only under .tmp/agent/explore-candidate/<lane>/. No edits to repo files. Unattended: never ask user; report blockers.
-1. Write prototypes.py: PROTOTYPES {name: BaseModel subclass, name prefix "<lane>_"}, FEATURES {name: ("features.<col>"|"history.<col>"|"local.<key>", ...)}.
-   Inputs only via fit(history_df)/predict(features_df). No file reads, no players.parquet, no season literals.
-2. uv run python .agents/skills/explore-candidate/smoke.py .tmp/agent/explore-candidate/<lane>/prototypes.py --audit_only   (must PASS)
-3. uv run python .agents/skills/explore-candidate/smoke.py .tmp/agent/explore-candidate/<lane>/prototypes.py --lane <lane> --workers 2 --out .tmp/agent/explore-candidate/<lane>/smoke.csv
-   Run in background; poll until `Wrote … rows`. Re-run of same command resumes (Resume after interruption). Changed prototype code = new variant name (skip-done keys on name).
-Return: table variant|pass|combined_delta|segs|boot_p_gt0|reasons, manifest per variant, one-line mechanism per variant, best variant + why.
+For each candidate lane, the orchestrator deploys a dedicated **3-Subagent Team** before running `smoke.py`:
+
+```mermaid
+flowchart TD
+    Dossier["Candidate Dossier<br/>(docs/research/.../ideas/<id>.md)"] --> Imp["1. Implementer Subagent<br/>(Constructs/Patches Prototype)"]
+    Imp --> RevA["2a. Reviewer A (Spec & Math)<br/>- Formula alignment<br/>- Sign integrity<br/>- Penalty isolation<br/>- Empirical shrinkage"]
+    Imp --> RevB["2b. Reviewer B (Standards & Arch)<br/>- Parent inheritance<br/>- Assist GLM preservation<br/>- Zero lookahead / leakage<br/>- Manifest completeness"]
+    RevA & RevB --> Gate{"Both Sign Off<br/>VERDICT: PASS?"}
+    Gate -- "No (Fail / Findings)" --> Fix["Implementer Applies Fixes<br/>(Max 3 iterations)"]
+    Fix --> RevA & RevB
+    Gate -- "Yes (Clean PASS)" --> Purge["Purge Stale Lane Rows in smoke_results.csv"]
+    Purge --> Exec["Run smoke.py on Dev Season"]
+    Exec --> Ledger["Update idea_queue.csv & candidate_ledger.csv"]
+    Ledger --> Checkpoint["Atomic Git Commit Checkpoint<br/>(bash tests/verify.sh)"]
 ```
 
-Prototype shape (Champion class = whatever `config/model_selection.json` names; example uses current one):
+#### Step 3a: Implementer Subagent (`self`)
+Spawn an Implementer subagent to construct or patch `docs/research/<topic slug>/prototypes/<lane>/prototypes.py` (or `.tmp/agent/explore-candidate/<lane>/prototypes.py`).
+- Inputs strictly via `fit(history_df)` / `predict(features_df)`.
+- Respects point-in-time constraints (as-of `gw`, history strictly before target deadline).
+- Bounded parameter sweep grid (all declared variants in `_GRID`).
 
-```python
-from backtesting.walkforward import LEDGER_COMPONENTS
-from models.face_value_challenger import FaceValueChallengerModel
+#### Step 3b: Dual-Axis Review Gate (Parallel Subagents)
+Spawn two independent reviewer subagents in parallel:
 
+1. **Reviewer A (Spec & Math Integrity, `research`)**:
+   - Compares prototype line-by-line against `docs/research/<topic slug>/<spec_path>`.
+   - **Checklist**:
+     - [ ] Mathematical alignment with dossier formulas (no uncalibrated proxy substitutions like FDR difficulty for xGC).
+     - [ ] Sign integrity: adjustments scale in the hypothesized direction (easy vs hard, home vs away) without inverted divisors.
+     - [ ] Penalty threat isolation: open-play rates isolate $0.15\text{ xG/90}$ for primary penalty takers.
+     - [ ] Small-sample / cold-start priors: proper Empirical Bayes shrinkage and prior weights ($n_{\text{ref}}$, $K$, pseudo-minutes).
+     - [ ] Bounded output: sensible clipping on multiplier ratios and probability bounds; non-negative event rates.
+     - [ ] Grid completeness: all variants in `_GRID` are present, distinct, and correctly parameterized.
+   - Concludes with `VERDICT: PASS` or `VERDICT: FAIL` with line-referenced remediation requirements.
 
-class A1Shrink(FaceValueChallengerModel):
-    @property
-    def name(self) -> str:
-        return "a1_shrink_k20"
+2. **Reviewer B (Standards & Pipeline Architecture, `research`)**:
+   - Audits repository inheritance, class contracts, and pipeline collisions.
+   - **Checklist**:
+     - [ ] Clean inheritance from `DefXgShrinkChallengerModel` or specified `BaseModel` subclass.
+     - [ ] Parent pipeline preservation: `predict()` delegates cleanly to `super().predict()`; defender xG rate shrinkage ($K=2400$) is preserved and not double-applied.
+     - [ ] Assist GLM interaction: `self._history` and assist features interact cleanly with `MultiFeatureAssistChallengerModel` without being wiped out in GW4–38.
+     - [ ] Threshold isolation: rate scaling does not inadvertently cross `HoldChase` minutes thresholds (`_XG_TRIM_BELOW`).
+     - [ ] Zero lookahead / leakage: fit window strictly before target deadline; zero terminal columns (`TERMINAL_PLAYER_COLUMNS`).
+     - [ ] Code hygiene & manifest: type annotations, ruff clean, input immutability (`features_df.copy()`), and `_MANIFEST` / `FEATURES` declare all accessed columns.
+   - Concludes with `VERDICT: PASS` or `VERDICT: FAIL` with line-referenced remediation requirements.
 
-    def predict(self, features_df, horizon):
-        keys = ["player_id", "fixture_id"]
-        out = super().predict(features_df, horizon).merge(features_df[[*keys, "avg_points_3gw"]], on=keys, how="left")
-        scaled = ["projected_points", *[c for c in LEDGER_COMPONENTS if c in out.columns]]
-        out[scaled] = out[scaled].mul(1 - 0.02 * out["avg_points_3gw"].lt(2), axis=0)
-        return out.drop(columns=["avg_points_3gw"])
+#### Step 3c: Bounded Repair Loop (Max 3 Rounds)
+If either reviewer returns `VERDICT: FAIL`, the orchestrator instructs the Implementer to apply the requested remediations and re-invokes the failing reviewer(s).
+- **Cap**: Maximum **3 review-repair iterations**.
+- **Exit if unresolvable**: If both reviewers do not sign off `VERDICT: PASS` within 3 cycles, flag row as `blocked (review convergence)` in `idea_queue.csv`, log findings to `## Human Queue`, and advance to the next candidate.
 
+---
 
-PROTOTYPES = {"a1_shrink_k20": A1Shrink}
-FEATURES = {"a1_shrink_k20": ("features.avg_points_3gw",)}
-```
+### 4. Stale Purge, Smoke Execution & Checkpoint
 
-Component ledger: `xp_*` columns (`LEDGER_COMPONENTS`) must sum to `projected_points` (atol 1e-9) or gate raises. Post-hoc scaling touches points + every component; component-level levers change the component, then re-sum points.
+Once both Reviewers sign off with `VERDICT: PASS`:
+1. **Purge Stale Rows**: Automatically purge any pre-existing rows for `<lane>` from `smoke_results.csv` to ensure clean diagnostic recording.
+2. **Execute Smoke Retest**: Run `uv run python .agents/skills/explore-candidate/smoke.py docs/research/<topic slug>/prototypes/<lane>/prototypes.py --lane <lane> --out docs/research/<topic slug>/smoke_results.csv` on Dev Season (`2025-26`).
+3. **Record Results**: Update `docs/research/<topic slug>/idea_queue.csv` and `docs/research/candidate-ledger/candidate_ledger.csv`.
+4. **Atomic Git Checkpoint**: Run `bash tests/verify.sh` and commit local checkpoint:
+   ```bash
+   git add docs/research/<topic slug>/prototypes/<lane>/prototypes.py docs/research/<topic slug>/idea_queue.csv docs/research/<topic slug>/smoke_results.csv
+   git commit -m "chore(candidate): complete <lane> prototype fix, two-axis review, and dev retest"
+   ```
+5. **Confirmation & Dual-Season Halting Protocol**:
+   - If a candidate passes both Dev Season and Confirmation Season (Tier 2 & Tier 3 PASS):
+     1. Freeze prototype into `models/custom/<name>.py`.
+     2. Draft Champion-change ADR Proposed (`docs/adr/XXXX-champion-<name>.md`).
+     3. Populate adoption in `## Human Queue`.
+     4. **Halt loop immediately** to await human operator authorization before modifying production Champion configuration.
 
-Cost: Champion + each variant = one full-season walk-forward (~9 min each, parallel across `--workers`). Batch lane variants in one file.
-
-### 4. Audit + verify results
-
-Subagent reports = claims. Orchestrator re-runs `--audit_only` on every `prototypes.py` and reads each manifest:
-- `history.*` feature derived only from rows before target GW; no same-GW outcome columns.
-- `features.*` column exists in Feature Contract; not terminal.
-- `local.*` = config keys only, never data.
-Smoke row counts only with AUDIT PASS and no `LEAKAGE FAIL`. Winner claims → re-run winning variant yourself. Record verified rows in packet.
+---
 
 ### 5. Iterate to Development Screen win
 

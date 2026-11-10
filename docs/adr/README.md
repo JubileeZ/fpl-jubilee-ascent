@@ -112,10 +112,11 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | [0062](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Non-Catastrophic Segment Loss Guardrail | Amended | Continuous segment loss floors integrated into ADR 0066 multi-season protocol and substantive guards. |
 | [0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Promotion Gate & Evaluation Rigor Overhaul | Amended | Warm-seeded confirmation and non-wrapping MBB (L=5) retained; amended by ADR 0066 for 4-way verdicts and manual adoption. |
 | [0066](0066-backtesting-and-promotion-foundation.md) | Backtesting and Promotion Foundation | Accepted | Primary rolling replay net FPL points, neutral GW1 anchor, substantive projection guards, 4-verdict taxonomy, immutable attempt registry, and manual adoption. |
+| [0068](0068-two-axis-pre-execution-candidate-review.md) | Two-Axis Pre-Execution Candidate Review Protocol | Accepted | Mandatory 3-subagent team per candidate (Implementer, Reviewer A Spec/Math, Reviewer B Standards/Arch) with bounded 3-round repair loop and atomic checkpoints. |
 
 ---
 
-## Chronological Index (0001–0066)
+## Chronological Index (0001–0068)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -185,3 +186,5 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0064 | [promotion-gate-and-evaluation-rigor-overhaul](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Amended | Evaluation |
 | 0065 | [strategic-arm-horizon-penalty-scaling-and-ft-schedule](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) | Accepted | Solver |
 | 0066 | [backtesting-and-promotion-foundation](0066-backtesting-and-promotion-foundation.md) | Accepted | Evaluation |
+| 0067 | [planning-horizon-architecture](0067-planning-horizon-architecture.md) | Accepted | Solver |
+| 0068 | [two-axis-pre-execution-candidate-review](0068-two-axis-pre-execution-candidate-review.md) | Accepted | Evaluation |
