@@ -1,0 +1,5 @@
+variant,screen_outcome,execution_status,oracle_regret_delta,oracle_bootstrap_probability,max_playable_projection_shift,scientific_verdict,reason,source
+ext_35_h045_k7200_xclub,not_passed,complete,0.0,0.0,,inconclusive,tier2_oracle_fail: oracle formation XI regret did not improve (+0.0000); oracle bootstrap P 0.000 below required 0.65,../../smoke_results.csv
+ext_35_h070_k7200_xclub,not_admitted_inert,invalid_inert,0.0,,0.004793,inconclusive,inert on Exogenous Playable Pool (max |delta_xp| = 0.004793 < 0.01) with combined_delta = +0.000000,dev_smoke.log
+ext_35_h045_k14400_xclub,not_admitted_inert,invalid_inert,0.0,,0.009150,inconclusive,inert on Exogenous Playable Pool (max |delta_xp| = 0.009150 < 0.01) with combined_delta = +0.000000,dev_smoke.log
+ext_35_h045_k7200_allclubs,not_admitted_inert,invalid_inert,0.0,,0.009393,inconclusive,inert on Exogenous Playable Pool (max |delta_xp| = 0.009393 < 0.01) with combined_delta = +0.000000,dev_smoke.log

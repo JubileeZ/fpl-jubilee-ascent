@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-10 (+00:00)
-**Data stamp**: Completed dev rows in `smoke_results.csv` (151 rows, 119 unique variants); no confirmation or holdout results
+**Updated**: 2026-11-11 (+00:00)
+**Data stamp**: 152 development smoke rows, 120 unique saved variants; EXT-35 terminal companion additionally records three inert admission refusals; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Queue exhausted: all 34 candidate ideas evaluated/screened (EXT-01 through EXT-34); zero promotions; Model Champion `def_xg_shrink_challenger` stands unchanged  
+**Status**: Eligible queue exhausted; EXT-35 inconclusive after no development win; EXT-10/13/37 blocked; zero promotions; Champion unchanged
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0068](../../adr/0068-two-axis-pre-execution-candidate-review.md) · [ADR 0066](../../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -15,6 +15,20 @@
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
 
 ---
+
+## Batch 8 EXT-35 execution (2026-11-11)
+
+**Verdict:** No development winner. All four fixed variants executed on resolved development 2025-26 GW1-38, seed 2024-25. One variant failed Tier 2 on an oracle formation-regret tie (`combined_delta=0`, `boot_p_gt0=0`); three failed inertness admission with zero oracle-regret delta and maximum playable projection shifts below 0.01. Complete terminal coverage: [execution_results.csv](prototypes/ext_35/execution_results.csv), columns `screen_outcome`, `execution_status`, `oracle_regret_delta`, `max_playable_projection_shift`. One genuine screen row appended to `smoke_results.csv`; refused variants remain separate rather than fabricated as valid screen rows.
+
+Both source-review axes passed before compute. Full 380-cell event-on/off by native/oracle diagnostic retained; independent verification passed state/rate identity, component accounting, source/artifact hashes, squad constraints, canonical selections, paired scores and interactions. Native states exactly matched Champion; tiny rate intervention did not improve oracle selection. No assertion that minutes caused earlier failures. [Source/reviews/paired companions](prototypes/ext_35/README.md).
+
+Harness exit 2 reflects caught inertness refusals, not a traceback or leakage finding. Scientific verdict remains inconclusive; queue EXT-35 `inconclusive`, ledger row `open`, locks unchanged. No Tier 3, confirmation, Candidate registration, parameter expansion, or production change. Remaining EXT-10/13/37 blocked; default skip. Source and execution validations: 1036 tests pass, Ruff clean.
+
+Capture limitation: core manifest did not hash feature frames or rate diagnostics at capture. Post-processing records current hashes with explicit limitation. Retained evidence remains diagnostic, not admitted promotion evidence.
+
+## Near-miss ideation (2026-11-10, paper intake)
+
+Three specialist agents inspected promising failed OPEN mechanisms and actual scoring paths. Added EXT-35 fixed-K lagged creative-role prior and EXT-37 baseline-preserving hazard residual; four preregistered variants each, partial implementation skeletons. EXT-35 eligible for implementation; EXT-37 blocked pending exact overlay context reconstruction/applicability. Lexical Dead matches reviewed and retained with explicit distinctions; locks unchanged. No new model execution or empirical improvement claimed. [Review, provenance, diagnostic prerequisite](near-miss-ideation-2026-11-10.md) · [Source proposals](near-miss-ideation-response.md).
 
 ## Batch 7 Exploration Execution (2026-11-10, completed)
 

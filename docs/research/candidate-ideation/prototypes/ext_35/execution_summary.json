@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-11",
+  "scope": "EXT-35 fixed grid, full resolved development season",
+  "screen_verdict": "no_development_winner",
+  "scientific_verdict": "inconclusive",
+  "native_projection_diagnostic": "complete",
+  "tier3_screen_executed": false,
+  "confirmation_executed": false,
+  "champion_changed": false,
+  "dead_locks_changed": false,
+  "smoke_exit_code": 2,
+  "exit_code_reason": "Three caught inertness guard refusals; no traceback or leakage finding",
+  "terminal_variants": [
+    {
+      "variant": "ext_35_h045_k7200_xclub",
+      "screen_outcome": "not_passed",
+      "execution_status": "complete",
+      "oracle_regret_delta": "0.0",
+      "oracle_bootstrap_probability": "0.0",
+      "max_playable_projection_shift": "",
+      "scientific_verdict": "inconclusive",
+      "reason": "tier2_oracle_fail: oracle formation XI regret did not improve (+0.0000); oracle bootstrap P 0.000 below required 0.65",
+      "source": "../../smoke_results.csv"
+    },
+    {
+      "variant": "ext_35_h070_k7200_xclub",
+      "screen_outcome": "not_admitted_inert",
+      "execution_status": "invalid_inert",
+      "oracle_regret_delta": "0.0",
+      "oracle_bootstrap_probability": "",
+      "max_playable_projection_shift": "0.004793",
+      "scientific_verdict": "inconclusive",
+      "reason": "inert on Exogenous Playable Pool (max |delta_xp| = 0.004793 < 0.01) with combined_delta = +0.000000",
+      "source": "dev_smoke.log"
+    },
+    {
+      "variant": "ext_35_h045_k14400_xclub",
+      "screen_outcome": "not_admitted_inert",
+      "execution_status": "invalid_inert",
+      "oracle_regret_delta": "0.0",
+      "oracle_bootstrap_probability": "",
+      "max_playable_projection_shift": "0.009150",
+      "scientific_verdict": "inconclusive",
+      "reason": "inert on Exogenous Playable Pool (max |delta_xp| = 0.009150 < 0.01) with combined_delta = +0.000000",
+      "source": "dev_smoke.log"
+    },
+    {
+      "variant": "ext_35_h045_k7200_allclubs",
+      "screen_outcome": "not_admitted_inert",
+      "execution_status": "invalid_inert",
+      "oracle_regret_delta": "0.0",
+      "oracle_bootstrap_probability": "",
+      "max_playable_projection_shift": "0.009393",
+      "scientific_verdict": "inconclusive",
+      "reason": "inert on Exogenous Playable Pool (max |delta_xp| = 0.009393 < 0.01) with combined_delta = +0.000000",
+      "source": "dev_smoke.log"
+    }
+  ],
+  "prototype_sha256": "7aeb59b76904c5cb16435f036a8b58f2b615d10c8b5b9241e835ec2fcaa287eb",
+  "log_sha256": "81900def344322057f82d64ffb3bedb92f5b25636ed4244cd02d3a946fcdc049",
+  "execution_companion_sha256": "04812501760ca7b33375d6da1932f3ba0048e2bda99f4600993334bf10cee9da"
+}

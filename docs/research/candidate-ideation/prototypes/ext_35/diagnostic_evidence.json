@@ -1,0 +1,90 @@
+{
+  "recorded_date": "2026-11-11",
+  "evidence_kind": "development_projection_diagnostic",
+  "promotion_authority": false,
+  "core_manifest": {
+    "path": "data/reports/ext-35-preflight-2026-11-11/manifest.json",
+    "sha256": "b0cd6b4d1b8eed064ba6f4262f4d57f5cf3371228bc2e55046d8af7f33b559d9"
+  },
+  "summary_manifest": {
+    "path": "data/reports/ext-35-preflight-2026-11-11/summary/summary_manifest.json",
+    "sha256": "2d009bae7b2720a4272aabc51eed3ab47a99cd4cda73c7370d715572949d59a8"
+  },
+  "season": "2025-26",
+  "gameweeks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38
+  ],
+  "variants": [
+    "ext_35_h045_k7200_xclub",
+    "ext_35_h070_k7200_xclub",
+    "ext_35_h045_k14400_xclub",
+    "ext_35_h045_k7200_allclubs"
+  ],
+  "cells": 380,
+  "projection_rows": 323750,
+  "prepared_event_rows": 639160,
+  "invariants": {
+    "native_state_parity": true,
+    "rate_regime_identity": true,
+    "component_accounting": true,
+    "blank_identity": true,
+    "finite": true,
+    "atol": 1e-10
+  },
+  "independent_verification": {
+    "core": "PASS",
+    "paired_summary": "PASS",
+    "scope": "Artifact integrity, state/rate parity, component accounting, canonical selections and diagnostic scores; no scientific promotion verdict"
+  },
+  "capture_integrity_limitation": "Core manifest did not hash feature frames or rate_diagnostics at capture. Summary records current hashes, without proving their capture-time integrity.",
+  "score_definition": "diagnostic reoptimized weekly lineup with autosubs and captain; blended = 50% actual + 50% process; not rolling net or promotion evidence",
+  "companions": {
+    "paired_gameweeks.csv": {
+      "sha256": "3b0f258e46d7c8af0f2ebf32a688b9dcc75664ebc8416def9947b638d022a780",
+      "source": "data/reports/ext-35-preflight-2026-11-11/summary/paired_gameweeks.csv"
+    },
+    "interactions.csv": {
+      "sha256": "dbd9f7fd8d41053adf14817eb86009ee96002250d739d6ca572f8359a533747f",
+      "source": "data/reports/ext-35-preflight-2026-11-11/summary/interactions.csv"
+    }
+  },
+  "prototype_sha256": "7aeb59b76904c5cb16435f036a8b58f2b615d10c8b5b9241e835ec2fcaa287eb",
+  "summary_script_sha256": "4a21327a65abf763bf4fac4cccdb0961f55658c06074a750544b8de9adcd02e6"
+}

@@ -1,55 +1,59 @@
 # Active Task: explore-candidate-candidate-ideation
 
-- **Status:** In Progress
+- **Status:** Awaiting Human Queue
 - **Objective:** explore-candidate candidate-ideation: frozen Candidate with verified ADR 0066 evidence and registered confirmation, adoption queued in Human Queue — or scope exhausted with every attempt recorded. Smoke diagnostics alone cannot satisfy gate. State: .agents/work-packets/explore-candidate-candidate-ideation.md
-- **Acceptance:** All eligible candidate ideas (EXT-32, EXT-33, EXT-34) evaluated under ADR 0068 serialized 3-subagent review and execution engine against Champion def_xg_shrink_challenger on Dev 2025-26; results recorded in idea_queue.csv and candidate_ledger.csv; verify.sh passes.
+- **Acceptance:** Eligible Batch 8 EXT-35 implemented, independently reviewed on both axes, evaluated on resolved development season, recorded with diagnostic scope; scientific gate only after admitted evidence. Existing blocked rows skipped; all required checks pass.
 - **Issue/Ticket:** ADR 0068 / ADR 0066
 
 ## Work Packet (SFDBN)
 
-- **Status:** In Progress
-- **Files:** docs/research/candidate-ideation/idea_queue.csv, docs/research/candidate-ideation/smoke_results.csv, docs/research/candidate-ledger/candidate_ledger.csv, docs/research/candidate-ideation/prototypes/ext_32/prototypes.py, docs/research/candidate-ideation/prototypes/ext_33/prototypes.py, docs/research/candidate-ideation/prototypes/ext_34/prototypes.py, docs/research/candidate-ideation/candidate-ideation.md, docs/agents/current-state.md
-- **Decisions:** Queue mode on docs/research/candidate-ideation/idea_queue.csv. Batch 7: EXT-32, EXT-33, EXT-34. All 3 candidates completed under ADR 0068 serialized 3-subagent review protocol. All 3 demonstrated positive Tier 2 Oracle signals but failed Tier 3 walkforward Development Screen. All 3 logged in candidate_ledger.csv with open status preserved. Entire queue exhausted (Exit b: no win). Model Champion def_xg_shrink_challenger unchanged.
-- **Blocked:** None
-- **Next:** Await operator instructions for next ideation vector or evaluation focus.
+- **Status:** Awaiting Human Queue
+- **Files:** docs/research/candidate-ideation/prototypes/ext_35/, queue and smoke CSVs, EXT-35/37 dossiers, near-miss ideation companions, candidate ledger, current-state, research index, topic note
+- **Decisions:** Queue mode resumed for Batch 8 EXT-35. Prior ideation changes belong to same user-authorized sequence; retain in atomic checkpoint. Champion def_xg_shrink_challenger unchanged. New fixed-K donor-role prior semantically cleared against lexical club-prior match; no Dead override. EXT-10/13/37 blocked, skipped. Implementer plus Spec/Math and Standards/Arch reviewers required before compute.
+- **Blocked:** No remaining eligible lane. EXT-10/13/37 prerequisites remain excluded; default skip.
+- **Next:** Local atomic checkpoint after delivery gate; then await operator direction on blocked EXT-10/13/37 or fresh ideation. No automatic scale expansion, Dead override, confirmation, adoption, or push.
 
 ## Metadata
 - **Mode:** Queue
-- **Scope:** docs/research/candidate-ideation/idea_queue.csv (Batch 7: EXT-32, EXT-33, EXT-34)
+- **Scope:** docs/research/candidate-ideation/idea_queue.csv (Batch 8: EXT-35; blocked EXT-10/13/37 excluded)
 - **Champion:** def_xg_shrink_challenger
 - **Seasons:** dev=2025-26 (GW1-38, seed 2024-25), confirm=2024-25 (GW1-38, seed 2023-24), holdout=2026-27 (sealed)
-- **Step:** 8 (Record + Exit b)
+- **Step:** 8 (Record + Exit b: eligible scope exhausted, no win)
 - **Round:** 1
 
-## Batch 7 Lanes
-- [x] Lane 1: `ext_32` (EXT-32: Smooth Sigmoid Attacking-Role Stratification for Fullbacks)
-  - Mechanism: Replaces DefXgShrinkChallengerModel.predict with smooth sigmoid threat transition and asymptotic minute reliability.
-  - Grid: tau_threat=15.0,k_oop=800,m_zero=360,gamma_oop=0.20,s_threat=3.0; tau_threat=15.0,k_oop=600,m_zero=360,gamma_oop=0.25,s_threat=3.0; tau_threat=15.0,k_oop=1000,m_zero=450,gamma_oop=0.20,s_threat=3.0; tau_threat=18.0,k_oop=800,m_zero=360,gamma_oop=0.25,s_threat=3.0; tau_threat=18.0,k_oop=600,m_zero=450,gamma_oop=0.25,s_threat=3.5; tau_threat=14.0,k_oop=800,m_zero=360,gamma_oop=0.20,s_threat=2.5
-  - Best row: ext_32_t18_k800_m360 (delta -0.0187, segs 1/3, boot P 0.514)
-  - Status: fail
-- [x] Lane 2: `ext_33` (EXT-33: Truly Asymmetric Convex-Balanced Clean Sheet Hazard)
-  - Mechanism: Strict convex weighting (1-w)z_fdr + wz_opp, K_cs=8 shrinkage, asymmetric hazard exp(alpha z) / exp(beta z) with beta = rho*alpha (rho 0.20-0.35).
-  - Grid: alpha_cs=0.18,rho_cs=0.25,k_cs=8.0; alpha_cs=0.22,rho_cs=0.25,k_cs=8.0; alpha_cs=0.22,rho_cs=0.20,k_cs=10.0; alpha_cs=0.26,rho_cs=0.20,k_cs=10.0; alpha_cs=0.18,rho_cs=0.33,k_cs=6.0; alpha_cs=0.22,rho_cs=0.33,k_cs=6.0
-  - Best row: ext_33_a18_r33_k6 (delta -0.0371, segs 1/3, boot P 0.229)
-  - Status: fail
-- [x] Lane 3: `ext_34` (EXT-34: Unified Fullback Attacking-Role and Matchup Clean-Sheet Hazard)
-  - Mechanism: Co-optimization of sigmoid fullback role stratification (EXT-32) and asymmetric clean sheet hazard (EXT-33).
-  - Grid: tau_threat=15.0,k_oop=800,alpha_cs=0.18; tau_threat=15.0,k_oop=800,alpha_cs=0.22; tau_threat=15.0,k_oop=600,alpha_cs=0.22; tau_threat=18.0,k_oop=800,alpha_cs=0.18; tau_threat=18.0,k_oop=800,alpha_cs=0.22; tau_threat=18.0,k_oop=600,alpha_cs=0.22
-  - Best row: ext_34_t18_k600_a22 / ext_34_t18_k800_a22 (delta -0.0988, segs 1/3, boot P 0.427)
-  - Status: fail
+## Prior work
+
+Batch 7 EXT-32/33/34 completed; development diagnostics did not pass, no new Dead locks. Full evidence retained in topic note and smoke_results.csv; commits 28c803f9 and predecessors.
 
 ## Todo
-- [x] 0. Ground (seasons, packet, ledger screen)
-- [x] 3a. EXT-32: Implementer subagent creates prototype
-- [x] 3b. EXT-32: Reviewer A (Spec/Math) + Reviewer B (Standards/Arch) dual-axis review
-- [x] 4. EXT-32: Purge stale rows, smoke test, record results, atomic checkpoint
-- [x] 3a. EXT-33: Implementer subagent creates prototype
-- [x] 3b. EXT-33: Reviewer A (Spec/Math) + Reviewer B (Standards/Arch) dual-axis review
-- [x] 4. EXT-33: Purge stale rows, smoke test, record results, atomic checkpoint
-- [x] 3a. EXT-34: Implementer subagent creates prototype
-- [x] 3b. EXT-34: Reviewer A (Spec/Math) + Reviewer B (Standards/Arch) dual-axis review
-- [x] 4. EXT-34: Purge stale rows, smoke test, record results, atomic checkpoint
-- [x] 8. Summary report & Exit
-
+- [x] Batch 8 ground: no running smoke; seasons resolved, Champion unchanged, packet bound
+- [x] Batch 8 EXT-35 implement fixed grid and causal donor panel
+- [x] Batch 8 EXT-35 Reviewer A Spec/Math and Reviewer B Standards/Architecture
+- [x] Batch 8 EXT-35 audit, diagnostic prerequisite, development smoke, evidence record
+- [x] Batch 8 delivery gate and local checkpoint preparation
 ## Human Queue
-- [ ] Await operator review on next ideation direction (queue exhausted across EXT-01 through EXT-34; Champion def_xg_shrink_challenger retained).
+- [x] Prior ideation-direction request resolved: user authorized near-miss ideation, then explore-candidate Batch 8.
+- [ ] Blocked EXT-10/13/37 prerequisites unresolved; default skip, no Dead overrides, no confirmation/holdout substitution. Evidence: queue ledger_result and linked dossiers.
+
+## Batch 8 lane
+
+- **Lane:** ext_35, new fixed-K lagged donor-role prior; paper semantic review distinct from Dead club-conditioned prior and deterministic creative-share scaling.
+- **Dossier:** docs/research/candidate-ideation/ideas/EXT-35-leave-player-and-club-out-creative-role-kernel-prior-at-fixed-defender-k.md
+- **Grid:** h=0.45,k_pool=7200,exclude_target_club=True,cap=0.02; h=0.70,k_pool=7200,exclude_target_club=True,cap=0.02; h=0.45,k_pool=14400,exclude_target_club=True,cap=0.02; h=0.45,k_pool=7200,exclude_target_club=False,cap=0.02
+- **Expected sign:** population-role prior may raise or lower xG; native decision-score delta positive is hypothesis only. K_DEF=2400 invariant.
+- **Lineage:** DEF position shrink; learned starts and P(60)-weighted bonus; assist GLM; face-value attack and finishing; HoldChase preparation; calibrated matchup; participation-state scorer. Existing shipped levers preserved.
+- **State:** Implementation frozen SHA256 7aeb59b76904c5cb16435f036a8b58f2b615d10c8b5b9241e835ec2fcaa287eb; both review axes PASS. Twelve synthetic checks, Ruff, 1024 repository tests pass. Full-development four-cell diagnostic completed 2026-11-11: 38 GWs, 380 cells, both state regimes exact parity, prepared rates exact across regimes. Independent evidence verification PASS; paired summary complete and independently verified. Development smoke complete: one Tier 2 tie/nonpass, three invalid/inert screen admissions; zero grid winners. All four terminal outcomes recorded in execution_results.csv. Queue inconclusive, ledger open. No Tier 3/confirmation or Dead lock. Goal tool retained usageLimited after interruption; packet carries explicitly continued work. Implementation/verification effort follows latest user cost preference.
+
+## Exit report
+
+**Verdict:** No development winner; eligible scope exhausted. Scientific inconclusive.
+
+**Lane:** ext_35; fixed-K lagged donor-role prior; one ordinary oracle screen delta 0, bootstrap P 0; three inert admissions below 0.01 playable projection shift. No native Tier 3 selection gate.
+
+**Audit:** Prototype source AUDIT PASS and both code-review axes PASS. Full native/oracle projection diagnostic and artifact-only summary verified; no leakage finding or traceback. Harness exit 2 represents inertness guards. Capture-time hash limitation disclosed in diagnostic evidence.
+
+**Ledger:** New open EXT-35 row; old ledger bytes and all locks unchanged. All original 34 queue rows preserved.
+
+**Validation:** 1036 tests pass, Ruff clean; delivery gate 29 passed, 0 failed; ready for authorized local atomic checkpoint.
+
+**Human Queue:** EXT-10/13/37 prerequisites unresolved; default skip. No intervention required for completed eligible lane.

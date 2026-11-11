@@ -1,0 +1,8 @@
+Legacy smoke diagnostics only: scientific verdict inconclusive; no promotion or Dead Lever authority.
+AUDIT PASS
+Season dev = 2025-26 GW1-38, seed 2024-25
+ext_35_h045_k7200_xclub: SCREEN_NOT_PASSED delta +0.0000 (min 0.0000) segs 0/3 boot P 0.000 tier2_oracle_fail: oracle formation XI regret did not improve (+0.0000); oracle bootstrap P 0.000 below required 0.65
+INERT FAIL: ext_35_h070_k7200_xclub: inert on Exogenous Playable Pool (max |delta_xp| = 0.004793 < 0.01) with combined_delta = +0.000000
+INERT FAIL: ext_35_h045_k14400_xclub: inert on Exogenous Playable Pool (max |delta_xp| = 0.009150 < 0.01) with combined_delta = +0.000000
+INERT FAIL: ext_35_h045_k7200_allclubs: inert on Exogenous Playable Pool (max |delta_xp| = 0.009393 < 0.01) with combined_delta = +0.000000
+Wrote 1 rows -> docs/research/candidate-ideation/smoke_results.csv (grid_positives=0/4)

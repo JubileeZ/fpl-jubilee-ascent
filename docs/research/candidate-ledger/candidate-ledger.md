@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-06 (+00:00)
+**Updated**: 2026-11-11 (+00:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -149,6 +149,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
+| Fixed-K leave-player-and-club-out creative-role kernel prior (EXT-35) | Evaluated 2026-11-11; open | One Tier 2 oracle selection tie (delta 0, P 0); three inert screen-admission refusals; [complete terminal companion](../candidate-ideation/prototypes/ext_35/execution_results.csv) | Scientific inconclusive; no new Dead lock, no Tier 3 or confirmation |
 | Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (EXT-20) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: best `ext_20_t15_k800` delta +0.0563, 1/3 segs, boot P 0.671 < 0.75 (4/6 passed Tier 2, all 6 failed Tier 3 under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Joint own-xG/xA process intensity and allocation likelihood (EXT-08) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: delta +0.0000, 0/3 segs, boot P 0.000 (all 4 variants tier2_oracle_fail under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
 | Bounded soft-saturating matchup factor on open-play goal expectancy (EXT-21) | Evaluated (2026-11-09) | dev 2025-26 FAIL: best `ext_21_g22_k12` delta -0.4082, 1/3 segs, boot P 0.418 (1/6 passed Tier 2, all 6 failed Tier 3 dev screen) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
