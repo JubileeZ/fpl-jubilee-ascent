@@ -1,6 +1,6 @@
 # EXT-35 execution artifacts
 
-Fixed-K lagged creative-role donor prior. Four preregistered variants; inherited participation isolated from rate changes. Champion unchanged; models unregistered.
+Fixed-K lagged creative-role donor prior. Four preregistered variants; inherited participation isolated from rate changes. Champion unchanged; models unregistered. Operator retired EXT-35 on 2026-11-11: effect too small, zero decision benefit. Current queue status closed; no automatic resweep or revival. Historical scientific label remains inconclusive.
 
 - [Specification](../../ideas/EXT-35-leave-player-and-club-out-creative-role-kernel-prior-at-fixed-defender-k.md)
 - [Source and evidence review](review.md)

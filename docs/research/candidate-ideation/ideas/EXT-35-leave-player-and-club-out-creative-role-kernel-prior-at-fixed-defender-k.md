@@ -3,7 +3,7 @@ idea_id: EXT-35
 name: Leave-Player-and-Club-Out Creative-Role Kernel Prior at Fixed Defender K
 tier: P1
 component: xp_goals
-status: inconclusive
+status: closed
 replaces: "Replace only the DEF prior inside models/def_xg_shrink_challenger.py::shrunk_xg_rates as used by DefXgShrinkChallengerModel.predict. New rate numerator uses mu_i; K remains 2400 and non-DEF rates remain exact Champion values. Apply new_rate / rate_360 once to original features.per90_xg, then enter LearnedStartChallengerModel.predict through the same parent call used by existing prototypes; do not call the DEF-shrink wrapper again. This preserves builder warm seed and matchup overlays and prevents double shrinkage."
 grid: "h=0.45,k_pool=7200,exclude_target_club=True,cap=0.02; h=0.70,k_pool=7200,exclude_target_club=True,cap=0.02; h=0.45,k_pool=14400,exclude_target_club=True,cap=0.02; h=0.45,k_pool=7200,exclude_target_club=False,cap=0.02"
 inputs: features.player_id; features.position_id; features.club_id; features.gameweek_id; features.per90_xg; features.per90_xa; features.xmins_if_start; features.xmins_if_sub_in; history.player_id; history.fixture_id; history.gameweek_id; history.was_home; history.opponent_club_id; history.minutes; history.expected_goals; history.creativity
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-35-leave-player-and-club-out-creative-role-kernel-prior-at-
 ---
 
 # EXT-35: Leave-Player-and-Club-Out Creative-Role Kernel Prior at Fixed Defender K
+
+## Operator retirement (2026-11-11)
+
+Closed: intervention too small to change squad, XI or captain decisions; zero point gain. Operator rejected further work on current EXT-35. No automatic scale expansion, resweep or revival without new authorization. Historical diagnostic evidence and inconclusive scientific label preserved; no fabricated scientific failure or new moratorium.
 
 ## 1. Concept & Football Hypothesis
 
