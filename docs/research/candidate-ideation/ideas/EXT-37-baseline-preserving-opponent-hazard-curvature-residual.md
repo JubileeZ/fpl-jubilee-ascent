@@ -3,7 +3,7 @@ idea_id: EXT-37
 name: Baseline-Preserving Opponent Hazard Curvature Residual
 tier: P1
 component: xp_clean_sheets
-status: blocked
+status: closed
 replaces: "Subclass DefXgShrinkChallengerModel; leave predict parent call and _apply_hard_fixture_defence inherited. Before parent prediction, prepare per-(player, fixture) residuals from original incoming features. Override _project_event_components: copy row, multiply only its already hard-fixture-adjusted per90_goals_conceded by prepared residual factor, then call super()._project_event_components once. This traverses inherited multi-feature assist override and base scoring; it updates clean-sheet xBPS before inherited Plackett-Luce bonus allocation. Never bypass DefXgShrinkChallengerModel.predict; never pre-apply hard fixture multiplier to features passed to parent."
 grid: "mode=full,bound_scale=1.0,rho=0.25; mode=hard_only,bound_scale=1.0,rho=0.25; mode=full,bound_scale=0.5,rho=0.25; mode=identity,bound_scale=0.0,rho=0.25"
 inputs: features.player_id; features.fixture_id; features.gameweek_id; features.position_id; features.club_id; features.opponent_id; features.is_home; features.difficulty; features.per90_goals_conceded; features.defence_multiplier; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.was_home; history.minutes; history.expected_goals; history.expected_assists; history.expected_goals_conceded
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-37-baseline-preserving-opponent-hazard-curvature-residual.m
 ---
 
 # EXT-37: Baseline-Preserving Opponent Hazard Curvature Residual
+
+## Operator closure (2026-11-11)
+
+Closed: current version lacks required prerequisites. Prior status: `blocked`. No empirical failure or new Dead lock. Reopening requires fresh evidence resolving stated prerequisite and explicit new work authorization. Original proposal and historical blocker assessment preserved below.
 
 ## 1. Concept & Football Hypothesis
 

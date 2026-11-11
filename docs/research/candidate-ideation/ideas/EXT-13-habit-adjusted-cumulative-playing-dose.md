@@ -3,7 +3,7 @@ idea_id: EXT-13
 name: Habit-Adjusted Cumulative Playing Dose
 tier: P3
 component: xp_minutes
-status: blocked (historical schedule provenance)
+status: closed
 replaces: "Add a pure, pre-deadline workload builder alongside models.ml_panel_features._build_gw_panel; apply the incremental learned offset inside MLComponentChallengerModel.predict H1 before its existing preserve_mass loop. Keep current H1 covariates and weights fixed. The new offset consumes causal Champion prediction caches for earlier training rows; those offsets are proposed derived inputs, not present in train_panel today. This requires a controlled H1 hook or an extracted helper, not enable_congestion=True."
 grid: "recovery_days=2,hazard_ridge=100; recovery_days=4,hazard_ridge=100; recovery_days=2,hazard_ridge=400; recovery_days=4,hazard_ridge=400"
 inputs: "Existing history.player_id; history.fixture_id; history.gameweek_id; history.minutes; history.starts; history.kickoff_time; features.kickoff_time; features.position_id; current fixture schedule known at deadline. Proposed derived features: actual-playing-dose kernel; shrunk habitual-dose quantile; frozen Champion prequential p_start and horizon expected-minutes cache; genuine seed-row count. No existing features.fatigue, external recovery data, cup minutes, international minutes, injury news, or physiological measurements assumed. Historical schedule provenance prerequisite: final archive fixture dates alone do not establish dates known at each historical deadline. Without deadline-valid schedule evidence, defer this version or specify a separate deadline-only dose formulation before experimentation. No future realized minutes or rescheduled kickoff information may enter historical predictors."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-13-habit-adjusted-cumulative-playing-dose.md
 ---
 
 # EXT-13: Habit-Adjusted Cumulative Playing Dose
+
+## Operator closure (2026-11-11)
+
+Closed: current version lacks required prerequisites. Prior status: `blocked (historical schedule provenance)`. No empirical failure or new Dead lock. Reopening requires fresh evidence resolving stated prerequisite and explicit new work authorization. Original proposal and historical blocker assessment preserved below.
 
 ## Checkpoint status (2026-10-28)
 

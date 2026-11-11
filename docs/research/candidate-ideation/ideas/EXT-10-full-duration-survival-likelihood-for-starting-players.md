@@ -3,7 +3,7 @@ idea_id: EXT-10
 name: Full-Duration Survival Likelihood for Starting Players
 tier: P2
 component: xp_minutes
-status: blocked (EXT-07 dead; seed hazards unavailable)
+status: closed
 replaces: "MLComponentChallengerModel.predict H3 block currently fits target_minutes minus shrunk_mins_if_start, clips start minutes to [60,90], and maps mean to P(60) with a line. Replace that H3 likelihood and moment mapping. build_causal_panel already supplies fixture-level target_minutes and target_starts. New immutable pooled seed hazard summaries belong in build_features seed preparation, explicitly passed as optional numeric features. Shared Candidate 1 replay utility is a prerequisite for assessing full scoring consequences."
 grid: "hazard_ridge=50,seed_strength=12; hazard_ridge=200,seed_strength=12; hazard_ridge=50,seed_strength=24; hazard_ridge=200,seed_strength=24"
 inputs: "Existing history.minutes; history.starts; history.player_id; history.fixture_id; history.gameweek_id; existing causal-panel shrunk_mins_if_start and early_hook_rate; features.position_id. Proposed derived features: fixed-bin exit counts and at-risk exposures, prior-season position hazard summaries, genuine seed-row count. These are not existing FeatureContract columns. Injury exit reasons, exact substitute identity, player tracking load, and live lineup news are unavailable and unused."
@@ -12,6 +12,10 @@ spec_path: ideas/EXT-10-full-duration-survival-likelihood-for-starting-players.m
 ---
 
 # EXT-10: Full-Duration Survival Likelihood for Starting Players
+
+## Operator closure (2026-11-11)
+
+Closed: current version lacks required prerequisites. Prior status: `blocked (EXT-07 dead; seed hazards unavailable)`. No empirical failure or new Dead lock. Reopening requires fresh evidence resolving stated prerequisite and explicit new work authorization. Original proposal and historical blocker assessment preserved below.
 
 ## Checkpoint status (2026-10-28)
 

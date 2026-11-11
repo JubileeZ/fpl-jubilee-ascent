@@ -3,7 +3,7 @@
 **Updated**: 2026-11-11 (+00:00)
 **Data stamp**: 152 development smoke rows, 120 unique saved variants; EXT-35 terminal companion additionally records three inert admission refusals; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Eligible queue exhausted; EXT-35 inconclusive after no development win; EXT-10/13/37 blocked; zero promotions; Champion unchanged
+**Status**: Eligible queue exhausted; EXT-35 inconclusive after no development win; EXT-10/13/37 closed for unmet prerequisites; zero promotions; Champion unchanged
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0068](../../adr/0068-two-axis-pre-execution-candidate-review.md) · [ADR 0066](../../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
@@ -15,6 +15,10 @@
 LLM references: capability-neutral; specialist role, date, source artifact for provenance. No fixed provider/model/version recommendations. FPL projection-model identifiers retained for reproducibility.
 
 ---
+
+## Operator queue closure (2026-11-11)
+
+EXT-10, EXT-13, EXT-37 closed after prerequisite review, per operator instruction. Locked decoder/missing seed hazards, historical schedule provenance, and exact overlay provenance respectively unresolved. Historical reasons retained in queue and dossiers. Administrative closure only; no model evaluation, scientific failure, or new Dead lock. No ready-to-test or blocked queue rows remain; EXT-35 remains inconclusive.
 
 ## Batch 8 EXT-35 execution (2026-11-11)
 
