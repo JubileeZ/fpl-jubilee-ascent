@@ -424,7 +424,7 @@ def main() -> int:
         try:
             store.record(identities[name], summary, reference=reference.df_eval if reference is not None else None,
                          candidate=candidate.df_eval if candidate is not None else None, weekly=weekly)
-        except (ValueError, OSError) as error:
+        except (ValueError, TypeError, OSError) as error:
             if status != "complete":
                 raise
             store.record(identities[name], {**summary, "execution_status": "partial", "terminal": True,
@@ -485,11 +485,7 @@ def main() -> int:
                     if name in prototype_names:
                         c_delta = float(weekly["delta"].to_numpy(dtype=float).mean())
                         check_inert_prototype(name, base_oracle, result, combined_delta=c_delta)
-                except ValueError as error:
-                    retain(name, "oracle", terminal=True, status="partial", reasons=str(error))
-                    leaked = True
-                    continue
-                except InertPrototypeError as error:
+                except (ValueError, TypeError, InertPrototypeError) as error:
                     retain(name, "oracle", terminal=True, status="partial", reasons=str(error))
                     leaked = True
                     continue
@@ -528,7 +524,7 @@ def main() -> int:
                             result,
                             combined_delta=verdict.combined_primary_delta,
                         )
-                except (ValueError, InertPrototypeError) as error:
+                except (ValueError, TypeError, InertPrototypeError) as error:
                     retain(name, "integrated", terminal=True, status="partial", reasons=str(error))
                     leaked = True
                     continue

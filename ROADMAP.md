@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Foundation engineering repaired; empirical admission/calibration pending**
 
-- Smoke measurement/readiness preflight, 2026-11-12: oracle common-pool guard, retained stage identities and verified resume implemented; eight synthetic solver probes complete. Empirical admission remains closed; synthetic significance diagnostics do not establish nominal error control. [Report](docs/research/backtesting-promotion-foundation/smoke_gate_preflight.md). Validation/review pending; Champion unchanged.
+- Smoke measurement/readiness preflight delivered, 2026-11-12: oracle common-pool guard, retained stage identities and verified resume; eight synthetic solver probes. Empirical admission remains closed; synthetic significance diagnostics do not establish nominal error control. [Report](docs/research/backtesting-promotion-foundation/smoke_gate_preflight.md) · [Delivery](docs/testing/smoke-gate-preflight-delivery.md). Validation: 1046 tests, Ruff, portable gate; Standards/Spec zero remaining findings; Champion unchanged.
 
 - Correctness repair checkpoint, 2026-10-30: Phase 1–14 Standards/Spec findings resolved; final reviews 0 confirmed findings on both axes. Full suite 1007 passed, Ruff/core types clean; unchanged diagnostic smoke baseline types recorded. Native replay and verified evidence authority validated synthetically. Empirical admission, numerical calibration/approval and prospective validation remain separate prerequisites; no Champion change. Functional local checkpoint `25db911f`; temporary task artifacts removed; no push.
 

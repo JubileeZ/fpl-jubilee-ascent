@@ -183,6 +183,10 @@ def probe_manifest() -> dict[str, Any]:
 
 
 def probe_worker() -> None:
+    if not (REPORTS / "probe_started.json").is_file() or (REPORTS / "probe_progress.json").exists() or (REPORTS / "probe_report.json").exists():
+        raise ValueError("Synthetic worker requires an unused authorized probe attempt")
+    with (REPORTS / "probe_worker_started.json").open("x") as handle:
+        json.dump({"max_calls": 8}, handle)
     manifest, solver, source, protocol = native_manifest_adapter(REPORTS / "probe_manifest.json")
     progress: list[dict[str, Any]] = []
 
@@ -218,9 +222,11 @@ def summarize_probes() -> None:
         for name in ("features_time_seconds", "fitting_time_seconds", "projection_time_seconds", "assembly_time_seconds", "scoring_time_seconds"):
             row[name] = None
     write_csv("smoke_gate_probe_timings.csv", rows)
+    groups = _group(read_csv(TOPIC / "smoke_gate_probe_timings.csv"), ("problem_id",))
+    pairs = [group for group in groups.values() if len(group) == 2 and {float(row["target_gap"]) for row in group} == {0.0, 0.02}]
     write_csv("smoke_gate_probe_summary.csv", [{"actual_calls": report["total_calls_executed"], "optimal_calls": sum(row["termination_status"] == "OPTIMAL" for row in rows),
                                                 "censored_calls": report["censored_calls_count"], "elapsed_seconds": report["total_elapsed_seconds"],
-                                                "matched_action_pairs": sum(len({row["first_action_digest"] for row in group}) == 1 for group in _group(read_csv(TOPIC / "smoke_gate_probe_timings.csv"), ("problem_id",)).values()),
+                                                "matched_action_pairs": sum(len({row["first_action_digest"] for row in group}) == 1 for group in pairs), "paired_problems": len(pairs),
                                                 "max_achieved_gap": max(row["actual_gap"] for row in rows), "empirical_runtime_authority": False}])
     environment = {key: report[key] for key in ("environment", "envelope", "timestamp", "total_calls_executed", "total_elapsed_seconds", "budget_exhausted", "censored_calls_count")}
     environment.update(input_mode="synthetic_diagnostic", report_sha256=file_digest(path), manifest_sha256=file_digest(REPORTS / "probe_manifest.json"),
@@ -270,6 +276,34 @@ def render_report() -> None:
         return
     trials = read_csv(calibration_path)
     probe = read_csv(TOPIC / "smoke_gate_probe_summary.csv")[0]
+    quality = read_csv(TOPIC / "smoke_gate_data_quality.csv")
+    outcomes = read_csv(TOPIC / "smoke_gate_outcomes.csv")
+    timings = read_csv(TOPIC / "smoke_gate_probe_timings.csv")
+
+    def setting(name: str) -> str:
+        values = {row[name] for row in trials}
+        if len(values) != 1 or "" in values:
+            raise ValueError(f"Inconsistent calibration setting: {name}")
+        return next(iter(values))
+
+    simulations, draws = int(setting("simulations")), int(setting("bootstrap_draws"))
+    seasons, gameweeks = int(setting("seasons")), int(setting("gws_per_season"))
+    sigma = float(setting("marginal_sd_pts_per_gw"))
+    if min(simulations, draws, seasons, gameweeks) < 1 or not math.isfinite(sigma) or sigma <= 0:
+        raise ValueError("Invalid calibration dimensions or scale")
+    for name in ("simulation_seed", "kernel_sha256"):
+        if trials and name in trials[0]:
+            setting(name)
+    effects = ", ".join(f"{value:g}" for value in sorted({float(row["true_mean_delta_pts_per_gw"]) for row in trials}))
+    correlations = ", ".join(f"{value:g}" for value in sorted({float(row["ar1_rho"]) for row in trials}))
+    budgets = ", ".join(str(value) for value in sorted({int(row["family_budget"]) for row in trials}))
+    duplicates = sum(int(row["duplicate_keys"]) for row in quality)
+    invalid_cells = sum(int(row["invalid_numeric_cells"]) for row in quality)
+    missing_players = sum(int(row["missing_player_ids"]) for row in outcomes)
+    missing_fixtures = sum(int(row["missing_fixture_ids"]) for row in outcomes)
+    mismatches = sum(int(row["ledger_mismatch_rows"]) for row in outcomes)
+    problem_count = len({row["problem_id"] for row in timings})
+    paired_actions = f"{probe['matched_action_pairs']}/{probe['paired_problems']} paired immediate-action digests matched" if int(probe["paired_problems"]) else "Paired immediate actions unassessed (no complete paired problems)"
     nulls = [row for row in trials if float(row["true_mean_delta_pts_per_gw"]) == 0 and row["family_budget"] == "1"]
     lines = [
         "# Smoke repair and promotion-readiness preflight", "",
@@ -286,8 +320,8 @@ def render_report() -> None:
         "Legacy CSVs and Candidate Ledger locks retained. Source/data/protocol changes invalidate reuse. Smoke remains legacy default scoring; recording data season does not claim native scoring injection.", "",
         "## Historical evidence and data quality", "",
         f"[Historical pairs](smoke_gate_historical_pairs.csv): {audit['historical_pairs']} paired comparisons, {audit['unique_models']} distinct models; {audit['confirmation_passes']} confirmation passes, {audit['negative_confirmation_deltas']} negative confirmation deltas, {audit['positive_confirmation_rejections']} positive rejection. Pairing preserves file, model, Champion and GW range. Mixed protocols/repeated models prevent interpreting counts as independent generalization trials.",
-        "[Data quality](smoke_gate_data_quality.csv): no duplicate inspected table keys, unparseable required numeric cells or missing referenced player/fixture IDs. Negative player points retained as legitimate outcomes. 2024-25 Assistant Manager elements excluded from player ledger audit; no native Assistant Manager benchmark implied.",
-        "[Outcome reconciliation](smoke_gate_outcomes.csv): native component totals reconcile exactly across three archives. This verifies outcome arithmetic only. Older seasons lack defensive-contribution inputs and award no native defensive-contribution points; a current-rule reconstruction cannot silently treat unavailable actions as measured zeros.",
+        f"[Data quality](smoke_gate_data_quality.csv): {duplicates} duplicate inspected table keys; {invalid_cells} unparseable required numeric cells; {missing_players} missing referenced player IDs; {missing_fixtures} missing fixture IDs. Negative player points retained as legitimate outcomes. 2024-25 Assistant Manager elements excluded from player ledger audit; no native Assistant Manager benchmark implied.",
+        f"[Outcome reconciliation](smoke_gate_outcomes.csv): {mismatches} native ledger mismatch rows across {len(outcomes)} inspected archives. This verifies outcome arithmetic only. Older seasons lack defensive-contribution inputs and award no native defensive-contribution points; a current-rule reconstruction cannot silently treat unavailable actions as measured zeros.",
         f"[Source retention](smoke_gate_source_retention.csv): acquisition manifest records {audit['recorded_retrieved_sources']} retrieved-but-unadmitted sources and {audit['recorded_missing_rows']} missing rows; {audit['retained_recorded_raw_sources']} recorded raw paths currently present locally. Retrieval history does not establish presently available bytes.",
         f"[Readiness matrix](smoke_gate_readiness.csv): original inventory has {audit['inventory_rows']} unverified bookkeeping rows, not that many independent missing source packages. 2023-24 is seed-only; no full 2023-24 replay required. GW1 ownership/price admission distinct from per-origin inputs and settled outcomes.", "",
         "## Admission blockers", "",
@@ -295,11 +329,11 @@ def render_report() -> None:
         "Historical universe/eligibility, deadline prices/club membership, issue-time six-GW schedules, availability and independent outcome completeness remain unadmitted. Frozen archive presence and exact scoring reconciliation do not certify pre-deadline information. Builder warm seeding does not imply prior raw rows reach model.fit().",
         "Registry machinery cannot make previously inspected 2024-25 outcomes fresh. Source reacquisition/admission, empirical activation, a causal shared chip calendar and a registered fresh-evidence plan remain prerequisites.", "",
         "## Bounded solver diagnostic", "",
-        f"[Probe summary](smoke_gate_probe_summary.csv), [timings](smoke_gate_probe_timings.csv) and [environment](smoke_gate_probe_environment.json): {probe['actual_calls']} actual optimizer calls on four artificial native problems; target gaps 0 and 0.02; {probe['optimal_calls']} optimal results, {probe['censored_calls']} censored. Experiment elapsed {float(probe['elapsed_seconds']):.4f} seconds. All paired immediate-action digests matched and achieved gaps were zero.",
-        "Artificial pool contains 17-19 players with fixed fabricated projections. Profiles measure neither Champion feature/fit/projection cost nor empirical season runtime. Assembly/scoring and cache/resume costs unmeasured; companion cells blank. All solves reached exact optimum, so probes do not establish acceptable approximation or material speed benefit. No final solver tolerance adopted.",
+        f"[Probe summary](smoke_gate_probe_summary.csv), [timings](smoke_gate_probe_timings.csv) and [environment](smoke_gate_probe_environment.json): {probe['actual_calls']} actual optimizer calls on {problem_count} artificial native problems; target gaps 0 and 0.02; {probe['optimal_calls']} optimal results, {probe['censored_calls']} censored. Experiment elapsed {float(probe['elapsed_seconds']):.4f} seconds. {paired_actions}; maximum achieved gap {float(probe['max_achieved_gap']):g}.",
+        "Artificial pool contains 17-19 players with fixed fabricated projections. Profiles measure neither Champion feature/fit/projection cost nor empirical season runtime. Assembly/scoring and cache/resume costs unmeasured; companion cells blank. These small artificial probes do not establish acceptable approximation or material speed benefit. No final solver tolerance adopted.",
         "Bound: eight calls total, 30-second solver limit, one thread, serial; parent process enforces 1,200-second worker timeout. Per-call progress retained under `data/reports/smoke-gate-preflight/`; exclusive start marker prevents accidental probe repetition.", "",
         "## Statistical diagnostic", "",
-        "[Calibration companion](smoke_gate_calibration.csv): 200 independent trajectory replicates per configuration, two 38-GW seasons, synthetic stationary Gaussian AR(1) deltas with marginal SD 4 points/GW; means 0 or +0.5; correlations 0, 0.4, 0.8; family budgets 1 or 5. Shared random numbers across configurations permit sensitivity comparison; configurations are not independent experiments. Existing stored-score kernel used with L=5 and 1,000 draws; seed and kernel/config hashes retained.",
+        f"[Calibration companion](smoke_gate_calibration.csv): {simulations} independent trajectory replicates per configuration, {seasons} seasons of {gameweeks} GWs, synthetic stationary Gaussian AR(1) deltas with marginal SD {sigma:g} points/GW; means {effects}; correlations {correlations}; family budgets {budgets}. Shared random numbers across configurations permit sensitivity comparison; configurations are not independent experiments. Existing stored-score kernel used with L=5 and {draws:,} draws; seed and kernel/config hashes retained.",
         "Significance-component rejection requires positive estimate and (`p_value_superiority <= adjusted_alpha` or lower two-sided CI > 0). Projection guards, registration and empirical admission omitted, so this is not complete-gate false-positive probability or empirical FWER.", "",
     ]
     for row in nulls:

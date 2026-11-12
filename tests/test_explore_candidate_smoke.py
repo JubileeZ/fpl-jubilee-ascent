@@ -177,3 +177,23 @@ def test_smoke_retains_oracle_success_when_integrated_screen_fails(tmp_path: Pat
     assert float(rows[2]["combined_delta"]) < 0
     assert all(row["scientific_verdict"] == "inconclusive" for row in rows)
 
+
+def test_null_oracle_metric_is_retained_as_invalid_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    smoke, out = _smoke(), tmp_path / "null.csv"
+    _fake_main(smoke, monkeypatch, tmp_path, leaky=set())
+    original = smoke._run
+
+    def run(job: tuple) -> tuple[str, WalkforwardResult]:
+        name, result = original(job)
+        result.metrics.update(oracle_formation_xi_regret=None, oracle_captain_regret=0.0)
+        return name, result
+
+    monkeypatch.setattr(smoke, "_run", run)
+    monkeypatch.setattr(sys, "argv", ["smoke.py", "--model", "a", "--tier", "2", "--out", str(out), "--workers", "1"])
+    assert smoke.main() == 2
+    rows = list(csv.DictReader(versioned_output(out).open()))
+    assert rows[-1]["stage"] == "oracle"
+    assert rows[-1]["execution_status"] == "partial"
+    assert rows[-1]["scientific_verdict"] == "invalid"
+    assert rows[-1]["combined_delta"] == ""
+

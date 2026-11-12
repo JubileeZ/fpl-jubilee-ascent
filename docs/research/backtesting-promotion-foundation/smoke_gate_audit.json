@@ -23,7 +23,7 @@
   },
   "negative_confirmation_deltas": 10,
   "positive_confirmation_rejections": 1,
-  "producer_sha256": "35cfa18a887e0e608bce9ed04065e1a5c627b494f0a11ecd80cc3465ca69c158",
+  "producer_sha256": "c81f565dbe2cc438e08634321a8dd8bb200a0a300e3ea01d6501174669e14451",
   "retained_recorded_raw_sources": 0,
   "scope": "Stored historical outcomes/records only; no model evaluation, confirmation rerun or sealed outcomes",
   "unique_models": 11
