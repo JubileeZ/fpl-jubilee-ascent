@@ -692,35 +692,35 @@ def evaluate_oracle_event_gate(
     4. Captaincy Regret: cand_cap <= champ_cap + captain_regret_tol (0.15 pts/GW).
     """
     champ_regret = float(
-        champion_metrics.get("oracle_formation_xi_regret")
-        or champion_metrics.get("formation_xi_regret", 0.0)
+        champion_metrics.get("oracle_formation_xi_regret", champion_metrics.get("formation_xi_regret", float("nan")))
     )
     cand_regret = float(
-        candidate_metrics.get("oracle_formation_xi_regret")
-        or candidate_metrics.get("formation_xi_regret", 0.0)
+        candidate_metrics.get("oracle_formation_xi_regret", candidate_metrics.get("formation_xi_regret", float("nan")))
     )
     oracle_delta = champ_regret - cand_regret
 
     champ_cap = float(
-        champion_metrics.get("oracle_captain_regret")
-        or champion_metrics.get("captain_regret", 0.0)
+        champion_metrics.get("oracle_captain_regret", champion_metrics.get("captain_regret", float("nan")))
     )
     cand_cap = float(
-        candidate_metrics.get("oracle_captain_regret")
-        or candidate_metrics.get("captain_regret", 0.0)
+        candidate_metrics.get("oracle_captain_regret", candidate_metrics.get("captain_regret", float("nan")))
     )
     captain_regret_delta = cand_cap - champ_cap
+    if not np.isfinite([champ_regret, cand_regret, champ_cap, cand_cap]).all():
+        raise ValueError("Oracle event screen requires finite regret and captain metrics")
 
     champ_bias = float(
         champion_playable_bias
         if champion_playable_bias is not None
-        else champion_metrics.get("playable_bias", champion_metrics.get("bias", 0.0))
+        else champion_metrics.get("playable_bias", float("nan"))
     )
     cand_bias = float(
         candidate_playable_bias
         if candidate_playable_bias is not None
-        else candidate_metrics.get("playable_bias", candidate_metrics.get("bias", 0.0))
+        else candidate_metrics.get("playable_bias", float("nan"))
     )
+    if not np.isfinite([champ_bias, cand_bias]).all():
+        raise ValueError("Oracle event screen requires finite common playable-pool biases")
 
     reasons: list[str] = []
 

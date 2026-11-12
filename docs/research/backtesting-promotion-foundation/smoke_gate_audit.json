@@ -1,0 +1,30 @@
+{
+  "acquisition_rows": 119,
+  "acquisition_statuses": {
+    "missing": 114,
+    "retrieved_unadmitted": 5
+  },
+  "confirmation_passes": 3,
+  "historical_pairs": 14,
+  "input_hashes": {
+    "data/archive/2023-24/processed/fixtures.parquet": "2d64f8b864852ecba3bce1cb135fac7c4cdf8e9e4ac91d7e1350a4d2639b3c92",
+    "data/archive/2023-24/processed/player_performances.parquet": "5af4eedd7d914895383c5ac92829f2079f70af6fb512d1dd5a05e14dd4393fbe",
+    "data/archive/2023-24/processed/players.parquet": "4f767f37274e22e711d52245f10293eeb4a3e5730ebbbdeccefd89a9e96c5368",
+    "data/archive/2024-25/processed/fixtures.parquet": "2341493d57b899c3a32467093745322cb8bffd08b8fc9234bb707fd3b28567c0",
+    "data/archive/2024-25/processed/player_performances.parquet": "ceed6b878a19227aca61379691eb40e891667d91bd4b92e26c9e71eaf54da977",
+    "data/archive/2024-25/processed/players.parquet": "76ff58f701b8085b705fe1984567eb76a66128962035ea0de3a29fa3f5dbca6c",
+    "data/archive/2025-26/processed/fixtures.parquet": "9821829c8ea43d0e47a926a7d6b5105ef68c18e06b6ebe21a86d457ca8a72d92",
+    "data/archive/2025-26/processed/player_performances.parquet": "64db5dc13408f9a315e3e3941b2c7ea08a4aeb60f1d69295a0eb0303e4b72741",
+    "data/archive/2025-26/processed/players.parquet": "6f4e1cd553f8cade33411c44cf81f86d53feb616db4293fd7f226ee07ad6bb11"
+  },
+  "inventory_rows": 1368,
+  "inventory_statuses": {
+    "unverified": 1368
+  },
+  "negative_confirmation_deltas": 10,
+  "positive_confirmation_rejections": 1,
+  "producer_sha256": "35cfa18a887e0e608bce9ed04065e1a5c627b494f0a11ecd80cc3465ca69c158",
+  "retained_recorded_raw_sources": 0,
+  "scope": "Stored historical outcomes/records only; no model evaluation, confirmation rerun or sealed outcomes",
+  "unique_models": 11
+}

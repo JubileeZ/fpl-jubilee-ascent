@@ -1,0 +1,6 @@
+season,origin,kind,recorded_status,path,exists_now,hash_matches_now
+2023-24,gw01,opening_bootstrap,retrieved_unadmitted,data/reports/replay-admission/v1/2023-24/opening/bootstrap.json.xz,False,unavailable
+2024-25,gw01,opening_bootstrap,retrieved_unadmitted,data/reports/replay-admission/v1/2024-25/opening/bootstrap.json.xz,False,unavailable
+2025-26,gw01,opening_bootstrap,retrieved_unadmitted,data/reports/replay-admission/v1/2025-26/opening/bootstrap.json.xz,False,unavailable
+2025-26,gw02,origin_bootstrap_pilot,retrieved_unadmitted,data/reports/replay-admission/v1/2025-26/origins/gw02/raw-mixed/bootstrap.json.xz,False,unavailable
+2025-26,gw02,fixture_pilot,retrieved_unadmitted,data/reports/replay-admission/v1/2025-26/origins/gw02/raw-mixed/fixtures.csv,False,unavailable

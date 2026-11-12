@@ -58,7 +58,7 @@ Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_i
 - **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict. Base for `after:` row = current Champion; `<id>` `confirm-pass` unpromoted → row waits. Grid entry naming another row (`+ <id>`) = implicit `after:<id>`; grid token `best` = second smoke round same lane, counts toward ≤6. Deferred rows wait for next batch.
 - **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
 - **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
-- **Per batch (ADR 0068):** Lanes execute **serially** (one candidate at a time) using the **3-subagent team** (`Implementer` + `Reviewer A Spec/Math` + `Reviewer B Standards/Arch`). Steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`). Review-repair loop is capped at max 3 iterations. Purge stale lane rows from `smoke_results.csv` before `smoke.py`. Post-retest: atomic local Git commit checkpoint (`chore(candidate): ...`) upon `bash tests/verify.sh` pass. If a candidate achieves PASS on dev and confirm, freeze prototype, draft ADR Proposed, queue adoption in Human Queue, and halt loop immediately.
+- **Per batch (ADR 0068):** Lanes execute **serially** (one candidate at a time) using the **3-subagent team** (`Implementer` + `Reviewer A Spec/Math` + `Reviewer B Standards/Arch`). Steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`). Review-repair loop is capped at max 3 iterations. Preserve legacy rows; `smoke.py` retains versioned stages and resumes only verified matching identities. Post-retest: atomic local Git commit checkpoint (`chore(candidate): ...`) upon `bash tests/verify.sh` pass. If a candidate achieves PASS on dev and confirm, freeze prototype, draft ADR Proposed, queue adoption in Human Queue, and halt loop immediately.
 - **Row verdict = one atomic edit:** Record diagnostic metrics with diagnostic scope; final `pass`/`fail` requires shared scientific evidence. `inconclusive`/`invalid` never creates a new Dead Lever lock. Persist evidence → ledger record → queue status; never mark `confirm-pass` from legacy smoke or unregistered historical inspection.
 - **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
 - **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
@@ -130,8 +130,8 @@ flowchart TD
     RevA & RevB --> Gate{"Both Sign Off<br/>VERDICT: PASS?"}
     Gate -- "No (Fail / Findings)" --> Fix["Implementer Applies Fixes<br/>(Max 3 iterations)"]
     Fix --> RevA & RevB
-    Gate -- "Yes (Clean PASS)" --> Purge["Purge Stale Lane Rows in smoke_results.csv"]
-    Purge --> Exec["Run smoke.py on Dev Season"]
+    Gate -- "Yes (Clean PASS)" --> Identity["Preserve history; bind source/data/protocol identity"]
+    Identity --> Exec["Run smoke.py on Dev Season; retain v2 stages"]
     Exec --> Ledger["Update idea_queue.csv & candidate_ledger.csv"]
     Ledger --> Checkpoint["Atomic Git Commit Checkpoint<br/>(bash tests/verify.sh)"]
 ```
@@ -174,15 +174,15 @@ If either reviewer returns `VERDICT: FAIL`, the orchestrator instructs the Imple
 
 ---
 
-### 4. Stale Purge, Smoke Execution & Checkpoint
+### 4. Retained Evidence, Smoke Execution & Checkpoint
 
 Once both Reviewers sign off with `VERDICT: PASS`:
-1. **Purge Stale Rows**: Automatically purge any pre-existing rows for `<lane>` from `smoke_results.csv` to ensure clean diagnostic recording.
-2. **Execute Smoke Retest**: Run `uv run python .agents/skills/explore-candidate/smoke.py docs/research/<topic slug>/prototypes/<lane>/prototypes.py --lane <lane> --out docs/research/<topic slug>/smoke_results.csv` on Dev Season (`2025-26`).
+1. **Preserve History**: Keep legacy CSVs and prior stage artifacts. Changed source, data, seed, parameters or protocol creates a new run identity; resume only complete evidence with verified artifact hashes. Missing/tampered evidence stops reuse; never erase rows to force a rerun. Confirmation single-look limits remain independent of identity.
+2. **Execute Smoke Retest**: Run `uv run python .agents/skills/explore-candidate/smoke.py docs/research/<topic slug>/prototypes/<lane>/prototypes.py --lane <lane> --out docs/research/<topic slug>/smoke_results.v2.csv` on Dev Season (`2025-26`). Retain `.evidence/` sidecars: paired evaluation frames, weekly regret deltas, common playable-pool summaries and identity manifests. Oracle success and integrated outcome remain separate rows; oracle segment wins unassessed. `execution_status=complete` describes diagnostic execution; `promotion_execution_status=not_run` and scientific Inconclusive retain zero adoption/Dead authority. Interpret `integrated_grid_positives` only as descriptive integrated deltas, never winner count.
 3. **Record Results**: Update `docs/research/<topic slug>/idea_queue.csv` and `docs/research/candidate-ledger/candidate_ledger.csv`.
 4. **Atomic Git Checkpoint**: Run `bash tests/verify.sh` and commit local checkpoint:
    ```bash
-   git add docs/research/<topic slug>/prototypes/<lane>/prototypes.py docs/research/<topic slug>/idea_queue.csv docs/research/<topic slug>/smoke_results.csv
+   git add docs/research/<topic slug>/prototypes/<lane>/prototypes.py docs/research/<topic slug>/idea_queue.csv docs/research/<topic slug>/smoke_results.v2.csv docs/research/<topic slug>/smoke_results.v2.evidence
    git commit -m "chore(candidate): complete <lane> prototype fix, two-axis review, and dev retest"
    ```
 5. **Confirmation & Dual-Season Halting Protocol**:
@@ -226,7 +226,7 @@ From winning prototype:
 
 ### 8. Record + Exit
 
-- Topic folder `docs/research/<slug>/` from `docs/research/template/research-note.md`: note + frozen `smoke_results.csv` (append verified lane rows; never overwrite) + `candidate_gate.csv`. Metric section per INDEX conventions.
+- Topic folder `docs/research/<slug>/` from `docs/research/template/research-note.md`: note + `smoke_results.v2.csv` with retained sidecars + `candidate_gate.v2.csv` diagnostics. Preserve legacy CSVs. Metric section per INDEX conventions. New final promotion evidence follows shared ADR 0066 evaluator.
 - Every attempt → `candidate_ledger.csv` evidence record + ledger table view. New Dead lock only for demonstrated scientific failure under approved policy; `inconclusive`, `invalid` and diagnostic failure never imply Dead. Existing locks preserved. `uv run pytest tests/test_candidate_ledger.py`.
 - Code touched → `uv run ruff check .`, `uv run pytest`, `bash tests/verify.sh`. Failures fixed before Exit.
 - Delete `.tmp/agent/explore-candidate/` only at Exit (a)/(b); keep for (c).

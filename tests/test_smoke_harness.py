@@ -12,19 +12,6 @@ from smoke import InertPrototypeError, check_inert_prototype, max_playable_pool_
 from backtesting.walkforward import WalkforwardResult  # noqa: E402
 
 
-def test_smoke_proxy_rows_have_no_promotion_or_dead_lever_authority(tmp_path: Path) -> None:
-    import csv
-    from smoke import append_row
-
-    output = tmp_path / "diagnostic.csv"
-    append_row(output, {"variant": "toy", "pass": False})
-    row = next(csv.DictReader(output.read_text().splitlines()))
-    assert row["evidence_kind"] == "legacy_proxy_diagnostic"
-    assert row["scientific_verdict"] == "inconclusive"
-    assert row["execution_status"] == "not_run"
-    assert row["dead_lever_authority"] == "False"
-
-
 def test_smoke_final_evidence_route_does_not_open_archive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import smoke
     from backtesting import promotion_evidence

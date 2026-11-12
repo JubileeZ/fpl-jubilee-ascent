@@ -1,0 +1,10 @@
+season,table,rows,duplicate_keys,invalid_numeric_cells,negative_total_points_rows
+2023-24,players,865,0,0,2
+2023-24,fixtures,380,0,0,0
+2023-24,player_performances,29725,0,0,165
+2024-25,players,804,0,0,1
+2024-25,fixtures,380,0,0,0
+2024-25,player_performances,27605,0,0,115
+2025-26,players,841,0,0,0
+2025-26,fixtures,380,0,0,0
+2025-26,player_performances,29747,0,0,77

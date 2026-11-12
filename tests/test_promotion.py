@@ -879,6 +879,25 @@ def test_evaluate_oracle_event_gate() -> None:
     assert any("captaincy regret regressed" in r for r in verdict_fail_cap.reasons)
 
 
+@pytest.mark.parametrize("field", ["playable_bias", "oracle_formation_xi_regret", "oracle_captain_regret"])
+@pytest.mark.parametrize("value", [None, float("nan"), float("inf")])
+def test_oracle_screen_rejects_missing_or_nonfinite_metrics(field: str, value: float | None) -> None:
+    from backtesting.promotion import evaluate_oracle_event_gate
+
+    champion = {"oracle_formation_xi_regret": 2.0, "oracle_captain_regret": 0.0, "playable_bias": 0.0}
+    candidate = {"oracle_formation_xi_regret": 1.0, "oracle_captain_regret": 0.0, "playable_bias": 0.0, field: value}
+    with pytest.raises((ValueError, TypeError)):
+        evaluate_oracle_event_gate(champion, candidate, gw_deltas=[1.0] * 20)
+
+
+def test_oracle_screen_never_substitutes_global_bias() -> None:
+    from backtesting.promotion import evaluate_oracle_event_gate
+
+    metrics = {"oracle_formation_xi_regret": 2.0, "oracle_captain_regret": 0.0, "bias": 0.0}
+    with pytest.raises(ValueError, match="playable-pool"):
+        evaluate_oracle_event_gate(metrics, {**metrics, "oracle_formation_xi_regret": 1.0})
+
+
 def test_block_bootstrap_win_probability_neutralizes_zero_tie_draws() -> None:
     """Targeted lever with 1 active win and 0 losses gets 0.5 credit on all-zero draws, while pure no-op returns 0.0."""
     sparse_deltas = [0.0] * 18 + [1.0] + [0.0] * 19

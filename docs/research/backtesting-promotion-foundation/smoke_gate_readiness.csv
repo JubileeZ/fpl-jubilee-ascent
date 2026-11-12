@@ -1,0 +1,41 @@
+season,role,field,inventory_rows,recorded_statuses,empirical_admission,evidence,applicability
+2023-24,seed_only,availability,38,unverified,not_activated,ownership_local_coverage.csv; no admitted historical availability snapshots,not_required_for_seed_only
+2023-24,seed_only,components,38,unverified,not_activated,smoke_gate_outcomes.csv; defensive contribution native-inapplicable before 2025-26,seed identity/outcome provenance only; no rolling replay
+2023-24,seed_only,deadline,38,unverified,not_activated,acquisition_manifest.csv; gameweeks.parquet,not_required_for_seed_only
+2023-24,seed_only,deadline_price_and_membership,38,unverified,not_activated,features/builder.py future-first-row fallback; ownership_local_coverage.csv,not_required_for_seed_only
+2023-24,seed_only,eligibility,38,unverified,not_activated,ownership_local_coverage.csv; data_admission.py,not_required_for_seed_only
+2023-24,seed_only,native_rules,38,unverified,not_activated,backtesting/season_rules.py; tests/test_native_season_rules.py,seed identity/outcome provenance only; no rolling replay
+2023-24,seed_only,opening_ownership,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,not_required_for_seed_only
+2023-24,seed_only,opening_price,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,not_required_for_seed_only
+2023-24,seed_only,outcomes,38,unverified,not_activated,"smoke_gate_outcomes.csv; arithmetic verified, source completeness unadmitted",seed identity/outcome provenance only; no rolling replay
+2023-24,seed_only,player_universe,38,unverified,not_activated,ownership_local_coverage.csv; ownership-anchor-feasibility.md,seed identity/outcome provenance only; no rolling replay
+2023-24,seed_only,seed_history,38,unverified,not_activated,processed archives retained; walkforward.py fit receives current-season rows,seed identity/outcome provenance only; no rolling replay
+2023-24,seed_only,six_gw_fixture_schedule,38,unverified,not_activated,acquisition_manifest.csv; fixture announcement chronology unavailable,not_required_for_seed_only
+2024-25,confirmation,availability,38,unverified,not_activated,ownership_local_coverage.csv; no admitted historical availability snapshots,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,components,38,unverified,not_activated,smoke_gate_outcomes.csv; defensive contribution native-inapplicable before 2025-26,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,deadline,38,unverified,not_activated,acquisition_manifest.csv; gameweeks.parquet,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,deadline_price_and_membership,38,unverified,not_activated,features/builder.py future-first-row fallback; ownership_local_coverage.csv,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,eligibility,38,unverified,not_activated,ownership_local_coverage.csv; data_admission.py,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,native_rules,38,unverified,not_activated,backtesting/season_rules.py; tests/test_native_season_rules.py,season-level contract
+2024-25,confirmation,opening_ownership,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,GW1 anchor only
+2024-25,confirmation,opening_price,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,GW1 anchor only
+2024-25,confirmation,outcomes,38,unverified,not_activated,"smoke_gate_outcomes.csv; arithmetic verified, source completeness unadmitted",per-origin forecasts or independent settled outcomes
+2024-25,confirmation,player_universe,38,unverified,not_activated,ownership_local_coverage.csv; ownership-anchor-feasibility.md,per-origin forecasts or independent settled outcomes
+2024-25,confirmation,seed_history,38,unverified,not_activated,processed archives retained; walkforward.py fit receives current-season rows,season-level contract
+2024-25,confirmation,six_gw_fixture_schedule,38,unverified,not_activated,acquisition_manifest.csv; fixture announcement chronology unavailable,per-origin forecasts or independent settled outcomes
+2025-26,development,availability,38,unverified,not_activated,ownership_local_coverage.csv; no admitted historical availability snapshots,per-origin forecasts or independent settled outcomes
+2025-26,development,components,38,unverified,not_activated,smoke_gate_outcomes.csv; defensive contribution native-inapplicable before 2025-26,per-origin forecasts or independent settled outcomes
+2025-26,development,deadline,38,unverified,not_activated,acquisition_manifest.csv; gameweeks.parquet,per-origin forecasts or independent settled outcomes
+2025-26,development,deadline_price_and_membership,38,unverified,not_activated,features/builder.py future-first-row fallback; ownership_local_coverage.csv,per-origin forecasts or independent settled outcomes
+2025-26,development,eligibility,38,unverified,not_activated,ownership_local_coverage.csv; data_admission.py,per-origin forecasts or independent settled outcomes
+2025-26,development,native_rules,38,unverified,not_activated,backtesting/season_rules.py; tests/test_native_season_rules.py,season-level contract
+2025-26,development,opening_ownership,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,GW1 anchor only
+2025-26,development,opening_price,38,unverified,not_activated,ownership_snapshot_samples.csv; ownership_snapshot_provenance.csv,GW1 anchor only
+2025-26,development,outcomes,38,unverified,not_activated,"smoke_gate_outcomes.csv; arithmetic verified, source completeness unadmitted",per-origin forecasts or independent settled outcomes
+2025-26,development,player_universe,38,unverified,not_activated,ownership_local_coverage.csv; ownership-anchor-feasibility.md,per-origin forecasts or independent settled outcomes
+2025-26,development,seed_history,38,unverified,not_activated,processed archives retained; walkforward.py fit receives current-season rows,season-level contract
+2025-26,development,six_gw_fixture_schedule,38,unverified,not_activated,acquisition_manifest.csv; fixture announcement chronology unavailable,per-origin forecasts or independent settled outcomes
+all,authority,empirical_admission_activation,0,closed_in_code,not_activated,backtesting/data_admission.py: assess_origins/input_ready/require_admitted,prerequisite for authoritative promotion evidence
+all,authority,statistical_calibration_approval,0,unapproved,not_activated,backtesting/evidence_statistics.py; smoke_gate_calibration.csv,prerequisite for authoritative promotion evidence
+all,authority,confirmation_freshness,0,historical_inspection_not_fresh_confirmation,not_activated,docs/testing/operator-workflow.md; Immutable Attempt Registry,prerequisite for authoritative promotion evidence
+all,authority,continuous_replay_accounting,0,synthetic_verification_only,not_activated,backtesting/replay_state.py; backtesting/rolling_replay.py; foundation-delivery.md,prerequisite for authoritative promotion evidence

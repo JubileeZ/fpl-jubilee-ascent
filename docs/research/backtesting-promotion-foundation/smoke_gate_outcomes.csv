@@ -1,0 +1,4 @@
+season,role,player_fixture_rows,native_point_total,defcon_points,ledger_mismatch_rows,missing_player_ids,missing_fixture_ids,causal_admission
+2023-24,seed_only,29725,31271.0,0.0,0,0,0,unverified
+2024-25,confirmation,27283,31290.0,0.0,0,0,0,unverified
+2025-26,development,29747,34382.0,2834.0,0,0,0,unverified

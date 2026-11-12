@@ -1,4 +1,4 @@
-"""Explore-candidate smoke harness: prototypes vs Champion through real gate code.
+"""Development Screen: retained prototype diagnostics against Champion.
 
     uv run python .agents/skills/explore-candidate/smoke.py --show_seasons
     uv run python .agents/skills/explore-candidate/smoke.py <prototypes.py> [--gw_range 1-N] [--workers 4]
@@ -10,9 +10,11 @@ Season roles resolve from ``data/archive/YYYY-YY`` (complete = every fixture fin
 ``dev`` = latest complete season, ``confirm`` = second-latest complete season (ADR 0047), incomplete seasons = sealed live
 holdout (never run here). ``--season confirm``: registered models only, full season, durable ``--out``, one run per model
 (refused when ``--out``, any ``docs/{research,archive}/*/candidate_gate.csv``, or Candidate Ledger already holds it).
-Rows append to ``--out`` as each variant finishes; re-running skips variants already there for same season/Champion/GW range.
+New records append to a separate ``*.v2.csv`` beside requested ``--out``; legacy files remain unchanged.
+Each stage retains paired frames, weekly scores and pool metrics. Resume requires matching source/data/protocol identity
+and intact artifacts; oracle success remains recorded even if integrated evaluation fails. Oracle segment wins unassessed.
 Prototype file exports ``PROTOTYPES: dict[str, type[BaseModel]]`` and ``FEATURES: dict[str, tuple[str, ...]]``
-(entries ``features.<col>`` / ``history.<col>`` / ``local.<key>``). Exit 2 = audit, leakage, or confirm-protocol failure.
+(entries ``features.<col>`` / ``history.<col>`` / ``local.<key>``). Exit 2 = invalid execution, audit, or confirm-protocol failure.
 """
 
 from __future__ import annotations
@@ -29,23 +31,22 @@ from datetime import date
 from pathlib import Path
 from types import ModuleType
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from backtesting import walkforward  # noqa: E402
-from backtesting.metrics import formation_xi_regret_by_gameweek  # noqa: E402
 from backtesting.model_evaluation import compare_to_reference  # noqa: E402
+from backtesting import promotion  # noqa: E402
 from backtesting.promotion import (  # noqa: E402
     BOOTSTRAP_MIN_P,
     CONFIRMATION_BOOTSTRAP_MIN_P,
     PLAYABLE_MINUTES_THRESHOLD,
     PLAYABLE_XP_THRESHOLD,
-    evaluate_oracle_event_gate,
     identify_active_gameweeks,
 )
+from backtesting.smoke_diagnostics import DiagnosticStore, digest, input_identity, oracle_event_screen, paired_weekly_regret  # noqa: E402
 from backtesting.walkforward import LEDGER_COMPONENTS, WalkforwardConfig, WalkforwardResult, run_walkforward_backtest  # noqa: E402
 from commands.evaluate_minutes import evaluate_minutes_from_eval_frames  # noqa: E402
 from features.builder import TERMINAL_PLAYER_COLUMNS  # noqa: E402
@@ -265,24 +266,6 @@ def _read_rows(path: Path) -> list[dict[str, str]]:
     return list(csv.DictReader(path.read_text().splitlines())) if path.exists() else []
 
 
-def append_row(out: Path, row: dict[str, object]) -> None:
-    row = {**row, "evidence_kind": "legacy_proxy_diagnostic", "scientific_verdict": "inconclusive", "execution_status": "not_run", "dead_lever_authority": False}
-    out.parent.mkdir(parents=True, exist_ok=True)
-    new_file = not out.exists()
-    if not new_file and next(csv.reader(out.read_text().splitlines()), []) != list(row):
-        raise ValueError("Legacy smoke CSV schema differs; choose a new diagnostic output file")
-    with out.open("a", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(row))
-        if new_file:
-            writer.writeheader()
-        writer.writerow(row)
-
-
-def done_variants(out: Path, *, season: str, data_season: str, champion: str, gw_range: str) -> set[str]:
-    key = (season, data_season, champion, gw_range)
-    return {r["variant"] for r in _read_rows(out) if (r.get("season"), r.get("data_season"), r.get("champion"), r.get("gw_range")) == key}
-
-
 def count_grid_positives(
     out: Path,
     *,
@@ -291,16 +274,23 @@ def count_grid_positives(
     champion: str,
     gw_range: str,
     variants: list[str] | tuple[str, ...] | set[str] | None = None,
+    identities: dict[str, dict[str, object]] | None = None,
 ) -> int:
     key = (season, data_season, champion, gw_range)
     allowed = set(variants) if variants is not None else None
     latest: dict[str, float] = {}
-    for row in _read_rows(out):
+    store = DiagnosticStore(out)
+    for row in store.rows():
         if (row.get("season"), row.get("data_season"), row.get("champion"), row.get("gw_range")) != key:
             continue
         variant = row.get("variant", "")
         if allowed is not None and variant not in allowed:
             continue
+        if identities is not None and (variant not in identities or row["run_id"] != digest(identities[variant])):
+            continue
+        if row["stage"] not in {"integrated", "minutes"} or row["execution_status"] != "complete":
+            continue
+        store.verify(row)
         try:
             latest[variant] = float(row.get("combined_delta", 0.0))
         except (TypeError, ValueError):
@@ -317,8 +307,8 @@ def confirm_violations(
     if ".tmp" in out.resolve().parts:
         issues.append("confirm season needs durable --out (docs/research/<slug>/...), not .tmp")
     if prior_gates is None:
-        prior_gates = [*ROOT.glob("docs/research/*/candidate_gate.csv"), *ROOT.glob("docs/archive/*/candidate_gate.csv")]
-    rows = [r for path in {out, *prior_gates} for r in _read_rows(path)]
+        prior_gates = [*ROOT.glob("docs/research/*/candidate_gate*.csv"), *ROOT.glob("docs/archive/*/candidate_gate*.csv")]
+    rows = [r for path in {out, DiagnosticStore(out).output, *prior_gates} for r in _read_rows(path)]
     done_out = {r["variant"] for r in rows if r.get("season") == "confirm" and r.get("data_season") == season}
     ledger = list(csv.DictReader(LEDGER_CSV.read_text().splitlines()))
     for name in models:
@@ -327,20 +317,22 @@ def confirm_violations(
     return issues
 
 
-def oracle_gw_deltas(
-    champion_eval: pd.DataFrame,
-    candidate_eval: pd.DataFrame,
-    *,
-    target_column: str = EVAL_TARGET,
-) -> tuple[list[int], list[float]]:
-    champ = formation_xi_regret_by_gameweek(champion_eval, target_column=target_column)
-    cand = formation_xi_regret_by_gameweek(candidate_eval, target_column=target_column)
-    gws = sorted(set(champ.index) | set(cand.index))
-    return gws, [float(champ.get(g, 0.0) - cand.get(g, 0.0)) for g in gws]
+def run_identities(args: argparse.Namespace, season: Season, champion: str, challengers: list[str], module: ModuleType | None) -> dict[str, dict[str, object]]:
+    shared = input_identity(ROOT, season.data_dir, season.seed_dir, args.prototypes)
+    protocol = {name: value for name, value in vars(promotion).items() if name.isupper() and isinstance(value, (str, int, float, bool, dict, tuple))}
+    return {
+        name: {"input_identity": shared, "season": args.season, "data_season": season.name, "champion": champion,
+               "variant": name, "gw_range": args.gw_range or f"1-{season.last_gw}",
+               "initial_tier": resolve_candidate_tier(args.tier, name, args.lane, module, args.season),
+               "component": resolve_candidate_component(name, args.lane, module), "protocol": protocol,
+               "eval_target": EVAL_TARGET, "blend_weight": 0.5, "seed_season": season.seed_dir.parent.name if season.seed_dir else "none",
+               "scoring_context": "legacy_default_2025-26; no native_rules_version injection"}
+        for name in challengers
+    }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Smoke prototypes vs Champion (real gate; dev or confirm season).")
+    parser = argparse.ArgumentParser(description="Development Screen diagnostics; retained final evidence requires --evidence_request.")
     parser.add_argument("--season", choices=ROLES, default="dev")
     parser.add_argument("--show_seasons", action="store_true")
     parser.add_argument("prototypes", nargs="?", type=Path)
@@ -391,6 +383,8 @@ def main() -> int:
         parser.error("give a prototypes file and/or --model")
     gw_range = args.gw_range or f"1-{season.last_gw}"
     start_gw, end_gw = map(int, gw_range.split("-"))
+    if not 1 <= start_gw <= end_gw <= season.last_gw:
+        parser.error("Requested gameweeks must fit selected completed season")
     if args.season == "confirm":
         full = (start_gw, end_gw) == (1, season.last_gw)
         issues = confirm_violations(args.model, args.prototypes, args.out, full, season.name)
@@ -400,16 +394,48 @@ def main() -> int:
 
     champion = load_model_selection().champion
     print(f"Season {args.season} = {season.name} GW{gw_range}, seed {season.seed_dir.parent.name if season.seed_dir else 'none'}")
-    done = done_variants(args.out, season=args.season, data_season=season.name, champion=champion, gw_range=gw_range) & set(challengers)
+    store = DiagnosticStore(args.out)
+    identities = run_identities(args, season, champion, challengers, module)
+    done = store.completed(identities)
     if done:
-        print(f"Skipping variants already in {args.out}: {', '.join(sorted(done))}")
+        print(f"Skipping verified complete identities in {store.output}: {', '.join(sorted(done))}")
     pending = [name for name in challengers if name not in done]
     if not pending:
-        print(f"Wrote 0 rows -> {args.out} (all variants done)")
+        print(f"Wrote 0 rows -> {store.output} (all identities complete)")
         return 0
     path_arg = str(args.prototypes.resolve()) if args.prototypes else None
     bar = CONFIRMATION_BOOTSTRAP_MIN_P if args.season == "confirm" else BOOTSTRAP_MIN_P
     written, leaked = 0, False
+
+    def retain(name: str, stage: str, *, terminal: bool, status: str = "complete", reference: WalkforwardResult | None = None,
+               candidate: WalkforwardResult | None = None, weekly: pd.DataFrame | None = None, **values: object) -> bool:
+        nonlocal written, leaked
+        if status == "complete" and input_identity(ROOT, season.data_dir, season.seed_dir, args.prototypes) != identities[name]["input_identity"]:
+            status, terminal = "partial", True
+            values = {"reasons": "Source or input bytes changed during execution; retained identity invalid"}
+        summary = {
+            "date": date.today().isoformat(), "season": args.season, "data_season": season.name,
+            "lane": args.lane, "variant": name, "champion": champion, "gw_range": gw_range,
+            "stage": stage, "terminal": terminal, "participation_mode": "oracle" if stage == "oracle" else "predicted",
+            "scoring_context": identities[name]["scoring_context"], "eval_target": EVAL_TARGET,
+            "seed_season": identities[name]["seed_season"], "execution_status": status,
+            "source": str(args.prototypes or "registered"), **values,
+        }
+        try:
+            store.record(identities[name], summary, reference=reference.df_eval if reference is not None else None,
+                         candidate=candidate.df_eval if candidate is not None else None, weekly=weekly)
+        except (ValueError, OSError) as error:
+            if status != "complete":
+                raise
+            store.record(identities[name], {**summary, "execution_status": "partial", "terminal": True,
+                                           "pass": None, "reasons": f"Evidence invalid: {error}"})
+            status = "partial"
+        written += 1
+        leaked = leaked or status == "partial"
+        return status == "complete"
+
+    for name in pending:
+        retain(name, "queued", terminal=False, status="not_run", reasons="Diagnostic attempt queued")
 
     needs_oracle = any(
         resolve_candidate_tier(args.tier, name, args.lane, module, args.season) == "2"
@@ -438,8 +464,9 @@ def main() -> int:
             name, eff_tier, is_oracle = active_futures.pop(done_future)
             try:
                 _, result = done_future.result()
-            except LeakageError as error:
-                print(f"LEAKAGE FAIL: {error}")
+            except Exception as error:
+                retain(name, "oracle" if is_oracle else "integrated", terminal=True, status="partial", reasons=f"{type(error).__name__}: {error}")
+                print(f"EXECUTION INVALID: {error}")
                 leaked = True
                 continue
 
@@ -448,45 +475,36 @@ def main() -> int:
                     assert oracle_reference is not None
                     try:
                         base_oracle = oracle_reference.result()[1]
-                    except LeakageError as error:
-                        pool.shutdown(cancel_futures=True)
-                        print(f"LEAKAGE FAIL (Champion oracle reference): {error}")
-                        return 2
-
-                all_gws, gw_oracle_deltas = oracle_gw_deltas(
-                    base_oracle.df_eval,
-                    result.df_eval,
-                    target_column=EVAL_TARGET,
-                )
-                c_delta = float(np.mean(gw_oracle_deltas)) if gw_oracle_deltas else 0.0
-
-                if name in prototype_names:
-                    try:
-                        check_inert_prototype(name, base_oracle, result, combined_delta=c_delta)
-                    except InertPrototypeError as error:
-                        print(f"INERT FAIL: {error}", flush=True)
+                    except Exception as error:
+                        retain(name, "oracle", terminal=True, status="partial", reasons=f"Champion reference: {type(error).__name__}: {error}")
                         leaked = True
                         continue
 
-                t2_verdict = evaluate_oracle_event_gate(
-                    base_oracle.metrics,
-                    result.metrics,
-                    gw_deltas=gw_oracle_deltas,
-                    all_gameweeks=all_gws,
-                )
+                try:
+                    t2_verdict, weekly = oracle_event_screen(base_oracle, result, target=EVAL_TARGET)
+                    if name in prototype_names:
+                        c_delta = float(weekly["delta"].to_numpy(dtype=float).mean())
+                        check_inert_prototype(name, base_oracle, result, combined_delta=c_delta)
+                except ValueError as error:
+                    retain(name, "oracle", terminal=True, status="partial", reasons=str(error))
+                    leaked = True
+                    continue
+                except InertPrototypeError as error:
+                    retain(name, "oracle", terminal=True, status="partial", reasons=str(error))
+                    leaked = True
+                    continue
+                reasons_str = "; ".join(t2_verdict.reasons)
+                retained = retain(name, "oracle", terminal=not t2_verdict.passed, reference=base_oracle, candidate=result, weekly=weekly,
+                       **{"pass": t2_verdict.passed, "combined_delta": t2_verdict.oracle_delta, "min_effect": 0.0,
+                          "segs": None, "boot_p_gt0": t2_verdict.bootstrap_p, "guardrails_passed": t2_verdict.passed,
+                          "reasons": reasons_str})
+                if not retained:
+                    continue
 
                 if not t2_verdict.passed:
                     reasons_str = "tier2_oracle_fail: " + "; ".join(t2_verdict.reasons)
                     boot_str = "n/a" if t2_verdict.bootstrap_p is None else f"{t2_verdict.bootstrap_p:.3f}"
-                    append_row(args.out, {
-                        "date": date.today().isoformat(), "season": args.season, "data_season": season.name, "lane": args.lane,
-                        "variant": name, "champion": champion, "gw_range": gw_range, "pass": False, "combined_delta": t2_verdict.oracle_delta,
-                        "min_effect": 0.0, "segs": 0, "boot_p_gt0": t2_verdict.bootstrap_p,
-                        "guardrails_passed": False, "reasons": reasons_str,
-                        "source": str(args.prototypes or "registered"),
-                    })
-                    written += 1
-                    print(f"{name}: SCREEN_NOT_PASSED delta {t2_verdict.oracle_delta:+.4f} (min 0.0000) segs 0/3 boot P {boot_str} {reasons_str}", flush=True)
+                    print(f"{name}: ORACLE_SCREEN_NOT_PASSED delta {t2_verdict.oracle_delta:+.4f} segments unassessed boot P {boot_str} {reasons_str}", flush=True)
                 else:
                     print(f"{name}: Tier 2 Oracle Event Gate PASSED (delta {t2_verdict.oracle_delta:+.4f}, P={t2_verdict.bootstrap_p}); queueing Tier 3 walkforward...", flush=True)
                     f3 = pool.submit(_run, (name, season, start_gw, end_gw, False))
@@ -495,47 +513,48 @@ def main() -> int:
                 if base is None:
                     try:
                         base = reference.result()[1]
-                    except LeakageError as error:
-                        pool.shutdown(cancel_futures=True)
-                        print(f"LEAKAGE FAIL (Champion reference): {error}")
-                        return 2
+                    except Exception as error:
+                        retain(name, "integrated", terminal=True, status="partial", reasons=f"Champion reference: {type(error).__name__}: {error}")
+                        leaked = True
+                        continue
 
-                verdict = compare_to_reference(base, result, bootstrap_min_p=bar)
-                if name in prototype_names:
-                    try:
+                try:
+                    weekly = paired_weekly_regret(base.df_eval, result.df_eval, EVAL_TARGET)
+                    verdict = compare_to_reference(base, result, bootstrap_min_p=bar)
+                    if name in prototype_names:
                         check_inert_prototype(
                             name,
                             base,
                             result,
                             combined_delta=verdict.combined_primary_delta,
                         )
-                    except InertPrototypeError as error:
-                        print(f"INERT FAIL: {error}", flush=True)
-                        leaked = True
-                        continue
+                except (ValueError, InertPrototypeError) as error:
+                    retain(name, "integrated", terminal=True, status="partial", reasons=str(error))
+                    leaked = True
+                    continue
 
                 is_pass = verdict.passed
                 reasons_list = list(verdict.reasons)
 
                 if eff_tier == "1":
-                    t1_verdict = evaluate_minutes_from_eval_frames(base.df_eval, result.df_eval)
+                    try:
+                        t1_verdict = evaluate_minutes_from_eval_frames(base.df_eval, result.df_eval)
+                    except (ValueError, TypeError) as error:
+                        retain(name, "minutes", terminal=True, status="partial", reasons=str(error))
+                        continue
                     if not t1_verdict.passed:
                         is_pass = False
                         reasons_list = [f"tier1_minutes_fail: {r}" for r in t1_verdict.reasons] + reasons_list
 
-                append_row(args.out, {
-                    "date": date.today().isoformat(), "season": args.season, "data_season": season.name, "lane": args.lane,
-                    "variant": name, "champion": champion, "gw_range": gw_range, "pass": is_pass, "combined_delta": verdict.combined_primary_delta,
-                    "min_effect": verdict.min_effect, "segs": verdict.segment_wins, "boot_p_gt0": verdict.bootstrap_p,
-                    "guardrails_passed": verdict.guardrails_passed, "reasons": "; ".join(reasons_list),
-                    "source": str(args.prototypes or "registered"),
-                })
-                written += 1
+                retain(name, "minutes" if eff_tier == "1" else "integrated", terminal=True, reference=base, candidate=result, weekly=weekly,
+                       **{"pass": is_pass, "combined_delta": verdict.combined_primary_delta,
+                          "min_effect": verdict.min_effect, "segs": verdict.segment_wins, "boot_p_gt0": verdict.bootstrap_p,
+                          "guardrails_passed": verdict.guardrails_passed, "reasons": "; ".join(reasons_list)})
                 boot = "n/a" if verdict.bootstrap_p is None else f"{verdict.bootstrap_p:.3f}"
                 print(f"{name}: {'SCREEN_PASS' if is_pass else 'SCREEN_NOT_PASSED'} delta {verdict.combined_primary_delta:+.4f} "
                       f"(min {verdict.min_effect:.4f}) segs {verdict.segment_wins}/3 boot P {boot} {'; '.join(reasons_list)}", flush=True)
-    pos = count_grid_positives(args.out, season=args.season, data_season=season.name, champion=champion, gw_range=gw_range, variants=challengers)
-    print(f"Wrote {written} rows -> {args.out} (grid_positives={pos}/{len(challengers)})")
+    pos = count_grid_positives(args.out, season=args.season, data_season=season.name, champion=champion, gw_range=gw_range, variants=challengers, identities=identities)
+    print(f"Wrote {written} stage/attempt rows -> {store.output} (integrated_grid_positives={pos}/{len(challengers)})")
     return 2 if leaked else 0
 
 

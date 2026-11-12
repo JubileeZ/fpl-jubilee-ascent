@@ -1,9 +1,11 @@
 # Foundation preflight and calibration proposal
 
 **Updated**: 2026-10-29T13:36:20+07:00\
-**Status**: Proposed; prepared for review, not executed.\
+**Status**: Bounded smoke repair/synthetic preflight executed 2026-11-12; empirical admission and numerical approval pending.\
 **Authority**: [Agreed policy direction Q1-Q28](backtesting-promotion-foundation.md), refined after independent/subagent review.\
 **Purpose**: Establish whether available evidence and replay machinery can support policy; propose defensible numerical settings before testing finalists.
+
+**Execution record:** [Smoke repair/readiness preflight](smoke_gate_preflight.md). Eight actual solver calls on synthetic native fixtures; no empirical runtime claim. Historical acquisition sources absent locally; empirical admission closed in code. Synthetic significance diagnostics do not establish agreed 5% error guarantee. Existing numerical limits remain unapproved.
 
 ## Scope and order
 
