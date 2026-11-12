@@ -17,6 +17,8 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Foundation engineering repaired; empirical admission/calibration pending**
 
+- Readiness route charted, 2026-11-12: [Candidate Evaluation and Promotion Readiness](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/174). Nine dependency-linked tickets; inference source research complete on separate published branch. Next: human-approved input evidence/freshness policy, then coverage, replay, fresh-confirmation and calibration prerequisites. Model/workflow recommendation saved in current-state. Search readiness and per-finalist promotion remain separate milestones; no Candidate search resumed.
+
 - Offline input contracts and fixed-pilot assessment delivered, 2026-11-12: [Contract](docs/research/backtesting-promotion-foundation/input-evidence-contract.md) · [Delivery/reviews](docs/testing/input-evidence-delivery.md). Future raw receipt format tested offline. Full suite 1062 passed; Ruff/types clean; both reviews zero remaining findings. Empirical gate closed; field-specific approval/calibration/confirmation pending.
 
 - Historical source pilot complete, 2026-11-12: [Report](docs/research/backtesting-promotion-foundation/readiness-source-pilot.md); pinned bytes recovered, partial feasibility. Timing/freshness, eligibility and replay dependency admission unresolved. Prospective protocol proposal prepared; no activation or Candidate search.
