@@ -1,0 +1,216 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "opening_bootstrap",
+      "retrieval_utc": "2026-11-12T08:43:01.302273+00:00",
+      "status": "unavailable",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/4aaec38e6b5f5ade8b63162a3678ce67148adb67/cache/2025/8/15/1252.json.xz"
+    },
+    {
+      "attempt": 2,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "opening_bootstrap-commit",
+      "retrieval_utc": "2026-11-12T08:43:01.305907+00:00",
+      "status": "unavailable",
+      "url": "https://api.github.com/repos/Randdalf/fplcache/commits/4aaec38e6b5f5ade8b63162a3678ce67148adb67"
+    },
+    {
+      "attempt": 3,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "origin_bootstrap_pilot",
+      "retrieval_utc": "2026-11-12T08:43:01.306345+00:00",
+      "status": "unavailable",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/cache/2025/8/22/1251.json.xz"
+    },
+    {
+      "attempt": 4,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "origin_bootstrap_pilot-commit",
+      "retrieval_utc": "2026-11-12T08:43:01.306640+00:00",
+      "status": "unavailable",
+      "url": "https://api.github.com/repos/Randdalf/fplcache/commits/acaa50071f959d804abf8ca983adb1363b09619d"
+    },
+    {
+      "attempt": 5,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "fixture_pilot",
+      "retrieval_utc": "2026-11-12T08:43:01.306898+00:00",
+      "status": "unavailable",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e930bb766ff82d6dff6a47f40eefd4e65bba29ef/data/2025-26/fixtures.csv"
+    },
+    {
+      "attempt": 6,
+      "bytes": 0,
+      "error": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
+      "label": "fixture_pilot-commit",
+      "retrieval_utc": "2026-11-12T08:43:01.307146+00:00",
+      "status": "unavailable",
+      "url": "https://api.github.com/repos/vaastav/Fantasy-Premier-League/commits/e930bb766ff82d6dff6a47f40eefd4e65bba29ef"
+    },
+    {
+      "attempt": 7,
+      "bytes": 106252,
+      "expected_sha256": "eee31c9ece4864963bff4d88543ac5d440ca4d574ec89512e680d6e697f9a086",
+      "label": "opening_bootstrap",
+      "retrieval_utc": "2026-11-12T08:43:56.273572+00:00",
+      "sha256": "eee31c9ece4864963bff4d88543ac5d440ca4d574ec89512e680d6e697f9a086",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/4aaec38e6b5f5ade8b63162a3678ce67148adb67/cache/2025/8/15/1252.json.xz"
+    },
+    {
+      "attempt": 8,
+      "bytes": 3925,
+      "expected_sha256": "",
+      "label": "opening_bootstrap-commit",
+      "retrieval_utc": "2026-11-12T08:43:56.755285+00:00",
+      "sha256": "cb8cd9071d7e25f5eb650fcf7e9a403bd837e0b4d1438daba1cc8f1e66470379",
+      "status": "recovered",
+      "url": "https://api.github.com/repos/Randdalf/fplcache/commits/4aaec38e6b5f5ade8b63162a3678ce67148adb67"
+    },
+    {
+      "attempt": 9,
+      "bytes": 104780,
+      "expected_sha256": "4fc61f6f89d925af550887c05eeb84648d9860cf974ddee113306a89a1d36f51",
+      "label": "origin_bootstrap_pilot",
+      "retrieval_utc": "2026-11-12T08:43:57.136360+00:00",
+      "sha256": "4fc61f6f89d925af550887c05eeb84648d9860cf974ddee113306a89a1d36f51",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/cache/2025/8/22/1251.json.xz"
+    },
+    {
+      "attempt": 10,
+      "bytes": 3925,
+      "expected_sha256": "",
+      "label": "origin_bootstrap_pilot-commit",
+      "retrieval_utc": "2026-11-12T08:43:57.466794+00:00",
+      "sha256": "00bc232e769b9beb272693ac909a32978b49d513ac59512b3c3cd80bb7a892d0",
+      "status": "recovered",
+      "url": "https://api.github.com/repos/Randdalf/fplcache/commits/acaa50071f959d804abf8ca983adb1363b09619d"
+    },
+    {
+      "attempt": 11,
+      "bytes": 56644,
+      "expected_sha256": "8c4f54bbb1d7f28a3d01c5b36081e28b3092a06f70dd0263c0f4a9468641ea96",
+      "label": "fixture_pilot",
+      "retrieval_utc": "2026-11-12T08:43:57.897571+00:00",
+      "sha256": "8c4f54bbb1d7f28a3d01c5b36081e28b3092a06f70dd0263c0f4a9468641ea96",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e930bb766ff82d6dff6a47f40eefd4e65bba29ef/data/2025-26/fixtures.csv"
+    },
+    {
+      "attempt": 12,
+      "bytes": 662906,
+      "expected_sha256": "",
+      "label": "fixture_pilot-commit",
+      "retrieval_utc": "2026-11-12T08:43:58.171300+00:00",
+      "sha256": "b7bb897d8259a8fe5f1159a3dccff65488b591bca6c2ef8a265a22a06c2d549f",
+      "status": "recovered",
+      "url": "https://api.github.com/repos/vaastav/Fantasy-Premier-League/commits/e930bb766ff82d6dff6a47f40eefd4e65bba29ef"
+    },
+    {
+      "attempt": 13,
+      "bytes": 2327,
+      "expected_sha256": "",
+      "label": "collector-tree",
+      "retrieval_utc": "2026-11-12T08:44:50.220370+00:00",
+      "sha256": "37e23efc9e68e28b72f71999ebc93da289f699463ea28bd98948ad38f79bbf7f",
+      "status": "recovered",
+      "url": "https://api.github.com/repos/Randdalf/fplcache/git/trees/16e778c54d5449d237f76ebf3146fa90de279a53"
+    },
+    {
+      "attempt": 14,
+      "bytes": 1442,
+      "expected_sha256": "",
+      "label": "collector-c163de8519a2da9fbd8dec0547c4748ee354f268",
+      "retrieval_utc": "2026-11-12T08:44:50.727506+00:00",
+      "sha256": "465d027a4eb87eb0d821ac8f4428340dc3550ad8434cb61cc4e1d8ea381c10dc",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/cache.py"
+    },
+    {
+      "attempt": 15,
+      "bytes": 568,
+      "expected_sha256": "",
+      "label": "collector-faed46200726285b5861cc7ca6f505d615d128a3",
+      "retrieval_utc": "2026-11-12T08:44:50.961829+00:00",
+      "sha256": "662038c10152c14fe00417427d8b5b6dde3aad5ff6ffe4a5e0953b845beed1f7",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/cat.py"
+    },
+    {
+      "attempt": 16,
+      "bytes": 1000,
+      "expected_sha256": "",
+      "label": "collector-1d1ab16eddc993ecec9b938e8efb7f6a28f6f299",
+      "retrieval_utc": "2026-11-12T08:44:51.270865+00:00",
+      "sha256": "f594925627e9c85ba8501c7192f7dc8b6076a1b45656ceaefdbe333e86628bbd",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/diff.py"
+    },
+    {
+      "attempt": 17,
+      "bytes": 2211,
+      "expected_sha256": "",
+      "label": "collector-ba5d30e794c3ad0f1bfa3c704a78a0e7d1ab4805",
+      "retrieval_utc": "2026-11-12T08:44:51.524719+00:00",
+      "sha256": "b87480358226cd3a4f9546ecd47bd8b8aa2e817831b1dab424c522e8e3e685dd",
+      "status": "recovered",
+      "url": "https://raw.githubusercontent.com/Randdalf/fplcache/acaa50071f959d804abf8ca983adb1363b09619d/dump.py"
+    }
+  ],
+  "commit_times": {
+    "fixture_pilot": {
+      "author_date": "2025-08-20T07:59:03Z",
+      "committer_date": "2025-08-20T07:59:03Z",
+      "verified": true,
+      "verified_at": "2025-08-20T07:59:03Z"
+    },
+    "opening_bootstrap": {
+      "author_date": "2025-08-15T12:52:48Z",
+      "committer_date": "2025-08-15T12:52:48Z",
+      "verified": false,
+      "verified_at": null
+    },
+    "origin_bootstrap_pilot": {
+      "author_date": "2025-08-22T12:51:15Z",
+      "committer_date": "2025-08-22T12:51:15Z",
+      "verified": false,
+      "verified_at": null
+    }
+  },
+  "deadlines": {
+    "opening_bootstrap": [
+      {
+        "deadline_time": "2025-08-15T17:30:00Z",
+        "id": 1,
+        "is_next": true
+      }
+    ],
+    "origin_bootstrap_pilot": [
+      {
+        "deadline_time": "2025-08-22T17:30:00Z",
+        "id": 2,
+        "is_next": true
+      }
+    ]
+  },
+  "downloaded_bytes": 945980,
+  "elapsed_seconds": 110.46491291606799,
+  "origin": "2025-26 GW2",
+  "output": "data/reports/readiness-source-pilot/v1",
+  "producer_sha256": "71380c17ceeeb48de523db34557e3104bc18ec79967e6abac5fdf68377a65ea7",
+  "requests": 17,
+  "seed_dependency": {
+    "causal_training_lineage": "unverified; no outcome rows inspected",
+    "exists": true,
+    "source": "data/archive/2024-25/processed"
+  },
+  "status": "partial"
+}

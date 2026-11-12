@@ -1,0 +1,185 @@
+{
+  "assessment_scope": "offline supplied-evidence diagnostics; not empirical admission",
+  "code_sha256": {
+    "backtesting/forecast_adapter.py": "6a3550db8511d08fc79093d894c922156cfd3ae92453473fb0ee8e3dd72de540",
+    "backtesting/input_evidence.py": "cf216b88684d323472c3fbe627c47eed6d3b272aec6a1dcfd404cbaeb903dad1",
+    "backtesting/walkforward.py": "ccb428136148d1980f6bd1312b8e9500ce25574f97fc39e968e018019ee5f26b",
+    "features/builder.py": "8e4e53db62829206493519eef9420fd29eb6b3152fb013b48ce831e43b24bd72"
+  },
+  "fields": [
+    {
+      "limitations": [
+        "Eligibility and complete legal universe not independently verified."
+      ],
+      "name": "eligible_universe",
+      "promotion_authority": false,
+      "reasons": [
+        "capture_bounds_missing",
+        "publication_bound_missing",
+        "timing_basis_unknown",
+        "freshness_policy_unapproved",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": "origin_bootstrap_pilot",
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Commit time not substituted for capture bounds; no age policy approved."
+      ],
+      "name": "price_club_position",
+      "promotion_authority": false,
+      "reasons": [
+        "capture_bounds_missing",
+        "publication_bound_missing",
+        "timing_basis_unknown",
+        "freshness_policy_unapproved",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": "origin_bootstrap_pilot",
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Null next-round chance remains unknown; no terminal-status substitution."
+      ],
+      "name": "availability",
+      "promotion_authority": false,
+      "reasons": [
+        "capture_bounds_missing",
+        "publication_bound_missing",
+        "timing_basis_unknown",
+        "freshness_policy_unapproved",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": "origin_bootstrap_pilot",
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Observed horizon rows do not establish announcement-history completeness."
+      ],
+      "name": "fixture_schedule",
+      "promotion_authority": false,
+      "reasons": [
+        "capture_bounds_missing",
+        "publication_bound_missing",
+        "timing_basis_unknown",
+        "freshness_policy_unapproved",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": "fixture_pilot",
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Metadata only; no ownership optimization or eligibility certificate."
+      ],
+      "name": "opening_anchor",
+      "promotion_authority": false,
+      "reasons": [
+        "capture_bounds_missing",
+        "publication_bound_missing",
+        "timing_basis_unknown",
+        "freshness_policy_unapproved",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": "opening_bootstrap",
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Causal pre-origin history source/coverage not admitted."
+      ],
+      "name": "historical_performance",
+      "promotion_authority": false,
+      "reasons": [
+        "source_missing",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": null,
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Code trace distinguishes seeded features from current-history model.fit; empirical seed lineage unverified."
+      ],
+      "name": "prior_season_training",
+      "promotion_authority": false,
+      "reasons": [
+        "source_missing",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": null,
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "Independent post-settlement completeness unverified; no missing outcomes converted to zero."
+      ],
+      "name": "settled_outcomes",
+      "promotion_authority": false,
+      "reasons": [
+        "source_missing",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": null,
+      "status": "unresolved"
+    },
+    {
+      "limitations": [
+        "No causal calendar supplied; no future-outcome calendar optimization."
+      ],
+      "name": "shared_chip_calendar",
+      "promotion_authority": false,
+      "reasons": [
+        "source_missing",
+        "coverage_or_lineage_unverified"
+      ],
+      "source_id": null,
+      "status": "unresolved"
+    }
+  ],
+  "metrics": {
+    "current_player_rows": 698,
+    "horizon_fixture_rows": 60,
+    "null_next_round_chance": 541,
+    "opening_player_rows": 685
+  },
+  "origin": "2025-26 GW2",
+  "promotion_authority": false,
+  "sources": {
+    "fixture_pilot": {
+      "capture_lower": null,
+      "capture_upper": null,
+      "publication_upper": null,
+      "references": [
+        "summary.json#attempt-11"
+      ],
+      "sha256": "8c4f54bbb1d7f28a3d01c5b36081e28b3092a06f70dd0263c0f4a9468641ea96",
+      "timing_basis": "unknown"
+    },
+    "opening_bootstrap": {
+      "capture_lower": null,
+      "capture_upper": null,
+      "publication_upper": null,
+      "references": [
+        "summary.json#attempt-7"
+      ],
+      "sha256": "eee31c9ece4864963bff4d88543ac5d440ca4d574ec89512e680d6e697f9a086",
+      "timing_basis": "unknown"
+    },
+    "origin_bootstrap_pilot": {
+      "capture_lower": null,
+      "capture_upper": null,
+      "publication_upper": null,
+      "references": [
+        "summary.json#attempt-9"
+      ],
+      "sha256": "4fc61f6f89d925af550887c05eeb84648d9860cf974ddee113306a89a1d36f51",
+      "timing_basis": "unknown"
+    }
+  },
+  "summary_sha256": "941b6c7b6293b9079d8cbf16e722635de8fdeec6a538a9786e46cafaa08a8ff5",
+  "version": 1
+}
