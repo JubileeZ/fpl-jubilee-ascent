@@ -888,4 +888,12 @@ _Avoid_: Blocking universe admission when `can_select=False`, forcing owned `sta
 Contiguous empirical development slice (`1..k` starting from locked GW1) used only for bounded vertical verification before full `1..38` acquisition completes; explicitly disallowed for full-season readiness or finalist promotion claims.
 _Avoid_: Skipping missing/stale intermediate GWs, claiming full-season Dev parity from a prefix
 
+**Certified Quality Policy**:
+Authoritative `QualityPolicy` (`mode="certified"`, `target_gap=0.0`, `time_limit_seconds=60.0`, `require_proven_optimal=True`, `raise_on_failure=True`, deterministic HiGHS `threads=1, seed=42`) governing replay promotion runs; contrasts with diagnostic `"time_capped"`, forbids heuristic fallback, and disallows non-zero gap relaxation without paired Stage A decision-sensitivity proof and explicit human approval (`#179`).
+_Avoid_: Treating `"time_capped"` solves as promotion authority, equating MIP objective gap percentage to realized FPL points delta, falling back to `heuristic_zero_transfer_solve`
+
+**Shared Chip Calendar**:
+Single predeclared model-independent `chip_calendar` per season fixed deterministically from causal `season_rules.py` windows, locked GW1 ownership anchor, and pre-deadline published fixtures before inspecting any Candidate forecast or replay trace; eliminates per-model chip-timing confounding (`#178`, `#179`). Alternate calendars are sensitivity-only.
+_Avoid_: Optimizing chips dynamically per model in primary replay, choosing chip weeks from realized outcomes or post-deadline postponements
+
 
