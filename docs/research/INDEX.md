@@ -51,6 +51,8 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ## Active Research Index
 
+- **Development coverage & training lineage inventory (complete, 2026-11-12):** [Report](backtesting-promotion-foundation/development_coverage_report.md) · [Coverage matrix](backtesting-promotion-foundation/development_coverage_inventory.csv) · [Sources](backtesting-promotion-foundation/development_coverage_sources.csv) · [Assessment](backtesting-promotion-foundation/development_coverage_assessment.json). Unsealed 2023-26 inventory, quarantine provenance, and lineage audit; 342 evaluations (8 evidenced_bounded, 37 carried_from_gw1, 1 evidenced_empty, 113 partial, 183 absent).
+
 - **Offline input evidence contracts (2026-11-12):** [Contract/report](backtesting-promotion-foundation/input-evidence-contract.md) · [Field dispositions](backtesting-promotion-foundation/input_evidence_fields.csv) · [Assessment](backtesting-promotion-foundation/input_evidence_assessment.json). Input/receipt contracts and retained GW2 diagnostics; no empirical capability or new freshness approval.
 
 - **Historical input source pilot (complete, 2026-11-12):** [Report/prospective proposal](backtesting-promotion-foundation/readiness-source-pilot.md) · [Checks](backtesting-promotion-foundation/readiness_source_pilot_checks.csv) · [Audit](backtesting-promotion-foundation/readiness_source_pilot_audit.json). Pinned bytes recovered; partial feasibility; admission unresolved. No Candidate/solver/confirmation runs.

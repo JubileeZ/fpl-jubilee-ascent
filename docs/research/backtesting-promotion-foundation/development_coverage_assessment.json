@@ -1,0 +1,435 @@
+{
+  "archives": {
+    "2023-24": {
+      "processed": {
+        "assistant_managers_pos5": 0,
+        "duplicate_codes": 0,
+        "files": {
+          "fixtures.parquet": {
+            "sha256": "2d64f8b864852ecba3bce1cb135fac7c4cdf8e9e4ac91d7e1350a4d2639b3c92",
+            "size": 12255
+          },
+          "player_performances.parquet": {
+            "sha256": "5af4eedd7d914895383c5ac92829f2079f70af6fb512d1dd5a05e14dd4393fbe",
+            "size": 875411
+          },
+          "players.parquet": {
+            "sha256": "4f767f37274e22e711d52245f10293eeb4a3e5730ebbbdeccefd89a9e96c5368",
+            "size": 111489
+          }
+        },
+        "fixtures_count": 380,
+        "gameweeks_span": [
+          1,
+          38
+        ],
+        "manager_perf_rows": 0,
+        "performance_rows": 29725,
+        "players_excl_pos5": 865,
+        "players_total_rows": 865,
+        "position_counts": {
+          "1": 100,
+          "2": 278,
+          "3": 374,
+          "4": 113
+        }
+      },
+      "subdirs": [
+        "processed",
+        "vaastav"
+      ],
+      "vaastav": {
+        "fixtures.csv": {
+          "rows": 380,
+          "sha256": "d8521bdbb80edb5141bc17df71bf6026275f2e56fd6a6dc6041b3ae23a39ce6a",
+          "size": 712532
+        },
+        "gws/merged_gw.csv": {
+          "rows": 29725,
+          "sha256": "e9c09c8856f1c86b4f920f46ddd5033af83409439dfda53be925df2a3e7c8a9e",
+          "size": 4997188
+        },
+        "players_raw.csv": {
+          "rows": 865,
+          "sha256": "43d8cf5efb3d901f2499558c40b392b7f0ee22afe28030f36266ad29024c63d9",
+          "size": 310197
+        },
+        "teams.csv": {
+          "rows": 20,
+          "sha256": "7795f091ccea17fda0752cb07b935e1515b09a9d3f924147997cbf28139edd49",
+          "size": 1715
+        }
+      }
+    },
+    "2024-25": {
+      "processed": {
+        "assistant_managers_pos5": 20,
+        "duplicate_codes": 0,
+        "files": {
+          "fixtures.parquet": {
+            "sha256": "2341493d57b899c3a32467093745322cb8bffd08b8fc9234bb707fd3b28567c0",
+            "size": 12232
+          },
+          "player_performances.parquet": {
+            "sha256": "ceed6b878a19227aca61379691eb40e891667d91bd4b92e26c9e71eaf54da977",
+            "size": 861891
+          },
+          "players.parquet": {
+            "sha256": "76ff58f701b8085b705fe1984567eb76a66128962035ea0de3a29fa3f5dbca6c",
+            "size": 105384
+          }
+        },
+        "fixtures_count": 380,
+        "gameweeks_span": [
+          1,
+          38
+        ],
+        "manager_perf_rows": 322,
+        "performance_rows": 27605,
+        "players_excl_pos5": 784,
+        "players_total_rows": 804,
+        "position_counts": {
+          "1": 82,
+          "2": 268,
+          "3": 347,
+          "4": 87,
+          "5": 20
+        }
+      },
+      "subdirs": [
+        "processed",
+        "vaastav"
+      ],
+      "vaastav": {
+        "fixtures.csv": {
+          "rows": 380,
+          "sha256": "ce696e187569ca7c45da2562811d3c38f525b58e65575531be37bebd0769ee28",
+          "size": 751413
+        },
+        "gws/merged_gw.csv": {
+          "rows": 27605,
+          "sha256": "5bbbcba6353b4c72ad273adcc8e3aa451946a826564679788f45b1cb3325b84e",
+          "size": 5125595
+        },
+        "players_raw.csv": {
+          "rows": 804,
+          "sha256": "75686051b265cbe7755ac71213ecaad21b26ee1cc46a8bafbba19c39ce894b05",
+          "size": 342122
+        },
+        "teams.csv": {
+          "rows": 20,
+          "sha256": "d10a6db8feca6db9e44a3ba50b15168396667ea387fee9235d6b211c7f598c3b",
+          "size": 1717
+        }
+      }
+    },
+    "2025-26": {
+      "ledger_reconciliation": {
+        "checked_rows": 29747,
+        "distinct_gameweeks": 38,
+        "exact_matches": 29747,
+        "gw_max": 38,
+        "gw_min": 1,
+        "mismatches": 0,
+        "missing_position_rows": 0
+      },
+      "processed": {
+        "assistant_managers_pos5": 0,
+        "duplicate_codes": 0,
+        "files": {
+          "fixtures.parquet": {
+            "sha256": "9821829c8ea43d0e47a926a7d6b5105ef68c18e06b6ebe21a86d457ca8a72d92",
+            "size": 215444
+          },
+          "player_performances.parquet": {
+            "sha256": "64db5dc13408f9a315e3e3941b2c7ea08a4aeb60f1d69295a0eb0303e4b72741",
+            "size": 713470
+          },
+          "players.parquet": {
+            "sha256": "6f4e1cd553f8cade33411c44cf81f86d53feb616db4293fd7f226ee07ad6bb11",
+            "size": 108626
+          }
+        },
+        "fixtures_count": 380,
+        "gameweeks_span": [
+          1,
+          38
+        ],
+        "manager_perf_rows": 0,
+        "performance_rows": 29747,
+        "players_excl_pos5": 841,
+        "players_total_rows": 841,
+        "position_counts": {
+          "1": 97,
+          "2": 270,
+          "3": 379,
+          "4": 95
+        }
+      },
+      "raw": {
+        "bootstrap_static_bytes": 2743417,
+        "bootstrap_static_sha256": "f108d27b4fb14d1d0008e71a6df2c81c99548f7f8bbb619ef6d7a40f66900bcd",
+        "element_summaries_count": 841,
+        "finished_events_count": 38,
+        "fixtures_all_bytes": 2551440,
+        "fixtures_all_count": 380,
+        "fixtures_all_sha256": "59b917fddd3f0dec7e5b48432079682c818efae8b7ee200be0401e7c7408b533",
+        "is_terminal_snapshot": true,
+        "live_events_count": 38,
+        "total_events_count": 38,
+        "total_files": 881
+      },
+      "subdirs": [
+        "processed",
+        "raw"
+      ]
+    }
+  },
+  "assessment_title": "Development Coverage and Training Lineage Inventory (Season 2025-26)",
+  "coverage_summary_counts": {
+    "status_breakdown": {
+      "absent": 183,
+      "carried_from_gw1": 37,
+      "evidenced_bounded": 8,
+      "evidenced_empty": 1,
+      "partial": 113
+    },
+    "total_gameweek_field_evaluations": 342
+  },
+  "generated_utc": "2026-11-12T20:30:15+00:00",
+  "origin_scope": "2025-26 GW1..38 (Dev); 2024-25 & 2023-24 (Seeds); 2026-27 GW6+ strictly untouched",
+  "quarantine_pilot": {
+    "collector_uses_naive_today": true,
+    "files": {
+      "07-opening_bootstrap.raw": {
+        "sha256": "eee31c9ece4864963bff4d88543ac5d440ca4d574ec89512e680d6e697f9a086",
+        "size": 106252
+      },
+      "08-opening_bootstrap-commit.raw": {
+        "sha256": "cb8cd9071d7e25f5eb650fcf7e9a403bd837e0b4d1438daba1cc8f1e66470379",
+        "size": 3925
+      },
+      "09-origin_bootstrap_pilot.raw": {
+        "sha256": "4fc61f6f89d925af550887c05eeb84648d9860cf974ddee113306a89a1d36f51",
+        "size": 104780
+      },
+      "10-origin_bootstrap_pilot-commit.raw": {
+        "sha256": "00bc232e769b9beb272693ac909a32978b49d513ac59512b3c3cd80bb7a892d0",
+        "size": 3925
+      },
+      "11-fixture_pilot.raw": {
+        "sha256": "8c4f54bbb1d7f28a3d01c5b36081e28b3092a06f70dd0263c0f4a9468641ea96",
+        "size": 56644
+      },
+      "12-fixture_pilot-commit.raw": {
+        "sha256": "b7bb897d8259a8fe5f1159a3dccff65488b591bca6c2ef8a265a22a06c2d549f",
+        "size": 662906
+      },
+      "13-collector-tree.raw": {
+        "sha256": "37e23efc9e68e28b72f71999ebc93da289f699463ea28bd98948ad38f79bbf7f",
+        "size": 2327
+      },
+      "14-collector-c163de8519a2da9fbd8dec0547c4748ee354f268.raw": {
+        "sha256": "465d027a4eb87eb0d821ac8f4428340dc3550ad8434cb61cc4e1d8ea381c10dc",
+        "size": 1442
+      },
+      "15-collector-faed46200726285b5861cc7ca6f505d615d128a3.raw": {
+        "sha256": "662038c10152c14fe00417427d8b5b6dde3aad5ff6ffe4a5e0953b845beed1f7",
+        "size": 568
+      },
+      "16-collector-1d1ab16eddc993ecec9b938e8efb7f6a28f6f299.raw": {
+        "sha256": "f594925627e9c85ba8501c7192f7dc8b6076a1b45656ceaefdbe333e86628bbd",
+        "size": 1000
+      },
+      "17-collector-ba5d30e794c3ad0f1bfa3c704a78a0e7d1ab4805.raw": {
+        "sha256": "b87480358226cd3a4f9546ecd47bd8b8aa2e817831b1dab424c522e8e3e685dd",
+        "size": 2211
+      },
+      "attempts.jsonl": {
+        "sha256": "fa4b51ea8b0a2c548e2266a201920de4eda43c1388bbaffa0b8e530587c5c3de",
+        "size": 10886
+      },
+      "summary.json": {
+        "sha256": "941b6c7b6293b9079d8cbf16e722635de8fdeec6a538a9786e46cafaa08a8ff5",
+        "size": 14658
+      }
+    },
+    "gw1_bootstrap": {
+      "age_from_capture_lower": "5h 07m 12s",
+      "age_from_capture_lower_seconds": 18432.0,
+      "age_from_commit": "4h 37m 12s",
+      "age_from_commit_seconds": 16632.0,
+      "artifact": "07-opening_bootstrap.raw",
+      "can_select_true": 637,
+      "capture_lower_utc": "2025-08-15T12:22:48+00:00",
+      "capture_upper_utc": "2025-08-15T12:52:48+00:00",
+      "clubs_count": 20,
+      "commit_artifact": "08-opening_bootstrap-commit.raw",
+      "commit_before_deadline": true,
+      "commit_time_utc": "2025-08-15T12:52:48+00:00",
+      "commit_verified": false,
+      "deadline_utc": "2025-08-15T17:30:00+00:00",
+      "duplicate_codes": 0,
+      "duplicate_ids": 0,
+      "element_type_counts": {
+        "1": 80,
+        "2": 228,
+        "3": 304,
+        "4": 73
+      },
+      "events_is_next": true,
+      "excluded_assistant_managers": 0,
+      "expected_gw": 1,
+      "max_news_added_utc": "2025-08-15T12:03:26.649417+00:00",
+      "max_news_le_commit": true,
+      "min_15_selectable_cost_tenths": 640,
+      "player_rows": 685,
+      "selectable_by_position": {
+        "1": 70,
+        "2": 218,
+        "3": 280,
+        "4": 69
+      },
+      "sha256": "eee31c9ece4864963bff4d88543ac5d440ca4d574ec89512e680d6e697f9a086",
+      "size_bytes": 106252,
+      "status_a_null_chance": 554,
+      "status_u": 48,
+      "total_elements": 685,
+      "verification_reason": "unsigned",
+      "within_24h_ceiling": true,
+      "within_8h_target": true
+    },
+    "gw2_bootstrap": {
+      "age_from_capture_lower": "4h 59m 53s",
+      "age_from_capture_lower_seconds": 17992.56,
+      "age_from_commit": "4h 38m 45s",
+      "age_from_commit_seconds": 16725.0,
+      "artifact": "09-origin_bootstrap_pilot.raw",
+      "can_select_true": 641,
+      "capture_lower_utc": "2025-08-22T12:30:07.438657+00:00",
+      "capture_upper_utc": "2025-08-22T12:51:15+00:00",
+      "clubs_count": 20,
+      "commit_artifact": "10-origin_bootstrap_pilot-commit.raw",
+      "commit_before_deadline": true,
+      "commit_time_utc": "2025-08-22T12:51:15+00:00",
+      "commit_verified": false,
+      "deadline_utc": "2025-08-22T17:30:00+00:00",
+      "duplicate_codes": 0,
+      "duplicate_ids": 0,
+      "element_type_counts": {
+        "1": 81,
+        "2": 231,
+        "3": 311,
+        "4": 75
+      },
+      "events_is_next": true,
+      "excluded_assistant_managers": 0,
+      "expected_gw": 2,
+      "max_news_added_utc": "2025-08-22T12:30:07.438657+00:00",
+      "max_news_le_commit": true,
+      "min_15_selectable_cost_tenths": 640,
+      "player_rows": 698,
+      "selectable_by_position": {
+        "1": 70,
+        "2": 219,
+        "3": 281,
+        "4": 71
+      },
+      "sha256": "4fc61f6f89d925af550887c05eeb84648d9860cf974ddee113306a89a1d36f51",
+      "size_bytes": 104780,
+      "status_a_null_chance": 541,
+      "status_u": 57,
+      "total_elements": 698,
+      "verification_reason": "unsigned",
+      "within_24h_ceiling": true,
+      "within_8h_target": true
+    },
+    "gw2_fixtures": {
+      "age_from_capture_upper": "2d 09h 30m 57s",
+      "age_from_capture_upper_seconds": 207057.0,
+      "age_from_fallback_lower": "7d 00h 00m 00s",
+      "age_from_fallback_lower_seconds": 604800.0,
+      "artifact": "11-fixture_pilot.raw",
+      "clubs_covered": 20,
+      "commit_artifact": "12-fixture_pilot-commit.raw",
+      "commit_time_utc": "2025-08-20T07:59:03+00:00",
+      "commit_verified": true,
+      "duplicate_horizon_ids": 0,
+      "gw2_7_rows": 60,
+      "missing_required_cells": 0,
+      "origin_deadline_utc": "2025-08-22T17:30:00+00:00",
+      "parent_commit_retained_locally": false,
+      "parent_commits": [
+        "46277afda009b340e738336dabc4b0822dd80c57"
+      ],
+      "prev_gw_deadline_utc": "2025-08-15T17:30:00+00:00",
+      "rows_by_gw": {
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10,
+        "7": 10
+      },
+      "sha256": "8c4f54bbb1d7f28a3d01c5b36081e28b3092a06f70dd0263c0f4a9468641ea96",
+      "size_bytes": 56644,
+      "strict_between_deadlines": true,
+      "total_rows": 380,
+      "within_7d_target": true
+    },
+    "pre_175_input_pilot_statuses": {
+      "availability": "unresolved",
+      "eligible_universe": "unresolved",
+      "fixture_schedule": "unresolved",
+      "historical_performance": "unresolved",
+      "opening_anchor": "unresolved",
+      "price_club_position": "unresolved",
+      "prior_season_training": "unresolved",
+      "settled_outcomes": "unresolved",
+      "shared_chip_calendar": "unresolved"
+    }
+  },
+  "training_lineage_trace": {
+    "code_sha256": {
+      "backtesting/forecast_adapter.py": "6a3550db8511d08fc79093d894c922156cfd3ae92453473fb0ee8e3dd72de540",
+      "backtesting/input_pilot.py": "b2f3cb22ab77d775f70781b78d7f7244b8cbe5e9d4aa12159df98b49d9623897",
+      "backtesting/walkforward.py": "ccb428136148d1980f6bd1312b8e9500ce25574f97fc39e968e018019ee5f26b",
+      "backtesting/walkforward_solve.py": "96ef9ae16cb8d5a1fdf35b150d3702eea2b1983b357e478f486e2085b5a7fc82",
+      "features/builder.py": "8e4e53db62829206493519eef9420fd29eb6b3152fb013b48ce831e43b24bd72",
+      "models/adaptive_causal_challenger.py": "a651ee915046833b711714fb16e0dd7488323436cd4375983b15eb5b35d3af4a",
+      "models/club_def_prior_challenger.py": "acbd680a2d94c5366912a413536bbc1ffaecee2acf0f7c40f1cf28f63f035eb9",
+      "models/def_xg_shrink_challenger.py": "9d56247b67d8fce507a3a945cd71d15e0539ff03bce92cc60bf4c7bc4986264d"
+    },
+    "gw1_seed_resolution": {
+      "matched_below_threshold_fallback": 209,
+      "matched_by_code": 511,
+      "matched_by_name_fallback": 0,
+      "player_prior_eligible": 302,
+      "players_excl_pos5": 685,
+      "total_position_price_fallback": 383,
+      "unmatched_newcomers": 174
+    },
+    "gw2_seed_resolution": {
+      "matched_below_threshold_fallback": 210,
+      "matched_by_code": 514,
+      "matched_by_name_fallback": 0,
+      "player_prior_eligible": 304,
+      "players_excl_pos5": 698,
+      "total_position_price_fallback": 394,
+      "unmatched_newcomers": 184
+    },
+    "paths": {
+      "adaptive_causal_challenger": "AdaptiveCausalChallengerModel falls back 100% to Champion for GW1-19 and activates causal panel ML components trained on current-season GW4+ rows at GW20+.",
+      "club_def_prior_challenger": "ClubDefPriorChallengerModel derives opposing-side fixture club and fits as-of club x DEF pooled xG/90 shrinkage ratio (K=360) strictly on current-season history_df (minutes > 0).",
+      "def_xg_shrink_challenger": "Champion (DefXgShrinkChallengerModel) fits DEF K=2400 decayed xG/90 ratio on current-season history_df (minutes > 0) and inherits LearnedStartChallengerModel (GW >= 4, >= 500 rows ridge + assist GLM/bonus).",
+      "features_builder": "features/builder.py consumes seed_processed_dir via code_to_seed_id, name_to_seed_id fallback, and Position-Price fallback when min_prior_appearances >= 8 & min_prior_minutes >= 450; cold-start rate/state priors deactivate globally once this-season evidence exists.",
+      "prior_season_raw_rows_in_model_fit": false,
+      "walkforward": "backtesting/walkforward.py passes use_archive_seed=False; _default_seed_season_for_data_dir auto-resolves '2023-24' only for '2024-25' and returns None for '2025-26' unless seed_season/seed_processed_dir is passed explicitly. model.fit receives strictly history_before_target(df_perf, gw).",
+      "walkforward_solve_and_adapter": "backtesting/walkforward_solve.py and backtesting/forecast_adapter.py pass use_archive_seed=False with explicit seed_processed_dir and fit models on gameweek_id < target_gw."
+    },
+    "thresholds": {
+      "min_prior_appearances": 8,
+      "min_prior_minutes": 450
+    }
+  }
+}
