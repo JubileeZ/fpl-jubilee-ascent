@@ -695,20 +695,20 @@ A Candidate that passes the Historical Promotion Gate may be adopted as Model Ch
 _Avoid_: Margin threshold, discard previous model, automatic adoption
 
 **Provisional Historical Promotion**:
-An Incremental Promotion supported only by archive data without verified pre-deadline snapshots. It remains provisional until two Live Validation Windows provide current-season evidence.
-_Avoid_: Validated promotion, snapshot-backed promotion
+*(Disallowed without fresh confirmation, `#180` Q2)* Superseded historical label for archive-only promotion before live validation windows. Archive-only Historical Promotion grants zero Champion promotion authority; a frozen Finalist must complete full-season prospective confirmation (`2027-28 GW1–38` or successor fresh season) before manual adoption (`commands.evaluate_model_promotion --adopt`).
+_Avoid_: Validated promotion, archive-only promotion without prospective confirmation
 
 **Live Validation Window**:
-A rolling four-Gameweek comparison of the Model Champion and up to two Candidates using predictions captured from the same pre-deadline inputs.
-_Avoid_: Single-Gameweek validation, live test
+Post-adoption shadow replay horizon (`min_gameweeks >= 4` at fixed 4-GW-spaced checkpoints under `LiveCaptureManager.evaluate_live_review`) tracking an already-adopted Model Champion against the former Champion from identical pre-deadline `Prospective Receipt` + `capture_live_evidence` snapshots (`ADR 0066`, `#180` Q7). Operational monitoring safeguard only; never substitutes for pre-adoption Fresh Confirmation or auto-switches Champions.
+_Avoid_: Single-Gameweek validation, live confirmation substitute, automatic Champion switch
 
 **Live Reassessment**:
-A Live Validation Window confirms or challenges a Champion but cannot switch it automatically. A material loss triggers user review, a new Historical Promotion Gate evaluation, or a second live window.
-_Avoid_: Automatic live promotion, weekly model switching
+Human-gated operational safeguard during post-adoption `Live Validation Window` (`LiveCaptureManager`): evaluates realized net-point material harm after `min_gameweeks >= 4` and emits `PendingReview` / `RollbackRecommended` citing bundle hash; requires explicit human approval for manual rollback, never weekly switching or automatic promotion (`ADR 0066`, `#180` Q7).
+_Avoid_: Automatic live promotion, weekly model switching, midseason confirmation peeking
 
 **Meaningful Live Lead**:
-At least a 5% primary-metric advantage over a Live Validation Window while matching the Model Champion's guardrails. Smaller leads are unclear and leave the comparison slate unchanged.
-_Avoid_: Single-week win, automatic promotion threshold
+*(Superseded threshold note)* Deprecated pre-ADR-0066 `>= 5%` 4-GW live lead rule. Promotion no longer uses fixed minimum percentage leads or 4-GW live lead gates: Fresh Confirmation requires FWER-controlled paired difference superiority plus substantive non-inferiority guards (`ADR 0066`), while post-adoption operational review checks calibrated material-loss harm bounds (`#180`, `#181`, `#182`).
+_Avoid_: Single-week win, 5% live promotion threshold, automatic promotion threshold
 
 **Candidate Admission**:
 When the three-model comparison slate is full, a new Model Candidate enters only by passing the Historical Promotion Gate against an existing Candidate, which it replaces. The Model Champion is retained.
@@ -895,5 +895,17 @@ _Avoid_: Treating `"time_capped"` solves as promotion authority, equating MIP ob
 **Shared Chip Calendar**:
 Single predeclared model-independent `chip_calendar` per season fixed deterministically from causal `season_rules.py` windows, locked GW1 ownership anchor, and pre-deadline published fixtures before inspecting any Candidate forecast or replay trace; eliminates per-model chip-timing confounding (`#178`, `#179`). Alternate calendars are sensitivity-only.
 _Avoid_: Optimizing chips dynamically per model in primary replay, choosing chip weeks from realized outcomes or post-deadline postponements
+
+**Prospective Confirmation Window**:
+Full-season future `GW1–38` confirmation route (`2027-28 GW1–38` initially, then successor fresh eligible seasons) starting from neutral GW1 ownership anchor (`£100.0m`, `0` carried FT), verified Official `rules_id` bound into `protocol_hash`, `registered_at < gw1_deadline`, two-step pre-deadline `Prospective Receipt` + `capture_live_evidence` across 100% admitted universe leads `0..5`, independent `+24h` `finished=True`/`data_checked=True` settlement, pre-bundle Official re-settlement check, and 100%-schedule non-peeking (`#180`). Reused `2024-25` and `2026-27 GW6+` remain permanently ineligible as fresh confirmation.
+_Avoid_: Reused `2024-25` confirmation, midseason partial promotion peeking, zero-filled/carried-forward missing captures
+
+**Season Lifecycle**:
+Versioned season-role contract (`config/season_lifecycle.json`, implementation queued under `#182`) assigning each `YYYY-YY` season to `prior_seed_only`, `development`, `sealed_holdout` (`sealed_from_gw`), `prospective_confirmation`, or `post_adoption_live` (`#180` Q1, Q8, Q9). Replaces hardcoded year strings across backtesting, features, models, CLIs, and skills so agents and pipelines adapt dynamically across season rollovers.
+_Avoid_: Hardcoded `2023-24`/`2024-25`/`2025-26`/`2026-27` tuples, implicit year rollover, tuning on `prior_seed_only` seasons
+
+**Prior-Season Seed**:
+Completed prior season (`YYYY-1 -> YYYY`) unlocked strictly after full season conclusion, archive ingest, and Official `SeasonRules` verification exclusively to initialize GW1 Cold-Start priors (`features/builder.py`), remaining excluded from Candidate tuning/ideation/smoke searches while tagged `prior_seed_only` (e.g., finalized `2026-27` seeding `2027-28 GW1–38` confirmation while `2025-26` remains `development`, `#180` Q9).
+_Avoid_: Pre-completion seeding, Candidate tuning on `2026-27` seed data
 
 

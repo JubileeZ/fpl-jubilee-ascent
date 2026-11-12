@@ -1,6 +1,6 @@
 # Backtesting and Promotion Foundation (ADR 0066)
 
-**Status**: Accepted (2026-10-29)
+**Status**: Accepted (2026-10-29); Amended (2026-11-12, `#180`)
 
 **Amends / Supersedes**:
 - Supersedes [ADR 0044](0044-blended-eval-target-promotion-primary.md) (Blended Eval Target as promotion primary; now a supporting diagnostic).
@@ -47,7 +47,7 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
 ### 3. Numerical & Statistical Evaluation Protocol
 - Paired calendar dependence evaluated via **non-wrapping Moving Block Bootstrap (MBB, $L=5$)** on stored score traces (`backtesting/evidence_statistics.py`). Re-solving the MILP inside bootstrap draws is strictly prohibited. When active differences exist ($\exists t : |\Delta_t| > 10^{-12}$), exact zero-mean resampled draws ($|\bar{\Delta}^*| \le 10^{-12}$) receive neutral `0.5` tie credit in `p_value_superiority`; pure no-op trajectories return `p_value_superiority = 1.0`.
 - Search-wide family-wise error control (Q17) enforces $\text{FWER} \le 0.05$ across registered attempts within a mechanism family using Bonferroni (`default max_family_attempts = 1` for single-finalist confirmation, $\alpha_{\text{adj}} = \alpha_{\text{nominal}} / M$) and one-sided superiority evaluation (`p_value_superiority <= adjusted_alpha` or `ci_lower > 0.0`, yielding a 95% two-season bar for $M=1$ at $\alpha = 0.05$).
-- Continuous multi-season normalized weighting across Development (2025-26, seed 2024-25) and un-tuned Confirmation (2024-25, seed 2023-24).
+- Continuous multi-season normalized weighting across Development (`development_season`) and prospective Confirmation *(amended per `#180` / Section 8: previously inspected `2024-25` prohibited as fresh confirmation)*.
 - Formal four-way scientific verdicts:
   - **`pass`**: Statistically significant positive net score delta meeting bootstrap bar, material-loss floors, and substantive guards.
   - **`fail`**: Statistically demonstrated regression or material harm.
@@ -87,6 +87,14 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
   - Goalkeeper transfer friction: $1.5 \times \text{scale}(H)$.
   - Diminishing emergency FT value schedule: `{"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * scale(H)`.
   - Weekly variance constraints (Starter xMins floor, First-Bench cover, DEF stack cap) remain active.
+
+### 8. Amendment (`#180`, 2026-11-12): Fresh Prospective Confirmation & Dynamic Season Lifecycle
+- **Authoritative Confirmation Route**: Previously inspected `2024-25` results are disallowed as fresh confirmation regardless of hashes/aliases, and `Provisional Historical Promotion` without fresh confirmation grants zero authority. Primary confirmation requires future full-season prospective collection starting `2027-28 GW1–38` (neutral GW1 anchor `£100.0m`, `0` carried FT, `opening` anchor, causal `shared_chip_calendar`), keeping `2026-27 GW6+` strictly sealed throughout all `2025-26` development/ideation/smoke searches.
+- **Pre-Window Rules & Registration Freeze**: Official native-rule verification (`docs/rules/scoring-rules-<season>.md`, `backtesting/season_rules.py`, `models/scoring_matrix.py`, `GUARD_SEMANTICS` per-guard applicability) must bind verified `rules_id`, `anchor_mode`, `prior_seed_digest`, and causal `shared_chip_calendar` into `protocol_hash` before registration opens; finalists freeze strictly at `registered_at < first_confirmation_gw_deadline`.
+- **Two-Step Prospective Capture & Fail-Closed Missingness**: Each confirmation GW requires (1) raw HTTP `retain_receipt` (`2h` target / `6h` cap, `#175`) and (2) `commands.capture_live_evidence` (`before_deadline_minutes=30`, `clock="execution_utc"`) over 100% admitted universe leads `0..5` for Finalist + Champion. Missing or late (`> deadline` or `> 6h`) captures retain raw receipt flagged `late=True` for audit only and mark attempt `Invalid` (no Dead Lever moratorium; no GW skipping, zero-filling, backdating, or carry-forward heuristics).
+- **Independent Settlement & Pre-Bundle Verification**: Outcomes admit only at `captured_at >= max(gw_kickoff) + 24h` with Official `finished=True` & `data_checked=True`, zero `admission_fixtures.py` missing rows or 13-component mismatches (preserving `#178` `minutes==0` card rule), blocking `OutcomeNotFinalizedError` on postponed fixtures, and a final pre-bundle Official API re-settlement check.
+- **100%-Schedule Non-Peeking & Operational Post-Adoption Review**: Confirmation enforces `IncompleteScheduleError` over full registered GWs. `LiveCaptureManager.evaluate_live_review` (`min_gameweeks=4`, fixed 4-GW-spaced checkpoints) runs strictly **post-adoption** for manual human rollback monitoring (`PendingReview` / `RollbackRecommended`), never substituting for pre-adoption confirmation. Single-season ~38-GW power limitations (`~7–8` $L=5$ MBB blocks) allow `Inconclusive` verdicts (preserving Champion) to continue in successor fresh seasons (`2028-29+`) per `#181` calibration without relaxing `FWER <= 0.05`.
+- **Dynamic Season Lifecycle & Prior-Seed Rollover (`#182`)**: Implement a versioned season-lifecycle contract (`config/season_lifecycle.json`) replacing hardcoded `2023-24`/`2024-25`/`2025-26`/`2026-27` checks across backtesting, features, models, CLIs, and `.agents/skills/`. Upon `2026-27` completion + ingest + `SeasonRules` verification, `2026-27` unlocks exclusively to `prior_seed_only` for `2027-28` seeding while remaining barred from Candidate tuning/ideation/smoke searches (`2025-26` remains Dev until `2027-28` closes). Automated collector recovery/idempotency tests execute offline + on `2025-26` mirrors in `#182` without accessing `2026-27 GW6+`.
 
 ---
 
