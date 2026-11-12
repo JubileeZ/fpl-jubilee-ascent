@@ -868,3 +868,24 @@ _Avoid_: Hallucinated inputs, bookmaker spreads, tempo telemetry
 Mathematical transformation (e.g. exponential moving average, Empirical Bayes shrinkage, Leave-One-Out club sums) computed strictly over pre-deadline performance history $\mathcal{H}_{<g}$ without external or future leakage. Permitted in candidate proposals when base primitives belong to `history.<col>`.
 _Avoid_: Leaked future statistics, post-deadline actuals, ungrounded external rates
 
+**Empirical Admission**:
+Non-synthetic causal origin and independent settlement admission (`mode="empirical"`) gated across two distinct tracks — `Development Mirror` and `Prospective Receipt` — replacing `synthetic`-only gating while keeping `mode="synthetic"` strictly as regression/negative controls (`#178`).
+_Avoid_: Admitting offline diagnostics as empirical capability, relaxing `synthetic`-only checks by hash match alone
+
+**Development Mirror**:
+Reconstructed historical `2025-26` origin provenance (`Randdalf/fplcache` pre-deadline `.json.xz` bootstrap `8h` target / `24h` cap, plus pinned `vaastav/Fantasy-Premier-League` pre-deadline `fixtures.csv` `7d` target / `21d` cap and post-settlement `>= +24h` outcomes cross-checked zero-diff against `data/archive/2025-26/processed/`). Carries explicit structured `disclosed_limitations`; never accepted as fresh confirmation.
+_Avoid_: Prospective Receipt, terminal post-season bootstrap as point-in-time, undocumented mirror staleness
+
+**Prospective Receipt**:
+Live pre-deadline Official capture (`2h` target / `6h` cap) paired with independent `>= max(kickoff)+24h` and `data_checked=True` outcome settlement persisted via `retain_receipt`, free of mirror `disclosed_limitations`.
+_Avoid_: Development Mirror, retroactive local timestamps
+
+**Purchase Eligible**:
+Per-player boolean eligibility (`can_select=True` and `not removed`, fallback `status != "u"`) gating new buys (`native_strategic_solve` / `transfer_squad`) independently from season universe registration (`eligible_since`) and owned-squad hold/sell validity (`ReplayState` allows holding or selling owned `purchase_eligible=False` players).
+_Avoid_: Blocking universe admission when `can_select=False`, forcing owned `status="u"` players out without valid transfer accounting
+
+**Partial Prefix**:
+Contiguous empirical development slice (`1..k` starting from locked GW1) used only for bounded vertical verification before full `1..38` acquisition completes; explicitly disallowed for full-season readiness or finalist promotion claims.
+_Avoid_: Skipping missing/stale intermediate GWs, claiming full-season Dev parity from a prefix
+
+
