@@ -19,3 +19,6 @@ origin_bootstrap_pilot,invalid_price_ownership_position_rows,0
 origin_bootstrap_pilot,missing_required_cells,0
 origin_bootstrap_pilot,null_next_round_chance,541
 origin_bootstrap_pilot,rows,698
+acquisition,requests,17
+acquisition,downloaded_bytes,945980
+acquisition,elapsed_seconds,110.46491291606799

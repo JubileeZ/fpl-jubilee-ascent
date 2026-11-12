@@ -41,6 +41,7 @@ class FieldEvidence:
     coverage_reference: str | None
     freshness: FreshnessRule | None = None
     limitations: tuple[str, ...] = ()
+    missing_requirements: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,7 @@ class FieldAssessment:
 
 def assess_field(field: FieldEvidence, cutoff: datetime) -> FieldAssessment:
     """Check supplied evidence claims, not independently certify their truth."""
-    unresolved: list[str] = []
+    unresolved: list[str] = list(field.missing_requirements)
     invalid: list[str] = list(field.content_issues)
     if cutoff.utcoffset() is None:
         raise ValueError("Timezone-aware decision cutoff required")
@@ -214,6 +215,13 @@ def _receipt_storage(storage: Path) -> Path:
     return resolved
 
 
+def _receipt_member(storage: Path, relative: Path) -> Path:
+    resolved = (storage / relative).resolve()
+    if not resolved.is_relative_to(storage):
+        raise ValueError("Receipt member escapes storage")
+    return _receipt_storage(resolved)
+
+
 def retain_receipt(
     storage: Path, *, season: str, gw: int, endpoint: Literal["bootstrap-static", "fixtures"],
     deadline: datetime, payload: bytes,
@@ -234,15 +242,15 @@ def retain_receipt(
     }
     receipt_id = _digest(record)
     record["receipt_id"] = receipt_id
-    (storage / "raw").mkdir(parents=True, exist_ok=True)
-    raw_path = storage / "raw" / digest
+    _receipt_member(storage, Path("raw")).mkdir(parents=True, exist_ok=True)
+    raw_path = _receipt_member(storage, Path("raw") / digest)
     try:
         with raw_path.open("xb") as handle:
             handle.write(payload)
     except FileExistsError:
         if raw_path.read_bytes() != payload:
             raise ValueError("Existing receipt hash mismatch") from None
-    with (storage / f"{receipt_id}.json").open("x") as handle:
+    with _receipt_member(storage, Path(f"{receipt_id}.json")).open("x") as handle:
         handle.write(json.dumps(record, indent=2, sort_keys=True) + "\n")
     return record
 
@@ -251,7 +259,7 @@ def load_receipt(storage: Path, receipt_id: str) -> tuple[dict[str, Any], bytes]
     storage = _receipt_storage(storage)
     if not re.fullmatch(r"[0-9a-f]{64}", receipt_id):
         raise ValueError("Invalid receipt ID")
-    record = json.loads((storage / f"{receipt_id}.json").read_text())
+    record = json.loads(_receipt_member(storage, Path(f"{receipt_id}.json")).read_text())
     if not isinstance(record, dict) or record.get("receipt_id") != receipt_id:
         raise ValueError("Invalid receipt manifest")
     required = {"version", "season", "gw", "endpoint", "source_url", "received_at", "deadline",
@@ -271,7 +279,7 @@ def load_receipt(storage: Path, receipt_id: str) -> tuple[dict[str, Any], bytes]
     digest = record.get("payload_sha256")
     if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise ValueError("Invalid payload hash")
-    raw = (storage / "raw" / digest).read_bytes()
+    raw = _receipt_member(storage, Path("raw") / digest).read_bytes()
     if hashlib.sha256(raw).hexdigest() != digest or len(raw) != record["payload_size"]:
         raise ValueError("Receipt payload hash mismatch")
     return record, raw

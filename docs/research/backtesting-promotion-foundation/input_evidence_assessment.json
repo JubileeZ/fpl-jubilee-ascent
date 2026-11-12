@@ -2,7 +2,8 @@
   "assessment_scope": "offline supplied-evidence diagnostics; not empirical admission",
   "code_sha256": {
     "backtesting/forecast_adapter.py": "6a3550db8511d08fc79093d894c922156cfd3ae92453473fb0ee8e3dd72de540",
-    "backtesting/input_evidence.py": "cf216b88684d323472c3fbe627c47eed6d3b272aec6a1dcfd404cbaeb903dad1",
+    "backtesting/input_evidence.py": "390947ae0cfbe236b38628e5225a52ad5ae2573725624b899299ed181ede4d83",
+    "backtesting/input_pilot.py": "b2f3cb22ab77d775f70781b78d7f7244b8cbe5e9d4aa12159df98b49d9623897",
     "backtesting/walkforward.py": "ccb428136148d1980f6bd1312b8e9500ce25574f97fc39e968e018019ee5f26b",
     "features/builder.py": "8e4e53db62829206493519eef9420fd29eb6b3152fb013b48ce831e43b24bd72"
   },

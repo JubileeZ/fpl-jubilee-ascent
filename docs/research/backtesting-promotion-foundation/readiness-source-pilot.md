@@ -1,10 +1,10 @@
 # Historical input source pilot
 
-**Updated:** 2026-11-12 (Europe/Copenhagen)  
-**Data stamp:** Pinned public files recovered 2026-11-12; attempts/hashes in [audit](readiness_source_pilot_audit.json).  
-**Season:** 2025-26; 2024-25 seed dependencies only.  
-**Status:** Bounded pilot complete; partial source feasibility; no empirical admission.  
-**Purpose:** Establish whether one historical decision date can be reconstructed using information available before its deadline.  
+**Updated:** 2026-11-12T12:17:22+00:00
+**Data stamp:** Pinned public files recovered 2026-11-12; attempts/hashes in [audit](readiness_source_pilot_audit.json).
+**Season:** 2025-26; 2024-25 seed dependencies only.
+**Status:** Bounded pilot complete; partial source feasibility; no empirical admission.
+**Purpose:** Establish whether one historical decision date can be reconstructed using information available before its deadline.
 **Scope:** Source feasibility; no Candidate search, performance comparison or empirical activation.
 
 ## Decision
@@ -56,13 +56,13 @@ Zero Candidate/model runs, solver calls, confirmation reruns or sealed 2026-27 G
 
 [Checks](readiness_source_pilot_checks.csv) cache allowlisted input-field audits. [Audit](readiness_source_pilot_audit.json) records source URLs, hashes, timings, resource use, failed attempts and producer hash. Raw mixed payloads, collector source and full commit metadata quarantined under `data/reports/readiness-source-pilot/v1/`; original acquisition manifest untouched.
 
-- Three data files recovered with exact prior SHA256 matches: GW1 bootstrap, GW2 bootstrap and GW2 fixture snapshot. Three commit-metadata files also recovered. Initial six requests failed sandbox DNS; same-phase retry retained failures and original budgets.
-- Final acquisition totals: 17 requests, 945,980 downloaded bytes, 110.46 seconds through last collector retrieval; within agreed limits. Remaining time/requests not used to shop for another origin. Later offline analysis/verification separate from acquisition timing.
-- GW1 bootstrap: 685 player records. GW2 bootstrap: 698. Zero duplicate IDs, missing required audited cells, or invalid price/ownership/position rows in either. This is field consistency, not independent proof of complete legal universe or eligibility.
-- GW2 payload confirms deadline `2025-08-22T17:30:00Z`. Recorded bootstrap commit `2025-08-22T12:51:15Z` precedes deadline by 4h38m45s. This is commit-to-deadline separation, not measured capture age.
-- Fixture snapshot: 60 rows for GW2–7, ten per GW; zero duplicate IDs or missing audited schedule fields. Recorded GitHub-verified commit timestamp precedes GW2 deadline. Completeness relative to official announcement history still unverified.
+- Recovered data files match prior SHA256 records: opening bootstrap, origin bootstrap and fixture snapshot. Commit metadata recovered separately. Sandbox DNS failures retained in audit `attempts`; retry preserved original budgets.
+- Acquisition totals: companion CSV `source=acquisition`, metrics `requests`, `downloaded_bytes`, `elapsed_seconds`; within agreed limits. Remaining resources not used to shop for another origin. Later offline analysis/verification separate from acquisition timing.
+- Player populations and quality: CSV `source=opening_bootstrap|origin_bootstrap_pilot`, metrics `rows`, `duplicate_ids`, `missing_required_cells`, `invalid_price_ownership_position_rows`. Inspected rows internally consistent; this does not independently establish complete legal universe or eligibility.
+- Payload deadline matches fixed GW2 target. Recorded bootstrap commit precedes deadline; audit `commit_times.origin_bootstrap_pilot` and `deadlines.origin_bootstrap_pilot` preserve exact timestamps. Their separation is not measured capture age.
+- Fixture coverage: CSV `source=fixture_pilot`, metrics `window_rows`, `gw2_fixtures` through `gw7_fixtures`, `duplicate_window_ids`, `missing_window_input_cells`. Observed horizon populated/consistent. Recorded GitHub-verified commit precedes deadline; Official announcement completeness still unverified.
 - Collector at pinned GW2 revision fetches Official bootstrap, then names compressed file using timezone-naive `datetime.today()`. Supports fetch-then-write lineage; filename alone does not certify capture UTC. Bootstrap commits unsigned; signed fixture commit does not attest Official capture time.
-- Availability status present; next-round chance null for 541 GW2 players. Null chance retained as unknown, never converted to zero/DNP. Source snapshot does not establish updates made between collection and deadline.
+- Availability status present; unknown next-round probabilities counted in CSV `source=origin_bootstrap_pilot`, metric `null_next_round_chance`. Null chance retained as unknown, never converted to zero/DNP. Snapshot does not establish subsequent pre-deadline updates.
 
 ### Required-field disposition
 

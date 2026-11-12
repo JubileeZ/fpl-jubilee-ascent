@@ -205,7 +205,7 @@
   "elapsed_seconds": 110.46491291606799,
   "origin": "2025-26 GW2",
   "output": "data/reports/readiness-source-pilot/v1",
-  "producer_sha256": "71380c17ceeeb48de523db34557e3104bc18ec79967e6abac5fdf68377a65ea7",
+  "producer_sha256": "045182993666e86098fb57e98bbcac2e87c54c111a5a1b9b8b46fdbc80f9c527",
   "requests": 17,
   "seed_dependency": {
     "causal_training_lineage": "unverified; no outcome rows inspected",

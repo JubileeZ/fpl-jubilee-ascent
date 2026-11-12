@@ -46,3 +46,10 @@ def test_retained_pilot_reports_blockers_without_promoting(tmp_path: Path) -> No
     (tmp_path / "02-origin_bootstrap_pilot.raw").write_bytes(b"corrupt")
     with pytest.raises(ValueError, match="hash"):
         assess(tmp_path)
+
+
+def test_missing_sources_are_unresolved_not_malformed(tmp_path: Path) -> None:
+    (tmp_path / "summary.json").write_text(json.dumps({"origin": "2025-26 GW2", "attempts": []}))
+    report = assess_retained_pilot(tmp_path)
+    assert all(field["status"] == "unresolved" for field in report["fields"])
+    assert all("source_missing" in field["reasons"] for field in report["fields"])

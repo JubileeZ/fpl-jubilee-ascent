@@ -67,9 +67,9 @@ def assess_retained_pilot(quarantine: Path) -> dict[str, Any]:
     ]
     current = "origin_bootstrap_pilot"
     opening = "opening_bootstrap"
-    current_issues = validate_player_inputs(players.get(current, []), clubs.get(current, set()))
-    opening_issues = validate_player_inputs(players.get(opening, []), clubs.get(opening, set()), require_ownership=True)
-    schedule_issues = validate_schedule_inputs(fixtures, tuple(range(2, 8)), clubs.get(current, set()))
+    current_issues = validate_player_inputs(players[current], clubs[current]) if current in players else ()
+    opening_issues = validate_player_inputs(players[opening], clubs[opening], require_ownership=True) if opening in players else ()
+    schedule_issues = validate_schedule_inputs(fixtures, tuple(range(2, 8)), clubs[current]) if fixture_source and clubs.get(current) else ()
     cutoff = datetime.fromisoformat("2025-08-22T17:30:00+00:00")
     opening_cutoff = datetime.fromisoformat("2025-08-15T17:30:00+00:00")
     for label, gw, expected in ((current, 2, cutoff), (opening, 1, opening_cutoff)):
@@ -89,7 +89,9 @@ def assess_retained_pilot(quarantine: Path) -> dict[str, Any]:
         ("shared_chip_calendar", "", (), "No causal calendar supplied; no future-outcome calendar optimization."),
     )
     assessments = [asdict(assess_field(FieldEvidence(name, sources.get(label), issues, None,
-                          limitations=(limitation,)), opening_cutoff if name == "opening_anchor" else cutoff))
+                          limitations=(limitation,), missing_requirements=("club_universe_missing",)
+                          if name == "fixture_schedule" and not clubs.get(current) else ()),
+                          opening_cutoff if name == "opening_anchor" else cutoff))
                    for name, label, issues, limitation in specs]
     return {
         "version": 1, "origin": "2025-26 GW2", "promotion_authority": False,
@@ -103,7 +105,7 @@ def assess_retained_pilot(quarantine: Path) -> dict[str, Any]:
                     "null_next_round_chance": sum(row["chance_of_playing_next_round"] is None for row in players.get(current, []))},
         "fields": assessments,
         "code_sha256": {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in (
-            "backtesting/input_evidence.py", "backtesting/walkforward.py", "features/builder.py", "backtesting/forecast_adapter.py")},
+            "backtesting/input_evidence.py", "backtesting/input_pilot.py", "backtesting/walkforward.py", "features/builder.py", "backtesting/forecast_adapter.py")},
     }
 
 
@@ -111,7 +113,7 @@ def main() -> None:
     report = assess_retained_pilot(QUARANTINE)
     (TOPIC / "input_evidence_assessment.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     with (TOPIC / "input_evidence_fields.csv").open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=("name", "source_id", "status", "reasons", "limitations", "promotion_authority"))
+        writer = csv.DictWriter(handle, fieldnames=("name", "source_id", "status", "reasons", "limitations", "promotion_authority"), lineterminator="\n")
         writer.writeheader()
         for field in report["fields"]:
             writer.writerow({**field, "reasons": ";".join(field["reasons"]), "limitations": ";".join(field["limitations"])})

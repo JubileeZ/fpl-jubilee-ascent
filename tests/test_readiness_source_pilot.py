@@ -76,11 +76,29 @@ def test_fixture_input_window_excludes_outcome_values() -> None:
 def test_resume_keeps_original_request_budget(tmp_path: Path) -> None:
     output = tmp_path / "run"
     output.mkdir()
+    records = [{"attempt": index, "retrieval_utc": datetime.now(timezone.utc).isoformat(),
+                "bytes": 123 if index == 1 else 0} for index in range(1, 31)]
     (output / "summary.json").write_text(json.dumps({
-        "requests": 30, "downloaded_bytes": 123,
-        "attempts": [{"retrieval_utc": datetime.now(timezone.utc).isoformat()}]}))
+        "requests": 30, "downloaded_bytes": 123, "attempts": records}))
+    (output / "attempts.jsonl").write_text("".join(json.dumps({**row, "event": event}) + "\n"
+        for row in records for event in ("start", "finish")))
     resumed = PILOT["Fetcher"](output, resume=True)
     assert resumed.bytes == 123
     with pytest.raises(RuntimeError, match="cap"):
         resumed.fetch("never", "https://raw.githubusercontent.com/Randdalf/fplcache/a/file")
     assert resumed.count == 30
+
+
+def test_unfinished_request_cannot_reuse_summary_budget(tmp_path: Path) -> None:
+    output = tmp_path / "run"
+    output.mkdir()
+    records = [{"attempt": index, "retrieval_utc": datetime.now(timezone.utc).isoformat(),
+                "bytes": 0} for index in range(1, 30)]
+    (output / "summary.json").write_text(json.dumps({
+        "requests": 29, "downloaded_bytes": 0, "attempts": records}))
+    journal = "".join(json.dumps({**row, "event": event}) + "\n"
+                      for row in records for event in ("start", "finish"))
+    journal += json.dumps({"attempt": 30, "event": "start"}) + "\n"
+    (output / "attempts.jsonl").write_text(journal)
+    with pytest.raises(RuntimeError, match="journal"):
+        PILOT["Fetcher"](output, resume=True)

@@ -1,10 +1,10 @@
 # Offline input evidence contract
 
-**Updated:** 2026-11-12 (Europe/Copenhagen)  
-**Data stamp:** Retained source pilot; no new retrieval. Source/producer hashes in [assessment](input_evidence_assessment.json).  
-**Season:** 2025-26 GW2; GW1 anchor and prior-season dependencies.  
-**Status:** Implementation; empirical admission remains closed.  
-**Purpose:** Report which input claims pass offline contract checks and which required evidence remains missing.  
+**Updated:** 2026-11-12T12:17:22+00:00
+**Data stamp:** Retained source pilot; no new retrieval. Source/producer hashes in [assessment](input_evidence_assessment.json).
+**Season:** 2025-26 GW2; GW1 anchor and prior-season dependencies.
+**Status:** Delivered and independently reviewed; empirical admission remains closed.
+**Purpose:** Report which input claims pass offline contract checks and which required evidence remains missing.
 **Scope:** User-approved Q5/Q7 contracts, offline validation, retained-pilot assessment and future raw receipt format. No Candidate search, scheduling, native replay, empirical activation or new confirmation window.
 
 ## Sources
@@ -19,6 +19,8 @@
 Q5: define/test field-specific input acceptance before calibration. Q7: implement contracts and offline pilot assessment now; preserve justified historical reconstruction with explicit limitations. Source-age limits, eligibility/freshness policy, practical harm limits and fresh-confirmation window remain future approval items. No arbitrary numerical default adopted.
 
 No glossary change or new ADR: existing domain policy retained; diagnostic implementation has no new adoption authority.
+
+[Delivery/reviews](../../testing/input-evidence-delivery.md): full suite and regression validation complete; Standards and Spec re-reviews zero remaining findings.
 
 ## Method
 

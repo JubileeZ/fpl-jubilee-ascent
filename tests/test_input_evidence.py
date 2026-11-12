@@ -86,3 +86,15 @@ def test_outcome_source_cannot_support_issue_inputs() -> None:
     result = assess_field(FieldEvidence("price", source, (), None), datetime.now(timezone.utc))
     assert result.status == "invalid"
     assert "outcome_used_as_input" in result.reasons
+
+
+def test_nested_receipt_symlink_cannot_escape_storage(tmp_path: Path) -> None:
+    storage = tmp_path / "storage"
+    protected = tmp_path / "archive"
+    protected.mkdir()
+    storage.mkdir()
+    (storage / "raw").symlink_to(protected, target_is_directory=True)
+    with pytest.raises(ValueError, match="storage"):
+        retain_receipt(storage, season="test", gw=2, endpoint="fixtures",
+                       deadline=datetime.now(timezone.utc), payload=b"must not reach archive")
+    assert list(protected.iterdir()) == []

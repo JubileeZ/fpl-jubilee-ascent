@@ -57,7 +57,26 @@ class Fetcher:
             self.count = previous["requests"]
             self.bytes = previous["downloaded_bytes"]
             self.records = previous["attempts"]
+            try:
+                journal = [json.loads(line) for line in (output / "attempts.jsonl").read_text().splitlines()]
+                if (type(self.count) is not int or self.count != len(self.records) or not self.records
+                        or type(self.bytes) is not int or self.bytes < 0
+                        or len(journal) != 2 * self.count):
+                    raise ValueError("Summary/journal counts differ")
+                for index, record in enumerate(self.records):
+                    start, finish = journal[index * 2:index * 2 + 2]
+                    if (record["attempt"] != index + 1 or type(record["bytes"]) is not int or record["bytes"] < 0
+                            or start.get("event") != "start" or finish.get("event") != "finish"
+                            or {key: value for key, value in finish.items() if key != "event"} != record
+                            or any(record.get(key) != value for key, value in start.items() if key != "event")):
+                        raise ValueError("Unfinalized or mismatched attempt")
+                if sum(row["bytes"] for row in self.records) != self.bytes:
+                    raise ValueError("Unaccounted bytes")
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise RuntimeError("Interrupted/inconsistent acquisition journal; resume denied") from exc
             first = datetime.fromisoformat(self.records[0]["retrieval_utc"])
+            if first.utcoffset() is None or first > datetime.now(timezone.utc):
+                raise RuntimeError("Invalid acquisition journal clock")
             self.started -= (datetime.now(timezone.utc) - first).total_seconds()
         self.opener = build_opener(NoRedirect())
 
@@ -220,8 +239,10 @@ def export_retained() -> None:
                 rows.append({"source": source, "metric": metric, "value": value})
         for gw, count in checks.get("window_event_counts", {}).items():
             rows.append({"source": source, "metric": f"gw{gw}_fixtures", "value": count})
+    for metric in ("requests", "downloaded_bytes", "elapsed_seconds"):
+        rows.append({"source": "acquisition", "metric": metric, "value": result[metric]})
     with (TOPIC / "readiness_source_pilot_checks.csv").open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=("source", "metric", "value"))
+        writer = csv.DictWriter(handle, fieldnames=("source", "metric", "value"), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     audit = {key: result[key] for key in ("origin", "status", "requests", "downloaded_bytes",
