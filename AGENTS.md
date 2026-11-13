@@ -148,16 +148,3 @@ JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`
 - Handoff / device switch / leave-for-other-agent: write Packet ID to `.agents/handoff-pointer` and commit the packet. Other device: pull, then Bind that Packet ID.
 - Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; **delete** the packet file (do not empty). Next task: new packet from `.agents/work-packet.md.tmpl`. Durable state stays in ROADMAP / current-state / git.
 <!-- AZG:MANAGED:END -->
-
-<!-- antislop:start -->
-## antislop
-For UI, copy, people, mobile layout, or code comments work, read these installed skill files directly (use these paths even if a same-named global skill exists):
-- Core filter, always on: `antislop`: `.agents/skills/antislop/SKILL.md`
-- UI / visual: `antislop-ui`: `.agents/skills/antislop-ui/SKILL.md`
-- Copy & text: `antislop-copywriting`: `.agents/skills/antislop-copywriting/SKILL.md`
-- People: `antislop-human`: `.agents/skills/antislop-human/SKILL.md`
-- Code comments: `antislop-code`: `.agents/skills/antislop-code/SKILL.md`
-Repository default mode is `during` (project preference). Do not prompt the user in new sessions; announce `antislop active: during (project preference).` and proceed directly. The user will explicitly invoke `after` mode themselves if an audit is desired.
-If explicitly overridden by the user in session, follow the session override. For read-only tasks, put the active-mode notice only at the start of the final answer, never in progress messages. For editing tasks, announce before the first edit and omit it from the final answer.
-To update antislop later: `npx antislop-ai --update`, or run `npx antislop-ai` and pick Overwrite them.
-<!-- antislop:end -->
