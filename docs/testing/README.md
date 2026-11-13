@@ -31,13 +31,13 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 - **Specification**: [`archive-testing.md`](archive-testing.md)
 - **Mandate**: **MUST** be read before executing historical backtesting or historical data exploration.
 - **Key Concepts**:
-  - Point-in-time feature isolation: features must never leak post-kickoff information into target gameweek predictions.
-  - Development Season (`2025-26`): Used for parameter tuning and prototype exploration.
-  - Confirmation Season (`2024-25`): Used for un-tuned single-shot evaluation under ADR 0064 and ADR 0066.
-  - Sealed Holdout (`2026-27` GW6+): Strictly sealed from training/tuning.
+  - Point-in-time feature isolation: features must never leak post-kickoff information into target gameweek predictions (`model.fit()` uses strictly `< gw` + prior-season seed).
+  - Development Season (`S-1` = `2025-26`, seed `2024-25`): Parameter tuning and prototype exploration.
+  - Historical Filter (`S-2` = `2024-25`, seed `2023-24`): Un-tuned cross-check before Dual-Tier `Provisional Active`.
+  - Active Validation (`S` = `2026-27`, ADR 0069): Quarantined from training/tuning; validates frozen finalists via `Randdalf/fplcache` (`<= 24h`) at `GW15`/`GW30`/`GW38` (`legacy static GW6+ code locks migrating under #185`).
 
 ### 4. Promotion & Operator Workflow
-- **Specification**: [`operator-workflow.md`](operator-workflow.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md)
+- **Specification**: [`operator-workflow.md`](operator-workflow.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md)
 - **Lifecycle**: `register -> capture/generate -> verify/admit -> replay -> evaluate -> recommend -> human adopt -> prospective review/rollback`.
 - **Primary Estimand**: Rolling 6-GW Strategic transfer plan net score from neutral GW1 ownership anchor.
 - **Manual Adoption**: CLI and CI are read-only; Champion adoption requires explicit verified bundle and human approval.

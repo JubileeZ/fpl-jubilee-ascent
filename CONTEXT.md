@@ -694,20 +694,20 @@ _Avoid_: Overwriting past attempts, unregistered confirmation runs, adaptive par
 A Candidate that passes the Historical Promotion Gate may be adopted as Model Champion via explicit manual adoption; the former Champion remains in the comparison slate for live validation and rollback.
 _Avoid_: Margin threshold, discard previous model, automatic adoption
 
-**Provisional Historical Promotion**:
-*(Disallowed without fresh confirmation, `#180` Q2)* Superseded historical label for archive-only promotion before live validation windows. Archive-only Historical Promotion grants zero Champion promotion authority; a frozen Finalist must complete full-season prospective confirmation (`2027-28 GW1–38` or successor fresh season) before manual adoption (`commands.evaluate_model_promotion --adopt`).
-_Avoid_: Validated promotion, archive-only promotion without prospective confirmation
+**Provisional Active (`Dual-Tier`, ADR 0069)**:
+Operational second prediction tier earned by frozen `#1` finalist beating `Confirmed Champion` on both `S-1` (Dev, `2025-26`) and `S-2` (Historical Filter, `2024-25`) without severe segment harm. Exports weekly projections alongside `Confirmed Champion`, drives default weekly Transfer Plan when active, remains protected by Early-Harm Fallback, and awaits `GW15`/`GW30`/`GW38` `S` validation (`<= 5%` FWER + guards) prior to manual `adopt_champion`. Supersedes deprecated `#180` ban (`Provisional Historical Promotion`).
+_Avoid_: Permanent `Confirmed Champion` overwrite before `S` confirmation, unseeded archive-only promotion, more than 1 simultaneous `Provisional Active` model
 
 **Live Validation Window**:
-Post-adoption shadow replay horizon (`min_gameweeks >= 4` at fixed 4-GW-spaced checkpoints under `LiveCaptureManager.evaluate_live_review`) tracking an already-adopted Model Champion against the former Champion from identical pre-deadline `Prospective Receipt` + `capture_live_evidence` snapshots (`ADR 0066`, `#180` Q7). Operational monitoring safeguard only; never substitutes for pre-adoption Fresh Confirmation or auto-switches Champions.
-_Avoid_: Single-Gameweek validation, live confirmation substitute, automatic Champion switch
+Active-season shadow/side-by-side comparison horizon across current season `S` (`GW1–38`, ADR 0069) comparing `Provisional Active` and `Confirmed Champion` on identical [`Randdalf/fplcache`](https://github.com/Randdalf/fplcache) `<= 24h` pre-deadline bootstrap snapshots and settled outcomes (`captured_at >= max(kickoff)+24h`). Evaluated at pre-declared `GW15`, `GW30`, and `GW38` confirmation checkpoints (`max 2` pre-frozen finalists).
+_Avoid_: Tuning on `S`, retweaking parameters after peeking `S GW1..X`, unattended automatic Champion overwrite
 
 **Live Reassessment**:
-Human-gated operational safeguard during post-adoption `Live Validation Window` (`LiveCaptureManager`): evaluates realized net-point material harm after `min_gameweeks >= 4` and emits `PendingReview` / `RollbackRecommended` citing bundle hash; requires explicit human approval for manual rollback, never weekly switching or automatic promotion (`ADR 0066`, `#180` Q7).
-_Avoid_: Automatic live promotion, weekly model switching, midseason confirmation peeking
+Calibrated Early-Harm Fallback & checkpoint safeguard (`ADR 0069`, bounds calibrated in `#186`): drops failing `Provisional Active` back to `Confirmed Champion` (or rotates to frozen `#2` backup within `FWER <= 0.05` `M<=2` budget) when `S` shows severe harm, and routes close `GW15` leads cleanly to `GW30`/`GW38` confirmation.
+_Avoid_: Retuning after `GW15` miss, ad-hoc weekly hopping across un-frozen variants
 
 **Meaningful Live Lead**:
-*(Superseded threshold note)* Deprecated pre-ADR-0066 `>= 5%` 4-GW live lead rule. Promotion no longer uses fixed minimum percentage leads or 4-GW live lead gates: Fresh Confirmation requires FWER-controlled paired difference superiority plus substantive non-inferiority guards (`ADR 0066`), while post-adoption operational review checks calibrated material-loss harm bounds (`#180`, `#181`, `#182`).
+*(Superseded threshold note)* Deprecated pre-ADR-0066 `>= 5%` 4-GW live lead rule. Final Champion replacement requires `FWER <= 0.05` (`M <= 2` frozen finalists) paired difference superiority, segment floors, and substantive projection guards (`ADR 0066`, `ADR 0069`, calibrated in `#186`).
 _Avoid_: Single-week win, 5% live promotion threshold, automatic promotion threshold
 
 **Candidate Admission**:
@@ -873,12 +873,12 @@ Non-synthetic causal origin and independent settlement admission (`mode="empiric
 _Avoid_: Admitting offline diagnostics as empirical capability, relaxing `synthetic`-only checks by hash match alone
 
 **Development Mirror**:
-Reconstructed historical `2025-26` origin provenance (`Randdalf/fplcache` pre-deadline `.json.xz` bootstrap `8h` target / `24h` cap, plus pinned `vaastav/Fantasy-Premier-League` pre-deadline `fixtures.csv` `7d` target / `21d` cap and post-settlement `>= +24h` outcomes cross-checked zero-diff against `data/archive/2025-26/processed/`). Carries explicit structured `disclosed_limitations`; never accepted as fresh confirmation.
-_Avoid_: Prospective Receipt, terminal post-season bootstrap as point-in-time, undocumented mirror staleness
+Historical reconstruction (`Randdalf/fplcache` `<= 24h` pre-deadline `.json.xz` `8h` target / `24h` cap + `vaastav/Fantasy-Premier-League` for `2025-26`, or `Randdalf/fplcache` + official settled FPL outcomes for active `S`) carrying explicit `disclosed_limitations` (late <24h news lag; `Randdalf/fplcache` formally credited per ADR 0069).
+_Avoid_: Terminal post-season bootstrap as point-in-time, undocumented mirror staleness, omitting `Randdalf/fplcache` credit
 
 **Prospective Receipt**:
-Live pre-deadline Official capture (`2h` target / `6h` cap) paired with independent `>= max(kickoff)+24h` and `data_checked=True` outcome settlement persisted via `retain_receipt`, free of mirror `disclosed_limitations`.
-_Avoid_: Development Mirror, retroactive local timestamps
+Optional manual local pre-deadline Official capture (`2h` target / `6h` cap) paired with `+24h` `data_checked=True` settlement. Not required for `GW1–38` validation under ADR 0069 (`Randdalf/fplcache` `<= 24h` is canonical base).
+_Avoid_: Requiring unattended `-30m` cron automation to score confirmation checkpoints
 
 **Purchase Eligible**:
 Per-player boolean eligibility (`can_select=True` and `not removed`, fallback `status != "u"`) gating new buys (`native_strategic_solve` / `transfer_squad`) independently from season universe registration (`eligible_since`) and owned-squad hold/sell validity (`ReplayState` allows holding or selling owned `purchase_eligible=False` players).
@@ -896,16 +896,16 @@ _Avoid_: Treating `"time_capped"` solves as promotion authority, equating MIP ob
 Single predeclared model-independent `chip_calendar` per season fixed deterministically from causal `season_rules.py` windows, locked GW1 ownership anchor, and pre-deadline published fixtures before inspecting any Candidate forecast or replay trace; eliminates per-model chip-timing confounding (`#178`, `#179`). Alternate calendars are sensitivity-only.
 _Avoid_: Optimizing chips dynamically per model in primary replay, choosing chip weeks from realized outcomes or post-deadline postponements
 
-**Prospective Confirmation Window**:
-Full-season future `GW1–38` confirmation route (`2027-28 GW1–38` initially, then successor fresh eligible seasons) starting from neutral GW1 ownership anchor (`£100.0m`, `0` carried FT), verified Official `rules_id` bound into `protocol_hash`, `registered_at < gw1_deadline`, two-step pre-deadline `Prospective Receipt` + `capture_live_evidence` across 100% admitted universe leads `0..5`, independent `+24h` `finished=True`/`data_checked=True` settlement, pre-bundle Official re-settlement check, and 100%-schedule non-peeking (`#180`). Reused `2024-25` and `2026-27 GW6+` remain permanently ineligible as fresh confirmation.
-_Avoid_: Reused `2024-25` confirmation, midseason partial promotion peeking, zero-filled/carried-forward missing captures
+**Current-Season Validation Window (`ADR 0069`)**:
+Frozen-candidate evaluation across active quarantined season `S` (`2026-27 GW1–38`) starting from neutral GW1 ownership anchor (`£100.0m`, `0` saved FT GW1, transfers GW2+, `1–5 FT`), using `Randdalf/fplcache` `<= 24h` pre-deadline snapshots (`#175` `8h`/`24h` bounds) + settled official outcomes (`+24h`, `finished=True`, `data_checked=True`), evaluated at pre-declared `GW15`, `GW30`, and `GW38` checkpoints under strict non-retuning firewall. Supersedes `#180` `Prospective Confirmation Window` (`2027-28`-deferred).
+_Avoid_: Tuning/ideation on `S`, retweaking finalist after peeking `S GW1..X`, hardcoded `2026-27 GW6+` static freeze
 
 **Season Lifecycle**:
-Versioned season-role contract (`config/season_lifecycle.json`, implementation queued under `#182`) assigning each `YYYY-YY` season to `prior_seed_only`, `development`, `sealed_holdout` (`sealed_from_gw`), `prospective_confirmation`, or `post_adoption_live` (`#180` Q1, Q8, Q9). Replaces hardcoded year strings across backtesting, features, models, CLIs, and skills so agents and pipelines adapt dynamically across season rollovers.
-_Avoid_: Hardcoded `2023-24`/`2024-25`/`2025-26`/`2026-27` tuples, implicit year rollover, tuning on `prior_seed_only` seasons
+Versioned season-role contract (`config/season_lifecycle.json`, implementation queued under `#185`) assigning `YYYY-YY` roles under ADR 0069 Annual Rolling Firewall: `prior_seed_only` (`2023-24`), `historical_filter` (`S-2`=`2024-25`), `development` (`S-1`=`2025-26`), `active_validation` (`S`=`2026-27`). Rotates each summer post-`GW38` (`S -> S-1 -> S-2`), replacing hardcoded year tuples across backtesting, features, models, CLIs, and skills.
+_Avoid_: Hardcoded `2023-24`/`2024-25`/`2025-26`/`2026-27` tuples, implicit year rollover, training/tuning on active `S`
 
 **Prior-Season Seed**:
-Completed prior season (`YYYY-1 -> YYYY`) unlocked strictly after full season conclusion, archive ingest, and Official `SeasonRules` verification exclusively to initialize GW1 Cold-Start priors (`features/builder.py`), remaining excluded from Candidate tuning/ideation/smoke searches while tagged `prior_seed_only` (e.g., finalized `2026-27` seeding `2027-28 GW1–38` confirmation while `2025-26` remains `development`, `#180` Q9).
-_Avoid_: Pre-completion seeding, Candidate tuning on `2026-27` seed data
+Completed prior season (`S-1 -> S`, e.g., `2025-26` seeding `2026-27`, `2024-25` seeding `2025-26`, `2023-24` seeding `2024-25`) unlocked strictly post-conclusion exclusively to initialize GW1 Cold-Start priors (`features/builder.py`), with `model.fit()` accessing only `< gw` current-season rows + seed.
+_Avoid_: Training on current-season post-target rows, unverified native rule mismatches
 
 

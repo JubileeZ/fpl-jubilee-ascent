@@ -1,6 +1,6 @@
 # Point-in-time backtest features, statistical promotion gate, sealed holdout
 
-**Status**: Accepted; amended by [ADR 0049](0049-gate-bootstrap-060-no-min-effect.md), [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md), and [ADR 0066](0066-backtesting-and-promotion-foundation.md) (Point-in-time feature isolation retained; rolling replay net score primary; attempt registry and 4-way scientific verdicts).
+**Status**: Accepted; amended by [ADR 0049](0049-gate-bootstrap-060-no-min-effect.md), [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md), [ADR 0066](0066-backtesting-and-promotion-foundation.md), and [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) (Point-in-time feature isolation retained; static `2026-27 GW6+` lock replaced by Annual Rolling Firewall + Dual-Tier `ADR 0069`).
 
 **Amended by ADR 0049**: bootstrap bar 0.95 → 0.60 (both promotion seasons); minimum effect 1% → none (delta > 0).
 

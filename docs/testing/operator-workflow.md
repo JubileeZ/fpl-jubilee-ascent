@@ -1,7 +1,7 @@
 # Backtesting & Promotion Foundation Operator Workflow
 
-**Status**: Authoritative Operator Guide (ADR 0066)  
-**Governing Standard**: [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [Foundation Rationale](../research/backtesting-promotion-foundation/backtesting-promotion-foundation.md)
+**Status**: Authoritative Operator Guide (ADR 0066 Sections 1–7 + ADR 0069)  
+**Governing Standard**: [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [Foundation Rationale](../research/backtesting-promotion-foundation/backtesting-promotion-foundation.md)
 
 **Operational boundary (2026-10-30):** Legacy archive walkforward and smoke results = diagnostics only. Final recommendation re-verifies retained replay evidence through `backtesting.promotion_evidence`; synthetic admission cannot authorize production adoption. Empirical admission and approved numerical calibration remain prerequisites, not outcomes of infrastructure tests. Bonferroni supported with frozen family budget; chronological/sequential Holm configuration rejected.
 
@@ -54,7 +54,7 @@ entry = registry.register_finalist(
 ```
 - **Integrity**: `registry.verify_integrity()` validates the entire cryptographic SHA-256 chain.
 - **Moratorium Check**: Fails closed if the mechanism is an active Dead Lever in `docs/research/candidate-ledger/candidate_ledger.csv`.
-- **Holdout Boundary**: Strictly rejects attempts targeting sealed season `2026-27 GW6+`.
+- **Annual Quarantine Boundary (`ADR 0069`)**: Training, tuning, and re-tweaking on active validation season `S` (`2026-27`) remain strictly blocked; only frozen registered finalists evaluate against `Randdalf/fplcache` (`<= 24h`) + settled outcomes (`legacy hardcoded 2026-27 GW6+ code gate migrates under #185`).
 - **Frozen identities**: Variables above = hashes of retained source, parameters and complete approved protocol; example is a registration shape, not standalone runnable evidence. Register before confirmation; preserve inspected-data history.
 - **Completion**: Attach exact completed confirmation score digest and schedule before assessment. Finalize scientific verdict after reconstruction. Duplicate IDs, terminal verdict replacement and reopening terminal attempts rejected.
 
@@ -148,10 +148,9 @@ if review.should_rollback:
 
 ---
 
-## 4. Supported Seasons, Components & Chips
+## 4. Supported Seasons, Components & Chips (`ADR 0069`)
 
-- **Supported Historical Seasons**: 2023–24 (seed only), 2024–25 (Confirmation), 2025–26 (Development).
-- **Sealed Season**: 2026–27 GW6+ (Holdout; access strictly prohibited).
+- **Rolling Seasons (`config/season_lifecycle.json`, `#185`)**: `2023-24` (seed only), `2024-25` (`S-2` Historical Filter), `2025-26` (`S-1` Development), `2026-27` (`S` Quarantined Validation via `Randdalf/fplcache` `<= 24h`, legacy static `GW6+` code block lifts in `#185`). Rotates each summer post-`GW38` (`S -> S-1 -> S-2`).
 - **Supported Event Components**:
   - `xp_goals`, `xp_assists`, `xp_clean_sheet`, `xp_saves`, `xp_defcon`, `xp_bonus`, `xp_minutes`.
 - **Supported Chips**: Bench Boost, Triple Captain, Free Hit, Wildcard.

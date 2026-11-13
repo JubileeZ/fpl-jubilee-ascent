@@ -343,7 +343,7 @@ Live `refresh_data` pins Official FPL into `data/archive/<season>/` (Live Season
 
 ### 10. Compare and promote models
 
-Read-only Comparison Slate diagnostics and verified replay recommendation (ADR 0066); manual adoption requires complete empirical evidence:
+Read-only Comparison Slate diagnostics and verified replay recommendation ([ADR 0066](docs/adr/0066-backtesting-and-promotion-foundation.md) / [ADR 0069](docs/adr/0069-annual-rolling-validation-and-dual-tier-promotion.md)); manual adoption requires complete empirical evidence:
 
 ```bash
 uv run python -m commands.compare_models --gw_range 1-38 --data_dir data/archive/2025-26/processed
@@ -410,4 +410,9 @@ uv run pytest
 ```bash
 bash tests/verify.sh
 ```
+
+## Data Sources & Credits
+
+- **Pre-deadline historical & active-season `bootstrap-static` archive:** [`Randdalf/fplcache`](https://github.com/Randdalf/fplcache) (`The Unlicense`, 4x-daily automated `.json.xz` snapshots), canonical pre-deadline validation base under [ADR 0069](docs/adr/0069-annual-rolling-validation-and-dual-tier-promotion.md).
+- **Historical season CSV archives (`2023-24` / `2024-25`):** [`vaastav/Fantasy-Premier-League`](https://github.com/vaastav/Fantasy-Premier-League).
 

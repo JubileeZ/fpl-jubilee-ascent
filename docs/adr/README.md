@@ -105,18 +105,19 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 |-----|-------|--------|---------|
 | [0038](0038-process-points-eval-target.md) | Process Points Evaluation Target | Accepted | Evaluates underlying expected points removing match-level variance noise. |
 | [0044](0044-blended-eval-target-promotion-primary.md) | Blended Eval Target as Promotion Primary | Superseded | Replaced as primary promotion metric by rolling replay net points in ADR 0066; retained as diagnostic. |
-| [0046](0046-point-in-time-backtest-and-statistical-gate.md) | Point-in-Time Backtest & Statistical Gate | Amended | Zero-leakage features retained; amended by ADR 0066 for rolling replay estimand and attempt registry. |
-| [0047](0047-two-season-promotion-gate.md) | Two-Season Promotion Gate | Amended | Dev and Confirmation seasons retained; amended by ADR 0066 requiring fresh registered confirmation and manual adoption. |
+| [0046](0046-point-in-time-backtest-and-statistical-gate.md) | Point-in-Time Backtest & Statistical Gate | Amended | Zero-leakage features retained; amended by ADR 0066 & ADR 0069 (annual rolling validation firewall replaces static `2026-27 GW6+` lock). |
+| [0047](0047-two-season-promotion-gate.md) | Two-Season Promotion Gate | Amended | `S-1` + `S-2` cross-check retained; amended by ADR 0066 & ADR 0069 (Dual-Tier `Provisional Active` + `S` validation & manual adoption). |
 | [0049](0049-gate-bootstrap-060-no-min-effect.md) | Bootstrap Bar 0.60 Without Arbitrary Minimum Effect | Superseded | Superseded by ADR 0066 search-wide family-wise error control (FWER ≤ 0.05 via Bonferroni/Holm). |
 | [0054](0054-formation-constrained-xi-regret-and-playable-pool-guardrails.md) | Constrained Legal XI Regret & Playable Pool Guardrails | Amended | Constrained XI regret and squad churn retained as fast screens; amended by ADR 0066 rolling net-score primary. |
 | [0062](0062-non-catastrophic-segment-loss-promotion-guardrail.md) | Non-Catastrophic Segment Loss Guardrail | Amended | Continuous segment loss floors integrated into ADR 0066 multi-season protocol and substantive guards. |
-| [0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Promotion Gate & Evaluation Rigor Overhaul | Amended | Warm-seeded confirmation and non-wrapping MBB (L=5) retained; amended by ADR 0066 for 4-way verdicts and manual adoption. |
-| [0066](0066-backtesting-and-promotion-foundation.md) | Backtesting and Promotion Foundation | Accepted | Primary rolling replay net FPL points, neutral GW1 anchor, substantive projection guards, 4-verdict taxonomy, immutable attempt registry, and manual adoption. |
+| [0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Promotion Gate & Evaluation Rigor Overhaul | Amended | Warm-seeded confirmation and non-wrapping MBB (L=5) retained; amended by ADR 0066 & ADR 0069 (`S-1`/`S-2` filter -> Dual-Tier `S` validation). |
+| [0066](0066-backtesting-and-promotion-foundation.md) | Backtesting and Promotion Foundation | Amended | Sections 1–7 retained (rolling replay net FPL points, neutral £100m GW1 anchor, projection guards, 4 verdicts, immutable registry, manual adoption); Section 8 & static holdout superseded by ADR 0069. |
 | [0068](0068-two-axis-pre-execution-candidate-review.md) | Two-Axis Pre-Execution Candidate Review Protocol | Accepted | Mandatory 3-subagent team per candidate (Implementer, Reviewer A Spec/Math, Reviewer B Standards/Arch) with bounded 3-round repair loop and atomic checkpoints. |
+| [0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Annual Rolling Validation & Dual-Tier Promotion Governance | Accepted | Annual rolling firewall (`S`=`2026-27` quarantined validation via `Randdalf/fplcache` `<= 24h`, `S-1` Dev, `S-2` Filter, summer rollover), Dual-Tier `Provisional Active` + `Confirmed Champion`, and `GW15`/`GW30`/`GW38` checks. |
 
 ---
 
-## Chronological Index (0001–0068)
+## Chronological Index (0001–0069)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -185,6 +186,7 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0063 | [champion-adaptive-causal-challenger](0063-champion-adaptive-causal-challenger.md) | Accepted | Modeling |
 | 0064 | [promotion-gate-and-evaluation-rigor-overhaul](0064-promotion-gate-and-evaluation-rigor-overhaul.md) | Amended | Evaluation |
 | 0065 | [strategic-arm-horizon-penalty-scaling-and-ft-schedule](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) | Accepted | Solver |
-| 0066 | [backtesting-and-promotion-foundation](0066-backtesting-and-promotion-foundation.md) | Accepted | Evaluation |
+| 0066 | [backtesting-and-promotion-foundation](0066-backtesting-and-promotion-foundation.md) | Amended | Evaluation |
 | 0067 | [planning-horizon-architecture](0067-planning-horizon-architecture.md) | Accepted | Solver |
 | 0068 | [two-axis-pre-execution-candidate-review](0068-two-axis-pre-execution-candidate-review.md) | Accepted | Evaluation |
+| 0069 | [annual-rolling-validation-and-dual-tier-promotion](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Accepted | Evaluation |

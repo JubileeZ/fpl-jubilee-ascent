@@ -1,6 +1,6 @@
 # Backtesting and Promotion Foundation (ADR 0066)
 
-**Status**: Accepted (2026-10-29); Amended (2026-11-12, `#180`)
+**Status**: Accepted (2026-10-29); Amended (2026-11-12 `#180`; 2026-11-13 **Sections 1–7 retained, Section 8 and static `2026-27 GW6+` / provisional-ban clauses superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md)**)
 
 **Amends / Supersedes**:
 - Supersedes [ADR 0044](0044-blended-eval-target-promotion-primary.md) (Blended Eval Target as promotion primary; now a supporting diagnostic).
@@ -12,7 +12,7 @@
 - Amends [ADR 0064](0064-promotion-gate-and-evaluation-rigor-overhaul.md) (Warm-seeded confirmation and non-wrapping MBB retained; binary pass/fail replaced by 4-verdict taxonomy; rolling net-score primary; manual adoption enforced).
 - Reconciles [ADR 0020](0020-transfer-plan-walk-forward-first-half.md) (GW1–19 first-half walkforward retained as optional historical diagnostic; replaced by continuous 6-GW rolling replay primary).
 - Freezes [ADR 0065](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) (Strategic arm horizon scaling and diminishing FT schedule frozen as active research baseline).
-- Retains sealed holdout boundary (2026-27 GW6+ strictly protected).
+- Sealed holdout boundary updated by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) (annual rolling validation firewall replaces static `2026-27 GW6+` lock; runtime guards migrating under `#185`).
 
 ---
 
@@ -88,7 +88,10 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
   - Diminishing emergency FT value schedule: `{"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * scale(H)`.
   - Weekly variance constraints (Starter xMins floor, First-Bench cover, DEF stack cap) remain active.
 
-### 8. Amendment (`#180`, 2026-11-12): Fresh Prospective Confirmation & Dynamic Season Lifecycle
+### 8. Amendment (`#180`, 2026-11-12) — *Superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) (2026-11-13)*
+
+> **Superseded Notice**: Clean Governance Reset under Wayfinder Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) (`ADR 0069`) replaced this section's `2027-28`-deferred `-30m` gate and provisional ban with Annual Rolling Validation (`S`=`2026-27` via `Randdalf/fplcache` `<= 24h`, `S-1`=`2025-26`, `S-2`=`2024-25`), Dual-Tier `Provisional Active` operation, and `GW15`/`GW30`/`GW38` checks. Retained technical pieces (`config/season_lifecycle.json`, pre-window `SeasonRules` verification, `+24h` outcome settlement) moved into `ADR 0069` & `#185`–`#187`.
+
 - **Authoritative Confirmation Route**: Previously inspected `2024-25` results are disallowed as fresh confirmation regardless of hashes/aliases, and `Provisional Historical Promotion` without fresh confirmation grants zero authority. Primary confirmation requires future full-season prospective collection starting `2027-28 GW1–38` (neutral GW1 anchor `£100.0m`, `0` carried FT, `opening` anchor, causal `shared_chip_calendar`), keeping `2026-27 GW6+` strictly sealed throughout all `2025-26` development/ideation/smoke searches.
 - **Pre-Window Rules & Registration Freeze**: Official native-rule verification (`docs/rules/scoring-rules-<season>.md`, `backtesting/season_rules.py`, `models/scoring_matrix.py`, `GUARD_SEMANTICS` per-guard applicability) must bind verified `rules_id`, `anchor_mode`, `prior_seed_digest`, and causal `shared_chip_calendar` into `protocol_hash` before registration opens; finalists freeze strictly at `registered_at < first_confirmation_gw_deadline`.
 - **Two-Step Prospective Capture & Fail-Closed Missingness**: Each confirmation GW requires (1) raw HTTP `retain_receipt` (`2h` target / `6h` cap, `#175`) and (2) `commands.capture_live_evidence` (`before_deadline_minutes=30`, `clock="execution_utc"`) over 100% admitted universe leads `0..5` for Finalist + Champion. Missing or late (`> deadline` or `> 6h`) captures retain raw receipt flagged `late=True` for audit only and mark attempt `Invalid` (no Dead Lever moratorium; no GW skipping, zero-filling, backdating, or carry-forward heuristics).

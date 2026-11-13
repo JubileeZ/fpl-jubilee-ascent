@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-10-29 (+07:00)
+**Updated**: 2026-11-13T20:32:00+01:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -9,7 +9,7 @@
 
 Agents starting any model / Candidate / Champion work **read this block first**. Topic notes hold evidence; this block holds which metric is primary for which job.
 
-**Leakage / holdout (ADR 0046, 0047, 0064, 0066):** 2025-26 = development season. Promotion = scientific verdict PASS on multi-season normalized evaluation: 2025-26 (seed 2024-25) **and** 2024-25 (seed 2023-24; un-tuned confirmation registered in immutable attempt registry). Non-wrapping MBB ($L=5$) paired stored-score bootstrap with family-wise error rate control ($\text{FWER} \le 0.05$ via Bonferroni/Holm, ADR 0066). 2026-27 GW6+ sealed: no tuning/smoke/ablation; one post-promotion check per Champion. All runs logged in Candidate Ledger and confirmation registry. Backtest features without snapshot are point-in-time (price/club from pre-target rows; season-end player columns dropped) — never read `players.parquet` season totals, status, ownership, or set-piece orders in backtest code.
+**Leakage / holdout (`ADR 0046`, `0047`, `0064`, `0066`, `0069`):** Annual Rolling Firewall (`config/season_lifecycle.json`, code migration queued `#185`): `2025-26` (`S-1`, seed `2024-25`) = development; `2024-25` (`S-2`, seed `2023-24`, `position_id==5` excluded) = untuned historical filter; `2026-27` (`S`, seed `2025-26`) = quarantined validation (zero training, tuning, or ideation; one-shot frozen finalists via `Randdalf/fplcache` `<= 24h` pre-deadline + `+24h` settled outcomes at `GW15`/`GW30`/`GW38`). Qualified finalists (`<= 2`) beating Champion on both `S-1` and `S-2` elevate `#1` to `Provisional Active` (Dual-Tier); permanent Champion adoption requires `FWER <= 0.05` (`L=5` non-wrapping MBB, `M <= 2` frozen finalists), projection/segment guards, and manual `adopt_champion`. Candidate search remains paused until Map `#184` (`#185`–`#188`) completes; legacy `2026-27 GW6+` code guards remain active until `#185`. Backtest features without snapshot stay point-in-time (`price`/`club` pre-target; `TERMINAL_PLAYER_COLUMNS` dropped).
 
 **Before proposing a Candidate lever:** read [Candidate Ledger](candidate-ledger/candidate-ledger.md). Dead lever = no retry until `Revisit after` (evidence date + 1 year); new Champion does not reopen early. Record every attempt there.
 
@@ -17,7 +17,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 | Job | Primary | Guardrails & Diagnostics | Authority |
 |-----|---------|--------------------------|-----------|
-| Historical Promotion Gate / Candidate vs Champion | **Actual Native-Season Net FPL Points** (gross points minus official hit deductions) under independent 6-GW rolling Strategic transfer plan replay from neutral GW1 ownership anchor; paired non-wrapping MBB ($L=5$) with search-wide $\text{FWER} \le 0.05$ (Bonferroni/Holm); multi-season normalized weighting (ADR 0066); non-catastrophic segment loss floors (ADR 0062, 0066) | Substantive Projection Non-Inferiority Guards (total points, minutes, G/A/CS/saves/bonus via `backtesting/projection_guards.py`); Invariant Common Population Masks; Ledger Reconciliation; Supporting Diagnostics: Constrained Formation XI Regret (£100.0m 15-player squad + bench auto-subs, max 3/club), Squad Churn (≤ +0.50), Blended Eval Target, Process Points | [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0062](../adr/0062-non-catastrophic-segment-loss-promotion-guardrail.md) · [ADR 0061](../adr/0061-strategic-variance-scenario-and-unconstrained-rename.md) · [ADR 0057](../adr/0057-zero-gap-digest-caching-3-arm-transfer-plan.md) · [ADR 0047](../adr/0047-two-season-promotion-gate.md) · [ADR 0046](../adr/0046-point-in-time-backtest-and-statistical-gate.md) |
+| Promotion Gate / Candidate vs Champion | **Actual Native-Season Net FPL Points** (gross points minus official hit deductions) under independent 6-GW rolling Strategic transfer plan replay from neutral GW1 ownership anchor; paired non-wrapping MBB ($L=5$) with search-wide $\text{FWER} \le 0.05$ (`M <= 2` frozen finalists); Dual-Tier `Provisional Active` on `S-1`+`S-2` win -> `S` checkpoints (`GW15`/`GW30`/`GW38`, `ADR 0069`); non-catastrophic segment loss floors | Substantive Projection Non-Inferiority Guards (total points, minutes, G/A/CS/saves/bonus via `backtesting/projection_guards.py`); Invariant Common Population Masks; Ledger Reconciliation; Early-Harm Fallback (`#186`); Supporting Diagnostics: Constrained Formation XI Regret (£100.0m 15-player squad + bench auto-subs, max 3/club), Squad Churn (≤ +0.50), Blended Eval Target, Process Points | [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0062](../adr/0062-non-catastrophic-segment-loss-promotion-guardrail.md) · [ADR 0061](../adr/0061-strategic-variance-scenario-and-unconstrained-rename.md) · [ADR 0057](../adr/0057-zero-gap-digest-caching-3-arm-transfer-plan.md) · [ADR 0047](../adr/0047-two-season-promotion-gate.md) · [ADR 0046](../adr/0046-point-in-time-backtest-and-statistical-gate.md) |
 | Champion Signed Bias gate (Hits / no mean calibrate) | Realized `signed_bias` | `mae`, `minutes_bias` | [ADR 0033](../adr/0033-transfer-plan-hits-until-champion-bias.md) · [champion-signed-bias](champion-signed-bias-2025-26/champion_bias_summary.csv) `signed_bias` |
 | Supporting totals diagnostics in research companions | Triple-report `realized` \| `process` \| `blend` | Formation XI Regret, Squad Churn | ADR 0044 · ADR 0054 · ADR 0066 |
 
@@ -45,7 +45,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ### Glossary pointers
 
-`CONTEXT.md`: Rolling Replay Net Score · Neutral GW1 Ownership Anchor · Realized Points · Process Points · Blended Eval Target · Poisson-xGC Twin · Extended Process Points · Four-Way Scientific Verdicts · Immutable Attempt Registry · Model Champion / Candidate / Comparison Slate.
+`CONTEXT.md`: Rolling Replay Net Score · Neutral GW1 Ownership Anchor · Provisional Active (Dual-Tier) · Current-Season Validation Window · Season Lifecycle · Development Mirror · Realized Points · Process Points · Blended Eval Target · Poisson-xGC Twin · Four-Way Scientific Verdicts · Immutable Attempt Registry · Model Champion / Candidate / Comparison Slate.
 
 ---
 
