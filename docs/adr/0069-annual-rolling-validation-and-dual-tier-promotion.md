@@ -64,6 +64,6 @@ Replace hardcoded year checks (`2023-24`, `2024-25`, `2025-26`, `2026-27`) with 
 
 ## Consequences
 
-- Candidate ideation/search resumes on a clean, leak-free annual cycle (`S-1` Dev, `S-2` Filter, `S` Quarantined Validation) as soon as `#185`–`#188` complete.
+- Candidate ideation/search resumes on a clean, leak-free annual cycle (`S-1` Dev, `S-2` Filter, `S` Quarantined Validation) as soon as `#185`–`#189` complete.
 - Promising candidates act immediately via Dual-Tier `Provisional Active` without weakening `<= 5%` FWER permanent champion standards or manual adoption control.
 - Explicit attribution to `Randdalf/fplcache` and structured `-24h` lag disclosure keep reproducibility audit-ready without unattended cron fragility.
