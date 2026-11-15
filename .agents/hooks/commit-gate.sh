@@ -35,15 +35,6 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
         exit 0
       fi
     done
-
-    # Single active packet invariant: at most one packet may have Status: In Progress
-    azg_count_in_progress_packets ".agents/work-packets"
-    if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
-      reason="Multiple active Work Packets found with Status: In Progress:${AZG_IN_PROGRESS_PKTS}. Only one active packet may be In Progress at a time. Mark others as Status: Parked or complete them."
-      jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
-      shopt -u nullglob
-      exit 0
-    fi
     shopt -u nullglob
     if azg_packet_is_finished "task.md"; then
       reason="Legacy task.md is complete. Delete task.md (azg apply migrates it to .agents/work-packets/) plus implementation_plan.md / walkthrough.md if present."
@@ -79,24 +70,6 @@ if [ "$tool_name" = "run_command" ] || [ -n "$cmd" ]; then
       reason="verify.sh failed:\n$verify_output"
       jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
       exit 0
-    fi
-
-    # Checkpoint: code commits must stage a Work Packet path
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      file_list=""
-      if echo "$cmd" | grep -qE '(^|[[:space:]])(-a|--all)([[:space:]]|$)'; then
-        file_list=$(git status --porcelain 2>/dev/null | cut -c 4- | sed 's/^"//;s/"$//')
-      else
-        file_list=$(git diff --cached --name-only 2>/dev/null)
-      fi
-      azg_commit_classify_paths <<EOF
-${file_list}
-EOF
-      if [ "${AZG_COMMIT_HAS_CODE}" = true ] && [ "${AZG_COMMIT_HAS_PACKET}" = false ]; then
-        reason="Checkpoint requires Work Packet: stage a file under .agents/work-packets/ (update or delete) with the code changes, then commit."
-        jq -n --arg r "$reason" '{decision: "deny", reason: $r}'
-        exit 0
-      fi
     fi
   fi
 fi

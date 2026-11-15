@@ -93,6 +93,7 @@ docs/          # Durable project documentation and decision records
 ---
 
 <!-- AZG:MANAGED:START -->
+<!-- azg-harness-version: 4.1.0 -->
 ## Placeholder fill
 
 `<!-- AGENT: ... -->` in agent/tracking docs (e.g. `AGENTS.md`, `ROADMAP.md`, `docs/agents/*`):
@@ -106,23 +107,11 @@ docs/          # Durable project documentation and decision records
 
 Once per session (not every turn). Continuity from listed files (chat ≠ continuity):
 
-1. `current-state.md` (reality).
+1. `docs/agents/current-state.md` (reality).
 2. `ROADMAP.md` active phase / first unchecked only.
 3. `git status` + `git log -5 --oneline` before edit.
-4. Other docs JIT via pointers.
-
-Do not read Work Packet bodies at start. **Independent Request** (no change asked): no packet I/O.
-
-**Bind** only when the user says continue / handoff / a Packet ID, or asks to continue and `.agents/handoff-pointer` names one. Change asked with no bind: attended — ask new vs which open slug (≤3); unattended — create `.agents/work-packets/<slug>.md` from `.agents/work-packet.md.tmpl`. Never auto-bind the last leftover packet.
-
-Session start done when: `current-state` + ROADMAP slice + git status/log. Bound packet read only after Bind.
-
-Missing required continuity doc: restore from git if history exists; else ask user.
-
-During work / before Checkpoint: update tracking docs when state changes
-(see `docs/agents/progress.md`). Before Checkpoint: refresh bound packet SFDBN, or delete the packet if finished.
-
-JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`, archived ROADMAP, research notes.
+4. If continuing a handoff (`.agents/handoff-pointer` or user-named Packet ID), Bind and read `.agents/work-packets/<slug>.md`.
+5. Other docs JIT via pointers (`CONTEXT.md`, `docs/agents/progress.md`, `docs/agents/issue-tracker.md`, ADRs).
 
 ---
 
@@ -143,8 +132,8 @@ JIT (read when task needs): full `CONTEXT.md`, `progress.md`, `issue-tracker.md`
 ## Work State & Checkpoints
 
 - Tracker: `docs/agents/issue-tracker.md`. Updates/compaction/archive/cleanup: `docs/agents/progress.md`.
-- Autonomous progress & push: user prompt asking to update progress and commit/push authorizes full cycle: update packet/docs, run `bash tests/verify.sh`, commit, and `git push`.
-- Code commits: stage a Work Packet under `.agents/work-packets/` with code — `commit-gate` enforces. Finished packet: delete the file in the same Checkpoint. Trivial: minimal packet OK.
-- Handoff / device switch / leave-for-other-agent: write Packet ID to `.agents/handoff-pointer` and commit the packet. Other device: pull, then Bind that Packet ID.
-- Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md`; **delete** the packet file (do not empty). Next task: new packet from `.agents/work-packet.md.tmpl`. Durable state stays in ROADMAP / current-state / git.
+- Autonomous progress & push: user prompt asking to update progress and commit/push authorizes full cycle: update docs, run `bash tests/verify.sh`, commit, and `git push`.
+- Checkpoints: `commit-gate` enforces `bash tests/verify.sh` on `git commit`. Work Packets under `.agents/work-packets/<slug>.md` are opt-in for multi-session or cross-device handoffs; delete finished packets on commit (do not leave empty stubs).
+- Handoff / device switch / leave-for-other-agent: write Packet ID to `.agents/handoff-pointer` and commit `.agents/work-packets/<slug>.md`. Other device: pull, then Bind that Packet ID.
+- Cleanup when task complete: delete `implementation_plan.md` / `walkthrough.md` and any finished Work Packet file. Durable state stays in `ROADMAP.md` / `docs/agents/current-state.md` / git.
 <!-- AZG:MANAGED:END -->

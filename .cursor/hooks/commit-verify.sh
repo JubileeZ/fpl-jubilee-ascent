@@ -43,33 +43,23 @@ for pkt in .agents/work-packets/*.md; do
     exit 0
   fi
 done
-
-# Single active packet invariant: at most one packet may have Status: In Progress
-azg_count_in_progress_packets ".agents/work-packets"
-if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
-  jq -n --arg p "${AZG_IN_PROGRESS_PKTS}" '{permission:"deny",user_message:"Multiple active Work Packets",agent_message:("Multiple active Work Packets found with Status: In Progress:" + $p + ". Only one active packet may be In Progress at a time. Mark others as Status: Parked or complete them.")}'
-  shopt -u nullglob
-  exit 0
-fi
 shopt -u nullglob
 if azg_packet_is_finished "task.md"; then
   printf '{"permission":"deny","user_message":"Legacy task.md is complete","agent_message":"Delete task.md (azg apply migrates it) plus implementation_plan.md / walkthrough.md if present."}\n'
   exit 0
 fi
 
-# Checkpoint freshness (same contract as Antigravity commit-gate)
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  file_list=""
-  if echo "${cmd}" | grep -qE '(^|[[:space:]])(-a|--all)([[:space:]]|$)'; then
-    file_list=$(git status --porcelain 2>/dev/null | cut -c 4- | sed 's/^"//;s/"$//')
-  else
-    file_list=$(git diff --cached --name-only 2>/dev/null)
-  fi
-  azg_commit_classify_paths <<EOF
-${file_list}
-EOF
-  if [ "${AZG_COMMIT_HAS_CODE}" = true ] && [ "${AZG_COMMIT_HAS_PACKET}" = false ]; then
-    printf '{"permission":"deny","user_message":"Checkpoint requires Work Packet","agent_message":"Stage a file under .agents/work-packets/ (update or delete) with the code changes, then commit."}\n'
+if [ -f "implementation_plan.md" ] || [ -f "walkthrough.md" ]; then
+  open_pkt=false
+  shopt -s nullglob
+  for pkt in .agents/work-packets/*.md; do
+    if grep -q -E '\- \[[[:space:]]*\]' "$pkt"; then
+      open_pkt=true
+    fi
+  done
+  shopt -u nullglob
+  if [ "$open_pkt" = false ]; then
+    printf '{"permission":"deny","user_message":"Transient planning files remain","agent_message":"Delete implementation_plan.md and walkthrough.md when no open Work Packet remains."}\n'
     exit 0
   fi
 fi

@@ -1,5 +1,5 @@
 ---
-description: Record progress via Work Packets / ROADMAP / current-state; compact or archive tracking docs. Use when finishing work, advancing phases, trimming bloated ROADMAP/current-state/CONTEXT, or deciding docs/archive/ moves.
+description: Record progress via ROADMAP / current-state / opt-in Work Packets; compact or archive tracking docs. Use when finishing work, advancing phases, trimming bloated ROADMAP/current-state/CONTEXT, or deciding docs/archive/ moves.
 alwaysApply: false
 ---
 
@@ -7,7 +7,7 @@ alwaysApply: false
 
 Follow `docs/agents/progress.md` (not always-on — load when recording progress or compacting).
 
-- Update the correct layer: task → ROADMAP → current-state.
+- Update the correct layer: ROADMAP → current-state (plus opt-in Work Packet for handoffs).
 - Compaction in place: Active-Phase Compaction; current-state = current truth; CONTEXT = glossary only.
 - Archive under `docs/archive/<kebab-slug>/` (or single `.md`) per when-to-archive; leave live pointer.
 - Never archive live `CONTEXT.md` / `CONTEXT-MAP.md`; never relocate ADRs from `docs/adr/`.

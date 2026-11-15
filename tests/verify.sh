@@ -75,19 +75,28 @@ else
   pass "No tmp_azg* leaks at project root"
 fi
 
+# --- Harness vs Device version sync warning (non-fatal) ---
+_azg_dev_ver_file="${HOME}/.gemini/antigravity-cli/version"
+if [ -f "${_azg_dev_ver_file}" ] && [ -f "AGENTS.md" ]; then
+  _azg_dev_ver="$(tr -d '\r\n' < "${_azg_dev_ver_file}" 2>/dev/null || true)"
+  _azg_repo_ver="$(sed -n 's/^<!-- azg-harness-version: \([^ ]*\) -->/\1/p' AGENTS.md 2>/dev/null | tr -d '\r' | head -n 1)"
+  if [ -n "${_azg_dev_ver}" ]; then
+    if [ -z "${_azg_repo_ver}" ]; then
+      printf "  \033[0;33m!\033[0m [azg warn] Repo AGENTS.md missing azg-harness-version stamp (device is v%s). Run 'azg apply .' to update this repo.\n" "${_azg_dev_ver}"
+    elif [ "${_azg_repo_ver}" != "${_azg_dev_ver}" ]; then
+      printf "  \033[0;33m!\033[0m [azg warn] Harness version drift: repo is v%s, device is v%s. Run 'azg apply .' (update repo) or 'azg update && azg setup' (update device).\n" "${_azg_repo_ver}" "${_azg_dev_ver}"
+    else
+      pass "Harness version matches device (v${_azg_repo_ver})"
+    fi
+  fi
+fi
+
 # --- Work Packet (required when any packet file present) ---
 shopt -s nullglob
 _azg_packets=(.agents/work-packets/*.md)
 shopt -u nullglob
 # Bash 3.2 + set -u: empty "${arr[@]}" is unbound. Skip when no packets.
 if [ "${#_azg_packets[@]}" -gt 0 ]; then
-  if [ -f ".agents/hooks/commit-scan.sh" ]; then
-    # shellcheck source=../.agents/hooks/commit-scan.sh
-    source ".agents/hooks/commit-scan.sh"
-  else
-    fail "Missing .agents/hooks/commit-scan.sh required for Work Packet verification"
-  fi
-
   for _pkt in "${_azg_packets[@]}"; do
     for marker in \
       "**Objective:**" \
@@ -105,21 +114,7 @@ if [ "${#_azg_packets[@]}" -gt 0 ]; then
         fail "Work Packet ${_pkt} missing ${marker}"
       fi
     done
-
-    # Finished Work Packet must not linger on disk
-    if azg_packet_is_finished "${_pkt}"; then
-      fail "Finished Work Packet ${_pkt} still present (must be deleted)"
-    else
-      pass "Work Packet ${_pkt} is not finished"
-    fi
   done
-
-  azg_count_in_progress_packets ".agents/work-packets"
-  if [ "${AZG_IN_PROGRESS_COUNT}" -gt 1 ]; then
-    fail "Multiple active Work Packets in progress:${AZG_IN_PROGRESS_PKTS} (only 1 active packet allowed; park others)"
-  else
-    pass "Single active Work Packet invariant maintained"
-  fi
 fi
 
 # --- Project validation (optional until configured) ---
