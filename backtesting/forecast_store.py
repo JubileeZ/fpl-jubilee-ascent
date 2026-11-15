@@ -17,7 +17,7 @@ from backtesting.data_admission import AdmittedInput, assess_origins, verify_inp
 from backtesting.forecast_adapter import predict_synthetic_issue
 from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.forecast_inputs import validate_storage_path, verify_training_bundle
-from backtesting.season_rules import get_rules
+from backtesting.season_rules import get_rules, load_season_lifecycle
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -67,13 +67,14 @@ def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalo
     input_source = matches[0]
     project = Path(__file__).resolve().parent.parent
     code: dict[str, str] = {}
+    sealed = load_season_lifecycle().sealed_seasons()
     for directory in ("backtesting", "features", "models", "projections", "solver", "config"):
         root = project / directory
         if not root.is_dir() or not root.resolve().is_relative_to(project):
             raise ValueError("Source closure directory missing")
         for path in sorted(root.rglob("*.py")):
             resolved = path.resolve()
-            if not resolved.is_relative_to(root.resolve()) or any(part in {"2026-27", ".git", ".agents"} for part in resolved.parts):
+            if not resolved.is_relative_to(root.resolve()) or any(part in {".git", ".agents", *sealed} for part in resolved.parts):
                 raise ValueError("Unsealed source path")
             code[path.relative_to(project).as_posix()] = resolved.read_bytes().hex()
     for name in ("pyproject.toml", "uv.lock"):

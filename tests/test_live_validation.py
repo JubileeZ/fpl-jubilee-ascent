@@ -83,19 +83,32 @@ def test_late_capture_rejection(tmp_path: Path) -> None:
 
 
 def test_sealed_season_live_rejection(tmp_path: Path) -> None:
-    """Verify prospective capture on sealed season 2026-27 GW6+ is strictly blocked."""
+    """Verify ADR 0069 permits active_validation 2026-27 live capture while rejecting prior_seed_only/sealed seasons."""
     mgr = LiveCaptureManager(tmp_path)
-    with pytest.raises(SealedLiveSeasonError, match="sealed 2026-27 GW6+"):
-        mgr.record_deadline_capture(
-            season="2026-27",
-            gameweek=6,
-            deadline_time_utc="2026-09-20T10:00:00+00:00",
-            capture_time_utc="2026-09-20T09:00:00+00:00",
-            model_name="candidate",
-            model_version_hash="1" * 64,
-            policy_settings_hash="2" * 64,
-            forecasts=_sample_forecasts(),
-        )
+    cap = mgr.record_deadline_capture(
+        season="2026-27",
+        gameweek=6,
+        deadline_time_utc="2026-09-20T10:00:00+00:00",
+        capture_time_utc="2026-09-20T09:00:00+00:00",
+        model_name="candidate",
+        model_version_hash="1" * 64,
+        policy_settings_hash="2" * 64,
+        forecasts=_sample_forecasts(),
+    )
+    assert cap.season == "2026-27" and cap.gameweek == 6
+
+    for blocked_season in ("2023-24", "2027-28"):
+        with pytest.raises(SealedLiveSeasonError):
+            mgr.record_deadline_capture(
+                season=blocked_season,
+                gameweek=6,
+                deadline_time_utc="2026-09-20T10:00:00+00:00",
+                capture_time_utc="2026-09-20T09:00:00+00:00",
+                model_name="candidate",
+                model_version_hash="1" * 64,
+                policy_settings_hash="2" * 64,
+                forecasts=_sample_forecasts(),
+            )
 
 
 def test_outcome_not_finalized_rejection(tmp_path: Path) -> None:

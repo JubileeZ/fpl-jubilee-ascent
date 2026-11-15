@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "adr": "0069",
+  "active_season": "2026-27",
+  "seasons": {
+    "2026-27": {
+      "role": "active_validation",
+      "cycle_slot": "S",
+      "prior_seed": "2025-26",
+      "rules_id": "native-2026-27-v1"
+    },
+    "2025-26": {
+      "role": "development",
+      "cycle_slot": "S-1",
+      "prior_seed": "2024-25",
+      "rules_id": "native-2025-26-v1"
+    },
+    "2024-25": {
+      "role": "historical_filter",
+      "cycle_slot": "S-2",
+      "prior_seed": "2023-24",
+      "rules_id": "native-2024-25-v1"
+    },
+    "2023-24": {
+      "role": "prior_seed_only",
+      "cycle_slot": "S-3",
+      "prior_seed": null,
+      "rules_id": "native-2023-24-v1"
+    }
+  }
+}

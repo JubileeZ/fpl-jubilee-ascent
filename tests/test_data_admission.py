@@ -234,18 +234,41 @@ def test_late_corrupt_and_missing_player_fail_closed() -> None:
         require_admitted(value, catalog(value), "test", 1)
 
 
-def test_sealed_path_rejected_before_reader(tmp_path: Path) -> None:
+def test_sealed_path_rejected_before_reader(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from backtesting import data_admission
+    from backtesting.season_rules import SeasonLifecycle, SeasonLifecycleEntry, load_season_lifecycle
+
+    base = load_season_lifecycle()
+    custom = SeasonLifecycle(
+        active_season="2026-27",
+        seasons={
+            **base.seasons,
+            "2027-28": SeasonLifecycleEntry("2027-28", "sealed", "S+1", "2026-27", "native-2026-27-v1"),
+        },
+    )
+    monkeypatch.setattr(data_admission, "load_season_lifecycle", lambda: custom)
+
     calls: list[Path] = []
-    descriptor = {
+    sealed_descriptor = {
         "version": 1,
-        "season": "2026-27",
+        "season": "2027-28",
         "gw": 6,
         "path": str(tmp_path / "data"),
         "sha256": "a" * 64,
         "parent_manifest": "b" * 64,
     }
-    with pytest.raises(ValueError):
-        strict_load(descriptor, {}, lambda path: calls.append(path) or b"")
+    with pytest.raises(ValueError, match="Unknown or sealed scope|Sealed"):
+        strict_load(sealed_descriptor, {}, lambda path: calls.append(path) or b"")
+    assert calls == []
+
+    # Active active_validation (2026-27 GW6) is no longer statically blocked before parent verification.
+    validation_descriptor = {
+        **sealed_descriptor,
+        "season": "2026-27",
+        "path": str(tmp_path / "2026-27" / "data"),
+    }
+    with pytest.raises(ValueError, match="Missing parent manifest"):
+        strict_load(validation_descriptor, {}, lambda path: calls.append(path) or b"")
     assert calls == []
 
 
@@ -297,15 +320,22 @@ def test_mandatory_sealed_season_before_reader() -> None:
     called: list[Path] = []
     descriptor = {
         "version": 1,
-        "season": "2026-27",
+        "season": "2028-29",
         "gw": 6,
         "path": "other/location",
         "sha256": "a" * 64,
         "parent_manifest": "b" * 64,
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Unknown or sealed scope|Sealed"):
         strict_load(descriptor, {}, lambda path: called.append(path) or b"")
     assert called == []
+
+    # 2026-27 GW6 active_validation is permitted without static "sealed_window" reason
+    value = request()
+    value["origins"][0]["season"] = "2026-27"
+    value["origins"][0]["gw"] = 6
+    report = assess_origins(value, catalog(value))[0]
+    assert "sealed_window" not in report["reasons"]
 
 
 def test_malformed_origin_does_not_hide_other_origins() -> None:

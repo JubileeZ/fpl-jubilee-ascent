@@ -12,7 +12,7 @@ from backtesting.admission_fixtures import (
     assess_fixture_coverage,
     assess_issue_fixture_coverage,
 )
-from backtesting.season_rules import get_rules
+from backtesting.season_rules import get_rules, load_season_lifecycle
 
 
 @dataclass(frozen=True)
@@ -46,13 +46,8 @@ def strict_load(
     ):
         raise ValueError("Invalid source descriptor")
     season, gw = descriptor["season"], descriptor["gw"]
-    if (
-        season not in ("test", "2023-24", "2024-25", "2025-26", "2026-27")
-        or type(gw) is not int
-        or not 1 <= gw <= 38
-        or (season == "2026-27" and gw >= 6)
-    ):
-        raise ValueError("Unknown or sealed scope")
+    lifecycle = load_season_lifecycle()
+    lifecycle.assert_access(season, gw, purpose="validation")
     if not isinstance(descriptor["path"], str) or not descriptor["path"]:
         raise ValueError("Invalid path")
     if not isinstance(descriptor["sha256"], str) or not re.fullmatch(
@@ -60,7 +55,7 @@ def strict_load(
     ):
         raise ValueError("Invalid source hash")
     path = Path(descriptor["path"]).resolve()
-    if "2026-27" in path.parts:
+    if any(part in lifecycle.sealed_seasons() for part in path.parts):
         raise ValueError("Sealed path")
     digest = descriptor["parent_manifest"]
     if not isinstance(digest, str):
@@ -83,7 +78,7 @@ def strict_load(
                 or type(parent["first_gw"]) is not int
                 or type(parent["last_gw"]) is not int
                 or not parent["first_gw"] <= gw <= parent["last_gw"]
-                or (season == "2026-27" and parent["last_gw"] >= 6)
+                or lifecycle.is_sealed_window(season, parent["last_gw"])
             ):
                 raise ValueError("Invalid parent scope")
             if (
@@ -325,6 +320,7 @@ def assess_origins(
             raise ValueError("Unknown authority version")
     except (ValueError, TypeError, KeyError):
         raise ValueError("Invalid authority closure") from None
+    lifecycle = load_season_lifecycle()
     reports: list[dict[str, Any]] = []
     for request_index, origin in enumerate(request["origins"]):
         reasons: set[str] = set()
@@ -337,7 +333,7 @@ def assess_origins(
                 or not 1 <= gw <= 38
             ):
                 raise ValueError("Invalid origin")
-            if season == "2026-27" and gw >= 6:
+            if lifecycle.is_sealed_window(season, gw):
                 reasons.add("sealed_window")
             if (
                 authority.get("season") != season

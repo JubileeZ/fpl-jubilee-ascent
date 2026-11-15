@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
+from backtesting.season_rules import load_season_lifecycle
+
 
 @dataclass(frozen=True)
 class SourceEvidence:
@@ -200,8 +202,10 @@ def _scope(season: str, gw: int) -> None:
         raise ValueError("Invalid receipt scope")
     if season != "test" and (int(season[:4]) + 1) % 100 != int(season[-2:]):
         raise ValueError("Invalid season years")
-    if season == "2026-27" and gw >= 6:
-        raise ValueError("Receipt scope is sealed")
+    try:
+        load_season_lifecycle().assert_access(season, gw, purpose="receipt")
+    except ValueError as exc:
+        raise ValueError("Receipt scope is sealed") from exc
 
 
 def _digest(value: dict[str, Any]) -> str:
@@ -209,10 +213,7 @@ def _digest(value: dict[str, Any]) -> str:
 
 
 def _receipt_storage(storage: Path) -> Path:
-    resolved = storage.resolve()
-    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in resolved.parts):
-        raise ValueError("Protected receipt storage")
-    return resolved
+    return load_season_lifecycle().assert_unsealed_storage_path(storage, error_message="Protected receipt storage")
 
 
 def _receipt_member(storage: Path, relative: Path) -> Path:

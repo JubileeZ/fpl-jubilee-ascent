@@ -15,6 +15,7 @@ from typing import Any
 from backtesting.input_evidence import (
     FieldEvidence, SourceEvidence, assess_field, validate_player_inputs, validate_schedule_inputs,
 )
+from backtesting.season_rules import load_season_lifecycle
 
 ROOT = Path(__file__).resolve().parents[1]
 TOPIC = ROOT / "docs/research/backtesting-promotion-foundation"
@@ -30,9 +31,7 @@ def _bootstrap(raw: bytes) -> dict[str, Any]:
 
 
 def assess_retained_pilot(quarantine: Path) -> dict[str, Any]:
-    quarantine = quarantine.resolve()
-    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in quarantine.parts):
-        raise ValueError("Protected pilot path")
+    quarantine = load_season_lifecycle().assert_unsealed_storage_path(quarantine, error_message="Protected pilot path")
     summary_raw = (quarantine / "summary.json").read_bytes()
     summary = json.loads(summary_raw)
     if summary.get("origin") != "2025-26 GW2":

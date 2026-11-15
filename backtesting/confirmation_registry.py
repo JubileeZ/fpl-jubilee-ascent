@@ -6,7 +6,7 @@ Implements Phase 9 requirements:
 2. Registry append-only atomicity and tamper-evident integrity hashing.
 3. Family-wise continuity across aliases and model renames; prevents history reset.
 4. Prevention of duplicate, adaptive, or peeking runs; requires registered complete schedule.
-5. Sealed-path protection enforcing strict holdout boundaries (2026-27 GW6+).
+5. ADR 0069 SeasonLifecycle boundary enforcement (`active_validation` quarantine & `sealed` blocks).
 6. Candidate Ledger integration preventing re-evaluation of active Dead Levers without explicit override.
 7. Verification of completed schedules before verdict admission.
 """
@@ -25,6 +25,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from backtesting.evidence_statistics import ScientificVerdict
+from backtesting.season_rules import AccessPurpose, SeasonLifecycle, load_season_lifecycle
 
 AttemptStatus = Literal["registered", "in_progress", "completed", "withdrawn", "invalidated"]
 ExecutionStatus = Literal["not_run", "partial", "censored", "complete"]
@@ -234,15 +235,19 @@ class ConfirmationRegistry:
         self,
         requested_seasons: Sequence[str],
         requested_gameweeks: Sequence[int] | None = None,
+        *,
+        purpose: AccessPurpose = "validation",
+        lifecycle: SeasonLifecycle | None = None,
     ) -> None:
-        """Enforce strict holdout boundary: season 2026-27 GW6+ is completely sealed."""
+        """Enforce ADR 0069 SeasonLifecycle boundary checks across seasons and purposes."""
+        lc = lifecycle or load_season_lifecycle()
+        gws = requested_gameweeks or tuple(range(1, 39))
         for season in requested_seasons:
-            if season == "2026-27":
-                gws = requested_gameweeks or tuple(range(1, 39))
-                if any(gw >= 6 for gw in gws):
-                    raise SealedDataViolationError(
-                        "Access to sealed season 2026-27 GW6+ strictly prohibited without approved protocol amendment"
-                    )
+            for gw in gws:
+                try:
+                    lc.assert_access(season, gw, purpose=purpose, allow_test=False)
+                except ValueError as exc:
+                    raise SealedDataViolationError(str(exc)) from exc
 
     def check_candidate_ledger_safety(
         self,

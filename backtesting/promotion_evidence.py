@@ -36,6 +36,7 @@ from backtesting.rolling_replay import (
     verify_replay_record,
     validate_solver_certificate_consistency,
 )
+from backtesting.season_rules import load_season_lifecycle
 
 EVIDENCE_VERSION = "rolling-promotion-v1"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -88,9 +89,7 @@ def _local_path(root: Path, relative: Any) -> Path:
     result = (root / path).resolve()
     if path.is_absolute() or ".." in path.parts or not result.is_relative_to(root.resolve()):
         raise ValueError("Evidence path must remain within request directory")
-    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in result.parts):
-        raise ValueError("Protected evidence path")
-    return result
+    return load_season_lifecycle().assert_unsealed_storage_path(result, error_message="Protected evidence path")
 
 
 def _read_material(root: Path, reference: Mapping[str, Any]) -> dict[str, Any]:

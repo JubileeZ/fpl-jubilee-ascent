@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from backtesting.data_admission import AdmittedInput, verify_input
+from backtesting.season_rules import load_season_lifecycle
 
 
 def _read_canonical_json(catalog: dict[str, bytes], digest: str) -> dict[str, Any]:
@@ -31,10 +32,7 @@ def _parse_iso_time(value: Any) -> datetime:
 
 
 def validate_storage_path(path: Path) -> Path:
-    resolved = path.resolve()
-    if any(part in {"archive", "2026-27", ".git", ".agents"} for part in resolved.parts):
-        raise ValueError("Invalid storage path")
-    return resolved
+    return load_season_lifecycle().assert_unsealed_storage_path(path, error_message="Invalid storage path")
 
 
 def verify_training_bundle(
@@ -45,7 +43,7 @@ def verify_training_bundle(
 ) -> dict[str, Any]:
     """Resolve source-authorized rows; this synthetic contract is not empirical admission."""
     verify_input(capability, request, catalog)
-    if capability.season == "2026-27":
+    if capability.season in load_season_lifecycle().sealed_seasons():
         raise ValueError("Protected season")
     authority = _read_canonical_json(catalog, authority_digest)
     required = {"version", "mode", "input_digest", "season", "gw", "seed_identity", "source_digest"}

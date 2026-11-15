@@ -73,11 +73,22 @@ def test_receipt_retains_bytes_and_local_clock_without_claiming_admission(tmp_pa
 
 
 def test_sealed_receipt_is_rejected_before_storage(tmp_path: Path) -> None:
+    ok_dir = tmp_path / "2026-27"
+    rec = retain_receipt(ok_dir, season="2026-27", gw=6, endpoint="fixtures",
+                         deadline=datetime(2030, 1, 1, tzinfo=timezone.utc), payload=b"ok quarantined")
+    assert rec["season"] == "2026-27" and rec["gw"] == 6
+
     target = tmp_path / "untouched"
     with pytest.raises(ValueError, match="sealed"):
-        retain_receipt(target, season="2026-27", gw=6, endpoint="fixtures",
+        retain_receipt(target, season="2027-28", gw=6, endpoint="fixtures",
                        deadline=datetime(2030, 1, 1, tzinfo=timezone.utc), payload=b"never store")
     assert not target.exists()
+
+    archive_target = tmp_path / "archive" / "untouched"
+    with pytest.raises(ValueError, match="Protected"):
+        retain_receipt(archive_target, season="2026-27", gw=6, endpoint="fixtures",
+                       deadline=datetime(2030, 1, 1, tzinfo=timezone.utc), payload=b"never store")
+    assert not archive_target.exists()
 
 
 def test_outcome_source_cannot_support_issue_inputs() -> None:

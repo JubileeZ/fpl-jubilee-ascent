@@ -48,6 +48,7 @@ from backtesting.promotion import (  # noqa: E402
     SEGMENT_REGRESSION_TOL,
     SPEARMAN_ABS_TOL,
 )
+from backtesting.season_rules import load_season_lifecycle  # noqa: E402
 from solver.scenarios import (  # noqa: E402
     BASE_STRATEGIC_HORIZON,
     DEFAULT_STRATEGIC_FT_SCHEDULE,
@@ -393,6 +394,12 @@ def build_prompt_markdown(focus: str) -> str:
      where $N_{\\text{eff}, g} = 0.5 N_{\\text{seed}} + N_{\\text{in\\_season}, <g}$, with $N_{\\min} = 3500$, $N_{\\text{full}} = 7500$."""
         exemplar_import = "from models.adaptive_causal_challenger import AdaptiveCausalChallengerModel"
     mission_target = f"`{champ_name}`" if champ_name == "def_xg_shrink_challenger" else f"`{champ_name}` and `def_xg_shrink_challenger`"
+    lifecycle = load_season_lifecycle()
+    val_season = lifecycle.season_for_role("active_validation")
+    dev_season = lifecycle.season_for_role("development")
+    dev_seed = lifecycle.seasons[dev_season].prior_seed or "none"
+    filter_season = lifecycle.season_for_role("historical_filter")
+    filter_seed = lifecycle.seasons[filter_season].prior_seed or "none"
 
     return f"""# FPL Candidate Model Ideation Prompt Brief
 
@@ -422,8 +429,8 @@ We operate under strict empirical model governance:
 - **Downstream Consumer**: Multi-period HiGHS MILP solver optimizing transfer paths and lineups over a 1-10 GW horizon subject to 5 "Strategic" variance constraints (ADR 0061), horizon-scaled hit/GK friction, and diminishing emergency Free Transfer Value schedule (ADR 0065).
 - **Promotion Gate (ADR 0066 Foundation & ADR 0064 Standards)**: Any new model ("Candidate") must pass our multi-season evaluation: **Primary Estimand is Rolling Transfer Plan Net FPL Points** under an independent 6-GW Strategic transfer plan replay initialized from the neutral GW1 ownership anchor (15-player £100.0m squad, bank balance, rolling transfers, hit deductions, bench cover). Evaluated via paired non-wrapping Moving Block Bootstrap ($L={BOOTSTRAP_BLOCK_GWS}$, $B={BOOTSTRAP_DRAWS:,}$) with family-wise error control ($\\text{{FWER}} \\le 0.05$), substantive projection non-inferiority guards (total, minutes, components), and supporting diagnostic screens (including Constrained Legal Formation XI £83.5m cap and rolling squad churn $\\le \\text{{Champ}} + {CHURN_GUARDRAIL_TOL:.2f}$ players/GW). Four-way scientific verdicts (`pass`, `fail`, `inconclusive`, `invalid`); inconclusive directs to fresh registered confirmation without dead lever lock.
 - **Historical Ledger**: {total_trials} candidate model levers recorded. {dead_count} have failed or been logged dead ({len(active_dead)} currently locked under 1-year moratorium). We maintain an authoritative taxonomy of proven dead levers that must NOT be proposed.
-- **Evaluation Boundary & Sealed Window**: Develop on 2025-26 with 2024-25 seed. Freeze each Candidate before its single 2024-25 confirmation run with 2023-24 seed; never tune on confirmation. 2026-27 GW6+ is sealed: no ideation evidence, tuning, smoke tests, or ablations from that window; one post-promotion check per Champion only.
-  - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/2026-27/` or any live 2026-27 performance files in the public repository. All proposals must derive strictly from 2025–26 developmental principles.
+- **Evaluation Boundary & Season Lifecycle (ADR 0069)**: Develop on {dev_season} with {dev_seed} seed. Freeze each Candidate before its single {filter_season} confirmation run with {filter_seed} seed; never tune on confirmation. `{val_season}` is assigned to `active_validation` (`config/season_lifecycle.json`): zero ideation evidence, tuning, smoke tests, or ablations from `{val_season}`; frozen finalist validation & live capture only.
+  - **CRITICAL FOR WEB-BROWSING MODELS**: Do NOT inspect, query, or infer features from `data/archive/{val_season}/` or any live {val_season} performance files in the public repository. All proposals must derive strictly from {dev_season} developmental principles.
 
 ### Your Mission
 Generate an actionable, innovative, and mathematically sound slate of 5 to 7 NEW Candidate Projection Models (or component mechanisms) that can defeat {mission_target} under the ADR 0066 Historical Promotion Gate.
@@ -578,7 +585,7 @@ Strategic marginal FT values for post-transfer carried bank states 2-5 (`fts[w +
 
 ### 3. The Historical Promotion Gate (ADR 0066 Foundation & ADR 0064 Standards)
 
-A Candidate must pass all criteria across both Development (2025–26, seeded with 2024–25) and Confirmation (2024–25, warm-seeded with 2023–24) seasons:
+A Candidate must pass all criteria across both Development ({dev_season}, seeded with {dev_seed}) and Historical Filter Confirmation ({filter_season}, warm-seeded with {filter_seed}) seasons:
 
 ```python
 # backtesting/promotion.py gate constants

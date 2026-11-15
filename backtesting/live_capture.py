@@ -8,7 +8,7 @@ Implements Phase 10 requirements:
 4. Operational tracking with outcome-finalization delay checks.
 5. Fixed review points enforcing minimum evaluation horizon and peeking prevention.
 6. Material-harm rollback recommendation citing bundle hash and requiring explicit human approval.
-7. Strict sealed holdout protection (2026-27 GW6+).
+7. ADR 0069 SeasonLifecycle boundary enforcement (`active_validation` allowed, `prior_seed_only` & `sealed` rejected).
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from typing import Any, Literal
 
 from backtesting.replay_state import Decision, OutcomeBatch, ReplayState, transition
 from backtesting.rolling_replay import validate_decision_legality
+from backtesting.season_rules import load_season_lifecycle
 
 ModelRole = Literal["adopted_candidate", "former_champion"]
 
@@ -193,11 +194,10 @@ class LiveCaptureManager:
         """Capture and validate pre-deadline player forecasts."""
         self._ensure_dir()
 
-        # Sealed data protection
-        if season == "2026-27" and gameweek >= 6:
-            raise SealedLiveSeasonError(
-                "Access to sealed 2026-27 GW6+ prohibited in live capture without explicit protocol amendment"
-            )
+        try:
+            load_season_lifecycle().assert_access(season, gameweek, purpose="live_capture", allow_test=False)
+        except ValueError as exc:
+            raise SealedLiveSeasonError(str(exc)) from exc
 
         # Parse timestamps with timezone awareness
         dl_dt = datetime.fromisoformat(deadline_time_utc.replace("Z", "+00:00"))

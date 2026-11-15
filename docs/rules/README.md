@@ -14,8 +14,9 @@ Code implementation lives in [`models/scoring_matrix.py`](../../models/scoring_m
 
 | Season | Documentation | Primary Additions / Scoring Notes | Status |
 |--------|---------------|-----------------------------------|--------|
-| **2025/26** | [`scoring-rules-2025-26.md`](scoring-rules-2025-26.md) | Official scoring matrix, 60+ min thresholds, Defensive Contributions (CBIT 10 / CBIRT 12), and BPS system. Captured 2026-07-26. | Active Baseline |
-| **2026/27** | *Pending official PL rule release* | Will track official rule deltas from 2025/26. | Upcoming |
+| **2026/27** | [`scoring-rules-2026-27.md`](scoring-rules-2026-27.md) | Official `native-2026-27-v1`: same scoring matrix + Defensive Contributions as 2025/26, 2 chip sets (`GW1–19`, `GW20–38`), cap 5 FT, no GW15 AFCON topup. Verified 2026-11-15. | Active Quarantined Validation (`S`) |
+| **2025/26** | [`scoring-rules-2025-26.md`](scoring-rules-2025-26.md) | Official scoring matrix, 60+ min thresholds, Defensive Contributions (CBIT 10 / CBIRT 12), and BPS system. Captured 2026-07-26. | Dev Season (`S-1`) |
+| **2024/25** | Historical pre-defcon rules | `native-2024-25-v1` (GK goal 10, cap 5 FT, chip transfer preservation, no defensive contributions). | Historical Filter (`S-2`) |
 
 ---
 

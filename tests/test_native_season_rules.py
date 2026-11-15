@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 from datetime import UTC, datetime
 from dataclasses import replace
+from pathlib import Path
 from typing import cast
 
 from backtesting.season_rules import Chip, afcon_topup_known_at, chip_window, get_rules, next_free_transfers, selling_price, validate_chip_calendar
@@ -200,3 +201,90 @@ def test_decision_and_outcome_scope() -> None:
         apply_decision(replace(result.state, free_transfers=1.5), (), lineup, dict(batch.outcomes))
     with pytest.raises(ValueError):
         apply_decision(replace(result.state, chip_history=((1, "bench_boost", 1), (1, "triple_captain", 1))), (), lineup, dict(batch.outcomes))
+
+
+def test_season_lifecycle_policy_and_storage_guards(tmp_path: Path) -> None:
+    from backtesting.season_rules import SeasonLifecycle, SeasonLifecycleEntry, load_season_lifecycle
+
+    lifecycle = load_season_lifecycle()
+    assert lifecycle.active_season == "2026-27"
+    assert lifecycle.season_for_role("active_validation") == "2026-27"
+    assert lifecycle.season_for_role("development") == "2025-26"
+    assert lifecycle.season_for_role("historical_filter") == "2024-25"
+    assert lifecycle.season_for_role("prior_seed_only") == "2023-24"
+    assert lifecycle.seasons["2026-27"].prior_seed == "2025-26"
+    assert lifecycle.seasons["2025-26"].prior_seed == "2024-25"
+    assert lifecycle.seasons["2024-25"].prior_seed == "2023-24"
+    assert lifecycle.seasons["2023-24"].prior_seed is None
+
+    for purpose in ("validation", "active_validation", "live_capture", "receipt"):
+        lifecycle.assert_access("2026-27", 6, purpose=purpose)
+        lifecycle.assert_access("2026-27", 38, purpose=purpose)
+    for bad_purpose in ("ideation", "tuning", "dev", "historical_filter"):
+        with pytest.raises(ValueError, match="active_validation"):
+            lifecycle.assert_access("2026-27", 6, purpose=bad_purpose)
+    for blocked_role_purpose in ("validation", "active_validation", "live_capture", "receipt", "ideation"):
+        with pytest.raises(ValueError, match="prior_seed_only"):
+            lifecycle.assert_access("2023-24", 1, purpose=blocked_role_purpose)
+    with pytest.raises(ValueError, match="development"):
+        lifecycle.assert_access("2025-26", 1, purpose="active_validation")
+
+    assert lifecycle.assert_unsealed_storage_path(tmp_path / "2026-27" / "manifest.json") == (tmp_path / "2026-27" / "manifest.json").resolve()
+    for bad_part in ("archive", ".git", ".agents"):
+        with pytest.raises(ValueError, match="Protected"):
+            lifecycle.assert_unsealed_storage_path(tmp_path / bad_part / "file.json")
+
+    custom = SeasonLifecycle(
+        active_season="2027-28",
+        seasons={
+            **lifecycle.seasons,
+            "2027-28": SeasonLifecycleEntry("2027-28", "sealed", "S", "2026-27", "native-2026-27-v1"),
+        },
+    )
+    with pytest.raises(ValueError, match="Sealed"):
+        custom.assert_access("2027-28", 6, purpose="validation")
+    with pytest.raises(ValueError, match="Protected"):
+        custom.assert_unsealed_storage_path(tmp_path / "2027-28" / "file.json")
+
+
+def test_2026_27_native_rules_chips_ft_and_defcon() -> None:
+    rules_26 = get_rules("2026-27")
+    assert rules_26.version == "2026-27"
+    assert rules_26.rules_id == "native-2026-27-v1"
+    assert rules_26.free_transfer_cap == 5
+    assert rules_26.preserve_chip_transfers is True
+    assert rules_26.goalkeeper_goal_points == 10
+    assert rules_26.defensive_contributions is True
+    assert rules_26.two_chip_sets is True
+    assert rules_26.afcon_gw15_topup is False
+
+    for chip in ("wildcard", "free_hit", "bench_boost", "triple_captain"):
+        assert chip_window(rules_26, cast(Chip, chip), 19) == 1
+        assert chip_window(rules_26, cast(Chip, chip), 20) == 2
+    with pytest.raises(ValueError):
+        chip_window(rules_26, "free_hit", 1)
+
+    # No GW15 AFCON 5-FT topup in 2026-27 (unlike 2025-26)
+    assert next_free_transfers(rules_26, 1, 0, None, 15) == 2
+    assert event_points("goals", "GK", 1, rules_version="2026-27") == 10.0
+    assert event_points("defensive_contributions", "D", 1, rules_version="2026-27") == 2.0
+
+    row_no_defcon = {
+        "minutes": 90, "total_points": 6, "goals_scored": 0, "assists": 0,
+        "clean_sheets": 1, "goals_conceded": 0, "saves": 0, "bonus": 0,
+    }
+    with pytest.raises(ValueError, match="Native observed component data incomplete"):
+        realized_gameweek_score([row_no_defcon], 2, rules_version="2026-27")
+    scored = realized_gameweek_score([{**row_no_defcon, "defensive_contribution": 10}], 2, rules_version="2026-27")
+    assert scored.xp_defcon == 2.0
+
+    perf_no_defcon = {
+        "player_id": 1, "total_points": 6, "minutes": 90, "goals_scored": 0, "assists": 0,
+        "clean_sheets": 1, "goals_conceded": 0, "saves": 0, "penalties_saved": 0,
+        "penalties_missed": 0, "own_goals": 0, "yellow_cards": 0, "red_cards": 0, "bonus": 0,
+    }
+    feature_26 = pd.DataFrame([{"player_id": 1, "position_id": 2, "native_rules_version": "2026-27"}])
+    with pytest.raises(ValueError, match="Missing native actual component"):
+        _build_actual_components(pd.DataFrame([perf_no_defcon]), feature_26)
+    built = _build_actual_components(pd.DataFrame([{**perf_no_defcon, "defensive_contribution": 10}]), feature_26)
+    assert built.iloc[0]["actual_xp_defcon"] == 2.0

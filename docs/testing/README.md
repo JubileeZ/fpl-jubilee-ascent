@@ -34,7 +34,7 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
   - Point-in-time feature isolation: features must never leak post-kickoff information into target gameweek predictions (`model.fit()` uses strictly `< gw` + prior-season seed).
   - Development Season (`S-1` = `2025-26`, seed `2024-25`): Parameter tuning and prototype exploration.
   - Historical Filter (`S-2` = `2024-25`, seed `2023-24`): Un-tuned cross-check before Dual-Tier `Provisional Active`.
-  - Active Validation (`S` = `2026-27`, ADR 0069): Quarantined from training/tuning; validates frozen finalists via `Randdalf/fplcache` (`<= 24h`) at `GW15`/`GW30`/`GW38` (`legacy static GW6+ code locks migrating under #185`).
+  - Active Validation (`S` = `2026-27`, ADR 0069): Quarantined from training/tuning via `config/season_lifecycle.json` (`#185`); validates frozen finalists via `Randdalf/fplcache` (`<= 24h`) at `GW15`/`GW30`/`GW38`.
 
 ### 4. Promotion & Operator Workflow
 - **Specification**: [`operator-workflow.md`](operator-workflow.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md)

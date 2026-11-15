@@ -193,11 +193,11 @@ def test_alias_and_mechanism_family_lineage(tmp_path: Path) -> None:
 
 
 def test_sealed_data_protection(tmp_path: Path) -> None:
-    """Verify access to sealed 2026-27 GW6+ is strictly blocked."""
+    """Verify ADR 0069 SeasonLifecycle safety checks across validation, ideation, and sealed seasons."""
     reg_file = tmp_path / "registry.jsonl"
     registry = ConfirmationRegistry(reg_file)
 
-    # Allowed: 2024-25
+    # Allowed: 2024-25 (historical_filter)
     registry.register_finalist(
         candidate_name="cand",
         champion_name="champ",
@@ -209,7 +209,7 @@ def test_sealed_data_protection(tmp_path: Path) -> None:
         requested_seasons=["2024-25"],
     )
 
-    # Allowed: 2026-27 GW 1-5 only
+    # Allowed: 2026-27 GW1-38 under active_validation for frozen finalist validation
     registry.register_finalist(
         candidate_name="cand2",
         champion_name="champ",
@@ -219,11 +219,16 @@ def test_sealed_data_protection(tmp_path: Path) -> None:
         dev_selection_record_ref="dev",
         protocol_hash="3" * 64,
         requested_seasons=["2026-27"],
-        registered_gameweeks=(1, 2, 3, 4, 5),
+        registered_gameweeks=tuple(range(1, 39)),
     )
 
-    # Blocked: 2026-27 GW6+
-    with pytest.raises(SealedDataViolationError, match="sealed season 2026-27 GW6+"):
+    # Blocked: ideation / tuning / dev on active_validation 2026-27
+    for bad_purpose in ("ideation", "tuning", "dev"):
+        with pytest.raises(SealedDataViolationError):
+            registry.check_sealed_data_safety(["2026-27"], tuple(range(1, 39)), purpose=bad_purpose)
+
+    # Blocked: unconfigured / sealed season
+    with pytest.raises(SealedDataViolationError):
         registry.register_finalist(
             candidate_name="cand3",
             champion_name="champ",
@@ -232,7 +237,7 @@ def test_sealed_data_protection(tmp_path: Path) -> None:
             parameters_hash="2" * 64,
             dev_selection_record_ref="dev",
             protocol_hash="3" * 64,
-            requested_seasons=["2026-27"],
+            requested_seasons=["2027-28"],
             registered_gameweeks=tuple(range(1, 39)),
         )
 

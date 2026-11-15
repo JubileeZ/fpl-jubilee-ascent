@@ -901,7 +901,7 @@ Frozen-candidate evaluation across active quarantined season `S` (`2026-27 GW1â€
 _Avoid_: Tuning/ideation on `S`, retweaking finalist after peeking `S GW1..X`, hardcoded `2026-27 GW6+` static freeze
 
 **Season Lifecycle**:
-Versioned season-role contract (`config/season_lifecycle.json`, implementation queued under `#185`) assigning `YYYY-YY` roles under ADR 0069 Annual Rolling Firewall: `prior_seed_only` (`2023-24`), `historical_filter` (`S-2`=`2024-25`), `development` (`S-1`=`2025-26`), `active_validation` (`S`=`2026-27`). Rotates each summer post-`GW38` (`S -> S-1 -> S-2`), replacing hardcoded year tuples across backtesting, features, models, CLIs, and skills.
+Versioned season-role contract (`config/season_lifecycle.json`, implemented under `#185`) assigning `YYYY-YY` roles under ADR 0069 Annual Rolling Firewall: `prior_seed_only` (`2023-24`), `historical_filter` (`S-2`=`2024-25`), `development` (`S-1`=`2025-26`), `active_validation` (`S`=`2026-27`). Rotates each summer post-`GW38` (`S -> S-1 -> S-2`), replacing hardcoded year tuples across backtesting, features, models, CLIs, and skills.
 _Avoid_: Hardcoded `2023-24`/`2024-25`/`2025-26`/`2026-27` tuples, implicit year rollover, training/tuning on active `S`
 
 **Prior-Season Seed**:

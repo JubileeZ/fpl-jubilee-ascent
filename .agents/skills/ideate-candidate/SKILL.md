@@ -58,7 +58,7 @@ Dispatch prompt via either:
 Prompt characteristics:
 - **Critical Operational Directive**: Opens with strict directive commanding external model to execute immediately in one turn without conversational preambles or clarifying questions.
 - **Public Repository Ground Truth**: Codebase public at `https://github.com/JubileeZ/fpl-jubilee-ascent`. Includes direct GitHub permalinks to active Champion, Feature Contract, Candidate Ledger, and ADRs for web-browsing models. 100% self-contained for offline models.
-- **Sealed Window Boundary**: Explicitly bars browsing models from reading or mining `data/archive/2026-27/`, protecting 2026-27 GW6+ sealed evaluation window.
+- **Quarantined Validation Boundary**: Explicitly bars browsing models from reading or mining active validation `data/archive/<active_season>/`, protecting `ADR 0069` `active_validation` quarantine.
 - **Model Neutrality**: Reusable prompts, report titles, filenames, and documentation stay model-neutral (no provider/version names; identify by specialist role, date, source artifact; exact FPL projection identifiers unchanged).
 
 ### 3. Ingest Proposals into `idea_queue.csv` and `ideas/` Dossiers

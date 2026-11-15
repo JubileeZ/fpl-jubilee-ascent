@@ -292,7 +292,8 @@ def test_generate_prompt_tracks_solver_options_and_sealed_holdout(monkeypatch: p
     assert 'ft_value_list = {"2": 3.4} * s(H)' in md
     assert "$H_0=6$" in md
     assert "Freeze each Candidate before its single 2024-25 confirmation run" in md
-    assert "2026-27 GW6+ is sealed" in md
+    assert "2026-27` is assigned to `active_validation`" in md or "active_validation" in md
+    assert "2026-27 GW6+ is sealed" not in md
 
 
 def test_context_md_defines_candidate_ledger_and_dead_lever_terms() -> None:

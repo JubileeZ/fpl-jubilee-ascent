@@ -11,6 +11,7 @@ import pandas as pd
 
 from backtesting.metrics import evaluate_predictions
 from backtesting.process_points import aggregate_process_points, blended_points
+from backtesting.season_rules import get_rules
 from features.builder import build_features, history_before_target
 from features.contracts import assert_projection_contract
 from models import get_model
@@ -76,7 +77,7 @@ def _build_actual_components(gw_perf: pd.DataFrame, df_feat: pd.DataFrame) -> pd
     gw_perf = gw_perf.merge(pos_map, on="player_id", how="left")
     if rules_version is not None:
         required = ["total_points", "minutes", "goals_scored", "assists", "clean_sheets", "goals_conceded", "saves", "penalties_saved", "penalties_missed", "own_goals", "yellow_cards", "red_cards", "bonus"]
-        if rules_version == "2025-26":
+        if get_rules(rules_version).defensive_contributions:
             required.append("defensive_contribution")
         if not gw_perf["position_id"].isin(PLAYER_POSITIONS).all():
             raise ValueError("Unknown native actual position")

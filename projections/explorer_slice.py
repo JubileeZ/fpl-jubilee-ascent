@@ -200,7 +200,7 @@ def realized_gameweek_score(
     for row in fixture_rows:
         if rules_version is not None:
             required = {"minutes", "total_points", "goals_scored", "assists", "clean_sheets", "goals_conceded", "saves", "bonus"}
-            if rules_version == "2025-26":
+            if get_rules(rules_version).defensive_contributions:
                 required.add("defensive_contribution")
             if any(key not in row or row[key] is None for key in required):
                 raise ValueError("Native observed component data incomplete")
