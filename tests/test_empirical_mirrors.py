@@ -17,10 +17,10 @@ from backtesting.empirical_mirrors import (
     build_causal_chip_calendar,
     build_fixture_mirror_record,
     build_seed_manifest,
+    load_empirical_manifest_bundle,
     validate_mirror_url,
     verify_settled_outcomes_zero_diff,
 )
-from backtesting.input_pilot import load_empirical_manifest_bundle
 from backtesting.season_rules import get_rules, validate_chip_calendar
 
 UTC = timezone.utc
@@ -491,3 +491,88 @@ def test_acquire_csv_schema_shift_pagination_and_zdiff_merge(tmp_path: Path, mon
     }))
     with pytest.raises(ValueError, match="traversal|Missing"):
         load_empirical_manifest_bundle(bad_manifest, quarantine_root=qroot, prefix_end_gw=1)
+
+
+def test_chip_calendar_consumes_bootstrap_chips_and_bundle_verifies_table_sha256(tmp_path: Path) -> None:
+    """build_causal_chip_calendar respects bootstrap[t]['chips'] bounds and manifest bundle checks table_sha256."""
+    fx_rows = {gw: pd.DataFrame([{"event": w, "team_h": 1, "team_a": 2} for w in range(gw, min(gw + 6, 39))]) for gw in range(1, 39)}
+    chips_bs = [
+        {"name": "wildcard", "start_event": 9, "stop_event": 19},
+        {"name": "freehit", "start_event": 15, "stop_event": 19},
+        {"name": "bboost", "start_event": 10, "stop_event": 19},
+        {"name": "3xc", "start_event": 2, "stop_event": 19},
+        {"name": "wildcard", "start_event": 25, "stop_event": 38},
+    ]
+    cal = build_causal_chip_calendar("2025-26", fixtures_by_gw=fx_rows, bootstrap_chips=chips_bs)
+    cal_map = {c: [g for g, ch in cal if ch == c] for _, c in cal}
+    assert all(9 <= g <= 19 for g in cal_map["wildcard"] if g <= 19)
+    assert all(15 <= g <= 19 for g in cal_map["free_hit"] if g <= 19)
+
+    qroot = tmp_path / "quarantine2"
+    (qroot / "2025-26/bootstraps").mkdir(parents=True)
+    (qroot / "2025-26/fixtures").mkdir(parents=True)
+    dl1 = datetime(2025, 8, 15, 17, 30, tzinfo=UTC)
+    bs_raw = _bootstrap_xz(gw=1, deadline=dl1)
+    fx_raw = _fixtures_csv(range(1, 7))
+    (qroot / "2025-26/bootstraps/gw01.json.xz").write_bytes(bs_raw)
+    (qroot / "2025-26/fixtures/f1.csv").write_bytes(fx_raw)
+    bs_rec = build_bootstrap_mirror_record(
+        season="2025-26", gw=1, deadline=dl1, prev_deadline=None,
+        url="https://raw.githubusercontent.com/Randdalf/fplcache/sha1/cache/2025/8/15/1252.json.xz",
+        repo_path="cache/2025/8/15/1252.json.xz", commit_sha="a" * 40,
+        commit_time=datetime(2025, 8, 15, 12, 53, tzinfo=UTC), raw_bytes=bs_raw, local_relpath="2025-26/bootstraps/gw01.json.xz",
+    )
+    fx_rec = build_fixture_mirror_record(
+        season="2025-26", gw=1, deadline=dl1, prev_deadline=None,
+        url="https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/s1/data/2025-26/fixtures.csv",
+        commit_sha="b" * 40, commit_time=datetime(2025, 8, 14, 12, 0, tzinfo=UTC),
+        prev_commit_time=None, raw_bytes=fx_raw, local_relpath="2025-26/fixtures/f1.csv",
+    )
+    fx_rec["table_sha256"] = "0" * 64
+    bad_tbl_manifest = tmp_path / "bad_tbl.json"
+    bad_tbl_manifest.write_text(json.dumps({
+        "schema_version": 2, "season": "2025-26", "track": "development_mirror",
+        "origins": [{"gw": 1, "origin_admitted": True, "bootstrap": bs_rec, "fixtures": fx_rec, "settled_outcomes": {"meets_plus_24h": True}}],
+    }))
+    with pytest.raises(ValueError, match="table_sha256"):
+        load_empirical_manifest_bundle(bad_tbl_manifest, quarantine_root=qroot, prefix_end_gw=1)
+
+    # Bootstrap with news_added after capture_upper fails sanitization inside load_empirical_manifest_bundle
+    import hashlib
+    bad_payload = json.loads(lzma.decompress(bs_raw).decode("utf-8"))
+    bad_payload["elements"][0]["news_added"] = (dl1 + timedelta(hours=1)).isoformat()
+    bad_raw = lzma.compress(json.dumps(bad_payload).encode("utf-8"))
+    (qroot / "2025-26/bootstraps/gw01_bad.json.xz").write_bytes(bad_raw)
+    bad_bs_rec = {
+        **bs_rec,
+        "local_relpath": "2025-26/bootstraps/gw01_bad.json.xz",
+        "blob_sha256": hashlib.sha256(bad_raw).hexdigest(),
+        "decompressed_sha256": hashlib.sha256(lzma.decompress(bad_raw)).hexdigest(),
+        "table_sha256": None,
+    }
+    fx_rec_ok = dict(fx_rec, table_sha256=None)
+    bad_san_manifest = tmp_path / "bad_san.json"
+    bad_san_manifest.write_text(json.dumps({
+        "schema_version": 2, "season": "2025-26", "track": "development_mirror",
+        "origins": [{"gw": 1, "origin_admitted": True, "bootstrap": bad_bs_rec, "fixtures": fx_rec_ok, "settled_outcomes": {"meets_plus_24h": True}}],
+    }))
+    with pytest.raises(ValueError, match="sanitization|news_added"):
+        load_empirical_manifest_bundle(bad_san_manifest, quarantine_root=qroot, prefix_end_gw=1)
+
+    for bad_season in ("2026-27", "2023-24"):
+        bad_season_manifest = tmp_path / f"bad_season_{bad_season}.json"
+        bad_season_manifest.write_text(json.dumps({
+            "schema_version": 2, "season": bad_season, "track": "development_mirror",
+            "origins": [{"gw": 1, "origin_admitted": True, "bootstrap": {**bs_rec, "table_sha256": None}, "fixtures": fx_rec_ok, "settled_outcomes": {"meets_plus_24h": True}}],
+        }))
+        with pytest.raises(ValueError, match="prohibits"):
+            load_empirical_manifest_bundle(bad_season_manifest, quarantine_root=qroot, prefix_end_gw=1)
+
+    spoof_bs = {**bs_rec, "table_sha256": None, "url": "https://evil.example/Randdalf/fplcache/cache/2025/8/15/1252.json.xz"}
+    bad_url_manifest = tmp_path / "bad_url.json"
+    bad_url_manifest.write_text(json.dumps({
+        "schema_version": 2, "season": "2025-26", "track": "development_mirror",
+        "origins": [{"gw": 1, "origin_admitted": True, "bootstrap": spoof_bs, "fixtures": fx_rec_ok, "settled_outcomes": {"meets_plus_24h": True}}],
+    }))
+    with pytest.raises(ValueError, match="approved GitHub HTTPS"):
+        load_empirical_manifest_bundle(bad_url_manifest, quarantine_root=qroot, prefix_end_gw=1)

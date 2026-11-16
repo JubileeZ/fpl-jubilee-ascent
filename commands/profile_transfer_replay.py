@@ -494,7 +494,9 @@ def _default_empirical_anchor_and_lineup_costs(time_fn: Callable[[], float]) -> 
     """Measure real ~685-player GW1 ownership anchor MILP + opening lineup MILP latency."""
     from backtesting.ownership_anchor import UniverseSchema, solve_ownership_anchor
     from backtesting.rolling_replay import solve_lineup_milp
+    from backtesting.season_rules import load_season_lifecycle
 
+    dev_season = load_season_lifecycle().season_for_role("development")
     rows: list[dict[str, Any]] = []
     pos_counts = ((1, 80), (2, 240), (3, 270), (4, 95))
     pid = 1
@@ -516,12 +518,12 @@ def _default_empirical_anchor_and_lineup_costs(time_fn: Callable[[], float]) -> 
     t_a0 = time_fn()
     anchor = solve_ownership_anchor(
         universe_df,
-        "2025-26",
+        dev_season,
         1,
         anchor_type="opening",
         schema=UniverseSchema(eligibility_col="purchase_eligible"),
     )
-    st1 = anchor.to_replay_state("2025-26")
+    st1 = anchor.to_replay_state(dev_season)
     anchor_cost = max(1e-6, time_fn() - t_a0)
 
     t_l0 = time_fn()
@@ -594,6 +596,7 @@ def execute_profiling_experiment(
     *,
     solver_hook: Callable[[ProfilingProblem, float, float], tuple[SolverCertificate, str]],
     model_prep_hook: Callable[[ProfilingProblem], tuple[float, float, float]] | None = None,
+    scoring_hook: Callable[[ProfilingProblem], float] | None = None,
     anchor_hook: Callable[[], float] | None = None,
     gw1_lineup_hook: Callable[[], float] | None = None,
     time_fn: Callable[[], float] = time.perf_counter,
@@ -655,18 +658,22 @@ def execute_profiling_experiment(
         audit_score = cert.strategic_audit.get("scoring_time_seconds")
         if isinstance(audit_score, (int, float)) and not isinstance(audit_score, bool):
             scoring_time = float(audit_score)
+        elif scoring_hook is not None:
+            scoring_time = max(1e-6, float(scoring_hook(problem)))
         else:
             from backtesting.replay_state import Outcome, OutcomeBatch, Player, initial_state, score_lineup, state_hash
             from backtesting.replay_state import Lineup as _Lineup
+            from backtesting.season_rules import load_season_lifecycle
             from models.scoring_matrix import Position as _Pos
 
+            _dev_season = load_season_lifecycle().season_for_role("development")
             _pos_seq: tuple[_Pos, ...] = (
                 "GK", "GK", "D", "D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F"
             )
             _sq = tuple(Player(pid, pos, (pid - 1) % 5 + 1, 50, 50, True) for pid, pos in enumerate(_pos_seq, 1))
-            _st = initial_state("2025-26", _sq)
+            _st = initial_state(_dev_season, _sq)
             _lu = _Lineup((1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9)
-            _ob = OutcomeBatch("2025-26", 1, "bench", tuple((p.player_id, Outcome(2, 90, True, 0, 0, 2)) for p in _sq))
+            _ob = OutcomeBatch(_dev_season, 1, "bench", tuple((p.player_id, Outcome(2, 90, True, 0, 0, 2)) for p in _sq))
             _ = (state_hash(_st), score_lineup(_sq, _lu, dict(_ob.outcomes), None))
             scoring_time = max(1e-6, time_fn() - t_score0)
         call_time = time_fn() - call_start
@@ -789,7 +796,7 @@ def save_profiling_report(report: ProfilingReport, output_path: Path) -> None:
 def native_manifest_adapter(path: Path) -> tuple[tuple[ProfilingProblem, ...], Callable[[ProfilingProblem, float, float], tuple[SolverCertificate, str]], str, str]:
     """Bind retained synthetic diagnostic or development_mirror native problems to real optimizer calls."""
     from backtesting.native_transfer_solver import native_strategic_solve
-    from backtesting.season_rules import get_rules
+    from backtesting.season_rules import get_rules, load_season_lifecycle
 
     raw = path.read_bytes()
     data = json.loads(raw)
@@ -800,6 +807,7 @@ def native_manifest_adapter(path: Path) -> tuple[tuple[ProfilingProblem, ...], C
         or (mode == "development_mirror" and data.get("version") != 2)
     ):
         raise ValueError("Native profiling manifest requires mode='synthetic_diagnostic' (v1) or 'development_mirror' (v2)")
+    lifecycle = load_season_lifecycle()
     digest = hashlib.sha256(raw).hexdigest()
     source_id = f"{mode}:{digest}" if mode == "development_mirror" else f"synthetic-native:{digest}"
     protocol_id = hashlib.sha256(json.dumps({"adapter": "native-v1", "policy": "strategic", "manifest": source_id}, sort_keys=True).encode()).hexdigest()
@@ -808,6 +816,8 @@ def native_manifest_adapter(path: Path) -> tuple[tuple[ProfilingProblem, ...], C
     for item in data["problems"]:
         state = replay_state_from_dict(item["state"])
         get_rules(state.rules_version)
+        if mode == "development_mirror":
+            lifecycle.assert_access(state.rules_version, state.deadline, purpose="dev")
         problem_id = item["problem_id"]
         if not isinstance(problem_id, str) or not problem_id.strip() or problem_id in retained:
             raise ValueError("Native profiling problem IDs must be unique and nonempty")
@@ -884,7 +894,7 @@ def main(args: Sequence[str] | None = None) -> int:
         except (ValueError, KeyError, OSError, TypeError) as exc:
             parser.error(str(exc))
         if source_id.startswith("development_mirror:"):
-            print("[profiler] Real HiGHS measurements on development_mirror inputs (no 2026-27 holdout access).")
+            print("[profiler] Real HiGHS measurements on development_mirror inputs (active_validation season protected via SeasonLifecycle).")
         else:
             print("[profiler] Real HiGHS measurements on retained synthetic diagnostic inputs; no empirical admission claim.")
 

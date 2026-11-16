@@ -722,3 +722,204 @@ def test_pre_deadline_input_ready_decoupled_from_outcomes_and_real_seed_id_link(
     bad_auth = {**auth_obj, "source_digest": _put(cat2, bad_src)}
     with pytest.raises(ValueError, match="causal|gameweek"):
         verify_training_bundle(require_input(req2, cat2, "2025-26", 2), req2, cat2, _put(cat2, bad_auth))
+
+
+def test_seed_mapping_hierarchy_table_sha256_disclosures_bootstrap_48h_and_chips(tmp_path: Path) -> None:
+    """Verify Opta code/identity/absent seed mapping, table_sha256, MIRROR_DISCLOSURE_CODES, chip bounds, 48h bootstrap bind, and component outcome ledger."""
+    from backtesting.empirical_admission import build_empirical_seed_mapping
+
+    # 1. Opta code primary + normalized unicode identity secondary + absent:<id> + position_id==5 exclusion
+    cur_els = [
+        {"id": 1, "code": 1001, "first_name": "Alpha", "second_name": "One", "web_name": "A1", "element_type": 3},
+        {"id": 2, "code": 9999, "first_name": "José", "second_name": "García", "web_name": "García", "birth_date": "1999-05-01", "element_type": 2},
+        {"id": 3, "code": 8888, "first_name": "New", "second_name": "Arrival", "web_name": "NewArr", "element_type": 4},
+        {"id": 900, "code": 9000, "first_name": "Boss", "second_name": "Mgr", "web_name": "Boss", "element_type": 5},
+    ]
+    seed_rows = [
+        {"id": 51, "code": 1001, "first_name": "Different", "second_name": "Name", "web_name": "D1", "position_id": 3},
+        {"id": 52, "code": 1002, "first_name": "Jose", "second_name": "Garcia", "web_name": "Garcia", "birth_date": "1999-05-01", "position_id": 2},
+        {"id": 900, "code": 9000, "first_name": "Boss", "second_name": "Mgr", "web_name": "Boss", "position_id": 5},
+    ]
+    smap = build_empirical_seed_mapping(cur_els, seed_rows)
+    assert smap == {"1": "51", "2": "52", "3": "absent:3"}
+
+    # 2. Bogus disclosed_limitations on development_mirror fails invalid
+    req_d, cat_d, _ = _build_empirical_bundle(gws=(1,), track="development_mirror", disclosed=["not_a_known_code"])
+    assert assess_origins(req_d, cat_d)[0]["status"] == "invalid"
+
+    # 3. Tampered table_sha256 on outcomes fails invalid
+    req_t, cat_t, _ = _build_empirical_bundle(gws=(1,))
+    req_t["origins"][0]["sources"]["outcomes"]["table_sha256"] = "0" * 64
+    assert assess_origins(req_t, cat_t)[0]["status"] == "invalid"
+
+    # 4. shared_chip_calendar violating bootstrap[t]['chips'] bounds fails invalid
+    req_c, cat_c, _ = _build_empirical_bundle(gws=(1,))
+    req_c["shared_chip_calendar"] = [{"gameweek": 15, "chip": "wildcard"}]
+    bs_dec = lzma.decompress(cat_c["bootstrap_gw1"])
+    bs_obj = json.loads(bs_dec.decode("utf-8"))
+    bs_obj["chips"] = [{"name": "wildcard", "start_event": 1, "stop_event": 10}]
+    new_bs_raw = json.dumps(bs_obj, sort_keys=True).encode("utf-8")
+    new_bs_xz = lzma.compress(new_bs_raw)
+    cat_c["bootstrap_gw1"] = new_bs_xz
+    req_c["origins"][0]["sources"]["bootstrap"]["blob_sha256"] = _sha(new_bs_xz)
+    req_c["origins"][0]["sources"]["bootstrap"]["decompressed_sha256"] = _sha(new_bs_raw)
+    assert assess_origins(req_c, cat_c)[0]["status"] == "invalid"
+
+    # 5. write_availability_snapshot 48h bound binds bootstrap (fixtures > 48h ok, bootstrap > 48h / mismatched fails)
+    req_b, cat_b, auth_b = _build_empirical_bundle(gws=(1,), bootstrap_age_hours=4.0, fixtures_age_hours=120.0)
+    cap_b = require_input(req_b, cat_b, "2025-26", 1)
+    auth_obj = json.loads(cat_b[auth_b[1]])
+    src_obj = json.loads(cat_b[auth_obj["source_digest"]])
+    src_obj["captured_at"] = (datetime.fromisoformat(req_b["origins"][0]["deadline"]) - timedelta(hours=50)).isoformat()
+    auth_obj["source_digest"] = _put(cat_b, src_obj)
+    with pytest.raises(ValueError, match="48h|bootstrap"):
+        verify_training_bundle(cap_b, req_b, cat_b, _put(cat_b, auth_obj))
+
+    # 6. Full-component outcome row with mismatched total_points (omitting component_points_sum) fails invalid
+    req_o, cat_o, _ = _build_empirical_bundle(gws=(1,))
+    out_rows = json.loads(cat_o["outcomes_gw1"])
+    out_rows[0]["position_id"] = 2
+    out_rows[0]["total_points"] = 99
+    bad_out = _canon(out_rows)
+    cat_o["outcomes_gw1"] = bad_out
+    req_o["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(bad_out)
+    req_o["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(bad_out)
+    assert assess_origins(req_o, cat_o)[0]["status"] == "invalid"
+
+    # 7. SeasonLifecycle blocks development_mirror on active_validation (2026-27) even if purpose="active_validation" requested
+    req_26, cat_26, _ = _build_empirical_bundle(gws=(1,))
+    req_26["season"] = "2026-27"
+    req_26["purpose"] = "active_validation"
+    req_26["origins"][0]["season"] = "2026-27"
+    assert assess_origins(req_26, cat_26)[0]["status"] == "invalid"
+
+    # 8. Spoofed non-GitHub mirror host, freehit at GW1, malformed history rows, lying component_points_sum, omitted/bool position_id, and seed mapping hierarchy
+    from backtesting.empirical_admission import validate_seed_mapping
+
+    req_host, cat_host, _ = _build_empirical_bundle(gws=(1,))
+    req_host["origins"][0]["sources"]["bootstrap"]["url"] = "https://evil.example/Randdalf/fplcache/cache/2025/8/15/1200.json.xz"
+    assert assess_origins(req_host, cat_host)[0]["status"] == "invalid"
+
+    req_fh, cat_fh, _ = _build_empirical_bundle(gws=(1,))
+    bs_fh = json.loads(lzma.decompress(cat_fh["bootstrap_gw1"]).decode("utf-8"))
+    bs_fh["chips"] = [{"name": "freehit", "start_event": 1, "stop_event": 19}]
+    raw_fh = json.dumps(bs_fh, sort_keys=True).encode("utf-8")
+    xz_fh = lzma.compress(raw_fh)
+    cat_fh["bootstrap_gw1"] = xz_fh
+    req_fh["origins"][0]["sources"]["bootstrap"]["blob_sha256"] = _sha(xz_fh)
+    req_fh["origins"][0]["sources"]["bootstrap"]["decompressed_sha256"] = _sha(raw_fh)
+    assert assess_origins(req_fh, cat_fh)[0]["status"] == "invalid"
+
+    req_hbad, cat_hbad, _ = _build_empirical_bundle(gws=(1,))
+    bad_hist = _canon(["malformed"])
+    cat_hbad["history_gw1"] = bad_hist
+    req_hbad["origins"][0]["sources"]["history"]["blob_sha256"] = _sha(bad_hist)
+    req_hbad["origins"][0]["sources"]["history"]["decompressed_sha256"] = _sha(bad_hist)
+    assert assess_origins(req_hbad, cat_hbad)[0]["status"] == "invalid"
+
+    req_lie, cat_lie, _ = _build_empirical_bundle(gws=(1,))
+    lie_rows = json.loads(cat_lie["outcomes_gw1"])
+    lie_rows[0]["goals_scored"] = 3
+    lie_rows[0]["component_points_sum"] = lie_rows[0]["total_points"]
+    lie_bytes = _canon(lie_rows)
+    cat_lie["outcomes_gw1"] = lie_bytes
+    req_lie["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(lie_bytes)
+    req_lie["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(lie_bytes)
+    assert assess_origins(req_lie, cat_lie)[0]["status"] == "invalid"
+
+    req_bool, cat_bool, _ = _build_empirical_bundle(gws=(1,))
+    bool_rows = json.loads(cat_bool["outcomes_gw1"])
+    bool_rows[0]["position_id"] = True
+    bool_bytes = _canon(bool_rows)
+    cat_bool["outcomes_gw1"] = bool_bytes
+    req_bool["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(bool_bytes)
+    req_bool["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(bool_bytes)
+    assert assess_origins(req_bool, cat_bool)[0]["status"] == "invalid"
+
+    assert any(
+        "hierarchy" in iss
+        for iss in validate_seed_mapping(
+            {
+                "players": seed_rows,
+                "seed_mapping": {"1": "52", "2": "51", "3": "absent:3"},
+            },
+            cur_els,
+        )
+    )
+
+
+def test_verify_training_bundle_accepts_2024_25_admitted_2023_24_seed_url_only() -> None:
+    req_24, cat_24, _ = _build_empirical_bundle(gws=(1,), seed_season="2023-24")
+    req_24["season"] = "2024-25"
+    req_24["purpose"] = "historical_filter"
+    o1 = req_24["origins"][0]
+    o1["season"] = "2024-25"
+    for r in ("fixtures", "history", "outcomes"):
+        o1["sources"][r]["url"] = o1["sources"][r]["url"].replace("/data/2025-26/", "/data/2024-25/")
+    o1["sources"]["seed"]["url"] = o1["sources"]["seed"]["url"].replace("/data/2024-25/", "/data/2023-24/")
+    rep = assess_origins(req_24, cat_24)[0]
+    assert rep["status"] == "admitted_empirical"
+
+    dl1 = datetime.fromisoformat(o1["deadline"])
+    bs_payload = json.loads(lzma.decompress(cat_24["bootstrap_gw1"]).decode("utf-8"))
+    fx_csv_rows = list(csv.DictReader(io.StringIO(cat_24["fixtures_gw1"].decode("utf-8"))))
+    seed_obj = json.loads(cat_24["seed_2024_25"].decode("utf-8"))
+    src_obj = {
+        "mode": "empirical",
+        "track": "development_mirror",
+        "url": o1["sources"]["seed"]["url"],
+        "revision": "a" * 40,
+        "parser_version": "empirical-v2",
+        "captured_at": o1["sources"]["bootstrap"]["capture_upper"],
+        "defensive_contribution_status": seed_obj["defensive_contribution_status"],
+        "disclosed_limitations": o1["disclosed_limitations"],
+        "seed_mapping": seed_obj["seed_mapping"],
+        "tables": {
+            "clubs": [{"id": int(t["id"]), "strength": 1000 + int(t["id"]) * 10, "short_name": t["short_name"]} for t in bs_payload["teams"]],
+            "player_metadata": [
+                {"id": int(e["id"]), "code": e["code"], "club_id": e["team"], "position_id": e["element_type"], "now_cost": e["now_cost"], "first_name": e["first_name"], "second_name": e["second_name"], "web_name": e["web_name"], "status": e["status"], "chance_of_playing_next_round": e["chance_of_playing_next_round"]}
+                for e in bs_payload["elements"]
+            ],
+            "target_fixtures": [
+                {"id": int(r["id"]), "gameweek_id": int(r["event"]), "home_club_id": int(r["team_h"]), "away_club_id": int(r["team_a"]), "kickoff_time": r["kickoff_time"], "team_h_difficulty": int(r["team_h_difficulty"]), "team_a_difficulty": int(r["team_a_difficulty"])}
+                for r in fx_csv_rows
+            ],
+            "history": [],
+            "history_fixtures": [],
+            "seed_players": seed_obj["players"],
+            "seed_history": seed_obj["history"],
+            "seed_fixtures": [{"id": 1, "gameweek_id": 1, "home_club_id": 1, "away_club_id": 2, "kickoff_time": (dl1 - timedelta(days=300)).isoformat(), "team_h_difficulty": 3, "team_a_difficulty": 3}],
+        },
+    }
+    src_digest = _put(cat_24, src_obj)
+    auth_digest = _put(
+        cat_24,
+        {
+            "version": 2,
+            "mode": "empirical",
+            "track": "development_mirror",
+            "input_digest": rep["input_digest"],
+            "season": "2024-25",
+            "gw": 1,
+            "seed_identity": f"seed:2023-24:{'a'*40}",
+            "source_digest": src_digest,
+        },
+    )
+    verify_training_bundle(require_input(req_24, cat_24, "2024-25", 1), req_24, cat_24, auth_digest)
+
+    spoof_src = {**src_obj, "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'b'*40}/data/2023-24/fixtures.csv"}
+    spoof_auth = _put(
+        cat_24,
+        {
+            "version": 2,
+            "mode": "empirical",
+            "track": "development_mirror",
+            "input_digest": rep["input_digest"],
+            "season": "2024-25",
+            "gw": 1,
+            "seed_identity": f"seed:2023-24:{'a'*40}",
+            "source_digest": _put(cat_24, spoof_src),
+        },
+    )
+    with pytest.raises(ValueError, match="admitted origin source|vaastav"):
+        verify_training_bundle(require_input(req_24, cat_24, "2024-25", 1), req_24, cat_24, spoof_auth)

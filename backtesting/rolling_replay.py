@@ -20,6 +20,7 @@ import json
 import math
 import os
 from pathlib import Path
+import time
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -110,6 +111,37 @@ class QualityPolicy:
     time_limit_seconds: float = 60.0
     require_proven_optimal: bool = True
     raise_on_failure: bool = True
+    stage_a_decision_agreement: float | None = None
+    nonzero_gap_approval_ref: str | None = None
+
+
+def validate_quality_policy_gate(policy: QualityPolicy, *, require_certified: bool = False) -> None:
+    """Enforce certified QualityPolicy limits and Stage A >=95% non-zero gap authorization."""
+    if require_certified and (
+        policy.mode != "certified"
+        or not policy.require_proven_optimal
+        or not policy.raise_on_failure
+        or policy.time_limit_seconds != 60.0
+    ):
+        raise UncertifiedSolveError(
+            "Promotion evidence requires certified QualityPolicy "
+            "(mode='certified', target_gap=0.0 or approved <=2% Stage A relaxation, "
+            "time_limit_seconds=60.0, require_proven_optimal=True, raise_on_failure=True)"
+        )
+    if policy.mode == "certified" and policy.target_gap != 0.0:
+        approval = policy.nonzero_gap_approval_ref
+        if not (0.0 < policy.target_gap <= 0.02):
+            raise UncertifiedSolveError(
+                "Non-zero certified target_gap disallowed outside (0.0, 0.02] relaxation range"
+            )
+        if not isinstance(approval, str) or not approval.strip():
+            raise UncertifiedSolveError(
+                "Non-zero certified target_gap disallowed without Stage A >=95% decision agreement and explicit approval"
+            )
+        if policy.stage_a_decision_agreement is None or policy.stage_a_decision_agreement < 0.95:
+            raise UncertifiedSolveError(
+                "Non-zero certified target_gap disallowed without Stage A >=95% decision agreement and explicit approval"
+            )
 
 
 @dataclass(frozen=True)
@@ -712,6 +744,7 @@ def execute_replay_deadline(
     eff_horizon = clipped_replay_horizon(state.deadline, last_gw=last_gw, horizon=horizon)
     options = get_strategic_replay_options(eff_horizon, rules_version=state.rules_version)
     options.update(chip_calendar=chip_calendar, target_gap=policy.target_gap, time_limit_seconds=policy.time_limit_seconds)
+    validate_quality_policy_gate(policy, require_certified=False)
 
     if solve_fn is None:
         from backtesting.native_transfer_solver import native_strategic_solve
@@ -845,20 +878,27 @@ def run_rolling_replay(
         if checkpoint_dir is not None and cp_file is not None and not cp_file.exists() and any(checkpoint_dir.glob(f"checkpoint_gw_{gw}_*.json")):
             raise ValueError("Replay checkpoint issue metadata changed")
         if cp_file and cp_file.is_file():
-            data = json.loads(cp_file.read_text(encoding="utf-8"))
-            if data["pre_state_hash"] != state_hash(current_state):
-                raise ValueError("Corrupted resume checkpoint state mismatch")
-            rec = record_from_dict(data)
-            if (rec.evaluation_identity != identity or rec.model_version_hash != model_version_hash or rec.protocol_hash != protocol_hash
-                    or rec.forecast_hash != forecast_content_hash(forecast_df) or rec.outcome_hash != _content_hash(asdict(outcomes))):
-                raise ValueError("Replay checkpoint forecast, outcome or evaluation identity mismatch")
-            verify_replay_record(rec, current_state, model_name=model_name, parent_checkpoint_id=parent_cp_id)
-            records.append(rec)
-            parent_cp_id = rec.checkpoint_id
-            current_state = rec.transition_result.state
-            if rec.execution_status != "SUCCESS":
-                break
-            continue
+            raw_text = cp_file.read_text(encoding="utf-8", errors="replace")
+            try:
+                data = json.loads(raw_text)
+            except json.JSONDecodeError:
+                quarantine_path = cp_file.with_suffix(f".corrupt_tail.{int(time.time() * 1000)}.bak")
+                cp_file.replace(quarantine_path)
+                data = None
+            if data is not None:
+                if data["pre_state_hash"] != state_hash(current_state):
+                    raise ValueError("Corrupted resume checkpoint state mismatch")
+                rec = record_from_dict(data)
+                if (rec.evaluation_identity != identity or rec.model_version_hash != model_version_hash or rec.protocol_hash != protocol_hash
+                        or rec.forecast_hash != forecast_content_hash(forecast_df) or rec.outcome_hash != _content_hash(asdict(outcomes))):
+                    raise ValueError("Replay checkpoint forecast, outcome or evaluation identity mismatch")
+                verify_replay_record(rec, current_state, model_name=model_name, parent_checkpoint_id=parent_cp_id)
+                records.append(rec)
+                parent_cp_id = rec.checkpoint_id
+                current_state = rec.transition_result.state
+                if rec.execution_status != "SUCCESS":
+                    break
+                continue
 
         rec = execute_replay_deadline(
             current_state,

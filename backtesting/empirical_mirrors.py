@@ -7,10 +7,11 @@ import hashlib
 import io
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -25,7 +26,7 @@ from backtesting.fplcache_ingest import (
     parse_fplcache_snapshot_path,
 )
 from backtesting.replay_state import zero_min_card_points
-from backtesting.season_rules import Chip, SeasonRules, get_rules, validate_chip_calendar
+from backtesting.season_rules import AccessPurpose, Chip, get_rules, load_season_lifecycle, validate_chip_calendar
 from backtesting.walkforward import LEDGER_COMPONENTS, _build_actual_components
 
 UTC = timezone.utc
@@ -40,12 +41,24 @@ FIXTURE_MIN_CAP_SECONDS = 14 * 86400
 FIXTURE_MAX_CAP_SECONDS = 21 * 86400
 SETTLEMENT_MIN_WAIT_SECONDS = 24 * 3600
 
+_MERGED_CSV_PREFIX_COLS = 21
+_MERGED_CSV_SUFFIX_COLS = 20
+_BOOTSTRAP_CHIP_NAMES: dict[str, Chip] = {
+    "wildcard": "wildcard",
+    "freehit": "free_hit",
+    "free_hit": "free_hit",
+    "bboost": "bench_boost",
+    "bench_boost": "bench_boost",
+    "3xc": "triple_captain",
+    "triple_captain": "triple_captain",
+}
+
 _ALLOWED_HOSTS = frozenset({"raw.githubusercontent.com", "api.github.com"})
 _FPLCACHE_PATH_RE = re.compile(
     r"^/(?:Randdalf/fplcache/[^/]+/|repos/Randdalf/fplcache/)(cache/(\d{4})/(\d{1,2})/\d{1,2}/\d{4}\.json\.xz)$"
 )
 _VAASTAV_PATH_RE = re.compile(
-    r"^/(?:vaastav/Fantasy-Premier-League/[^/]+/|repos/vaastav/Fantasy-Premier-League/)(data/(2024-25|2025-26)/.+$)"
+    r"^/(?:vaastav/Fantasy-Premier-League/[^/]+/|repos/vaastav/Fantasy-Premier-League/)(data/(\d{4}-\d{2})/.+$)"
 )
 _ZERO_DIFF_COLS_COMMON = (
     "minutes",
@@ -80,27 +93,66 @@ def canonical_json_sha256(obj: Any) -> str:
     return sha256_bytes(canonical_json_bytes(obj))
 
 
-def validate_mirror_url(url: str) -> str:
-    """Validate URL stays within allowlisted historical mirror hosts/paths and excludes 2026-27."""
+def canonical_bootstrap_table(
+    payload: Mapping[str, Any],
+    sanitized: Sequence[Mapping[str, Any]],
+    club_ids: Iterable[int],
+    gw: int,
+) -> dict[str, Any]:
+    """Return canonical bootstrap table payload for deterministic table_sha256 verification."""
+    return {
+        "elements": sorted(sanitized, key=lambda r: int(r["id"])),
+        "club_ids": sorted(club_ids),
+        "events": [
+            {k: ev.get(k) for k in ("id", "deadline_time", "is_next")}
+            for ev in payload.get("events", [])
+            if isinstance(ev, Mapping) and ev.get("id") == gw
+        ],
+        "chips": payload.get("chips", []),
+    }
+
+
+def _allowed_dev_mirror_seasons(*, include_prior_seed: bool = False) -> frozenset[str]:
+    """Return development and historical_filter (plus optional prior_seed_only) seasons."""
+    lifecycle = load_season_lifecycle()
+    roles = ("development", "historical_filter", "prior_seed_only") if include_prior_seed else ("development", "historical_filter")
+    return frozenset(season for season, entry in lifecycle.seasons.items() if entry.role in roles)
+
+
+def _season_from_fplcache_ym(year: int, month: int) -> str | None:
+    if 8 <= month <= 12:
+        return f"{year}-{str(year + 1)[-2:]}"
+    if 1 <= month <= 5:
+        return f"{year - 1}-{str(year)[-2:]}"
+    return None
+
+
+def validate_mirror_url(url: str, *, allow_prior_seed: bool = False) -> str:
+    """Validate URL stays within allowlisted historical mirror hosts/paths and authorized dev seasons."""
     parsed = urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in _ALLOWED_HOSTS:
         raise ValueError(f"Mirror URL outside approved GitHub HTTPS hosts: {url}")
     path = parsed.path
-    if "2026-27" in path or "2027-" in path or "2027/" in path:
-        raise ValueError(f"Sealed 2026-27+ mirror access forbidden: {url}")
+    lifecycle = load_season_lifecycle()
+    allowed_seasons = _allowed_dev_mirror_seasons(include_prior_seed=allow_prior_seed)
+    blocked_seasons = tuple(lifecycle.sealed_seasons()) + (lifecycle.active_season,)
+    if any(season in path for season in blocked_seasons):
+        raise ValueError(f"Protected or active-validation season mirror access forbidden: {url}")
     if m_fc := _FPLCACHE_PATH_RE.search(path):
-        year, month = int(m_fc.group(2)), int(m_fc.group(3))
-        if (year == 2024 and 8 <= month <= 12) or (year == 2025 and 1 <= month <= 12) or (year == 2026 and 1 <= month <= 5):
+        season = _season_from_fplcache_ym(int(m_fc.group(2)), int(m_fc.group(3)))
+        if season is not None and season in allowed_seasons:
             return url
-        raise ValueError(f"fplcache date outside 2024-25/2025-26 boundaries: {url}")
-    if _VAASTAV_PATH_RE.search(path):
-        return url
+        raise ValueError(f"fplcache date outside authorized historical mirror seasons: {url}")
+    if m_va := _VAASTAV_PATH_RE.search(path):
+        if m_va.group(2) in allowed_seasons:
+            return url
+        raise ValueError(f"vaastav season outside authorized historical mirror seasons: {url}")
     raise ValueError(f"Mirror URL outside allowlisted historical repositories/seasons: {url}")
 
 
 def build_bootstrap_mirror_record(
     *,
-    season: Literal["2024-25", "2025-26"],
+    season: str,
     gw: int,
     deadline: datetime,
     prev_deadline: datetime | None,
@@ -112,6 +164,7 @@ def build_bootstrap_mirror_record(
     local_relpath: str | None = None,
 ) -> dict[str, Any]:
     """Verify and summarize one pinned Randdalf/fplcache bootstrap snapshot per #175/#178."""
+    get_rules(season)
     validate_mirror_url(url)
     dl_utc = _utc(deadline)
     commit_utc = _utc(commit_time)
@@ -168,16 +221,7 @@ def build_bootstrap_mirror_record(
     elif age_lower > FPLCACHE_MAX_TARGET_SECONDS:
         disclosed.append("bootstrap_stale_band_8h_to_24h")
 
-    canonical_table = {
-        "elements": sorted(sanitized, key=lambda r: int(r["id"])),
-        "club_ids": sorted(club_ids),
-        "events": [
-            {k: ev.get(k) for k in ("id", "deadline_time", "is_next")}
-            for ev in payload.get("events", [])
-            if isinstance(ev, Mapping) and ev.get("id") == gw
-        ],
-        "chips": payload.get("chips", []),
-    }
+    canonical_table = canonical_bootstrap_table(payload, sanitized, club_ids, gw)
     return {
         "season": season,
         "gw": gw,
@@ -245,7 +289,7 @@ def parse_fixtures_csv_window(raw_bytes: bytes, gw: int, *, horizon: int = 6) ->
 
 def build_fixture_mirror_record(
     *,
-    season: Literal["2024-25", "2025-26"],
+    season: str,
     gw: int,
     deadline: datetime,
     prev_deadline: datetime | None,
@@ -257,6 +301,7 @@ def build_fixture_mirror_record(
     local_relpath: str | None = None,
 ) -> dict[str, Any]:
     """Verify and summarize one pinned vaastav fixtures.csv snapshot against #175 Q7 bounds."""
+    get_rules(season)
     validate_mirror_url(url)
     dl_utc = _utc(deadline)
     commit_utc = _utc(commit_time)
@@ -335,7 +380,7 @@ def verify_settled_outcomes_zero_diff(
     processed_perf_df: pd.DataFrame,
     processed_players_df: pd.DataFrame,
     *,
-    season: Literal["2024-25", "2025-26"],
+    season: str,
 ) -> dict[str, Any]:
     """Verify settled vaastav outcomes zero-diff vs local processed parquet and 13-component ledger."""
     rules = get_rules(season)
@@ -432,13 +477,131 @@ def verify_settled_outcomes_zero_diff(
     }
 
 
+def extract_gws_from_merged_csv(raw_bytes: bytes) -> set[int]:
+    """Read unique integer GW values cleanly even across mid-season column schema drift."""
+    lines = raw_bytes.decode("utf-8-sig", errors="replace").splitlines()
+    if not lines:
+        return set()
+    reader = csv.reader(lines)
+    header = next(reader, [])
+    if "GW" not in header:
+        return set()
+    gw_tail_offset = len(header) - header.index("GW")
+    gws: set[int] = set()
+    for row in reader:
+        if len(row) < gw_tail_offset:
+            continue
+        val = row[-gw_tail_offset].strip()
+        if val.isdigit():
+            gw_val = int(val)
+            if 1 <= gw_val <= 38:
+                gws.add(gw_val)
+    return gws
+
+
+def _extract_gws_df_from_merged_csv(raw_bytes: bytes, target_gws: set[int]) -> pd.DataFrame:
+    """Extract target integer GWs from merged_gw.csv across mid-season schema shifts (e.g. mng_* cols)."""
+    if not target_gws:
+        return pd.DataFrame()
+    lines = raw_bytes.decode("utf-8-sig", errors="replace").splitlines()
+    if not lines:
+        return pd.DataFrame()
+    reader = csv.reader(lines)
+    header = next(reader, [])
+    if "GW" not in header:
+        return pd.DataFrame()
+    gw_tail_offset = len(header) - header.index("GW")
+    rows_out: list[dict[str, str]] = []
+    for row in reader:
+        if len(row) < gw_tail_offset:
+            continue
+        raw_gw = row[-gw_tail_offset].strip()
+        if not raw_gw.isdigit() or int(raw_gw) not in target_gws:
+            continue
+        if len(row) == len(header):
+            rows_out.append(dict(zip(header, row, strict=True)))
+            continue
+        mapped: dict[str, str] = {}
+        for idx, col in enumerate(header):
+            if idx < _MERGED_CSV_PREFIX_COLS:
+                mapped[col] = row[idx]
+            elif idx >= len(header) - _MERGED_CSV_SUFFIX_COLS:
+                mapped[col] = row[len(row) - (len(header) - idx)]
+        rows_out.append(mapped)
+    return pd.DataFrame(rows_out)
+
+
+def extract_gw_df_from_merged_csv(raw_bytes: bytes, gw: int) -> pd.DataFrame:
+    """Extract one GW slice from merged_gw.csv across mid-season schema shifts (e.g. mng_* cols)."""
+    return _extract_gws_df_from_merged_csv(raw_bytes, {gw})
+
+
+def extract_prior_settled_df(raw_bytes: bytes, *, before_gw: int) -> pd.DataFrame:
+    """Extract settled GW rows strictly prior to ``before_gw`` and verify any duplicate keys match."""
+    df = _extract_gws_df_from_merged_csv(raw_bytes, set(range(1, before_gw)))
+    if df.empty or "element" not in df.columns or "fixture" not in df.columns:
+        return df
+    dups = df[df.duplicated(subset=["element", "fixture"], keep=False)]
+    if not dups.empty:
+        check_cols = [c for c in ("minutes", "total_points", "goals_scored", "assists", "yellow_cards", "red_cards") if c in df.columns]
+        for _, grp in dups.groupby(["element", "fixture"]):
+            if grp[check_cols].astype(str).drop_duplicates().shape[0] > 1:
+                raise ValueError("Conflicting duplicate (element, fixture) stats in settled outcomes CSV")
+        df = df.drop_duplicates(subset=["element", "fixture"], keep="last").reset_index(drop=True)
+    return df
+
+
+def extract_settled_gw_table_rows(raw_bytes: bytes, gw: int) -> list[dict[str, Any]]:
+    """Extract deterministically sorted settled GW rows matching manifest table_sha256."""
+    df = extract_gw_df_from_merged_csv(raw_bytes, gw)
+    if df.empty:
+        return []
+    return sorted(
+        df.to_dict(orient="records"),
+        key=lambda r: (str(r.get("element", "")), str(r.get("fixture", ""))),
+    )
+
+
+@dataclass(frozen=True)
+class _ChipWindowSpec:
+    chip: Chip
+    start_gw: int
+    end_gw: int
+    default_gw: int
+
+
+def _chip_bounds_from_bootstrap(
+    bootstrap_chips: Sequence[Mapping[str, Any]] | None,
+    chip: Chip,
+    default_start: int,
+    default_end: int,
+) -> tuple[int, int]:
+    if not bootstrap_chips:
+        return default_start, default_end
+    windows: list[tuple[int, int]] = []
+    for item in bootstrap_chips:
+        if not isinstance(item, Mapping):
+            continue
+        mapped = _BOOTSTRAP_CHIP_NAMES.get(str(item.get("name", "")).strip().lower())
+        if mapped != chip:
+            continue
+        s_ev = item.get("start_event")
+        e_ev = item.get("stop_event")
+        if type(s_ev) is int and type(e_ev) is int and s_ev <= e_ev:
+            lo, hi = max(default_start, s_ev), min(default_end, e_ev)
+            if lo <= hi:
+                windows.append((lo, hi))
+    if not windows:
+        return default_start, default_end
+    return min(w[0] for w in windows), max(w[1] for w in windows)
+
+
 def _best_dgw_in_range(
     fixtures_by_gw: Mapping[int, pd.DataFrame],
     start_gw: int,
     end_gw: int,
     *,
     exclude: set[int],
-    rules: SeasonRules,
     fallback_gw: int,
     opening_schedule: pd.DataFrame | None = None,
 ) -> int:
@@ -464,54 +627,54 @@ def _best_dgw_in_range(
 
 
 def build_causal_chip_calendar(
-    season: Literal["2024-25", "2025-26"],
+    season: str,
     *,
     fixtures_by_gw: Mapping[int, pd.DataFrame] | None = None,
     opening_schedule: pd.DataFrame | None = None,
+    bootstrap_chips: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[tuple[int, Chip], ...]:
-    """Deterministically derive one model-independent chip_calendar from causal pre-GW1/pre-deadline fixtures."""
+    """Deterministically derive one model-independent chip_calendar from causal bootstrap chips & pre-deadline fixtures."""
     rules = get_rules(season)
     fx_map = fixtures_by_gw or {}
     used_gws: set[int] = set()
     entries: list[tuple[int, Chip]] = []
 
     if rules.two_chip_sets:
-        # Set 1 (GW2-19) and Set 2 (GW20-38)
-        candidates_s1: list[tuple[Chip, int, int, int]] = [
-            ("wildcard", 4, 19, 8),
-            ("free_hit", 12, 19, 14),
-            ("bench_boost", 6, 19, 10),
-            ("triple_captain", 2, 19, 3),
-        ]
-        candidates_s2: list[tuple[Chip, int, int, int]] = [
-            ("wildcard", 24, 38, 30),
-            ("free_hit", 28, 38, 32),
-            ("bench_boost", 30, 38, 34),
-            ("triple_captain", 22, 38, 25),
-        ]
-        for chip, start, end, default_gw in (*candidates_s1, *candidates_s2):
-            blocked = set(used_gws)
-            if chip == "free_hit":
-                blocked |= {g - 1 for g, c in entries if c == "free_hit"} | {g + 1 for g, c in entries if c == "free_hit"}
-            gw = _best_dgw_in_range(
-                fx_map, start, end, exclude=blocked, rules=rules, fallback_gw=default_gw, opening_schedule=opening_schedule
-            )
-            used_gws.add(gw)
-            entries.append((gw, chip))
+        specs: tuple[_ChipWindowSpec, ...] = (
+            _ChipWindowSpec("wildcard", 4, 19, 8),
+            _ChipWindowSpec("free_hit", 12, 19, 14),
+            _ChipWindowSpec("bench_boost", 6, 19, 10),
+            _ChipWindowSpec("triple_captain", 2, 19, 3),
+            _ChipWindowSpec("wildcard", 24, 38, 30),
+            _ChipWindowSpec("free_hit", 28, 38, 32),
+            _ChipWindowSpec("bench_boost", 30, 38, 34),
+            _ChipWindowSpec("triple_captain", 22, 38, 25),
+        )
     else:
-        plan: list[tuple[Chip, int, int, int]] = [
-            ("wildcard", 4, 19, 6),
-            ("wildcard", 24, 38, 30),
-            ("triple_captain", 20, 38, 24),
-            ("bench_boost", 30, 38, 33),
-            ("free_hit", 25, 38, 29),
-        ]
-        for chip, start, end, default_gw in plan:
-            gw = _best_dgw_in_range(
-                fx_map, start, end, exclude=used_gws, rules=rules, fallback_gw=default_gw, opening_schedule=opening_schedule
-            )
-            used_gws.add(gw)
-            entries.append((gw, chip))
+        specs = (
+            _ChipWindowSpec("wildcard", 4, 19, 6),
+            _ChipWindowSpec("wildcard", 24, 38, 30),
+            _ChipWindowSpec("triple_captain", 20, 38, 24),
+            _ChipWindowSpec("bench_boost", 30, 38, 33),
+            _ChipWindowSpec("free_hit", 25, 38, 29),
+        )
+
+    for spec in specs:
+        start, end = _chip_bounds_from_bootstrap(bootstrap_chips, spec.chip, spec.start_gw, spec.end_gw)
+        blocked = set(used_gws)
+        if spec.chip == "free_hit":
+            blocked |= {g - 1 for g, c in entries if c == "free_hit"} | {g + 1 for g, c in entries if c == "free_hit"}
+        default_gw = spec.default_gw if start <= spec.default_gw <= end else start
+        gw = _best_dgw_in_range(
+            fx_map,
+            start,
+            end,
+            exclude=blocked,
+            fallback_gw=default_gw,
+            opening_schedule=opening_schedule,
+        )
+        used_gws.add(gw)
+        entries.append((gw, spec.chip))
 
     calendar = tuple(sorted(entries, key=lambda item: item[0]))
     validate_chip_calendar(rules, calendar)
@@ -519,7 +682,7 @@ def build_causal_chip_calendar(
 
 
 def build_causal_origin_chip_metadata(
-    season: Literal["2024-25", "2025-26"],
+    season: str,
     *,
     gw: int,
     bootstrap_chips: list[dict[str, Any]],
@@ -561,12 +724,13 @@ def build_causal_origin_chip_metadata(
 
 def build_seed_manifest(
     *,
-    season: Literal["2024-25"],
+    season: str,
     processed_dir: Path,
     vaastav_commits: list[dict[str, Any]],
     upstream_digests: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    """Build pinned 2024-25 prior-season seed manifest with manager exclusions and DefCon status."""
+    """Build pinned prior-season seed manifest with manager exclusions and DefCon status."""
+    rules = get_rules(season)
     players = pd.read_parquet(processed_dir / "players.parquet")
     perf = pd.read_parquet(processed_dir / "player_performances.parquet")
     manager_ids = set(players[players["position_id"] == 5]["id"].astype(int))
@@ -589,6 +753,101 @@ def build_seed_manifest(
         "excluded_position_5_perf_rows": excluded_perf_rows,
         "retained_player_count": int(len(players) - len(manager_ids)),
         "retained_perf_rows": int(len(perf) - excluded_perf_rows),
-        "defensive_contribution_status": "inapplicable_native",
+        "defensive_contribution_status": "native" if rules.defensive_contributions else "inapplicable_native",
         "code_mapping_rule": "opta_code_primary_normalized_identity_secondary_absent_newcomer",
+    }
+
+
+def load_empirical_manifest_bundle(
+    manifest_path: Path,
+    *,
+    quarantine_root: Path | None = None,
+    prefix_end_gw: int | None = None,
+    require_admitted: bool = True,
+) -> dict[str, Any]:
+    """Load content-addressed empirical mirror/receipt bundle with fail-closed SHA-256 checks."""
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if data.get("schema_version") != 2 or data.get("track") not in ("development_mirror", "prospective_receipt"):
+        raise ValueError("Unsupported empirical manifest schema or track")
+    lifecycle = load_season_lifecycle()
+    qroot = lifecycle.assert_unsealed_storage_path(
+        quarantine_root if quarantine_root is not None else Path("data/reports/empirical_mirrors"),
+        error_message="Empirical mirror storage path is forbidden",
+    )
+    season = str(data["season"])
+    get_rules(season)
+    role_s = lifecycle.role_of(season)
+    purpose_s: AccessPurpose = (
+        ("historical_filter" if role_s == "historical_filter" else "dev")
+        if data["track"] == "development_mirror"
+        else "validation"
+    )
+    lifecycle.assert_access(season, purpose=purpose_s)
+    origins_raw = list(data.get("origins", []))
+    selected = [o for o in origins_raw if prefix_end_gw is None or int(o["gw"]) <= prefix_end_gw]
+    if not selected:
+        raise ValueError("Empirical manifest slice contains no origins")
+
+    loaded_origins: list[dict[str, Any]] = []
+    for entry in selected:
+        gw_int = int(entry["gw"])
+        lifecycle.assert_access(season, gw_int, purpose=purpose_s)
+        bs_meta = entry.get("bootstrap", {})
+        fx_meta = entry.get("fixtures", {})
+        out_meta = entry.get("settled_outcomes", {})
+        if require_admitted and (
+            entry.get("origin_admitted") is not True
+            or bs_meta.get("status") != "supported"
+            or fx_meta.get("status") != "supported"
+            or out_meta.get("meets_plus_24h") is not True
+        ):
+            raise ValueError(f"Non-admitted empirical manifest entry at GW{gw_int}")
+        for label, meta in (("bootstrap", bs_meta), ("fixtures", fx_meta), ("settled_outcomes", out_meta)):
+            if data["track"] == "development_mirror" and isinstance(meta, Mapping) and meta.get("url"):
+                validate_mirror_url(str(meta["url"]))
+            rel = meta.get("local_relpath")
+            if not rel:
+                if require_admitted:
+                    raise ValueError(f"Missing quarantined {label} local_relpath for GW{gw_int}")
+                continue
+            fpath = (qroot / str(rel)).resolve()
+            if not fpath.is_relative_to(qroot):
+                raise ValueError(f"Path traversal outside quarantine root for {label}: {rel}")
+            if not fpath.is_file():
+                raise ValueError(f"Missing quarantined {label} file: {fpath}")
+            raw = fpath.read_bytes()
+            actual_blob = sha256_bytes(raw)
+            expected_blob = meta.get("blob_sha256")
+            if not isinstance(expected_blob, str) or len(expected_blob) != 64 or any(c not in "0123456789abcdef" for c in expected_blob):
+                raise ValueError(f"Missing or malformed {label} blob_sha256 for {fpath}")
+            if actual_blob != expected_blob:
+                raise ValueError(f"{label} sha256 hash mismatch for {fpath}")
+            expected_table = meta.get("table_sha256")
+            if label == "bootstrap":
+                dec, payload = _unpack_bootstrap_xz(raw)
+                if meta.get("decompressed_sha256") and sha256_bytes(dec) != meta["decompressed_sha256"]:
+                    raise ValueError(f"bootstrap decompressed_sha256 hash mismatch for {fpath}")
+                sanitized, club_ids, bs_issues = _sanitize_bootstrap(payload, capture_upper=_utc(meta["capture_upper_utc"]))
+                if bs_issues:
+                    raise ValueError(f"Bootstrap sanitization failed for {fpath}: {','.join(bs_issues)}")
+                if isinstance(expected_table, str) and canonical_json_sha256(canonical_bootstrap_table(payload, sanitized, club_ids, gw_int)) != expected_table:
+                    raise ValueError(f"bootstrap table_sha256 hash mismatch for {fpath}")
+            elif label == "fixtures" and isinstance(expected_table, str):
+                if canonical_json_sha256(parse_fixtures_csv_window(raw, gw_int)) != expected_table:
+                    raise ValueError(f"fixtures table_sha256 hash mismatch for {fpath}")
+            elif label == "settled_outcomes" and isinstance(expected_table, str):
+                if canonical_json_sha256(extract_settled_gw_table_rows(raw, gw_int)) != expected_table:
+                    raise ValueError(f"settled_outcomes table_sha256 hash mismatch for {fpath}")
+        loaded_origins.append(entry)
+
+    is_partial = len(loaded_origins) < 38 or not bool(data.get("summary", {}).get("full_season_admitted", False))
+    return {
+        "schema_version": 2,
+        "mode": "empirical",
+        "track": data["track"],
+        "season": season,
+        "partial_prefix": is_partial,
+        "promotable": not is_partial,
+        "shared_chip_calendar": data.get("shared_chip_calendar", []),
+        "origins": loaded_origins,
     }

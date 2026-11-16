@@ -27,12 +27,14 @@ from backtesting.projection_guards import GuardOutput, MetricDirection, evaluate
 from backtesting.rolling_replay import (
     QualityPolicy,
     ReplayDeadlineRecord,
+    UncertifiedSolveError,
     forecast_content_hash,
     record_from_dict,
     refresh_replay_market,
     replay_evaluation_identity,
     replay_solver_identity,
     get_strategic_replay_options,
+    validate_quality_policy_gate,
     verify_replay_record,
     validate_solver_certificate_consistency,
 )
@@ -184,21 +186,15 @@ def _extract_origin_players_and_outcomes(
     if "sources" not in origin or not isinstance(origin.get("sources"), Mapping):
         return list(origin["players"]), list(origin["outcomes"])
 
-    from backtesting.empirical_admission import resolve_source_bytes, verify_digests
+    from backtesting.empirical_admission import resolve_and_verify_source_bytes
     from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
     from backtesting.walkforward import _build_actual_components
 
     sources = origin["sources"]
     bs_spec = sources["bootstrap"]
     out_spec = sources["outcomes"]
-    bs_raw = resolve_source_bytes(bs_spec, catalog)
-    out_raw = resolve_source_bytes(out_spec, catalog)
-    if bs_raw is None or out_raw is None:
-        raise ValueError("Missing empirical bootstrap or outcomes bytes in promotion evidence")
-    bs_dec, bs_err = verify_digests(bs_spec, bs_raw)
-    out_dec, out_err = verify_digests(out_spec, out_raw)
-    if bs_err or out_err:
-        raise ValueError("Empirical digest mismatch in promotion evidence")
+    bs_dec = resolve_and_verify_source_bytes(bs_spec, catalog, role_label="bootstrap")
+    out_dec = resolve_and_verify_source_bytes(out_spec, catalog, role_label="outcomes")
 
     sanitized, _, bs_issues = _sanitize_bootstrap(
         json.loads(bs_dec.decode("utf-8")),
@@ -233,7 +229,7 @@ def _extract_origin_players_and_outcomes(
             "native_rules_version": season,
         }
     )
-    actual_df = _build_actual_components(out_df, players_df)
+    actual_df = _build_actual_components(out_df.drop(columns=["position_id"], errors="ignore"), players_df)
     normalized_outcomes: list[dict[str, Any]] = []
     for row in actual_df.to_dict(orient="records"):
         norm: dict[str, Any] = {
@@ -304,13 +300,10 @@ def _verify_replay(
     if [record.deadline for record in records] != protocol["windows"][season] or len(entry["issues"]) != len(records):
         raise ValueError("Replay trace does not cover the complete frozen schedule")
     quality = QualityPolicy(**protocol["quality_policy"])
-    if (
-        quality.mode != "certified"
-        or quality.target_gap != 0.0
-        or not quality.require_proven_optimal
-        or not 0 < quality.time_limit_seconds <= 60.0
-    ):
-        raise ValueError("Promotion evidence requires certified QualityPolicy (mode='certified', target_gap=0.0, time_limit_seconds<=60.0)")
+    try:
+        validate_quality_policy_gate(quality, require_certified=True)
+    except UncertifiedSolveError as exc:
+        raise ValueError(str(exc)) from exc
     identity = replay_evaluation_identity(
         model_name=model, model_version_hash=model_source_hash, protocol_hash=config.compute_hash(),
         season=season, anchor_id=anchor.anchor_id, horizon=6, last_gw=38, scored_end_gw=max(protocol["windows"][season]),
@@ -376,7 +369,7 @@ def _verify_replay(
         certificate = record.certificate
         validate_solver_certificate_consistency(certificate)
         if (record.execution_status != "SUCCESS" or not certificate.feasible or certificate.quality_mode != "certified"
-                or certificate.termination_status != "OPTIMAL" or certificate.relative_gap > 0.0
+                or certificate.termination_status != "OPTIMAL" or certificate.relative_gap > quality.target_gap + 1e-8
                 or certificate.threads != 1 or certificate.seed != 42 or certificate.runtime_seconds > quality.time_limit_seconds):
             raise ValueError("Replay lacks required certified solver-quality certificate")
         lowered_solver = record.certificate.solver_version.lower()

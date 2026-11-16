@@ -1,4 +1,4 @@
-"""Strict solver-table preparation for an admitted synthetic issue."""
+"""Strict solver-table preparation for an admitted synthetic or empirical issue."""
 
 import math
 from typing import Any, cast
@@ -37,19 +37,13 @@ def _expected_empirical_coverage(
 ) -> tuple[set[tuple[int, int, int]], pd.DataFrame]:
     import json
 
-    from backtesting.empirical_admission import resolve_source_bytes, verify_digests
+    from backtesting.empirical_admission import resolve_and_verify_source_bytes
     from backtesting.empirical_mirrors import parse_fixtures_csv_window
     from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
 
     sources = origin["sources"]
-    bs_raw = resolve_source_bytes(sources["bootstrap"], catalog)
-    fx_raw = resolve_source_bytes(sources["fixtures"], catalog)
-    if bs_raw is None or fx_raw is None:
-        raise ValueError("Missing empirical bootstrap or fixtures for solver table check")
-    bs_dec, bs_err = verify_digests(sources["bootstrap"], bs_raw)
-    fx_dec, fx_err = verify_digests(sources["fixtures"], fx_raw)
-    if bs_err or fx_err:
-        raise ValueError("Empirical digest mismatch in solver table check")
+    bs_dec = resolve_and_verify_source_bytes(sources["bootstrap"], catalog, role_label="bootstrap")
+    fx_dec = resolve_and_verify_source_bytes(sources["fixtures"], catalog, role_label="fixtures")
     bs_payload = json.loads(bs_dec.decode("utf-8"))
     elements, _, _ = _sanitize_bootstrap(bs_payload, capture_upper=_utc(sources["bootstrap"]["capture_upper"]))
     fx_rows = parse_fixtures_csv_window(fx_dec, capability.gw, horizon=len(targets))

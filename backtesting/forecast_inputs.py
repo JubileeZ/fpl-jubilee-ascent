@@ -1,4 +1,4 @@
-"""Retained synthetic training closure for causal forecast staging."""
+"""Retained training closure for synthetic or empirical causal forecast staging."""
 
 import hashlib
 import json
@@ -41,7 +41,7 @@ def _verify_empirical_training_bundle(
     catalog: dict[str, bytes],
     authority: dict[str, Any],
 ) -> dict[str, Any]:
-    from backtesting.empirical_admission import resolve_source_bytes, validate_seed_mapping, verify_digests
+    from backtesting.empirical_admission import resolve_and_verify_source_bytes, validate_seed_mapping
     from backtesting.empirical_mirrors import parse_fixtures_csv_window, validate_mirror_url
     from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
 
@@ -76,16 +76,26 @@ def _verify_empirical_training_bundle(
     }
     if not req_source <= set(source) or source.get("mode") != "empirical" or source["track"] != track:
         raise ValueError("Invalid empirical training source")
+    sources = origin["sources"]
     url = str(source["url"])
     if track == "development_mirror":
-        validate_mirror_url(url)
+        seed_url = sources["seed"].get("url")
+        allowed_urls = {
+            sources[role].get("url")
+            for role in ("bootstrap", "fixtures", "history", "seed")
+            if isinstance(sources.get(role), dict)
+        }
+        if url not in allowed_urls:
+            raise ValueError("Empirical training source url must match an admitted origin source")
+        validate_mirror_url(url, allow_prior_seed=(url == seed_url))
     elif not url.startswith("receipt://"):
         raise ValueError("Prospective receipt track requires receipt:// URL")
 
     dl = _parse_iso_time(origin["deadline"])
     cap_ts = _parse_iso_time(source["captured_at"])
-    if cap_ts >= dl:
-        raise ValueError("Empirical training source captured at or after deadline")
+    bs_cap_up = _utc(sources["bootstrap"]["capture_upper"])
+    if cap_ts >= dl or cap_ts != bs_cap_up or (dl - cap_ts).total_seconds() > 48 * 3600:
+        raise ValueError("Empirical training source captured_at must bind bootstrap <=48h pre-deadline")
 
     tables = source.get("tables")
     needed_tables = {
@@ -114,19 +124,10 @@ def _verify_empirical_training_bundle(
             raise ValueError("Empirical history_fixtures kickoff exceeds deadline")
 
     # Cryptographically bind tables back to admitted origin sources
-    sources = origin["sources"]
-    bs_raw = resolve_source_bytes(sources["bootstrap"], catalog)
-    fx_raw = resolve_source_bytes(sources["fixtures"], catalog)
-    hist_raw = resolve_source_bytes(sources["history"], catalog)
-    seed_raw = resolve_source_bytes(sources["seed"], catalog)
-    if any(b is None for b in (bs_raw, fx_raw, hist_raw, seed_raw)):
-        raise ValueError("Missing admitted source bytes during training bundle verification")
-    bs_dec, bs_err = verify_digests(sources["bootstrap"], bs_raw or b"")
-    fx_dec, fx_err = verify_digests(sources["fixtures"], fx_raw or b"")
-    hist_dec, hist_err = verify_digests(sources["history"], hist_raw or b"")
-    seed_dec, seed_err = verify_digests(sources["seed"], seed_raw or b"")
-    if any(err is not None for err in (bs_err, fx_err, hist_err, seed_err)):
-        raise ValueError("Admitted source digest verification failed in training bundle")
+    bs_dec = resolve_and_verify_source_bytes(sources["bootstrap"], catalog, role_label="bootstrap")
+    fx_dec = resolve_and_verify_source_bytes(sources["fixtures"], catalog, role_label="fixtures")
+    hist_dec = resolve_and_verify_source_bytes(sources["history"], catalog, role_label="history")
+    seed_dec = resolve_and_verify_source_bytes(sources["seed"], catalog, role_label="seed")
 
     admitted_bs_elements, _, _ = _sanitize_bootstrap(
         json.loads(bs_dec.decode("utf-8")),

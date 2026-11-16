@@ -28,6 +28,8 @@ from backtesting.projection_guards import (
 )
 from backtesting.promotion_evidence import MANDATORY_GUARDS, _verify_replay, protocol_from_payload
 from backtesting.replay_state import (
+    Decision,
+    Lineup,
     Outcome,
     OutcomeBatch,
     Player,
@@ -358,3 +360,166 @@ def test_native_solver_gw1_gw2_hit_afcon_5buy_and_unpruned_exact_parity() -> Non
     full_m.run()
     assert full_m.getModelStatus() == highspy.HighsModelStatus.kOptimal
     assert abs(cert_pruned.objective - full_m.getObjectiveValue()) < 1e-6
+
+
+def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(tmp_path: Path) -> None:
+    """Verify atomic corrupt-tail checkpoint quarantine resume and all 8 #179 negative control classes."""
+    from backtesting.confirmation_registry import ConfirmationRegistry, IncompleteScheduleError, SealedDataViolationError
+    from backtesting.promotion_evidence import content_hash, evaluate_replay_evidence
+    from backtesting.replay_state import refresh_owned
+    from backtesting.rolling_replay import IncompleteReplayOutcomeError, UncertifiedSolveError, run_rolling_replay
+    from commands.profile_transfer_replay import native_manifest_adapter
+
+    # Positive check: truncated JSON tail on disk is quarantined to .corrupt_tail.*.bak and GW re-solved cleanly
+    cp_dir = tmp_path / "quarantine_resume"
+    pool = [*_squad(), Player(16, "F", 6, 50, 50, True)]
+    anchor = solve_ownership_anchor(
+        pd.DataFrame(
+            [
+                {
+                    "player_id": p.player_id,
+                    "position_id": POS_ID[p.position],
+                    "club_id": p.club,
+                    "now_cost": p.market,
+                    "selected_by_percent": 20.0 if p.player_id <= 15 else 1.0,
+                    "purchase_eligible": True,
+                }
+                for p in pool
+            ]
+        ),
+        "2025-26",
+        1,
+        anchor_type="opening",
+        schema=UniverseSchema(eligibility_col="purchase_eligible"),
+    )
+    wide = _forecast_df(pool, [1, 2, 3, 4, 5, 6, 7], lambda pid, _gw: 4.0 if pid <= 15 else 1.0)
+
+    def _out_fn(gw: int) -> OutcomeBatch:
+        return OutcomeBatch("2025-26", gw, f"src-{gw}", tuple((p.player_id, Outcome(2, 90, True)) for p in pool))
+
+    traj1 = run_rolling_replay(
+        "champ", "2025-26", anchor, lambda gw, _s: wide, _out_fn, start_gw=1, end_gw=2,
+        horizon=6, solve_fn=native_strategic_solve, policy=QualityPolicy(),
+        checkpoint_dir=cp_dir, model_version_hash="v1", protocol_hash="p1",
+    )
+    gw2_cp = next(cp_dir.glob("checkpoint_gw_2_*.json"))
+    gw2_cp.write_text('{"deadline": 2, "corrupt_tail":', encoding="utf-8")
+    traj2 = run_rolling_replay(
+        "champ", "2025-26", anchor, lambda gw, _s: wide, _out_fn, start_gw=1, end_gw=2,
+        horizon=6, solve_fn=native_strategic_solve, policy=QualityPolicy(),
+        checkpoint_dir=cp_dir, model_version_hash="v1", protocol_hash="p1",
+    )
+    assert [r.net_points for r in traj2.records] == [r.net_points for r in traj1.records]
+    assert [r.decision for r in traj2.records] == [r.decision for r in traj1.records]
+    assert [r.post_state_hash for r in traj2.records] == [r.post_state_hash for r in traj1.records]
+    assert traj2.records[0].checkpoint_id == traj1.records[0].checkpoint_id
+    assert traj2.records[1].parent_checkpoint_id == traj2.records[0].checkpoint_id
+    assert list(cp_dir.glob("checkpoint_gw_2_*.corrupt_tail.*.bak"))
+
+    # --- 8 Mandatory #179 Negative Control Classes ---
+    req = build_evidence_fixture(tmp_path / "neg8")
+    payload = json.loads(req.read_text())
+    proto_path = req.parent / payload["protocol"]["path"]
+    proto = json.loads(proto_path.read_text())
+    config = protocol_from_payload(proto)
+    entry0 = dict(payload["replays"][0])
+
+    # Class 1: Diagnostic/mock solver rejection
+    assert "lineup" in heuristic_zero_transfer_solve(initial_state("2025-26", _squad()), 1, wide, {})[1].solver_version
+
+    # Class 2: Certificate fraud / unapproved non-zero gap / raise_on_failure=False rejected
+    with pytest.raises(UncertifiedSolveError, match="Stage A"):
+        execute_replay_deadline(
+            initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+            policy=QualityPolicy(mode="certified", target_gap=0.01),
+        )
+    bad_proto_fail = {**proto, "quality_policy": {**asdict(QualityPolicy()), "raise_on_failure": False}}
+    with pytest.raises(ValueError, match="QualityPolicy|certified"):
+        _verify_replay(req.parent, entry0, bad_proto_fail, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+    approved_gap_cert = execute_replay_deadline(
+        initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+        policy=QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, nonzero_gap_approval_ref="RFC-TEST"),
+    )
+    assert approved_gap_cert.execution_status == "SUCCESS"
+
+    # Class 3: Identity drift (model_source_hash / protocol_hash / chip_calendar)
+    with pytest.raises(ValueError, match="bind verified forecasts|identity|mismatch"):
+        _verify_replay(req.parent, entry0, proto, config, "0" * 64, {}, "2099-01-01T00:00:00+00:00")
+    bad_cal_proto = {**proto, "chip_calendar": [[1, "bench_boost"]]}
+    with pytest.raises(ValueError, match="bind verified forecasts|calendar|identity"):
+        _verify_replay(req.parent, entry0, bad_cal_proto, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+
+    # Class 4: GW1 lock, consecutive Free Hit, purchase basis drift, purchase_eligible=False buy block
+    st1 = initial_state("2025-26", _squad())
+    with pytest.raises(ValueError, match="GW1"):
+        transition(st1, Decision(((15, Player(16, "F", 6, 50, 50, True)),), Lineup((1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9), state_hash(st1), 1), _out_fn(1))
+    with pytest.raises(ValueError, match="acquisition"):
+        refresh_owned(_squad(), (replace(_squad()[0], purchase=45), *_squad()[1:]))
+
+    # Class 5: Missing outcome, non-card 0-min points, missing 15-guard completeness
+    with pytest.raises(IncompleteReplayOutcomeError):
+        execute_replay_deadline(st1, wide, OutcomeBatch("2025-26", 1, "bad", ()), solve_fn=native_strategic_solve)
+    with pytest.raises(ValueError, match="Zero-minute|card"):
+        transition(st1, Decision((), Lineup((1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9), state_hash(st1), 1),
+                   OutcomeBatch("2025-26", 1, "bad0", tuple((p.player_id, Outcome(3, 0, False)) for p in st1.squad)))
+    ev_missing_guards = evaluate_evidence_against_protocol(
+        [PairedGameweekScore("2025-26", 1, 50.0, 50.0, 50.0, 50.0, 0, 0, False, "h1")],
+        [],
+        StatisticalProtocolConfig(bootstrap_draws=50, required_projection_guards=tuple(sorted(MANDATORY_GUARDS))),
+    )
+    assert ev_missing_guards.verdict == "invalid" and ev_missing_guards.projection_guards_passed is False
+    bad_proto_guards = {**proto, "guard_specs": {k: v for k, v in proto["guard_specs"].items() if k != "points_mse"}}
+    bad_decl = {k: v for k, v in bad_proto_guards.items() if k != "statistics"}
+    bad_proto_guards["statistics"] = {
+        **bad_proto_guards["statistics"],
+        "required_projection_guards": sorted(bad_proto_guards["guard_specs"]),
+        "evidence_protocol_hash": content_hash(bad_decl),
+    }
+    with pytest.raises(ValueError, match="Guard|omitted|inventory"):
+        protocol_from_payload(bad_proto_guards)
+
+    # Class 6: Tampered checkpoint / broken parent_checkpoint_id chain
+    tpath = req.parent / entry0["trace"]["path"]
+    tdata = json.loads(tpath.read_text())
+    tdata["records"][1]["parent_checkpoint_id"] = "f" * 64
+    raw_bad = json.dumps(tdata).encode()
+    tamper_entry = dict(entry0)
+    tamper_path = req.parent / "tampered_trace.json"
+    tamper_path.write_bytes(raw_bad)
+    tamper_entry["trace"] = {"path": "tampered_trace.json", "sha256": hashlib.sha256(raw_bad).hexdigest()}
+    with pytest.raises(ValueError, match="Checkpoint|lineage"):
+        _verify_replay(req.parent, tamper_entry, proto, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+
+    # Class 7: Incomplete schedule / non-GW1 schedule start
+    bad_win_proto = {**proto, "windows": {**proto["windows"], "2025-26": [2, 3]}}
+    with pytest.raises(ValueError, match="schedule|GW1"):
+        _verify_replay(req.parent, entry0, bad_win_proto, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+
+    # Class 8: Confirmation chronology violation & active_validation (2026-27) leakage in dev profiler/registry
+    with pytest.raises(ValueError, match="precede"):
+        _verify_replay(req.parent, entry0, proto, config, payload["model_source_hash"], {}, "2020-01-01T00:00:00+00:00")
+    entry_confirm = dict(payload["replays"][3])
+    with pytest.raises(ValueError, match="predates"):
+        _verify_replay(req.parent, entry_confirm, proto, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+    reg_bad = ConfirmationRegistry(tmp_path / "reg_bad.jsonl")
+    attempt = reg_bad.register_finalist("c", "h", "fam", "a" * 64, "b" * 64, "c" * 64, "d" * 64, registered_gameweeks=[1, 2], max_family_attempts=1)
+    with pytest.raises(IncompleteScheduleError, match="registered schedule"):
+        reg_bad.transition_attempt_status(attempt.attempt_id, "completed", execution_status="complete", completed_gameweeks=[1], scientific_verdict="fail")
+    with pytest.raises(SealedDataViolationError, match="prohibits dev access"):
+        reg_bad.check_sealed_data_safety(["2026-27"], [1], purpose="dev")
+    st_26 = initial_state("2026-27", _squad())
+    bad_prof = tmp_path / "bad_prof.json"
+    bad_prof.write_text(json.dumps({"version": 2, "mode": "development_mirror", "problems": [{"problem_id": "leak", "archetype": "ordinary", "horizon": 1, "state": asdict(st_26), "forecasts": {"rows": [], "attrs": {}}}]}))
+    with pytest.raises(ValueError, match="prohibits dev access"):
+        native_manifest_adapter(bad_prof)
+    with pytest.raises(UncertifiedSolveError, match="relaxation|approval"):
+        execute_replay_deadline(
+            initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+            policy=QualityPolicy(mode="certified", target_gap=0.03, stage_a_decision_agreement=0.98, nonzero_gap_approval_ref="RFC-HI"),
+        )
+    with pytest.raises(UncertifiedSolveError, match="approval"):
+        execute_replay_deadline(
+            initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+            policy=QualityPolicy(mode="certified", target_gap=0.01, stage_a_decision_agreement=0.98, nonzero_gap_approval_ref="   "),
+        )
+    assert evaluate_replay_evidence(req)["empirical_admission"] is False

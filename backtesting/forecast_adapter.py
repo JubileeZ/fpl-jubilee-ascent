@@ -1,4 +1,4 @@
-"""Synthetic, admitted inputs to one issue-wide model prediction."""
+"""Verified synthetic or empirical inputs to one issue-wide model prediction."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -74,6 +74,7 @@ def predict_issue(
             if int(p.get("position_id", 0)) not in (1, 2, 3, 4):
                 continue
             tok = str(seed_map[str(p["id"])])
+            # features/builder.py joins df_players['code'] against df_seed_players['code']; encode resolved seed_mapping key directly
             current.append(
                 {
                     "id": p["id"],
@@ -102,7 +103,7 @@ def predict_issue(
     history_columns = sorted(required_history)
     history = pd.DataFrame(tables["history"], columns=history_columns)
     seed_history = pd.DataFrame(seed_hist_rows, columns=seed_history_cols)
-    with TemporaryDirectory(prefix="synthetic-issue-", dir=root) as temporary:
+    with TemporaryDirectory(prefix="issue-", dir=root) as temporary:
         stage = Path(temporary)
         processed, seed_dir, snapshots = stage / "current", stage / "seed", stage / "snapshots"
         processed.mkdir()

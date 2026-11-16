@@ -200,6 +200,12 @@ def extract_max_news_added(payload: Mapping[str, Any]) -> datetime | None:
     return max_news_added
 
 
+def is_purchase_eligible(element: Mapping[str, Any]) -> bool:
+    """Resolve purchase eligibility from FPL element payload without mutating hold/sell rights."""
+    can_select = element.get("can_select")
+    return bool(can_select) if can_select is not None else (element.get("status") != "u" and not bool(element.get("removed", False)))
+
+
 def _sanitize_bootstrap(
     payload: dict[str, Any],
     *,
@@ -216,12 +222,7 @@ def _sanitize_bootstrap(
         if el.get("element_type") not in PLAYER_ELEMENT_TYPES:
             continue
         row = {field: el.get(field) for field in ALLOWLISTED_ELEMENT_FIELDS}
-        can_select = el.get("can_select")
-        row["purchase_eligible"] = (
-            bool(can_select)
-            if can_select is not None
-            else (el.get("status") != "u" and not bool(el.get("removed", False)))
-        )
+        row["purchase_eligible"] = is_purchase_eligible(el)
         sanitized.append(row)
 
     if max_news_added is not None and max_news_added > capture_upper:

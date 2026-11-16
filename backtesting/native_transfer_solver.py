@@ -113,14 +113,15 @@ _SEED_MIN_CANDIDATES = 85
 _SEED_MIN_BUDGET_SECONDS = 15.0
 _SEED_TOP_NAILED = 25
 _SEED_TOP_EV = 45
-_LP_KERNEL_TOP_EV = 20
-_LP_KERNEL_GAP = 0.005
+_LP_KERNEL_TOP_EV = 10
+_LP_KERNEL_TOP_RC_PER_POS = 5
+_LP_KERNEL_GAP = 0.0
 _HEURISTIC_SEED_GAP = 0.05
 _LP_TIME_FRACTION = 0.15
 _LP_TIME_CAP = 6.0
-_SEED_AFTER_LP_FRACTION = 0.18
+_SEED_AFTER_LP_FRACTION = 0.22
 _SEED_AFTER_LP_MIN = 1.5
-_SEED_AFTER_LP_CAP = 8.0
+_SEED_AFTER_LP_CAP = 13.0
 _SEED_TIME_FRACTION = 0.2
 _SEED_TIME_CAP = 9.5
 
@@ -398,9 +399,9 @@ def _lp_kernel_candidate_ids(
     chip_by_gw: dict[int, Chip],
     *,
     time_limit: float,
-) -> tuple[list[int], float]:
+) -> tuple[list[int], float, float]:
     """Solve 1s root LP relaxation on exact universe and extract active kernel players."""
-    lp_model, lp_vars, _ = _build_native_milp(
+    lp_model, lp_vars, lp_asm = _build_native_milp(
         state, weeks, players, xp, xmins, ids, options, chip_by_gw,
         target_gap=0.0, time_limit=time_limit, disable_submip=False,
     )
@@ -408,9 +409,10 @@ def _lp_kernel_candidate_ids(
     lp_model.run()
     lp_run = float(lp_model.getRunTime())
     owned_set = {p.player_id for p in state.squad}
-    if not lp_model.getSolution().value_valid:
-        return _seed_candidate_ids(state, ids, players, xp, xmins, weeks, options), lp_run
-    lp_sol = lp_model.getSolution().col_value
+    lp_sol_obj = lp_model.getSolution()
+    if not lp_sol_obj.value_valid:
+        return _seed_candidate_ids(state, ids, players, xp, xmins, weeks, options), lp_run, lp_asm
+    lp_sol = lp_sol_obj.col_value
     active_lp: set[int] = set()
     for p in ids:
         activity = 0.0
@@ -423,9 +425,24 @@ def _lp_kernel_candidate_ids(
                 activity += float(lp_sol[lp_vars["start"][p, gw].index])
         if activity > 1e-4:
             active_lp.add(p)
+    extras: set[int] = set(owned_set) | active_lp
     tot_ev = {p: sum(xp[p, gw] for gw in weeks) for p in ids}
+    # Add per-position LP reduced-cost runner-ups so budget/bench enablers omitted by global EV remain in the seed kernel.
+    if lp_sol_obj.dual_valid and len(lp_sol_obj.col_dual) == lp_model.getNumCol():
+        col_dual = lp_sol_obj.col_dual
+        rc_sum: dict[int, float] = {
+            p: sum(float(col_dual[lp_vars["new"][p, gw].index]) for gw in weeks if (p, gw) in lp_vars["new"])
+            for p in ids
+            if p not in extras
+        }
+        for pos in sorted({players[p].position for p in rc_sum}):
+            pos_cands = sorted(
+                (p for p in rc_sum if players[p].position == pos),
+                key=lambda p: (-rc_sum[p], -tot_ev[p], p),
+            )
+            extras.update(pos_cands[:_LP_KERNEL_TOP_RC_PER_POS])
     top_ev = sorted(ids, key=lambda p: (-tot_ev[p], p))[:_LP_KERNEL_TOP_EV]
-    return sorted(owned_set | active_lp | set(top_ev)), lp_run
+    return sorted(extras | set(top_ev)), lp_run, lp_asm
 
 
 def _inject_mip_start(seed_model: highspy.Highs, seed_vars: dict[str, Any], target_model: highspy.Highs, target_vars: dict[str, Any]) -> bool:
@@ -477,37 +494,41 @@ def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.Dat
     total_limit = float(options.get("time_limit_seconds", 60.0))
 
     seed_run_time = 0.0
+    total_assembly_seconds = 0.0
     seed_model: highspy.Highs | None = None
     seed_vars: dict[str, Any] | None = None
     has_start = False
     if len(ids) > _SEED_MIN_CANDIDATES and total_limit >= _SEED_MIN_BUDGET_SECONDS:
         has_free_chip = any(chip_by_gw.get(gw) in ("wildcard", "free_hit") for gw in weeks)
         if has_free_chip:
-            seed_ids, lp_run_time = _lp_kernel_candidate_ids(
+            seed_ids, lp_run_time, lp_asm = _lp_kernel_candidate_ids(
                 state, ids, weeks, players, xp, xmins, options, chip_by_gw,
                 time_limit=min(_LP_TIME_CAP, _LP_TIME_FRACTION * total_limit),
             )
             seed_run_time += lp_run_time
+            total_assembly_seconds += lp_asm
             seed_gap = max(target_gap, _LP_KERNEL_GAP)
             seed_budget = min(_SEED_AFTER_LP_CAP, max(_SEED_AFTER_LP_MIN, _SEED_AFTER_LP_FRACTION * (total_limit - seed_run_time)))
         else:
             seed_ids = _seed_candidate_ids(state, ids, players, xp, xmins, weeks, options)
             seed_gap = max(target_gap, _HEURISTIC_SEED_GAP)
             seed_budget = min(_SEED_TIME_CAP, _SEED_TIME_FRACTION * total_limit)
-        seed_model, seed_vars, _ = _build_native_milp(
+        seed_model, seed_vars, seed_asm = _build_native_milp(
             state, weeks, players, xp, xmins, seed_ids, options, chip_by_gw,
             target_gap=seed_gap, time_limit=seed_budget, disable_submip=False,
         )
+        total_assembly_seconds += seed_asm
         seed_model.run()
         seed_run_time += float(seed_model.getRunTime())
         has_start = seed_model.getSolution().value_valid and seed_model.getInfo().primal_solution_status == highspy.SolutionStatus.kSolutionStatusFeasible
 
     elapsed_wall = time.perf_counter() - solve_t0
     remaining_budget = max(1e-3, min(total_limit - seed_run_time - 0.5, total_limit - elapsed_wall)) if seed_model is not None else max(1e-3, total_limit)
-    model, hvars, assembly_time_seconds = _build_native_milp(
+    model, hvars, full_asm = _build_native_milp(
         state, weeks, players, xp, xmins, ids, options, chip_by_gw,
         target_gap=target_gap, time_limit=remaining_budget, disable_submip=has_start,
     )
+    assembly_time_seconds = round(total_assembly_seconds + full_asm, 6)
     if has_start and seed_model is not None and seed_vars is not None:
         if not _inject_mip_start(seed_model, seed_vars, model, hvars):
             _set_highs_heuristics(model, enabled=True)
