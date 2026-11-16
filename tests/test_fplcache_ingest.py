@@ -9,7 +9,7 @@ from typing import Sequence
 import pandas as pd
 import pytest
 
-from backtesting.fplcache_ingest import ingest_season_fplcache
+from backtesting.fplcache_ingest import ingest_season_fplcache, is_purchase_eligible
 from backtesting.input_evidence import retain_receipt
 
 
@@ -380,3 +380,12 @@ def test_ingest_reconciles_in_window_club_transfer_and_catches_missing_outcome(t
     )
     assert bad_manifest["gameweeks"][0]["outcome_settlement_status"] == "settlement_coverage_mismatch"
     assert bad_manifest["gameweeks"][0]["settlement_coverage_errors"] == ["outcome_coverage"]
+
+
+def test_is_purchase_eligible_respects_removed_even_when_can_select_true() -> None:
+    assert is_purchase_eligible({"can_select": True, "removed": True, "status": "a"}) is False
+    assert is_purchase_eligible({"can_select": True, "removed": False, "status": "a"}) is True
+    assert is_purchase_eligible({"can_select": False, "removed": False, "status": "a"}) is False
+    assert is_purchase_eligible({"can_select": None, "removed": False, "status": "u"}) is False
+    assert is_purchase_eligible({"can_select": None, "removed": True, "status": "a"}) is False
+    assert is_purchase_eligible({"can_select": None, "removed": False, "status": "a"}) is True

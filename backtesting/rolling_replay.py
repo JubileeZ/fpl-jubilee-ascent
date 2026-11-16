@@ -112,6 +112,7 @@ class QualityPolicy:
     require_proven_optimal: bool = True
     raise_on_failure: bool = True
     stage_a_decision_agreement: float | None = None
+    stage_a_blocking_timeouts: int = 0
     nonzero_gap_approval_ref: str | None = None
 
 
@@ -137,6 +138,10 @@ def validate_quality_policy_gate(policy: QualityPolicy, *, require_certified: bo
         if not isinstance(approval, str) or not approval.strip():
             raise UncertifiedSolveError(
                 "Non-zero certified target_gap disallowed without Stage A >=95% decision agreement and explicit approval"
+            )
+        if type(policy.stage_a_blocking_timeouts) is not int or policy.stage_a_blocking_timeouts <= 0:
+            raise UncertifiedSolveError(
+                "Non-zero certified target_gap disallowed without Stage A blocking 60.0s timeouts, >=95% decision agreement, and explicit approval"
             )
         if policy.stage_a_decision_agreement is None or policy.stage_a_decision_agreement < 0.95:
             raise UncertifiedSolveError(

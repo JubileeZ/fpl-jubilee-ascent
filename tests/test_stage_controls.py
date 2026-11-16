@@ -18,7 +18,13 @@ from backtesting.evidence_statistics import (
     StatisticalProtocolConfig,
     evaluate_evidence_against_protocol,
 )
-from backtesting.native_transfer_solver import _build_native_milp, _forecast_universe, native_strategic_solve
+from backtesting.native_transfer_solver import (
+    _build_native_milp,
+    _exact_undominated_ids,
+    _forecast_universe,
+    _lp_kernel_candidate_ids,
+    native_strategic_solve,
+)
 from backtesting.ownership_anchor import UniverseSchema, solve_ownership_anchor
 from backtesting.projection_guards import (
     ComponentLedger,
@@ -436,9 +442,27 @@ def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(t
     bad_proto_fail = {**proto, "quality_policy": {**asdict(QualityPolicy()), "raise_on_failure": False}}
     with pytest.raises(ValueError, match="QualityPolicy|certified"):
         _verify_replay(req.parent, entry0, bad_proto_fail, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
+    with pytest.raises(UncertifiedSolveError, match="blocking"):
+        execute_replay_deadline(
+            initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+            policy=QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, nonzero_gap_approval_ref="RFC-TEST"),
+        )
+    with pytest.raises(UncertifiedSolveError, match="blocking"):
+        execute_replay_deadline(
+            initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
+            policy=QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, stage_a_blocking_timeouts=True, nonzero_gap_approval_ref="RFC-TEST"),  # type: ignore[arg-type]
+        )
+    bad_proto_no_timeout = {
+        **proto,
+        "quality_policy": {
+            **asdict(QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, nonzero_gap_approval_ref="RFC-TEST")),
+        },
+    }
+    with pytest.raises(ValueError, match="Stage A|blocking|QualityPolicy"):
+        _verify_replay(req.parent, entry0, bad_proto_no_timeout, config, payload["model_source_hash"], {}, "2099-01-01T00:00:00+00:00")
     approved_gap_cert = execute_replay_deadline(
         initial_state("2025-26", _squad()), wide, _out_fn(1), solve_fn=native_strategic_solve,
-        policy=QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, nonzero_gap_approval_ref="RFC-TEST"),
+        policy=QualityPolicy(mode="certified", target_gap=0.005, stage_a_decision_agreement=0.96, stage_a_blocking_timeouts=1, nonzero_gap_approval_ref="RFC-TEST"),
     )
     assert approved_gap_cert.execution_status == "SUCCESS"
 
@@ -523,3 +547,61 @@ def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(t
             policy=QualityPolicy(mode="certified", target_gap=0.01, stage_a_decision_agreement=0.98, nonzero_gap_approval_ref="   "),
         )
     assert evaluate_replay_evidence(req)["empirical_admission"] is False
+
+
+def test_lp_kernel_candidate_ids_free_hit_retains_reduced_cost_enablers() -> None:
+    """On a Free Hit week, _lp_kernel_candidate_ids ranks inactive enablers by active_new_fh reduced cost, not fixed new."""
+    st = replace(initial_state("2025-26", _squad()), deadline=2, free_transfers=1, bank=0)
+    pool: list[Player] = list(_squad())
+    ev: dict[int, float] = {p.player_id: 1.0 for p in pool}
+
+    # 2 cheap active GKs in LP + 1 inactive ultra-cheap GK enabler (id=999) + 6 expensive GKs outside top-10 EV.
+    pool.extend(
+        [
+            Player(101, "GK", 6, 38, 38, True),
+            Player(102, "GK", 7, 38, 38, True),
+            Player(999, "GK", 20, 38, 38, True),
+        ]
+    )
+    ev[101], ev[102], ev[999] = 4.2, 4.2, 4.1
+    for i in range(6):
+        pid = 201 + i
+        pool.append(Player(pid, "GK", 8 + i, 95, 95, True))
+        ev[pid] = 6.0
+
+    # Top-12 high-EV expensive outfielders consume the global top-10 EV slots and tighten Free Hit budget.
+    top_positions: tuple[Position, ...] = ("D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F")
+    for i, pos in enumerate(top_positions):
+        pid = 301 + i
+        pool.append(Player(pid, pos, 6 + (i % 15), 95, 95, True))
+        ev[pid] = 15.0 + 0.1 * (12 - i)
+
+    # Pad universe across clubs 6..20 so >85 candidates survive _exact_undominated_ids.
+    next_pid = 400
+    pad_positions: tuple[Position, ...] = ("D", "M", "F")
+    for club in range(6, 21):
+        for pos in pad_positions:
+            pool.append(Player(next_pid, pos, club, 55, 55, True))
+            ev[next_pid] = 3.0
+            next_pid += 1
+        pool.append(Player(next_pid, "D", club, 42, 42, True))
+        ev[next_pid] = 2.0
+        next_pid += 1
+
+    wide_fh = _forecast_df(pool, [2], lambda pid, _gw: ev[pid])
+    opts = {
+        **get_strategic_replay_options(1, rules_version="2025-26"),
+        "chip_calendar": ((2, "free_hit"),),
+    }
+    players, xp, xmins = _forecast_universe(st, 1, wide_fh)
+    ids = _exact_undominated_ids(st, players, xp, xmins, [2], opts)
+    assert len(ids) > 85
+    assert 999 in ids
+
+    seed_ids, _, _ = _lp_kernel_candidate_ids(st, ids, [2], players, xp, xmins, opts, {2: "free_hit"}, time_limit=5.0)
+    assert 999 in seed_ids
+
+    dec, cert = native_strategic_solve(st, 1, wide_fh, opts)
+    assert dec.chip == "free_hit"
+    assert cert.termination_status == "OPTIMAL"
+    assert cert.relative_gap == 0.0

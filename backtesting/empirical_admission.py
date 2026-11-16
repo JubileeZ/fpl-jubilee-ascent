@@ -179,9 +179,12 @@ def build_empirical_seed_mapping(
     return mapping
 
 
+_SEED_IDENTITY_KEYS = ("code", "first_name", "second_name", "web_name")
+
+
 def validate_seed_mapping(
     seed_obj: Mapping[str, Any],
-    elements: list[Mapping[str, Any]],
+    elements: Sequence[Mapping[str, Any]],
 ) -> list[str]:
     """Validate 1-to-1 prior-season seed mapping, position_id==5 exclusion, and DefCon applicability."""
     issues: list[str] = []
@@ -222,8 +225,8 @@ def validate_seed_mapping(
 
     if (
         not issues
-        and any(any(k in el for k in ("first_name", "second_name", "web_name")) for el in elements)
-        and any(any(k in sp for k in ("first_name", "second_name", "web_name")) for sp in non_manager_seed)
+        and any(any(k in el for k in _SEED_IDENTITY_KEYS) for el in elements)
+        and any(any(k in sp for k in _SEED_IDENTITY_KEYS) for sp in non_manager_seed)
     ):
         expected = build_empirical_seed_mapping(elements, seed_players)
         if dict(seed_mapping) != expected:
@@ -253,24 +256,22 @@ _POS_BY_ID: dict[int, Position] = {1: "GK", 2: "D", 3: "M", 4: "F"}
 def _compute_outcome_component_sum(row: Mapping[str, Any], rules_version: str) -> int:
     """Compute exact 13-component FPL integer score from settled outcome component fields."""
     pos = _POS_BY_ID[int(row["position_id"])]
-    mins = int(row["minutes"])
-    app_pts = 2 if mins >= 60 else (1 if mins > 0 else 0)
     defcon_raw = int(row.get("defensive_contribution", 0) or 0)
     defcon_cnt = 1.0 if ((pos == "D" and defcon_raw >= 10) or (pos in ("M", "F") and defcon_raw >= 12)) else 0.0
     total = (
-        app_pts
+        event_points("minutes", pos, float(row["minutes"]), rules_version=rules_version)
         + event_points("goals", pos, float(row["goals_scored"]), rules_version=rules_version)
         + event_points("assists", pos, float(row["assists"]), rules_version=rules_version)
         + event_points("clean_sheets", pos, float(row["clean_sheets"]), rules_version=rules_version)
-        + event_points("goals_conceded", pos, float(int(row["goals_conceded"]) // 2), rules_version=rules_version)
-        + event_points("saves", pos, float(int(row["saves"]) // 3), rules_version=rules_version)
+        + event_points("goals_conceded", pos, float(row["goals_conceded"]), rules_version=rules_version)
+        + event_points("saves", pos, float(row["saves"]), rules_version=rules_version)
         + event_points("defensive_contributions", pos, defcon_cnt, rules_version=rules_version)
-        + float(row["bonus"])
-        - float(row["yellow_cards"])
-        - 3.0 * float(row["red_cards"])
-        + 5.0 * float(row["penalties_saved"])
-        - 2.0 * float(row["penalties_missed"])
-        - 2.0 * float(row["own_goals"])
+        + event_points("bonus", pos, float(row["bonus"]), rules_version=rules_version)
+        + event_points("yellow_cards", pos, float(row["yellow_cards"]), rules_version=rules_version)
+        + event_points("red_cards", pos, float(row["red_cards"]), rules_version=rules_version)
+        + event_points("penalties_saved", pos, float(row["penalties_saved"]), rules_version=rules_version)
+        + event_points("penalties_missed", pos, float(row["penalties_missed"]), rules_version=rules_version)
+        + event_points("own_goals", pos, float(row["own_goals"]), rules_version=rules_version)
     )
     return int(round(total))
 
@@ -379,7 +380,7 @@ def _assess_bootstrap_role(
     anchor_squad_ids: list[int],
     inv_bucket: list[str],
     unr_bucket: list[str],
-) -> tuple[list[dict[str, Any]], set[int]]:
+) -> tuple[list[dict[str, Any]], list[Mapping[str, Any]], set[int]]:
     """Validate empirical bootstrap source bytes, windows, table digest, chip bounds, and anchor."""
     try:
         bs_payload = json.loads(dec_bytes.decode("utf-8"))
@@ -387,7 +388,7 @@ def _assess_bootstrap_role(
         cap_up = _utc(spec.get("capture_upper"))
     except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
         inv_bucket.append("bootstrap:malformed_metadata_or_json")
-        return [], set()
+        return [], [], set()
 
     if cap_lo > cap_up:
         inv_bucket.append("bootstrap:capture_bounds_reversed")
@@ -459,7 +460,13 @@ def _assess_bootstrap_role(
             el_by_id = {int(r["id"]): r for r in sanitized_elements if type(r.get("id")) is int}
             if any(pid not in el_by_id or not el_by_id[pid]["purchase_eligible"] for pid in anchor_squad_ids):
                 inv_bucket.append("anchor:ineligible_player")
-    return sanitized_elements, bs_club_ids
+    admitted_ids = {int(r["id"]) for r in sanitized_elements if type(r.get("id")) is int}
+    raw_bs_elements: list[Mapping[str, Any]] = [
+        el
+        for el in bs_payload.get("elements", [])
+        if isinstance(el, Mapping) and type(el.get("id")) is int and int(el["id"]) in admitted_ids
+    ]
+    return sanitized_elements, raw_bs_elements, bs_club_ids
 
 
 def _assess_fixtures_role(
@@ -717,6 +724,7 @@ def assess_empirical_origins(
         pre_role_digests: dict[str, dict[str, str]] = {}
         all_role_digests: dict[str, dict[str, str]] = {}
         sanitized_elements: list[dict[str, Any]] = []
+        raw_bs_elements: list[Mapping[str, Any]] = []
         bs_club_ids: set[int] = set()
         fx_rows: list[dict[str, Any]] = []
         parsed_seed_obj: Mapping[str, Any] | None = None
@@ -751,7 +759,7 @@ def assess_empirical_origins(
                 pre_role_digests[role] = digest_entry
 
             if role == "bootstrap":
-                sanitized_elements, bs_club_ids = _assess_bootstrap_role(
+                sanitized_elements, raw_bs_elements, bs_club_ids = _assess_bootstrap_role(
                     spec=spec,
                     dec_bytes=dec_bytes,
                     track=track,
@@ -815,7 +823,7 @@ def assess_empirical_origins(
                 )
 
         if parsed_seed_obj is not None and sanitized_elements:
-            invalid_pre.extend(validate_seed_mapping(parsed_seed_obj, sanitized_elements))
+            invalid_pre.extend(validate_seed_mapping(parsed_seed_obj, raw_bs_elements or sanitized_elements))
         if track == "development_mirror" and not any(
             d in ("fplcache_mirror_provenance", "vaastav_mirror_provenance") for d in disclosed
         ):

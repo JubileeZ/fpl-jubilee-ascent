@@ -717,11 +717,13 @@ def run_stage_b() -> dict[str, Any]:
             work_dir=tmp / "b2_h",
             horizon=6,
         )
-        d6, _ = native_strategic_solve(traj12.records[1].pre_state, 6, wide_gw2, get_strategic_replay_options(6, rules_version=dev_season))
-        d1, _ = native_strategic_solve(traj12.records[1].pre_state, 1, wide_gw2, get_strategic_replay_options(1, rules_version=dev_season))
+        pre_state = traj12.records[1].pre_state
+        assert pre_state is not None
+        d6, _ = native_strategic_solve(pre_state, 6, wide_gw2, get_strategic_replay_options(6, rules_version=dev_season))
+        d1, _ = native_strategic_solve(pre_state, 1, wide_gw2, get_strategic_replay_options(1, rules_version=dev_season))
         # Also verify explicit horizon divergence on real dev_season universe (deferred GW3 jump)
         div_df = wide_gw2.copy()
-        owned_ids = {p.player_id for p in traj12.records[1].pre_state.squad}
+        owned_ids = {p.player_id for p in pre_state.squad}
         candidates = div_df[(div_df["purchase_eligible"]) & (~div_df["player_id"].isin(owned_ids)) & (div_df["position_id"] == 4)].head(2)
         assert len(candidates) == 2
         p_fast, p_long = int(candidates.iloc[0]["player_id"]), int(candidates.iloc[1]["player_id"])
@@ -729,8 +731,8 @@ def run_stage_b() -> dict[str, Any]:
             div_df[f"{col_gw}_Pts"] = 4.0
         div_df.loc[div_df["player_id"] == p_fast, "2_Pts"] = 18.0
         div_df.loc[div_df["player_id"] == p_long, ["2_Pts", "3_Pts", "4_Pts", "5_Pts", "6_Pts", "7_Pts"]] = [17.0, 15.0, 15.0, 15.0, 15.0, 15.0]
-        d6_div, _ = native_strategic_solve(traj12.records[1].pre_state, 6, div_df, get_strategic_replay_options(6, rules_version=dev_season))
-        d1_div, _ = native_strategic_solve(traj12.records[1].pre_state, 1, div_df, get_strategic_replay_options(1, rules_version=dev_season))
+        d6_div, _ = native_strategic_solve(pre_state, 6, div_df, get_strategic_replay_options(6, rules_version=dev_season))
+        d1_div, _ = native_strategic_solve(pre_state, 1, div_df, get_strategic_replay_options(1, rules_version=dev_season))
         assert d6_div.transfers != d1_div.transfers
         summary["b2_dev_gw1_2"] = {
             **meta12,
@@ -740,41 +742,51 @@ def run_stage_b() -> dict[str, Any]:
             "horizon_divergence_verified": d6_div.transfers != d1_div.transfers,
         }
 
-        # B3: Dev season GW1-7 contiguous prefix + GW1-38 fail-closed gate + real GW22 player 218 admission & transition
-        _, _, meta17 = _replay_mirror_prefix(dev_season, [1, 2, 3, 4, 5, 6, 7], tmp, seed_dev_dir)
+        # B3: Dev season contiguous prefix + GW1-38 fail-closed gate + real zero-minute card exception admission & transition
+        dev_prefix_end = int(manifest_dev["summary"]["contiguous_admitted_prefix_end_gw"])
+        _, _, meta17 = _replay_mirror_prefix(dev_season, list(range(1, dev_prefix_end + 1)), tmp, seed_dev_dir)
         first_blocked_dev = next(o["gw"] for o in manifest_dev["origins"] if not o["origin_admitted"])
-        assert first_blocked_dev == 8
+        assert first_blocked_dev == dev_prefix_end + 1
         try:
             load_empirical_manifest_bundle(manifest_dev_path, quarantine_root=MIRROR_ROOT, prefix_end_gw=None, require_admitted=True)
-            raise AssertionError("Expected full 1..38 dev manifest admission to fail closed at GW8")
+            raise AssertionError(f"Expected full 1..38 dev manifest admission to fail closed at GW{first_blocked_dev}")
         except ValueError as exc:
-            assert "GW8" in str(exc)
+            assert f"GW{first_blocked_dev}" in str(exc)
 
-        gw22_batch = _outcomes_for_gw(dev_season, 22)
-        gw22_218 = dict(gw22_batch.outcomes)[218]
-        assert gw22_218.minutes == 0 and gw22_218.yellow_cards == 1 and gw22_218.points == -1
+        card_exceptions = manifest_dev["summary"].get("zero_minute_card_exceptions", [])
+        assert card_exceptions, "Expected at least one zero-minute card exception in dev manifest"
+        card_exc = card_exceptions[0]
+        card_gw = int(card_exc["gameweek_id"])
+        card_pid = int(card_exc["player_id"])
+        card_batch = _outcomes_for_gw(dev_season, card_gw)
+        card_outcome = dict(card_batch.outcomes)[card_pid]
+        assert (
+            card_outcome.minutes == int(card_exc["minutes"])
+            and card_outcome.yellow_cards == int(card_exc["yellow_cards"])
+            and card_outcome.points == int(card_exc["total_points"])
+        )
         assert _valid_outcomes_payload(
             [
                 {
-                    "player_id": 218,
-                    "total_points": gw22_218.points,
-                    "minutes": gw22_218.minutes,
-                    "appeared": gw22_218.appeared,
-                    "yellow_cards": gw22_218.yellow_cards,
-                    "red_cards": gw22_218.red_cards,
-                    "component_points_sum": gw22_218.component_points_sum,
+                    "player_id": card_pid,
+                    "total_points": card_outcome.points,
+                    "minutes": card_outcome.minutes,
+                    "appeared": card_outcome.appeared,
+                    "yellow_cards": card_outcome.yellow_cards,
+                    "red_cards": card_outcome.red_cards,
+                    "component_points_sum": card_outcome.component_points_sum,
                 }
             ],
             rules_version=dev_season,
         ) == []
         sq22 = list(_sample_squad())
-        sq22[7] = Player(218, "M", 6, 65, 65, True)
+        sq22[7] = Player(card_pid, "M", 6, 65, 65, True)
         st22 = initial_state(dev_season, tuple(sq22))
-        dec22 = Decision((), Lineup((1, 3, 4, 5, 6, 218, 9, 10, 11, 13, 14), (2, 7, 12, 15), 9, 10), state_hash(st22), 1)
+        dec22 = Decision((), Lineup((1, 3, 4, 5, 6, card_pid, 9, 10, 11, 13, 14), (2, 7, 12, 15), 9, 10), state_hash(st22), 1)
         tr22 = transition(
             st22,
             dec22,
-            OutcomeBatch(dev_season, 1, "gw22-card", tuple((p.player_id, gw22_218 if p.player_id == 218 else Outcome(2, 90, True)) for p in sq22)),
+            OutcomeBatch(dev_season, 1, f"gw{card_gw}-card", tuple((p.player_id, card_outcome if p.player_id == card_pid else Outcome(2, 90, True)) for p in sq22)),
         )
         assert tr22.gross == 22
         tr22_card = transition(
@@ -783,18 +795,18 @@ def run_stage_b() -> dict[str, Any]:
             OutcomeBatch(
                 dev_season,
                 1,
-                "gw22-card-nosub",
+                f"gw{card_gw}-card-nosub",
                 tuple(
-                    (p.player_id, gw22_218 if p.player_id == 218 else (Outcome(0, 0, False) if p.player_id in (2, 7, 12, 15) else Outcome(2, 90, True)))
+                    (p.player_id, card_outcome if p.player_id == card_pid else (Outcome(0, 0, False) if p.player_id in (2, 7, 12, 15) else Outcome(2, 90, True)))
                     for p in sq22
                 ),
             ),
         )
-        assert tr22_card.gross == 19
+        assert tr22_card.gross == 20 + int(card_exc["total_points"])
         summary["b3_dev_gw1_7_and_full_gate"] = {
             **meta17,
             "full_1_to_38_first_blocked_gw": first_blocked_dev,
-            "gw22_player_218_verified": {"minutes": gw22_218.minutes, "yellow_cards": gw22_218.yellow_cards, "points": gw22_218.points},
+            "gw22_player_218_verified": {"minutes": card_outcome.minutes, "yellow_cards": card_outcome.yellow_cards, "points": card_outcome.points},
         }
 
         # B4: Historical Filter season GW1 prefix + GW1-38 fail-closed gate + cross-season native rules

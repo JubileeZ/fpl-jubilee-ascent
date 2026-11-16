@@ -421,6 +421,8 @@ def _lp_kernel_candidate_ids(
                 activity += float(lp_sol[lp_vars["new"][p, gw].index])
             if (p, gw) in lp_vars["buy"]:
                 activity += float(lp_sol[lp_vars["buy"][p, gw].index])
+            if (p, gw) in lp_vars["active_new_fh"]:
+                activity += float(lp_sol[lp_vars["active_new_fh"][p, gw].index])
             if (p, gw) in lp_vars["start"]:
                 activity += float(lp_sol[lp_vars["start"][p, gw].index])
         if activity > 1e-4:
@@ -430,8 +432,17 @@ def _lp_kernel_candidate_ids(
     # Add per-position LP reduced-cost runner-ups so budget/bench enablers omitted by global EV remain in the seed kernel.
     if lp_sol_obj.dual_valid and len(lp_sol_obj.col_dual) == lp_model.getNumCol():
         col_dual = lp_sol_obj.col_dual
+
+        def _gw_rc(p: int, gw: int) -> float:
+            rc = float(col_dual[lp_vars["buy"][p, gw].index]) if (p, gw) in lp_vars["buy"] else 0.0
+            if (p, gw) in lp_vars["active_new_fh"]:
+                return rc + float(col_dual[lp_vars["active_new_fh"][p, gw].index])
+            if (p, gw) in lp_vars["new"]:
+                return rc + float(col_dual[lp_vars["new"][p, gw].index])
+            return rc
+
         rc_sum: dict[int, float] = {
-            p: sum(float(col_dual[lp_vars["new"][p, gw].index]) for gw in weeks if (p, gw) in lp_vars["new"])
+            p: sum(_gw_rc(p, gw) for gw in weeks)
             for p in ids
             if p not in extras
         }

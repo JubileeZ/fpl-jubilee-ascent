@@ -203,7 +203,8 @@ def extract_max_news_added(payload: Mapping[str, Any]) -> datetime | None:
 def is_purchase_eligible(element: Mapping[str, Any]) -> bool:
     """Resolve purchase eligibility from FPL element payload without mutating hold/sell rights."""
     can_select = element.get("can_select")
-    return bool(can_select) if can_select is not None else (element.get("status") != "u" and not bool(element.get("removed", False)))
+    selectable = bool(can_select) if can_select is not None else (element.get("status") != "u")
+    return selectable and not bool(element.get("removed", False))
 
 
 def _sanitize_bootstrap(

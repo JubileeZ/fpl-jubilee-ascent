@@ -846,6 +846,59 @@ def test_seed_mapping_hierarchy_table_sha256_disclosures_bootstrap_48h_and_chips
             cur_els,
         )
     )
+    assert "seed:mapping_hierarchy_mismatch" in validate_seed_mapping(
+        {
+            "players": [
+                {"id": 51, "code": 1001, "position_id": 1},
+                {"id": 52, "code": 1002, "position_id": 2},
+            ],
+            "seed_mapping": {"1": "absent:1", "2": "52"},
+        },
+        [
+            {"id": 1, "code": 1001, "position_id": 1},
+            {"id": 2, "code": 1002, "position_id": 2},
+        ],
+    )
+    req_seed_swap, cat_seed_swap, _ = _build_empirical_bundle(gws=(1,))
+    seed_swap_obj = json.loads(cat_seed_swap["seed_2024_25"].decode("utf-8"))
+    seed_swap_obj["seed_mapping"]["1"], seed_swap_obj["seed_mapping"]["2"] = (
+        seed_swap_obj["seed_mapping"]["2"],
+        seed_swap_obj["seed_mapping"]["1"],
+    )
+    seed_swap_bytes = _canon(seed_swap_obj)
+    cat_seed_swap["seed_2024_25"] = seed_swap_bytes
+    req_seed_swap["origins"][0]["sources"]["seed"]["blob_sha256"] = _sha(seed_swap_bytes)
+    req_seed_swap["origins"][0]["sources"]["seed"]["decompressed_sha256"] = _sha(seed_swap_bytes)
+    rep_seed_swap = assess_origins(req_seed_swap, cat_seed_swap)[0]
+    assert rep_seed_swap["status"] == "invalid"
+    assert "seed:mapping_hierarchy_mismatch" in rep_seed_swap["reasons"]
+
+    req_rem, cat_rem, _ = _build_empirical_bundle(gws=(1,))
+    bs_rem = json.loads(lzma.decompress(cat_rem["bootstrap_gw1"]).decode("utf-8"))
+    bs_rem["elements"][0]["can_select"] = True
+    bs_rem["elements"][0]["removed"] = True
+    bs_rem["elements"][0]["status"] = "a"
+    raw_rem = json.dumps(bs_rem, sort_keys=True).encode("utf-8")
+    xz_rem = lzma.compress(raw_rem)
+    cat_rem["bootstrap_gw1"] = xz_rem
+    req_rem["origins"][0]["sources"]["bootstrap"]["blob_sha256"] = _sha(xz_rem)
+    req_rem["origins"][0]["sources"]["bootstrap"]["decompressed_sha256"] = _sha(raw_rem)
+    rep_rem = assess_origins(req_rem, cat_rem)[0]
+    assert rep_rem["status"] == "invalid"
+    assert "anchor:ineligible_player" in rep_rem["reasons"]
+
+    # GK with 3 saves (+1) and D with 2 goals_conceded (-1) reconcile via event_points without double floor division
+    req_gc, cat_gc, _ = _build_empirical_bundle(gws=(1,))
+    gc_rows = json.loads(cat_gc["outcomes_gw1"])
+    gc_rows[0]["saves"] = 3
+    gc_rows[0]["total_points"] = 3
+    gc_rows[2]["goals_conceded"] = 2
+    gc_rows[2]["total_points"] = 1
+    gc_bytes = _canon(gc_rows)
+    cat_gc["outcomes_gw1"] = gc_bytes
+    req_gc["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(gc_bytes)
+    req_gc["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(gc_bytes)
+    assert assess_origins(req_gc, cat_gc)[0]["status"] == "admitted_empirical"
 
 
 def test_verify_training_bundle_accepts_2024_25_admitted_2023_24_seed_url_only() -> None:

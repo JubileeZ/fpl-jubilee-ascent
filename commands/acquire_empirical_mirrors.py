@@ -24,6 +24,7 @@ from backtesting.empirical_mirrors import (
     canonical_json_sha256,
     extract_gw_df_from_merged_csv as _extract_gw_df_from_merged_csv,
     extract_gws_from_merged_csv as _extract_gws_from_merged_csv,
+    extract_settled_gw_table_rows,
     parse_fixtures_csv_window,
     sha256_bytes,
     validate_mirror_url,
@@ -43,8 +44,8 @@ def _gh_api(path: str) -> Any:
     return json.loads(raw)
 
 
-def _fetch_bytes(url: str, cache_path: Path | None = None) -> bytes:
-    validate_mirror_url(url)
+def _fetch_bytes(url: str, cache_path: Path | None = None, *, allow_prior_seed: bool = False) -> bytes:
+    validate_mirror_url(url, allow_prior_seed=allow_prior_seed)
     if cache_path is not None and cache_path.exists():
         return cache_path.read_bytes()
     req = urllib.request.Request(url, headers={"User-Agent": "fpl-jubilee-ascent-mirror-acquire"})
@@ -263,7 +264,7 @@ def _acquire_origin_entry(
     settle_dt, settle_sha = gw_settlement.get(gw, (final_dt, final_sha))
     settle_url, settle_rel, settle_bytes = merged_meta_by_sha[settle_sha]
     gw_va_df = _extract_gw_df_from_merged_csv(settle_bytes, gw)
-    gw_table_rows = sorted(gw_va_df.to_dict(orient="records"), key=lambda r: (str(r.get("element", "")), str(r.get("fixture", ""))))
+    gw_table_rows = extract_settled_gw_table_rows(settle_bytes, gw)
     try:
         gw_zdiff = verify_settled_outcomes_zero_diff(gw_va_df, proc_perf[proc_perf["gameweek_id"] == gw], proc_players, season=season)
         gw_zdiff_ok, gw_ledger_mismatch = bool(gw_zdiff["zero_diff"]), int(gw_zdiff["ledger_mismatch_rows"])
@@ -435,7 +436,12 @@ def acquire_seed_manifest(
     for fname in ("players_raw.csv", "teams.csv", "fixtures.csv", "gws/merged_gw.csv"):
         url = f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{pin_sha}/data/{target_season}/{fname}"
         rel = f"{target_season}/seed/{pin_sha[:10]}/{fname.replace('/', '_')}"
-        raw = fetch_fn(url, quarantine_root / rel)
+        validate_mirror_url(url, allow_prior_seed=True)
+        raw = (
+            _fetch_bytes(url, quarantine_root / rel, allow_prior_seed=True)
+            if fetch_fn is _fetch_bytes
+            else fetch_fn(url, quarantine_root / rel)
+        )
         upstream_digests[fname] = {
             "url": url,
             "commit_sha": pin_sha,

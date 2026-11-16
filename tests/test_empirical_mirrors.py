@@ -8,6 +8,7 @@ import json
 import lzma
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -576,3 +577,40 @@ def test_chip_calendar_consumes_bootstrap_chips_and_bundle_verifies_table_sha256
     }))
     with pytest.raises(ValueError, match="approved GitHub HTTPS"):
         load_empirical_manifest_bundle(bad_url_manifest, quarantine_root=qroot, prefix_end_gw=1)
+
+
+def test_acquire_seed_manifest_accepts_prior_seed_only_season(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """acquire_seed_manifest accepts prior_seed_only seasons (2023-24) under SeasonLifecycle."""
+    from commands.acquire_empirical_mirrors import acquire_seed_manifest
+
+    proc_dir = tmp_path / "data/archive/2023-24/processed"
+    proc_dir.mkdir(parents=True)
+    pd.DataFrame([{"id": 1, "position_id": 2}, {"id": 900, "position_id": 5}]).to_parquet(
+        proc_dir / "players.parquet", index=False
+    )
+    pd.DataFrame(
+        [{"player_id": 1, "fixture_id": 1, "gameweek_id": 1, "minutes": 90, "total_points": 6}]
+    ).to_parquet(proc_dir / "player_performances.parquet", index=False)
+
+    monkeypatch.setattr("commands.acquire_empirical_mirrors.ROOT", tmp_path)
+    qroot = tmp_path / "q"
+    pin_sha = "a" * 40
+    seed_dir = qroot / "2023-24/seed" / pin_sha[:10]
+    seed_dir.mkdir(parents=True)
+    for fname in ("players_raw.csv", "teams.csv", "fixtures.csv", "gws_merged_gw.csv"):
+        (seed_dir / fname).write_text("col\n1\n", encoding="utf-8")
+
+    def _fake_gh_api(_path: str) -> Any:
+        return [
+            {"sha": pin_sha, "commit": {"committer": {"date": "2024-06-01T12:00:00Z"}, "message": "final"}},
+            {"sha": "b" * 40, "commit": {"committer": {"date": "2024-05-20T12:00:00Z"}, "message": "prev"}},
+        ]
+
+    manifest = acquire_seed_manifest(season="2023-24", quarantine_root=qroot, gh_api_fn=_fake_gh_api)
+    assert manifest["season"] == "2023-24"
+    assert manifest["role"] == "prior_season_seed"
+    assert manifest["defensive_contribution_status"] == "inapplicable_native"
+    assert manifest["retained_player_count"] == 1
