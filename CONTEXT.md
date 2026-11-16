@@ -695,20 +695,20 @@ A Candidate that passes the Historical Promotion Gate may be adopted as Model Ch
 _Avoid_: Margin threshold, discard previous model, automatic adoption
 
 **Provisional Active (`Dual-Tier`, ADR 0069)**:
-Operational second prediction tier earned by frozen `#1` finalist beating `Confirmed Champion` on both `S-1` (Dev, `2025-26`) and `S-2` (Historical Filter, `2024-25`) without severe segment harm. Exports weekly projections alongside `Confirmed Champion`, drives default weekly Transfer Plan when active, remains protected by Early-Harm Fallback, and awaits `GW15`/`GW30`/`GW38` `S` validation (`<= 5%` FWER + guards) prior to manual `adopt_champion`. Supersedes deprecated `#180` ban (`Provisional Historical Promotion`).
-_Avoid_: Permanent `Confirmed Champion` overwrite before `S` confirmation, unseeded archive-only promotion, more than 1 simultaneous `Provisional Active` model
+Operational second prediction tier earned by frozen `#1` finalist (top of `M <= 2` slate ranked by `0.5 * (delta_S1 + delta_S2)`, sealed at `S` freeze) beating `Confirmed Champion` on both `S-1` (Dev, `2025-26`) and `S-2` (Historical Filter, `2024-25`) without severe segment harm. Exports weekly projections alongside `Confirmed Champion`, drives default weekly Transfer Plan when active, remains protected by statistical Early-Harm Fallback & `#1 -> #2` backup rotation, and awaits `GW15`/`GW30`/`GW38` `<= 5%` FWER confirmation + guards prior to manual `adopt_champion`. Supersedes deprecated `#180` ban (`Provisional Historical Promotion`).
+_Avoid_: Permanent `Confirmed Champion` overwrite before `S` confirmation, unseeded archive-only promotion, more than 1 simultaneous `Provisional Active` model, mid-season finalist additions to frozen `S` slate
 
 **Live Validation Window**:
 Active-season shadow/side-by-side comparison horizon across current season `S` (`GW1–38`, ADR 0069) comparing `Provisional Active` and `Confirmed Champion` on identical [`Randdalf/fplcache`](https://github.com/Randdalf/fplcache) `<= 24h` pre-deadline bootstrap snapshots and settled outcomes (`captured_at >= max(kickoff)+24h`). Evaluated at pre-declared `GW15`, `GW30`, and `GW38` confirmation checkpoints (`max 2` pre-frozen finalists).
 _Avoid_: Tuning on `S`, retweaking parameters after peeking `S GW1..X`, unattended automatic Champion overwrite
 
 **Live Reassessment**:
-Calibrated Early-Harm Fallback & checkpoint safeguard (`ADR 0069`, bounds calibrated in `#186`): drops failing `Provisional Active` back to `Confirmed Champion` (or rotates to frozen `#2` backup within `FWER <= 0.05` `M<=2` budget) when `S` shows severe harm, and routes close `GW15` leads cleanly to `GW30`/`GW38` confirmation.
-_Avoid_: Retuning after `GW15` miss, ad-hoc weekly hopping across un-frozen variants
+Scale-aware Early-Harm Fallback & checkpoint safeguard (`ADR 0069`, `#186`): after `6`-GW warm-up (`df >= 4`), drops failing `Provisional Active` back to `Confirmed Champion` (or auto-rotates to frozen `#2` backup within symmetric `alpha/M` budget) when `S` shows statistical harm (`p_harm <= 0.025` via Kendall-PW + Bartlett HAC on cumulative `S` or completed segment) or demonstrated mandatory guard `FAIL` (`alpha = 0.05`, `INCONCLUSIVE` ignored); rotates `#1 -> #2` if `#1` trails `#2` at `GW15`, and routes close non-harmful `GW15` leads cleanly to `GW30`/`GW38`.
+_Avoid_: Arbitrary hardcoded cumulative net-point panic triggers, triggering on `< 6` GWs or `INCONCLUSIVE` guards, retuning after `GW15` miss, ad-hoc weekly hopping across un-frozen variants
 
 **Meaningful Live Lead**:
-*(Superseded threshold note)* Deprecated pre-ADR-0066 `>= 5%` 4-GW live lead rule. Final Champion replacement requires `FWER <= 0.05` (`M <= 2` frozen finalists) paired difference superiority, segment floors, and substantive projection guards (`ADR 0066`, `ADR 0069`, calibrated in `#186`).
-_Avoid_: Single-week win, 5% live promotion threshold, automatic promotion threshold
+*(Superseded threshold note)* Deprecated pre-ADR-0066 `>= 5%` 4-GW live lead rule. Final Champion replacement requires consistent one-sided `S` superiority (`one_sided_lower > 0` iff `p_val <= alpha_spent`) via Kendall-bias-corrected AR(1)-prewhitened + Bartlett HAC Student-$t$, O'Brien-Fleming sequential spending across `GW15`/`GW30`/`GW38` (`0.0005` / `0.010` / `0.0395` for `M=1`; halved for `M=2`), symmetric `alpha/M` FWER across `M <= 2` frozen finalists (higher `S` net-points delta wins simultaneous-pass ties, tie-break pre-freeze `#1`), and data-derived `S-1` Champion projection guards (`max(0.05 * Champion S-1 mean, 1.0 * Champion S-1 GW_SE)` at `alpha = 0.05`) plus `z = -0.25 SE` segment parity floors (`ADR 0066`, `ADR 0069`, `#186`).
+_Avoid_: Single-week win, 5% live promotion threshold, uncentered MBB `OR` gate, hardcoded point/guard tables, automatic promotion threshold
 
 **Candidate Admission**:
 When the three-model comparison slate is full, a new Model Candidate enters only by passing the Historical Promotion Gate against an existing Candidate, which it replaces. The Model Champion is retained.
