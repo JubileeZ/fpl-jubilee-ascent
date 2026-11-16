@@ -15,7 +15,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ---
 
-## Current Project Status: **ADR 0069 governance reset active (Map #184); implementation & calibration queued before search**
+## Current Project Status: **ADR 0069 SeasonLifecycle + #186 policy locked (Map #184); #189 replay parity & #187 Dual-Tier wiring queued before search**
 
 ### Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) Decision & Implementation Schedule (ADR 0069)
 
