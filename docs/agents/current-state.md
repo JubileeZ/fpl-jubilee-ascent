@@ -212,12 +212,12 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 | Deps | `pyproject.toml`, `.venv/` | uv |
 | Clients | `clients/` | FPL API + Playwright/JWT auth |
 | Data dictionary | `docs/data_dictionary.md` | API → parquet |
-| CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias |
+| CLI | `commands/` | Refresh, snapshot, model, backtest, FDR, solve, dashboard, bias, `ingest_fplcache`, `acquire_empirical_mirrors`, `run_stage_a_and_b` |
 | Models | `models/`, `docs/model_name.md` | Catalog `name`. Champion in `config/model_selection.json` |
 | Features / projections | `features/`, `projections/` | Typed contracts; Explorer slice; Role retired; Trailing Start Window default (ADR 0035); Calibrated Matchup Share overlay (`features/matchup_share.py`, ADR 0040); Three-Tier Minutes Cascade & Broad Pool Shield (`features/injury_triage.py`); Official processed heals from Live Season Pin on resolve (ADR 0036) |
 | Dashboard | `dashboard/`, `commands/dashboard.py`, `DESIGN.md` | One native Streamlit product: Transfer Planner, Explorer, Research, Model Methodology (ADR 0060); `http://127.0.0.1:8000`, IPv4 bind. Persistent editable draft/results/jobs; shared exclusive heavy-job queue; Explorer What-If separate. Content-width reflow, focused Player dialogs, initially collapsed sidebar, contained tables/math; spec `docs/product/dashboard-responsive-layout.md`. Legacy branching backups downloadable. |
 | README | `README.md` | How to use + CLI |
-| Backtesting | `backtesting/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward |
+| Backtesting | `backtesting/`, `config/` | Walk-forward, Decision Regret, Transfer Plan Walk-Forward, `SeasonLifecycle` (`season_lifecycle.json`), `mode="empirical"` mirrors/admission (`dev_mirror_*_manifest.json`, `seed_manifest_2024_25.json`), Stage A->B profiler/replay |
 | Solver | `solver/` | open-fpl-solver `2ff829f` highspy; live Transfer Plan default gap 0% with deterministic digest caching (ADR 0057); Strategic variance optimization & 3 arms `strategic`, `unconstrained`, `no_hit` (ADR 0061); Dream Team and Walk-Forward stay gap 0 |
 | Research | `docs/research/`, `docs/archive/` | Live INDEX + topics. `data/archive/` = Season Archive pins |
 
