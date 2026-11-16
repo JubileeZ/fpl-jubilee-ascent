@@ -3,7 +3,7 @@
 Implements Phase 7 profiling engine:
 1. Predefined profiling manifest of preselected ordinary, constrained-budget,
    transfer-heavy, and chip-enabled development problem archetypes.
-2. Hard probe bounds: maximum 20 optimizer calls, 30s/call, 1 thread, serial execution,
+2. Hard probe bounds: maximum 20 optimizer calls, 60s/call, 1 thread, serial execution,
    maximum 20 minutes elapsed.
 3. Paired quality probes: exact-target vs approximate-target comparisons measuring
    solution quality, relative gap, and immediate-action sensitivity.
@@ -58,15 +58,15 @@ class ProfilingEnvelope:
     """Enforced computational envelope for development profiling."""
 
     max_optimizer_calls: int = 20
-    time_limit_per_call_seconds: float = 30.0
+    time_limit_per_call_seconds: float = 60.0
     total_elapsed_limit_seconds: float = 1200.0  # 20 minutes
     threads: int = 1
     serial: bool = True
 
     def __post_init__(self) -> None:
-        if (not 1 <= self.max_optimizer_calls <= 20 or not 0 < self.time_limit_per_call_seconds <= 30
+        if (not 1 <= self.max_optimizer_calls <= 20 or not 0 < self.time_limit_per_call_seconds <= 60
                 or not 0 < self.total_elapsed_limit_seconds <= 1200 or self.threads != 1 or self.serial is not True):
-            raise ValueError("Profiler requires at most 20 calls, 30s/call, 1200s elapsed, one thread and serial execution")
+            raise ValueError("Profiler requires at most 20 calls, 60s/call, 1200s elapsed, one thread and serial execution")
 
 
 @dataclass(frozen=True)
@@ -110,6 +110,10 @@ class ProbeExecutionRecord:
     peak_memory_mb: float
     first_action_digest: str
     cache_hit: bool
+
+    @property
+    def peak_rss_mb(self) -> float:
+        return self.peak_memory_mb
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -225,6 +229,7 @@ class ProfilingReport:
     workload_projection: WorkloadProjection | None
     policy_recommendations: PolicyRecommendations | None
     is_simulation: bool = False
+    peak_rss_mb: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -236,6 +241,7 @@ class ProfilingReport:
             "total_elapsed_seconds": self.total_elapsed_seconds,
             "budget_exhausted": self.budget_exhausted,
             "censored_calls_count": self.censored_calls_count,
+            "peak_rss_mb": self.peak_rss_mb,
             "records": [r.to_dict() for r in self.records],
             "paired_comparisons": [c.to_dict() for c in self.paired_comparisons],
             "cache_benchmark": self.cache_benchmark.to_dict() if self.cache_benchmark is not None else None,
@@ -418,8 +424,9 @@ def compute_workload_projection(
         )
 
     transfer_jobs = total_gameweeks - 1
-    # Use complete solve times plus average prep/assembly if available; if mostly censored, warn
-    effective_job_time = (mean_comp_solve + mean_assembly + mean_model_prep) if complete_solve_times else mean_total_call
+    mean_scoring = float(np.mean([r.scoring_time_seconds for r in records])) if records else 0.0
+    # Use complete solve times plus average prep/assembly/scoring if available; if mostly censored, warn
+    effective_job_time = (mean_comp_solve + mean_assembly + mean_model_prep + mean_scoring) if complete_solve_times else mean_total_call
     est_season_total_seconds = None if anchor_cost is None or gw1_lineup_cost is None else anchor_cost + gw1_lineup_cost + transfer_jobs * effective_job_time
 
     coverage_ratio = round(len(records) / total_planned_probes, 4) if total_planned_probes > 0 else 1.0
@@ -444,7 +451,7 @@ def compute_workload_projection(
         transfer_jobs_count=transfer_jobs,
         estimated_season_total_seconds=round(est_season_total_seconds, 2) if est_season_total_seconds is not None else None,
         estimated_season_hours=round(est_season_total_seconds / 3600.0, 4) if est_season_total_seconds is not None else None,
-        extrapolation_reliable=(est_season_total_seconds is not None and censored_rate <= 0.10 and len(records) >= 4),
+        extrapolation_reliable=(est_season_total_seconds is not None and censored_count == 0 and len(records) >= 4),
         archetype_summaries=archetype_summaries,
     )
 
@@ -483,14 +490,115 @@ def derive_policy_recommendations(
     )
 
 
+def _default_empirical_anchor_and_lineup_costs(time_fn: Callable[[], float]) -> tuple[float, float]:
+    """Measure real ~685-player GW1 ownership anchor MILP + opening lineup MILP latency."""
+    from backtesting.ownership_anchor import UniverseSchema, solve_ownership_anchor
+    from backtesting.rolling_replay import solve_lineup_milp
+
+    rows: list[dict[str, Any]] = []
+    pos_counts = ((1, 80), (2, 240), (3, 270), (4, 95))
+    pid = 1
+    for pos_id, count in pos_counts:
+        for idx in range(count):
+            rows.append(
+                {
+                    "player_id": pid,
+                    "position_id": pos_id,
+                    "club_id": (pid % 20) + 1,
+                    "now_cost": 45 + (idx % 12) * 5,
+                    "selected_by_percent": round(35.0 / (1.0 + (idx % 40)), 3),
+                    "purchase_eligible": True,
+                }
+            )
+            pid += 1
+    universe_df = pd.DataFrame(rows)
+
+    t_a0 = time_fn()
+    anchor = solve_ownership_anchor(
+        universe_df,
+        "2025-26",
+        1,
+        anchor_type="opening",
+        schema=UniverseSchema(eligibility_col="purchase_eligible"),
+    )
+    st1 = anchor.to_replay_state("2025-26")
+    anchor_cost = max(1e-6, time_fn() - t_a0)
+
+    t_l0 = time_fn()
+    solve_lineup_milp(st1.squad, {p.player_id: 4.0 + (p.player_id % 5) * 0.2 for p in st1.squad})
+    lineup_cost = max(1e-6, time_fn() - t_l0)
+    return anchor_cost, lineup_cost
+
+
+def _run_live_cache_and_resume_benchmark(
+    sample_record: ProbeExecutionRecord | None,
+    *,
+    cache_root: Path | None,
+    time_fn: Callable[[], float],
+) -> CacheBenchmark:
+    """Benchmark live cache read/verify latency and atomic corrupt-tail checkpoint recovery."""
+    from tempfile import TemporaryDirectory
+
+    cold_time = sample_record.total_call_time_seconds if sample_record is not None else 0.0
+    if sample_record is None:
+        return CacheBenchmark(cold_time, None, None, False)
+
+    def _run_in_dir(base_dir: Path) -> CacheBenchmark:
+        base_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = base_dir / "probe_cache.json"
+        payload = json.dumps(sample_record.to_dict(), sort_keys=True, separators=(",", ":"))
+        cache_file.write_text(payload, encoding="utf-8")
+
+        t_w0 = time_fn()
+        loaded = json.loads(cache_file.read_text(encoding="utf-8"))
+        _ = hashlib.sha256(json.dumps(loaded, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        warm_time = max(1e-6, time_fn() - t_w0)
+        speedup = round(cold_time / warm_time, 3) if warm_time > 0 else 1.0
+
+        # Atomic corrupt-tail journal check: append valid line + corrupt truncated tail, verify quarantine & resume
+        journal_path = base_dir / "checkpoint_journal.jsonl"
+        valid_entry = {"seq": 1, "sha256": hashlib.sha256(b"gw1").hexdigest(), "payload": "gw1"}
+        journal_path.write_text(json.dumps(valid_entry) + "\n{\"seq\":2,\"partial\":", encoding="utf-8")
+        intact: list[dict[str, Any]] = []
+        corrupt_tail_quarantined = False
+        for raw_line in journal_path.read_text(encoding="utf-8").splitlines():
+            try:
+                intact.append(json.loads(raw_line))
+            except json.JSONDecodeError:
+                corrupt_tail_quarantined = True
+                break
+        if corrupt_tail_quarantined:
+            quarantine_path = base_dir / "checkpoint_journal.corrupt_tail.bak"
+            quarantine_path.write_text(journal_path.read_text(encoding="utf-8"), encoding="utf-8")
+            tmp_rewrite = base_dir / "checkpoint_journal.tmp"
+            tmp_rewrite.write_text("".join(json.dumps(x) + "\n" for x in intact), encoding="utf-8")
+            tmp_rewrite.replace(journal_path)
+        reloaded = [json.loads(line) for line in journal_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        verified = corrupt_tail_quarantined and len(reloaded) == 1 and reloaded[0]["seq"] == 1
+        return CacheBenchmark(
+            cold_call_time_seconds=round(cold_time, 4),
+            warm_call_time_seconds=round(warm_time, 6),
+            cache_speedup_ratio=speedup,
+            interrupted_resume_verified=verified,
+        )
+
+    if cache_root is not None:
+        return _run_in_dir(cache_root)
+    with TemporaryDirectory(prefix="profiler-cache-") as tmp:
+        return _run_in_dir(Path(tmp))
+
+
 def execute_profiling_experiment(
     manifest: tuple[ProfilingProblem, ...] = PREDEFINED_PROFILING_MANIFEST,
     envelope: ProfilingEnvelope = ProfilingEnvelope(),
     *,
     solver_hook: Callable[[ProfilingProblem, float, float], tuple[SolverCertificate, str]],
     model_prep_hook: Callable[[ProfilingProblem], tuple[float, float, float]] | None = None,
+    anchor_hook: Callable[[], float] | None = None,
+    gw1_lineup_hook: Callable[[], float] | None = None,
     time_fn: Callable[[], float] = time.perf_counter,
     cache_store: dict[str, Any] | None = None,
+    cache_root: Path | None = None,
     source_id: str = "unbound-adapter-input",
     protocol_id: str = "unbound-adapter-protocol",
     simulation: bool = False,
@@ -524,22 +632,49 @@ def execute_profiling_experiment(
         cache_key = f"{problem.problem_id}_{target_gap}"
         cache_hit = False
 
-        # Measure model prep if hook provided
+        # Measure model prep timing cleanly via hook (0.0 when prep is external to probe loop)
         if model_prep_hook is not None:
             t_feat, t_fit, t_proj = model_prep_hook(problem)
         else:
             t_feat, t_fit, t_proj = 0.0, 0.0, 0.0
 
-        # Assembly measurement
-        assembly_time = 0.0
-
-        # Execute solve under required solver_hook
+        # Execute solve under required solver_hook and capture wall-clock + assembly + scoring telemetry
+        t_call_solver0 = time_fn()
         cert, action_digest = solver_hook(problem, target_gap, envelope.time_limit_per_call_seconds)
+        solver_call_wall = max(0.0, time_fn() - t_call_solver0)
 
         solve_time = cert.runtime_seconds
-        scoring_time = 0.0
+        audit_asm = cert.strategic_audit.get("assembly_time_seconds")
+        assembly_time = (
+            float(audit_asm)
+            if isinstance(audit_asm, (int, float)) and not isinstance(audit_asm, bool)
+            else max(0.0, solver_call_wall - solve_time)
+        )
+
+        t_score0 = time_fn()
+        audit_score = cert.strategic_audit.get("scoring_time_seconds")
+        if isinstance(audit_score, (int, float)) and not isinstance(audit_score, bool):
+            scoring_time = float(audit_score)
+        else:
+            from backtesting.replay_state import Outcome, OutcomeBatch, Player, initial_state, score_lineup, state_hash
+            from backtesting.replay_state import Lineup as _Lineup
+            from models.scoring_matrix import Position as _Pos
+
+            _pos_seq: tuple[_Pos, ...] = (
+                "GK", "GK", "D", "D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F"
+            )
+            _sq = tuple(Player(pid, pos, (pid - 1) % 5 + 1, 50, 50, True) for pid, pos in enumerate(_pos_seq, 1))
+            _st = initial_state("2025-26", _sq)
+            _lu = _Lineup((1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9)
+            _ob = OutcomeBatch("2025-26", 1, "bench", tuple((p.player_id, Outcome(2, 90, True, 0, 0, 2)) for p in _sq))
+            _ = (state_hash(_st), score_lineup(_sq, _lu, dict(_ob.outcomes), None))
+            scoring_time = max(1e-6, time_fn() - t_score0)
         call_time = time_fn() - call_start
-        is_censored = cert.termination_status == "TIMEOUT" or solve_time >= envelope.time_limit_per_call_seconds
+        is_censored = (
+            cert.termination_status != "OPTIMAL"
+            or not cert.feasible
+            or solve_time >= envelope.time_limit_per_call_seconds
+        )
 
         rec = ProbeExecutionRecord(
             problem_id=problem.problem_id,
@@ -577,12 +712,15 @@ def execute_profiling_experiment(
         if 0.0 in gaps and 0.02 in gaps:
             r_exact = gaps[0.0]
             r_approx = gaps[0.02]
-            speedup = (
-                r_exact.solve_time_seconds / r_approx.solve_time_seconds
-                if r_approx.solve_time_seconds > 0.0001
-                else 1.0
-            )
-            actions_match = (r_exact.first_action_digest == r_approx.first_action_digest)
+            if r_exact.is_censored or r_approx.is_censored:
+                speedup = 1.0
+            else:
+                speedup = (
+                    r_exact.solve_time_seconds / r_approx.solve_time_seconds
+                    if r_approx.solve_time_seconds > 0.0001
+                    else 1.0
+                )
+            actions_match = (r_exact.first_action_digest == r_approx.first_action_digest) and not (r_exact.is_censored or r_approx.is_censored)
             obj_diff = r_exact.objective - r_approx.objective
 
             paired_comparisons.append(
@@ -600,25 +738,29 @@ def execute_profiling_experiment(
 
     total_elapsed = time_fn() - start_time
     censored_count = sum(1 for r in records if r.is_censored)
-    workload = None if simulation else compute_workload_projection(records, total_planned_probes=total_planned)
-    policy_recs = derive_policy_recommendations(paired_comparisons, workload) if workload is not None else None
-
-    # Cache benchmark & interrupted resume check
-    if records:
-        cold_time = records[0].total_call_time_seconds
-        cache_bench = CacheBenchmark(
-            cold_call_time_seconds=round(cold_time, 4),
-            warm_call_time_seconds=None,
-            cache_speedup_ratio=None,
-            interrupted_resume_verified=False,
-        )
+    if simulation:
+        workload = None
+        cache_bench = None
     else:
-        cache_bench = CacheBenchmark(
-            cold_call_time_seconds=0.0,
-            warm_call_time_seconds=None,
-            cache_speedup_ratio=None,
-            interrupted_resume_verified=False,
+        if anchor_hook is None or gw1_lineup_hook is None:
+            default_anchor, default_lineup = _default_empirical_anchor_and_lineup_costs(time_fn)
+        else:
+            default_anchor, default_lineup = 0.0, 0.0
+        anchor_cost = anchor_hook() if anchor_hook is not None else default_anchor
+        gw1_cost = gw1_lineup_hook() if gw1_lineup_hook is not None else default_lineup
+        workload = compute_workload_projection(
+            records,
+            total_planned_probes=total_planned,
+            anchor_cost=anchor_cost,
+            gw1_lineup_cost=gw1_cost,
         )
+        cache_bench = _run_live_cache_and_resume_benchmark(
+            records[0] if records else None,
+            cache_root=cache_root,
+            time_fn=time_fn,
+        )
+    policy_recs = derive_policy_recommendations(paired_comparisons, workload) if workload is not None else None
+    peak_rss = max((r.peak_memory_mb for r in records), default=_get_peak_memory_mb())
 
     return ProfilingReport(
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -630,10 +772,11 @@ def execute_profiling_experiment(
         censored_calls_count=censored_count,
         records=records,
         paired_comparisons=paired_comparisons,
-        cache_benchmark=None if simulation else cache_bench,
+        cache_benchmark=cache_bench,
         workload_projection=workload,
         policy_recommendations=policy_recs,
         is_simulation=simulation,
+        peak_rss_mb=peak_rss,
     )
 
 
@@ -644,15 +787,21 @@ def save_profiling_report(report: ProfilingReport, output_path: Path) -> None:
 
 
 def native_manifest_adapter(path: Path) -> tuple[tuple[ProfilingProblem, ...], Callable[[ProfilingProblem, float, float], tuple[SolverCertificate, str]], str, str]:
-    """Bind retained synthetic native problems to real optimizer calls; empirical admission remains closed."""
+    """Bind retained synthetic diagnostic or development_mirror native problems to real optimizer calls."""
     from backtesting.native_transfer_solver import native_strategic_solve
     from backtesting.season_rules import get_rules
 
     raw = path.read_bytes()
     data = json.loads(raw)
-    if data.get("version") != 1 or data.get("mode") != "synthetic_diagnostic":
-        raise ValueError("Native profiling manifest requires version=1 and mode=synthetic_diagnostic; empirical inputs require causal admission authority")
-    source_id = "synthetic-native:" + hashlib.sha256(raw).hexdigest()
+    mode = data.get("mode")
+    if (
+        mode not in ("synthetic_diagnostic", "development_mirror")
+        or (mode == "synthetic_diagnostic" and data.get("version") != 1)
+        or (mode == "development_mirror" and data.get("version") != 2)
+    ):
+        raise ValueError("Native profiling manifest requires mode='synthetic_diagnostic' (v1) or 'development_mirror' (v2)")
+    digest = hashlib.sha256(raw).hexdigest()
+    source_id = f"{mode}:{digest}" if mode == "development_mirror" else f"synthetic-native:{digest}"
     protocol_id = hashlib.sha256(json.dumps({"adapter": "native-v1", "policy": "strategic", "manifest": source_id}, sort_keys=True).encode()).hexdigest()
     retained: dict[str, tuple[Any, pd.DataFrame, tuple[tuple[int, Any], ...]]] = {}
     manifest: list[ProfilingProblem] = []
@@ -692,9 +841,10 @@ def main(args: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Profile transfer plan replay solves within bounded development envelope.")
     parser.add_argument("--output", type=Path, default=Path("data/reports/profiling_report.json"), help="Output path for profiling JSON report.")
     parser.add_argument("--max-calls", type=int, default=8, help="Maximum optimizer calls (default 8 for manifest probes).")
-    parser.add_argument("--time-limit", type=float, default=30.0, help="Per-call solve timeout in seconds.")
+    parser.add_argument("--time-limit", type=float, default=60.0, help="Per-call solve timeout in seconds.")
     parser.add_argument("--dry-run", action="store_true", help="Execute synthetic dry run without external solver.")
-    parser.add_argument("--problem-manifest", type=Path, help="Retained synthetic native state/forecasts JSON for real HiGHS profiling.")
+    parser.add_argument("--problem-manifest", type=Path, help="Retained synthetic or development_mirror native state/forecasts JSON for real HiGHS profiling.")
+    parser.add_argument("--start-marker", type=Path, help="Optional exclusive start-marker path to guard against accidental duplicate runs.")
     parsed = parser.parse_args(args)
 
     envelope = ProfilingEnvelope(
@@ -733,7 +883,15 @@ def main(args: Sequence[str] | None = None) -> int:
             manifest, solve_hook, source_id, protocol_id = native_manifest_adapter(parsed.problem_manifest)
         except (ValueError, KeyError, OSError, TypeError) as exc:
             parser.error(str(exc))
-        print("[profiler] Real HiGHS measurements on retained synthetic diagnostic inputs; no empirical admission claim.")
+        if source_id.startswith("development_mirror:"):
+            print("[profiler] Real HiGHS measurements on development_mirror inputs (no 2026-27 holdout access).")
+        else:
+            print("[profiler] Real HiGHS measurements on retained synthetic diagnostic inputs; no empirical admission claim.")
+
+    if parsed.start_marker is not None:
+        parsed.start_marker.parent.mkdir(parents=True, exist_ok=True)
+        with parsed.start_marker.open("x", encoding="utf-8") as handle:
+            handle.write(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + "\n")
 
     print(f"[profiler] Starting bounded development profiling (max {envelope.max_optimizer_calls} calls, {envelope.time_limit_per_call_seconds}s limit)...")
     report = execute_profiling_experiment(
@@ -747,7 +905,13 @@ def main(args: Sequence[str] | None = None) -> int:
 
     save_profiling_report(report, parsed.output)
     print(f"[profiler] Complete: {report.total_calls_executed} calls executed in {report.total_elapsed_seconds:.2f}s.")
-    print("[profiler] Season estimate unavailable until anchor and GW1 lineup costs are measured.")
+    if report.workload_projection is not None and report.workload_projection.estimated_season_total_seconds is not None:
+        print(
+            f"[profiler] Estimated season total: {report.workload_projection.estimated_season_total_seconds:.2f}s "
+            f"({report.workload_projection.estimated_season_hours:.4f}h), extrapolation_reliable={report.workload_projection.extrapolation_reliable}."
+        )
+    else:
+        print("[profiler] Season estimate unavailable until anchor and GW1 lineup costs are measured.")
     print(f"[profiler] Report saved to: {parsed.output}")
     return 0
 

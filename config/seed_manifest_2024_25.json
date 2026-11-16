@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "season": "2024-25",
+  "role": "prior_season_seed",
+  "vaastav_commits": [
+    {
+      "sha": "a59a43a8343d960a58cbe7a1f9fba2d2ce431856",
+      "committed_at_utc": "2026-01-02T07:35:49+00:00",
+      "message": "fix: Handle schema drift in merged_gw.csv when API adds new columns (#221)"
+    },
+    {
+      "sha": "59c767596750f554ba464de94cf4fce8664a6cbe",
+      "committed_at_utc": "2025-06-04T15:20:23+00:00",
+      "message": "Add GW38 data"
+    }
+  ],
+  "upstream_digests": {
+    "players_raw.csv": {
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a59a43a8343d960a58cbe7a1f9fba2d2ce431856/data/2024-25/players_raw.csv",
+      "commit_sha": "a59a43a8343d960a58cbe7a1f9fba2d2ce431856",
+      "sha256": "75686051b265cbe7755ac71213ecaad21b26ee1cc46a8bafbba19c39ce894b05",
+      "bytes": 342122,
+      "local_relpath": "2024-25/seed/a59a43a834/players_raw.csv"
+    },
+    "teams.csv": {
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a59a43a8343d960a58cbe7a1f9fba2d2ce431856/data/2024-25/teams.csv",
+      "commit_sha": "a59a43a8343d960a58cbe7a1f9fba2d2ce431856",
+      "sha256": "d10a6db8feca6db9e44a3ba50b15168396667ea387fee9235d6b211c7f598c3b",
+      "bytes": 1717,
+      "local_relpath": "2024-25/seed/a59a43a834/teams.csv"
+    },
+    "fixtures.csv": {
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a59a43a8343d960a58cbe7a1f9fba2d2ce431856/data/2024-25/fixtures.csv",
+      "commit_sha": "a59a43a8343d960a58cbe7a1f9fba2d2ce431856",
+      "sha256": "ce696e187569ca7c45da2562811d3c38f525b58e65575531be37bebd0769ee28",
+      "bytes": 751413,
+      "local_relpath": "2024-25/seed/a59a43a834/fixtures.csv"
+    },
+    "gws/merged_gw.csv": {
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a59a43a8343d960a58cbe7a1f9fba2d2ce431856/data/2024-25/gws/merged_gw.csv",
+      "commit_sha": "a59a43a8343d960a58cbe7a1f9fba2d2ce431856",
+      "sha256": "5bbbcba6353b4c72ad273adcc8e3aa451946a826564679788f45b1cb3325b84e",
+      "bytes": 5125595,
+      "local_relpath": "2024-25/seed/a59a43a834/gws_merged_gw.csv"
+    }
+  },
+  "processed_digests": {
+    "clubs.parquet": {
+      "sha256": "47025183c50b5a2df7b524b13fea9e06d4e8e6fdb16c54a99e787984a4058b14",
+      "bytes": 7694
+    },
+    "fixtures.parquet": {
+      "sha256": "2341493d57b899c3a32467093745322cb8bffd08b8fc9234bb707fd3b28567c0",
+      "bytes": 12232
+    },
+    "gameweeks.parquet": {
+      "sha256": "00b82d0fbb11a1d545558ac494b2dd2a8b7d7963c91643baab4befa47ab36880",
+      "bytes": 3467
+    },
+    "player_performances.parquet": {
+      "sha256": "ceed6b878a19227aca61379691eb40e891667d91bd4b92e26c9e71eaf54da977",
+      "bytes": 861891
+    },
+    "players.parquet": {
+      "sha256": "76ff58f701b8085b705fe1984567eb76a66128962035ea0de3a29fa3f5dbca6c",
+      "bytes": 105384
+    }
+  },
+  "players_total": 804,
+  "excluded_position_5_count": 20,
+  "excluded_position_5_perf_rows": 322,
+  "retained_player_count": 784,
+  "retained_perf_rows": 27283,
+  "defensive_contribution_status": "inapplicable_native",
+  "code_mapping_rule": "opta_code_primary_normalized_identity_secondary_absent_newcomer"
+}

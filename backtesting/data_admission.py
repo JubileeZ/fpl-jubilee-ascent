@@ -21,6 +21,10 @@ class AdmittedOrigin:
     gw: int
     mode: str
     evidence_digest: str
+    track: str = "synthetic"
+    disclosed_limitations: tuple[str, ...] = ()
+    partial_prefix: bool = False
+    promotable: bool = False
 
 
 def _utc(value: Any) -> datetime:
@@ -281,6 +285,15 @@ def _issue_errors(
 def assess_origins(
     request: dict[str, Any], catalog: dict[str, bytes]
 ) -> list[dict[str, Any]]:
+    if (
+        isinstance(request, dict)
+        and request.get("version") == 2
+        and request.get("mode") == "empirical"
+        and request.get("track") in ("development_mirror", "prospective_receipt")
+    ):
+        from backtesting.empirical_admission import assess_empirical_origins
+
+        return assess_empirical_origins(request, catalog)
     if (
         not isinstance(request, dict)
         or set(request)
@@ -692,12 +705,19 @@ def assess_origins(
 
 
 def require_admitted(
-    request: dict[str, Any], catalog: dict[str, bytes], season: str, gw: int
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    season: str,
+    gw: int,
+    *,
+    require_full_season: bool = False,
 ) -> AdmittedOrigin:
     reports = assess_origins(request, catalog)
     match = [r for r in reports if r["season"] == season and r["gw"] == gw]
-    if len(match) != 1 or match[0]["status"] != "admitted_synthetic":
+    if len(match) != 1 or match[0]["status"] not in ("admitted_synthetic", "admitted_empirical"):
         raise ValueError("Origin not admitted")
+    if require_full_season and match[0].get("partial_prefix", True):
+        raise ValueError("Origin is partial_prefix and cannot satisfy full season requirement")
     serialized = json.dumps(
         {"request": request, "catalog": catalog},
         sort_keys=True,
@@ -706,7 +726,14 @@ def require_admitted(
         allow_nan=False,
     ).encode()
     return AdmittedOrigin(
-        season, gw, request["mode"], hashlib.sha256(serialized).hexdigest()
+        season,
+        gw,
+        request["mode"],
+        hashlib.sha256(serialized).hexdigest(),
+        track=str(match[0].get("track", request["mode"])),
+        disclosed_limitations=tuple(str(x) for x in match[0].get("disclosed_limitations", ())),
+        partial_prefix=bool(match[0].get("partial_prefix", False)),
+        promotable=bool(match[0].get("promotable", False)),
     )
 
 
@@ -715,7 +742,11 @@ def verify_admitted(
 ) -> None:
     """Revalidate retained payload at each consumer boundary; never trust a record alone."""
     if capability != require_admitted(
-        request, catalog, capability.season, capability.gw
+        request,
+        catalog,
+        capability.season,
+        capability.gw,
+        require_full_season=capability.promotable,
     ):
         raise ValueError("Admission capability does not match inputs")
 
@@ -725,10 +756,20 @@ class AdmittedInput:
     season: str
     gw: int
     input_digest: str
+    mode: str = "synthetic"
+    track: str = "synthetic"
+    disclosed_limitations: tuple[str, ...] = ()
+    partial_prefix: bool = False
+    promotable: bool = False
 
 
 def require_input(
-    request: dict[str, Any], catalog: dict[str, bytes], season: str, gw: int
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    season: str,
+    gw: int,
+    *,
+    require_full_season: bool = False,
 ) -> AdmittedInput:
     matches = [
         report
@@ -737,11 +778,28 @@ def require_input(
     ]
     if len(matches) != 1 or matches[0].get("input_ready") is not True:
         raise ValueError("Input not admitted")
-    return AdmittedInput(season, gw, matches[0]["input_digest"])
+    if require_full_season and matches[0].get("partial_prefix", True):
+        raise ValueError("Input is partial_prefix and cannot satisfy full season requirement")
+    return AdmittedInput(
+        season,
+        gw,
+        matches[0]["input_digest"],
+        mode=str(matches[0].get("mode", request["mode"])),
+        track=str(matches[0].get("track", request["mode"])),
+        disclosed_limitations=tuple(str(x) for x in matches[0].get("disclosed_limitations", ())),
+        partial_prefix=bool(matches[0].get("partial_prefix", False)),
+        promotable=bool(matches[0].get("promotable", False)),
+    )
 
 
 def verify_input(
     capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes]
 ) -> None:
-    if capability != require_input(request, catalog, capability.season, capability.gw):
+    if capability != require_input(
+        request,
+        catalog,
+        capability.season,
+        capability.gw,
+        require_full_season=capability.promotable,
+    ):
         raise ValueError("Input capability does not match inputs")

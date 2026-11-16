@@ -108,6 +108,80 @@ def assess_retained_pilot(quarantine: Path) -> dict[str, Any]:
     }
 
 
+def load_empirical_manifest_bundle(
+    manifest_path: Path,
+    *,
+    quarantine_root: Path | None = None,
+    prefix_end_gw: int | None = None,
+    require_admitted: bool = True,
+) -> dict[str, Any]:
+    """Load content-addressed empirical mirror/receipt bundle with fail-closed SHA-256 checks."""
+    from backtesting.fplcache_ingest import _unpack_bootstrap_xz
+    from backtesting.season_rules import load_season_lifecycle
+
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if data.get("schema_version") != 2 or data.get("track") not in ("development_mirror", "prospective_receipt"):
+        raise ValueError("Unsupported empirical manifest schema or track")
+    qroot = load_season_lifecycle().assert_unsealed_storage_path(
+        quarantine_root if quarantine_root is not None else Path("data/reports/empirical_mirrors"),
+        error_message="Empirical mirror storage path is forbidden",
+    )
+    season = str(data["season"])
+    origins_raw = list(data.get("origins", []))
+    selected = [o for o in origins_raw if prefix_end_gw is None or int(o["gw"]) <= prefix_end_gw]
+    if not selected:
+        raise ValueError("Empirical manifest slice contains no origins")
+
+    loaded_origins: list[dict[str, Any]] = []
+    for entry in selected:
+        bs_meta = entry.get("bootstrap", {})
+        fx_meta = entry.get("fixtures", {})
+        out_meta = entry.get("settled_outcomes", {})
+        if require_admitted:
+            if (
+                entry.get("origin_admitted") is not True
+                or bs_meta.get("status") != "supported"
+                or fx_meta.get("status") != "supported"
+                or out_meta.get("meets_plus_24h") is not True
+            ):
+                raise ValueError(f"Non-admitted empirical manifest entry at GW{entry.get('gw')}")
+        for label, meta in (("bootstrap", bs_meta), ("fixtures", fx_meta), ("settled_outcomes", out_meta)):
+            rel = meta.get("local_relpath")
+            if not rel:
+                if require_admitted:
+                    raise ValueError(f"Missing quarantined {label} local_relpath for GW{entry.get('gw')}")
+                continue
+            fpath = (qroot / str(rel)).resolve()
+            if not fpath.is_relative_to(qroot):
+                raise ValueError(f"Path traversal outside quarantine root for {label}: {rel}")
+            if not fpath.is_file():
+                raise ValueError(f"Missing quarantined {label} file: {fpath}")
+            raw = fpath.read_bytes()
+            actual_blob = hashlib.sha256(raw).hexdigest()
+            expected_blob = meta.get("blob_sha256")
+            if not isinstance(expected_blob, str) or len(expected_blob) != 64 or any(c not in "0123456789abcdef" for c in expected_blob):
+                raise ValueError(f"Missing or malformed {label} blob_sha256 for {fpath}")
+            if actual_blob != expected_blob:
+                raise ValueError(f"{label} sha256 hash mismatch for {fpath}")
+            if label == "bootstrap" and meta.get("decompressed_sha256"):
+                dec, _ = _unpack_bootstrap_xz(raw)
+                if hashlib.sha256(dec).hexdigest() != meta["decompressed_sha256"]:
+                    raise ValueError(f"bootstrap decompressed_sha256 hash mismatch for {fpath}")
+        loaded_origins.append(entry)
+
+    is_partial = len(loaded_origins) < 38 or not bool(data.get("summary", {}).get("full_season_admitted", False))
+    return {
+        "schema_version": 2,
+        "mode": "empirical",
+        "track": data["track"],
+        "season": season,
+        "partial_prefix": is_partial,
+        "promotable": not is_partial,
+        "shared_chip_calendar": data.get("shared_chip_calendar", []),
+        "origins": loaded_origins,
+    }
+
+
 def main() -> None:
     report = assess_retained_pilot(QUARANTINE)
     (TOPIC / "input_evidence_assessment.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

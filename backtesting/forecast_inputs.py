@@ -35,17 +35,152 @@ def validate_storage_path(path: Path) -> Path:
     return load_season_lifecycle().assert_unsealed_storage_path(path, error_message="Invalid storage path")
 
 
+def _verify_empirical_training_bundle(
+    capability: AdmittedInput,
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    authority: dict[str, Any],
+) -> dict[str, Any]:
+    from backtesting.empirical_admission import resolve_source_bytes, validate_seed_mapping, verify_digests
+    from backtesting.empirical_mirrors import parse_fixtures_csv_window, validate_mirror_url
+    from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
+
+    required = {"version", "mode", "track", "input_digest", "season", "gw", "seed_identity", "source_digest"}
+    if set(authority) != required or authority["version"] != 2 or authority["mode"] != "empirical":
+        raise ValueError("Unsupported empirical training authority")
+    track = authority["track"]
+    if track not in ("development_mirror", "prospective_receipt") or track != capability.track:
+        raise ValueError("Training authority track mismatch")
+    origin = next((o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw), None)
+    if origin is None:
+        raise ValueError("Empirical origin missing from request")
+    if (authority["input_digest"], authority["season"], authority["gw"]) != (
+        capability.input_digest,
+        capability.season,
+        capability.gw,
+    ):
+        raise ValueError("Training authority scope mismatch")
+
+    source = _read_canonical_json(catalog, authority["source_digest"])
+    req_source = {
+        "mode",
+        "track",
+        "url",
+        "revision",
+        "parser_version",
+        "captured_at",
+        "defensive_contribution_status",
+        "disclosed_limitations",
+        "seed_mapping",
+        "tables",
+    }
+    if not req_source <= set(source) or source.get("mode") != "empirical" or source["track"] != track:
+        raise ValueError("Invalid empirical training source")
+    url = str(source["url"])
+    if track == "development_mirror":
+        validate_mirror_url(url)
+    elif not url.startswith("receipt://"):
+        raise ValueError("Prospective receipt track requires receipt:// URL")
+
+    dl = _parse_iso_time(origin["deadline"])
+    cap_ts = _parse_iso_time(source["captured_at"])
+    if cap_ts >= dl:
+        raise ValueError("Empirical training source captured at or after deadline")
+
+    tables = source.get("tables")
+    needed_tables = {
+        "clubs",
+        "player_metadata",
+        "target_fixtures",
+        "history",
+        "history_fixtures",
+        "seed_players",
+        "seed_history",
+        "seed_fixtures",
+    }
+    if not isinstance(tables, dict) or not needed_tables <= set(tables):
+        raise ValueError("Empirical training tables incomplete")
+
+    # Enforce strict pre-deadline isolation on history and history_fixtures
+    for row in tables["history"]:
+        if type(row.get("gameweek_id")) is not int or not 1 <= row["gameweek_id"] < capability.gw:
+            raise ValueError("Empirical history outside causal gameweek bounds")
+        if _parse_iso_time(row["kickoff_time"]) >= dl:
+            raise ValueError("Empirical history kickoff exceeds deadline")
+    for row in tables["history_fixtures"]:
+        if type(row.get("gameweek_id")) is not int or not 1 <= row["gameweek_id"] < capability.gw:
+            raise ValueError("Empirical history_fixtures outside causal gameweek bounds")
+        if _parse_iso_time(row["kickoff_time"]) >= dl:
+            raise ValueError("Empirical history_fixtures kickoff exceeds deadline")
+
+    # Cryptographically bind tables back to admitted origin sources
+    sources = origin["sources"]
+    bs_raw = resolve_source_bytes(sources["bootstrap"], catalog)
+    fx_raw = resolve_source_bytes(sources["fixtures"], catalog)
+    hist_raw = resolve_source_bytes(sources["history"], catalog)
+    seed_raw = resolve_source_bytes(sources["seed"], catalog)
+    if any(b is None for b in (bs_raw, fx_raw, hist_raw, seed_raw)):
+        raise ValueError("Missing admitted source bytes during training bundle verification")
+    bs_dec, bs_err = verify_digests(sources["bootstrap"], bs_raw or b"")
+    fx_dec, fx_err = verify_digests(sources["fixtures"], fx_raw or b"")
+    hist_dec, hist_err = verify_digests(sources["history"], hist_raw or b"")
+    seed_dec, seed_err = verify_digests(sources["seed"], seed_raw or b"")
+    if any(err is not None for err in (bs_err, fx_err, hist_err, seed_err)):
+        raise ValueError("Admitted source digest verification failed in training bundle")
+
+    admitted_bs_elements, _, _ = _sanitize_bootstrap(
+        json.loads(bs_dec.decode("utf-8")),
+        capture_upper=_utc(sources["bootstrap"]["capture_upper"]),
+    )
+    admitted_pids = {int(r["id"]) for r in admitted_bs_elements}
+    bundle_pids = {int(r["id"]) for r in tables["player_metadata"] if int(r.get("position_id", 0)) != 5}
+    if bundle_pids != admitted_pids:
+        raise ValueError("Empirical training player_metadata differs from admitted bootstrap")
+
+    admitted_fx_ids = {int(r["id"]) for r in parse_fixtures_csv_window(fx_dec, capability.gw)}
+    if {int(r["id"]) for r in tables["target_fixtures"]} != admitted_fx_ids:
+        raise ValueError("Empirical target_fixtures differ from admitted fixtures source")
+
+    admitted_hist = json.loads(hist_dec.decode("utf-8"))
+    if len(tables["history"]) != len(admitted_hist) or tables["history"] != admitted_hist:
+        raise ValueError("Empirical training history differs from admitted history source")
+
+    admitted_seed = json.loads(seed_dec.decode("utf-8"))
+    if (
+        source["seed_mapping"] != admitted_seed.get("seed_mapping")
+        or len(tables["seed_players"]) != len(admitted_seed.get("players", []))
+        or len(tables["seed_history"]) != len(admitted_seed.get("history", []))
+    ):
+        raise ValueError("Empirical seed bundle differs from admitted seed source")
+
+    non_mgr_meta = [row for row in tables["player_metadata"] if int(row.get("position_id", 0)) != 5]
+    seed_issues = validate_seed_mapping(
+        {
+            "players": tables["seed_players"],
+            "history": tables["seed_history"],
+            "seed_mapping": source["seed_mapping"],
+            "defensive_contribution_status": source.get("defensive_contribution_status"),
+        },
+        non_mgr_meta,
+    )
+    if seed_issues:
+        raise ValueError(f"Invalid empirical seed mapping: {seed_issues[0]}")
+    return source
+
+
 def verify_training_bundle(
     capability: AdmittedInput,
     request: dict[str, Any],
     catalog: dict[str, bytes],
     authority_digest: str,
 ) -> dict[str, Any]:
-    """Resolve source-authorized rows; this synthetic contract is not empirical admission."""
+    """Resolve source-authorized rows for synthetic diagnostics or verified empirical bundles."""
     verify_input(capability, request, catalog)
     if capability.season in load_season_lifecycle().sealed_seasons():
         raise ValueError("Protected season")
     authority = _read_canonical_json(catalog, authority_digest)
+    if isinstance(authority, dict) and authority.get("mode") == "empirical":
+        return _verify_empirical_training_bundle(capability, request, catalog, authority)
     required = {"version", "mode", "input_digest", "season", "gw", "seed_identity", "source_digest"}
     if set(authority) != required or authority["version"] != 2 or authority["mode"] != "synthetic":
         raise ValueError("Unsupported training authority")

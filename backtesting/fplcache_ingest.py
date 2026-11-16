@@ -186,16 +186,9 @@ def _unpack_bootstrap_xz(raw: bytes) -> tuple[bytes, dict[str, Any]]:
     return decoded, payload
 
 
-def _sanitize_bootstrap(
-    payload: dict[str, Any],
-    *,
-    capture_upper: datetime,
-) -> tuple[list[dict[str, Any]], set[int], list[str]]:
-    issues: list[str] = []
-    club_ids = {int(t["id"]) for t in payload.get("teams", []) if isinstance(t, Mapping) and "id" in t}
-    sanitized: list[dict[str, Any]] = []
+def extract_max_news_added(payload: Mapping[str, Any]) -> datetime | None:
+    """Return latest element ``news_added`` UTC timestamp inside a bootstrap payload."""
     max_news_added: datetime | None = None
-
     for el in payload.get("elements", []):
         if not isinstance(el, Mapping):
             continue
@@ -204,6 +197,22 @@ def _sanitize_bootstrap(
             news_dt = _utc(news_raw)
             if max_news_added is None or news_dt > max_news_added:
                 max_news_added = news_dt
+    return max_news_added
+
+
+def _sanitize_bootstrap(
+    payload: dict[str, Any],
+    *,
+    capture_upper: datetime,
+) -> tuple[list[dict[str, Any]], set[int], list[str]]:
+    issues: list[str] = []
+    club_ids = {int(t["id"]) for t in payload.get("teams", []) if isinstance(t, Mapping) and "id" in t}
+    sanitized: list[dict[str, Any]] = []
+    max_news_added = extract_max_news_added(payload)
+
+    for el in payload.get("elements", []):
+        if not isinstance(el, Mapping):
+            continue
         if el.get("element_type") not in PLAYER_ELEMENT_TYPES:
             continue
         row = {field: el.get(field) for field in ALLOWLISTED_ELEMENT_FIELDS}

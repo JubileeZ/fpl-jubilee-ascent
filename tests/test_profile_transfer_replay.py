@@ -251,7 +251,7 @@ def test_cli_profiles_actual_native_solver_from_retained_manifest(tmp_path: Path
     assert report["records"][0]["objective"] == pytest.approx(report["records"][0]["objective_bound"], abs=1e-6)
 
 
-@pytest.mark.parametrize("kwargs", [{"max_optimizer_calls": 21}, {"time_limit_per_call_seconds": 31}, {"threads": 2}, {"serial": False}])
+@pytest.mark.parametrize("kwargs", [{"max_optimizer_calls": 21}, {"time_limit_per_call_seconds": 61}, {"threads": 2}, {"serial": False}])
 def test_profiling_hard_caps_cannot_be_relaxed(kwargs: dict[str, Any]) -> None:
     with pytest.raises(ValueError, match="at most 20"):
         ProfilingEnvelope(**kwargs)

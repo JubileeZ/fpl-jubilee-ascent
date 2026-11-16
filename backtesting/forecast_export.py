@@ -29,6 +29,54 @@ def validate_components(predictions: pd.DataFrame, rules_version: str) -> None:
             raise ValueError("Blank components must be zero")
 
 
+def _expected_empirical_coverage(
+    origin: dict[str, Any],
+    capability: AdmittedInput,
+    targets: list[int],
+    catalog: dict[str, bytes],
+) -> tuple[set[tuple[int, int, int]], pd.DataFrame]:
+    import json
+
+    from backtesting.empirical_admission import resolve_source_bytes, verify_digests
+    from backtesting.empirical_mirrors import parse_fixtures_csv_window
+    from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
+
+    sources = origin["sources"]
+    bs_raw = resolve_source_bytes(sources["bootstrap"], catalog)
+    fx_raw = resolve_source_bytes(sources["fixtures"], catalog)
+    if bs_raw is None or fx_raw is None:
+        raise ValueError("Missing empirical bootstrap or fixtures for solver table check")
+    bs_dec, bs_err = verify_digests(sources["bootstrap"], bs_raw)
+    fx_dec, fx_err = verify_digests(sources["fixtures"], fx_raw)
+    if bs_err or fx_err:
+        raise ValueError("Empirical digest mismatch in solver table check")
+    bs_payload = json.loads(bs_dec.decode("utf-8"))
+    elements, _, _ = _sanitize_bootstrap(bs_payload, capture_upper=_utc(sources["bootstrap"]["capture_upper"]))
+    fx_rows = parse_fixtures_csv_window(fx_dec, capability.gw, horizon=len(targets))
+
+    club_gw_fixtures: dict[tuple[int, int], list[int]] = {}
+    for row in fx_rows:
+        w = int(row["event"])
+        fid = int(row["id"])
+        club_gw_fixtures.setdefault((int(row["team_h"]), w), []).append(fid)
+        club_gw_fixtures.setdefault((int(row["team_a"]), w), []).append(fid)
+
+    expected: set[tuple[int, int, int]] = set()
+    meta_rows: list[dict[str, int]] = []
+    for el in elements:
+        pid = int(el["id"])
+        club = int(el["team"])
+        meta_rows.append({"id": pid, "club": club, "position": int(el["element_type"]), "price": int(el["now_cost"])})
+        for w in targets:
+            fids = club_gw_fixtures.get((club, w), [])
+            if not fids:
+                expected.add((pid, w, -1))
+            else:
+                for fid in fids:
+                    expected.add((pid, w, fid))
+    return expected, pd.DataFrame(meta_rows)
+
+
 def strict_solver_table(
     predictions: pd.DataFrame,
     capability: AdmittedInput,
@@ -46,9 +94,13 @@ def strict_solver_table(
         raise ValueError("Ambiguous issue")
     origin = origins[0]
     targets = list(range(capability.gw, min(capability.gw + 5, 38) + 1))
-    if origin["target_gws"] != targets:
-        raise ValueError("Incomplete issue horizon")
-    expected = {(int(row["player"]), int(row["gw"]), -1 if row["status"] == "blank" else int(row["fixture"])) for row in origin["schedule"]}
+    if capability.mode == "empirical":
+        expected, raw_meta = _expected_empirical_coverage(origin, capability, targets, catalog)
+    else:
+        if origin["target_gws"] != targets:
+            raise ValueError("Incomplete issue horizon")
+        expected = {(int(row["player"]), int(row["gw"]), -1 if row["status"] == "blank" else int(row["fixture"])) for row in origin["schedule"]}
+        raw_meta = pd.DataFrame(origin["players"])
     columns = ["player_id", "gameweek_id", "fixture_id", "projected_points", "projected_minutes"]
     if not set(columns).issubset(predictions.columns):
         raise ValueError("Forecast columns missing")
@@ -69,7 +121,6 @@ def strict_solver_table(
     if ((frame.loc[blank, "projected_points"] != 0) | (frame.loc[blank, "projected_minutes"] != 0)).any():
         raise ValueError("Known blank must be zero")
     grouped: pd.DataFrame = cast(pd.DataFrame, frame.groupby(["player_id", "gameweek_id"], as_index=False)[columns[3:]].sum())
-    raw_meta: pd.DataFrame = pd.DataFrame(origin["players"])
     metadata: pd.DataFrame = cast(pd.DataFrame, raw_meta[["id", "club", "position", "price"]]).rename(columns={"id": "player_id"})
     points = grouped.pivot(index="player_id", columns="gameweek_id", values="projected_points")
     points.columns = [f"{gw}_Pts" for gw in points.columns]

@@ -236,6 +236,9 @@ def record_from_dict(d: dict[str, Any]) -> ReplayDeadlineRecord:
                 points=int(item[1]["points"]),
                 minutes=int(item[1]["minutes"]),
                 appeared=item[1].get("appeared"),
+                yellow_cards=item[1].get("yellow_cards", 0),
+                red_cards=item[1].get("red_cards", 0),
+                component_points_sum=item[1].get("component_points_sum"),
             ),
         )
         for item in out_data["outcomes"]
@@ -496,7 +499,8 @@ def get_strategic_replay_options(
         "hit_hurdle": round(4.0 + 1.8 * scale, 4),
         "paid_hit_penalty": round(1.8 * scale, 4),
         "gk_transfer_friction": round(1.5 * scale, 4),
-        "ft_use_penalty": 0.2,
+        "ft_use_penalty": 0.5,
+        "spare_ft_hold_weight": 0.325,
         "starter_xmins_floor": 65.0,
         "starter_xmins_penalty": 10.0,
         "bench_cover_min": 12,
@@ -731,12 +735,12 @@ def execute_replay_deadline(
                 )
             exec_status = "UNCERTIFIED_GAP" if cert.feasible else "INFEASIBLE"
     elif policy.mode == "time_capped":
-        if cert.termination_status in ("TIMEOUT", "INFEASIBLE") or not cert.feasible:
+        if cert.termination_status in ("TIMEOUT", "TIME_LIMIT", "INFEASIBLE") or not cert.feasible:
             if policy.raise_on_failure:
                 raise UncertifiedSolveError(
                     f"Solve at deadline {state.deadline} failed time-capped policy (status={cert.termination_status}, runtime={cert.runtime_seconds}s)"
                 )
-            exec_status = "TIMEOUT" if cert.termination_status == "TIMEOUT" else "INFEASIBLE"
+            exec_status = "TIMEOUT" if cert.termination_status in ("TIMEOUT", "TIME_LIMIT") else "INFEASIBLE"
 
     # Validate decision legality independently
     validate_decision_legality(state, decision)

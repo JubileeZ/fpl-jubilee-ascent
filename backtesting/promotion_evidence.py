@@ -159,6 +159,95 @@ def native_solver_identity() -> str:
     return replay_solver_identity(native_strategic_solve)
 
 
+_ACTUAL_XP_TO_GUARD_OUTCOME = {
+    "actual_xp_goals": "actual_goals_points",
+    "actual_xp_assists": "actual_assists_points",
+    "actual_xp_clean_sheet": "actual_clean_sheet_points",
+    "actual_xp_saves": "actual_saves_points",
+    "actual_xp_bonus": "actual_bonus_points",
+    "actual_xp_minutes": "actual_minutes_points",
+    "actual_xp_conceded": "actual_conceded_points",
+    "actual_xp_defcon": "actual_defcon_points",
+    "actual_xp_yellow_cards": "actual_yellow_cards_points",
+    "actual_xp_red_cards": "actual_red_cards_points",
+    "actual_xp_penalties_saved": "actual_penalties_saved_points",
+    "actual_xp_penalties_missed": "actual_penalties_missed_points",
+    "actual_xp_own_goals": "actual_own_goals_points",
+}
+
+
+def _extract_origin_players_and_outcomes(
+    origin: Mapping[str, Any],
+    catalog: Mapping[str, bytes] | None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Normalize synthetic v1 or empirical v2 origin into canonical (players, outcomes) lists."""
+    if "sources" not in origin or not isinstance(origin.get("sources"), Mapping):
+        return list(origin["players"]), list(origin["outcomes"])
+
+    from backtesting.empirical_admission import resolve_source_bytes, verify_digests
+    from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
+    from backtesting.walkforward import _build_actual_components
+
+    sources = origin["sources"]
+    bs_spec = sources["bootstrap"]
+    out_spec = sources["outcomes"]
+    bs_raw = resolve_source_bytes(bs_spec, catalog)
+    out_raw = resolve_source_bytes(out_spec, catalog)
+    if bs_raw is None or out_raw is None:
+        raise ValueError("Missing empirical bootstrap or outcomes bytes in promotion evidence")
+    bs_dec, bs_err = verify_digests(bs_spec, bs_raw)
+    out_dec, out_err = verify_digests(out_spec, out_raw)
+    if bs_err or out_err:
+        raise ValueError("Empirical digest mismatch in promotion evidence")
+
+    sanitized, _, bs_issues = _sanitize_bootstrap(
+        json.loads(bs_dec.decode("utf-8")),
+        capture_upper=_utc(bs_spec["capture_upper"]),
+    )
+    if bs_issues:
+        raise ValueError("Malformed empirical bootstrap in promotion evidence")
+
+    players = [
+        {
+            "id": int(el["id"]),
+            "club": int(el["team"]),
+            "position": int(el["element_type"]),
+            "price": int(el["now_cost"]),
+            "ownership": float(el.get("selected_by_percent") or 0.0),
+            "eligible": bool(el["purchase_eligible"]),
+        }
+        for el in sanitized
+    ]
+    season = str(origin["season"])
+    gw = int(origin["gw"])
+    out_rows = json.loads(out_dec.decode("utf-8"))
+    out_df = pd.DataFrame(out_rows)
+    if out_df.empty:
+        raise ValueError("Empty empirical outcomes in promotion evidence")
+    if "gameweek_id" not in out_df.columns:
+        out_df["gameweek_id"] = gw
+    players_df = pd.DataFrame(
+        {
+            "player_id": [p["id"] for p in players],
+            "position_id": [p["position"] for p in players],
+            "native_rules_version": season,
+        }
+    )
+    actual_df = _build_actual_components(out_df, players_df)
+    normalized_outcomes: list[dict[str, Any]] = []
+    for row in actual_df.to_dict(orient="records"):
+        norm: dict[str, Any] = {
+            "gw": int(row["gameweek_id"]),
+            "player": int(row["player_id"]),
+            "points": float(row["total_points"]),
+            "minutes": int(row["minutes"]),
+        }
+        for src_col, dst_col in _ACTUAL_XP_TO_GUARD_OUTCOME.items():
+            norm[dst_col] = float(row[src_col])
+        normalized_outcomes.append(norm)
+    return players, normalized_outcomes
+
+
 def _verify_live_readiness(root: Path, payload: dict[str, Any], candidate: str, champion: str, protocol_hash: str, source_hash: str, frozen_review: dict[str, Any]) -> None:
     from backtesting.live_capture import LiveDeadlineCapture, PlayerForecastSnapshot
 
@@ -215,6 +304,13 @@ def _verify_replay(
     if [record.deadline for record in records] != protocol["windows"][season] or len(entry["issues"]) != len(records):
         raise ValueError("Replay trace does not cover the complete frozen schedule")
     quality = QualityPolicy(**protocol["quality_policy"])
+    if (
+        quality.mode != "certified"
+        or quality.target_gap != 0.0
+        or not quality.require_proven_optimal
+        or not 0 < quality.time_limit_seconds <= 60.0
+    ):
+        raise ValueError("Promotion evidence requires certified QualityPolicy (mode='certified', target_gap=0.0, time_limit_seconds<=60.0)")
     identity = replay_evaluation_identity(
         model_name=model, model_version_hash=model_source_hash, protocol_hash=config.compute_hash(),
         season=season, anchor_id=anchor.anchor_id, horizon=6, last_gw=38, scored_end_gw=max(protocol["windows"][season]),
@@ -227,14 +323,16 @@ def _verify_replay(
     for record, issue in zip(records, entry["issues"], strict=True):
         context = _read_material(root, issue["admission"])
         admitted, request, catalog = _admit_context(context, season, record.deadline)
-        empirical = empirical and admitted.mode == "empirical"
+        empirical = empirical and (admitted.mode == "empirical" and admitted.promotable and not admitted.partial_prefix)
         capability = require_input(request, catalog, season, record.deadline)
         origin = next(origin for origin in request["origins"] if origin["season"] == season and origin["gw"] == record.deadline)
+        origin_players, origin_outcomes = _extract_origin_players_and_outcomes(origin, catalog)
+        origin_universe = [player["id"] for player in origin_players]
         if record.deadline == 1:
-            universe = pd.DataFrame(origin["players"]).rename(columns={"id": "player_id", "club": "club_id", "position": "position_id", "price": "now_cost", "ownership": "selected_by_percent", "eligible": "is_eligible"})
+            universe = pd.DataFrame(origin_players).rename(columns={"id": "player_id", "club": "club_id", "position": "position_id", "price": "now_cost", "ownership": "selected_by_percent", "eligible": "is_eligible"})
             if anchor.source_digest != compute_universe_digest(universe):
                 raise ValueError("Neutral anchor differs from admitted opening universe")
-            selected = {player["id"]: player for player in origin["players"] if player["id"] in anchor.player_ids}
+            selected = {player["id"]: player for player in origin_players if player["id"] in anchor.player_ids}
             position_codes = {1: "GK", 2: "D", 3: "M", 4: "F"}
             if len(selected) != 15 or any(anchor.acquisition_prices[pid] != player["price"] or anchor.player_clubs[pid] != player["club"] or anchor.player_positions[pid] != position_codes[player["position"]] or anchor.player_eligible.get(pid) != player["eligible"] or not player["eligible"] for pid, player in selected.items()):
                 raise ValueError("Neutral anchor acquisition state differs from admitted opening metadata")
@@ -251,7 +349,7 @@ def _verify_replay(
             raise ValueError("Development selection evidence must precede finalist registration")
         wide = strict_solver_table(predictions, capability, request, catalog)
         wide = wide.rename(columns={"club": "club_id", "position": "position_id", "price": "now_cost"})
-        eligibility = {player["id"]: player["eligible"] for player in origin["players"]}
+        eligibility = {player["id"]: player["eligible"] for player in origin_players}
         wide["purchase_eligible"] = wide["player_id"].map(lambda pid: eligibility[pid])
         if record.forecast_hash != forecast_content_hash(wide) or record.evaluation_identity != identity:
             raise ValueError("Replay does not bind verified forecasts and frozen policy")
@@ -263,9 +361,9 @@ def _verify_replay(
             raise ValueError("Unsupported forecast generator parameterization")
         if record.outcomes.source_identity != admitted.evidence_digest:
             raise ValueError("Scored outcomes do not bind admitted source closure")
-        source_points: dict[int, float] = {pid: 0.0 for pid in origin["universe"]}
-        source_minutes: dict[int, float] = {pid: 0.0 for pid in origin["universe"]}
-        for outcome in origin["outcomes"]:
+        source_points: dict[int, float] = {pid: 0.0 for pid in origin_universe}
+        source_minutes: dict[int, float] = {pid: 0.0 for pid in origin_universe}
+        for outcome in origin_outcomes:
             if outcome["gw"] == record.deadline:
                 source_points[outcome["player"]] += outcome["points"]
                 if type(outcome.get("minutes")) is not int:
@@ -277,12 +375,13 @@ def _verify_replay(
             raise ValueError("Replay appearance or minutes differ from admitted native outcomes")
         certificate = record.certificate
         validate_solver_certificate_consistency(certificate)
-        if (record.execution_status != "SUCCESS" or not certificate.feasible or certificate.quality_mode != quality.mode
-                or certificate.termination_status != "OPTIMAL" or certificate.relative_gap > quality.target_gap
+        if (record.execution_status != "SUCCESS" or not certificate.feasible or certificate.quality_mode != "certified"
+                or certificate.termination_status != "OPTIMAL" or certificate.relative_gap > 0.0
                 or certificate.threads != 1 or certificate.seed != 42 or certificate.runtime_seconds > quality.time_limit_seconds):
-            raise ValueError("Replay lacks required solver-quality certificate")
-        if "lineup" in record.certificate.solver_version or "dry_run" in record.certificate.solver_version:
-            raise ValueError("Diagnostic solver cannot produce final promotion evidence")
+            raise ValueError("Replay lacks required certified solver-quality certificate")
+        lowered_solver = record.certificate.solver_version.lower()
+        if any(bad in lowered_solver for bad in ("lineup", "dry_run", "diagnostic", "mock", "heuristic")):
+            raise ValueError("Diagnostic/mock solver cannot produce final promotion evidence")
         expected_options = get_strategic_replay_options(min(6, 39 - record.deadline), rules_version=season)
         if any(record.certificate.strategic_audit.get(key) != value for key, value in expected_options.items()):
             raise ValueError("Effective solver policy differs from frozen Strategic baseline")
@@ -308,12 +407,18 @@ def group_projection_gameweeks(predictions: pd.DataFrame, season: str, issue_gw:
     return result
 
 
-def finalized_gameweek_outcomes(origin: dict[str, Any], protocol: dict[str, Any]) -> dict[tuple[str, int, int], dict[str, Any]]:
+def finalized_gameweek_outcomes(
+    origin: dict[str, Any],
+    protocol: dict[str, Any],
+    *,
+    catalog: Mapping[str, bytes] | None = None,
+) -> dict[tuple[str, int, int], dict[str, Any]]:
     """Only call after independent native outcome admission proves complete coverage."""
     season, gw = origin["season"], origin["gw"]
+    origin_players, origin_outcomes = _extract_origin_players_and_outcomes(origin, catalog)
     fields = {spec["outcome_field"] for spec in protocol["guard_specs"].values()}
-    totals = {(season, gw, pid): {field: 0.0 for field in fields} for pid in origin["universe"]}
-    for row in origin["outcomes"]:
+    totals = {(season, gw, player["id"]): {field: 0.0 for field in fields} for player in origin_players}
+    for row in origin_outcomes:
         if row["gw"] != gw:
             raise ValueError("Incorrectly scoped guard outcome source")
         measured = {**row, "actual_points": row["points"], "actual_minutes": row.get("minutes")}
@@ -422,17 +527,23 @@ def evaluate_replay_evidence(request_path: Path | str) -> dict[str, Any]:
     all_records: dict[tuple[str, str], list[ReplayDeadlineRecord]] = {}
     all_rows: dict[tuple[str, str], list[dict[str, Any]]] = {}
     empirical = True
+    partial_prefix_seen = False
+    disclosed: list[str] = []
     guard_outcomes: dict[tuple[str, int, int], dict[str, Any]] = {}
     guard_windows: set[tuple[str, int]] = set()
     for reference in request["guard_outcome_sources"]:
         season, gw = reference["season"], reference["gameweek"]
-        admitted, source_request, _ = _admit_context(_read_material(root, reference["admission"]), season, gw)
-        empirical = empirical and admitted.mode == "empirical"
+        admitted, source_request, source_catalog = _admit_context(_read_material(root, reference["admission"]), season, gw)
+        empirical = empirical and (admitted.mode == "empirical" and admitted.promotable and not admitted.partial_prefix)
+        partial_prefix_seen = partial_prefix_seen or (admitted.mode == "empirical" and admitted.partial_prefix)
+        for lim in admitted.disclosed_limitations:
+            if lim not in disclosed:
+                disclosed.append(str(lim))
         if (season, gw) in guard_windows:
             raise ValueError("Duplicate guard outcome source window")
         guard_windows.add((season, gw))
         origin = next(origin for origin in source_request["origins"] if origin["season"] == season and origin["gw"] == gw)
-        guard_outcomes.update(finalized_gameweek_outcomes(origin, protocol))
+        guard_outcomes.update(finalized_gameweek_outcomes(origin, protocol, catalog=source_catalog))
     expected_guard_windows = {(season, gw) for season, weeks in protocol["windows"].items() for issue in weeks for gw in range(issue, min(39, issue + 6))}
     if guard_windows != expected_guard_windows:
         raise ValueError("Required six-lead guard outcome source coverage missing")
@@ -460,7 +571,14 @@ def evaluate_replay_evidence(request_path: Path | str) -> dict[str, Any]:
     guards = _guards_from_rows(request, protocol, all_rows)
     result = evaluate_evidence_against_protocol(scores, guards, config, attempt_number=registration.attempt_number_in_family, confirmation_registry=registry, confirmation_attempt_id=registration.attempt_id)
     if not empirical:
-        result = replace(result, verdict="inconclusive" if result.verdict == "pass" else result.verdict, reasons=[*result.reasons, "Synthetic evidence verifies infrastructure only; empirical admission pending"], admitted_limitations=[*result.admitted_limitations, "No production recommendation or adoption authority"])
+        note = (
+            "Partial-prefix empirical slice non-promotable for full-season readiness"
+            if partial_prefix_seen
+            else "Synthetic evidence verifies infrastructure only; empirical admission pending"
+        )
+        result = replace(result, verdict="inconclusive" if result.verdict == "pass" else result.verdict, reasons=[*result.reasons, note], admitted_limitations=[*result.admitted_limitations, *disclosed, "No production recommendation or adoption authority"])
+    elif disclosed:
+        result = replace(result, admitted_limitations=[*result.admitted_limitations, *disclosed])
     if registration.status == "completed" and registration.scientific_verdict != result.verdict:
         raise ValueError("Registered terminal verdict differs from reconstructed evidence")
     body = {

@@ -49,6 +49,9 @@ class Outcome:
     points: int
     minutes: int
     appeared: bool | None
+    yellow_cards: int = 0
+    red_cards: int = 0
+    component_points_sum: int | None = None
 
 
 @dataclass(frozen=True)
@@ -103,8 +106,8 @@ def validate_squad(squad: tuple[Player, ...]) -> None:
 def initial_state(rules_version: str, squad: tuple[Player, ...]) -> ReplayState:
     rules = get_rules(rules_version)
     validate_squad(squad)
-    if any(p.purchase != p.market for p in squad):
-        raise ValueError("Initial acquisition must use deadline market price")
+    if any(p.purchase != p.market or not p.purchase_eligible for p in squad):
+        raise ValueError("Initial acquisition must use deadline market price and purchase_eligible players")
     bank = 1000 - sum(p.purchase for p in squad)
     if type(bank) is not int or bank < 0:
         raise ValueError("Initial squad exceeds budget")
@@ -155,13 +158,33 @@ def _formation(ids: tuple[int, ...], players: dict[int, Player]) -> bool:
             and 2 <= positions["M"] <= 5 and 1 <= positions["F"] <= 3)
 
 
+def zero_min_card_points(yellow_cards: int, red_cards: int) -> int:
+    """FPL disciplinary card deduction at zero minutes."""
+    return -(yellow_cards + 3 * red_cards)
+
+
 def _validate_outcome(outcome: Outcome) -> None:
     if not isinstance(outcome, Outcome) or type(outcome.points) is not int or type(outcome.minutes) is not int or outcome.minutes < 0:
         raise ValueError("Incomplete outcome")
+    if type(outcome.yellow_cards) is not int or outcome.yellow_cards < 0 or type(outcome.red_cards) is not int or outcome.red_cards < 0:
+        raise ValueError("Incomplete outcome")
+    if outcome.component_points_sum is not None:
+        if type(outcome.component_points_sum) is not int:
+            raise ValueError("Incomplete outcome")
+        if outcome.component_points_sum != outcome.points:
+            raise ValueError("Component points mismatch")
     if type(outcome.appeared) is not bool or (outcome.minutes > 0 and not outcome.appeared):
         raise ValueError("Unknown or inconsistent appearance")
-    if outcome.minutes == 0 and (outcome.points != 0 or outcome.appeared):
-        raise ValueError("Zero-minute scoring or appearance eligibility unsupported")
+    if outcome.minutes == 0:
+        if outcome.appeared:
+            raise ValueError("Zero-minute scoring or appearance eligibility unsupported")
+        expected_card_pts = zero_min_card_points(outcome.yellow_cards, outcome.red_cards)
+        if outcome.points != 0:
+            # #178 Q7: permit non-zero 0-minute points iff zero-residual card penalty (e.g. GW22 Barnes)
+            if (outcome.yellow_cards == 0 and outcome.red_cards == 0) or outcome.points != expected_card_pts:
+                raise ValueError("Zero-minute scoring or appearance eligibility unsupported")
+        elif outcome.yellow_cards > 0 or outcome.red_cards > 0:
+            raise ValueError("Zero-minute card penalty mismatch")
 
 
 def score_lineup(

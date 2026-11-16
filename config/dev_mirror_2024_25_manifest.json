@@ -1,0 +1,4905 @@
+{
+  "schema_version": 2,
+  "season": "2024-25",
+  "track": "development_mirror",
+  "attributions": [
+    {
+      "repo": "Randdalf/fplcache",
+      "license": "The Unlicense",
+      "role": "pre-deadline bootstrap-static snapshots"
+    },
+    {
+      "repo": "vaastav/Fantasy-Premier-League",
+      "license": "NOASSERTION (provenance cited)",
+      "role": "fixtures.csv & settled GW outcomes"
+    }
+  ],
+  "summary": {
+    "bootstrap_admitted_count": 38,
+    "fixture_admitted_count": 35,
+    "settled_outcomes_zero_diff": true,
+    "verified_outcome_rows": 27283,
+    "ledger_mismatch_rows": 0,
+    "zero_minute_card_exceptions": [
+      {
+        "player_id": 565,
+        "gameweek_id": 8,
+        "minutes": 0,
+        "yellow_cards": 1,
+        "red_cards": 0,
+        "total_points": -1
+      }
+    ],
+    "contiguous_admitted_prefix_end_gw": 1,
+    "full_season_admitted": false,
+    "partial_prefix_only": true,
+    "blocked_gw_count": 17,
+    "blocked_gws": [
+      {
+        "gw": 2,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[1]"
+        ]
+      },
+      {
+        "gw": 3,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[2]"
+        ]
+      },
+      {
+        "gw": 5,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[4]"
+        ]
+      },
+      {
+        "gw": 7,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[6]"
+        ]
+      },
+      {
+        "gw": 8,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[7]"
+        ]
+      },
+      {
+        "gw": 10,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[9]"
+        ]
+      },
+      {
+        "gw": 14,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[13]"
+        ]
+      },
+      {
+        "gw": 18,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[17]"
+        ]
+      },
+      {
+        "gw": 19,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[18]"
+        ]
+      },
+      {
+        "gw": 21,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[20]"
+        ]
+      },
+      {
+        "gw": 23,
+        "reasons": [
+          "fixtures:out_of_window:no_commit_between_prev_and_origin_deadline",
+          "historical_performance_delayed:prior_gws=[22]"
+        ]
+      },
+      {
+        "gw": 25,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[24]"
+        ]
+      },
+      {
+        "gw": 27,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[26]"
+        ]
+      },
+      {
+        "gw": 29,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[28]"
+        ]
+      },
+      {
+        "gw": 33,
+        "reasons": [
+          "fixtures:out_of_window:no_commit_between_prev_and_origin_deadline",
+          "historical_performance_delayed:prior_gws=[32]"
+        ]
+      },
+      {
+        "gw": 34,
+        "reasons": [
+          "historical_performance_delayed:prior_gws=[32]"
+        ]
+      },
+      {
+        "gw": 35,
+        "reasons": [
+          "fixtures:out_of_window:no_commit_between_prev_and_origin_deadline",
+          "historical_performance_delayed:prior_gws=[32, 34]"
+        ]
+      }
+    ]
+  },
+  "shared_chip_calendar": [
+    {
+      "gameweek": 4,
+      "chip": "wildcard"
+    },
+    {
+      "gameweek": 20,
+      "chip": "triple_captain"
+    },
+    {
+      "gameweek": 24,
+      "chip": "wildcard"
+    },
+    {
+      "gameweek": 25,
+      "chip": "free_hit"
+    },
+    {
+      "gameweek": 30,
+      "chip": "bench_boost"
+    }
+  ],
+  "shared_chip_calendar_sha256": "551c2a4eb3fd1818d8c3d3df92e443d86ac8ade4b83e32f994882629dd15927f",
+  "origins": [
+    {
+      "gw": 1,
+      "deadline_utc": "2024-08-16T17:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 1,
+        "deadline_utc": "2024-08-16T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/2ae22a16ee2280311de07b8b5ee3b8393377a178/cache/2024/8/16/1238.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/8/16/1238.json.xz",
+        "commit_sha": "2ae22a16ee2280311de07b8b5ee3b8393377a178",
+        "commit_time_utc": "2024-08-16T12:38:36+00:00",
+        "filename_utc": "2024-08-16T12:38:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-08-16T12:08:36+00:00",
+        "capture_upper_utc": "2024-08-16T12:38:36+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 19284.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "039f3d6584e510aee89802dbf91ec0be0ccc69ee412a47e2104ec553d7037d51",
+        "decompressed_sha256": "2a883793c70f511d85756b8d8a0faf48fc027436fc59eda33a968e662406b133",
+        "table_sha256": "0c37ab7a9cb47d81c3dda94b1ff1ce7f78ba3b33de6d1f9601d825bdf17d6b29",
+        "element_count": 610,
+        "purchase_eligible_count": 575,
+        "excluded_manager_count": 0,
+        "null_chance_count": 517,
+        "max_news_added_utc": "2024-08-16T11:57:26.531525+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw01.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 1,
+        "deadline_utc": "2024-08-16T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/c43f0d83d2b9d769c8dadb64959c16b01713cfaa/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "c43f0d83d2b9d769c8dadb64959c16b01713cfaa",
+        "commit_time_utc": "2024-08-15T17:16:49+00:00",
+        "capture_lower_utc": "2024-08-02T08:16:31+00:00",
+        "capture_upper_utc": "2024-08-15T17:16:49+00:00",
+        "age_upper_seconds": 87191.0,
+        "age_lower_seconds": 1242809.0,
+        "hard_cap_seconds": 1814400.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "a7179a1a633dd1cd7af933bf79f0fefca76f2357b209c1e7c06c8124cc8a7a1f",
+        "table_sha256": "053b5e8fca9c6d38f7b22615b56f609dba7fb52cf156fe4716d35d672ac325d6",
+        "window_gws": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/c43f0d83d2.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "ec2a907dae6e97f76406c742a15e56653f3d170e",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/ec2a907dae6e97f76406c742a15e56653f3d170e/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-08-26T08:10:14+00:00",
+        "max_kickoff_utc": "2024-08-19T19:00:00+00:00",
+        "settlement_lag_seconds": 565814.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_ec2a907dae.csv",
+        "blob_sha256": "b325334261d41326ae9323b8d333582d3eab3ac8a9dc136b6b8db65ebae597ca",
+        "table_sha256": "76bf25a94f9f92a2e141ae60fd2d4582558b9406bd78e301c1212f64fb042423"
+      },
+      "causal_chip_metadata": {
+        "gw": 1,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "1": [],
+          "2": [],
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": []
+        },
+        "double_clubs_by_gw": {
+          "1": [],
+          "2": [],
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": []
+        }
+      }
+    },
+    {
+      "gw": 2,
+      "deadline_utc": "2024-08-24T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 2,
+        "deadline_utc": "2024-08-24T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/29d4a580715247ad03d10aa5004218e4789aca00/cache/2024/8/24/0627.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/8/24/0627.json.xz",
+        "commit_sha": "29d4a580715247ad03d10aa5004218e4789aca00",
+        "commit_time_utc": "2024-08-24T06:27:19+00:00",
+        "filename_utc": "2024-08-24T06:27:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-08-24T05:57:19+00:00",
+        "capture_upper_utc": "2024-08-24T06:27:19+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14561.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "c4ae1aa11edc4940b4b964469f3e7bbe70087595818781b52554a79b622dc721",
+        "decompressed_sha256": "9b36f946586f8fb691e1ec44f02c2fd9c86682d0e12705b5c08af939d3c3197e",
+        "table_sha256": "f4015252c7a115b9264ee13a2f1e86ce924f5b81a8b9ddc989edcb8500f7a7a9",
+        "element_count": 625,
+        "purchase_eligible_count": 580,
+        "excluded_manager_count": 0,
+        "null_chance_count": 503,
+        "max_news_added_utc": "2024-08-23T23:00:06.122778+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw02.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 2,
+        "deadline_utc": "2024-08-24T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/403e10b7b661252698745d1101d1086cec31e0f1/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "403e10b7b661252698745d1101d1086cec31e0f1",
+        "commit_time_utc": "2024-08-20T08:46:13+00:00",
+        "capture_lower_utc": "2024-08-16T17:30:00+00:00",
+        "capture_upper_utc": "2024-08-20T08:46:13+00:00",
+        "age_upper_seconds": 350027.0,
+        "age_lower_seconds": 664200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "fbd4488202c51e8e274be15e106a5aba44631282a9e08888eff1502c612d1deb",
+        "table_sha256": "fe5ae0665d2a40d2861158510c3baadae4096036c506f9f0415982351722fe2e",
+        "window_gws": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/403e10b7b6.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "9d4b5d89af45f85be8c9215f713000072bdbe3dd",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/9d4b5d89af45f85be8c9215f713000072bdbe3dd/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-09-06T13:50:27+00:00",
+        "max_kickoff_utc": "2024-08-25T15:30:00+00:00",
+        "settlement_lag_seconds": 1030827.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_9d4b5d89af.csv",
+        "blob_sha256": "af19affe85e1f09b3c069c84687904c24716d0ba0218bb3b9ac10082f8dcb7af",
+        "table_sha256": "8da811701dc48f4ad9c474ff4215e0f209d431a99e4cd157222ac8ebb073301b"
+      },
+      "causal_chip_metadata": {
+        "gw": 2,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "2": [],
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": []
+        },
+        "double_clubs_by_gw": {
+          "2": [],
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": []
+        }
+      }
+    },
+    {
+      "gw": 3,
+      "deadline_utc": "2024-08-31T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 3,
+        "deadline_utc": "2024-08-31T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/b7c3fe2660909bc648a5fbbfaaff3a1b198e37a3/cache/2024/8/31/0627.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/8/31/0627.json.xz",
+        "commit_sha": "b7c3fe2660909bc648a5fbbfaaff3a1b198e37a3",
+        "commit_time_utc": "2024-08-31T06:27:20+00:00",
+        "filename_utc": "2024-08-31T06:27:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-08-31T06:26:07.653045+00:00",
+        "capture_upper_utc": "2024-08-31T06:27:20+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 12832.347,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "0d6c4800cf20f1a17fa7647e6db612acf01ee5b8821cca266c713bd7c8ed4143",
+        "decompressed_sha256": "d03a9da006c680734208f04adcad211de7cda5cb801530d8711e99118c1ca1b5",
+        "table_sha256": "fd19717bb918147b9b73d81075e09000cd6abc76ebca4fe8959919985aa2852f",
+        "element_count": 637,
+        "purchase_eligible_count": 557,
+        "excluded_manager_count": 0,
+        "null_chance_count": 462,
+        "max_news_added_utc": "2024-08-31T06:26:07.653045+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw03.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 3,
+        "deadline_utc": "2024-08-31T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/ec2a907dae6e97f76406c742a15e56653f3d170e/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "ec2a907dae6e97f76406c742a15e56653f3d170e",
+        "commit_time_utc": "2024-08-26T08:10:14+00:00",
+        "capture_lower_utc": "2024-08-24T10:00:00+00:00",
+        "capture_upper_utc": "2024-08-26T08:10:14+00:00",
+        "age_upper_seconds": 438586.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "2af550a76a801398f5756d4b8a40ce8270b98b609fa64197d0bddb624b599c13",
+        "table_sha256": "326e63802d37269f268f46307f3ec3be03444f2b154c2546e7e1fadeb78e4f77",
+        "window_gws": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/ec2a907dae.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "9d4b5d89af45f85be8c9215f713000072bdbe3dd",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/9d4b5d89af45f85be8c9215f713000072bdbe3dd/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-09-06T13:50:27+00:00",
+        "max_kickoff_utc": "2024-09-01T15:00:00+00:00",
+        "settlement_lag_seconds": 427827.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_9d4b5d89af.csv",
+        "blob_sha256": "af19affe85e1f09b3c069c84687904c24716d0ba0218bb3b9ac10082f8dcb7af",
+        "table_sha256": "4b38fb7144b3ec5c2bed8545c0c0db07ae8c6d2efb5fa0df25202aa410c98670"
+      },
+      "causal_chip_metadata": {
+        "gw": 3,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": []
+        },
+        "double_clubs_by_gw": {
+          "3": [],
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": []
+        }
+      }
+    },
+    {
+      "gw": 4,
+      "deadline_utc": "2024-09-14T10:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 4,
+        "deadline_utc": "2024-09-14T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/76d5d882cc1d23aac1179de23d3b0afc47966c1c/cache/2024/9/14/0629.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/9/14/0629.json.xz",
+        "commit_sha": "76d5d882cc1d23aac1179de23d3b0afc47966c1c",
+        "commit_time_utc": "2024-09-14T06:29:06+00:00",
+        "filename_utc": "2024-09-14T06:29:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-09-14T05:59:06+00:00",
+        "capture_upper_utc": "2024-09-14T06:29:06+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14454.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "e7bea990fa0f8b5d20d98607ff499d39d2a6952386bdbba7f8d9fe1d9db10f2f",
+        "decompressed_sha256": "301eb3d6e367a9c0d4ffbf894d4f1af3189f06004180eb503c53e2271903780b",
+        "table_sha256": "aeec4d8a96bc3644f9997251302e22873e69675b24baeee1c259904f0fa2e24d",
+        "element_count": 655,
+        "purchase_eligible_count": 543,
+        "excluded_manager_count": 0,
+        "null_chance_count": 408,
+        "max_news_added_utc": "2024-09-13T18:00:06.517398+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw04.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 4,
+        "deadline_utc": "2024-09-14T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/9d4b5d89af45f85be8c9215f713000072bdbe3dd/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "9d4b5d89af45f85be8c9215f713000072bdbe3dd",
+        "commit_time_utc": "2024-09-06T13:50:27+00:00",
+        "capture_lower_utc": "2024-08-31T10:00:00+00:00",
+        "capture_upper_utc": "2024-09-06T13:50:27+00:00",
+        "age_upper_seconds": 677373.0,
+        "age_lower_seconds": 1209600.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h",
+          "fixture_stale_band_7d_to_21d"
+        ],
+        "blob_sha256": "66287c32f833fdbc5df0c9b8c799481dd8f922d3f6e39fe1ab875de3086d44f7",
+        "table_sha256": "4f7dbecd56166f3f0cc9ae35d0dbf8f5c54c925588922ad393c792d543edc8f3",
+        "window_gws": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/9d4b5d89af.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "f42ed38d279afc705448ebc2b89e48838a0fdfba",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f42ed38d279afc705448ebc2b89e48838a0fdfba/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-09-23T21:15:45+00:00",
+        "max_kickoff_utc": "2024-09-15T15:30:00+00:00",
+        "settlement_lag_seconds": 711945.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_f42ed38d27.csv",
+        "blob_sha256": "eca80330a5953c7588627459deac81f96535f3c652c9f5312385f41d47831a81",
+        "table_sha256": "86369f0e0b40220a37c5a69b5c0e0a3ba5949cd2e8f5fd47a054921b38b25c24"
+      },
+      "causal_chip_metadata": {
+        "gw": 4,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": []
+        },
+        "double_clubs_by_gw": {
+          "4": [],
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": []
+        }
+      }
+    },
+    {
+      "gw": 5,
+      "deadline_utc": "2024-09-21T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 5,
+        "deadline_utc": "2024-09-21T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/1985768971f368810f208680c2dd65612cfe3fee/cache/2024/9/21/0628.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/9/21/0628.json.xz",
+        "commit_sha": "1985768971f368810f208680c2dd65612cfe3fee",
+        "commit_time_utc": "2024-09-21T06:28:24+00:00",
+        "filename_utc": "2024-09-21T06:28:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-09-21T05:58:24+00:00",
+        "capture_upper_utc": "2024-09-21T06:28:24+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14496.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "d87c99edc17bad545c2563bd9bc299d246e9f84c05e8dc534504e841c1e1e733",
+        "decompressed_sha256": "1b0731f676d4476677b3ae1d33883ec608d9acb553a5cd27d00e18d42cf2ee85",
+        "table_sha256": "c175a181cb8eedb7d9090865e80eb786f1becd6485e06111c1294085b72f868f",
+        "element_count": 659,
+        "purchase_eligible_count": 547,
+        "excluded_manager_count": 0,
+        "null_chance_count": 390,
+        "max_news_added_utc": "2024-09-20T15:30:05.774450+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw05.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 5,
+        "deadline_utc": "2024-09-21T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/3c76203d2997a89f0735d2591e76e7c849a2f491/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "3c76203d2997a89f0735d2591e76e7c849a2f491",
+        "commit_time_utc": "2024-09-16T13:52:04+00:00",
+        "capture_lower_utc": "2024-09-14T10:00:00+00:00",
+        "capture_upper_utc": "2024-09-16T13:52:04+00:00",
+        "age_upper_seconds": 418076.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "fe2e470622abc671dd53aba48a9f8018447b30a3007f74fc3d846824d258bbe4",
+        "table_sha256": "59c981b4dc5d1a46cb1c72be17e0d74068ac6560145da20abe1062c828fcd636",
+        "window_gws": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/3c76203d29.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "f42ed38d279afc705448ebc2b89e48838a0fdfba",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f42ed38d279afc705448ebc2b89e48838a0fdfba/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-09-23T21:15:45+00:00",
+        "max_kickoff_utc": "2024-09-22T15:30:00+00:00",
+        "settlement_lag_seconds": 107145.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_f42ed38d27.csv",
+        "blob_sha256": "eca80330a5953c7588627459deac81f96535f3c652c9f5312385f41d47831a81",
+        "table_sha256": "b28885ddff0117a19991bdcaa3949d516fb19d5e95cc860433d4e591a1161993"
+      },
+      "causal_chip_metadata": {
+        "gw": 5,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": []
+        },
+        "double_clubs_by_gw": {
+          "5": [],
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": []
+        }
+      }
+    },
+    {
+      "gw": 6,
+      "deadline_utc": "2024-09-28T10:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 6,
+        "deadline_utc": "2024-09-28T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/c5e6f44b48a21ad8d18189f5b0eb86a3343781e9/cache/2024/9/28/0628.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/9/28/0628.json.xz",
+        "commit_sha": "c5e6f44b48a21ad8d18189f5b0eb86a3343781e9",
+        "commit_time_utc": "2024-09-28T06:28:56+00:00",
+        "filename_utc": "2024-09-28T06:28:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-09-28T05:58:56+00:00",
+        "capture_upper_utc": "2024-09-28T06:28:56+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14464.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "5daf40ee59f0606e3c2e3c41bf43325f0400c17d8f61f63a0d75ae2f26bb6b7a",
+        "decompressed_sha256": "25b5aa976c1f129bb25b7541302510bb29cf174727391548948135871442b4cd",
+        "table_sha256": "36ba1bd38ef8af34d1bb1dacef8968a43f993fbeeb345d4b6d4af96dc69a6c1a",
+        "element_count": 661,
+        "purchase_eligible_count": 549,
+        "excluded_manager_count": 0,
+        "null_chance_count": 385,
+        "max_news_added_utc": "2024-09-27T15:30:06.533416+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw06.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 6,
+        "deadline_utc": "2024-09-28T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f42ed38d279afc705448ebc2b89e48838a0fdfba/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "f42ed38d279afc705448ebc2b89e48838a0fdfba",
+        "commit_time_utc": "2024-09-23T21:15:45+00:00",
+        "capture_lower_utc": "2024-09-21T10:00:00+00:00",
+        "capture_upper_utc": "2024-09-23T21:15:45+00:00",
+        "age_upper_seconds": 391455.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "ecc0e4ca6acd938e8dd359039f934fe1378bd23776cdd84b09e2e1f99ebe0a23",
+        "table_sha256": "ac7653acafff0653bc0a70a05df5531e481adbe05c693834a80737b96dc735b8",
+        "window_gws": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/f42ed38d27.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "d0f7342e2f5f7176d507badb10ee2db76f564409",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/d0f7342e2f5f7176d507badb10ee2db76f564409/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-10-07T09:02:25+00:00",
+        "max_kickoff_utc": "2024-09-30T19:00:00+00:00",
+        "settlement_lag_seconds": 568945.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_d0f7342e2f.csv",
+        "blob_sha256": "7a3fc8a3311e680f1ba7437060271db9007565956862e023934d12a4bfe751fd",
+        "table_sha256": "3d904dce272fb791cb22d49c73783711720d6078e6cc0e4de80d734d45e4ee33"
+      },
+      "causal_chip_metadata": {
+        "gw": 6,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": []
+        },
+        "double_clubs_by_gw": {
+          "6": [],
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": []
+        }
+      }
+    },
+    {
+      "gw": 7,
+      "deadline_utc": "2024-10-05T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 7,
+        "deadline_utc": "2024-10-05T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/7d971ba8f03d6a0c241d7c4aa2dce6660d2f64d1/cache/2024/10/5/0629.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/10/5/0629.json.xz",
+        "commit_sha": "7d971ba8f03d6a0c241d7c4aa2dce6660d2f64d1",
+        "commit_time_utc": "2024-10-05T06:29:20+00:00",
+        "filename_utc": "2024-10-05T06:29:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-10-05T05:59:20+00:00",
+        "capture_upper_utc": "2024-10-05T06:29:20+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14440.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "302448e2f4b5c0abc414f51a7ef3312597302f3292abe3e84f7eeb3ef83998af",
+        "decompressed_sha256": "8e25682f2c0946a0ceb7530f36db039dbb922969ef25222445abf21c533a1a5f",
+        "table_sha256": "5b7a4e43573aaf52044796782c26dff782b2320e86c9cbe88cc0424ff9f76d27",
+        "element_count": 664,
+        "purchase_eligible_count": 552,
+        "excluded_manager_count": 0,
+        "null_chance_count": 371,
+        "max_news_added_utc": "2024-10-04T14:00:05.587137+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw07.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 7,
+        "deadline_utc": "2024-10-05T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/57caf7e165ba47b48de9f307785aac79cb03b8af/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "57caf7e165ba47b48de9f307785aac79cb03b8af",
+        "commit_time_utc": "2024-10-01T08:56:28+00:00",
+        "capture_lower_utc": "2024-09-28T10:00:00+00:00",
+        "capture_upper_utc": "2024-10-01T08:56:28+00:00",
+        "age_upper_seconds": 349412.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "a403444f3e58545319b0abeaeccd32617a7ca33799c015353264eb0c9d1141b5",
+        "table_sha256": "62370318bcf84a3a2b5fa4fb8f710d2a09f9edb6f9b0262b368c9784cd2016ba",
+        "window_gws": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/57caf7e165.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-10-24T08:59:52+00:00",
+        "max_kickoff_utc": "2024-10-06T15:30:00+00:00",
+        "settlement_lag_seconds": 1531792.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_80b1a9fd9e.csv",
+        "blob_sha256": "3bfb7265c2b54ff63b8678ab860b0fc86f00ef1c705dff8512647267745639c9",
+        "table_sha256": "76611c40db8d0e081b7d1249189e531448ffd714923163bf1a7835337debefa2"
+      },
+      "causal_chip_metadata": {
+        "gw": 7,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": []
+        },
+        "double_clubs_by_gw": {
+          "7": [],
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": []
+        }
+      }
+    },
+    {
+      "gw": 8,
+      "deadline_utc": "2024-10-19T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 8,
+        "deadline_utc": "2024-10-19T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/2b7c86bdd90cd0e4fd365007b34a652a367ce96a/cache/2024/10/19/0628.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/10/19/0628.json.xz",
+        "commit_sha": "2b7c86bdd90cd0e4fd365007b34a652a367ce96a",
+        "commit_time_utc": "2024-10-19T06:28:58+00:00",
+        "filename_utc": "2024-10-19T06:28:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-10-19T05:58:58+00:00",
+        "capture_upper_utc": "2024-10-19T06:28:58+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14462.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "f81521531d3b115279c385c9c5e2c6000f13c4e88c20a818d32baec855eb1c71",
+        "decompressed_sha256": "24df5b685441a8ece39a213e0b5907ac06fedb6a736f1f0021fb9707f4d65adc",
+        "table_sha256": "47d9896d363a74c9877a97756861c95fb3c7ce3005f6aa63452e5f1f61b0afdb",
+        "element_count": 666,
+        "purchase_eligible_count": 554,
+        "excluded_manager_count": 0,
+        "null_chance_count": 342,
+        "max_news_added_utc": "2024-10-18T17:30:07.558521+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw08.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 8,
+        "deadline_utc": "2024-10-19T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/d0f7342e2f5f7176d507badb10ee2db76f564409/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "d0f7342e2f5f7176d507badb10ee2db76f564409",
+        "commit_time_utc": "2024-10-07T09:02:25+00:00",
+        "capture_lower_utc": "2024-10-05T10:00:00+00:00",
+        "capture_upper_utc": "2024-10-07T09:02:25+00:00",
+        "age_upper_seconds": 1040255.0,
+        "age_lower_seconds": 1209600.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h",
+          "fixture_stale_band_7d_to_21d"
+        ],
+        "blob_sha256": "41c5641890d15f164308ca40d37a0646d7fcf919f8fdf65458447fd61017f862",
+        "table_sha256": "51453a052b72f9b93c85b08d769ff33c85e3fc327489a730edfc6a25fc639fe7",
+        "window_gws": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/d0f7342e2f.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-10-24T08:59:52+00:00",
+        "max_kickoff_utc": "2024-10-21T19:00:00+00:00",
+        "settlement_lag_seconds": 223192.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_80b1a9fd9e.csv",
+        "blob_sha256": "3bfb7265c2b54ff63b8678ab860b0fc86f00ef1c705dff8512647267745639c9",
+        "table_sha256": "6353043ab73ab4d78a32c083d34e8255d2d271ff3965f297196d6f730c52d1ed"
+      },
+      "causal_chip_metadata": {
+        "gw": 8,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": []
+        },
+        "double_clubs_by_gw": {
+          "8": [],
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": []
+        }
+      }
+    },
+    {
+      "gw": 9,
+      "deadline_utc": "2024-10-25T17:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 9,
+        "deadline_utc": "2024-10-25T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/2ea527719fa9bf1adbb739e62ebca04a38270642/cache/2024/10/25/1243.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/10/25/1243.json.xz",
+        "commit_sha": "2ea527719fa9bf1adbb739e62ebca04a38270642",
+        "commit_time_utc": "2024-10-25T12:43:49+00:00",
+        "filename_utc": "2024-10-25T12:43:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-10-25T12:13:49+00:00",
+        "capture_upper_utc": "2024-10-25T12:43:49+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18971.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "a67508d5bce013ed1c616829140e588ef7bd4400a49a0f96f2c9d99225e7666a",
+        "decompressed_sha256": "5a071fa26bdfa68912f462d044f690d27f3d06b588ba024777540b315519ff54",
+        "table_sha256": "01a43acb603d4cccc969fed31a67158acdb5f64c52c274b7677c6364587c650b",
+        "element_count": 667,
+        "purchase_eligible_count": 555,
+        "excluded_manager_count": 0,
+        "null_chance_count": 326,
+        "max_news_added_utc": "2024-10-25T10:30:06.315550+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw09.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 9,
+        "deadline_utc": "2024-10-25T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "80b1a9fd9efc30dab63fb4aba8afe3f1c6273e75",
+        "commit_time_utc": "2024-10-24T08:59:52+00:00",
+        "capture_lower_utc": "2024-10-19T10:00:00+00:00",
+        "capture_upper_utc": "2024-10-24T08:59:52+00:00",
+        "age_upper_seconds": 117008.0,
+        "age_lower_seconds": 545400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "cc5491a01430e18533409d78e79ee709dbb1dd696f8907e4f4bedc92a921b9cd",
+        "table_sha256": "ea4812be36bd38aad09ba2d48cf2d68fea5ee9f299b5d9ca8d53c4e1396ff122",
+        "window_gws": [
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/80b1a9fd9e.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "d7a9ea76d98e7453bdca8893224da894b9b55e28",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/d7a9ea76d98e7453bdca8893224da894b9b55e28/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-11-08T17:52:02+00:00",
+        "max_kickoff_utc": "2024-10-27T16:30:00+00:00",
+        "settlement_lag_seconds": 1041722.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_d7a9ea76d9.csv",
+        "blob_sha256": "acee732cbcc1c0b8675e6a2b4acec24361b0e789f2f054d4e0a2764b1e99faeb",
+        "table_sha256": "d5ed382bce0cb18cb271b389b87f2157ab28798a5af6ecf0daef2b84b2dc3cb4"
+      },
+      "causal_chip_metadata": {
+        "gw": 9,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": []
+        },
+        "double_clubs_by_gw": {
+          "9": [],
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": []
+        }
+      }
+    },
+    {
+      "gw": 10,
+      "deadline_utc": "2024-11-02T11:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 10,
+        "deadline_utc": "2024-11-02T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/729a225abcb46911c7cea63515bdf4ac10106db8/cache/2024/11/2/0630.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/11/2/0630.json.xz",
+        "commit_sha": "729a225abcb46911c7cea63515bdf4ac10106db8",
+        "commit_time_utc": "2024-11-02T06:30:18+00:00",
+        "filename_utc": "2024-11-02T06:30:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-11-02T06:00:18+00:00",
+        "capture_upper_utc": "2024-11-02T06:30:18+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 17982.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "5145cbe5bd03bba6a4cbedfa244ee7667ff02181590ca3032292a34e0534433b",
+        "decompressed_sha256": "46f15971d4c241e1a7bdded08a6d09f2457eb9ede1da9cf890ee4ff8fc324676",
+        "table_sha256": "d206910215018b04847a0d3baed86ab320186eaf4c09918b0630bb8446276659",
+        "element_count": 670,
+        "purchase_eligible_count": 558,
+        "excluded_manager_count": 0,
+        "null_chance_count": 302,
+        "max_news_added_utc": "2024-11-01T17:00:08.011314+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw10.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 10,
+        "deadline_utc": "2024-11-02T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/2840028eaea97d5255e96620ad2e06942cc8fe90/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "2840028eaea97d5255e96620ad2e06942cc8fe90",
+        "commit_time_utc": "2024-10-28T14:54:39+00:00",
+        "capture_lower_utc": "2024-10-25T17:30:00+00:00",
+        "capture_upper_utc": "2024-10-28T14:54:39+00:00",
+        "age_upper_seconds": 417921.0,
+        "age_lower_seconds": 667800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "be8fab2171fa14a65cd9aa51c3173e31a2cdb83b90d6a984f9e808e181889976",
+        "table_sha256": "3db87af1b792519980d07c9508d963f3d9cb4fb1d8baeadd0088ba3fa72ad5db",
+        "window_gws": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/2840028eae.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "d7a9ea76d98e7453bdca8893224da894b9b55e28",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/d7a9ea76d98e7453bdca8893224da894b9b55e28/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-11-08T17:52:02+00:00",
+        "max_kickoff_utc": "2024-11-04T20:00:00+00:00",
+        "settlement_lag_seconds": 337922.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_d7a9ea76d9.csv",
+        "blob_sha256": "acee732cbcc1c0b8675e6a2b4acec24361b0e789f2f054d4e0a2764b1e99faeb",
+        "table_sha256": "285d092c3c8c8c1a232e82bf01c8a8975dda53f2f42a38c99deea263ff927361"
+      },
+      "causal_chip_metadata": {
+        "gw": 10,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": []
+        },
+        "double_clubs_by_gw": {
+          "10": [],
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": []
+        }
+      }
+    },
+    {
+      "gw": 11,
+      "deadline_utc": "2024-11-09T13:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 11,
+        "deadline_utc": "2024-11-09T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/0dfec08a87ac735b3b569955ba7683a2428bd0bf/cache/2024/11/9/1238.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/11/9/1238.json.xz",
+        "commit_sha": "0dfec08a87ac735b3b569955ba7683a2428bd0bf",
+        "commit_time_utc": "2024-11-09T12:38:45+00:00",
+        "filename_utc": "2024-11-09T12:38:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-11-09T12:08:45+00:00",
+        "capture_upper_utc": "2024-11-09T12:38:45+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 4875.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "324fabd726b905cde3a42dd91ea08eb57b9ec1c93b5bbd55bb7f5ac338742ec0",
+        "decompressed_sha256": "b6fbf825932cf5409769fe757807fd345fd89a16017ceac9df9ac10935109329",
+        "table_sha256": "2c6d9085116475b87d50e59106300dff882fa8d3e4ff94b5ae756c45fa076da4",
+        "element_count": 674,
+        "purchase_eligible_count": 562,
+        "excluded_manager_count": 0,
+        "null_chance_count": 297,
+        "max_news_added_utc": "2024-11-08T18:30:07.952497+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw11.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 11,
+        "deadline_utc": "2024-11-09T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/d7a9ea76d98e7453bdca8893224da894b9b55e28/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "d7a9ea76d98e7453bdca8893224da894b9b55e28",
+        "commit_time_utc": "2024-11-08T17:52:02+00:00",
+        "capture_lower_utc": "2024-11-02T11:00:00+00:00",
+        "capture_upper_utc": "2024-11-08T17:52:02+00:00",
+        "age_upper_seconds": 70678.0,
+        "age_lower_seconds": 613800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "7f8670a6767521afb0242fcd3bfbdbc50ba03d0ccf484763ac84143812a41644",
+        "table_sha256": "50b12cb1dca4cf1fc3f2a989f05b8f8920b3bb32246e7f57339a482f319d54e6",
+        "window_gws": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/d7a9ea76d9.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "e3135daf0fcb706cc41f237e5c691517bd3432c1",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e3135daf0fcb706cc41f237e5c691517bd3432c1/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-11-20T00:44:27+00:00",
+        "max_kickoff_utc": "2024-11-10T16:30:00+00:00",
+        "settlement_lag_seconds": 807267.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_e3135daf0f.csv",
+        "blob_sha256": "f59ec1b04a7c277f03a532887a9b8fea1f408c3fdf478b06277f2566d42ba799",
+        "table_sha256": "7b5b0bea276262340812752c071c583b1a21016ab96e8d58a9b10224da7a4e65"
+      },
+      "causal_chip_metadata": {
+        "gw": 11,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": []
+        },
+        "double_clubs_by_gw": {
+          "11": [],
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": []
+        }
+      }
+    },
+    {
+      "gw": 12,
+      "deadline_utc": "2024-11-23T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 12,
+        "deadline_utc": "2024-11-23T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/18e925458a78ceae174cc5e8196488f0b5297b0a/cache/2024/11/23/0630.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/11/23/0630.json.xz",
+        "commit_sha": "18e925458a78ceae174cc5e8196488f0b5297b0a",
+        "commit_time_utc": "2024-11-23T06:30:04+00:00",
+        "filename_utc": "2024-11-23T06:30:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-11-23T06:00:04+00:00",
+        "capture_upper_utc": "2024-11-23T06:30:04+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 17996.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "daef571b36bdedc211ee356aab1df6bedef842038daf23c816af44fdc5a8fe35",
+        "decompressed_sha256": "07bc745aaa7f95cd2d3c0d5f3ec4f3dfdda408ed54b3bc98b8e55d894118be29",
+        "table_sha256": "b9c9f9cf222400bd9b2c68191e9c3c4ad34e946ad8b9ad1821a9ff6b6093b24e",
+        "element_count": 678,
+        "purchase_eligible_count": 566,
+        "excluded_manager_count": 0,
+        "null_chance_count": 277,
+        "max_news_added_utc": "2024-11-22T17:30:09.216627+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw12.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 12,
+        "deadline_utc": "2024-11-23T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e3135daf0fcb706cc41f237e5c691517bd3432c1/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "e3135daf0fcb706cc41f237e5c691517bd3432c1",
+        "commit_time_utc": "2024-11-20T00:44:27+00:00",
+        "capture_lower_utc": "2024-11-09T13:30:00+00:00",
+        "capture_upper_utc": "2024-11-20T00:44:27+00:00",
+        "age_upper_seconds": 296133.0,
+        "age_lower_seconds": 1200600.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "2dfa2617130c428d647ddf9549b071a9777dba20b1b2bfe94123652847a6eaf3",
+        "table_sha256": "0539e7c85eba017d6fb16789626d11ccf1f4acefd93d419733f4fd530321223e",
+        "window_gws": [
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/e3135daf0f.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "27c87bd13ef72dd8ed2ad6584a0d8d20f070f559",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/27c87bd13ef72dd8ed2ad6584a0d8d20f070f559/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-11-29T03:47:49+00:00",
+        "max_kickoff_utc": "2024-11-25T20:00:00+00:00",
+        "settlement_lag_seconds": 287269.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_27c87bd13e.csv",
+        "blob_sha256": "5edd3db4c2fe630cb1fbc4fc822603c1d439c786df4d5ab3d1b5928b9e2b5161",
+        "table_sha256": "ee9adeeb26e6bf41ecff6f8d587849e2bdd1ddc9d23c6bf649fe31791a8c2e9d"
+      },
+      "causal_chip_metadata": {
+        "gw": 12,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": []
+        },
+        "double_clubs_by_gw": {
+          "12": [],
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": []
+        }
+      }
+    },
+    {
+      "gw": 13,
+      "deadline_utc": "2024-11-29T18:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 13,
+        "deadline_utc": "2024-11-29T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/50bfbbc266e7cc766aa24eadc5b8d89eae07f64c/cache/2024/11/29/1247.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/11/29/1247.json.xz",
+        "commit_sha": "50bfbbc266e7cc766aa24eadc5b8d89eae07f64c",
+        "commit_time_utc": "2024-11-29T12:47:39+00:00",
+        "filename_utc": "2024-11-29T12:47:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-11-29T12:17:39+00:00",
+        "capture_upper_utc": "2024-11-29T12:47:39+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 22341.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "ac662fba3b0b0b87b57884beeb4bdacc1cc4990ac5854e035002ee88c2b031b3",
+        "decompressed_sha256": "cfedbc1b71c702062c85377a6bf4388db3b0e41da69ee87d10fc7642ad7e7d40",
+        "table_sha256": "2b5cf6cf75e4058f5b3f8ed40bfcbd04613ad49eec61313049c6e5be1415acfa",
+        "element_count": 684,
+        "purchase_eligible_count": 572,
+        "excluded_manager_count": 0,
+        "null_chance_count": 278,
+        "max_news_added_utc": "2024-11-29T12:00:07.896449+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw13.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 13,
+        "deadline_utc": "2024-11-29T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/27c87bd13ef72dd8ed2ad6584a0d8d20f070f559/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "27c87bd13ef72dd8ed2ad6584a0d8d20f070f559",
+        "commit_time_utc": "2024-11-29T03:47:49+00:00",
+        "capture_lower_utc": "2024-11-23T11:00:00+00:00",
+        "capture_upper_utc": "2024-11-29T03:47:49+00:00",
+        "age_upper_seconds": 52931.0,
+        "age_lower_seconds": 545400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "e4dd6dcbc7a3e7e9e9cf25038862a3fe40049dc1c9bffdc3bb9eb759a5d50369",
+        "table_sha256": "e3b1f38c844b0cda023be5f3abd8696983f1b05a088ea5189a3fc538d65d4971",
+        "window_gws": [
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/27c87bd13e.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "651e9adea9e420416fdde96faf920de232383036",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/651e9adea9e420416fdde96faf920de232383036/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-12-07T01:35:27+00:00",
+        "max_kickoff_utc": "2024-12-01T16:00:00+00:00",
+        "settlement_lag_seconds": 466527.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_651e9adea9.csv",
+        "blob_sha256": "c7d5031c67f73a875513baf18d253f904c15334285cdbe0a69a40bb2815d463a",
+        "table_sha256": "2589457b5c4f4887df7d1d1cf8ab75c645599cbe141f435a8813a683613954e6"
+      },
+      "causal_chip_metadata": {
+        "gw": 13,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": []
+        },
+        "double_clubs_by_gw": {
+          "13": [],
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": []
+        }
+      }
+    },
+    {
+      "gw": 14,
+      "deadline_utc": "2024-12-03T18:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 14,
+        "deadline_utc": "2024-12-03T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/fa54aeb4cc798eddf3b675ef2d361979acab3c79/cache/2024/12/3/1248.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/3/1248.json.xz",
+        "commit_sha": "fa54aeb4cc798eddf3b675ef2d361979acab3c79",
+        "commit_time_utc": "2024-12-03T12:48:38+00:00",
+        "filename_utc": "2024-12-03T12:48:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-03T12:30:09.025260+00:00",
+        "capture_upper_utc": "2024-12-03T12:48:38+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 19790.975,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "47a84c44b18975879e8fd5c62bd0faa844618ce3f12b176b2aae69171e64a763",
+        "decompressed_sha256": "dce7b87ecc738596c297a1310c33e190d795f5118ecad538c72c866b38496174",
+        "table_sha256": "43a6556571e9527e1b77a30f54a6f7f0865ed7adc301cb6cd9380a48e7ebabea",
+        "element_count": 690,
+        "purchase_eligible_count": 578,
+        "excluded_manager_count": 0,
+        "null_chance_count": 270,
+        "max_news_added_utc": "2024-12-03T12:30:09.025260+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw14.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 14,
+        "deadline_utc": "2024-12-03T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/bc76591d36196c0ef59b34db42d0167867686298/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "bc76591d36196c0ef59b34db42d0167867686298",
+        "commit_time_utc": "2024-12-02T03:53:51+00:00",
+        "capture_lower_utc": "2024-11-29T18:30:00+00:00",
+        "capture_upper_utc": "2024-12-02T03:53:51+00:00",
+        "age_upper_seconds": 137169.0,
+        "age_lower_seconds": 343800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "d6e2e02a6fa0cf03427abd8d54ace2e4ca90ad4a337e1835e53a15c574a7d15e",
+        "table_sha256": "a1854d6198d869726e72ea34d11b60c2cea80af9d9184a857a3a6b9e1cd49a05",
+        "window_gws": [
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/bc76591d36.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "651e9adea9e420416fdde96faf920de232383036",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/651e9adea9e420416fdde96faf920de232383036/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-12-07T01:35:27+00:00",
+        "max_kickoff_utc": "2024-12-05T20:15:00+00:00",
+        "settlement_lag_seconds": 105627.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_651e9adea9.csv",
+        "blob_sha256": "c7d5031c67f73a875513baf18d253f904c15334285cdbe0a69a40bb2815d463a",
+        "table_sha256": "e27dbeed90ff05f811beb05f2789c51251d499f72aae139e35eca7de63d2155d"
+      },
+      "causal_chip_metadata": {
+        "gw": 14,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": []
+        },
+        "double_clubs_by_gw": {
+          "14": [],
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": []
+        }
+      }
+    },
+    {
+      "gw": 15,
+      "deadline_utc": "2024-12-07T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 15,
+        "deadline_utc": "2024-12-07T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/bef5b4c1c4c4b61d765d98470a827a8524462954/cache/2024/12/7/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/7/0631.json.xz",
+        "commit_sha": "bef5b4c1c4c4b61d765d98470a827a8524462954",
+        "commit_time_utc": "2024-12-07T06:31:34+00:00",
+        "filename_utc": "2024-12-07T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-07T06:01:34+00:00",
+        "capture_upper_utc": "2024-12-07T06:31:34+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 17906.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "27ad7fc3778f5e7f17955e28f9a9975dc8ae137ddbaee58bb8fd7fb681fc3bff",
+        "decompressed_sha256": "a27d11e30ef963dd764b1665d70837ac5ed56d75b1b8451a3080cb902725e0e1",
+        "table_sha256": "7afd3f9698326d76932dbd09aa2f4a2d9cbc793390fd8fe69d030434ebaae2b3",
+        "element_count": 693,
+        "purchase_eligible_count": 581,
+        "excluded_manager_count": 0,
+        "null_chance_count": 267,
+        "max_news_added_utc": "2024-12-06T15:30:08.306281+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw15.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 15,
+        "deadline_utc": "2024-12-07T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/651e9adea9e420416fdde96faf920de232383036/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "651e9adea9e420416fdde96faf920de232383036",
+        "commit_time_utc": "2024-12-07T01:35:27+00:00",
+        "capture_lower_utc": "2024-12-03T18:00:00+00:00",
+        "capture_upper_utc": "2024-12-07T01:35:27+00:00",
+        "age_upper_seconds": 33873.0,
+        "age_lower_seconds": 320400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "b1bbb61d097cab69db6ab5282c29b77c3efe120e34b8f20fe955bb37a8940a42",
+        "table_sha256": "d34e730b3b9e3b026a931a43c40e4a3263bf23a6e1f66b23cde77828ba927dd7",
+        "window_gws": [
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/651e9adea9.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "dfdae0e489f8520228a4ffeae11fc70d6aef7804",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/dfdae0e489f8520228a4ffeae11fc70d6aef7804/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-12-13T03:23:48+00:00",
+        "max_kickoff_utc": "2024-12-09T20:00:00+00:00",
+        "settlement_lag_seconds": 285828.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_dfdae0e489.csv",
+        "blob_sha256": "127c00889ec9cb7f527d4a301f06a95440e059f50bfc04ad095955c4c8fb8870",
+        "table_sha256": "c72fa09f6c7f48e3d4130f2fc2f2ed9eb2c7aeb955dce7b2f152ae2bf4a079b1"
+      },
+      "causal_chip_metadata": {
+        "gw": 15,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [],
+        "blank_clubs_by_gw": {
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": []
+        },
+        "double_clubs_by_gw": {
+          "15": [],
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": []
+        }
+      }
+    },
+    {
+      "gw": 16,
+      "deadline_utc": "2024-12-14T13:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 16,
+        "deadline_utc": "2024-12-14T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/e82a95613c919d6c83cc6797a3a52efcfd0bb50e/cache/2024/12/14/1243.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/14/1243.json.xz",
+        "commit_sha": "e82a95613c919d6c83cc6797a3a52efcfd0bb50e",
+        "commit_time_utc": "2024-12-14T12:43:12+00:00",
+        "filename_utc": "2024-12-14T12:43:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-14T12:13:12+00:00",
+        "capture_upper_utc": "2024-12-14T12:43:12+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 4608.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "b6807223f57d60f28dfe848d4cae3f22eef9961bb4f1df5c746b0195fbfdd3ef",
+        "decompressed_sha256": "ecbfa8d1c7dfa5492fae0faa88fa40b5c52912cbf9a04435b27ef7fd42a0eef6",
+        "table_sha256": "81be968f0674ab170bc40e4364b7271b16761f6f4d0d7e9dc47d4cc80e421576",
+        "element_count": 693,
+        "purchase_eligible_count": 581,
+        "excluded_manager_count": 0,
+        "null_chance_count": 257,
+        "max_news_added_utc": "2024-12-13T17:00:06.193525+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw16.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 16,
+        "deadline_utc": "2024-12-14T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/dfdae0e489f8520228a4ffeae11fc70d6aef7804/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "dfdae0e489f8520228a4ffeae11fc70d6aef7804",
+        "commit_time_utc": "2024-12-13T03:23:48+00:00",
+        "capture_lower_utc": "2024-12-07T11:00:00+00:00",
+        "capture_upper_utc": "2024-12-13T03:23:48+00:00",
+        "age_upper_seconds": 122772.0,
+        "age_lower_seconds": 613800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "0b39c1cb195d161a0e22ec79836cb556f13cede3f8e2a63f14dd541665de591d",
+        "table_sha256": "6464811c8a4a7c4a8d8e49ffd6c2310985ce45a066b7175c2d2a06b3cf379244",
+        "window_gws": [
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/dfdae0e489.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "74d804715f821380314efc128bc3e1037750f23f",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/74d804715f821380314efc128bc3e1037750f23f/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-12-20T09:04:53+00:00",
+        "max_kickoff_utc": "2024-12-16T20:00:00+00:00",
+        "settlement_lag_seconds": 306293.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_74d804715f.csv",
+        "blob_sha256": "4fc8b4439fb0212525a70c7860d9189563ae950afb1f47ba9d9e2fb965a9d533",
+        "table_sha256": "8aa8877ac6c62f520f8301ecc4dcd9767510a648ce0af5767881e1eb32465be1"
+      },
+      "causal_chip_metadata": {
+        "gw": 16,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": []
+        },
+        "double_clubs_by_gw": {
+          "16": [],
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": []
+        }
+      }
+    },
+    {
+      "gw": 17,
+      "deadline_utc": "2024-12-21T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 17,
+        "deadline_utc": "2024-12-21T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/a1c85b6b6f02f2e0390be13792d44ac2cdb64126/cache/2024/12/21/0628.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/21/0628.json.xz",
+        "commit_sha": "a1c85b6b6f02f2e0390be13792d44ac2cdb64126",
+        "commit_time_utc": "2024-12-21T06:28:45+00:00",
+        "filename_utc": "2024-12-21T06:28:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-21T05:58:45+00:00",
+        "capture_upper_utc": "2024-12-21T06:28:45+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18075.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "7fc3c43081fff59a586ef8679323f1a08939c072738608a4ed16da1704b2551c",
+        "decompressed_sha256": "c030492c6e549f01a511f9b4b7a1a75622e32c18d39988ca42819c71f2d2ecb1",
+        "table_sha256": "613f7e1044f81e62acca0850c4faa9f13bc939ae42905940f5d8e129128971a4",
+        "element_count": 701,
+        "purchase_eligible_count": 589,
+        "excluded_manager_count": 0,
+        "null_chance_count": 253,
+        "max_news_added_utc": "2024-12-20T17:00:08.811947+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw17.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 17,
+        "deadline_utc": "2024-12-21T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/74d804715f821380314efc128bc3e1037750f23f/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "74d804715f821380314efc128bc3e1037750f23f",
+        "commit_time_utc": "2024-12-20T09:04:53+00:00",
+        "capture_lower_utc": "2024-12-14T13:30:00+00:00",
+        "capture_upper_utc": "2024-12-20T09:04:53+00:00",
+        "age_upper_seconds": 93307.0,
+        "age_lower_seconds": 595800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "40058f03efc43c76e4e1d509c4dcacd932f2fb55ccccd8917fb396cf68f5b07e",
+        "table_sha256": "d539abdf8f0e0c25951cffa8dcac57458fe7d6580ee8130cce1220d87b8743a3",
+        "window_gws": [
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/74d804715f.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "36f07bb50c876ac49255650fd4478c856f086735",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/36f07bb50c876ac49255650fd4478c856f086735/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2024-12-28T15:07:20+00:00",
+        "max_kickoff_utc": "2024-12-22T16:30:00+00:00",
+        "settlement_lag_seconds": 513440.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_36f07bb50c.csv",
+        "blob_sha256": "686fa9ffe3bb42f3e0f196b9e3d99b4cb70d84229f1afb9a44633325170f025d",
+        "table_sha256": "6cb129a932bd9241ce07d3f13808a9d18f5c99fde7844cefbe3b32a04e1983b8"
+      },
+      "causal_chip_metadata": {
+        "gw": 17,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": []
+        },
+        "double_clubs_by_gw": {
+          "17": [],
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": []
+        }
+      }
+    },
+    {
+      "gw": 18,
+      "deadline_utc": "2024-12-26T11:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 18,
+        "deadline_utc": "2024-12-26T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/2bcf5f53c04f3bcc4c39668eb4c8abb4e6553784/cache/2024/12/26/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/26/0631.json.xz",
+        "commit_sha": "2bcf5f53c04f3bcc4c39668eb4c8abb4e6553784",
+        "commit_time_utc": "2024-12-26T06:31:19+00:00",
+        "filename_utc": "2024-12-26T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-26T06:01:19+00:00",
+        "capture_upper_utc": "2024-12-26T06:31:19+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 17921.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "28566dd7cdba24ad9f395f635fff1fa3483f14526c2aa38d0b166b74c74c77b6",
+        "decompressed_sha256": "7063be3f2f068ed8d02d1e88867800e3f59f8de411a07e3eaa8e9e2c8b0028be",
+        "table_sha256": "8cd249a3b6b1fd8a9aec44782fb287e8f9003ecbf8da37c1e6766ae6f68ce7de",
+        "element_count": 701,
+        "purchase_eligible_count": 589,
+        "excluded_manager_count": 0,
+        "null_chance_count": 246,
+        "max_news_added_utc": "2024-12-25T22:30:08.266785+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw18.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 18,
+        "deadline_utc": "2024-12-26T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/c9a593826e077670fa300e825022b2979282d069/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "c9a593826e077670fa300e825022b2979282d069",
+        "commit_time_utc": "2024-12-23T09:00:23+00:00",
+        "capture_lower_utc": "2024-12-21T11:00:00+00:00",
+        "capture_upper_utc": "2024-12-23T09:00:23+00:00",
+        "age_upper_seconds": 266377.0,
+        "age_lower_seconds": 432000.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "57afd46cc82b1fca7bc4871d1a630c44b01bca8f6533839778d005ecee7e7669",
+        "table_sha256": "7ddf56777cbb1d2c52ef21a4e8f2f3b7605570604cda1c6d2669eaed3ca0b7de",
+        "window_gws": [
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/c9a593826e.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "e369a3a0943eb6c7cb240053c0e2827f91b57eaa",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e369a3a0943eb6c7cb240053c0e2827f91b57eaa/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-02T18:49:42+00:00",
+        "max_kickoff_utc": "2024-12-27T20:15:00+00:00",
+        "settlement_lag_seconds": 513282.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_e369a3a094.csv",
+        "blob_sha256": "f28678d127c6f89e3882c4356d7aa8eae8a48abbbe951b222550a68b94c260b6",
+        "table_sha256": "01a9075bd2ad2fdb2ea98c360b51c3855fcf7748462dd3b1f5c6a0c20d8f792b"
+      },
+      "causal_chip_metadata": {
+        "gw": 18,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": []
+        },
+        "double_clubs_by_gw": {
+          "18": [],
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": []
+        }
+      }
+    },
+    {
+      "gw": 19,
+      "deadline_utc": "2024-12-29T13:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 19,
+        "deadline_utc": "2024-12-29T13:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/1f6bf257f18bb09142ea5a4b42ad00673bccc69d/cache/2024/12/29/1239.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2024/12/29/1239.json.xz",
+        "commit_sha": "1f6bf257f18bb09142ea5a4b42ad00673bccc69d",
+        "commit_time_utc": "2024-12-29T12:39:43+00:00",
+        "filename_utc": "2024-12-29T12:39:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2024-12-29T12:09:43+00:00",
+        "capture_upper_utc": "2024-12-29T12:39:43+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 3017.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "05ca7934911c585fd51425e88baff73e03081aa0c7dd2c3e3409c4d52bd1bef8",
+        "decompressed_sha256": "8ec665ca0c81a6f00450f77724ba3637a2e385df958d33783ee9a6dbe2df85bf",
+        "table_sha256": "b161a1487c5f8f07a6779ae9e55b72e264a6f4d26acc62824cb31199851be58f",
+        "element_count": 705,
+        "purchase_eligible_count": 593,
+        "excluded_manager_count": 0,
+        "null_chance_count": 235,
+        "max_news_added_utc": "2024-12-29T08:30:08.854035+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw19.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 19,
+        "deadline_utc": "2024-12-29T13:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/36f07bb50c876ac49255650fd4478c856f086735/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "36f07bb50c876ac49255650fd4478c856f086735",
+        "commit_time_utc": "2024-12-28T15:07:20+00:00",
+        "capture_lower_utc": "2024-12-26T11:00:00+00:00",
+        "capture_upper_utc": "2024-12-28T15:07:20+00:00",
+        "age_upper_seconds": 78760.0,
+        "age_lower_seconds": 266400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "f709d518a9c228f436051194429af1eb0cfa258f9a1c04c02977fe8b5d0d3fc1",
+        "table_sha256": "d9ac8cdbb94259d072f8080b3be0fe5f70efa800cea73cb53f2e20fecb3525a3",
+        "window_gws": [
+          19,
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/36f07bb50c.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "e369a3a0943eb6c7cb240053c0e2827f91b57eaa",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e369a3a0943eb6c7cb240053c0e2827f91b57eaa/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-02T18:49:42+00:00",
+        "max_kickoff_utc": "2025-01-01T17:30:00+00:00",
+        "settlement_lag_seconds": 91182.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_e369a3a094.csv",
+        "blob_sha256": "f28678d127c6f89e3882c4356d7aa8eae8a48abbbe951b222550a68b94c260b6",
+        "table_sha256": "8e0b6f7787dbd671805f70c92109840460b9daa7100dff376ffb4028d20b7082"
+      },
+      "causal_chip_metadata": {
+        "gw": 19,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": []
+        },
+        "double_clubs_by_gw": {
+          "19": [],
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": []
+        }
+      }
+    },
+    {
+      "gw": 20,
+      "deadline_utc": "2025-01-04T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 20,
+        "deadline_utc": "2025-01-04T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/9ccd2db5c15ec3630147a770f59f6ec7254f7748/cache/2025/1/4/0629.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/1/4/0629.json.xz",
+        "commit_sha": "9ccd2db5c15ec3630147a770f59f6ec7254f7748",
+        "commit_time_utc": "2025-01-04T06:29:11+00:00",
+        "filename_utc": "2025-01-04T06:29:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-01-04T05:59:11+00:00",
+        "capture_upper_utc": "2025-01-04T06:29:11+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18049.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "7ea80f19102e41567202b81e2f5e77734060b608ff10fabd178d43a991c19507",
+        "decompressed_sha256": "25d7f8b92fd8560dc3e14fcf9f810e07d22569e725cd817e2e09b9efbe6c7c93",
+        "table_sha256": "a21026c2e71fc8f90411c361f75637af0698122ed4bbc66f5b40afb2e92dd638",
+        "element_count": 709,
+        "purchase_eligible_count": 597,
+        "excluded_manager_count": 0,
+        "null_chance_count": 231,
+        "max_news_added_utc": "2025-01-03T20:00:09.216849+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw20.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 20,
+        "deadline_utc": "2025-01-04T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e369a3a0943eb6c7cb240053c0e2827f91b57eaa/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "e369a3a0943eb6c7cb240053c0e2827f91b57eaa",
+        "commit_time_utc": "2025-01-02T18:49:42+00:00",
+        "capture_lower_utc": "2024-12-29T13:00:00+00:00",
+        "capture_upper_utc": "2025-01-02T18:49:42+00:00",
+        "age_upper_seconds": 144618.0,
+        "age_lower_seconds": 511200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "3c4f9b9975504738fa370936e2cc1a728dc6d2a2cd6e3809d6e871ac3867fb1d",
+        "table_sha256": "69fb55793079c02ad45601e8273d862043d801a47a62e4fd00d64520d4cb847e",
+        "window_gws": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/e369a3a094.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-18T05:15:44+00:00",
+        "max_kickoff_utc": "2025-01-06T20:00:00+00:00",
+        "settlement_lag_seconds": 983744.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_b9618a5d9e.csv",
+        "blob_sha256": "143a1efdddc3961175cfa238d60e3354aff417f6fe79c3c34481e1cd587a25cd",
+        "table_sha256": "3c5512e083531d0797b8be7a79d5754edd8bb5be6cfd6ed6830a9846f27a4a0d"
+      },
+      "causal_chip_metadata": {
+        "gw": 20,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": [],
+          "25": []
+        },
+        "double_clubs_by_gw": {
+          "20": [],
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": [],
+          "25": []
+        }
+      }
+    },
+    {
+      "gw": 21,
+      "deadline_utc": "2025-01-14T18:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 21,
+        "deadline_utc": "2025-01-14T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/140fc7a12ef4b57714c3ec3843176b396d3e0b81/cache/2025/1/14/1241.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/1/14/1241.json.xz",
+        "commit_sha": "140fc7a12ef4b57714c3ec3843176b396d3e0b81",
+        "commit_time_utc": "2025-01-14T12:42:00+00:00",
+        "filename_utc": "2025-01-14T12:41:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-01-14T12:12:00+00:00",
+        "capture_upper_utc": "2025-01-14T12:42:00+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 20880.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "d167faf62d41f05053bf55c4f2b97c9f58571be2fcb65eab8b1b4530e261a583",
+        "decompressed_sha256": "56179d69a53c1d3827d20b48acf604c9a20b7c996f0a9e942ed901a684387252",
+        "table_sha256": "13fa4ef19e6f9c5b2e472016018d684408e4df5292799e199ea29f899a3cb3b0",
+        "element_count": 718,
+        "purchase_eligible_count": 606,
+        "excluded_manager_count": 0,
+        "null_chance_count": 223,
+        "max_news_added_utc": "2025-01-14T12:00:08.993380+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw21.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 21,
+        "deadline_utc": "2025-01-14T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/c56971db31bd27acbc0ec3a96bc00da7870d68a7/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "c56971db31bd27acbc0ec3a96bc00da7870d68a7",
+        "commit_time_utc": "2025-01-07T11:11:38+00:00",
+        "capture_lower_utc": "2025-01-04T11:00:00+00:00",
+        "capture_upper_utc": "2025-01-07T11:11:38+00:00",
+        "age_upper_seconds": 629302.0,
+        "age_lower_seconds": 889200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h",
+          "fixture_stale_band_7d_to_21d"
+        ],
+        "blob_sha256": "5d0f8b6ca9d1ac9d266986a91ca738c28bed2ae37c33f987c5a49b24f701deb9",
+        "table_sha256": "5885469c6340b8536cef040f67f3700e6883ae8a6a30add04bdae058c9ff5260",
+        "window_gws": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/c56971db31.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-18T05:15:44+00:00",
+        "max_kickoff_utc": "2025-01-16T20:00:00+00:00",
+        "settlement_lag_seconds": 119744.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_b9618a5d9e.csv",
+        "blob_sha256": "143a1efdddc3961175cfa238d60e3354aff417f6fe79c3c34481e1cd587a25cd",
+        "table_sha256": "a8e9b589e81f0aa9c68f9d045e91c06b84f847bdb0767b3a37554f19178d4474"
+      },
+      "causal_chip_metadata": {
+        "gw": 21,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": [],
+          "25": [],
+          "26": []
+        },
+        "double_clubs_by_gw": {
+          "21": [],
+          "22": [],
+          "23": [],
+          "24": [],
+          "25": [],
+          "26": []
+        }
+      }
+    },
+    {
+      "gw": 22,
+      "deadline_utc": "2025-01-18T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 22,
+        "deadline_utc": "2025-01-18T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/0489fe37891318a4c7b18d88e776cdb7f7e80af6/cache/2025/1/18/0627.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/1/18/0627.json.xz",
+        "commit_sha": "0489fe37891318a4c7b18d88e776cdb7f7e80af6",
+        "commit_time_utc": "2025-01-18T06:27:46+00:00",
+        "filename_utc": "2025-01-18T06:27:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-01-18T05:57:46+00:00",
+        "capture_upper_utc": "2025-01-18T06:27:46+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18134.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "c9ce77d7e5c3d2869b06ce21a6f0f0fb0202491214039a7a1f4dff7107ad325c",
+        "decompressed_sha256": "a8e1915ba9f9fa68a07a2e7255c0026901c665d61dbb86a11de527b4c265e1bf",
+        "table_sha256": "e1f4a2e0e729af91cf420b7bdb08bdd0338718ce87c71cf3fb5cbe14e6e0e1b3",
+        "element_count": 726,
+        "purchase_eligible_count": 607,
+        "excluded_manager_count": 0,
+        "null_chance_count": 220,
+        "max_news_added_utc": "2025-01-17T16:00:08.726253+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw22.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 22,
+        "deadline_utc": "2025-01-18T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848",
+        "commit_time_utc": "2025-01-18T05:15:44+00:00",
+        "capture_lower_utc": "2025-01-14T18:00:00+00:00",
+        "capture_upper_utc": "2025-01-18T05:15:44+00:00",
+        "age_upper_seconds": 20656.0,
+        "age_lower_seconds": 320400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "241173b42629e232e7e783e8413049d6fba82f427577d74e95d325fd3b20b27b",
+        "table_sha256": "77e8d9973cdeec67fb8335f27ce34f28986baf8bbebbc66ce6c9c0eacc99d6cd",
+        "window_gws": [
+          22,
+          23,
+          24,
+          25,
+          26,
+          27
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/b9618a5d9e.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "48bd0a1b0b4de3afd436f2e07e1a3ebb698c8f90",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/48bd0a1b0b4de3afd436f2e07e1a3ebb698c8f90/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-30T22:44:45+00:00",
+        "max_kickoff_utc": "2025-01-20T20:00:00+00:00",
+        "settlement_lag_seconds": 873885.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_48bd0a1b0b.csv",
+        "blob_sha256": "ec379f228c98ca8a3a10dcda5d4df0b15a2e48d952adc8a47f80ed3f82c13e94",
+        "table_sha256": "24591f14cb57f78376fb326ae82cf5ca0f5bbc4e0f9fa8f1b528a3080cd2dce6"
+      },
+      "causal_chip_metadata": {
+        "gw": 22,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "22": [],
+          "23": [],
+          "24": [],
+          "25": [],
+          "26": [],
+          "27": []
+        },
+        "double_clubs_by_gw": {
+          "22": [],
+          "23": [],
+          "24": [
+            8,
+            12
+          ],
+          "25": [],
+          "26": [],
+          "27": []
+        }
+      }
+    },
+    {
+      "gw": 23,
+      "deadline_utc": "2025-01-25T13:30:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 23,
+        "deadline_utc": "2025-01-25T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/6b5be956bc6dfabf69420f737b57c8ad28b537ce/cache/2025/1/25/1238.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/1/25/1238.json.xz",
+        "commit_sha": "6b5be956bc6dfabf69420f737b57c8ad28b537ce",
+        "commit_time_utc": "2025-01-25T12:38:15+00:00",
+        "filename_utc": "2025-01-25T12:38:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-01-25T12:08:15+00:00",
+        "capture_upper_utc": "2025-01-25T12:38:15+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 4905.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "8b27730a0f89aaa185496f2b4478b3463672b90ac957a52df3aede0c5dad6ecf",
+        "decompressed_sha256": "563b10b9e131d7bff9efe6f5a20e5de82ec7ac57f72c2bfb300f024047c13b82",
+        "table_sha256": "67b338e4f09a0c013bc751c6f9221a5fa77b3b058b1af7de7d638e6ba7a13a31",
+        "element_count": 735,
+        "purchase_eligible_count": 608,
+        "excluded_manager_count": 20,
+        "null_chance_count": 223,
+        "max_news_added_utc": "2025-01-24T16:00:08.907673+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw23.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 23,
+        "deadline_utc": "2025-01-25T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "b9618a5d9eebce9bc5ab0e6683bfb8fc420ac848",
+        "commit_time_utc": "2025-01-18T05:15:44+00:00",
+        "capture_lower_utc": "2025-01-18T11:00:00+00:00",
+        "capture_upper_utc": "2025-01-18T05:15:44+00:00",
+        "age_upper_seconds": 634456.0,
+        "age_lower_seconds": 613800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": false,
+        "status": "out_of_window",
+        "reason": "no_commit_between_prev_and_origin_deadline",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "241173b42629e232e7e783e8413049d6fba82f427577d74e95d325fd3b20b27b",
+        "table_sha256": "02a4746b1c3e0868de83da4feee9b6803ac0c47a9f05fd608dbdbe88468f6580",
+        "window_gws": [
+          23,
+          24,
+          25,
+          26,
+          27,
+          28
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/b9618a5d9e.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "0f5da695398c293dca037c36c703fce88a161195",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/0f5da695398c293dca037c36c703fce88a161195/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-01-30T09:22:46+00:00",
+        "max_kickoff_utc": "2025-01-26T19:00:00+00:00",
+        "settlement_lag_seconds": 310966.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_0f5da69539.csv",
+        "blob_sha256": "5f3315be0caca5250b062afd55d708fdf8751505e3094bc6710982111bcd4f76",
+        "table_sha256": "767cfd03fd41053804940ce68d74066323c829a8247fac783b0baed849c2cdb0"
+      },
+      "causal_chip_metadata": {
+        "gw": 23,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "23": [],
+          "24": [],
+          "25": [],
+          "26": [],
+          "27": [],
+          "28": []
+        },
+        "double_clubs_by_gw": {
+          "23": [],
+          "24": [
+            8,
+            12
+          ],
+          "25": [],
+          "26": [],
+          "27": [],
+          "28": []
+        }
+      }
+    },
+    {
+      "gw": 24,
+      "deadline_utc": "2025-02-01T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 24,
+        "deadline_utc": "2025-02-01T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/a9fb53f0a51756928e823e82350fca6826c88edd/cache/2025/2/1/0628.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/2/1/0628.json.xz",
+        "commit_sha": "a9fb53f0a51756928e823e82350fca6826c88edd",
+        "commit_time_utc": "2025-02-01T06:28:53+00:00",
+        "filename_utc": "2025-02-01T06:28:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-02-01T05:58:53+00:00",
+        "capture_upper_utc": "2025-02-01T06:28:53+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18067.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "defec1e4132073efa69356ee67ccdf97fdb3b6e1ae2998561b9c0104024d4dd8",
+        "decompressed_sha256": "06baaf8632dc7a22308e541bf75afb12e128efa6506c9e6dfa8133677433c22e",
+        "table_sha256": "321e0e649c8d27ccdee5178a2d1ce06fe0a52379e6b057b250e30fc41cadc99b",
+        "element_count": 737,
+        "purchase_eligible_count": 602,
+        "excluded_manager_count": 20,
+        "null_chance_count": 215,
+        "max_news_added_utc": "2025-01-31T16:00:09.413287+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw24.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 24,
+        "deadline_utc": "2025-02-01T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/0f5da695398c293dca037c36c703fce88a161195/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "0f5da695398c293dca037c36c703fce88a161195",
+        "commit_time_utc": "2025-01-30T09:22:46+00:00",
+        "capture_lower_utc": "2025-01-25T13:30:00+00:00",
+        "capture_upper_utc": "2025-01-30T09:22:46+00:00",
+        "age_upper_seconds": 178634.0,
+        "age_lower_seconds": 595800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "50fe8bfc27a5951a6747b27518f7bb4c2e83a1132e6f24f2715c568a6d78f537",
+        "table_sha256": "de5ea712c0a3f566bfbccf544abce028e6bf855f0846b3a81e92f3a1683ac552",
+        "window_gws": [
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/0f5da69539.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "a0b8a68297efcf2a9b13b9e132a70913d590b246",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a0b8a68297efcf2a9b13b9e132a70913d590b246/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-02-20T21:00:55+00:00",
+        "max_kickoff_utc": "2025-02-12T19:30:00+00:00",
+        "settlement_lag_seconds": 696655.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_a0b8a68297.csv",
+        "blob_sha256": "d2061bf6518311fae0a45affddc872d7a269668e9873e16525c1ce170ba3721f",
+        "table_sha256": "9902c89d962b1e38580af6822e56702386bf6f8c49e4db551612b4804792c5f9"
+      },
+      "causal_chip_metadata": {
+        "gw": 24,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "24": [],
+          "25": [],
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": []
+        },
+        "double_clubs_by_gw": {
+          "24": [
+            8,
+            12
+          ],
+          "25": [],
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": []
+        }
+      }
+    },
+    {
+      "gw": 25,
+      "deadline_utc": "2025-02-14T18:30:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 25,
+        "deadline_utc": "2025-02-14T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/7e4a9f6ba86eed81d84a4fa2c725cf1fd8408d1c/cache/2025/2/14/1243.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/2/14/1243.json.xz",
+        "commit_sha": "7e4a9f6ba86eed81d84a4fa2c725cf1fd8408d1c",
+        "commit_time_utc": "2025-02-14T12:43:02+00:00",
+        "filename_utc": "2025-02-14T12:43:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-02-14T12:30:08.682021+00:00",
+        "capture_upper_utc": "2025-02-14T12:43:02+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 21591.318,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "9b424eab523e3e88125f1d4e434a07eeb6b153b6011476078844460c2ba64f12",
+        "decompressed_sha256": "e5abb32786af719055d07c1a4dfe8d323e5ed3be986fb51da556d5f4693a42d4",
+        "table_sha256": "7f64f4471dad3b34c3dc18260e77013f854cf47ac07884e963857dd4485b88c2",
+        "element_count": 753,
+        "purchase_eligible_count": 588,
+        "excluded_manager_count": 20,
+        "null_chance_count": 197,
+        "max_news_added_utc": "2025-02-14T12:30:08.682021+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw25.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 25,
+        "deadline_utc": "2025-02-14T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/58e46cd9b9fe439d875ed56bd1a398c69b08b570/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "58e46cd9b9fe439d875ed56bd1a398c69b08b570",
+        "commit_time_utc": "2025-02-13T12:56:35+00:00",
+        "capture_lower_utc": "2025-02-01T11:00:00+00:00",
+        "capture_upper_utc": "2025-02-13T12:56:35+00:00",
+        "age_upper_seconds": 106405.0,
+        "age_lower_seconds": 1150200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "8145dafb94f501220915cf4513973b5e0c56a02ebee75eeb5364dc3abe415fa7",
+        "table_sha256": "8173156d3403f4a37a1baa40897dedd62a160d843d78c93b3db701bf84af5c24",
+        "window_gws": [
+          25,
+          26,
+          27,
+          28,
+          29,
+          30
+        ],
+        "row_count": 59,
+        "local_relpath": "2024-25/fixtures/58e46cd9b9.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "a0b8a68297efcf2a9b13b9e132a70913d590b246",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a0b8a68297efcf2a9b13b9e132a70913d590b246/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-02-20T21:00:55+00:00",
+        "max_kickoff_utc": "2025-02-19T19:30:00+00:00",
+        "settlement_lag_seconds": 91855.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_a0b8a68297.csv",
+        "blob_sha256": "d2061bf6518311fae0a45affddc872d7a269668e9873e16525c1ce170ba3721f",
+        "table_sha256": "71edd453a32d0598c0904cda5724e07d6ffc69092e3f7b39e8b8fcda8e78fbf2"
+      },
+      "causal_chip_metadata": {
+        "gw": 25,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "25": [],
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": [
+            2,
+            7,
+            12,
+            15
+          ],
+          "30": []
+        },
+        "double_clubs_by_gw": {
+          "25": [
+            2,
+            12
+          ],
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": [],
+          "30": []
+        }
+      }
+    },
+    {
+      "gw": 26,
+      "deadline_utc": "2025-02-21T18:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 26,
+        "deadline_utc": "2025-02-21T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/145935695971375a1d37166943317b2edfc858dc/cache/2025/2/21/1244.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/2/21/1244.json.xz",
+        "commit_sha": "145935695971375a1d37166943317b2edfc858dc",
+        "commit_time_utc": "2025-02-21T12:44:08+00:00",
+        "filename_utc": "2025-02-21T12:44:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-02-21T12:14:08+00:00",
+        "capture_upper_utc": "2025-02-21T12:44:08+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 22552.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "bcb377af43c784e6a750437ece4d915451755f47fbb4c272bdff3b7bf0673835",
+        "decompressed_sha256": "8fa5cb40141e8ee4db4f999da61c65045251591ce86b0c212f371eae47144767",
+        "table_sha256": "3634b8257fff5569544be28525d57a230492ec936942a8ade1af29b4f5dcdb76",
+        "element_count": 759,
+        "purchase_eligible_count": 594,
+        "excluded_manager_count": 20,
+        "null_chance_count": 195,
+        "max_news_added_utc": "2025-02-21T03:30:10.447243+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw26.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 26,
+        "deadline_utc": "2025-02-21T18:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a0b8a68297efcf2a9b13b9e132a70913d590b246/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "a0b8a68297efcf2a9b13b9e132a70913d590b246",
+        "commit_time_utc": "2025-02-20T21:00:55+00:00",
+        "capture_lower_utc": "2025-02-14T18:30:00+00:00",
+        "capture_upper_utc": "2025-02-20T21:00:55+00:00",
+        "age_upper_seconds": 77345.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "6919577fb9efa53608c1752834fa65b02c3a0046a0a1d318caf26f6a6d3d291e",
+        "table_sha256": "7f7fe37d2fe3a472a9885d8c2b46f9c2343aa1a83a4c52e4475f44b604b69e4a",
+        "window_gws": [
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "row_count": 58,
+        "local_relpath": "2024-25/fixtures/a0b8a68297.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "a8fce2b6ef72a5f44639e2c0f9333e86c827db58",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a8fce2b6ef72a5f44639e2c0f9333e86c827db58/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-03-05T08:47:03+00:00",
+        "max_kickoff_utc": "2025-02-23T16:30:00+00:00",
+        "settlement_lag_seconds": 836223.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_a8fce2b6ef.csv",
+        "blob_sha256": "926c6bbfd351fe83ee0b14af5865de26a1f8ea777bf0add4abcb597ab0cb3e8e",
+        "table_sha256": "9e93524f92c45b5c285505c0ccc65ab979ee9d2eaa412b05c2a99400c1079125"
+      },
+      "causal_chip_metadata": {
+        "gw": 26,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": [
+            2,
+            7,
+            12,
+            15
+          ],
+          "30": [],
+          "31": []
+        },
+        "double_clubs_by_gw": {
+          "26": [],
+          "27": [],
+          "28": [],
+          "29": [],
+          "30": [],
+          "31": []
+        }
+      }
+    },
+    {
+      "gw": 27,
+      "deadline_utc": "2025-02-25T18:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 27,
+        "deadline_utc": "2025-02-25T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/c6fff91b29d1f54ae8a6278f0a156deb68d0514f/cache/2025/2/25/1245.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/2/25/1245.json.xz",
+        "commit_sha": "c6fff91b29d1f54ae8a6278f0a156deb68d0514f",
+        "commit_time_utc": "2025-02-25T12:45:54+00:00",
+        "filename_utc": "2025-02-25T12:45:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-02-25T12:30:09.810172+00:00",
+        "capture_upper_utc": "2025-02-25T12:45:54+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 19790.19,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "76a4a39d6b9b8364085e80043bf21dbbac642a080c45af99a0f71e1924bf4511",
+        "decompressed_sha256": "0f9084b60c09fbda2372080110233d8ce17be5441878a99151997a853bec2511",
+        "table_sha256": "963d1e346034c800a8d98bdf5a6a0170890489e0c9ff394df61c23a6cd2c607f",
+        "element_count": 763,
+        "purchase_eligible_count": 598,
+        "excluded_manager_count": 20,
+        "null_chance_count": 196,
+        "max_news_added_utc": "2025-02-25T12:30:09.810172+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw27.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 27,
+        "deadline_utc": "2025-02-25T18:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/814519241dbac0cf82eafa6ce227821e705f652b/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "814519241dbac0cf82eafa6ce227821e705f652b",
+        "commit_time_utc": "2025-02-24T11:50:55+00:00",
+        "capture_lower_utc": "2025-02-21T18:30:00+00:00",
+        "capture_upper_utc": "2025-02-24T11:50:55+00:00",
+        "age_upper_seconds": 108545.0,
+        "age_lower_seconds": 343800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "90c0e52d87a7254ec9b8b1691bee7b2288fd425c68934034cc4522c5cd5f9ca4",
+        "table_sha256": "69eb7f8de71ec98dc9c5782866b0999abe69704e3a2b5993a4ae6da62b46eaa2",
+        "window_gws": [
+          27,
+          28,
+          29,
+          30,
+          31,
+          32
+        ],
+        "row_count": 59,
+        "local_relpath": "2024-25/fixtures/814519241d.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "a8fce2b6ef72a5f44639e2c0f9333e86c827db58",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a8fce2b6ef72a5f44639e2c0f9333e86c827db58/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-03-05T08:47:03+00:00",
+        "max_kickoff_utc": "2025-02-27T20:00:00+00:00",
+        "settlement_lag_seconds": 478023.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_a8fce2b6ef.csv",
+        "blob_sha256": "926c6bbfd351fe83ee0b14af5865de26a1f8ea777bf0add4abcb597ab0cb3e8e",
+        "table_sha256": "e6243e08017731cc4576a8fa64586727696aef1652df427c9cbc2c568decf785"
+      },
+      "causal_chip_metadata": {
+        "gw": 27,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "27": [],
+          "28": [],
+          "29": [
+            2,
+            7,
+            12,
+            15
+          ],
+          "30": [],
+          "31": [],
+          "32": []
+        },
+        "double_clubs_by_gw": {
+          "27": [],
+          "28": [],
+          "29": [],
+          "30": [],
+          "31": [],
+          "32": [
+            7,
+            15
+          ]
+        }
+      }
+    },
+    {
+      "gw": 28,
+      "deadline_utc": "2025-03-08T11:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 28,
+        "deadline_utc": "2025-03-08T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/dfe865e99648f2cca785305f36a5596a6497c2d1/cache/2025/3/8/0625.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/3/8/0625.json.xz",
+        "commit_sha": "dfe865e99648f2cca785305f36a5596a6497c2d1",
+        "commit_time_utc": "2025-03-08T06:25:06+00:00",
+        "filename_utc": "2025-03-08T06:25:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-03-08T05:55:06+00:00",
+        "capture_upper_utc": "2025-03-08T06:25:06+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18294.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "5bfe4a25cba3a035cc7d9990433bd29adeae07092b3ef05e37320fc7a8d547c1",
+        "decompressed_sha256": "1f808ebfde4f806e4faeaf310b2d7b2c02da570e52fe8db969e5715a4bc4d971",
+        "table_sha256": "d92a823cfaf0dcc8a713e6ac513f0282ec96085c8fd41992914a2548ae4d9280",
+        "element_count": 765,
+        "purchase_eligible_count": 598,
+        "excluded_manager_count": 20,
+        "null_chance_count": 189,
+        "max_news_added_utc": "2025-03-07T16:30:09.194335+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw28.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 28,
+        "deadline_utc": "2025-03-08T11:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a8fce2b6ef72a5f44639e2c0f9333e86c827db58/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "a8fce2b6ef72a5f44639e2c0f9333e86c827db58",
+        "commit_time_utc": "2025-03-05T08:47:03+00:00",
+        "capture_lower_utc": "2025-02-25T18:00:00+00:00",
+        "capture_upper_utc": "2025-03-05T08:47:03+00:00",
+        "age_upper_seconds": 267177.0,
+        "age_lower_seconds": 925200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "4248fe90548ec0b00c2896cbd940a4c9a8e7035863bcd27847cd66a87346c708",
+        "table_sha256": "40076b95b58ace08321e59d66dbdcc59e247a1ca02a0954fb1183802ee7bec10",
+        "window_gws": [
+          28,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "row_count": 59,
+        "local_relpath": "2024-25/fixtures/a8fce2b6ef.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "f89612e6799fb3f8c91939aed87a998078dfb4b6",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f89612e6799fb3f8c91939aed87a998078dfb4b6/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-03-24T14:05:08+00:00",
+        "max_kickoff_utc": "2025-03-10T20:00:00+00:00",
+        "settlement_lag_seconds": 1188308.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_f89612e679.csv",
+        "blob_sha256": "65a96ad7cabec9085c87e2e57e1af7476ec9146ab6f756418dc0fbe71a4b492a",
+        "table_sha256": "e6da1720c3977602f32a52121727cb94bc87a6187abda11f3f4919216e098cb4"
+      },
+      "causal_chip_metadata": {
+        "gw": 28,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "28": [],
+          "29": [
+            2,
+            7,
+            12,
+            15
+          ],
+          "30": [],
+          "31": [],
+          "32": [],
+          "33": []
+        },
+        "double_clubs_by_gw": {
+          "28": [],
+          "29": [],
+          "30": [],
+          "31": [],
+          "32": [
+            7,
+            15
+          ],
+          "33": []
+        }
+      }
+    },
+    {
+      "gw": 29,
+      "deadline_utc": "2025-03-15T13:30:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 29,
+        "deadline_utc": "2025-03-15T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/d2938d0fc8db608ad7cfb09ff32706feac98faeb/cache/2025/3/15/1241.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/3/15/1241.json.xz",
+        "commit_sha": "d2938d0fc8db608ad7cfb09ff32706feac98faeb",
+        "commit_time_utc": "2025-03-15T12:41:15+00:00",
+        "filename_utc": "2025-03-15T12:41:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-03-15T12:11:15+00:00",
+        "capture_upper_utc": "2025-03-15T12:41:15+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 4725.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "9a3ebd94707ce3453822fe49a8bf3ae2789dbb60b31c2a993dd0811952becd97",
+        "decompressed_sha256": "f418a8ae409a8722313ef5b0c2fc939cd464536899abc5b43ce377bc98f45f48",
+        "table_sha256": "c78cc8a133e8652cf982314c3cbe07611ede50a8c6c897c291a7a30170f68cf9",
+        "element_count": 769,
+        "purchase_eligible_count": 602,
+        "excluded_manager_count": 20,
+        "null_chance_count": 191,
+        "max_news_added_utc": "2025-03-14T15:00:07.572220+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw29.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 29,
+        "deadline_utc": "2025-03-15T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/58de8250c856e3476d45557422b257a3659b2b26/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "58de8250c856e3476d45557422b257a3659b2b26",
+        "commit_time_utc": "2025-03-11T11:53:12+00:00",
+        "capture_lower_utc": "2025-03-08T11:00:00+00:00",
+        "capture_upper_utc": "2025-03-11T11:53:12+00:00",
+        "age_upper_seconds": 351408.0,
+        "age_lower_seconds": 613800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "14d42571651825343df33cb197efc371090c562c8ff2d90699b7a93380d813c0",
+        "table_sha256": "0a73f5b31302603d0097338744fab130cd539eac0622ed2348a47295116b7d4b",
+        "window_gws": [
+          29,
+          30,
+          31,
+          32,
+          33,
+          34
+        ],
+        "row_count": 59,
+        "local_relpath": "2024-25/fixtures/58de8250c8.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "f89612e6799fb3f8c91939aed87a998078dfb4b6",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f89612e6799fb3f8c91939aed87a998078dfb4b6/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-03-24T14:05:08+00:00",
+        "max_kickoff_utc": "2025-03-16T19:00:00+00:00",
+        "settlement_lag_seconds": 673508.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_f89612e679.csv",
+        "blob_sha256": "65a96ad7cabec9085c87e2e57e1af7476ec9146ab6f756418dc0fbe71a4b492a",
+        "table_sha256": "f4229804d9fd10c53b707c932cb39842c28dfdcf33ad7b3fedf1982ac4ec202e"
+      },
+      "causal_chip_metadata": {
+        "gw": 29,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "29": [
+            2,
+            7,
+            12,
+            15
+          ],
+          "30": [],
+          "31": [],
+          "32": [],
+          "33": [],
+          "34": []
+        },
+        "double_clubs_by_gw": {
+          "29": [],
+          "30": [],
+          "31": [],
+          "32": [
+            7,
+            15
+          ],
+          "33": [],
+          "34": []
+        }
+      }
+    },
+    {
+      "gw": 30,
+      "deadline_utc": "2025-04-01T17:15:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 30,
+        "deadline_utc": "2025-04-01T17:15:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/f4f6c8c39d71b68b6bb874b335ad0c7f222bfbc6/cache/2025/4/1/1250.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/4/1/1250.json.xz",
+        "commit_sha": "f4f6c8c39d71b68b6bb874b335ad0c7f222bfbc6",
+        "commit_time_utc": "2025-04-01T12:50:40+00:00",
+        "filename_utc": "2025-04-01T12:50:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-04-01T12:20:40+00:00",
+        "capture_upper_utc": "2025-04-01T12:50:40+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 17660.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "4e9a21ee6bc996453b31344b552e590efa5bb80dec33e473ab77a6e934d20564",
+        "decompressed_sha256": "754bddeb3917f135906d4f6229adf21a9cdeed7f512a7b73c352fdc25e41aff9",
+        "table_sha256": "6fd92a6b7da0b356055471aaf0110c7d1ab65785fc52d0f3bc33ac0725186a61",
+        "element_count": 769,
+        "purchase_eligible_count": 602,
+        "excluded_manager_count": 20,
+        "null_chance_count": 187,
+        "max_news_added_utc": "2025-03-31T14:00:06.529907+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw30.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 30,
+        "deadline_utc": "2025-04-01T17:15:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/f89612e6799fb3f8c91939aed87a998078dfb4b6/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "f89612e6799fb3f8c91939aed87a998078dfb4b6",
+        "commit_time_utc": "2025-03-24T14:05:08+00:00",
+        "capture_lower_utc": "2025-03-15T13:30:00+00:00",
+        "capture_upper_utc": "2025-03-24T14:05:08+00:00",
+        "age_upper_seconds": 702592.0,
+        "age_lower_seconds": 1482300.0,
+        "hard_cap_seconds": 1482300.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h",
+          "fixture_stale_band_7d_to_21d"
+        ],
+        "blob_sha256": "2f3fb93b0c0d6992006438833b2f5b9e5c79907bec6cb02b5b11ae7374e08024",
+        "table_sha256": "9651bd453398aed99848b31b817f1eaefa1044f2878e21e65788c398c8de698d",
+        "window_gws": [
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/f89612e679.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "c6f14b56fd810fcde3e9faec1c858c659142b99e",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/c6f14b56fd810fcde3e9faec1c858c659142b99e/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-04-05T08:21:22+00:00",
+        "max_kickoff_utc": "2025-04-03T19:00:00+00:00",
+        "settlement_lag_seconds": 134482.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_c6f14b56fd.csv",
+        "blob_sha256": "69219a6470c4be2f67d76ea9f11c261d24d508fc528002c5e1bc635a96e0778a",
+        "table_sha256": "b79ff16b0aea0da50909c3affdf5522c1360607b46e7553b7440ef84bc724f4d"
+      },
+      "causal_chip_metadata": {
+        "gw": 30,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "30": [],
+          "31": [],
+          "32": [],
+          "33": [],
+          "34": [],
+          "35": []
+        },
+        "double_clubs_by_gw": {
+          "30": [],
+          "31": [],
+          "32": [
+            7,
+            15
+          ],
+          "33": [],
+          "34": [],
+          "35": []
+        }
+      }
+    },
+    {
+      "gw": 31,
+      "deadline_utc": "2025-04-05T10:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 31,
+        "deadline_utc": "2025-04-05T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/7cc4a59cb03a6670cda4b249e4fc031b8705cb94/cache/2025/4/5/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/4/5/0631.json.xz",
+        "commit_sha": "7cc4a59cb03a6670cda4b249e4fc031b8705cb94",
+        "commit_time_utc": "2025-04-05T06:31:04+00:00",
+        "filename_utc": "2025-04-05T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-04-05T06:01:04+00:00",
+        "capture_upper_utc": "2025-04-05T06:31:04+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14336.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "e7f1038bf684e1b75770800f72ea57b56042b0fbfacf524a3c36652b9d4b4045",
+        "decompressed_sha256": "d706bd9826671b07893a9e7bb427ee4154b1dd5a2eb36904f77ae89b9399802d",
+        "table_sha256": "19f323216d37af5a0c854acfcfb1165948e0d2ebd3e5bc8e91d61de8d47b3c53",
+        "element_count": 771,
+        "purchase_eligible_count": 604,
+        "excluded_manager_count": 20,
+        "null_chance_count": 186,
+        "max_news_added_utc": "2025-04-04T14:30:09.150442+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw31.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 31,
+        "deadline_utc": "2025-04-05T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/c6f14b56fd810fcde3e9faec1c858c659142b99e/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "c6f14b56fd810fcde3e9faec1c858c659142b99e",
+        "commit_time_utc": "2025-04-05T08:21:22+00:00",
+        "capture_lower_utc": "2025-04-01T17:15:00+00:00",
+        "capture_upper_utc": "2025-04-05T08:21:22+00:00",
+        "age_upper_seconds": 5918.0,
+        "age_lower_seconds": 319500.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "b6658791a0fd92f16c3a7a51cc7a43057cae135ce01d31e22c3f8b1af84cb633",
+        "table_sha256": "58cd6c17d1a38138e977c75955494345e53cb16dd4bf997ff25c445772ca1903",
+        "window_gws": [
+          31,
+          32,
+          33,
+          34,
+          35,
+          36
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/c6f14b56fd.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "29e6c2f4590b1a03f218552ca676b9495539cfdc",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/29e6c2f4590b1a03f218552ca676b9495539cfdc/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-04-11T12:32:01+00:00",
+        "max_kickoff_utc": "2025-04-07T19:00:00+00:00",
+        "settlement_lag_seconds": 322321.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_29e6c2f459.csv",
+        "blob_sha256": "69bfbc348a50714d70968f0863bb9b22acf3c96137c48d440ca3e22efb422692",
+        "table_sha256": "1c1c330a58c0de246fac67c72a6b1a8d3474d6c8bba067c779ab555885be1158"
+      },
+      "causal_chip_metadata": {
+        "gw": 31,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "31": [],
+          "32": [],
+          "33": [],
+          "34": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "35": [],
+          "36": []
+        },
+        "double_clubs_by_gw": {
+          "31": [],
+          "32": [
+            7,
+            15
+          ],
+          "33": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "34": [],
+          "35": [],
+          "36": []
+        }
+      }
+    },
+    {
+      "gw": 32,
+      "deadline_utc": "2025-04-12T10:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 32,
+        "deadline_utc": "2025-04-12T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/69ea661bff8ad3a03e3c816589f483492faaf8c7/cache/2025/4/12/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/4/12/0631.json.xz",
+        "commit_sha": "69ea661bff8ad3a03e3c816589f483492faaf8c7",
+        "commit_time_utc": "2025-04-12T06:31:18+00:00",
+        "filename_utc": "2025-04-12T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-04-12T06:01:18+00:00",
+        "capture_upper_utc": "2025-04-12T06:31:18+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14322.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "7e7efc36acab5ca3d8157693e6b07a44357f06fa6cd2e21d73f5db2c7eda2a88",
+        "decompressed_sha256": "13f4f4bf532ea23abd139196cd3c844ab9eb73c70734574801d456226801f618",
+        "table_sha256": "41d27b0e859b13479e432cb97085fd417aafc92fef6cd72576b5d6616750e284",
+        "element_count": 772,
+        "purchase_eligible_count": 605,
+        "excluded_manager_count": 20,
+        "null_chance_count": 182,
+        "max_news_added_utc": "2025-04-12T05:30:06.621186+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw32.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 32,
+        "deadline_utc": "2025-04-12T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/29e6c2f4590b1a03f218552ca676b9495539cfdc/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "29e6c2f4590b1a03f218552ca676b9495539cfdc",
+        "commit_time_utc": "2025-04-11T12:32:01+00:00",
+        "capture_lower_utc": "2025-04-05T10:00:00+00:00",
+        "capture_upper_utc": "2025-04-11T12:32:01+00:00",
+        "age_upper_seconds": 77279.0,
+        "age_lower_seconds": 604800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "b832431b1ce6ea8566a2793a4046960102a3e90f56c5ad2adb98b67ea70ba8d1",
+        "table_sha256": "00ac2439c2b95d9c993571a8babb6285b447c890f0e37f58a6046e35c6a2c211",
+        "window_gws": [
+          32,
+          33,
+          34,
+          35,
+          36,
+          37
+        ],
+        "row_count": 61,
+        "local_relpath": "2024-25/fixtures/29e6c2f459.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "3558a3310103f24e17f02d684479067a2de099c5",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/3558a3310103f24e17f02d684479067a2de099c5/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-05-10T00:37:19+00:00",
+        "max_kickoff_utc": "2025-04-16T18:30:00+00:00",
+        "settlement_lag_seconds": 2009239.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_3558a33101.csv",
+        "blob_sha256": "e20d4c47b797632b980007c74f877795a07455aabb95663ef9cc2d865996dac2",
+        "table_sha256": "f4de9b1d1873b04b2eb861e37d4377886785cff9fa8112181381a1f8cc915a10"
+      },
+      "causal_chip_metadata": {
+        "gw": 32,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "32": [],
+          "33": [],
+          "34": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "35": [],
+          "36": [],
+          "37": []
+        },
+        "double_clubs_by_gw": {
+          "32": [
+            7,
+            15
+          ],
+          "33": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "34": [],
+          "35": [],
+          "36": [],
+          "37": []
+        }
+      }
+    },
+    {
+      "gw": 33,
+      "deadline_utc": "2025-04-19T12:30:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 33,
+        "deadline_utc": "2025-04-19T12:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/c588f57b2281222936898caf91b2bb4b0f65cd55/cache/2025/4/19/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/4/19/0631.json.xz",
+        "commit_sha": "c588f57b2281222936898caf91b2bb4b0f65cd55",
+        "commit_time_utc": "2025-04-19T06:31:43+00:00",
+        "filename_utc": "2025-04-19T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-04-19T06:01:43+00:00",
+        "capture_upper_utc": "2025-04-19T06:31:43+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 23297.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "0a4e081203f79bf7e44882faf82d04b077491e4e4280eeaaff36d68ec1a5df1a",
+        "decompressed_sha256": "c016bef83a0624a7493a6a3958c709607017505fe33012a47e0e31f571c97159",
+        "table_sha256": "3ef2c23418420a1466ef291d28a6a47b89e5571364693dc7b8b1dec06a1401d7",
+        "element_count": 778,
+        "purchase_eligible_count": 611,
+        "excluded_manager_count": 20,
+        "null_chance_count": 184,
+        "max_news_added_utc": "2025-04-18T17:00:07.605627+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw33.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 33,
+        "deadline_utc": "2025-04-19T12:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/29e6c2f4590b1a03f218552ca676b9495539cfdc/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "29e6c2f4590b1a03f218552ca676b9495539cfdc",
+        "commit_time_utc": "2025-04-11T12:32:01+00:00",
+        "capture_lower_utc": "2025-04-12T10:00:00+00:00",
+        "capture_upper_utc": "2025-04-11T12:32:01+00:00",
+        "age_upper_seconds": 691079.0,
+        "age_lower_seconds": 613800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": false,
+        "status": "out_of_window",
+        "reason": "no_commit_between_prev_and_origin_deadline",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "b832431b1ce6ea8566a2793a4046960102a3e90f56c5ad2adb98b67ea70ba8d1",
+        "table_sha256": "5c76efef4e33ea6960b027363041abc0046f9373c41f859878b69d89204607fd",
+        "window_gws": [
+          33,
+          34,
+          35,
+          36,
+          37,
+          38
+        ],
+        "row_count": 60,
+        "local_relpath": "2024-25/fixtures/29e6c2f459.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "761d80463ce8b7a74e1e67f7763910b4c4e14a10",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/761d80463ce8b7a74e1e67f7763910b4c4e14a10/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-04-26T00:07:50+00:00",
+        "max_kickoff_utc": "2025-04-23T19:00:00+00:00",
+        "settlement_lag_seconds": 191270.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_761d80463c.csv",
+        "blob_sha256": "bd5dbcc8b2e058c4a8b29dae98fdf70d0e20d3127a24661819c83f19c72cee48",
+        "table_sha256": "67a692e769d1da616e4903dbddde187543e5f8a42c4c2e5c8cb59ba135dd1995"
+      },
+      "causal_chip_metadata": {
+        "gw": 33,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "33": [],
+          "34": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "33": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "34": [],
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        }
+      }
+    },
+    {
+      "gw": 34,
+      "deadline_utc": "2025-04-26T10:00:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 34,
+        "deadline_utc": "2025-04-26T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/db3e7b2c124d5e2614116e2d8e3ca0d1bfc7d2f3/cache/2025/4/26/0631.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/4/26/0631.json.xz",
+        "commit_sha": "db3e7b2c124d5e2614116e2d8e3ca0d1bfc7d2f3",
+        "commit_time_utc": "2025-04-26T06:31:49+00:00",
+        "filename_utc": "2025-04-26T06:31:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-04-26T06:01:49+00:00",
+        "capture_upper_utc": "2025-04-26T06:31:49+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 14291.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "54b0704e0e071c6c742c0099301c6fd55ee6ae77f243371a07e9d9135e60c373",
+        "decompressed_sha256": "97827af929fd758fc08be837acba2ef934a6895df5115a15e647d3f87f2fc444",
+        "table_sha256": "71a73525f55c04bc29f626dd9bcfaa5e48538524d8d18fce18adcd5420dba71b",
+        "element_count": 779,
+        "purchase_eligible_count": 612,
+        "excluded_manager_count": 20,
+        "null_chance_count": 182,
+        "max_news_added_utc": "2025-04-25T14:00:07.684889+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw34.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 34,
+        "deadline_utc": "2025-04-26T10:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/761d80463ce8b7a74e1e67f7763910b4c4e14a10/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "761d80463ce8b7a74e1e67f7763910b4c4e14a10",
+        "commit_time_utc": "2025-04-26T00:07:50+00:00",
+        "capture_lower_utc": "2025-04-19T12:30:00+00:00",
+        "capture_upper_utc": "2025-04-26T00:07:50+00:00",
+        "age_upper_seconds": 35530.0,
+        "age_lower_seconds": 595800.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "153f8a1bc1e1a919fe3cda3847d4bcfc37935b1cc72b171a28590e066872b74a",
+        "table_sha256": "0b0b5adb98351a3d93c6c4976f7c96acf99adc88f17ab2511a9226aa09ea1b07",
+        "window_gws": [
+          34,
+          35,
+          36,
+          37,
+          38
+        ],
+        "row_count": 48,
+        "local_relpath": "2024-25/fixtures/761d80463c.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "3558a3310103f24e17f02d684479067a2de099c5",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/3558a3310103f24e17f02d684479067a2de099c5/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-05-10T00:37:19+00:00",
+        "max_kickoff_utc": "2025-05-01T18:30:00+00:00",
+        "settlement_lag_seconds": 713239.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": false,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_3558a33101.csv",
+        "blob_sha256": "e20d4c47b797632b980007c74f877795a07455aabb95663ef9cc2d865996dac2",
+        "table_sha256": "d01e1fef8799a0c4b585174b8d3d43418cb4260d58aee6d66e40e7a9c1ed7fb3"
+      },
+      "causal_chip_metadata": {
+        "gw": 34,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "34": [
+            1,
+            2,
+            7,
+            13
+          ],
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "34": [],
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        }
+      }
+    },
+    {
+      "gw": 35,
+      "deadline_utc": "2025-05-02T17:30:00+00:00",
+      "origin_admitted": false,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 35,
+        "deadline_utc": "2025-05-02T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/0d835fff5b462fc2acaec00063dee4c621eaace3/cache/2025/5/2/1249.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/5/2/1249.json.xz",
+        "commit_sha": "0d835fff5b462fc2acaec00063dee4c621eaace3",
+        "commit_time_utc": "2025-05-02T12:49:20+00:00",
+        "filename_utc": "2025-05-02T12:49:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-05-02T12:19:20+00:00",
+        "capture_upper_utc": "2025-05-02T12:49:20+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 18640.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "75fb742cf6b256fe52f2b83bd6450addaba51da3a6a767a55977202eef512bb8",
+        "decompressed_sha256": "3a38b9d03fa04cece599058a15e6af33efb61deb49d7410a56ab0ce8413cf8c7",
+        "table_sha256": "45825cc9020aa75bdba1688f3dca83f573683cb32c128618acf11c07e6e4bb13",
+        "element_count": 780,
+        "purchase_eligible_count": 613,
+        "excluded_manager_count": 20,
+        "null_chance_count": 181,
+        "max_news_added_utc": "2025-05-01T23:00:08.579870+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw35.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 35,
+        "deadline_utc": "2025-05-02T17:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/761d80463ce8b7a74e1e67f7763910b4c4e14a10/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "761d80463ce8b7a74e1e67f7763910b4c4e14a10",
+        "commit_time_utc": "2025-04-26T00:07:50+00:00",
+        "capture_lower_utc": "2025-04-26T10:00:00+00:00",
+        "capture_upper_utc": "2025-04-26T00:07:50+00:00",
+        "age_upper_seconds": 580930.0,
+        "age_lower_seconds": 545400.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": false,
+        "status": "out_of_window",
+        "reason": "no_commit_between_prev_and_origin_deadline",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance",
+          "fixture_schedule_gt_48h"
+        ],
+        "blob_sha256": "153f8a1bc1e1a919fe3cda3847d4bcfc37935b1cc72b171a28590e066872b74a",
+        "table_sha256": "6e8fd0e39fb59c0e53a2956573f6ccb1a92ab9fce48a684511f3d8b3f2d245fe",
+        "window_gws": [
+          35,
+          36,
+          37,
+          38
+        ],
+        "row_count": 40,
+        "local_relpath": "2024-25/fixtures/761d80463c.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "3558a3310103f24e17f02d684479067a2de099c5",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/3558a3310103f24e17f02d684479067a2de099c5/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-05-10T00:37:19+00:00",
+        "max_kickoff_utc": "2025-05-05T19:00:00+00:00",
+        "settlement_lag_seconds": 365839.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_3558a33101.csv",
+        "blob_sha256": "e20d4c47b797632b980007c74f877795a07455aabb95663ef9cc2d865996dac2",
+        "table_sha256": "45885e240e43ac6b1d52e274ead7e016ce1a6e18aec786a2574c2362807bf734"
+      },
+      "causal_chip_metadata": {
+        "gw": 35,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "35": [],
+          "36": [],
+          "37": [],
+          "38": []
+        }
+      }
+    },
+    {
+      "gw": 36,
+      "deadline_utc": "2025-05-10T12:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 36,
+        "deadline_utc": "2025-05-10T12:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/f331ffe54d8f2c32f68dafeb39f5072ffc266ab5/cache/2025/5/10/0632.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/5/10/0632.json.xz",
+        "commit_sha": "f331ffe54d8f2c32f68dafeb39f5072ffc266ab5",
+        "commit_time_utc": "2025-05-10T06:32:10+00:00",
+        "filename_utc": "2025-05-10T06:32:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-05-10T06:02:10+00:00",
+        "capture_upper_utc": "2025-05-10T06:32:10+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 23270.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "fdf87216448b42633fe9275a49a53ebd9e494ef5899d1062adb6ea626b27affe",
+        "decompressed_sha256": "1bbb5d5608413f8e9f90f1452ecbdc8c585ef26b5039bc32f59fd92d037c8494",
+        "table_sha256": "aa3d364eab53c80484523cd9479275115abbef86875a1fa11739c0b6b90f2f58",
+        "element_count": 781,
+        "purchase_eligible_count": 614,
+        "excluded_manager_count": 20,
+        "null_chance_count": 181,
+        "max_news_added_utc": "2025-05-09T16:30:08.831398+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw36.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 36,
+        "deadline_utc": "2025-05-10T12:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/3558a3310103f24e17f02d684479067a2de099c5/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "3558a3310103f24e17f02d684479067a2de099c5",
+        "commit_time_utc": "2025-05-10T00:37:19+00:00",
+        "capture_lower_utc": "2025-05-02T17:30:00+00:00",
+        "capture_upper_utc": "2025-05-10T00:37:19+00:00",
+        "age_upper_seconds": 42761.0,
+        "age_lower_seconds": 673200.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "8737b65fd424862d4997cf25a4228f65f274872134bbff47f0129f580abe6b9f",
+        "table_sha256": "e95975f4d0d79de6a461f5c99be1b6ee8282d22ea45daaa0213673ec0e4980c5",
+        "window_gws": [
+          36,
+          37,
+          38
+        ],
+        "row_count": 30,
+        "local_relpath": "2024-25/fixtures/3558a33101.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "e3a961c6b47342884268f59d6cb1730b3be194b2",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e3a961c6b47342884268f59d6cb1730b3be194b2/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-05-16T09:44:44+00:00",
+        "max_kickoff_utc": "2025-05-11T15:30:00+00:00",
+        "settlement_lag_seconds": 411284.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_e3a961c6b4.csv",
+        "blob_sha256": "d2a26b84971463d141b23b9f3700ffa2edcbd42e53ecbcf4291d9428028dddc5",
+        "table_sha256": "8f1893a8cb6863d91224dc98cf03121805b22265ede7d4480f486f6291734b1e"
+      },
+      "causal_chip_metadata": {
+        "gw": 36,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "36": [],
+          "37": [],
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "36": [],
+          "37": [],
+          "38": []
+        }
+      }
+    },
+    {
+      "gw": 37,
+      "deadline_utc": "2025-05-16T17:00:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 37,
+        "deadline_utc": "2025-05-16T17:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/e57b398eb70294bebb3b28afe12bef005cbf73c0/cache/2025/5/16/1252.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/5/16/1252.json.xz",
+        "commit_sha": "e57b398eb70294bebb3b28afe12bef005cbf73c0",
+        "commit_time_utc": "2025-05-16T12:52:09+00:00",
+        "filename_utc": "2025-05-16T12:52:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-05-16T12:22:09+00:00",
+        "capture_upper_utc": "2025-05-16T12:52:09+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 16671.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "7672e1df9c37b5d971abf698bd95c15c5360f2b14929834796b24c8dca26a6e7",
+        "decompressed_sha256": "914d27c303480a1d73c7f55fa4e69e46f303b2c3d97f2aba06ff63e462b5ce68",
+        "table_sha256": "428b7cbfa27b62e7379a8bdb349b949dca4970d7f61c66cb5049869e1006ae84",
+        "element_count": 781,
+        "purchase_eligible_count": 614,
+        "excluded_manager_count": 20,
+        "null_chance_count": 180,
+        "max_news_added_utc": "2025-05-16T09:30:08.547373+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw37.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 37,
+        "deadline_utc": "2025-05-16T17:00:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/e3a961c6b47342884268f59d6cb1730b3be194b2/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "e3a961c6b47342884268f59d6cb1730b3be194b2",
+        "commit_time_utc": "2025-05-16T09:44:44+00:00",
+        "capture_lower_utc": "2025-05-10T12:30:00+00:00",
+        "capture_upper_utc": "2025-05-16T09:44:44+00:00",
+        "age_upper_seconds": 26116.0,
+        "age_lower_seconds": 534600.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "c8c15992d13f97cfd6f440a10ec94faaf314c9e6d2a820ac1026d76a431ad647",
+        "table_sha256": "67b5c8d55498727e21d3a229169ec8c8b67ff8ab8d7b6052c6dc2e6d5c7f050a",
+        "window_gws": [
+          37,
+          38
+        ],
+        "row_count": 20,
+        "local_relpath": "2024-25/fixtures/e3a961c6b4.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "a7089bab28e2a6012cde62b4fbd692f975792a55",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a7089bab28e2a6012cde62b4fbd692f975792a55/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-05-24T12:26:14+00:00",
+        "max_kickoff_utc": "2025-05-20T19:00:00+00:00",
+        "settlement_lag_seconds": 321974.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_a7089bab28.csv",
+        "blob_sha256": "4538789c35afcf9750fbef9edd1c79e3b75b6131a27818a6ff724aee42734d5f",
+        "table_sha256": "e4088b9b32c394a8bc962b018f8e61cf34aec488778718ebf43cb512565ba46e"
+      },
+      "causal_chip_metadata": {
+        "gw": 37,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "37": [],
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "37": [],
+          "38": []
+        }
+      }
+    },
+    {
+      "gw": 38,
+      "deadline_utc": "2025-05-25T13:30:00+00:00",
+      "origin_admitted": true,
+      "bootstrap": {
+        "season": "2024-25",
+        "gw": 38,
+        "deadline_utc": "2025-05-25T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/Randdalf/fplcache/cd1809c6bb7735fda4ec786636ff3610fb5a5b6e/cache/2025/5/25/1247.json.xz",
+        "repo": "Randdalf/fplcache",
+        "path": "cache/2025/5/25/1247.json.xz",
+        "commit_sha": "cd1809c6bb7735fda4ec786636ff3610fb5a5b6e",
+        "commit_time_utc": "2025-05-25T12:47:47+00:00",
+        "filename_utc": "2025-05-25T12:47:00+00:00",
+        "filename_within_900s": true,
+        "capture_lower_utc": "2025-05-25T12:17:47+00:00",
+        "capture_upper_utc": "2025-05-25T12:47:47+00:00",
+        "timing_basis": "bounded_reconstruction",
+        "age_seconds": 4333.0,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "fplcache_mirror_provenance"
+        ],
+        "blob_sha256": "3c85ba3075fb54bfa6ecabff5d7291d77a2b0a9344da66b4d7543b9ff5a3227b",
+        "decompressed_sha256": "5a635f2800d8bbce7f475940dc611164ccb6e3259a187fdb1655d96074871f83",
+        "table_sha256": "649e75c8ee17c38d23e8de6130b7a0551355e21412a0dc7c78ca3edfc8c0bacd",
+        "element_count": 781,
+        "purchase_eligible_count": 614,
+        "excluded_manager_count": 20,
+        "null_chance_count": 179,
+        "max_news_added_utc": "2025-05-24T20:00:08.728150+00:00",
+        "is_next_ok": true,
+        "local_relpath": "2024-25/bootstraps/gw38.json.xz"
+      },
+      "fixtures": {
+        "season": "2024-25",
+        "gw": 38,
+        "deadline_utc": "2025-05-25T13:30:00+00:00",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/a7089bab28e2a6012cde62b4fbd692f975792a55/data/2024-25/fixtures.csv",
+        "repo": "vaastav/Fantasy-Premier-League",
+        "commit_sha": "a7089bab28e2a6012cde62b4fbd692f975792a55",
+        "commit_time_utc": "2025-05-24T12:26:14+00:00",
+        "capture_lower_utc": "2025-05-16T17:00:00+00:00",
+        "capture_upper_utc": "2025-05-24T12:26:14+00:00",
+        "age_upper_seconds": 90226.0,
+        "age_lower_seconds": 765000.0,
+        "hard_cap_seconds": 1209600.0,
+        "in_window": true,
+        "status": "supported",
+        "reason": "ok",
+        "disclosed_limitations": [
+          "vaastav_mirror_provenance"
+        ],
+        "blob_sha256": "0e7fdd0fc6a7ca0dbc7385ef604466e72f6853f2b329778da98384f167b9aaec",
+        "table_sha256": "26f479bcccefbec972d32d8144252b48fb4d6cab7f4d4b5e44b436597ab73634",
+        "window_gws": [
+          38
+        ],
+        "row_count": 10,
+        "local_relpath": "2024-25/fixtures/a7089bab28.csv"
+      },
+      "settled_outcomes": {
+        "commit_sha": "59c767596750f554ba464de94cf4fce8664a6cbe",
+        "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/59c767596750f554ba464de94cf4fce8664a6cbe/data/2024-25/gws/merged_gw.csv",
+        "finalized_at_utc": "2025-06-04T15:20:23+00:00",
+        "max_kickoff_utc": "2025-05-25T15:00:00+00:00",
+        "settlement_lag_seconds": 865223.0,
+        "meets_plus_24h": true,
+        "historical_performance_ready_by_next_gw": true,
+        "zero_diff_verified": true,
+        "ledger_mismatch_rows": 0,
+        "local_relpath": "2024-25/outcomes/merged_gw_59c7675967.csv",
+        "blob_sha256": "f0c27eb2b5676e486d9f452b81953db865bf39e71133e22056e370b6158785a9",
+        "table_sha256": "5db46d5ed3cd722915995099c01f5c84dbe748387022087095b4547b3347c99c"
+      },
+      "causal_chip_metadata": {
+        "gw": 38,
+        "rules_version": "2024-25",
+        "two_chip_sets": false,
+        "afcon_gw15_topup": false,
+        "active_chip_windows": [
+          {
+            "name": "wildcard",
+            "start_event": 2,
+            "stop_event": 19
+          },
+          {
+            "name": "wildcard",
+            "start_event": 20,
+            "stop_event": 38
+          },
+          {
+            "name": "freehit",
+            "start_event": 2,
+            "stop_event": 38
+          },
+          {
+            "name": "bboost",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "3xc",
+            "start_event": 1,
+            "stop_event": 38
+          },
+          {
+            "name": "manager",
+            "start_event": 24,
+            "stop_event": 38
+          }
+        ],
+        "blank_clubs_by_gw": {
+          "38": []
+        },
+        "double_clubs_by_gw": {
+          "38": []
+        }
+      }
+    }
+  ]
+}

@@ -27,7 +27,7 @@ def problem_material(forecast_store: Path, forecast_id: str, context: AdmissionC
     forecasts, forecast_material = load_forecast_verified(forecast_store, forecast_id, *context)
     issue = forecast_material["issue"]
     rules = get_rules(state.rules_version)
-    if issue["gw"] != state.deadline or issue["season"] != state.rules_version or state.rules_id != rules.rules_id or issue["native_rules"] != rules.rules_id:
+    if issue["gw"] != state.deadline or issue["season"] != state.rules_version or state.rules_id != rules.rules_id or issue.get("native_rules") != rules.rules_id:
         raise ValueError("Forecast and replay scope mismatch")
     if "player_id" not in forecasts or not {player.player_id for player in state.squad} <= set(forecasts["player_id"]):
         raise ValueError("Forecast does not cover owned squad")
@@ -59,7 +59,21 @@ def _decision(value: dict[str, Any]) -> Decision:
 
 
 def _batch(value: dict[str, Any]) -> OutcomeBatch:
-    return OutcomeBatch(value["rules_version"], value["deadline"], value["source_identity"], tuple((p, Outcome(item["points"], item["minutes"], item["appeared"])) for p, item in value["outcomes"]))
+    outcomes = tuple(
+        (
+            p,
+            Outcome(
+                item["points"],
+                item["minutes"],
+                item["appeared"],
+                item.get("yellow_cards", 0),
+                item.get("red_cards", 0),
+                item.get("component_points_sum"),
+            ),
+        )
+        for p, item in value["outcomes"]
+    )
+    return OutcomeBatch(value["rules_version"], value["deadline"], value["source_identity"], outcomes)
 
 
 def _verify_checkpoint(root: Path, forecast_store: Path, contexts: Mapping[str, AdmissionContext], checkpoint_id: str, seen: set[str]) -> dict[str, Any]:

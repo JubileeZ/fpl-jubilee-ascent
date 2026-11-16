@@ -14,7 +14,7 @@ from typing import Any
 import pandas as pd
 
 from backtesting.data_admission import AdmittedInput, assess_origins, verify_input
-from backtesting.forecast_adapter import predict_synthetic_issue
+from backtesting.forecast_adapter import predict_issue
 from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.forecast_inputs import validate_storage_path, verify_training_bundle
 from backtesting.season_rules import get_rules, load_season_lifecycle
@@ -54,17 +54,7 @@ def _publish_forecast_directory(stage: Path, destination: Path) -> bool:
     raise RuntimeError("Forecast publication retry exhausted")
 
 
-def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str = "def_xg_shrink_challenger") -> dict[str, Any]:
-    """Capture a conservative source closure, including dirty/generated Python bytes."""
-    verify_input(capability, request, catalog)
-    source = verify_training_bundle(capability, request, catalog, training_authority)
-    origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
-    authority = json.loads(catalog[request["authority_digest"]])
-    report = next(r for r in assess_origins(request, catalog) if r["season"] == capability.season and r["gw"] == capability.gw)
-    matches = [s for s in origin["sources"] if s["role"] == "input" and s["id"] == report["selected_source"]["input"]]
-    if len(matches) != 1:
-        raise ValueError("Ambiguous retained input source")
-    input_source = matches[0]
+def _collect_code_closure() -> dict[str, str]:
     project = Path(__file__).resolve().parent.parent
     code: dict[str, str] = {}
     sealed = load_season_lifecycle().sealed_seasons()
@@ -82,6 +72,49 @@ def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalo
         if not path.is_file() or not path.resolve().is_relative_to(project):
             raise ValueError("Dependency lock missing")
         code[name] = path.read_bytes().hex()
+    return code
+
+
+def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str = "def_xg_shrink_challenger") -> dict[str, Any]:
+    """Capture a conservative source closure, including dirty/generated Python bytes."""
+    verify_input(capability, request, catalog)
+    source = verify_training_bundle(capability, request, catalog, training_authority)
+    origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
+    code = _collect_code_closure()
+    if capability.mode == "empirical":
+        from backtesting.season_rules import get_rules
+
+        issue_payload = {
+            "season": origin["season"],
+            "gw": origin["gw"],
+            "deadline": origin["deadline"],
+            "native_rules": get_rules(origin["season"]).rules_id,
+            "disclosed_limitations": list(capability.disclosed_limitations),
+            "sources": origin["sources"],
+            "chip_calendar": request.get("shared_chip_calendar", []),
+        }
+        return {
+            "version": 2,
+            "mode": capability.track,
+            "issue": issue_payload,
+            "input_digest": capability.input_digest,
+            "training_authority": catalog[training_authority].hex(),
+            "training_source": _canonical_json_bytes(source).hex(),
+            "model": model_name,
+            "model_parameters": {},
+            "fit_policy": "current-history-once",
+            "seed_policy": "verified-prior-season",
+            "schema": "empirical-v2",
+            "code": code,
+            "python": sys.version,
+            "platform": platform.platform(),
+        }
+    authority = json.loads(catalog[request["authority_digest"]])
+    report = next(r for r in assess_origins(request, catalog) if r["season"] == capability.season and r["gw"] == capability.gw)
+    matches = [s for s in origin["sources"] if s["role"] == "input" and s["id"] == report["selected_source"]["input"]]
+    if len(matches) != 1:
+        raise ValueError("Ambiguous retained input source")
+    input_source = matches[0]
     return {"version": 1, "mode": "synthetic_diagnostic", "issue": {k: origin[k] for k in ("season", "gw", "deadline", "target_gws", "universe", "players", "fixtures", "schedule", "native_rules", "seed_identity")}, "input_digest": capability.input_digest, "input_authority": {k: v for k, v in authority.items() if k != "source_manifests"}, "input_source": {k: (v.hex() if isinstance(v, bytes) else v) for k, v in input_source.items() if k != "parent_manifest"}, "training_authority": catalog[training_authority].hex(), "training_source": _canonical_json_bytes(source).hex(), "model": model_name, "model_parameters": {}, "fit_policy": "current-history-once", "seed_policy": "verified-prior-season", "schema": "synthetic-fixture-v1", "code": code, "python": sys.version, "platform": platform.platform()}
 
 
@@ -151,15 +184,15 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
             validate_components(frame, rules.version)
             hit = True
         else:
-            frame, meta = predict_synthetic_issue(capability, request, catalog, training_authority, resolved / "staging", model_name=model_name)
+            frame, meta = predict_issue(capability, request, catalog, training_authority, resolved / "staging", model_name=model_name)
             table = frame.to_csv(index=False, float_format="%.17g", lineterminator="\n").encode()
             coverage_report = {
                 "version": 1,
                 "forecast_id": forecast_id,
                 "season": capability.season,
                 "issue_gw": capability.gw,
-                "universe_size": len(origin["universe"]),
-                "target_gws": origin["target_gws"],
+                "universe_size": int(frame["player_id"].nunique()) if capability.mode == "empirical" else len(origin["universe"]),
+                "target_gws": sorted(int(g) for g in frame["gameweek_id"].unique()) if capability.mode == "empirical" else origin["target_gws"],
                 "rows": len(frame),
                 "blanks": int((frame["fixture_id"] == -1).sum()),
                 "fixtures": int((frame["fixture_id"] != -1).sum()),
@@ -181,7 +214,7 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
                 "coverage_report_sha256": _sha256_hex(rep_bytes),
                 "generator_log_sha256": _sha256_hex(log_bytes),
                 "rows": len(frame),
-                "mode": "synthetic_diagnostic",
+                "mode": capability.track if capability.mode == "empirical" else "synthetic_diagnostic",
                 "generation": meta,
             }
             stage = forecasts / (".stage-" + uuid.uuid4().hex)
