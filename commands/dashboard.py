@@ -36,7 +36,8 @@ from commands.transfer_plan_scenarios import (
 from commands import refresh_data
 from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
-from models import get_default_model_name
+from models import get_active_transfer_plan_model_name, get_default_model_name
+from models.selection import dual_tier_models
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
@@ -88,7 +89,7 @@ def should_project_on_open(processed_dir: Path, json_path: Path) -> bool:
         projected = json.loads(json_path.read_text(encoding="utf-8")).get("meta", {}).get("models") or []
     except (OSError, ValueError, AttributeError):
         return True
-    return get_default_model_name() not in projected
+    return any(model not in projected for model in dual_tier_models())
 
 
 def refresh_status() -> dict[str, object]:
@@ -194,22 +195,28 @@ def run_refresh_job(
                 from commands.transfer_plan_scenarios import write_scenarios_payload
                 target_gw = int(payload["meta"].get("target_gw", 1))
                 h = int(payload["meta"].get("horizon", horizon))
-                champ = str(payload["meta"].get("champion", get_default_model_name()))
-                new_digest = compute_scenarios_digest(
-                    processed_dir=processed_dir,
-                    target_gw=target_gw,
-                    horizon=h,
-                    champion=champ,
+                active_cached_model = str(
+                    payload["meta"].get("active_model")
+                    or payload["meta"].get("champion")
+                    or get_active_transfer_plan_model_name()
                 )
-                if new_digest == cached_digest:
-                    payload["meta"]["stale"] = False
-                    write_scenarios_payload(SCENARIOS_PATH, payload)
-                    _set_plan_state(
-                        status="ok",
-                        error=None,
-                        detail="Transfer Plan Scenarios up-to-date (data unchanged).",
-                        payload=payload,
+                current_active = get_active_transfer_plan_model_name()
+                if active_cached_model == current_active:
+                    new_digest = compute_scenarios_digest(
+                        processed_dir=processed_dir,
+                        target_gw=target_gw,
+                        horizon=h,
+                        champion=active_cached_model,
                     )
+                    if new_digest == cached_digest:
+                        payload["meta"]["stale"] = False
+                        write_scenarios_payload(SCENARIOS_PATH, payload)
+                        _set_plan_state(
+                            status="ok",
+                            error=None,
+                            detail="Transfer Plan Scenarios up-to-date (data unchanged).",
+                            payload=payload,
+                        )
     except Exception as exc:
         logger.exception("Dashboard Refresh failed")
         _set_refresh_state(status="error", error=str(exc), detail="Refresh failed.")
@@ -317,6 +324,7 @@ def run_transfer_plan_job(
     booked_chips: dict[str, list[int]],
     enabled_chips: list[dict[str, object]],
     force_keep: list[dict[str, object]] | None = None,
+    datasource: str | None = None,
 ) -> None:
     try:
         _set_plan_state(
@@ -350,6 +358,7 @@ def run_transfer_plan_job(
             enabled_chips=enabled_chips,
             force_keep=force_keep or [],
             on_progress=on_progress,
+            datasource=datasource,
         )
         _set_plan_state(status="ok", error=None, detail="Transfer Plan Scenarios ready.", payload=payload)
     except UserSquadRequired as exc:
@@ -382,7 +391,14 @@ def start_transfer_plan(
     booked_chips: dict[str, list[int]],
     enabled_chips: list[dict[str, object]],
     force_keep: list[dict[str, object]] | None = None,
+    datasource: str | None = None,
 ) -> tuple[int, dict[str, object]]:
+    if datasource is not None and datasource not in set(dual_tier_models()):
+        return 400, {
+            "status": "error",
+            "error": f"Transfer Plan model '{datasource}' must belong to active Dual-Tier / Confirmed Champion slate.",
+            "detail": "Invalid model selection.",
+        }
     with _job_lock:
         conflict = _active_job_conflict()
         if conflict:
@@ -408,6 +424,7 @@ def start_transfer_plan(
             "booked_chips": booked_chips,
             "enabled_chips": enabled_chips,
             "force_keep": force_keep or [],
+            "datasource": datasource,
         },
         daemon=True,
     ).start()
@@ -563,7 +580,7 @@ def run_strategy_solve_job(*, options: dict[str, object], target_gw: int = 1) ->
 
         solver_opts = load_settings()
         solver_opts.update(options)
-        solver_opts["datasource"] = options.get("datasource") or get_default_model_name()
+        solver_opts["datasource"] = options.get("datasource") or get_active_transfer_plan_model_name()
 
         horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
         solver_opts["horizon"] = horizon
@@ -816,7 +833,7 @@ def run_branch_solve_job(*, options: dict[str, object], parent_node_id: str, tar
             if k not in options:
                 solver_opts[k] = v
 
-        solver_opts["datasource"] = options.get("datasource") or get_default_model_name()
+        solver_opts["datasource"] = options.get("datasource") or get_active_transfer_plan_model_name()
 
         horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
         solver_opts["horizon"] = horizon
@@ -1374,6 +1391,9 @@ def handle_dashboard_api(
         if method == "GET":
             return 200, refresh_status()
         if method == "POST":
+            raw_model = str((body or {}).get("model") or "").strip()
+            if (not raw_model or raw_model.lower() == "default") and len(dual_tier_models()) > 1:
+                return start_refresh(model_name=None)
             model_name = posted_primary_model(body)
             return start_refresh(model_name=model_name)
     if path == "/api/dream-team":
@@ -1394,12 +1414,19 @@ def handle_dashboard_api(
             return 200, state
         if method == "POST":
             target_gw, horizon, booked, enabled, force_keep = _transfer_plan_args(body)
+            raw_ds = str((body or {}).get("datasource") or (body or {}).get("model") or "").strip()
+            datasource = (
+                get_default_model_name()
+                if raw_ds.lower() == "champion"
+                else (raw_ds or None)
+            )
             return start_transfer_plan(
                 target_gw=target_gw,
                 horizon=horizon,
                 booked_chips=booked,
                 enabled_chips=enabled,
                 force_keep=force_keep,
+                datasource=datasource,
             )
     if path == "/api/strategy-solve":
         if method == "GET":

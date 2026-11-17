@@ -295,6 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (trust.promotion_status === "provisional") {
         parts.push("provisional");
       }
+      if (trust.provisional_active) {
+        parts.push(`Provisional Active: ${trust.provisional_active}`);
+      }
       el.textContent = parts.join(" · ");
     }
     fillTrust(document.getElementById("champion-trust"));

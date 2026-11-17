@@ -11,7 +11,7 @@ from typing import Any, Callable, Mapping
 
 from commands.export_dashboard import load_owned_picks, load_user_chips, load_user_state
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
-from models import get_default_model_name
+from models import get_active_transfer_plan_model_name, get_default_model_name
 from models.participation_state_hybrid import target_to_states
 from projections.expected_gw_score import _POS_ID, PlayerGw, player_gw_from_dashboard
 from solver.paths import DATA_DIR
@@ -85,13 +85,17 @@ def build_scenarios_payload(
     status: str,
     stale: bool = False,
     data_digest: str | None = None,
+    datasource: str | None = None,
 ) -> dict[str, Any]:
     completed = [str(row["id"]) for row in rows]
     pending = [arm for arm in arms if arm not in set(completed)]
     ranked = rank_scenarios(rows) if rows else []
+    active_model = datasource or get_active_transfer_plan_model_name()
     return {
         "meta": {
-            "champion": get_default_model_name(),
+            "champion": active_model,
+            "active_model": active_model,
+            "confirmed_champion": get_default_model_name(),
             "target_gw": int(target_gw),
             "horizon": int(horizon),
             "free_transfers": int(free_transfers),
@@ -134,12 +138,12 @@ def execute_transfer_plan_scenarios(
     _itb, free_transfers = load_user_state(processed_dir)
     horizon = clamp_planning_horizon(horizon)
 
-    champion = datasource or get_default_model_name()
+    active_model = datasource or get_active_transfer_plan_model_name()
     digest = compute_scenarios_digest(
         processed_dir=processed_dir,
         target_gw=target_gw,
         horizon=horizon,
-        champion=champion,
+        champion=active_model,
         booked_chips=booked_chips,
         enabled_chips=enabled_chips,
         force_keep=force_keep,
@@ -173,7 +177,8 @@ def execute_transfer_plan_scenarios(
         dashboard_json = PROJECT_ROOT / "dashboard" / "dashboard_data.json"
         if dashboard_json.exists():
             try:
-                dataset = json.loads(dashboard_json.read_text(encoding="utf-8"))
+                loaded = json.loads(dashboard_json.read_text(encoding="utf-8"))
+                dataset = loaded if isinstance(loaded, dict) else {"players": []}
             except Exception:
                 dataset = {"players": []}
         else:
@@ -195,9 +200,9 @@ def execute_transfer_plan_scenarios(
     if strategic_options:
         base["strategic_options"] = dict(strategic_options)
 
-    lookup = player_gw_from_dashboard(dataset)
-    if datasource and (xmins_override is not None or not lookup or datasource != get_default_model_name()):
-        csv_path = DATA_DIR / f"{datasource}.csv"
+    lookup = player_gw_from_dashboard(dataset, model=active_model)
+    if active_model and (xmins_override is not None or not lookup):
+        csv_path = DATA_DIR / f"{active_model}.csv"
         if csv_path.exists():
             csv_df = pd.read_csv(csv_path)
             id_col = "ID" if "ID" in csv_df.columns else "id"
@@ -226,6 +231,7 @@ def execute_transfer_plan_scenarios(
                 status=status,
                 stale=False,
                 data_digest=digest,
+                datasource=active_model,
             )
             write_scenarios_payload(scenarios_path, payload)
             if status == "ok" and payload["scenarios"]:

@@ -313,3 +313,42 @@ def test_solve_cli_single_flag_runs_single_plan(capsys: pytest.CaptureFixture[st
     assert "Single plan summary" in captured
     assert "TRANSFER PLAN SCENARIOS" not in captured
 
+
+def test_solve_cli_routes_default_to_provisional_active_and_champion_flag_switches_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger",),
+            provisional_active="adaptive_causal_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+
+    with (
+        patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}),
+        patch("commands.solve.prep_data", return_value={}),
+        patch("commands.solve.pad_solver_csv_horizon") as pad_mock,
+        patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
+        patch("sys.argv", ["commands.solve", "--preseason"]),
+    ):
+        main()
+    assert pad_mock.call_args.args[0].name == "adaptive_causal_challenger.csv"
+
+    with (
+        patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}),
+        patch("commands.solve.prep_data", return_value={}),
+        patch("commands.solve.pad_solver_csv_horizon") as pad_mock_champ,
+        patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
+        patch("sys.argv", ["commands.solve", "--preseason", "--champion"]),
+    ):
+        main()
+    assert pad_mock_champ.call_args.args[0].name == "def_xg_shrink_challenger.csv"
+

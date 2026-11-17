@@ -15,9 +15,9 @@ Implements Phase 6 guardrails:
 7. Bounded Unconstrained development diagnostic with separately reported reversal evidence.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -592,6 +592,43 @@ def evaluate_non_inferiority_guard(
         sample_size=n,
         direction=direction,
         reason=reason,
+    )
+
+
+def evaluate_gw_clustered_non_inferiority_guard(
+    candidate_errors_by_gw: Mapping[Any, Sequence[float]],
+    champion_errors_by_gw: Mapping[Any, Sequence[float]],
+    *,
+    metric_name: str,
+    meaningful_margin: float,
+    alpha: float = 0.05,
+    direction: MetricDirection = "lower_is_better",
+    required: bool = True,
+) -> GuardOutput:
+    """Cluster paired errors to per-gameweek means before non-inferiority inference."""
+    if set(candidate_errors_by_gw) != set(champion_errors_by_gw):
+        raise ValueError("GW-clustered guard requires identical gameweek keys across candidate and champion")
+    cand_means: list[float] = []
+    champ_means: list[float] = []
+    for gw in sorted(candidate_errors_by_gw):
+        c_arr = np.asarray(candidate_errors_by_gw[gw], dtype=float)
+        h_arr = np.asarray(champion_errors_by_gw[gw], dtype=float)
+        if len(c_arr) != len(h_arr):
+            raise ValueError(f"Unpaired samples in GW {gw}: {len(c_arr)} vs {len(h_arr)}")
+        if len(c_arr) == 0:
+            continue
+        if not np.isfinite(c_arr).all() or not np.isfinite(h_arr).all():
+            raise ValueError("Non-inferiority samples must be finite")
+        cand_means.append(float(np.mean(c_arr)))
+        champ_means.append(float(np.mean(h_arr)))
+    return evaluate_non_inferiority_guard(
+        cand_means,
+        champ_means,
+        metric_name=metric_name,
+        meaningful_margin=meaningful_margin,
+        alpha=alpha,
+        direction=direction,
+        required=required,
     )
 
 

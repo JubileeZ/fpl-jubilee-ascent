@@ -1,14 +1,16 @@
 """Versioned rule facts and ADR 0069 season lifecycle policy."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import json
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 Chip = Literal["wildcard", "free_hit", "bench_boost", "triple_captain"]
-SeasonRole = Literal["active_validation", "development", "historical_filter", "prior_seed_only", "sealed"]
+SeasonRole = Literal["active_validation", "development", "historical_filter", "prior_seed_only", "archived", "sealed"]
 AccessPurpose = Literal[
     "validation",
     "active_validation",
@@ -117,6 +119,110 @@ def load_season_lifecycle(path: Path | None = None) -> SeasonLifecycle:
         for season, spec in payload["seasons"].items()
     }
     return SeasonLifecycle(active_season=str(payload["active_season"]), seasons=entries)
+
+
+def save_season_lifecycle(lifecycle: SeasonLifecycle, path: Path | None = None) -> None:
+    target = path or DEFAULT_LIFECYCLE_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "adr": "0069",
+        "active_season": lifecycle.active_season,
+        "seasons": {
+            season: {
+                "role": entry.role,
+                "cycle_slot": entry.cycle_slot,
+                "prior_seed": entry.prior_seed,
+                "rules_id": entry.rules_id,
+            }
+            for season, entry in lifecycle.seasons.items()
+        },
+    }
+    target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def verify_gw38_finalized(
+    season: str,
+    *,
+    gameweeks_df: Any = None,
+    bootstrap_payload: Mapping[str, Any] | None = None,
+    root: Path | None = None,
+) -> None:
+    """Verify active season GW38 is finished and data_checked=True before summer rollover."""
+    if bootstrap_payload is not None:
+        events = bootstrap_payload.get("events", [])
+        ev38 = next((ev for ev in events if isinstance(ev, Mapping) and ev.get("id") == 38), None)
+        if ev38 is None or ev38.get("finished") is not True or ev38.get("data_checked") is not True:
+            raise ValueError(f"Cannot rollover {season}: GW38 is not finished with data_checked=True")
+        return
+
+    if gameweeks_df is not None:
+        if "id" not in gameweeks_df.columns or "finished" not in gameweeks_df.columns or "data_checked" not in gameweeks_df.columns:
+            raise ValueError(f"Cannot rollover {season}: GW38 requires finished and data_checked columns")
+        rows = gameweeks_df[gameweeks_df["id"] == 38]
+        if rows.empty or not bool(rows.iloc[0]["finished"]) or not bool(rows.iloc[0]["data_checked"]):
+            raise ValueError(f"Cannot rollover {season}: GW38 is not finished with data_checked=True")
+        return
+
+    base = root or Path(__file__).resolve().parent.parent
+    bs_path = base / "data" / "archive" / season / "raw" / "bootstrap_static.json"
+    if bs_path.is_file():
+        payload = json.loads(bs_path.read_text(encoding="utf-8"))
+        verify_gw38_finalized(season, bootstrap_payload=payload)
+        return
+    raise ValueError(f"Cannot rollover {season}: missing GW38 completion evidence (data_checked=True)")
+
+
+def rollover_season_lifecycle(
+    *,
+    new_season: str,
+    gameweeks_df: Any = None,
+    bootstrap_payload: Mapping[str, Any] | None = None,
+    lifecycle_path: Path | None = None,
+    new_rules: SeasonRules | None = None,
+    persist: bool = True,
+    root: Path | None = None,
+) -> SeasonLifecycle:
+    """Rotate ADR 0069 SeasonLifecycle S -> S-1 -> S-2 -> S-3 -> archived after GW38 completion."""
+    if len(new_season) != 7 or new_season[4] != "-" or not (new_season[:4].isdigit() and new_season[5:].isdigit()):
+        raise ValueError(f"Invalid season format '{new_season}'; expected YYYY-YY")
+    current = load_season_lifecycle(lifecycle_path)
+    if new_season in current.seasons:
+        raise ValueError(f"Season {new_season} already exists in lifecycle config")
+
+    old_s = current.season_for_role("active_validation")
+    old_s1 = current.season_for_role("development")
+    old_s2 = current.season_for_role("historical_filter")
+    old_s3 = [s for s, e in current.seasons.items() if e.role == "prior_seed_only"]
+
+    verify_gw38_finalized(old_s, gameweeks_df=gameweeks_df, bootstrap_payload=bootstrap_payload, root=root)
+    if new_rules is not None:
+        if new_rules.version != new_season:
+            raise ValueError(f"Provided SeasonRules version '{new_rules.version}' does not match '{new_season}'")
+        rules_new = new_rules
+    else:
+        rules_new = get_rules(new_season)
+
+    entry_s = current.seasons[old_s]
+    entry_s1 = current.seasons[old_s1]
+    entry_s2 = current.seasons[old_s2]
+
+    new_seasons: dict[str, SeasonLifecycleEntry] = {
+        new_season: SeasonLifecycleEntry(new_season, "active_validation", "S", old_s, rules_new.rules_id),
+        old_s: SeasonLifecycleEntry(old_s, "development", "S-1", old_s1, entry_s.rules_id),
+        old_s1: SeasonLifecycleEntry(old_s1, "historical_filter", "S-2", old_s2, entry_s1.rules_id),
+        old_s2: SeasonLifecycleEntry(old_s2, "prior_seed_only", "S-3", None, entry_s2.rules_id),
+    }
+    for s3 in old_s3:
+        new_seasons[s3] = SeasonLifecycleEntry(s3, "archived", "archived", None, current.seasons[s3].rules_id)
+    for season, entry in current.seasons.items():
+        if season not in new_seasons:
+            new_seasons[season] = SeasonLifecycleEntry(season, "archived" if entry.role == "archived" else entry.role, entry.cycle_slot, None if entry.role == "archived" else entry.prior_seed, entry.rules_id)
+
+    updated = SeasonLifecycle(active_season=new_season, seasons=new_seasons)
+    if persist:
+        save_season_lifecycle(updated, lifecycle_path)
+    return updated
 
 
 @dataclass(frozen=True)

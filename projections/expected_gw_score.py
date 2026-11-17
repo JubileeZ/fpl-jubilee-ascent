@@ -144,12 +144,27 @@ def auto_captain_alternatives(
 _POS_ID = {"G": 1, "D": 2, "M": 3, "F": 4}
 
 
-def player_gw_from_dashboard(dataset: Mapping[str, Any]) -> dict[tuple[int, int], PlayerGw]:
+def player_gw_from_dashboard(
+    dataset: Mapping[str, Any],
+    *,
+    model: str | None = None,
+) -> dict[tuple[int, int], PlayerGw]:
     out: dict[tuple[int, int], PlayerGw] = {}
+    default_model = (dataset.get("meta") or {}).get("default_model")
     for player in dataset.get("players") or []:
         pid = int(player["id"])
         pos = int(player.get("pos_id") or _POS_ID.get(str(player.get("pos") or "M"), 3))
-        for key, row in (player.get("projections") or {}).items():
+        models_map = player.get("models")
+        if model is not None:
+            if isinstance(models_map, Mapping) and model in models_map:
+                proj_map = models_map[model].get("projections") or {}
+            elif default_model is None or model == default_model:
+                proj_map = player.get("projections") or {}
+            else:
+                proj_map = {}
+        else:
+            proj_map = player.get("projections") or {}
+        for key, row in proj_map.items():
             if not str(key).startswith("gw"):
                 continue
             gw = int(str(key)[2:])

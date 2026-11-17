@@ -41,12 +41,30 @@ def test_promote_candidate_preserves_second_candidate_from_full_slate() -> None:
 
 
 def test_replace_candidate_swaps_registered_candidate() -> None:
+    import pytest
+
     selection = ModelSelection(champion="a", candidates=("b", "c"))
 
     updated = replace_candidate(selection, incoming="d", outgoing="c")
 
     assert updated.champion == "a"
     assert set(updated.candidates) == {"b", "d"}
+
+    sealed = ModelSelection(
+        champion="a",
+        candidates=("b", "c"),
+        provisional_active="b",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+    with pytest.raises(ValueError, match="sealed"):
+        replace_candidate(sealed, incoming="d", outgoing="c")
+
+    adopted = promote_candidate(sealed, "b", snapshot_backed=False)
+    assert adopted.champion == "b"
+    assert adopted.provisional_active is None
+    assert adopted.podium_frozen_season is None
+    assert adopted.podium_sealed is False
 
 
 def test_compare_to_reference_wires_active_window_metrics() -> None:

@@ -86,3 +86,102 @@ def test_cli_verified_evidence_route_skips_legacy_backtests(tmp_path: Path) -> N
         main(["--evidence_request", str(tmp_path / "request.json")])
     evaluate.assert_called_once_with(tmp_path / "request.json", tmp_path / "recommendation_bundle.json")
     legacy.assert_not_called()
+
+
+def test_cli_checkpoint_request_route_is_read_only(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    from backtesting.promotion_evidence import MANDATORY_GUARDS
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("cand_1",),
+            provisional_active="cand_1",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    req_path = tmp_path / "checkpoint_request.json"
+    req_path.write_text(
+        json.dumps(
+            {
+                "checkpoint_gw": 15,
+                "selection_path": str(sel_path),
+                "podium_order": ["cand_1"],
+                "finalist_traces": {
+                    "cand_1": [
+                        {
+                            "season": "2026-27",
+                            "gameweek": gw,
+                            "candidate_net_points": 60.2 if gw % 2 == 0 else 59.9,
+                            "champion_net_points": 60.0,
+                        }
+                        for gw in range(1, 16)
+                    ]
+                },
+                "finalist_guards": {
+                    "cand_1": [
+                        {
+                            "metric_name": g,
+                            "passed": True,
+                            "status": "PASS",
+                            "estimate": 0.0,
+                            "margin": 0.5,
+                            "standard_error": 0.1,
+                            "ci_lower": -0.2,
+                            "ci_upper": 0.2,
+                            "coverage": 0.95,
+                            "sample_size": 15,
+                            "direction": "lower_is_better",
+                            "reason": "ok",
+                        }
+                        for g in sorted(MANDATORY_GUARDS)
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    before = sel_path.read_text(encoding="utf-8")
+    main(["--checkpoint_request", str(req_path)])
+    out = json.loads(capsys.readouterr().out)
+    assert out["action"] == "retain_dual_tier"
+    assert out["checkpoint_gw"] == 15
+    assert sel_path.read_text(encoding="utf-8") == before
+
+
+def test_perform_annual_rollover_resets_provisional_and_carries_confirmed_champion(tmp_path: Path) -> None:
+    from backtesting.season_rules import SeasonRules
+    from commands.evaluate_model_promotion import perform_annual_rollover
+
+    lc_path = tmp_path / "season_lifecycle.json"
+    lc_path.write_text(Path("config/season_lifecycle.json").read_text(encoding="utf-8"), encoding="utf-8")
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+            provisional_active="adaptive_causal_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    rules_27 = SeasonRules("2027-28", "native-2027-28-v1", 5, True, 10, True, True, False)
+    bootstrap_gw38 = {"events": [{"id": 38, "finished": True, "data_checked": True}]}
+
+    new_lc, new_sel = perform_annual_rollover(
+        new_season="2027-28",
+        bootstrap_payload=bootstrap_gw38,
+        lifecycle_path=lc_path,
+        selection_path=sel_path,
+        new_rules=rules_27,
+    )
+    assert new_lc.active_season == "2027-28"
+    assert new_sel.champion == "def_xg_shrink_challenger"
+    assert new_sel.provisional_active is None
+    assert new_sel.podium_frozen_season is None
+    assert new_sel.podium_sealed is False
+    persisted = load_model_selection(sel_path)
+    assert persisted == new_sel

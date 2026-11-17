@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 from pandas.errors import EmptyDataError
@@ -26,24 +26,39 @@ DEFAULT_WALKFORWARD = ROOT / "docs" / "research" / "tp-walkforward-gw1-19-2025-2
 DEFAULT_REGRET = ROOT / "data" / "reports" / "decision_regret.csv"
 
 
-def _signed_bias_row(path: Path, champion: str) -> pd.Series | None:
+def _signed_bias_row(
+    path: Path,
+    champion: str,
+    *,
+    lifecycle_path: Path | None = None,
+) -> dict[str, Any] | None:
     df = _read_artifact(path)
     if df is None:
         return None
     if df.empty or "model" not in df.columns:
         return None
-    rows = df[df["model"].astype(str) == champion]
+    rows = cast(pd.DataFrame, df[df["model"].astype(str) == champion])
     if rows.empty:
         return None
-    if {"evaluation_season", "gw_start", "gw_end"}.issubset(rows.columns):
-        gate = rows[
-            (rows["evaluation_season"].astype(str) == "2025-26")
-            & (rows["gw_start"].astype(int) == 1)
-            & (rows["gw_end"].astype(int) == 38)
-        ]
+    dev_season: str | None = None
+    try:
+        from backtesting.season_rules import load_season_lifecycle
+
+        dev_season = load_season_lifecycle(lifecycle_path).season_for_role("development")
+    except (FileNotFoundError, OSError, ValueError, KeyError):
+        dev_season = None
+    if dev_season is not None and {"evaluation_season", "gw_start", "gw_end"}.issubset(rows.columns):
+        gate = cast(
+            pd.DataFrame,
+            rows[
+                (rows["evaluation_season"].astype(str) == dev_season)
+                & (rows["gw_start"].astype(int) == 1)
+                & (rows["gw_end"].astype(int) == 38)
+            ],
+        )
         if not gate.empty:
-            return gate.iloc[0]
-    return rows.iloc[0]
+            return dict(gate.iloc[0].to_dict())
+    return dict(rows.iloc[0].to_dict())
 
 
 def _walkforward(path: Path) -> tuple[str | None, float | None, list[dict[str, Any]]]:
@@ -52,19 +67,19 @@ def _walkforward(path: Path) -> tuple[str | None, float | None, list[dict[str, A
         return None, None, []
     if df.empty or "realized_points" not in df.columns:
         return None, None, []
-    ok = df if "status" not in df.columns else df[df["status"].astype(str) == "ok"]
+    ok = df if "status" not in df.columns else cast(pd.DataFrame, df[df["status"].astype(str) == "ok"])
     if ok.empty:
         return None, None, []
-    ranked = ok.sort_values("realized_points", ascending=False)
+    ranked = cast(pd.DataFrame, ok.sort_values(by="realized_points", ascending=False))
     best = ranked.iloc[0]
     arm = str(best["arm_id"]) if "arm_id" in ranked.columns else None
     ranking: list[dict[str, Any]] = []
     for _, row in ranked.head(3).iterrows():
         ranking.append({
             "arm_id": str(row["arm_id"]) if "arm_id" in ranked.columns else "",
-            "realized_points": round(float(row["realized_points"]), 2),
+            "realized_points": round(float(cast(Any, row["realized_points"])), 2),
         })
-    return arm, float(best["realized_points"]), ranking
+    return arm, float(cast(Any, best["realized_points"])), ranking
 
 
 def _regret_mean(path: Path) -> float | None:
@@ -74,7 +89,7 @@ def _regret_mean(path: Path) -> float | None:
     col = "model_regret" if "model_regret" in df.columns else None
     if col is None:
         return None
-    series = pd.to_numeric(df[col], errors="coerce").dropna()
+    series = pd.Series(pd.to_numeric(df[col], errors="coerce")).dropna()
     if series.empty:
         return None
     return round(float(series.mean()), 4)
@@ -86,12 +101,24 @@ def load_champion_trust(
     bias_path: Path | None = None,
     walkforward_path: Path | None = None,
     regret_path: Path | None = None,
+    lifecycle_path: Path | None = None,
 ) -> dict[str, Any]:
     selection = load_model_selection(selection_path)
-    bias_row = _signed_bias_row(bias_path or DEFAULT_BIAS, selection.champion)
+    bias_row = _signed_bias_row(
+        bias_path or DEFAULT_BIAS,
+        selection.champion,
+        lifecycle_path=lifecycle_path,
+    )
     arm, points, ranking = _walkforward(walkforward_path or DEFAULT_WALKFORWARD)
     return {
         "champion": selection.champion,
+        "confirmed_champion": selection.champion,
+        "provisional_active": selection.provisional_active,
+        "dual_tier_active": selection.provisional_active is not None,
+        "active_transfer_plan_model": selection.provisional_active or selection.champion,
+        "podium_candidates": list(selection.candidates),
+        "podium_frozen_season": selection.podium_frozen_season,
+        "podium_sealed": selection.podium_sealed,
         "promotion_status": selection.promotion_status,
         "signed_bias": None if bias_row is None else round(float(bias_row["signed_bias"]), 4),
         "bias_season": None if bias_row is None or "evaluation_season" not in bias_row else str(bias_row["evaluation_season"]),

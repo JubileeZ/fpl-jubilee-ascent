@@ -72,6 +72,12 @@ class Planner:
         max_proj = max(proj_gws) if proj_gws else 38
         default_end = min(start + DEFAULT_PLANNING_HORIZON - 1, max_proj, 38)
         default_strat = dict(DEFAULT_STRATEGIC_OPTIONS)
+        default_model = (
+            meta.get("active_transfer_plan_model")
+            or meta.get("default_model")
+            or meta.get("confirmed_champion")
+        )
+        available_models = set(meta.get("models") or ())
         self.state = copy.deepcopy(state) if state else {
             "version": 1, "start": start, "end": default_end,
             "scenario": "strategic", "base_ids": meta.get("owned_squad_ids", []),
@@ -79,7 +85,13 @@ class Planner:
             "data_digest": self.data_digest, "edits": {}, "overrides": {}, "chips": {},
             "recommendations": {}, "revision": 0, "job_id": None,
             "strategic_options": default_strat,
+            **({"model": default_model} if default_model else {}),
         }
+        if default_model and (
+            not self.state.get("model")
+            or (available_models and self.state.get("model") not in available_models)
+        ):
+            self.state["model"] = default_model
         self.state["strategic_options"] = normalize_strategic_options(self.state.get("strategic_options"))
         if "scenario" in self.state:
             self.state["scenario"] = normalize_arm_key(self.state["scenario"])
@@ -90,12 +102,45 @@ class Planner:
     def stale(self) -> bool:
         return self.state["data_digest"] != self.data_digest
 
+    @property
+    def active_model(self) -> str | None:
+        val = self.state.get("model")
+        return str(val) if val else None
+
+    def validate_models(self, allowed_models: set[str], *, active_default: str | None = None) -> None:
+        meta = self.dataset.get("meta", {})
+        exported_models = set(meta.get("models") or ([meta.get("default_model")] if meta.get("default_model") else []))
+        if exported_models and allowed_models and not allowed_models <= exported_models:
+            raise ValueError("Projections omit active Dual-Tier / Champion model. Refresh before solving.")
+        default_model = meta.get("default_model")
+        if default_model is not None and default_model not in allowed_models:
+            raise ValueError("Projections use a different model from current Champion / Dual-Tier slate. Refresh before solving.")
+        selected_model = self.active_model
+        if selected_model is not None and selected_model not in allowed_models:
+            raise ValueError("Selected model is outside current Champion / Dual-Tier slate. Refresh before solving.")
+        if selected_model is not None and exported_models and selected_model not in exported_models:
+            raise ValueError("Selected model projections missing from dataset. Refresh before solving.")
+        if active_default is not None and meta.get("active_transfer_plan_model") not in (None, active_default):
+            raise ValueError("Dataset Transfer Plan default differs from current active model. Refresh before solving.")
+
     def snapshot(self) -> str:
-        return digest({key: self.state[key] for key in (
+        return digest({key: self.state.get(key) for key in (
             "start", "end", "scenario", "base_ids", "base_bank", "base_ft",
             "edits", "overrides", "chips", "revision", "data_digest",
-            "strategic_options",
+            "strategic_options", "model",
         )})
+
+    def set_model(self, model: str | None) -> None:
+        self.state["model"] = model
+        self.state["revision"] += 1
+
+    def player_projections(self, player_id: int) -> dict[str, Any]:
+        player = self.players.get(player_id) or {}
+        active_model = self.active_model
+        models_map = player.get("models")
+        if active_model and isinstance(models_map, Mapping) and active_model in models_map:
+            return dict(models_map[active_model].get("projections") or {})
+        return dict(player.get("projections") or {})
 
     def change_horizon(self, start: int, end: int) -> None:
         deadline = int(self.dataset.get("meta", {}).get("transfer_plan_start", 1))
@@ -142,6 +187,7 @@ class Planner:
                     "edits_digest": digest(self.state["edits"]),
                     "chips_digest": digest(self.state["chips"]),
                     "strategic_digest": strat_digest,
+                    "model": self.state.get("model"),
                 }
         return applicable
 
@@ -149,6 +195,8 @@ class Planner:
         rec = self.state["recommendations"].get(self.state["scenario"])
         if not (rec and rec["applicable"] and rec["data_digest"] == self.data_digest
                 and rec["start"] == self.state["start"] and rec["end"] == self.state["end"]):
+            return False
+        if "model" in rec and rec["model"] != self.state.get("model"):
             return False
         if self.state["scenario"] == "strategic" and "strategic_digest" in rec:
             return rec["strategic_digest"] == digest(normalize_strategic_options(self.state.get("strategic_options")))
@@ -237,7 +285,7 @@ class Planner:
         self.state["revision"] += 1
 
     def xp(self, player_id: int, gw: int) -> float:
-        return float(self.players[player_id].get("projections", {}).get(f"gw{gw}", {}).get("total_xp") or 0)
+        return float(self.player_projections(player_id).get(f"gw{gw}", {}).get("total_xp") or 0)
 
     def select_lineup(self, squad: list[int], gw: int) -> dict[str, Any]:
         overrides = self.state["overrides"].get(str(gw), {})
@@ -349,7 +397,7 @@ class Planner:
                 conflicts.append("Fill replacement vacancies to restore a valid 15-player squad.")
             if len([pid for pid in squad if pid in self.players]) != len(squad):
                 conflicts.append("Squad contains Players absent from current data.")
-            if any(self.players.get(pid, {}).get("projections", {}).get(f"gw{gw}", {}).get("total_xp") is None for pid in squad):
+            if any(self.player_projections(pid).get(f"gw{gw}", {}).get("total_xp") is None for pid in squad):
                 conflicts.append("Gameweek projections missing. Refresh projections before solving.")
             if any(count > 3 for count in clubs.values()):
                 conflicts.append("Maximum three Players per Club.")
@@ -431,7 +479,7 @@ class Planner:
         week = self.week(gw)
         if not week["complete"]:
             return None
-        lookup = player_gw_from_dashboard(self.dataset)
+        lookup = player_gw_from_dashboard(self.dataset, model=self.state.get("model"))
         return expected_gw_score(lineup_ids=week["lineup_ids"], bench_ids=week["bench_ids"],
                                  captain_id=week["captain_id"], vice_id=week["vice_id"],
                                  players={pid: value for (pid, week_id), value in lookup.items() if week_id == gw},

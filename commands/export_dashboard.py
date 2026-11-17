@@ -24,6 +24,7 @@ from features.builder import (
     resolve_operational_processed_dir,
 )
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
+from models.selection import default_model_name as selection_default_model_name
 from models.selection import projection_model_names
 from projections.exporter import write_solver_projection_csvs
 from projections.explorer_slice import (
@@ -388,6 +389,7 @@ def build_dashboard_dataset(
     solution_path: Optional[Path] = None,
     default_model_name: Optional[str] = None,
     with_squad: bool = False,
+    selection_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
     horizon = clamp_planning_horizon(horizon)
@@ -739,6 +741,7 @@ def build_dashboard_dataset(
                 "chip_plays": chips_parsed,
             }
 
+    trust = load_champion_trust(selection_path=selection_path)
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -753,6 +756,10 @@ def build_dashboard_dataset(
             "available_chips": available_chips(planning_gw_ids, user_chips),
             "models": model_names,
             "default_model": primary_model_name,
+            "confirmed_champion": trust["confirmed_champion"],
+            "provisional_active": trust["provisional_active"],
+            "dual_tier_active": trust["dual_tier_active"],
+            "active_transfer_plan_model": trust["active_transfer_plan_model"],
             "catalog_models": list_model_names(),
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
@@ -764,7 +771,7 @@ def build_dashboard_dataset(
             "projection_generated_at": datetime.now(timezone.utc).isoformat(),
             "inputs_updated_at": inputs_updated_at,
             "transfer_plan_available_chips": available_chips(plan_gws, user_chips),
-            "champion_trust": load_champion_trust(),
+            "champion_trust": trust,
             "global_gameweeks": global_gw_benchmarks,
         },
         "players": players_data,
@@ -788,13 +795,19 @@ def run_dashboard_export(
     model_names: list[str] | None = None,
     output_path: Path | None = None,
     with_squad: bool = False,
+    config_path: Path | None = None,
 ) -> Path:
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     if not (processed_dir / "players.parquet").exists():
         raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
 
-    names = projection_model_names(model_name, model_names)
-    default_model = resolve_model_or_champion(model_name) if model_name else names[0]
+    names = projection_model_names(model_name, model_names, config_path=config_path)
+    if model_name is None or model_name.strip().lower() in ("", "default"):
+        default_model = names[0]
+    elif model_name.strip().lower() == "champion":
+        default_model = selection_default_model_name(config_path)
+    else:
+        default_model = resolve_model_or_champion(model_name)
     horizon = clamp_planning_horizon(horizon)
     earliest_unfinished = resolve_horizon_start(processed_dir)
     default_target = resolve_default_target_gw(processed_dir)
@@ -831,6 +844,7 @@ def run_dashboard_export(
         horizon,
         default_model_name=default_model,
         with_squad=with_squad,
+        selection_path=config_path,
     )
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")

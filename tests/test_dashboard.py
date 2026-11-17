@@ -1068,3 +1068,151 @@ def test_build_branch_nodes_stores_solver_recommendation() -> None:
     assert len(node["solverRecommendation"]["transfers"]) == 1
     assert node["solverRecommendation"]["transfers"][0]["playerInName"] == "Saka"
 
+
+def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from commands import export_dashboard
+    from models.selection import ModelSelection, save_model_selection
+
+    processed = tmp_path / "data" / "processed"
+    processed.mkdir(parents=True)
+    pd.DataFrame(
+        [
+            {
+                "id": 10, "code": 101, "first_name": "Erling", "second_name": "Haaland",
+                "web_name": "Haaland", "club_id": 1, "position_id": 4, "now_cost": 150,
+                "status": "a", "chance_of_playing_next_round": 100, "news": "",
+                "total_points": 0, "minutes": 0, "starts": 0, "ict_index": "0",
+                "influence": "0", "creativity": "0", "threat": "0",
+                "expected_goals": "0", "expected_assists": "0", "selected_by_percent": 30.0,
+            }
+        ]
+    ).to_parquet(processed / "players.parquet")
+    pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "name": "Manchester City",
+                "short_name": "MCI",
+                "strength": 4,
+                "strength_overall_home": 1300,
+                "strength_overall_away": 1300,
+                "strength_attack_home": 1300,
+                "strength_attack_away": 1300,
+                "strength_defence_home": 1300,
+                "strength_defence_away": 1300,
+            }
+        ]
+    ).to_parquet(processed / "clubs.parquet")
+    pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}]).to_parquet(processed / "gameweeks.parquet")
+    pd.DataFrame([{"id": 100, "gameweek_id": 1, "home_club_id": 1, "away_club_id": 1, "team_h_difficulty": 3, "team_a_difficulty": 3, "kickoff_time": None, "finished": False}]).to_parquet(processed / "fixtures.parquet")
+    pd.DataFrame(columns=["player_id", "fixture_id", "gameweek_id", "minutes", "total_points"]).to_parquet(processed / "player_performances.parquet")
+
+    sel_path = tmp_path / "config" / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="linear_baseline",
+            candidates=("component_baseline",),
+            provisional_active="component_baseline",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+    monkeypatch.setattr(export_dashboard, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(export_dashboard, "resolve_operational_processed_dir", lambda _root: processed)
+
+    class _StubModel:
+        def __init__(self, pts: float) -> None:
+            self._pts = pts
+
+        def fit(self, _hist: pd.DataFrame) -> None:
+            return None
+
+        def predict(self, df_feat: pd.DataFrame, _horizon: int) -> pd.DataFrame:
+            return pd.DataFrame(
+                [
+                    {
+                        "player_id": int(r["player_id"]),
+                        "gameweek_id": int(r["gameweek_id"]),
+                        "projected_points": self._pts,
+                        "projected_minutes": 90.0,
+                        "xp_goals": 1.0,
+                        "xp_assists": 0.0,
+                        "xp_clean_sheet": 0.0,
+                        "xp_defcon": 0.0,
+                        "xp_bonus": 0.0,
+                    }
+                    for _, r in df_feat.iterrows()
+                ]
+            )
+
+    monkeypatch.setattr(
+        export_dashboard,
+        "get_model",
+        lambda name: _StubModel(9.0 if name == "component_baseline" else 7.0),
+    )
+
+    out_json = export_dashboard.run_dashboard_export(horizon=1, target_gw=1, config_path=sel_path)
+    exported = json.loads(out_json.read_text(encoding="utf-8"))
+    assert exported["meta"]["models"] == ["linear_baseline", "component_baseline"]
+    assert exported["meta"]["default_model"] == "linear_baseline"
+    assert exported["meta"]["confirmed_champion"] == "linear_baseline"
+    assert exported["meta"]["provisional_active"] == "component_baseline"
+    assert exported["meta"]["active_transfer_plan_model"] == "component_baseline"
+    assert exported["meta"]["dual_tier_active"] is True
+    assert exported["meta"]["champion_trust"]["provisional_active"] == "component_baseline"
+    assert (tmp_path / "data" / "component_baseline.csv").is_file()
+    assert (tmp_path / "data" / "linear_baseline.csv").is_file()
+
+
+def test_should_project_on_open_and_refresh_require_both_dual_tier_models(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+    from commands import dashboard as dash
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger",),
+            provisional_active="adaptive_causal_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    (processed / "players.parquet").write_bytes(b"p")
+    json_path = tmp_path / "dashboard_data.json"
+    json_path.write_text(json.dumps({"meta": {"models": ["def_xg_shrink_challenger"]}}), encoding="utf-8")
+    later = json_path.stat().st_mtime + 10
+    os.utime(json_path, (later, later))
+    assert dash.should_project_on_open(processed, json_path) is True
+
+    json_path.write_text(
+        json.dumps({"meta": {"models": ["adaptive_causal_challenger", "def_xg_shrink_challenger"]}}),
+        encoding="utf-8",
+    )
+    os.utime(json_path, (later + 10, later + 10))
+    assert dash.should_project_on_open(processed, json_path) is False
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(dash, "start_refresh", lambda **kw: (captured.update(kw) or (202, {"status": "running"})))
+    status, _ = dash.handle_dashboard_api("POST", "/api/refresh", {"model": "default"})
+    assert status == 202
+    assert captured["model_name"] is None
+
+    tp_captured: dict[str, object] = {}
+    monkeypatch.setattr(dash, "start_transfer_plan", lambda **kw: (tp_captured.update(kw) or (202, {"status": "running"})))
+    tp_status, _ = dash.handle_dashboard_api("POST", "/api/transfer-plan", {"horizon": 6, "model": "champion"})
+    assert tp_status == 202
+    assert tp_captured["datasource"] == "def_xg_shrink_challenger"
+

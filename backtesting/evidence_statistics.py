@@ -22,6 +22,7 @@ import math
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+from scipy import stats
 
 from backtesting.projection_guards import GuardOutput, classify_non_inferiority_interval
 
@@ -30,6 +31,20 @@ if TYPE_CHECKING:
 
 ScientificVerdict = Literal["pass", "fail", "inconclusive", "invalid"]
 FamilyErrorControl = Literal["bonferroni", "holm", "none"]
+InferenceMethod = Literal["bootstrap", "kendall_pw_hac_t"]
+
+OBF_ALPHA_SCHEDULE: dict[int, float] = {
+    15: 0.0005,
+    30: 0.010,
+    38: 0.0395,
+}
+EARLY_HARM_MIN_GW = 6
+EARLY_HARM_P_THRESHOLD = 0.025
+CONTIGUOUS_SEGMENT_BOUNDS: dict[str, tuple[int, int]] = {
+    "cold_start": (1, 4),
+    "early_mid": (5, 19),
+    "late": (20, 38),
+}
 
 
 @dataclass(frozen=True)
@@ -128,6 +143,7 @@ class StatisticalProtocolConfig:
     development_season: str = "2025-26"
     confirmation_season: str = "2024-25"
     evidence_protocol_hash: str = ""
+    inference_method: InferenceMethod = "bootstrap"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -151,8 +167,57 @@ class StatisticalProtocolConfig:
             "confirmation_season": self.confirmation_season,
             "evidence_protocol_hash": self.evidence_protocol_hash,
         }
+        if self.inference_method != "bootstrap":
+            canonical_data["inference_method"] = self.inference_method
         encoded = json.dumps(canonical_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+
+@dataclass(frozen=True)
+class KendallPwHacResult:
+    """Result of Kendall-bias-corrected AR(1)-prewhitened + Bartlett HAC Student-t test."""
+
+    point_estimate: float
+    standard_error: float
+    t_statistic: float
+    df: float
+    n_eff: float
+    phi_hat: float
+    lrv_pw: float
+    lrv_bartlett: float
+    lrv: float
+    alpha: float
+    one_sided_lower: float
+    p_value_superiority: float
+    p_value_harm: float
+    sample_size: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class EarlyHarmAssessment:
+    """Statistical Early-Harm Fallback evaluation (min_gw=6, p_harm<=0.025 or guard FAIL)."""
+
+    triggered: bool
+    min_gw_met: bool
+    cumulative_p_harm: float | None
+    segment_p_harms: dict[str, float]
+    failed_guards: tuple[str, ...]
+    ignored_inconclusive_guards: tuple[str, ...]
+    reasons: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "triggered": self.triggered,
+            "min_gw_met": self.min_gw_met,
+            "cumulative_p_harm": self.cumulative_p_harm,
+            "segment_p_harms": dict(self.segment_p_harms),
+            "failed_guards": list(self.failed_guards),
+            "ignored_inconclusive_guards": list(self.ignored_inconclusive_guards),
+            "reasons": list(self.reasons),
+        }
 
 
 @dataclass(frozen=True)
@@ -392,6 +457,164 @@ def run_stored_score_bootstrap(
     )
 
 
+def obrien_fleming_alpha(checkpoint_gw: int, num_finalists: int = 1) -> float:
+    """Return O'Brien-Fleming sequential alpha allocation for GW15/GW30/GW38 divided across M<=2 finalists."""
+    if checkpoint_gw not in OBF_ALPHA_SCHEDULE:
+        raise ValueError(f"Unsupported checkpoint GW{checkpoint_gw}; expected one of {sorted(OBF_ALPHA_SCHEDULE)}")
+    if type(num_finalists) is not int or not 1 <= num_finalists <= 2:
+        raise ValueError(f"Frozen finalist count M must be 1 or 2, got {num_finalists}")
+    return OBF_ALPHA_SCHEDULE[checkpoint_gw] / float(num_finalists)
+
+
+def _bartlett_lrv(series: np.ndarray, bandwidth: int, *, adj: int = 1) -> float:
+    nv = len(series)
+    if nv == 0:
+        return 0.0
+    div = float(max(nv - adj, 1))
+    total = float(np.dot(series, series) / div)
+    for k in range(1, min(bandwidth, nv - 1) + 1):
+        weight = 1.0 - float(k) / float(bandwidth + 1)
+        cov = float(np.dot(series[k:], series[:-k]) / div)
+        total += 2.0 * weight * cov
+    return max(0.0, total)
+
+
+def run_kendall_pw_hac_test(
+    deltas: Sequence[float],
+    *,
+    alpha: float = 0.05,
+) -> KendallPwHacResult:
+    """Consistent one-sided Kendall-bias-corrected AR(1)-prewhitened + Bartlett HAC Student-t test."""
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("Alpha must lie strictly between 0 and 1")
+    arr = np.asarray(deltas, dtype=float)
+    n = len(arr)
+    if n < 2 or not np.isfinite(arr).all():
+        raise ValueError("Kendall-PW HAC test requires at least two finite observations")
+
+    mean = float(np.mean(arr))
+    e = arr - mean
+    denom = float(np.dot(e[:-1], e[:-1]))
+    r1 = float(np.dot(e[1:], e[:-1]) / denom) if denom > 1e-12 else 0.0
+    phi_raw = (float(n) * r1 + 1.0) / float(n - 3) if n > 3 else r1
+    phi = float(np.clip(phi_raw, 0.0, 0.92))
+
+    bandwidth = max(1, min(n - 2, int(math.floor(float(n) ** (1.0 / 3.0))))) if n >= 3 else 0
+    lrv_bartlett = _bartlett_lrv(e, bandwidth, adj=1)
+    u = e[1:] - phi * e[:-1]
+    lrv_u = _bartlett_lrv(u, bandwidth, adj=1) if len(u) >= 2 else float(np.dot(u, u))
+    lrv_pw = lrv_u / ((1.0 - phi) ** 2)
+    lrv = max(lrv_pw, lrv_bartlett)
+
+    var_e = float(np.var(e, ddof=1))
+    vif = max(1.0, lrv / max(var_e, 1e-12)) if var_e > 1e-12 else 1.0
+    n_eff = max(min(float(n), 5.0 if n >= 6 else float(n)), float(n) / vif)
+    df = max(1.0, n_eff - 1.0)
+    se = math.sqrt(lrv / float(n))
+
+    if se <= 1e-12:
+        if abs(mean) <= 1e-12:
+            t_stat, p_sup, p_harm, lower = 0.0, 1.0, 1.0, 0.0
+        elif mean > 0.0:
+            t_stat, p_sup, p_harm, lower = float("inf"), 0.0, 1.0, mean
+        else:
+            t_stat, p_sup, p_harm, lower = float("-inf"), 1.0, 0.0, mean
+    else:
+        t_stat = mean / se
+        p_sup = float(stats.t.sf(t_stat, df=df))
+        p_harm = float(stats.t.cdf(t_stat, df=df))
+        t_crit = float(stats.t.ppf(1.0 - alpha, df=df))
+        lower = mean - t_crit * se
+
+    return KendallPwHacResult(
+        point_estimate=mean,
+        standard_error=se,
+        t_statistic=t_stat,
+        df=df,
+        n_eff=n_eff,
+        phi_hat=phi,
+        lrv_pw=lrv_pw,
+        lrv_bartlett=lrv_bartlett,
+        lrv=lrv,
+        alpha=alpha,
+        one_sided_lower=lower,
+        p_value_superiority=p_sup,
+        p_value_harm=p_harm,
+        sample_size=n,
+    )
+
+
+def evaluate_early_harm_fallback(
+    paired_scores: Sequence[PairedGameweekScore],
+    projection_guards: Sequence[GuardOutput] | None = None,
+    *,
+    min_gw: int = EARLY_HARM_MIN_GW,
+    harm_alpha: float = EARLY_HARM_P_THRESHOLD,
+) -> EarlyHarmAssessment:
+    """Evaluate statistical Early-Harm Fallback after min_gw=6 warm-up (ignoring INCONCLUSIVE guards)."""
+    if min_gw < 6:
+        raise ValueError("Early-Harm Fallback requires min_gw >= 6 (df >= 4)")
+    seasons = {s.season for s in paired_scores}
+    if len(seasons) > 1:
+        raise ValueError("Early-Harm Fallback evaluates one active validation season at a time")
+
+    guards = list(projection_guards or ())
+    ignored_inc = tuple(g.metric_name for g in guards if g.status == "INCONCLUSIVE")
+    ordered = sorted(paired_scores, key=lambda s: s.gameweek)
+    gws = [s.gameweek for s in ordered]
+    if len(set(gws)) != len(gws):
+        raise ValueError("Duplicate gameweeks in Early-Harm score trace")
+
+    if len(ordered) < min_gw:
+        return EarlyHarmAssessment(
+            triggered=False,
+            min_gw_met=False,
+            cumulative_p_harm=None,
+            segment_p_harms={},
+            failed_guards=(),
+            ignored_inconclusive_guards=ignored_inc,
+            reasons=(),
+        )
+
+    reasons: list[str] = []
+    cum_res = run_kendall_pw_hac_test([s.delta_net for s in ordered], alpha=harm_alpha)
+    if cum_res.p_value_harm <= harm_alpha:
+        reasons.append(
+            f"Cumulative S (GW{ordered[0].gameweek}..{ordered[-1].gameweek}) rejected non-inferiority "
+            f"(p_harm={cum_res.p_value_harm:.4f} <= {harm_alpha:.3f}, delta={cum_res.point_estimate:+.3f})"
+        )
+
+    by_gw = {s.gameweek: s for s in ordered}
+    segment_p_harms: dict[str, float] = {}
+    for seg_name, (lo, hi) in CONTIGUOUS_SEGMENT_BOUNDS.items():
+        seg_len = hi - lo + 1
+        if seg_len < min_gw:
+            continue
+        if all(gw in by_gw for gw in range(lo, hi + 1)):
+            seg_deltas = [by_gw[gw].delta_net for gw in range(lo, hi + 1)]
+            seg_res = run_kendall_pw_hac_test(seg_deltas, alpha=harm_alpha)
+            segment_p_harms[seg_name] = seg_res.p_value_harm
+            if seg_res.p_value_harm <= harm_alpha:
+                reasons.append(
+                    f"Completed segment '{seg_name}' (GW{lo}..{hi}) rejected non-inferiority "
+                    f"(p_harm={seg_res.p_value_harm:.4f} <= {harm_alpha:.3f}, delta={seg_res.point_estimate:+.3f})"
+                )
+
+    failed_guards = tuple(g.metric_name for g in guards if g.status == "FAIL")
+    for name in failed_guards:
+        reasons.append(f"Mandatory projection guard '{name}' hit demonstrated FAIL")
+
+    return EarlyHarmAssessment(
+        triggered=bool(reasons),
+        min_gw_met=True,
+        cumulative_p_harm=cum_res.p_value_harm,
+        segment_p_harms=segment_p_harms,
+        failed_guards=failed_guards,
+        ignored_inconclusive_guards=ignored_inc,
+        reasons=tuple(reasons),
+    )
+
+
 def evaluate_evidence_against_protocol(
     paired_scores: Sequence[PairedGameweekScore],
     projection_guards: Sequence[GuardOutput] | None,
@@ -552,20 +775,40 @@ def evaluate_evidence_against_protocol(
         limitations.append("Unadjusted bootstrap diagnostic; no search-wide family error control")
     protocol_approved = config.approved_by_human and bool(config.approval_reference.strip()) and config.approval_reference != "UNAPPROVED"
 
-    bootstrap_res = run_stored_score_bootstrap(
-        paired_scores,
-        config,
-        attempt_number=attempt_number,
-        seed=seed,
-    )
-
-    ci_lower, ci_upper = bootstrap_res.confidence_interval
-    point_est = bootstrap_res.point_estimate
-    p_val = bootstrap_res.p_value_superiority
-    if ci_upper < 0.0:
-        reasons.append(
-            f"Candidate net-score interval below zero (upper CI {ci_upper:.3f} < 0.0 at alpha {bootstrap_res.adjusted_alpha:.4f})"
+    hac_harm_detected = False
+    if config.inference_method == "kendall_pw_hac_t":
+        adj_alpha = _adjusted_alpha(config, attempt_number)
+        target_scores = [
+            s for s in paired_scores if s.season == config.confirmation_season
+        ] or list(paired_scores)
+        if len({s.season for s in target_scores}) > 1:
+            raise ValueError("Kendall-PW HAC superiority evaluates one season trace without cross-season concatenation")
+        ordered_scores = sorted(target_scores, key=lambda s: s.gameweek)
+        hac_res = run_kendall_pw_hac_test([s.delta_net for s in ordered_scores], alpha=adj_alpha)
+        ci_lower, ci_upper = hac_res.one_sided_lower, float("inf")
+        point_est = hac_res.point_estimate
+        p_val = hac_res.p_value_superiority
+        eff_alpha = adj_alpha
+        if point_est < 0.0 and hac_res.p_value_harm <= adj_alpha:
+            hac_harm_detected = True
+            reasons.append(
+                f"Candidate net-score HAC harm rejected non-inferiority (p_harm {hac_res.p_value_harm:.4f} <= alpha {eff_alpha:.4f})"
+            )
+    else:
+        bootstrap_res = run_stored_score_bootstrap(
+            paired_scores,
+            config,
+            attempt_number=attempt_number,
+            seed=seed,
         )
+        ci_lower, ci_upper = bootstrap_res.confidence_interval
+        point_est = bootstrap_res.point_estimate
+        p_val = bootstrap_res.p_value_superiority
+        eff_alpha = bootstrap_res.adjusted_alpha
+        if ci_upper < 0.0:
+            reasons.append(
+                f"Candidate net-score interval below zero (upper CI {ci_upper:.3f} < 0.0 at alpha {eff_alpha:.4f})"
+            )
 
     # Invalid criteria:
     # - Missing or unassessed required projection guard evidence (contract defect; does NOT lock dead lever)
@@ -574,9 +817,9 @@ def evaluate_evidence_against_protocol(
 
     # Fail criteria:
     # - Material loss limit violated in any season or segment
-    # - Significant net loss (ci_upper < 0)
+    # - Significant net loss (ci_upper < 0 or HAC harm)
     # - Substantive projection guard regression
-    elif protocol_approved and (material_loss_violated or ci_upper < 0.0 or bool(guard_regressions)):
+    elif protocol_approved and (material_loss_violated or ci_upper < 0.0 or hac_harm_detected or bool(guard_regressions)):
         verdict = "fail"
 
     # Pass criteria:
@@ -592,7 +835,7 @@ def evaluate_evidence_against_protocol(
         and has_required_seasons
         and config.family_error_control == "bonferroni"
         and point_est > 0.0
-        and (ci_lower > 0.0 or p_val <= bootstrap_res.adjusted_alpha)
+        and (ci_lower > 0.0 or p_val <= eff_alpha)
         and guards_passed
         and not material_loss_violated
     ):
@@ -614,9 +857,9 @@ def evaluate_evidence_against_protocol(
                 "Confirmation season evidence not yet admitted or available; candidate cannot pass on development-only evidence"
             )
             limitations.append("Development-only trajectory; awaiting registered fresh confirmation")
-        if ci_lower <= 0.0 <= ci_upper and p_val > bootstrap_res.adjusted_alpha:
+        if ci_lower <= 0.0 <= ci_upper and p_val > eff_alpha:
             reasons.append(
-                f"Uncertainty contains zero (CI [{ci_lower:.3f}, {ci_upper:.3f}] at alpha {bootstrap_res.adjusted_alpha:.4f}); advantage not statistically distinguished"
+                f"Uncertainty contains zero (CI [{ci_lower:.3f}, {ci_upper:.3f}] at alpha {eff_alpha:.4f}); advantage not statistically distinguished"
             )
 
     return PromotionEvidenceEvaluation(
@@ -624,7 +867,7 @@ def evaluate_evidence_against_protocol(
         point_estimate=point_est,
         confidence_interval=(ci_lower, ci_upper),
         p_value=p_val,
-        adjusted_alpha=bootstrap_res.adjusted_alpha,
+        adjusted_alpha=eff_alpha,
         season_summaries=season_summaries,
         material_loss_violated=material_loss_violated,
         projection_guards_passed=guards_passed,

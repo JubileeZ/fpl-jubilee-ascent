@@ -509,6 +509,93 @@ class ConfirmationRegistry:
         self._append_record(final_rec)
         return final_rec
 
+    def record_checkpoint(
+        self,
+        attempt_id: str,
+        *,
+        checkpoint_gw: int,
+        completed_gameweeks: Sequence[int],
+        score_trace_hash: str,
+        bundle_path: str | None = None,
+    ) -> FinalistRegistration:
+        """Record an intermediate GW15/GW30/GW38 checkpoint trace without premature completion."""
+        if type(checkpoint_gw) is not int or not 1 <= checkpoint_gw <= 38:
+            raise RegistryError(f"Invalid checkpoint gameweek {checkpoint_gw}")
+        prior = self.get_attempt(attempt_id)
+        if prior is None:
+            raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
+        gws = tuple(sorted(set(int(g) for g in completed_gameweeks)))
+        if not gws or gws != tuple(range(1, checkpoint_gw + 1)):
+            raise IncompleteScheduleError(
+                f"Checkpoint GW{checkpoint_gw} requires contiguous completed gameweeks 1..{checkpoint_gw}"
+            )
+        exec_status: ExecutionStatus = (
+            "complete" if set(gws) == set(prior.registered_gameweeks) else "partial"
+        )
+        return self.transition_attempt_status(
+            attempt_id,
+            status="in_progress",
+            execution_status=exec_status,
+            completed_gameweeks=gws,
+            score_trace_hash=score_trace_hash,
+            bundle_path=bundle_path,
+        )
+
+    def finalize_early_checkpoint_pass(
+        self,
+        attempt_id: str,
+        *,
+        checkpoint_gw: int,
+        completed_gameweeks: Sequence[int],
+        score_trace_hash: str,
+        bundle_path: str | None = None,
+    ) -> FinalistRegistration:
+        """Finalize an ADR 0069 pre-declared GW15/GW30 early OBF confirmation pass."""
+        if checkpoint_gw not in (15, 30):
+            raise IncompleteScheduleError(f"Early checkpoint finalization permitted only at GW15/GW30, got GW{checkpoint_gw}")
+        prior = self.get_attempt(attempt_id)
+        if prior is None:
+            raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
+        if prior.status in ("completed", "withdrawn", "invalidated"):
+            raise AdaptiveRunViolationError(f"Cannot finalize {prior.status} attempt '{attempt_id}'")
+        gws = tuple(sorted(set(int(g) for g in completed_gameweeks)))
+        if gws != tuple(range(1, checkpoint_gw + 1)) or not set(gws) <= set(prior.registered_gameweeks):
+            raise IncompleteScheduleError(f"Early checkpoint GW{checkpoint_gw} requires contiguous GW1..{checkpoint_gw}")
+        if len(score_trace_hash) != 64 or any(c not in "0123456789abcdef" for c in score_trace_hash):
+            raise RegistryError("Score trace hash must be a SHA256 hex digest")
+        existing = self.load_all_records()
+        prev_hash = existing[-1].record_hash if existing else ("0" * 64)
+        updated = FinalistRegistration(
+            attempt_id=prior.attempt_id,
+            candidate_name=prior.candidate_name,
+            champion_name=prior.champion_name,
+            mechanism_family=prior.mechanism_family,
+            parent_attempt_id=prior.parent_attempt_id,
+            model_source_hash=prior.model_source_hash,
+            parameters_hash=prior.parameters_hash,
+            dev_selection_record_ref=prior.dev_selection_record_ref,
+            protocol_hash=prior.protocol_hash,
+            status="completed",
+            execution_status="complete",
+            scientific_verdict="pass",
+            attempt_number_in_family=prior.attempt_number_in_family,
+            registered_at=prior.registered_at,
+            completed_at=datetime.now(timezone.utc).isoformat(),
+            bundle_path=bundle_path,
+            human_approval_ref=prior.human_approval_ref,
+            known_aliases=prior.known_aliases,
+            registered_gameweeks=prior.registered_gameweeks,
+            completed_gameweeks=gws,
+            prev_record_hash=prev_hash,
+            record_hash="",
+            requested_seasons=prior.requested_seasons,
+            max_family_attempts=prior.max_family_attempts,
+            score_trace_hash=score_trace_hash,
+        )
+        final_rec = replace(updated, record_hash=updated.compute_record_hash())
+        self._append_record(final_rec)
+        return final_rec
+
     def _append_record(self, record: FinalistRegistration) -> None:
         """Append record line to registry file."""
         self._ensure_dir()

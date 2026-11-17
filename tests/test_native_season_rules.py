@@ -247,6 +247,60 @@ def test_season_lifecycle_policy_and_storage_guards(tmp_path: Path) -> None:
         custom.assert_unsealed_storage_path(tmp_path / "2027-28" / "file.json")
 
 
+def test_annual_rollover_season_lifecycle_demotes_archived_checks_gw38_and_requires_rules(
+    tmp_path: Path,
+) -> None:
+    from backtesting.season_rules import SeasonRules, load_season_lifecycle, rollover_season_lifecycle
+
+    src = Path("config/season_lifecycle.json")
+    lc_path = tmp_path / "season_lifecycle.json"
+    lc_path.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+
+    rules_27 = SeasonRules("2027-28", "native-2027-28-v1", 5, True, 10, True, True, False)
+
+    # 1. Fail closed when GW38 is unfinished or data_checked=False
+    gw_unfinished = pd.DataFrame([{"id": 38, "finished": True, "data_checked": False}])
+    with pytest.raises(ValueError, match="GW38"):
+        rollover_season_lifecycle(
+            new_season="2027-28",
+            gameweeks_df=gw_unfinished,
+            lifecycle_path=lc_path,
+            new_rules=rules_27,
+        )
+
+    # 2. Fail closed when incoming season lacks registered SeasonRules
+    gw_done = pd.DataFrame([{"id": 38, "finished": True, "data_checked": True}])
+    with pytest.raises(ValueError, match="Unsupported rules version"):
+        rollover_season_lifecycle(
+            new_season="2099-00",
+            gameweeks_df=gw_done,
+            lifecycle_path=lc_path,
+        )
+
+    # 3. Valid rollover: S->S-1, S-1->S-2, S-2->S-3, old S-3->archived
+    rolled = rollover_season_lifecycle(
+        new_season="2027-28",
+        gameweeks_df=gw_done,
+        lifecycle_path=lc_path,
+        new_rules=rules_27,
+    )
+    assert rolled.active_season == "2027-28"
+    assert rolled.season_for_role("active_validation") == "2027-28"
+    assert rolled.season_for_role("development") == "2026-27"
+    assert rolled.season_for_role("historical_filter") == "2025-26"
+    assert rolled.season_for_role("prior_seed_only") == "2024-25"
+    assert rolled.role_of("2023-24") == "archived"
+    assert rolled.seasons["2027-28"].prior_seed == "2026-27"
+    assert rolled.seasons["2026-27"].prior_seed == "2025-26"
+    assert rolled.seasons["2025-26"].prior_seed == "2024-25"
+
+    reloaded = load_season_lifecycle(lc_path)
+    assert reloaded.season_for_role("active_validation") == "2027-28"
+    assert reloaded.season_for_role("prior_seed_only") == "2024-25"
+    with pytest.raises(ValueError, match="archived"):
+        reloaded.assert_access("2023-24", 1, purpose="validation")
+
+
 def test_2026_27_native_rules_chips_ft_and_defcon() -> None:
     rules_26 = get_rules("2026-27")
     assert rules_26.version == "2026-27"

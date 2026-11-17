@@ -527,3 +527,38 @@ def test_missing_record_hash_is_detected(tmp_path: Path) -> None:
     registry.registry_file.write_text(content.replace(original.record_hash, ""), encoding="utf-8")
     with pytest.raises(TamperedRegistryError, match="hash mismatch"):
         registry.load_all_records()
+
+
+def test_record_checkpoint_progress_records_gw15_and_gw30_without_completing(tmp_path: Path) -> None:
+    registry = ConfirmationRegistry(tmp_path / "registry.jsonl")
+    rec = registry.register_finalist(
+        candidate_name="cand_1",
+        champion_name="def_xg_shrink_challenger",
+        mechanism_family="fam_a",
+        model_source_hash="a" * 64,
+        parameters_hash="b" * 64,
+        dev_selection_record_ref="dev-ref",
+        protocol_hash="c" * 64,
+        requested_seasons=("2026-27",),
+        registered_gameweeks=tuple(range(1, 39)),
+        max_family_attempts=2,
+    )
+    gw15 = registry.record_checkpoint(
+        rec.attempt_id,
+        checkpoint_gw=15,
+        completed_gameweeks=tuple(range(1, 16)),
+        score_trace_hash="d" * 64,
+    )
+    assert gw15.status == "in_progress"
+    assert gw15.execution_status == "partial"
+    assert gw15.completed_gameweeks == tuple(range(1, 16))
+    assert gw15.score_trace_hash == "d" * 64
+    assert registry.verify_integrity() is True
+
+    with pytest.raises(IncompleteScheduleError):
+        registry.transition_attempt_status(
+            rec.attempt_id,
+            "completed",
+            execution_status="complete",
+            completed_gameweeks=tuple(range(1, 16)),
+        )

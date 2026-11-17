@@ -19,6 +19,20 @@ class ModelSelection:
     candidates: tuple[str, ...]
     promotion_status: str = "provisional"
     schema_version: int = 1
+    provisional_active: str | None = None
+    podium_frozen_season: str | None = None
+    podium_sealed: bool = False
+
+    def __post_init__(self) -> None:
+        if len(self.candidates) > _MAX_CANDIDATES:
+            raise ValueError("Comparison Slate allows at most two Model Candidates")
+        if self.provisional_active is not None:
+            if not self.provisional_active.strip():
+                object.__setattr__(self, "provisional_active", None)
+            elif self.provisional_active == self.champion:
+                raise ValueError("Provisional Active model cannot equal Confirmed Champion")
+            elif self.provisional_active not in self.candidates:
+                raise ValueError("Provisional Active model must appear in Comparison Slate candidates")
 
 
 def load_model_selection(path: Path | None = None) -> ModelSelection:
@@ -34,15 +48,19 @@ def load_model_selection(path: Path | None = None) -> ModelSelection:
         return selection
     payload = json.loads(config_path.read_text(encoding="utf-8"))
     candidates = tuple(payload.get("candidates", ()))
-    if len(candidates) > _MAX_CANDIDATES:
-        raise ValueError("Comparison Slate allows at most two Model Candidates")
+    raw_prov = payload.get("provisional_active")
+    prov = str(raw_prov).strip() if isinstance(raw_prov, str) and raw_prov.strip() else None
+    raw_season = payload.get("podium_frozen_season")
+    frozen_season = str(raw_season).strip() if isinstance(raw_season, str) and raw_season.strip() else None
     return ModelSelection(
         champion=str(payload["champion"]),
         candidates=candidates,
         promotion_status=str(payload.get("promotion_status", "provisional")),
         schema_version=int(payload.get("schema_version", 1)),
+        provisional_active=prov,
+        podium_frozen_season=frozen_season,
+        podium_sealed=bool(payload.get("podium_sealed", False)),
     )
-
 
 
 def save_model_selection(selection: ModelSelection, path: Path | None = None) -> None:
@@ -55,6 +73,9 @@ def save_model_selection(selection: ModelSelection, path: Path | None = None) ->
         "champion": selection.champion,
         "candidates": list(selection.candidates),
         "promotion_status": selection.promotion_status,
+        "provisional_active": selection.provisional_active,
+        "podium_frozen_season": selection.podium_frozen_season,
+        "podium_sealed": selection.podium_sealed,
     }
     config_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -63,19 +84,38 @@ def default_model_name(path: Path | None = None) -> str:
     return load_model_selection(path).champion
 
 
+def active_transfer_plan_model_name(path: Path | None = None) -> str:
+    selection = load_model_selection(path)
+    return selection.provisional_active or selection.champion
+
+
+def dual_tier_models(path: Path | None = None) -> list[str]:
+    selection = load_model_selection(path)
+    if selection.provisional_active:
+        return list(dict.fromkeys([selection.champion, selection.provisional_active]))
+    return [selection.champion]
+
+
 def projection_model_names(
     model_name: str | None = None,
     model_names: Sequence[str] | None = None,
     *,
     config_path: Path | None = None,
 ) -> list[str]:
-    """Models to project for Explorer. Default Champion only. `--models` keeps the slate."""
+    """Models to project for Explorer/Dual-Tier serving. `--models` overrides slate."""
     if model_names:
         return list(dict.fromkeys(model_names))
-    if model_name and model_name.strip().lower() != "champion":
-        return [model_name.strip()]
+    if model_name is not None:
+        cleaned = model_name.strip()
+        if cleaned.lower() == "champion":
+            try:
+                return [default_model_name(config_path)]
+            except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
+                return [FALLBACK_CHAMPION]
+        if cleaned and cleaned.lower() != "default":
+            return [cleaned]
     try:
-        return [default_model_name(config_path)]
+        return dual_tier_models(config_path)
     except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
         return [FALLBACK_CHAMPION]
 

@@ -14,7 +14,10 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import resolve_operational_processed_dir
-from models import get_default_model_name, resolve_model_or_champion
+from models import (
+    get_active_transfer_plan_model_name,
+    resolve_model_or_transfer_plan_default,
+)
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
 from solver.planning import (
@@ -220,6 +223,7 @@ def transfer_plan_options_for_dashboard(
     force_ban: list[dict[str, object]] | None = None,
     available: list[dict[str, object]] | None = None,
     target_gw: int = 1,
+    datasource: str | None = None,
 ) -> dict[str, object]:
     options = load_settings()
     horizon = clamp_planning_horizon(horizon)
@@ -237,7 +241,7 @@ def transfer_plan_options_for_dashboard(
     keep_ids = {int(pid) for pid, _gw in chips.get("force_keep_gws") or []}
     existing_keep = {int(pid) for pid in (options.get("keep") or [])}
     options["keep"] = list(existing_keep | keep_ids)
-    options["datasource"] = get_default_model_name()
+    options["datasource"] = datasource or get_active_transfer_plan_model_name()
     return options
 
 
@@ -283,7 +287,7 @@ def execute_transfer_plan(
     best_sol = solutions[0] if isinstance(solutions, list) and solutions else {}
     plan = serialize_transfer_plan(
         best_sol,
-        champion=str(options.get("datasource") or get_default_model_name()),
+        champion=str(options.get("datasource") or get_active_transfer_plan_model_name()),
         horizon=horizon,
         next_gw=target_gw,
         decay_base=float(options.get("decay_base", 0.85)),
@@ -499,12 +503,12 @@ def main() -> None:
     parser.add_argument(
         "--model",
         type=str,
-        help="Projections model name to use as datasource (default: Champion)",
+        help="Projections model name to use as datasource (default: Provisional Active else Confirmed Champion)",
     )
     parser.add_argument(
         "--champion",
         action="store_true",
-        help="Explicitly use active Champion model projections",
+        help="Explicitly use active Confirmed Champion model projections",
     )
     parser.add_argument(
         "--arm",
@@ -663,8 +667,9 @@ def main() -> None:
             RECOMMENDED_MAX_HORIZON,
         )
     options["horizon"] = clamped_horizon
-    raw_model = None if args.champion else args.model
-    options["datasource"] = resolve_model_or_champion(raw_model)
+    options["datasource"] = resolve_model_or_transfer_plan_default(
+        args.model, force_champion=bool(args.champion)
+    )
     try:
         _apply_dynamic_overrides(options, unknown)
     except ValueError as exc:

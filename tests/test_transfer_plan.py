@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 from commands.export_dashboard import load_transfer_plan, load_transfer_plan_document
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
@@ -337,3 +338,107 @@ def test_load_transfer_plan_document_rejects_truncated_and_legacy(tmp_path: Path
     assert squad_ids == [10]
     assert model_name == "linear_baseline"
     assert plan is None
+
+
+def test_execute_transfer_plan_scenarios_routes_provisional_active_and_reads_model_p_appear(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    from commands.transfer_plan_scenarios import execute_transfer_plan_scenarios
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger",),
+            provisional_active="adaptive_causal_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    pd.DataFrame(
+        [
+            {"player_id": pid, "lineup_index": pid, "purchase_price": 50, "selling_price": 50, "is_captain": pid == 1, "is_vice_captain": pid == 2}
+            for pid in range(1, 16)
+        ]
+    ).to_parquet(processed / "user_picks.parquet")
+    pd.DataFrame([{"entry_id": 1, "bank": 10, "free_transfers": 1}]).to_parquet(processed / "user_state.parquet")
+    pd.DataFrame([{"id": pid, "position_id": 1 if pid <= 2 else (2 if pid <= 7 else (3 if pid <= 12 else 4))} for pid in range(1, 16)]).to_parquet(processed / "players.parquet")
+
+    dataset = {
+        "meta": {"default_model": "adaptive_causal_challenger"},
+        "players": [
+            {
+                "id": pid,
+                "pos_id": 1 if pid <= 2 else (2 if pid <= 7 else (3 if pid <= 12 else 4)),
+                "models": {
+                    "adaptive_causal_challenger": {
+                        "projections": {"gw6": {"total_xp": 8.0, "xmins": 90.0, "p_appear": 1.0}}
+                    },
+                    "def_xg_shrink_challenger": {
+                        "projections": {"gw6": {"total_xp": 4.0, "xmins": 90.0, "p_appear": 0.5}}
+                    },
+                },
+            }
+            for pid in range(1, 16)
+        ],
+    }
+
+    seen_datasources: list[str] = []
+
+    def _fake_exec(options: dict[str, Any], *, processed_dir: Path, target_gw: int, solution_path: Path) -> dict[str, Any]:
+        seen_datasources.append(str(options.get("datasource")))
+        return {
+            "meta": {"champion": str(options.get("datasource")), "next_gw": target_gw, "solver_objective": 10.0},
+            "weeks": [
+                {
+                    "gw": target_gw,
+                    "lineup_ids": list(range(1, 12)),
+                    "bench_ids": list(range(12, 16)),
+                    "captain_id": 1,
+                    "vice_id": 2,
+                    "hits": 0,
+                    "chip": None,
+                    "squad_ids": list(range(1, 16)),
+                    "buy": [],
+                    "sell": [],
+                }
+            ],
+        }
+
+    with patch("commands.solve.load_settings", return_value={"horizon": 1, "decay_base": 0.85}):
+        payload_default = execute_transfer_plan_scenarios(
+            processed_dir=processed,
+            target_gw=6,
+            horizon=1,
+            dataset=dataset,
+            execute_plan=_fake_exec,
+            scenarios_path=tmp_path / "scenarios.json",
+            solution_path=tmp_path / "solution.json",
+            force=True,
+        )
+        assert payload_default["meta"]["active_model"] == "adaptive_causal_challenger"
+        assert payload_default["meta"]["confirmed_champion"] == "def_xg_shrink_challenger"
+        assert set(seen_datasources) == {"adaptive_causal_challenger"}
+        assert payload_default["scenarios"][0]["horizon_egs"] == pytest.approx(96.0)
+
+        seen_datasources.clear()
+        payload_champ = execute_transfer_plan_scenarios(
+            processed_dir=processed,
+            target_gw=6,
+            horizon=1,
+            dataset=dataset,
+            execute_plan=_fake_exec,
+            scenarios_path=tmp_path / "scenarios_champ.json",
+            solution_path=tmp_path / "solution_champ.json",
+            force=True,
+            datasource="def_xg_shrink_challenger",
+        )
+        assert payload_champ["meta"]["active_model"] == "def_xg_shrink_challenger"
+        assert set(seen_datasources) == {"def_xg_shrink_challenger"}
+        assert payload_champ["scenarios"][0]["horizon_egs"] < 96.0

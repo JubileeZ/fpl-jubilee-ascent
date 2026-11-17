@@ -125,7 +125,7 @@ def player_button(planner: Planner, pid: int, gw: int, week: dict[str, Any]) -> 
     if player is None:
         st.warning(f"Player {pid} absent from data. Refresh required.")
         return
-    projection = player.get("projections", {}).get(f"gw{gw}", {})
+    projection = planner.player_projections(pid).get(f"gw{gw}", {})
     score = f"{float(projection['total_xp']):.1f} xP" if projection.get("total_xp") is not None else "Projection unavailable"
     role = " · C" if pid == week["captain_id"] else " · V" if pid == week["vice_id"] else ""
     if st.button(f"{player['name']} · {score}{role}", key=f"player-{pid}", width="stretch"):
@@ -215,7 +215,7 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
     pid = int(player["id"])
     st.subheader(player.get("full_name") or player["name"])
     st.caption(f"{player.get('team_full') or player.get('team', '')} · {POSITION_NAMES[player['pos_id']]}")
-    projection = player.get("projections", {}).get(f"gw{gw}", {})
+    projection = planner.player_projections(pid).get(f"gw{gw}", {})
     columns = st.columns(2)
     columns[0].metric(f"GW{gw} projected points", f"{projection['total_xp']:.2f}" if projection.get("total_xp") is not None else "Unavailable")
     columns[1].metric("Expected minutes", f"{projection['xmins']:.0f}" if projection.get("xmins") is not None else "Unavailable")
@@ -246,7 +246,7 @@ def details_panel(planner: Planner, store: PlanStore, paths: PlannerPaths, gw: i
     rows = [{"GW": week_id, "Fixture": fixture(cell), "Adjusted difficulty": cell.get("difficulty"),
              "xP": cell.get("total_xp"), "xMins": cell.get("xmins")}
             for week_id in range(gw, planner.state["end"] + 1)
-            for cell in [player.get("projections", {}).get(f"gw{week_id}", {})]]
+            for cell in [planner.player_projections(pid).get(f"gw{week_id}", {})]]
     st.dataframe(rows, hide_index=True, width="stretch")
     st.caption("Adjusted difficulty: official 1–5, home −0.25 / away +0.25; lower is easier. Double Gameweeks show mean difficulty.")
     with st.expander("Recent points and minutes"):
@@ -505,6 +505,20 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
                                     value=planner.state["end"], step=1, key="horizon-end")
     if end != planner.state["end"]:
         edit(planner, store, lambda: planner.change_horizon(planner.state["start"], end))
+    meta = dataset.get("meta") or {}
+    dual_models = meta.get("models") or []
+    if len(dual_models) > 1:
+        active_model = planner.state.get("model") if planner.state.get("model") in dual_models else dual_models[0]
+        confirmed_champ = meta.get("confirmed_champion")
+        chosen_model = controls[0].selectbox(
+            "Transfer Plan model",
+            dual_models,
+            index=dual_models.index(active_model),
+            format_func=lambda m: f"{m} (Confirmed Champion)" if m == confirmed_champ else f"{m} (Provisional Active)",
+            key="planner-model-select",
+        )
+        if chosen_model != planner.state.get("model"):
+            edit(planner, store, lambda: planner.set_model(chosen_model))
     scenario = controls[2].selectbox("Preview policy", list(ARM_NAMES), index=list(ARM_NAMES).index(planner.state["scenario"]),
                                     format_func=lambda arm: ARM_NAMES[arm], key="scenario-policy")
     controls[2].caption(f"Active saved policy: {ARM_NAMES[planner.state['scenario']]}")

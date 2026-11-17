@@ -12,6 +12,7 @@ from backtesting.projection_guards import (
     declare_component_applicability,
     diagnose_unconstrained_reversal,
     evaluate_composite_non_inferiority,
+    evaluate_gw_clustered_non_inferiority_guard,
     evaluate_non_inferiority_guard,
     evaluate_oracle_minutes_mechanism,
     evaluate_prioritization_screen,
@@ -374,3 +375,26 @@ def test_diagnose_unconstrained_reversal() -> None:
         minutes_floor_delta=2.0,
     )
     assert diag_mins.reversal_category == "MINUTES_FLOOR"
+
+
+def test_gw_clustered_non_inferiority_guard_prevents_player_row_overconfidence() -> None:
+    # Two gameweeks where GW1 has cand worse by +0.5 and GW2 has cand better by -0.3 across 500 players each
+    cand_by_gw = {
+        1: [1.5] * 500,
+        2: [0.7] * 500,
+    }
+    champ_by_gw = {
+        1: [1.0] * 500,
+        2: [1.0] * 500,
+    }
+    res = evaluate_gw_clustered_non_inferiority_guard(
+        cand_by_gw,
+        champ_by_gw,
+        metric_name="points_mse",
+        meaningful_margin=0.05,
+        alpha=0.05,
+    )
+    assert res.sample_size == 2
+    assert res.estimate == pytest.approx(0.1)
+    assert res.status == "INCONCLUSIVE"
+    assert res.passed is False

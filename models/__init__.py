@@ -2,6 +2,7 @@ import os
 import importlib
 import inspect
 from pathlib import Path
+from typing import Any
 from models.base import BaseModel
 from models.selection import FALLBACK_CHAMPION
 
@@ -18,14 +19,44 @@ def get_default_model_name() -> str:
         return DEFAULT_MODEL_NAME
 
 
-def resolve_model_or_champion(model_name: str | None = None, *, validate: bool = False) -> str:
-    """Return model name, resolving None, empty, or 'champion' to active Champion."""
-    if model_name is None or not str(model_name).strip() or str(model_name).strip().lower() == "champion":
+def get_active_transfer_plan_model_name() -> str:
+    try:
+        from models.selection import active_transfer_plan_model_name
+
+        return active_transfer_plan_model_name()
+    except (FileNotFoundError, ValueError, KeyError):
+        return DEFAULT_MODEL_NAME
+
+
+def _resolve_model(model_name: str | None, *, default_fn: Any, force_champion: bool = False, validate: bool = False) -> str:
+    if force_champion:
         return get_default_model_name()
-    resolved = str(model_name).strip()
-    if validate:
-        return resolve_model_name(resolved)
-    return resolved
+    cleaned = "" if model_name is None else str(model_name).strip()
+    if not cleaned:
+        return str(default_fn())
+    if cleaned.lower() == "champion":
+        return get_default_model_name()
+    return resolve_model_name(cleaned) if validate else cleaned
+
+
+def resolve_model_or_champion(model_name: str | None = None, *, validate: bool = False) -> str:
+    """Return model name, resolving None, empty, or 'champion' to active Confirmed Champion."""
+    return _resolve_model(model_name, default_fn=get_default_model_name, validate=validate)
+
+
+def resolve_model_or_transfer_plan_default(
+    model_name: str | None = None,
+    *,
+    force_champion: bool = False,
+    validate: bool = False,
+) -> str:
+    """Resolve Transfer Plan model: explicit --champion -> Confirmed Champion; omitted -> Provisional Active else Champion."""
+    return _resolve_model(
+        model_name,
+        default_fn=get_active_transfer_plan_model_name,
+        force_champion=force_champion,
+        validate=validate,
+    )
 
 
 

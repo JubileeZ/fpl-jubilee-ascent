@@ -7,13 +7,19 @@ import numpy as np
 import pytest
 
 from backtesting.evidence_statistics import (
+    EARLY_HARM_MIN_GW,
+    EARLY_HARM_P_THRESHOLD,
+    OBF_ALPHA_SCHEDULE,
     PairedGameweekScore,
     StatisticalProtocolConfig,
     assign_gameweek_segment,
     compute_season_summaries,
     compute_score_trace_hash,
+    evaluate_early_harm_fallback,
     evaluate_evidence_against_protocol,
+    obrien_fleming_alpha,
     resample_paired_blocks,
+    run_kendall_pw_hac_test,
     run_stored_score_bootstrap,
     simulate_bootstrap_calibration,
 )
@@ -765,4 +771,100 @@ def test_default_single_attempt_fwer_and_one_sided_superiority_and_zero_ties(tmp
         seed=42,
     )
     assert eval_res.verdict == "pass"
+
+
+def test_obrien_fleming_alpha_spending_m1_and_m2() -> None:
+    assert OBF_ALPHA_SCHEDULE == {15: 0.0005, 30: 0.010, 38: 0.0395}
+    assert obrien_fleming_alpha(15, 1) == pytest.approx(0.0005)
+    assert obrien_fleming_alpha(30, 1) == pytest.approx(0.010)
+    assert obrien_fleming_alpha(38, 1) == pytest.approx(0.0395)
+    assert sum(obrien_fleming_alpha(gw, 1) for gw in (15, 30, 38)) == pytest.approx(0.05)
+
+    assert obrien_fleming_alpha(15, 2) == pytest.approx(0.00025)
+    assert obrien_fleming_alpha(30, 2) == pytest.approx(0.005)
+    assert obrien_fleming_alpha(38, 2) == pytest.approx(0.01975)
+    assert 2 * sum(obrien_fleming_alpha(gw, 2) for gw in (15, 30, 38)) == pytest.approx(0.05)
+
+    with pytest.raises(ValueError):
+        obrien_fleming_alpha(10, 1)
+    with pytest.raises(ValueError):
+        obrien_fleming_alpha(15, 3)
+
+
+def test_kendall_pw_hac_consistency_clip_and_degenerate_cases() -> None:
+    # Identical zero series -> p=1.0, lower=0.0
+    zero = run_kendall_pw_hac_test([0.0] * 15, alpha=0.01)
+    assert zero.p_value_superiority == 1.0
+    assert zero.p_value_harm == 1.0
+    assert zero.one_sided_lower == 0.0
+
+    # Negative AR(1) autocorrelation gets nonnegative clip at 0.0 (never negative phi)
+    alternating = [3.0 if i % 2 == 0 else -1.0 for i in range(20)]
+    res_alt = run_kendall_pw_hac_test(alternating, alpha=0.05)
+    assert 0.0 <= res_alt.phi_hat <= 0.92
+    assert res_alt.phi_hat == 0.0
+    assert res_alt.lrv >= max(res_alt.lrv_pw, res_alt.lrv_bartlett) - 1e-12
+    assert res_alt.df >= 4.0
+
+    # Strictly positive correlated series: one_sided_lower > 0 iff p_value_superiority < alpha
+    rng = np.random.default_rng(7)
+    pos_series = (1.8 + rng.normal(0.0, 1.5, size=30)).tolist()
+    res_pos = run_kendall_pw_hac_test(pos_series, alpha=0.010)
+    assert (res_pos.one_sided_lower > 0.0) is (res_pos.p_value_superiority < 0.010)
+
+
+def test_kendall_pw_hac_controls_fwer_across_checkpoints() -> None:
+    rng = np.random.default_rng(2026)
+    for rho in (0.0, 0.4):
+        innov = np.sqrt(1.0 - rho**2) * 4.0
+        rejections = 0
+        sims = 400
+        for _ in range(sims):
+            vals = np.empty(38, dtype=float)
+            cur = float(rng.normal(0.0, 4.0))
+            for t in range(38):
+                cur = rho * cur + float(rng.normal(0.0, innov))
+                vals[t] = cur
+            hit = any(
+                run_kendall_pw_hac_test(vals[:gw].tolist(), alpha=obrien_fleming_alpha(gw, 1)).p_value_superiority
+                <= obrien_fleming_alpha(gw, 1)
+                for gw in (15, 30, 38)
+            )
+            if hit:
+                rejections += 1
+        # Binomial upper tolerance around nominal 0.05 at R=400
+        assert rejections / sims <= 0.075
+
+
+def test_early_harm_fallback_min_gw_contiguous_segments_and_guard_rules() -> None:
+    assert EARLY_HARM_MIN_GW == 6
+    assert EARLY_HARM_P_THRESHOLD == 0.025
+
+    # Below min_gw=6 (e.g. GW1-5 cold start/warm-up): never triggers even on negative points or guard FAIL
+    early_5 = _make_paired_scores(season="2026-27", gameweek_count=5, mean_cand=40.0, mean_champ=60.0, noise_std=0.0)
+    failed_guard = replace(_passing_guard(), passed=False, status="FAIL", estimate=3.0, ci_lower=2.0, ci_upper=4.0)
+    pre_min = evaluate_early_harm_fallback(early_5, [failed_guard])
+    assert pre_min.triggered is False
+    assert pre_min.min_gw_met is False
+
+    # At min_gw=6+, INCONCLUSIVE guard does NOT trigger fallback
+    mild_6 = _make_paired_scores(season="2026-27", gameweek_count=6, mean_cand=60.5, mean_champ=60.0, noise_std=0.5)
+    inconclusive_guard = replace(_passing_guard(), passed=False, status="INCONCLUSIVE", estimate=0.5, ci_lower=-0.5, ci_upper=1.5)
+    assert evaluate_early_harm_fallback(mild_6, [inconclusive_guard]).triggered is False
+
+    # Demonstrated mandatory guard FAIL after min_gw=6 triggers fallback
+    guard_fail_6 = evaluate_early_harm_fallback(mild_6, [failed_guard])
+    assert guard_fail_6.triggered is True
+    assert "minutes_mae" in guard_fail_6.failed_guards
+
+    # Completed early_mid (GW5..19) harm triggers even when cumulative GW1..19 was offset by huge GW1..4
+    offset_scores = [
+        PairedGameweekScore("2026-27", gw, 80.0 if gw <= 4 else 50.0, 60.0, 80.0 if gw <= 4 else 50.0, 60.0, 0, 0, segment=assign_gameweek_segment(gw))
+        for gw in range(1, 20)
+    ]
+    seg_harm = evaluate_early_harm_fallback(offset_scores, [_passing_guard()])
+    assert seg_harm.triggered is True
+    assert "early_mid" in seg_harm.segment_p_harms
+    assert seg_harm.segment_p_harms["early_mid"] <= 0.025
+    assert "cold_start" not in seg_harm.segment_p_harms  # cold_start len=4 < min_gw=6
 

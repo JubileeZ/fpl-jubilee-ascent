@@ -5,5 +5,8 @@
     "adaptive_causal_challenger",
     "club_def_prior_challenger"
   ],
-  "promotion_status": "provisional"
+  "promotion_status": "provisional",
+  "provisional_active": null,
+  "podium_frozen_season": null,
+  "podium_sealed": false
 }

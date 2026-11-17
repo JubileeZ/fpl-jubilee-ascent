@@ -10,8 +10,8 @@ When writing or running `run_model`, `backtest`, `report --model`, `dashboard --
 
 - Use the exact `BaseModel.name` string from [docs/model_name.md](docs/model_name.md) when specifying a model.
 - Champion is `config/model_selection.json` `champion`, not a hardcoded default.
-- `commands.run_model`, `commands.report`, `commands.decision_regret`, and `commands.solve` default to Champion when the model is omitted, or when passing `--champion` or `"champion"`.
-- `commands.solve` defaults to Champion and ignores stale `data/user_settings.json` `datasource`. `--model` is an explicit CSV override; `--no_hit` restricts solver to 0 hits.
+- `commands.run_model`, `commands.report`, and `commands.decision_regret` default to Confirmed Champion (`config/model_selection.json` `champion`) when the model is omitted, or when passing `--champion` or `"champion"`.
+- `commands.solve` defaults to `Provisional Active` when active, else Confirmed Champion; pass `--champion` to switch to Confirmed Champion. Stale `data/user_settings.json` `datasource` is ignored. `--model` is an explicit CSV override; `--no_hit` restricts solver to 0 hits.
 - `commands.backtest` requires an explicit, registered `BaseModel.name`.
 - Filename is not the identifier: `models/participation_state_hybrid.py` → `participation_state_hybrid`.
 - Unknown / retired Primary names are not aliases: dashboard Refresh falls back to Champion.

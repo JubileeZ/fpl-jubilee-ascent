@@ -2,7 +2,7 @@
 
 CLI identifier is `BaseModel.name`, not the Python filename. `models.get_model(name)` scans `models/*.py` and returns the class whose `name` property matches.
 
-Live Model Champion is `config/model_selection.json` `champion`. Transfer Plan always uses that Champion: dashboard **Solve scenarios** and `commands.solve`. Explorer Primary defaults to Champion; `--model` / the in-page Primary control may select any catalog name.
+Live Confirmed Model Champion is `config/model_selection.json` `champion`; when `provisional_active` is frozen/active (`ADR 0069` Dual-Tier), `Provisional Active` and `Confirmed Champion` export side-by-side (`dashboard` Explorer defaults to Confirmed Champion; Transfer Plan defaults to `Provisional Active` with Confirmed Champion one switch away via `--champion` or model selector).
 
 ## Catalog
 

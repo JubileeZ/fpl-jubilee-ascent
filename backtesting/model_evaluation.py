@@ -47,18 +47,28 @@ def promote_candidate(selection: ModelSelection, candidate: str, *, snapshot_bac
         candidates=tuple(candidates[:2]),
         promotion_status="validated" if snapshot_backed else "provisional",
         schema_version=selection.schema_version,
+        provisional_active=None,
+        podium_frozen_season=None,
+        podium_sealed=False,
     )
 
 
 def replace_candidate(selection: ModelSelection, incoming: str, outgoing: str) -> ModelSelection:
+    if selection.podium_sealed:
+        raise ValueError("Cannot replace candidates while Dual-Tier podium is sealed for active validation")
     candidates = [name for name in selection.candidates if name != outgoing]
     if incoming not in candidates:
         candidates.append(incoming)
+    new_candidates = tuple(candidates[:2])
+    new_provisional = selection.provisional_active if selection.provisional_active in new_candidates else None
     return ModelSelection(
         champion=selection.champion,
-        candidates=tuple(candidates[:2]),
+        candidates=new_candidates,
         promotion_status=selection.promotion_status,
         schema_version=selection.schema_version,
+        provisional_active=new_provisional,
+        podium_frozen_season=selection.podium_frozen_season,
+        podium_sealed=selection.podium_sealed,
     )
 
 

@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -26,13 +27,23 @@ from backtesting.model_evaluation import (
     promote_candidate,
     write_promotion_evidence,
 )
+from backtesting.evidence_statistics import PairedGameweekScore, assign_gameweek_segment
+from backtesting.projection_guards import GuardOutput
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
     CONFIRMATION_BOOTSTRAP_MIN_P,
     POOLED_BOOTSTRAP_MIN_P,
     PromotionVerdict,
 )
-from backtesting.promotion_evidence import verify_recommendation_bundle, write_recommendation_bundle
+from backtesting.promotion_evidence import (
+    CHECKPOINT_EVIDENCE_VERSION,
+    evaluate_dual_tier_checkpoint,
+    verify_checkpoint_recommendation_bundle,
+    verify_recommendation_bundle,
+    write_checkpoint_recommendation_bundle,
+    write_recommendation_bundle,
+)
+from backtesting.season_rules import SeasonLifecycle, SeasonRules, rollover_season_lifecycle
 from backtesting.walkforward import WalkforwardConfig, WalkforwardResult, run_walkforward_backtest
 from commands.backtest import resolve_backtest_data_dir, resolve_seed_processed_dir
 from models.selection import DEFAULT_CONFIG_PATH, ModelSelection, load_model_selection, save_model_selection
@@ -287,7 +298,19 @@ def adopt_champion(
         raise ValueError("Cannot adopt candidate: explicit expected current Champion required")
     if not approved_bundle_hash:
         raise ValueError("Cannot adopt candidate: exact approved bundle hash required")
-    data = verify_recommendation_bundle(bundle_path, require_finalized=True)
+    raw_bundle: dict[str, Any] = {}
+    bundle_file = Path(bundle_path)
+    if bundle_file.is_file():
+        try:
+            loaded = json.loads(bundle_file.read_bytes())
+            if isinstance(loaded, dict):
+                raw_bundle = loaded
+        except (OSError, ValueError):
+            raw_bundle = {}
+    if raw_bundle.get("version") == CHECKPOINT_EVIDENCE_VERSION:
+        data = verify_checkpoint_recommendation_bundle(bundle_path, require_finalized=True)
+    else:
+        data = verify_recommendation_bundle(bundle_path, require_finalized=True)
     if approved_bundle_hash != data["bundle_hash"]:
         raise ValueError("Human approval refers to a different evidence bundle hash")
     if data["scientific_verdict"] != "pass" or data["execution_status"] != "complete" or not data["empirical_admission"]:
@@ -312,6 +335,9 @@ def adopt_champion(
         "candidate_name": cand_name, "selection_before": {
             "champion": current_sel.champion, "candidates": list(current_sel.candidates),
             "promotion_status": current_sel.promotion_status, "schema_version": current_sel.schema_version,
+            "provisional_active": current_sel.provisional_active,
+            "podium_frozen_season": current_sel.podium_frozen_season,
+            "podium_sealed": current_sel.podium_sealed,
         },
     }
     with tempfile.NamedTemporaryFile(dir=selection_path.parent, suffix=".json", delete=False) as temporary:
@@ -333,6 +359,108 @@ def adopt_champion(
     return updated
 
 
+def evaluate_checkpoint_request(request_path: Path | str) -> dict[str, Any]:
+    """Read-only ADR 0069 GW15/GW30/GW38 checkpoint evaluator from a retained JSON request."""
+    path = Path(request_path).resolve()
+    payload = json.loads(path.read_bytes())
+    raw_sel = payload.get("selection_path")
+    if raw_sel:
+        sel_candidate = Path(raw_sel)
+        if not sel_candidate.is_absolute():
+            sel_candidate = (path.parent / sel_candidate).resolve()
+        selection = load_model_selection(sel_candidate)
+    else:
+        selection = load_model_selection()
+    traces = {
+        cand: [
+            PairedGameweekScore(
+                season=str(row["season"]),
+                gameweek=int(row["gameweek"]),
+                candidate_net_points=float(row["candidate_net_points"]),
+                champion_net_points=float(row["champion_net_points"]),
+                candidate_gross_points=float(row.get("candidate_gross_points", row["candidate_net_points"])),
+                champion_gross_points=float(row.get("champion_gross_points", row["champion_net_points"])),
+                candidate_hits_deducted=int(row.get("candidate_hits_deducted", 0)),
+                champion_hits_deducted=int(row.get("champion_hits_deducted", 0)),
+                is_chip_gameweek=bool(row.get("is_chip_gameweek", False)),
+                segment=assign_gameweek_segment(int(row["gameweek"])),
+            )
+            for row in rows
+        ]
+        for cand, rows in payload["finalist_traces"].items()
+    }
+    guards = {
+        cand: [GuardOutput(**g) for g in g_list]
+        for cand, g_list in payload["finalist_guards"].items()
+    }
+    result = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=int(payload["checkpoint_gw"]),
+        finalist_traces=traces,
+        finalist_guards=guards,
+        selection=selection,
+        podium_order=tuple(payload["podium_order"]),
+        protocol_approved=bool(payload.get("protocol_approved", True)),
+        inapplicable_guards=tuple(payload.get("inapplicable_guards", ())),
+    )
+    return {
+        "checkpoint_gw": result.checkpoint_gw,
+        "num_finalists": result.num_finalists,
+        "alpha_spent": result.alpha_spent,
+        "action": result.action,
+        "recommended_champion": result.recommended_champion,
+        "next_provisional_active": result.next_provisional_active,
+        "requires_manual_adopt": result.requires_manual_adopt,
+        "reasons": list(result.reasons),
+        "outcomes": {
+            cand: {
+                "net_delta": out.net_delta,
+                "mean_delta": out.mean_delta,
+                "p_value_superiority": out.hac_result.p_value_superiority,
+                "p_value_harm": out.hac_result.p_value_harm,
+                "one_sided_lower": out.hac_result.one_sided_lower,
+                "early_harm_triggered": out.early_harm.triggered,
+                "guards_passed": out.guards_passed,
+                "superior": out.superior,
+            }
+            for cand, out in result.outcomes.items()
+        },
+    }
+
+
+def perform_annual_rollover(
+    *,
+    new_season: str,
+    gameweeks_df: Any = None,
+    bootstrap_payload: dict[str, Any] | None = None,
+    lifecycle_path: Path | None = None,
+    selection_path: Path | None = None,
+    new_rules: SeasonRules | None = None,
+    persist: bool = True,
+) -> tuple[SeasonLifecycle, ModelSelection]:
+    """Execute ADR 0069 summer rollover: rotate lifecycle and clear unconfirmed provisional state."""
+    current_sel = load_model_selection(selection_path)
+    new_lifecycle = rollover_season_lifecycle(
+        new_season=new_season,
+        gameweeks_df=gameweeks_df,
+        bootstrap_payload=bootstrap_payload,
+        lifecycle_path=lifecycle_path,
+        new_rules=new_rules,
+        persist=persist,
+    )
+    updated_sel = ModelSelection(
+        champion=current_sel.champion,
+        candidates=current_sel.candidates,
+        promotion_status=current_sel.promotion_status,
+        schema_version=current_sel.schema_version,
+        provisional_active=None,
+        podium_frozen_season=None,
+        podium_sealed=False,
+    )
+    if persist:
+        save_model_selection(updated_sel, selection_path)
+    return new_lifecycle, updated_sel
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Evaluate candidate models and manage manual promotion adoption.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
@@ -352,6 +480,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--expected_champion", type=str, default=None, help="Expected current champion name for safe adoption")
     parser.add_argument("--bundle_hash", type=str, default=None, help="Exact evidence bundle hash approved by human")
     parser.add_argument("--evidence_request", type=Path, default=None, help="Reconstruct final recommendation from registered retained replay evidence")
+    parser.add_argument("--checkpoint_request", type=Path, default=None, help="Evaluate ADR 0069 GW15/GW30/GW38 checkpoint request (read-only)")
     parser.add_argument("--output_bundle", type=Path, default=None, help="Verified bundle destination alongside retained request")
     args = parser.parse_args(argv)
 
@@ -383,6 +512,15 @@ def main(argv: list[str] | None = None) -> None:
         output = args.output_bundle or args.evidence_request.with_name("recommendation_bundle.json")
         bundle = write_recommendation_bundle(args.evidence_request, output)
         print(f"Scientific verdict: {bundle['scientific_verdict']}\nBundle hash: {bundle['bundle_hash']}\nEvidence bundle: {output}")
+        return
+
+    if args.checkpoint_request is not None:
+        if args.output_bundle is not None:
+            bundle = write_checkpoint_recommendation_bundle(args.checkpoint_request, args.output_bundle)
+            print(json.dumps(bundle, indent=2))
+            return
+        summary = evaluate_checkpoint_request(args.checkpoint_request)
+        print(json.dumps(summary, indent=2))
         return
 
     if args.apply:

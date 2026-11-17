@@ -15,7 +15,8 @@ import pandas as pd
 
 from dashboard.planner import Planner, digest
 from features.builder import resolve_operational_processed_dir
-from models import get_default_model_name
+from models import get_active_transfer_plan_model_name
+from models.selection import dual_tier_models
 from solver.scenarios import ARM_NAMES, apply_scenario_arm, compute_scenarios_digest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -46,12 +47,16 @@ def load_dataset(paths: PlannerPaths) -> dict[str, Any]:
 
 
 def source_digest(paths: PlannerPaths) -> str:
-    from solver.paths import DATA_DIR
+    from solver import paths as solver_paths
 
+    model_csvs = [
+        solver_paths.DATA_DIR / f"{model_name}.csv"
+        for model_name in dict.fromkeys([*dual_tier_models(), get_active_transfer_plan_model_name()])
+    ]
     files = [paths.dataset, *(paths.processed / name for name in (
         "players.parquet", "user_picks.parquet", "user_state.parquet", "user_chips.parquet",
-        "player_performances.parquet", "gameweeks.parquet")), DATA_DIR / f"{get_default_model_name()}.csv",
-        DATA_DIR / "comprehensive_settings.json", DATA_DIR / "user_settings.json",
+        "player_performances.parquet", "gameweeks.parquet")), *model_csvs,
+        solver_paths.DATA_DIR / "comprehensive_settings.json", solver_paths.DATA_DIR / "user_settings.json",
         PROJECT_ROOT / "data/raw/bootstrap_static.json", PROJECT_ROOT / "data/raw/fixtures_all.json"]
     return digest({str(path): hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None for path in files})
 
@@ -59,9 +64,10 @@ def source_digest(paths: PlannerPaths) -> str:
 def make_solve_request(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
     if planner.stale:
         raise ValueError("Draft uses older squad/projections. Start a new plan from refreshed data before solving.")
-    model = planner.dataset.get("meta", {}).get("default_model")
-    if model is not None and model != get_default_model_name():
-        raise ValueError("Projections use a different model from current Champion. Refresh before solving.")
+    planner.validate_models(
+        set(dual_tier_models()),
+        active_default=get_active_transfer_plan_model_name(),
+    )
     if paths.dataset.exists() and any(path.exists() and path.stat().st_mtime > paths.dataset.stat().st_mtime
                                      for path in (paths.processed / name for name in ("players.parquet", "user_picks.parquet", "user_state.parquet", "player_performances.parquet"))):
         raise ValueError("Operational data newer than projections. Refresh projections before solving.")
@@ -83,6 +89,7 @@ def solver_options(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
         booked, planner.state["end"] - planner.state["start"] + 1,
         target_gw=planner.state["start"],
         available=planner.dataset.get("meta", {}).get("transfer_plan_available_chips", []),
+        datasource=planner.active_model or get_active_transfer_plan_model_name(),
     )
     options.update(gap=0.0, secs=1200, parallel="off", threads=1,
                    parent_state={"lineup": {"slots": {str(index): pid for index, pid in enumerate(planner.state["base_ids"], 1)}},
@@ -165,7 +172,7 @@ def import_cached_recommendations(planner: Planner, paths: PlannerPaths) -> bool
         processed_dir=paths.processed,
         target_gw=planner.state["start"],
         horizon=planner.state["end"] - planner.state["start"] + 1,
-        champion=get_default_model_name(),
+        champion=planner.active_model or get_active_transfer_plan_model_name(),
         gap=0.0,
         strategic_options=planner.state.get("strategic_options"),
     )

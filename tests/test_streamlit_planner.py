@@ -112,3 +112,102 @@ def test_legacy_scenario_normalization() -> None:
     assert p1.state["scenario"] == "unconstrained"
     p2 = Planner(data, {"version": 1, "start": 6, "end": 11, "scenario": "conservative"})
     assert p2.state["scenario"] == "strategic"
+
+
+def test_planner_dual_tier_model_switch_scores_selected_model_projections() -> None:
+    data = dataset()
+    data["meta"]["default_model"] = "adaptive_causal_challenger"
+    data["meta"]["confirmed_champion"] = "def_xg_shrink_challenger"
+    data["meta"]["provisional_active"] = "adaptive_causal_challenger"
+    data["meta"]["models"] = ["adaptive_causal_challenger", "def_xg_shrink_challenger"]
+    for p in data["players"]:
+        p["models"] = {
+            "adaptive_causal_challenger": {
+                "projections": {
+                    f"gw{gw}": {"total_xp": float(p["id"]) * 2.0, "xmins": 90.0, "p_appear": 1.0}
+                    for gw in range(6, 12)
+                }
+            },
+            "def_xg_shrink_challenger": {
+                "projections": {
+                    f"gw{gw}": {"total_xp": float(p["id"]), "xmins": 90.0, "p_appear": 1.0}
+                    for gw in range(6, 12)
+                }
+            },
+        }
+
+    planner = Planner(data)
+    assert planner.state["model"] == "adaptive_causal_challenger"
+    assert planner.xp(10, 6) == 20.0
+    prov_egs = planner.expected_score(6)
+    assert prov_egs is not None
+
+    planner.set_model("def_xg_shrink_challenger")
+    assert planner.state["model"] == "def_xg_shrink_challenger"
+    assert planner.xp(10, 6) == 10.0
+    champ_egs = planner.expected_score(6)
+    assert champ_egs is not None and champ_egs < prov_egs
+
+
+def test_planner_service_dual_tier_digest_request_and_switch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dashboard.planner_service import PlannerPaths, make_solve_request, solver_options, source_digest
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger",),
+            provisional_active="adaptive_causal_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "adaptive_causal_challenger.csv").write_text("a\n", encoding="utf-8")
+    (data_dir / "def_xg_shrink_challenger.csv").write_text("b\n", encoding="utf-8")
+    monkeypatch.setattr("solver.paths.DATA_DIR", data_dir)
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    ds_path = tmp_path / "dashboard_data.json"
+    data = dataset()
+    data["meta"].update(
+        {
+            "default_model": "def_xg_shrink_challenger",
+            "confirmed_champion": "def_xg_shrink_challenger",
+            "provisional_active": "adaptive_causal_challenger",
+            "active_transfer_plan_model": "adaptive_causal_challenger",
+            "models": ["def_xg_shrink_challenger", "adaptive_causal_challenger"],
+        }
+    )
+    ds_path.write_text("{}", encoding="utf-8")
+    paths = PlannerPaths(dataset=ds_path, processed=processed, storage=tmp_path / "storage")
+
+    d1 = source_digest(paths)
+    (data_dir / "adaptive_causal_challenger.csv").write_text("a2\n", encoding="utf-8")
+    d2 = source_digest(paths)
+    assert d1 != d2
+
+    planner = Planner(data)
+    req_prov = make_solve_request(planner, paths)
+    assert req_prov["state"]["model"] == "adaptive_causal_challenger"
+    opts_prov = solver_options(planner, paths)
+    assert opts_prov["datasource"] == "adaptive_causal_challenger"
+
+    planner.set_model("def_xg_shrink_challenger")
+    req_champ = make_solve_request(planner, paths)
+    assert req_champ["state"]["model"] == "def_xg_shrink_challenger"
+    opts_champ = solver_options(planner, paths)
+    assert opts_champ["datasource"] == "def_xg_shrink_challenger"
+
+    # Champion-only dataset must fail closed when Dual-Tier Provisional Active is live
+    champ_only_data = dataset()
+    champ_only_data["meta"].update({"default_model": "def_xg_shrink_challenger", "models": ["def_xg_shrink_challenger"]})
+    with pytest.raises(ValueError, match="omit active Dual-Tier"):
+        make_solve_request(Planner(champ_only_data), paths)

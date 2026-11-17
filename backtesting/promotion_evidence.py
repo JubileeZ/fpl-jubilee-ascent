@@ -1,13 +1,13 @@
 """Reconstruct candidate recommendations from retained, verified replay evidence."""
 
-from collections.abc import Mapping
-from dataclasses import asdict, replace
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from hashlib import sha256
 import json
 import math
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import pandas as pd
 
@@ -15,15 +15,29 @@ from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.data_admission import AdmittedOrigin, require_admitted, require_input
 from backtesting.evaluation_protocol import material_digest
 from backtesting.evidence_statistics import (
+    EARLY_HARM_P_THRESHOLD,
+    EarlyHarmAssessment,
+    KendallPwHacResult,
     PairedGameweekScore,
     StatisticalProtocolConfig,
     assign_gameweek_segment,
+    compute_score_trace_hash,
+    evaluate_early_harm_fallback,
     evaluate_evidence_against_protocol,
+    obrien_fleming_alpha,
+    run_kendall_pw_hac_test,
 )
+from backtesting.promotion import segment_regression_tolerance
+from models.selection import ModelSelection, load_model_selection, save_model_selection
 from backtesting.forecast_export import strict_solver_table
 from backtesting.forecast_store import load_forecast_verified
 from backtesting.ownership_anchor import OwnershipAnchor, compute_universe_digest
-from backtesting.projection_guards import GuardOutput, MetricDirection, evaluate_non_inferiority_guard
+from backtesting.projection_guards import (
+    GuardOutput,
+    MetricDirection,
+    evaluate_gw_clustered_non_inferiority_guard,
+    evaluate_non_inferiority_guard,
+)
 from backtesting.rolling_replay import (
     QualityPolicy,
     ReplayDeadlineRecord,
@@ -41,6 +55,7 @@ from backtesting.rolling_replay import (
 from backtesting.season_rules import load_season_lifecycle
 
 EVIDENCE_VERSION = "rolling-promotion-v1"
+CHECKPOINT_EVIDENCE_VERSION = "adr0069-checkpoint-v1"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GUARD_SEMANTICS = {
     "points_mse": ("projected_points", "actual_points", "squared_error", "points^2"),
@@ -247,6 +262,26 @@ def _extract_origin_players_and_outcomes(
 def _verify_live_readiness(root: Path, payload: dict[str, Any], candidate: str, champion: str, protocol_hash: str, source_hash: str, frozen_review: dict[str, Any]) -> None:
     from backtesting.live_capture import LiveDeadlineCapture, PlayerForecastSnapshot
 
+    if payload.get("version") == 2 and payload.get("mode") == "fplcache":
+        if (payload.get("candidate_name"), payload.get("former_champion"), payload.get("protocol_hash")) != (candidate, champion, protocol_hash):
+            raise ValueError("Live readiness identity mismatch")
+        if not payload.get("fplcache_manifest_path"):
+            raise ValueError("ADR 0069 live readiness requires fplcache_manifest_path")
+        max_lag = payload.get("max_snapshot_lag_hours")
+        if not isinstance(max_lag, (int, float)) or isinstance(max_lag, bool) or not 0 < float(max_lag) <= 24.0:
+            raise ValueError("ADR 0069 fplcache readiness requires <= 24h snapshot lag ceiling")
+        reviews = payload.get("review_gameweeks")
+        if reviews != [15, 30, 38]:
+            raise ValueError("ADR 0069 pre-declared checkpoints must be [15, 30, 38]")
+        delay = payload.get("settlement_delay_hours")
+        if not isinstance(delay, (int, float)) or isinstance(delay, bool) or float(delay) < 24.0:
+            raise ValueError("ADR 0069 requires >= 24h settlement delay")
+        if payload.get("early_harm_min_gw") != 6 or payload.get("early_harm_p_threshold") != 0.025:
+            raise ValueError("ADR 0069 requires calibrated Early-Harm parameters (min_gw=6, p_threshold=0.025)")
+        if {key: payload.get(key) for key in ("mode", "review_gameweeks", "settlement_delay_hours", "early_harm_min_gw", "early_harm_p_threshold")} != frozen_review:
+            raise ValueError("Live review configuration differs from frozen protocol")
+        return
+
     if (payload.get("version"), payload.get("candidate_name"), payload.get("former_champion"), payload.get("protocol_hash")) != (1, candidate, champion, protocol_hash):
         raise ValueError("Live readiness identity mismatch")
     if payload.get("capture_before_deadline") is not True or payload.get("native_shadow_replay") is not True:
@@ -283,6 +318,8 @@ def _verify_replay(
     model_source_hash: str,
     guard_outcomes: dict[tuple[str, int, int], dict[str, Any]],
     registered_at: str,
+    *,
+    max_target_gw: int | None = None,
 ) -> tuple[list[ReplayDeadlineRecord], list[dict[str, Any]], bool]:
     season, model = entry["season"], entry["model_name"]
     if season not in protocol["windows"]:
@@ -383,14 +420,27 @@ def _verify_replay(
         state = refresh_replay_market(state, wide)
         state = verify_replay_record(record, state, model_name=model, parent_checkpoint_id=parent_id)
         parent_id = record.checkpoint_id
-        evidence_rows.extend(group_projection_gameweeks(predictions, season, record.deadline, guard_outcomes))
+        evidence_rows.extend(
+            group_projection_gameweeks(
+                predictions, season, record.deadline, guard_outcomes, max_target_gw=max_target_gw
+            )
+        )
     return records, evidence_rows, empirical
 
 
-def group_projection_gameweeks(predictions: pd.DataFrame, season: str, issue_gw: int, outcomes: dict[tuple[str, int, int], dict[str, Any]]) -> list[dict[str, Any]]:
+def group_projection_gameweeks(
+    predictions: pd.DataFrame,
+    season: str,
+    issue_gw: int,
+    outcomes: dict[tuple[str, int, int], dict[str, Any]],
+    *,
+    max_target_gw: int | None = None,
+) -> list[dict[str, Any]]:
     """Score issue-known fixture sums against complete finalized player/GW outcomes."""
     columns = ["projected_points", "projected_minutes", *{semantics[0] for semantics in GUARD_SEMANTICS.values() if semantics[0].startswith("xp_")}]
     grouped = cast(pd.DataFrame, predictions.groupby(["player_id", "gameweek_id"], as_index=False)[columns].sum())
+    if max_target_gw is not None:
+        grouped = cast(pd.DataFrame, grouped[grouped["gameweek_id"] <= max_target_gw])
     result: list[dict[str, Any]] = []
     for row in grouped.to_dict(orient="records"):
         native = outcomes.get((season, row["gameweek_id"], row["player_id"]))
@@ -431,17 +481,108 @@ def finalized_gameweek_outcomes(
     return totals
 
 
-def _guards_from_rows(request: dict[str, Any], protocol: dict[str, Any], rows: dict[tuple[str, str], list[dict[str, Any]]]) -> list[GuardOutput]:
+def _compute_guard_loss(predicted: Any, realized: Any, loss: str) -> float:
+    if (
+        isinstance(predicted, bool)
+        or isinstance(realized, bool)
+        or not isinstance(predicted, (int, float))
+        or not isinstance(realized, (int, float))
+        or not math.isfinite(predicted)
+        or not math.isfinite(realized)
+    ):
+        raise ValueError("Missing or nonfinite required projection evidence")
+    delta = float(predicted) - float(realized)
+    if loss == "squared_error":
+        return delta * delta
+    if loss == "absolute_error":
+        return abs(delta)
+    if loss == "signed_error":
+        return delta
+    raise ValueError(f"Unknown predefined guard loss '{loss}'")
+
+
+def derive_s1_guard_margins(
+    champion_rows: Sequence[Mapping[str, Any]],
+    *,
+    leads: Sequence[int] = (0, 1, 2, 3, 4, 5),
+    weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0),
+    guard_specs: Mapping[str, Mapping[str, Any]] | None = None,
+    inapplicable_metrics: Sequence[str] = (),
+) -> dict[str, float]:
+    """Derive 15 mandatory non-inferiority margins from Confirmed Champion S-1 paired errors.
+
+    Formula (#186): margin_i = max(0.05 * S1_mean_i, 1.0 * S1_GW_SE_i) across all admitted
+    players and registered leads 0..5.
+    """
+    if not champion_rows:
+        raise ValueError("Cannot derive S-1 guard margins from empty Champion rows")
+    if len(leads) != len(weights) or not leads or any(
+        type(w) not in (int, float) or not math.isfinite(w) or w <= 0 for w in weights
+    ):
+        raise ValueError("Positive horizon weights matching declared leads required")
+
+    lead_weights = dict(zip(leads, weights, strict=True))
+    inapplicable = set(inapplicable_metrics)
+    specs: Mapping[str, Mapping[str, Any]] = guard_specs or {
+        name: {"forecast_field": s[0], "outcome_field": s[1], "loss": s[2]}
+        for name, s in GUARD_SEMANTICS.items()
+    }
+    margins: dict[str, float] = {}
+    for name, spec in specs.items():
+        if name in inapplicable:
+            continue
+        raw_errors: list[float] = []
+        row_weights: list[float] = []
+        row_gws: list[int] = []
+        f_field = str(spec["forecast_field"])
+        o_field = str(spec["outcome_field"])
+        loss = str(spec["loss"])
+        for row in champion_rows:
+            lead = int(row["gameweek_id"]) - int(row["issue_gw"])
+            if lead not in lead_weights:
+                continue
+            obs = row["_observed"]
+            raw_errors.append(_compute_guard_loss(row[f_field], obs[o_field], loss))
+            row_weights.append(float(lead_weights[lead]))
+            row_gws.append(int(row["gameweek_id"]))
+
+        if not raw_errors:
+            raise ValueError(f"No matching lead observations for S-1 guard margin '{name}'")
+        scaling = float(len(row_weights)) / float(sum(row_weights))
+        weighted = [e * w * scaling for e, w in zip(raw_errors, row_weights, strict=True)]
+        s1_mean = sum(weighted) / float(len(weighted))
+        by_gw: dict[int, list[float]] = {}
+        for gw, val in zip(row_gws, weighted, strict=True):
+            by_gw.setdefault(gw, []).append(val)
+        if len(by_gw) < 2:
+            raise ValueError(f"At least two gameweeks required to estimate S-1 GW SE for '{name}'")
+        gw_means = [sum(vals) / float(len(vals)) for vals in by_gw.values()]
+        gw_mean_avg = sum(gw_means) / float(len(gw_means))
+        gw_var = sum((m - gw_mean_avg) ** 2 for m in gw_means) / float(len(gw_means) - 1)
+        s1_gw_se = math.sqrt(gw_var / float(len(gw_means)))
+        margins[name] = max(0.05 * s1_mean, 1.0 * s1_gw_se)
+    return margins
+
+
+def _guards_from_rows(
+    request: dict[str, Any],
+    protocol: dict[str, Any],
+    rows: dict[tuple[str, str], list[dict[str, Any]]],
+    *,
+    cluster_by_gw: bool = False,
+) -> list[GuardOutput]:
     keys = ("season", "issue_gw", "gameweek_id", "player_id")
     candidate = {tuple(row[key] for key in keys): row for (season, model), values in rows.items() if model == request["candidate_name"] for row in values}
     champion = {tuple(row[key] for key in keys): row for (season, model), values in rows.items() if model == request["former_champion"] for row in values}
     if not candidate or set(candidate) != set(champion) or any(row["_observed"] != champion[key]["_observed"] for key, row in candidate.items()):
         raise ValueError("Projection guards require invariant complete paired forecast/outcome population")
+    use_clustering = cluster_by_gw or protocol.get("guard_clustering") == "gameweek"
     guards: list[GuardOutput] = []
     for name, spec in protocol["guard_specs"].items():
         cand_errors: list[float] = []
         champ_errors: list[float] = []
         weights: list[float] = []
+        gw_keys: list[tuple[str, int]] = []
         for key, candidate_row in candidate.items():
             outcome = candidate_row["_observed"]
             if protocol["projection_evaluation"]["applicability"][candidate_row["season"]][name] == "inapplicable_native":
@@ -450,23 +591,30 @@ def _guards_from_rows(request: dict[str, Any], protocol: dict[str, Any], rows: d
             if lead not in protocol["projection_evaluation"]["leads"]:
                 raise ValueError("Projection forecast outside registered horizon leads")
             weights.append(protocol["projection_evaluation"]["weights"][lead])
+            gw_keys.append((str(candidate_row["season"]), int(candidate_row["gameweek_id"])))
             for source, errors in ((candidate, cand_errors), (champion, champ_errors)):
-                predicted, realized = source[key][spec["forecast_field"]], outcome[spec["outcome_field"]]
-                if type(predicted) not in (int, float) or type(realized) not in (int, float) or not math.isfinite(predicted) or not math.isfinite(realized):
-                    raise ValueError("Missing or nonfinite required projection evidence")
-                delta = predicted - realized
-                if spec["loss"] == "squared_error":
-                    errors.append(delta * delta)
-                elif spec["loss"] == "absolute_error":
-                    errors.append(abs(delta))
-                elif spec["loss"] == "signed_error":
-                    errors.append(delta)
-                else:
-                    raise ValueError("Unknown predefined guard loss")
+                errors.append(_compute_guard_loss(source[key][spec["forecast_field"]], outcome[spec["outcome_field"]], str(spec["loss"])))
         scaling = len(weights) / sum(weights)
         cand_errors = [error * weight * scaling for error, weight in zip(cand_errors, weights, strict=True)]
         champ_errors = [error * weight * scaling for error, weight in zip(champ_errors, weights, strict=True)]
-        guards.append(evaluate_non_inferiority_guard(cand_errors, champ_errors, metric_name=name, meaningful_margin=spec["margin"], alpha=spec["alpha"], direction=cast(MetricDirection, spec["direction"])))
+        if use_clustering:
+            cand_by_gw: dict[tuple[str, int], list[float]] = {}
+            champ_by_gw: dict[tuple[str, int], list[float]] = {}
+            for gk, ce, he in zip(gw_keys, cand_errors, champ_errors, strict=True):
+                cand_by_gw.setdefault(gk, []).append(ce)
+                champ_by_gw.setdefault(gk, []).append(he)
+            guards.append(
+                evaluate_gw_clustered_non_inferiority_guard(
+                    cand_by_gw,
+                    champ_by_gw,
+                    metric_name=name,
+                    meaningful_margin=spec["margin"],
+                    alpha=spec["alpha"],
+                    direction=cast(MetricDirection, spec["direction"]),
+                )
+            )
+        else:
+            guards.append(evaluate_non_inferiority_guard(cand_errors, champ_errors, metric_name=name, meaningful_margin=spec["margin"], alpha=spec["alpha"], direction=cast(MetricDirection, spec["direction"])))
     return guards
 
 
@@ -626,3 +774,481 @@ def verify_recommendation_bundle(bundle_path: Path | str, *, require_finalized: 
         if registration is None or registration.status != "completed" or registration.scientific_verdict != bundle["scientific_verdict"]:
             raise ValueError("Confirmation attempt must be finalized with reconstructed verdict before adoption")
     return bundle
+
+
+@dataclass(frozen=True)
+class PodiumCandidateRecord:
+    """Two-season qualification record for ADR 0069 Max-2 Podium selection."""
+
+    candidate_name: str
+    champion_name: str
+    delta_s1: float
+    delta_s2: float
+    s1_segment_deltas: Mapping[str, float]
+    s2_segment_deltas: Mapping[str, float]
+    s1_guards_ok: bool
+    s2_guards_ok: bool
+    s1_segment_tolerances: Mapping[str, float] | None = None
+    s2_segment_tolerances: Mapping[str, float] | None = None
+
+    @property
+    def mean_two_season_delta(self) -> float:
+        return 0.5 * (float(self.delta_s1) + float(self.delta_s2))
+
+
+@dataclass(frozen=True)
+class PodiumFreezeResult:
+    podium: tuple[str, ...]
+    provisional_active: str | None
+    backup_finalist: str | None
+    displaced_candidates: tuple[str, ...]
+    rejected_candidates: tuple[str, ...]
+    updated_selection: ModelSelection
+
+
+CheckpointAction = Literal[
+    "eligible_for_manual_adopt",
+    "retain_dual_tier",
+    "rotate_to_backup",
+    "fallback_to_champion",
+]
+
+
+@dataclass(frozen=True)
+class FinalistCheckpointOutcome:
+    candidate_name: str
+    net_delta: float
+    mean_delta: float
+    hac_result: KendallPwHacResult
+    early_harm: EarlyHarmAssessment
+    guards_passed: bool
+    superior: bool
+
+
+@dataclass(frozen=True)
+class DualTierCheckpointResult:
+    checkpoint_gw: int
+    num_finalists: int
+    alpha_spent: float | None
+    action: CheckpointAction
+    recommended_champion: str | None
+    next_provisional_active: str | None
+    requires_manual_adopt: bool
+    outcomes: Mapping[str, FinalistCheckpointOutcome]
+    reasons: tuple[str, ...]
+
+
+def _passes_segment_floors(
+    segment_deltas: Mapping[str, float],
+    tolerances: Mapping[str, float] | None = None,
+) -> bool:
+    for seg in ("cold_start", "early_mid", "late"):
+        if seg in segment_deltas:
+            tol = segment_regression_tolerance(seg, tolerances=tolerances)
+            if float(segment_deltas[seg]) < -tol:
+                return False
+    return True
+
+
+def rank_and_freeze_podium(
+    candidates: Sequence[PodiumCandidateRecord],
+    *,
+    current_selection: ModelSelection,
+    active_season: str,
+    seal_slate: bool = False,
+) -> PodiumFreezeResult:
+    """Rank S-1+S-2 qualified finalists by 0.5*(delta_S1+delta_S2), enforce M<=2 cap & seal."""
+    if current_selection.podium_sealed and current_selection.podium_frozen_season == active_season:
+        raise ValueError(
+            f"Podium slate is sealed for active validation season {active_season}; "
+            "M<=2 cap prohibits mid-season finalist additions or displacement"
+        )
+
+    qualified: list[PodiumCandidateRecord] = []
+    rejected: list[str] = []
+    for cand in candidates:
+        if cand.champion_name != current_selection.champion or cand.candidate_name == current_selection.champion:
+            rejected.append(cand.candidate_name)
+            continue
+        ok = (
+            cand.delta_s1 > 0.0
+            and cand.delta_s2 > 0.0
+            and cand.s1_guards_ok
+            and cand.s2_guards_ok
+            and _passes_segment_floors(cand.s1_segment_deltas, cand.s1_segment_tolerances)
+            and _passes_segment_floors(cand.s2_segment_deltas, cand.s2_segment_tolerances)
+        )
+        if ok:
+            qualified.append(cand)
+        else:
+            rejected.append(cand.candidate_name)
+
+    ranked = sorted(
+        qualified,
+        key=lambda c: (-c.mean_two_season_delta, -float(c.delta_s2), c.candidate_name),
+    )
+    selected = ranked[:2]
+    displaced = tuple(c.candidate_name for c in ranked[2:])
+    podium = tuple(c.candidate_name for c in selected)
+    provisional_active = podium[0] if podium else None
+    backup = podium[1] if len(podium) > 1 else None
+    updated = ModelSelection(
+        champion=current_selection.champion,
+        candidates=podium,
+        promotion_status=current_selection.promotion_status,
+        schema_version=current_selection.schema_version,
+        provisional_active=provisional_active,
+        podium_frozen_season=active_season if (seal_slate and podium) else None,
+        podium_sealed=bool(seal_slate and podium),
+    )
+    return PodiumFreezeResult(
+        podium=podium,
+        provisional_active=provisional_active,
+        backup_finalist=backup,
+        displaced_candidates=displaced,
+        rejected_candidates=tuple(rejected),
+        updated_selection=updated,
+    )
+
+
+def evaluate_dual_tier_checkpoint(
+    *,
+    checkpoint_gw: int,
+    finalist_traces: Mapping[str, Sequence[PairedGameweekScore]],
+    finalist_guards: Mapping[str, Sequence[GuardOutput]],
+    selection: ModelSelection,
+    podium_order: Sequence[str],
+    protocol_approved: bool = True,
+    inapplicable_guards: Sequence[str] = (),
+    s1_champion_rows: Sequence[Mapping[str, Any]] | None = None,
+) -> DualTierCheckpointResult:
+    """Evaluate frozen M<=2 finalists symmetrically at GW15/GW30/GW38 (or intermediate Early-Harm GW>=6)."""
+    if type(checkpoint_gw) is not int or not 6 <= checkpoint_gw <= 38:
+        raise ValueError(f"Dual-Tier evaluation requires integer GW in [6, 38], got {checkpoint_gw}")
+    order = tuple(dict.fromkeys(podium_order))
+    m_count = len(order)
+    if not 1 <= m_count <= 2:
+        raise ValueError(f"Dual-Tier checkpoint requires 1 or 2 frozen finalists, got {m_count}")
+    is_obf_checkpoint = checkpoint_gw in (15, 30, 38)
+    alpha_spent = obrien_fleming_alpha(checkpoint_gw, num_finalists=m_count) if is_obf_checkpoint else None
+    hac_alpha = alpha_spent if alpha_spent is not None else EARLY_HARM_P_THRESHOLD
+    required_guards = MANDATORY_GUARDS - set(inapplicable_guards)
+    derived_margins = (
+        derive_s1_guard_margins(s1_champion_rows, inapplicable_metrics=inapplicable_guards)
+        if s1_champion_rows is not None
+        else None
+    )
+
+    outcomes: dict[str, FinalistCheckpointOutcome] = {}
+    for cand in order:
+        if cand not in finalist_traces or cand not in finalist_guards:
+            raise ValueError(f"Missing active-season scores or guards for finalist '{cand}'")
+        scores = sorted(
+            [s for s in finalist_traces[cand] if s.gameweek <= checkpoint_gw],
+            key=lambda s: s.gameweek,
+        )
+        gws = [s.gameweek for s in scores]
+        if gws != list(range(1, checkpoint_gw + 1)):
+            raise ValueError(f"Finalist '{cand}' trace at GW{checkpoint_gw} must cover GW1..{checkpoint_gw}")
+        guards = [g for g in finalist_guards[cand] if g.metric_name in required_guards]
+        supplied_names = {g.metric_name for g in guards}
+        if not required_guards <= supplied_names:
+            raise ValueError(f"Finalist '{cand}' missing mandatory projection guards")
+        if derived_margins is not None:
+            for g in guards:
+                if g.metric_name in derived_margins and not math.isclose(g.margin, derived_margins[g.metric_name], rel_tol=1e-6, abs_tol=1e-9):
+                    raise ValueError(f"Guard '{g.metric_name}' margin {g.margin} differs from derived S-1 margin {derived_margins[g.metric_name]}")
+
+        harm = evaluate_early_harm_fallback(scores, guards)
+        hac = run_kendall_pw_hac_test([s.delta_net for s in scores], alpha=hac_alpha)
+        net_delta = float(sum(s.delta_net for s in scores))
+        mean_delta = net_delta / float(len(scores))
+        guards_pass = all(g.status == "PASS" for g in guards)
+        superior = bool(
+            protocol_approved
+            and alpha_spent is not None
+            and hac.point_estimate > 0.0
+            and hac.one_sided_lower > 0.0
+            and hac.p_value_superiority <= alpha_spent
+            and not harm.triggered
+            and guards_pass
+        )
+        outcomes[cand] = FinalistCheckpointOutcome(
+            candidate_name=cand,
+            net_delta=net_delta,
+            mean_delta=mean_delta,
+            hac_result=hac,
+            early_harm=harm,
+            guards_passed=guards_pass,
+            superior=superior,
+        )
+
+    reasons: list[str] = []
+    if selection.provisional_active is None:
+        reasons.append("No active Provisional Active finalist (already reverted to Confirmed Champion)")
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="fallback_to_champion",
+            recommended_champion=None,
+            next_provisional_active=None,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+        )
+    if selection.provisional_active not in order:
+        raise ValueError(f"Active provisional model '{selection.provisional_active}' absent from podium {order}")
+
+    active = selection.provisional_active
+    active_idx = order.index(active)
+
+    # Only active/downstream finalists remain eligible (a dropped #1 cannot resurrect after #1 -> #2 rotation)
+    passing = [cand for cand in order[active_idx:] if outcomes[cand].superior]
+    if passing and alpha_spent is not None:
+        winner = max(passing, key=lambda c: (outcomes[c].net_delta, -order.index(c)))
+        if len(passing) > 1:
+            reasons.append(
+                f"Simultaneous pass at GW{checkpoint_gw}: '{winner}' won higher S net delta "
+                f"({outcomes[winner].net_delta:+.2f} pts)"
+            )
+        else:
+            reasons.append(
+                f"'{winner}' cleared OBF alpha={alpha_spent:.5f} at GW{checkpoint_gw} "
+                f"(p={outcomes[winner].hac_result.p_value_superiority:.5f}); manual adopt_champion required"
+            )
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="eligible_for_manual_adopt",
+            recommended_champion=winner,
+            next_provisional_active=winner,
+            requires_manual_adopt=True,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+        )
+
+    active_out = outcomes[active]
+    # Strictly one-way rotation: only downstream podium backups (#1 -> #2) eligible; never bounce back to dropped #1
+    backups = [cand for cand in order[active_idx + 1 :] if not outcomes[cand].early_harm.triggered]
+
+    trail_at_gw15 = checkpoint_gw == 15 and (
+        active_out.net_delta < 0.0 or any(outcomes[b].net_delta > active_out.net_delta for b in backups)
+    )
+    if active_out.early_harm.triggered or trail_at_gw15:
+        if backups and checkpoint_gw < 38:
+            backup = backups[0]
+            why = "Early-Harm Fallback" if active_out.early_harm.triggered else "GW15 trail vs backup/Champion"
+            reasons.append(f"Rotating Provisional Active '{active}' -> backup '{backup}' ({why})")
+            return DualTierCheckpointResult(
+                checkpoint_gw=checkpoint_gw,
+                num_finalists=m_count,
+                alpha_spent=alpha_spent,
+                action="rotate_to_backup",
+                recommended_champion=None,
+                next_provisional_active=backup,
+                requires_manual_adopt=False,
+                outcomes=outcomes,
+                reasons=tuple(reasons),
+            )
+        reasons.append(f"Reverting Provisional Active '{active}' -> Confirmed Champion '{selection.champion}'")
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="fallback_to_champion",
+            recommended_champion=None,
+            next_provisional_active=None,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+        )
+
+    if checkpoint_gw == 38:
+        reasons.append("GW38 final checkpoint did not clear <= 5% FWER; resetting Provisional Active cleanly")
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="fallback_to_champion",
+            recommended_champion=None,
+            next_provisional_active=None,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+        )
+
+    reasons.append(
+        f"'{active}' non-harmful at GW{checkpoint_gw}; retaining Dual-Tier"
+    )
+    return DualTierCheckpointResult(
+        checkpoint_gw=checkpoint_gw,
+        num_finalists=m_count,
+        alpha_spent=alpha_spent,
+        action="retain_dual_tier",
+        recommended_champion=None,
+        next_provisional_active=active,
+        requires_manual_adopt=False,
+        outcomes=outcomes,
+        reasons=tuple(reasons),
+    )
+
+
+def evaluate_checkpoint_bundle_evidence(request_path: Path | str) -> dict[str, Any]:
+    """Reconstruct and evaluate a registered ADR 0069 checkpoint request into a verifiable evidence bundle."""
+    path = Path(request_path).resolve()
+    root = path.parent
+    payload = json.loads(path.read_bytes())
+    if payload.get("version") != CHECKPOINT_EVIDENCE_VERSION:
+        raise ValueError("Unsupported checkpoint recommendation evidence request")
+    selection = (
+        load_model_selection(_local_path(root, payload["selection_path"]))
+        if payload.get("selection_path")
+        else load_model_selection()
+    )
+    checkpoint_gw = int(payload["checkpoint_gw"])
+    podium_order = tuple(payload["podium_order"])
+    traces: dict[str, list[PairedGameweekScore]] = {}
+    for cand, rows in payload["finalist_traces"].items():
+        traces[cand] = [
+            PairedGameweekScore(
+                season=str(row["season"]),
+                gameweek=int(row["gameweek"]),
+                candidate_net_points=float(row["candidate_net_points"]),
+                champion_net_points=float(row["champion_net_points"]),
+                candidate_gross_points=float(row.get("candidate_gross_points", row["candidate_net_points"])),
+                champion_gross_points=float(row.get("champion_gross_points", row["champion_net_points"])),
+                candidate_hits_deducted=int(row.get("candidate_hits_deducted", 0)),
+                champion_hits_deducted=int(row.get("champion_hits_deducted", 0)),
+                is_chip_gameweek=bool(row.get("is_chip_gameweek", False)),
+                segment=assign_gameweek_segment(int(row["gameweek"])),
+            )
+            for row in rows
+        ]
+    inapplicable = tuple(payload.get("inapplicable_guards", ()))
+    s1_rows = payload.get("s1_champion_rows")
+    margins = derive_s1_guard_margins(s1_rows, inapplicable_metrics=inapplicable) if s1_rows is not None else None
+    guards: dict[str, list[GuardOutput]] = {}
+    if "finalist_guard_errors" in payload:
+        for cand, by_metric in payload["finalist_guard_errors"].items():
+            guards[cand] = []
+            for m_name, gw_pairs in by_metric.items():
+                if m_name in inapplicable:
+                    continue
+                margin = float(margins[m_name]) if margins is not None else float(gw_pairs["margin"])
+                guards[cand].append(
+                    evaluate_gw_clustered_non_inferiority_guard(
+                        gw_pairs["candidate_by_gw"],
+                        gw_pairs["champion_by_gw"],
+                        metric_name=m_name,
+                        meaningful_margin=margin,
+                        alpha=float(gw_pairs.get("alpha", 0.05)),
+                    )
+                )
+    else:
+        for cand, g_list in payload["finalist_guards"].items():
+            guards[cand] = [GuardOutput(**g) for g in g_list]
+
+    result = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=checkpoint_gw,
+        finalist_traces=traces,
+        finalist_guards=guards,
+        selection=selection,
+        podium_order=podium_order,
+        protocol_approved=bool(payload.get("protocol_approved", True)),
+        inapplicable_guards=inapplicable,
+        s1_champion_rows=s1_rows,
+    )
+    registry_path = _local_path(root, payload["registry_path"]) if payload.get("registry_path") else None
+    attempt_ids: Mapping[str, str] = payload.get("confirmation_attempt_ids") or {}
+    winner = result.recommended_champion
+    attempt_id = attempt_ids.get(winner) if winner else None
+    if registry_path is not None and winner is not None and attempt_id is not None:
+        registry = ConfirmationRegistry(registry_path)
+        reg = registry.get_attempt(attempt_id)
+        expected_hash = compute_score_trace_hash(traces[winner])
+        if reg is None or reg.candidate_name != winner or reg.score_trace_hash != expected_hash:
+            raise ValueError("Checkpoint registry attempt or score_trace_hash mismatch")
+
+    body = {
+        "version": CHECKPOINT_EVIDENCE_VERSION,
+        "checkpoint_gw": result.checkpoint_gw,
+        "candidate_name": winner or (selection.provisional_active or podium_order[0]),
+        "former_champion": selection.champion,
+        "protocol_hash": str(payload.get("protocol_hash", "")),
+        "scientific_verdict": "pass" if result.action == "eligible_for_manual_adopt" else "inconclusive",
+        "execution_status": "complete" if result.action == "eligible_for_manual_adopt" else "partial",
+        "empirical_admission": bool(payload.get("empirical_admission", False)),
+        "action": result.action,
+        "recommended_champion": result.recommended_champion,
+        "next_provisional_active": result.next_provisional_active,
+        "requires_manual_adopt": result.requires_manual_adopt,
+        "confirmation_attempt_id": attempt_id,
+        "request_sha256": sha256(path.read_bytes()).hexdigest(),
+        "request_path": path.name,
+        "reasons": list(result.reasons),
+    }
+    return {**body, "bundle_hash": content_hash(body)}
+
+
+def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path: Path | str) -> dict[str, Any]:
+    path = Path(output_path).resolve()
+    request = Path(request_path).resolve()
+    if path.parent != request.parent:
+        raise ValueError("Recommendation bundle must accompany its retained request")
+    bundle = evaluate_checkpoint_bundle_evidence(request)
+    raw = canonical_bytes(bundle) + b"\n"
+    if path.exists() and path.read_bytes() != raw:
+        raise ValueError("Refusing to replace frozen recommendation bundle")
+    if not path.exists():
+        with path.open("xb") as output:
+            output.write(raw)
+    return bundle
+
+
+def verify_checkpoint_recommendation_bundle(bundle_path: Path | str, *, require_finalized: bool = False) -> dict[str, Any]:
+    path = Path(bundle_path).resolve()
+    bundle = json.loads(path.read_bytes())
+    if not isinstance(bundle, dict) or bundle.get("version") != CHECKPOINT_EVIDENCE_VERSION:
+        raise ValueError("Unsupported verified checkpoint recommendation bundle")
+    body = {key: value for key, value in bundle.items() if key != "bundle_hash"}
+    if bundle.get("bundle_hash") != content_hash(body):
+        raise ValueError("Recommendation bundle hash mismatch")
+    request_path = _local_path(path.parent, bundle["request_path"])
+    if sha256(request_path.read_bytes()).hexdigest() != bundle["request_sha256"]:
+        raise ValueError("Frozen evidence request changed")
+    if evaluate_checkpoint_bundle_evidence(request_path) != bundle:
+        raise ValueError("Recommendation differs from reconstructed evidence")
+    if require_finalized:
+        request = json.loads(request_path.read_bytes())
+        registry = ConfirmationRegistry(_local_path(path.parent, request["registry_path"]))
+        attempt_id = bundle.get("confirmation_attempt_id")
+        if not attempt_id:
+            raise ValueError("Confirmation attempt ID required for adoption")
+        registration = registry.get_attempt(attempt_id)
+        if registration is None or registration.status != "completed" or registration.scientific_verdict != bundle["scientific_verdict"]:
+            raise ValueError("Confirmation attempt must be finalized with reconstructed verdict before adoption")
+    return bundle
+
+
+def apply_provisional_action(
+    selection: ModelSelection,
+    checkpoint: DualTierCheckpointResult,
+    *,
+    config_path: Path | None = None,
+) -> ModelSelection:
+    """Apply non-champion Provisional Active rotation/fallback without ever altering Confirmed Champion."""
+    seal = selection.podium_sealed and checkpoint.next_provisional_active is not None
+    updated = ModelSelection(
+        champion=selection.champion,
+        candidates=selection.candidates,
+        promotion_status=selection.promotion_status,
+        schema_version=selection.schema_version,
+        provisional_active=checkpoint.next_provisional_active,
+        podium_frozen_season=selection.podium_frozen_season if seal else None,
+        podium_sealed=seal,
+    )
+    if config_path is not None:
+        save_model_selection(updated, config_path)
+    return updated
