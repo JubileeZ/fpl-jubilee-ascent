@@ -2,7 +2,7 @@
 
 CLI identifier is `BaseModel.name`, not the Python filename. `models.get_model(name)` scans `models/*.py` and returns the class whose `name` property matches.
 
-Live Confirmed Model Champion is `config/model_selection.json` `champion`; when `provisional_active` is frozen/active (`ADR 0069` Dual-Tier), `Provisional Active` and `Confirmed Champion` export side-by-side (`dashboard` Explorer defaults to Confirmed Champion; Transfer Plan defaults to `Provisional Active` with Confirmed Champion one switch away via `--champion` or model selector).
+`config/model_selection.json` `champion` identifies Confirmed Champion. Under `ADR 0069` Dual-Tier, exports include `Provisional Active` and `Confirmed Champion` side-by-side. Explorer and Transfer Plan default to `Provisional Active` when available, else `Confirmed Champion`. Select either model for comparison.
 
 ## Catalog
 

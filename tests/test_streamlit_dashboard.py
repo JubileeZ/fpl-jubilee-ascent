@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from dashboard.planner import PlanStore, digest
+from dashboard.planner import Planner, PlanStore, digest
 from dashboard.planner_jobs import PlannerJobs
 from dashboard.explorer import ExplorerSquad, compare_squads, player_slice, watchlist_rows
 from test_streamlit_planner import dataset
@@ -42,6 +42,40 @@ def test_dashboard_navigation_remembers_view_and_omits_transfer_planner(tmp_path
     restored = AppTest.from_file(script, default_timeout=30).run()
     assert restored.radio(key="dashboard-page").value == "Research"
 
+
+
+@pytest.mark.parametrize("provisional_active", ["adaptive_causal_challenger", None])
+def test_explorer_and_planner_default_to_active_tier(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, provisional_active: str | None
+) -> None:
+    champion = "def_xg_shrink_challenger"
+    candidate = "adaptive_causal_challenger"
+    expected_model = provisional_active or champion
+    data = dataset()
+    data["meta"].update(
+        models=[champion, candidate] if provisional_active else [champion],
+        default_model=champion,
+        confirmed_champion=champion,
+        provisional_active=provisional_active,
+        active_transfer_plan_model=expected_model,
+    )
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "streamlit_app.py", default_timeout=30).run()
+    app.radio(key="dashboard-page").set_value("Explorer").run()
+    assert not app.exception
+    planner = Planner(data)
+    assert app.selectbox(key="explorer-model").value == planner.active_model == expected_model
+
+    if provisional_active:
+        app.selectbox(key="explorer-model").set_value(champion).run()
+        assert not app.exception
+        assert app.selectbox(key="explorer-model").value == champion
+        planner.set_model(champion)
+        assert Planner(data, planner.state).active_model == champion
 
 
 def test_explorer_watchlist_add_and_clear(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

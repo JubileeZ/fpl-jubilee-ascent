@@ -670,7 +670,9 @@ def explorer(paths: PlannerPaths, jobs: PlannerJobs) -> None:
         return
     controls = st.columns(3)
     models = meta.get("models") or [meta.get("default_model") or get_default_model_name()]
-    model = controls[0].selectbox("Projection model", models, key="explorer-model")
+    preferred_models = (meta.get("provisional_active"), meta.get("confirmed_champion"), meta.get("default_model"))
+    default_model = next((name for name in preferred_models if name in models), models[0])
+    model = controls[0].selectbox("Projection model", models, index=models.index(default_model), key="explorer-model")
     starts = meta.get("unfinished_gameweeks") or meta.get("gw_ids") or [int(meta.get("transfer_plan_start", 1))]
     default_start = int(meta.get("transfer_plan_start") or meta.get("horizon_start") or starts[0])
     default_index = starts.index(default_start) if default_start in starts else 0

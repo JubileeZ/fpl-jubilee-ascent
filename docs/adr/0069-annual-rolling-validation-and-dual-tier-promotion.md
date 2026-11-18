@@ -39,7 +39,7 @@ Replace hardcoded year checks (`2023-24`, `2024-25`, `2025-26`, `2026-27`) with 
 
 ### 4. Dual-Tier Weekly Operation (`Confirmed Champion` + `Provisional Active`)
 - **Qualification (`max 2` frozen finalists)**: Up to `2` frozen finalists (`_MAX_CANDIDATES = 2` in `models/selection.py`) clearing `Confirmed Champion` on both `S-1` and `S-2` (`plus projection/segment sanity checks`) enter confirmation slate; `#1` enters **`Provisional Active`**.
-- **Weekly Predictions & Default Solver**: **Both** `Confirmed Champion` and `Provisional Active` project weekly side-by-side (`config/model_selection.json`, Explorer/export surfaces). When `Provisional Active` exists, it drives the **default weekly Transfer Plan** (`Confirmed Champion` immediately selectable for comparison).
+- **Weekly Predictions & Dashboard Defaults**: **Both** `Confirmed Champion` and `Provisional Active` project weekly side-by-side (`config/model_selection.json`, Explorer/export surfaces). Explorer and weekly Transfer Plan default to `Provisional Active` when available, else `Confirmed Champion`. Explicit model selections take precedence.
 - **Early-Harm Fallback**: Before permanent confirmation checkpoints, if `Provisional Active` violates calibrated early live/validation harm thresholds (`#186`), default reverts immediately to `Confirmed Champion` (or promotes pre-frozen finalist `#2` if eligible).
 - **Manual Final Adoption**: Permanently updating `"champion"` in `config/model_selection.json` stays gated by explicit manual `adopt_champion` (`--approval_ref`, `--bundle_hash`, `--expected_champion`; zero unattended auto-overwrite).
 

@@ -22,7 +22,7 @@ Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champi
 - GW15 provisional queue keeps ahead/even, unharmed #1. Rotate only to unharmed, non-trailing #2 after #1 drops. Fallback preserves season seal.
 - `validation_fplcache` admits complete GW15/GW30/GW38 prefixes separately from full-season eligibility. `adr0069-checkpoint-v2` reconstructs native replay scores and S-1-calibrated guards, verifies frozen registry bindings and finalizes passing bundles for explicit manual adoption. V1 diagnostic only. [Operator workflow](../testing/operator-workflow.md#stage-7-manual-champion-adoption)
 - Retained GW15 fixture verified through bundle reconstruction. Fixture verdict inconclusive. Manual adoption verified separately at passing-verdict boundary. Live winning checkpoint pending first qualified slate; evidence collection and checkpoint execution operator-run.
-- `solve` default documented. Dashboard refresh/model labels and config-driven forecast defaults deferred.
+- Explorer and Transfer Plan default to Provisional Active when available, else Confirmed Champion. `solve` default documented. Dashboard refresh/model labels and config-driven forecast defaults remain open.
 
 ## Research truth
 
