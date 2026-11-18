@@ -212,6 +212,107 @@ class ConfirmationRegistry:
         records = [r for r in self.load_all_records() if r.attempt_id == attempt_id]
         return records[-1] if records else None
 
+    def verify_checkpoint_attempt(
+        self,
+        attempt_id: str,
+        *,
+        candidate_name: str,
+        champion_name: str,
+        active_season: str,
+        checkpoint_gw: int,
+        model_source_hash: str,
+        parameters_hash: str,
+        protocol_hash: str,
+        score_trace_hash: str,
+        max_family_attempts: int | None = None,
+        finalized_bundle_path: Path | None = None,
+    ) -> FinalistRegistration:
+        """Verify the frozen checkpoint trace and optional final bundle path, relative to the registry."""
+        if checkpoint_gw not in (15, 30, 38):
+            raise ValueError("Confirmation requires a pre-declared GW15, GW30, or GW38 checkpoint")
+        load_season_lifecycle().assert_access(active_season, checkpoint_gw, purpose="active_validation", allow_test=False)
+        records = self.load_all_records()
+        history = [record for record in records if record.attempt_id == attempt_id]
+        if not history or history[0].status != "registered":
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has no initial registration")
+        first, latest = history[0], history[-1]
+        expected = {
+            "candidate_name": candidate_name,
+            "champion_name": champion_name,
+            "requested_seasons": (active_season,),
+            "registered_gameweeks": tuple(range(1, 39)),
+            "model_source_hash": model_source_hash,
+            "parameters_hash": parameters_hash,
+            "protocol_hash": protocol_hash,
+        }
+        frozen = {
+            **expected,
+            "mechanism_family": first.mechanism_family,
+            "known_aliases": first.known_aliases,
+            "parent_attempt_id": first.parent_attempt_id,
+            "attempt_number_in_family": first.attempt_number_in_family,
+            "registered_at": first.registered_at,
+            "dev_selection_record_ref": first.dev_selection_record_ref,
+        }
+        for field, value in frozen.items():
+            if any(getattr(record, field) != value for record in history):
+                raise ValueError(f"Checkpoint attempt '{attempt_id}' has a {field} mismatch")
+        if any(type(gw) is not int for record in history for gw in record.registered_gameweeks):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has a registered_gameweeks mismatch")
+        registered_at = datetime.fromisoformat(first.registered_at)
+        if registered_at.utcoffset() is None:
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has invalid registration timing")
+
+        aliases = {first.candidate_name, *first.known_aliases}
+        family = [
+            record for record in records
+            if record.mechanism_family == first.mechanism_family
+            or not aliases.isdisjoint((record.candidate_name, *record.known_aliases))
+        ]
+        attempt_order = list(dict.fromkeys(record.attempt_id for record in family))
+        prior_attempts = attempt_order[:attempt_order.index(attempt_id)]
+        budget = first.max_family_attempts
+        if (
+            type(budget) is not int
+            or not 1 <= len(attempt_order) <= budget
+            or (max_family_attempts is not None and budget != max_family_attempts)
+            or any(record.max_family_attempts != budget for record in family)
+            or first.attempt_number_in_family != len(prior_attempts) + 1
+            or first.parent_attempt_id not in (prior_attempts or [None])
+        ):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has inconsistent mechanism family history or budget")
+
+        prefix = tuple(range(1, checkpoint_gw + 1))
+        completed_counts = [len(record.completed_gameweeks) for record in history]
+        if (
+            latest.completed_gameweeks != prefix
+            or completed_counts != sorted(completed_counts)
+            or any(
+                record.completed_gameweeks != prefix[:len(record.completed_gameweeks)]
+                or any(type(gw) is not int for gw in record.completed_gameweeks)
+                for record in history
+            )
+        ):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' requires the exact completed GW1..{checkpoint_gw} prefix")
+        if latest.score_trace_hash != score_trace_hash or any(
+            record.completed_gameweeks == prefix and record.score_trace_hash != score_trace_hash for record in history
+        ):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has a score_trace_hash mismatch")
+        if latest.status not in ("in_progress", "completed"):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has status '{latest.status}'")
+
+        if finalized_bundle_path is not None:
+            if latest.status != "completed" or latest.execution_status != "complete" or latest.scientific_verdict != "pass":
+                raise ValueError(f"Checkpoint attempt '{attempt_id}' must be finalized with a complete pass")
+            completed_at = datetime.fromisoformat(latest.completed_at) if latest.completed_at else None
+            if completed_at is None or completed_at.utcoffset() is None or completed_at < registered_at:
+                raise ValueError(f"Checkpoint attempt '{attempt_id}' has invalid completion timing")
+            if not latest.bundle_path or (self.registry_file.parent / latest.bundle_path).resolve() != finalized_bundle_path.resolve():
+                raise ValueError(f"Checkpoint attempt '{attempt_id}' is finalized for a different bundle path")
+        elif latest.execution_status != ("complete" if latest.status == "completed" or checkpoint_gw == 38 else "partial"):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has inconsistent execution status")
+        return latest
+
     def find_family_history(
         self,
         mechanism_family: str,

@@ -141,7 +141,7 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
     assert rotated.provisional_active == "cand_2"
     assert get_active_transfer_plan_model_name() == "cand_2"
 
-    # 5. GW30 checkpoint: cand_2 clears alpha/M=0.005 -> verified bundle -> finalize registry -> manual adopt_champion
+    # 5. A GW30 statistical pass and finalized registry cannot establish empirical admission.
     s3_30 = _mk_scores([-2.0 if gw <= 15 else 0.0 for gw in range(1, 31)])
     s2_30 = _mk_scores([2.4 + (0.2 if gw % 2 == 0 else -0.2) for gw in range(1, 31)])
     req_path = tmp_path / "gw30_checkpoint.json"
@@ -162,9 +162,16 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
                     "cand_3": [{"season": s.season, "gameweek": s.gameweek, "candidate_net_points": s.candidate_net_points, "champion_net_points": s.champion_net_points} for s in s3_30],
                     "cand_2": [{"season": s.season, "gameweek": s.gameweek, "candidate_net_points": s.candidate_net_points, "champion_net_points": s.champion_net_points} for s in s2_30],
                 },
-                "finalist_guards": {
-                    "cand_3": [{"metric_name": g.metric_name, "passed": g.passed, "status": g.status, "estimate": g.estimate, "margin": g.margin, "standard_error": g.standard_error, "ci_lower": g.ci_lower, "ci_upper": g.ci_upper, "coverage": g.coverage, "sample_size": g.sample_size, "direction": g.direction, "reason": g.reason} for g in _mk_guards(30)],
-                    "cand_2": [{"metric_name": g.metric_name, "passed": g.passed, "status": g.status, "estimate": g.estimate, "margin": g.margin, "standard_error": g.standard_error, "ci_lower": g.ci_lower, "ci_upper": g.ci_upper, "coverage": g.coverage, "sample_size": g.sample_size, "direction": g.direction, "reason": g.reason} for g in _mk_guards(30)],
+                "s1_champion_rows": s1_rows,
+                "finalist_guard_errors": {
+                    candidate: {
+                        metric: {
+                            "candidate_by_gw": {str(gw): [0.0] for gw in range(1, 31)},
+                            "champion_by_gw": {str(gw): [1.0] for gw in range(1, 31)},
+                        }
+                        for metric in sorted(MANDATORY_GUARDS)
+                    }
+                    for candidate in ("cand_3", "cand_2")
                 },
             }
         ),
@@ -176,7 +183,7 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
     assert gw30["requires_manual_adopt"] is True
     assert load_model_selection(sel_path).champion == "def_xg_shrink_challenger"  # still unmutated until manual adopt
 
-    # Finalize GW30 early pass in registry, write & verify checkpoint bundle, and manually adopt
+    # Finalize the statistical pass and verify the retained checkpoint bundle.
     bundle_path = tmp_path / "gw30_bundle.json"
     registry.finalize_early_checkpoint_pass(
         reg2.attempt_id,
@@ -186,17 +193,19 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
         bundle_path=str(bundle_path),
     )
     bundle = write_checkpoint_recommendation_bundle(req_path, bundle_path)
+    assert bundle["action"] == gw30["action"]
+    assert bundle["recommended_champion"] == gw30["recommended_champion"]
     assert verify_checkpoint_recommendation_bundle(bundle_path, require_finalized=True) == bundle
-    adopted = adopt_champion(
-        bundle_path,
-        config_path=sel_path,
-        approval_ref="ADR-0069-GW30-EARLY-PASS",
-        expected_current_champion="def_xg_shrink_challenger",
-        approved_bundle_hash=bundle["bundle_hash"],
-    )
-    assert adopted.champion == "cand_2"
-    assert adopted.provisional_active is None
-    assert adopted.podium_sealed is False
+    with pytest.raises(ValueError, match="complete empirical scientific pass"):
+        adopt_champion(
+            bundle_path,
+            config_path=sel_path,
+            approval_ref="ADR-0069-GW30-EARLY-PASS",
+            expected_current_champion="def_xg_shrink_challenger",
+            approved_bundle_hash=bundle["bundle_hash"],
+        )
+    assert bundle["empirical_admission"] is False
+    assert load_model_selection(sel_path) == rotated
 
     # Re-seed provisional state to verify summer rollover clears unconfirmed provisional while keeping Champion
     re_provisional = ModelSelection("cand_2", ("def_xg_shrink_challenger", "cand_3"), provisional_active="cand_3", podium_frozen_season="2026-27", podium_sealed=True)

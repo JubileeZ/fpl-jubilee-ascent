@@ -12,7 +12,7 @@ from typing import Any, Literal, cast
 import pandas as pd
 
 from backtesting.confirmation_registry import ConfirmationRegistry
-from backtesting.data_admission import AdmittedOrigin, require_admitted, require_input
+from backtesting.data_admission import AdmittedOrigin, assess_origins, require_admitted, require_input
 from backtesting.evaluation_protocol import material_digest
 from backtesting.evidence_statistics import (
     EARLY_HARM_P_THRESHOLD,
@@ -56,6 +56,7 @@ from backtesting.season_rules import load_season_lifecycle
 
 EVIDENCE_VERSION = "rolling-promotion-v1"
 CHECKPOINT_EVIDENCE_VERSION = "adr0069-checkpoint-v1"
+CHECKPOINT_EVIDENCE_V2 = "adr0069-checkpoint-v2"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GUARD_SEMANTICS = {
     "points_mse": ("projected_points", "actual_points", "squared_error", "points^2"),
@@ -320,6 +321,7 @@ def _verify_replay(
     registered_at: str,
     *,
     max_target_gw: int | None = None,
+    frozen_protocol_hash: str | None = None,
 ) -> tuple[list[ReplayDeadlineRecord], list[dict[str, Any]], bool]:
     season, model = entry["season"], entry["model_name"]
     if season not in protocol["windows"]:
@@ -341,8 +343,9 @@ def _verify_replay(
         validate_quality_policy_gate(quality, require_certified=True)
     except UncertifiedSolveError as exc:
         raise ValueError(str(exc)) from exc
+    protocol_hash = frozen_protocol_hash or config.compute_hash()
     identity = replay_evaluation_identity(
-        model_name=model, model_version_hash=model_source_hash, protocol_hash=config.compute_hash(),
+        model_name=model, model_version_hash=model_source_hash, protocol_hash=protocol_hash,
         season=season, anchor_id=anchor.anchor_id, horizon=6, last_gw=38, scored_end_gw=max(protocol["windows"][season]),
         policy=quality, chip_calendar=tuple(tuple(item) for item in protocol["chip_calendar"]),
         solver_identity=protocol["solver_identity"],
@@ -373,7 +376,12 @@ def _verify_replay(
         generated = json.loads((cache / "forecasts" / issue["forecast_id"] / "generator_log.json").read_bytes())
         generation_time = datetime.fromisoformat(generated["completed_at"])
         registration_time = datetime.fromisoformat(registered_at)
-        if generation_time.utcoffset() is None or (season == config.confirmation_season and generation_time < registration_time):
+        start = generated.get("started_at") if frozen_protocol_hash else generated["completed_at"]
+        generation_start = datetime.fromisoformat(start) if isinstance(start, str) else None
+        if (generation_time.utcoffset() is None or generation_start is None or generation_start.utcoffset() is None
+                or generation_start > generation_time):
+            raise ValueError("Verified forecast generation timing required")
+        if season == config.confirmation_season and generation_start < registration_time:
             raise ValueError("Confirmation forecast predates frozen finalist registration")
         if season == config.development_season and generation_time >= registration_time:
             raise ValueError("Development selection evidence must precede finalist registration")
@@ -383,7 +391,7 @@ def _verify_replay(
         wide["purchase_eligible"] = wide["player_id"].map(lambda pid: eligibility[pid])
         if record.forecast_hash != forecast_content_hash(wide) or record.evaluation_identity != identity:
             raise ValueError("Replay does not bind verified forecasts and frozen policy")
-        if record.model_version_hash != model_source_hash or record.protocol_hash != config.compute_hash():
+        if record.model_version_hash != model_source_hash or record.protocol_hash != protocol_hash:
             raise ValueError("Replay model or protocol identity mismatch")
         if material["model"] != model or material["input_digest"] != capability.input_digest:
             raise ValueError("Forecast model or admitted input mismatch")
@@ -1031,15 +1039,19 @@ def evaluate_dual_tier_checkpoint(
 
     active_out = outcomes[active]
     # Strictly one-way rotation: only downstream podium backups (#1 -> #2) eligible; never bounce back to dropped #1
-    backups = [cand for cand in order[active_idx + 1 :] if not outcomes[cand].early_harm.triggered]
+    # At GW15, a trailing backup (#2 net_delta < 0.0) cannot replace #1 in Provisional Active.
+    backups = [
+        cand
+        for cand in order[active_idx + 1 :]
+        if not outcomes[cand].early_harm.triggered
+        and (checkpoint_gw != 15 or outcomes[cand].net_delta >= 0.0)
+    ]
 
-    trail_at_gw15 = checkpoint_gw == 15 and (
-        active_out.net_delta < 0.0 or any(outcomes[b].net_delta > active_out.net_delta for b in backups)
-    )
+    trail_at_gw15 = checkpoint_gw == 15 and active_out.net_delta < 0.0
     if active_out.early_harm.triggered or trail_at_gw15:
         if backups and checkpoint_gw < 38:
             backup = backups[0]
-            why = "Early-Harm Fallback" if active_out.early_harm.triggered else "GW15 trail vs backup/Champion"
+            why = "Early-Harm Fallback" if active_out.early_harm.triggered else "GW15 trail vs Confirmed Champion"
             reasons.append(f"Rotating Provisional Active '{active}' -> backup '{backup}' ({why})")
             return DualTierCheckpointResult(
                 checkpoint_gw=checkpoint_gw,
@@ -1095,18 +1107,10 @@ def evaluate_dual_tier_checkpoint(
     )
 
 
-def evaluate_checkpoint_bundle_evidence(request_path: Path | str) -> dict[str, Any]:
-    """Reconstruct and evaluate a registered ADR 0069 checkpoint request into a verifiable evidence bundle."""
-    path = Path(request_path).resolve()
-    root = path.parent
-    payload = json.loads(path.read_bytes())
-    if payload.get("version") != CHECKPOINT_EVIDENCE_VERSION:
-        raise ValueError("Unsupported checkpoint recommendation evidence request")
-    selection = (
-        load_model_selection(_local_path(root, payload["selection_path"]))
-        if payload.get("selection_path")
-        else load_model_selection()
-    )
+def evaluate_checkpoint_payload(
+    payload: Mapping[str, Any], selection: ModelSelection
+) -> tuple[DualTierCheckpointResult, dict[str, list[PairedGameweekScore]]]:
+    """Use the same score and guard interpretation for checkpoint reports and bundles."""
     checkpoint_gw = int(payload["checkpoint_gw"])
     podium_order = tuple(payload["podium_order"])
     traces: dict[str, list[PairedGameweekScore]] = {}
@@ -1160,6 +1164,208 @@ def evaluate_checkpoint_bundle_evidence(request_path: Path | str) -> dict[str, A
         inapplicable_guards=inapplicable,
         s1_champion_rows=s1_rows,
     )
+    return result, traces
+
+
+def evaluate_verified_checkpoint_payload(
+    root: Path, payload: Mapping[str, Any], *, finalized_bundle_path: Path | None = None
+) -> tuple[DualTierCheckpointResult, dict[str, Any]]:
+    """Rebuild the checkpoint from registered, admitted native replay material."""
+    lifecycle = load_season_lifecycle()
+    season = lifecycle.season_for_role("active_validation")
+    development_season = lifecycle.season_for_role("development")
+    checkpoint = payload["checkpoint_gw"]
+    if type(checkpoint) is not int or checkpoint not in (15, 30, 38):
+        raise ValueError("Verified checkpoint must be GW15, GW30 or GW38")
+    selection = load_model_selection(_local_path(root, payload["selection_path"]))
+    if not selection.podium_sealed or selection.podium_frozen_season != season or not selection.candidates:
+        raise ValueError("Verified checkpoint requires the frozen active-season podium")
+    champion = selection.champion
+    podium = selection.candidates
+    attempts = payload["confirmation_attempt_ids"]
+    development_refs = payload["development_selections"]
+    if set(attempts) != set(podium) or set(development_refs) != set(podium):
+        raise ValueError("Verified checkpoint requires registration and development selection for each frozen finalist")
+
+    source_hash = current_model_source_hash()
+    if payload["model_source_hash"] != source_hash:
+        raise ValueError("Frozen model source changed")
+    protocol = _read_material(root, payload["protocol"])
+    config = protocol_from_payload(protocol)
+    protocol_hash = content_hash(protocol)
+    if (config.development_season, config.confirmation_season) != (development_season, season):
+        raise ValueError("Checkpoint protocol differs from the active season lifecycle")
+    if (config.approved_by_human is not True or not isinstance(config.approval_reference, str) or not config.approval_reference.strip()
+            or config.approval_reference == "UNAPPROVED" or config.nominal_alpha != 0.05):
+        raise ValueError("Approved ADR 0069 checkpoint protocol required")
+    review = {"mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
+              "early_harm_min_gw": 6, "early_harm_p_threshold": EARLY_HARM_P_THRESHOLD}
+    if (protocol["windows"][season] != list(range(1, 39)) or protocol.get("live_review") != review
+            or len(protocol["windows"][development_season]) < 2 or set(protocol["guard_specs"]) != MANDATORY_GUARDS
+            or any(spec["alpha"] != 0.05 for spec in protocol["guard_specs"].values())):
+        raise ValueError("Frozen schedule or guard policy differs from ADR 0069")
+    if protocol["solver_identity"] != native_solver_identity():
+        raise ValueError("Checkpoint evidence requires the native Strategic transfer solver")
+
+    registry = ConfirmationRegistry(_local_path(root, payload["registry_path"]))
+    registrations = {}
+    baseline_refs = {}
+    for candidate in podium:
+        registration = registry.get_attempt(attempts[candidate])
+        development_ref = development_refs[candidate]
+        development = _read_material(root, development_ref)
+        identity = (candidate, champion, source_hash, protocol_hash)
+        if (registration is None or registration.dev_selection_record_ref != development_ref["sha256"]
+                or (registration.candidate_name, registration.champion_name,
+                    registration.model_source_hash, registration.protocol_hash) != identity
+                or tuple(development.get(field) for field in ("candidate_name", "former_champion", "model_source_hash", "protocol_hash")) != identity):
+            raise ValueError("Frozen checkpoint finalist or development selection mismatch")
+        registrations[candidate] = registration
+        baseline_refs[candidate] = development.get("traces", {}).get(champion)
+    registered_times = [datetime.fromisoformat(registration.registered_at) for registration in registrations.values()]
+    if any(value.utcoffset() is None for value in registered_times):
+        raise ValueError("Timezone-aware frozen finalist registration required")
+
+    windows = {**protocol["windows"], season: list(range(1, checkpoint + 1))}
+    expected_admissions = {(year, gw) for year, weeks in windows.items() for gw in weeks}
+    admission_refs: dict[tuple[str, int], dict[str, Any]] = {}
+    guard_outcomes: dict[tuple[str, int, int], dict[str, Any]] = {}
+    validation_ref = next((item["admission"] for item in payload["guard_outcome_sources"] if item["season"] == season), None)
+    if validation_ref is None:
+        raise ValueError("Missing active-season fplcache admission")
+    context = _read_material(root, validation_ref)
+    request = _restore_bytes(context["request"])
+    catalog = {digest: bytes.fromhex(raw) for digest, raw in context["catalog"].items()}
+    if request.get("track") != "validation_fplcache" or request.get("checkpoint_gw") != checkpoint:
+        raise ValueError("Verified checkpoint requires a matching validation_fplcache request")
+    reports = assess_origins(request, catalog)
+    if ([(row["season"], row["gw"]) for row in reports] != [(season, gw) for gw in windows[season]]
+            or not all(row.get("checkpoint_complete") is True and row["status"] == "admitted_empirical" for row in reports)):
+        raise ValueError("Incomplete admitted fplcache checkpoint")
+    for item in payload["guard_outcome_sources"]:
+        year, gw, reference = item["season"], item["gameweek"], item["admission"]
+        if (year, gw) not in expected_admissions or (year, gw) in admission_refs:
+            raise ValueError("Duplicate or foreign checkpoint admission")
+        admission_refs[year, gw] = reference
+        if year == season and reference != validation_ref:
+            raise ValueError("Active-season policies and outcomes require one shared admitted checkpoint")
+        if year == season:
+            source_request, source_catalog = request, catalog
+        else:
+            admitted, source_request, source_catalog = _admit_context(_read_material(root, reference), year, gw)
+            if admitted.mode != "empirical":
+                raise ValueError("S-1 guard baseline requires admitted empirical observations")
+        origin = next(origin for origin in source_request["origins"] if (origin["season"], origin["gw"]) == (year, gw))
+        guard_outcomes.update(finalized_gameweek_outcomes(origin, protocol, catalog=source_catalog))
+    if set(admission_refs) != expected_admissions:
+        raise ValueError("Incomplete checkpoint or S-1 guard outcome coverage")
+
+    records = {}
+    rows = {}
+    anchors = {}
+    expected_replays = {(development_season, champion), *((season, model) for model in (champion, *podium))}
+    replay_protocol = {**protocol, "windows": windows}
+    for entry in payload["replays"]:
+        year, model = entry["season"], entry["model_name"]
+        key = year, model
+        if key not in expected_replays or key in records:
+            raise ValueError("Duplicate or foreign checkpoint replay")
+        if [issue["admission"] for issue in entry["issues"]] != [admission_refs[year, gw] for gw in windows[year]]:
+            raise ValueError("Replay and guard outcomes must use the same admitted sources")
+        if anchors.setdefault(year, entry["anchor"]) != entry["anchor"]:
+            raise ValueError("Active-season policies must share the certified neutral opening anchor")
+        if year == development_season and any(reference != entry["trace"] for reference in baseline_refs.values()):
+            raise ValueError("S-1 Champion baseline differs from frozen finalist selection evidence")
+        registered_at = max(registered_times) if year == season else min(registered_times)
+        records[key], rows[key], _ = _verify_replay(
+            root, entry, replay_protocol, config, source_hash, guard_outcomes, registered_at.isoformat(),
+            max_target_gw=windows[year][-1], frozen_protocol_hash=protocol_hash,
+        )
+    if set(records) != expected_replays:
+        raise ValueError("Missing frozen finalist, Champion or S-1 baseline replay")
+
+    traces = {
+        candidate: [pair_replay_score(season, cand, champ) for cand, champ in
+                    zip(records[season, candidate], records[season, champion], strict=True)]
+        for candidate in podium
+    }
+    margins = derive_s1_guard_margins(
+        rows[development_season, champion], weights=protocol["projection_evaluation"]["weights"],
+        guard_specs=protocol["guard_specs"],
+    )
+    guard_protocol = {**protocol, "guard_specs": {
+        name: {**spec, "margin": margins[name]} for name, spec in protocol["guard_specs"].items()
+    }}
+    guards = {
+        candidate: _guards_from_rows(
+            {"candidate_name": candidate, "former_champion": champion}, guard_protocol,
+            {(season, model): rows[season, model] for model in (candidate, champion)}, cluster_by_gw=True,
+        )
+        for candidate in podium
+    }
+    result = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=checkpoint, finalist_traces=traces, finalist_guards=guards, selection=selection, podium_order=podium,
+    )
+    winner = result.recommended_champion
+    trace_hashes = {candidate: compute_score_trace_hash(scores) for candidate, scores in traces.items()}
+    for candidate in podium:
+        registry.verify_checkpoint_attempt(
+            attempts[candidate], candidate_name=candidate, champion_name=champion, active_season=season,
+            checkpoint_gw=checkpoint, model_source_hash=source_hash, parameters_hash=content_hash({}),
+            protocol_hash=protocol_hash, score_trace_hash=trace_hashes[candidate], max_family_attempts=config.max_family_attempts,
+            finalized_bundle_path=finalized_bundle_path if candidate == winner else None,
+        )
+    return result, {
+        "candidate_name": winner or selection.provisional_active or podium[0], "former_champion": champion,
+        "model_source_hash": source_hash, "protocol_hash": protocol_hash, "empirical_admission": True,
+        "selection_sha256": content_hash(asdict(selection)),
+        "admitted_limitations": sorted({limitation for row in reports for limitation in row["disclosed_limitations"]}),
+        "confirmation_attempt_id": attempts[winner] if winner else None,
+        "score_trace_hash": trace_hashes[winner] if winner else None,
+    }
+
+
+def evaluate_checkpoint_bundle_evidence(
+    request_path: Path | str, *, finalized_bundle_path: Path | None = None
+) -> dict[str, Any]:
+    """Reconstruct an ADR 0069 checkpoint recommendation from retained evidence."""
+    path = Path(request_path).resolve()
+    root = path.parent
+    raw_request = path.read_bytes()
+    payload = json.loads(raw_request)
+    if payload.get("version") == CHECKPOINT_EVIDENCE_V2:
+        result, identity = evaluate_verified_checkpoint_payload(root, payload, finalized_bundle_path=finalized_bundle_path)
+    elif payload.get("version") == CHECKPOINT_EVIDENCE_VERSION:
+        result, identity = _diagnostic_checkpoint_evidence(root, payload)
+    else:
+        raise ValueError("Unsupported checkpoint recommendation evidence request")
+    body = {
+        "version": payload["version"],
+        "checkpoint_gw": result.checkpoint_gw,
+        **identity,
+        "scientific_verdict": "pass" if result.action == "eligible_for_manual_adopt" else "inconclusive",
+        "execution_status": "complete" if result.action == "eligible_for_manual_adopt" else "partial",
+        "action": result.action,
+        "recommended_champion": result.recommended_champion,
+        "next_provisional_active": result.next_provisional_active,
+        "requires_manual_adopt": result.requires_manual_adopt,
+        "request_sha256": sha256(raw_request).hexdigest(),
+        "request_path": path.name,
+        "reasons": list(result.reasons),
+    }
+    return {**body, "bundle_hash": content_hash(body)}
+
+
+def _diagnostic_checkpoint_evidence(
+    root: Path, payload: Mapping[str, Any]
+) -> tuple[DualTierCheckpointResult, dict[str, Any]]:
+    selection = (
+        load_model_selection(_local_path(root, payload["selection_path"]))
+        if payload.get("selection_path")
+        else load_model_selection()
+    )
+    result, traces = evaluate_checkpoint_payload(payload, selection)
+    podium_order = payload["podium_order"]
     registry_path = _local_path(root, payload["registry_path"]) if payload.get("registry_path") else None
     attempt_ids: Mapping[str, str] = payload.get("confirmation_attempt_ids") or {}
     winner = result.recommended_champion
@@ -1171,25 +1377,14 @@ def evaluate_checkpoint_bundle_evidence(request_path: Path | str) -> dict[str, A
         if reg is None or reg.candidate_name != winner or reg.score_trace_hash != expected_hash:
             raise ValueError("Checkpoint registry attempt or score_trace_hash mismatch")
 
-    body = {
-        "version": CHECKPOINT_EVIDENCE_VERSION,
-        "checkpoint_gw": result.checkpoint_gw,
+    return result, {
         "candidate_name": winner or (selection.provisional_active or podium_order[0]),
         "former_champion": selection.champion,
         "protocol_hash": str(payload.get("protocol_hash", "")),
-        "scientific_verdict": "pass" if result.action == "eligible_for_manual_adopt" else "inconclusive",
-        "execution_status": "complete" if result.action == "eligible_for_manual_adopt" else "partial",
-        "empirical_admission": bool(payload.get("empirical_admission", False)),
-        "action": result.action,
-        "recommended_champion": result.recommended_champion,
-        "next_provisional_active": result.next_provisional_active,
-        "requires_manual_adopt": result.requires_manual_adopt,
+        # V1 retains submitted scores and guards, without replay material that can prove admission.
+        "empirical_admission": False,
         "confirmation_attempt_id": attempt_id,
-        "request_sha256": sha256(path.read_bytes()).hexdigest(),
-        "request_path": path.name,
-        "reasons": list(result.reasons),
     }
-    return {**body, "bundle_hash": content_hash(body)}
 
 
 def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path: Path | str) -> dict[str, Any]:
@@ -1204,13 +1399,32 @@ def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path
     if not path.exists():
         with path.open("xb") as output:
             output.write(raw)
+    if bundle["version"] == CHECKPOINT_EVIDENCE_V2 and bundle["scientific_verdict"] == "pass":
+        payload = json.loads(request.read_bytes())
+        registry = ConfirmationRegistry(_local_path(request.parent, payload["registry_path"]))
+        attempt = registry.get_attempt(bundle["confirmation_attempt_id"])
+        if (attempt is None or attempt.score_trace_hash != bundle["score_trace_hash"]
+                or attempt.completed_gameweeks != tuple(range(1, bundle["checkpoint_gw"] + 1))
+                or (attempt.model_source_hash, attempt.protocol_hash) != (bundle["model_source_hash"], bundle["protocol_hash"])):
+            raise ValueError("Checkpoint registration changed before finalization")
+        if attempt.status == "completed":
+            if (attempt.execution_status != "complete" or attempt.scientific_verdict != "pass"
+                    or not attempt.bundle_path or (registry.registry_file.parent / attempt.bundle_path).resolve() != path):
+                raise ValueError("Checkpoint registry was finalized for a different evidence bundle")
+        elif bundle["checkpoint_gw"] in (15, 30):
+            registry.finalize_early_checkpoint_pass(
+                attempt.attempt_id, checkpoint_gw=bundle["checkpoint_gw"], completed_gameweeks=attempt.completed_gameweeks,
+                score_trace_hash=bundle["score_trace_hash"], bundle_path=str(path),
+            )
+        else:
+            registry.transition_attempt_status(attempt.attempt_id, "completed", scientific_verdict="pass", bundle_path=str(path))
     return bundle
 
 
 def verify_checkpoint_recommendation_bundle(bundle_path: Path | str, *, require_finalized: bool = False) -> dict[str, Any]:
     path = Path(bundle_path).resolve()
     bundle = json.loads(path.read_bytes())
-    if not isinstance(bundle, dict) or bundle.get("version") != CHECKPOINT_EVIDENCE_VERSION:
+    if not isinstance(bundle, dict) or bundle.get("version") not in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
         raise ValueError("Unsupported verified checkpoint recommendation bundle")
     body = {key: value for key, value in bundle.items() if key != "bundle_hash"}
     if bundle.get("bundle_hash") != content_hash(body):
@@ -1218,9 +1432,10 @@ def verify_checkpoint_recommendation_bundle(bundle_path: Path | str, *, require_
     request_path = _local_path(path.parent, bundle["request_path"])
     if sha256(request_path.read_bytes()).hexdigest() != bundle["request_sha256"]:
         raise ValueError("Frozen evidence request changed")
-    if evaluate_checkpoint_bundle_evidence(request_path) != bundle:
+    finalized_path = path if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_V2 else None
+    if evaluate_checkpoint_bundle_evidence(request_path, finalized_bundle_path=finalized_path) != bundle:
         raise ValueError("Recommendation differs from reconstructed evidence")
-    if require_finalized:
+    if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_VERSION:
         request = json.loads(request_path.read_bytes())
         registry = ConfirmationRegistry(_local_path(path.parent, request["registry_path"]))
         attempt_id = bundle.get("confirmation_attempt_id")
@@ -1238,8 +1453,8 @@ def apply_provisional_action(
     *,
     config_path: Path | None = None,
 ) -> ModelSelection:
-    """Apply non-champion Provisional Active rotation/fallback without ever altering Confirmed Champion."""
-    seal = selection.podium_sealed and checkpoint.next_provisional_active is not None
+    """Apply non-champion Provisional Active rotation/fallback without ever altering Confirmed Champion or mid-season seal."""
+    seal = selection.podium_sealed
     updated = ModelSelection(
         champion=selection.champion,
         candidates=selection.candidates,

@@ -390,15 +390,20 @@ def test_evaluate_dual_tier_checkpoint_obf_rotation_simultaneous_pass_and_manual
         podium_sealed=True,
     )
 
-    # 1. GW15: cand_1 slightly ahead without 0.00025 certainty -> retain_dual_tier cleanly
+    # 1. GW15: both finalists lead without statistical confirmation; retain #1 even if #2 leads by more.
     mild = [0.2 if gw % 2 == 0 else -0.1 for gw in range(1, 16)]
+    small_lead = [1.0, -1.0] * 7 + [1.0]
+    larger_lead = [1.0, -1.0] * 7 + [2.0]
     res_retain = evaluate_dual_tier_checkpoint(
         checkpoint_gw=15,
-        finalist_traces={"cand_1": _scores(15, mild), "cand_2": _scores(15, [0.0] * 15)},
+        finalist_traces={"cand_1": _scores(15, small_lead), "cand_2": _scores(15, larger_lead)},
         finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
         selection=sel,
         podium_order=("cand_1", "cand_2"),
     )
+    assert res_retain.outcomes["cand_1"].net_delta == 1.0
+    assert res_retain.outcomes["cand_2"].net_delta == 2.0
+    assert not any(outcome.early_harm.triggered or outcome.superior for outcome in res_retain.outcomes.values())
     assert res_retain.action == "retain_dual_tier"
     assert res_retain.next_provisional_active == "cand_1"
 
@@ -490,6 +495,69 @@ def test_evaluate_dual_tier_checkpoint_obf_rotation_simultaneous_pass_and_manual
     )
     assert res_still_dropped.action == "fallback_to_champion"
     assert res_still_dropped.next_provisional_active is None
+
+
+def test_apply_provisional_action_keeps_podium_sealed_and_gw15_rejects_trailing_backup() -> None:
+    from backtesting.evidence_statistics import PairedGameweekScore, assign_gameweek_segment
+    from backtesting.projection_guards import GuardOutput
+    from backtesting.promotion_evidence import (
+        MANDATORY_GUARDS,
+        PodiumCandidateRecord,
+        apply_provisional_action,
+        evaluate_dual_tier_checkpoint,
+        rank_and_freeze_podium,
+    )
+
+    def _scores(deltas: list[float]) -> list[PairedGameweekScore]:
+        return [
+            PairedGameweekScore("2026-27", gw, 60.0 + deltas[gw - 1], 60.0, 60.0 + deltas[gw - 1], 60.0, 0, 0, segment=assign_gameweek_segment(gw))
+            for gw in range(1, len(deltas) + 1)
+        ]
+
+    def _guards() -> list[GuardOutput]:
+        return [
+            GuardOutput(name, True, "PASS", 0.0, 0.5, 0.1, -0.2, 0.2, 0.95, 15, "lower_is_better", "ok")
+            for name in sorted(MANDATORY_GUARDS)
+        ]
+
+    sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("cand_1", "cand_2"),
+        provisional_active="cand_1",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+
+    # At GW15, two trailing finalists lead to fallback even when the backup has no Early-Harm trigger.
+    cand1_trail = [-1.0] * 3 + [0.8] * 3 + [-1.0] * 3 + [0.8] * 3 + [-0.4] * 3
+    cand2_trail = [-2.0] * 3 + [1.5] * 3 + [-2.0] * 3 + [1.5] * 3 + [-0.5] * 3
+    res_both_trail = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={
+            "cand_1": _scores(cand1_trail),
+            "cand_2": _scores(cand2_trail),
+        },
+        finalist_guards={"cand_1": _guards(), "cand_2": _guards()},
+        selection=sel,
+        podium_order=("cand_1", "cand_2"),
+    )
+    assert res_both_trail.outcomes["cand_2"].early_harm.triggered is False
+    assert res_both_trail.outcomes["cand_2"].net_delta < 0.0
+    assert res_both_trail.action == "fallback_to_champion"
+    assert res_both_trail.next_provisional_active is None
+
+    # 2. Mid-season fallback_to_champion clears provisional_active but keeps podium_sealed=True for S.
+    after_fallback = apply_provisional_action(sel, res_both_trail)
+    assert after_fallback.provisional_active is None
+    assert after_fallback.podium_sealed is True
+    assert after_fallback.podium_frozen_season == "2026-27"
+    with pytest.raises(ValueError, match="sealed"):
+        rank_and_freeze_podium(
+            [PodiumCandidateRecord("cand_c", "def_xg_shrink_challenger", 0.9, 0.9, {"early_mid": 0.5}, {"early_mid": 0.5}, True, True)],
+            current_selection=after_fallback,
+            active_season="2026-27",
+            seal_slate=True,
+        )
 
 
 def test_verify_live_readiness_supports_adr0069_fplcache_mode(tmp_path: Path) -> None:

@@ -1,4 +1,4 @@
-"""Unified mode='empirical' admission engine for development mirrors and prospective receipts (#178)."""
+"""Unified empirical admission for historical mirrors, receipts, and active-season fplcache."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 from backtesting.empirical_mirrors import (
     _BOOTSTRAP_CHIP_NAMES,
+    EMPIRICAL_TRACKS,
     FIXTURE_DISCLOSURE_AGE_SECONDS,
     FIXTURE_MAX_CAP_SECONDS,
     FIXTURE_MIN_CAP_SECONDS,
@@ -23,9 +24,11 @@ from backtesting.empirical_mirrors import (
     canonical_bootstrap_table,
     canonical_json_bytes,
     canonical_json_sha256,
+    empirical_checkpoint_scope,
     parse_fixtures_csv_window,
     sha256_bytes,
     validate_mirror_url,
+    verify_validation_fplcache_snapshot,
 )
 from backtesting.fplcache_ingest import (
     LOCAL_RECEIPT_HARD_MAX_AGE_SECONDS,
@@ -396,11 +399,30 @@ def _assess_bootstrap_role(
         inv_bucket.append("bootstrap:capture_after_deadline")
     if track == "prospective_receipt" and spec.get("timing_basis") != "receipt":
         inv_bucket.append("bootstrap:prospective_requires_receipt")
+    if track == "validation_fplcache":
+        if spec.get("timing_basis") != "bounded_reconstruction":
+            inv_bucket.append("bootstrap:validation_requires_bounded_reconstruction")
+        try:
+            verify_validation_fplcache_snapshot(
+                str(spec.get("url", "")),
+                commit_sha=spec.get("commit_sha"), capture_lower=cap_lo, capture_upper=cap_up,
+            )
+        except ValueError:
+            inv_bucket.append("bootstrap:invalid_fplcache_provenance")
+        try:
+            event_deadlines = [
+                _utc(event.get("deadline_time")) for event in bs_payload.get("events", ())
+                if isinstance(event, Mapping) and event.get("id") == gw_int
+            ]
+        except (TypeError, ValueError):
+            event_deadlines = []
+        if event_deadlines != [dl]:
+            inv_bucket.append("bootstrap:deadline_mismatch")
     max_news = extract_max_news_added(bs_payload)
     if max_news is not None and max_news > cap_up:
         inv_bucket.append("bootstrap:news_added_after_capture")
     age = (dl - cap_lo).total_seconds()
-    if track == "development_mirror":
+    if track in ("development_mirror", "validation_fplcache"):
         url_path = urlparse(str(spec.get("url", ""))).path
         if (url_path.startswith("/Randdalf/fplcache/") or url_path.startswith("/repos/Randdalf/fplcache/")) and "fplcache_mirror_provenance" not in disclosed:
             disclosed.append("fplcache_mirror_provenance")
@@ -597,7 +619,7 @@ def _assess_outcomes_role(
         unr_bucket.append("outcomes:premature_settlement_lt_24h")
     if spec.get("finished") is not True:
         unr_bucket.append("outcomes:fixture_unfinished")
-    if track == "prospective_receipt" and spec.get("data_checked") is not True:
+    if track in ("prospective_receipt", "validation_fplcache") and spec.get("data_checked") is not True:
         unr_bucket.append("outcomes:prospective_data_unchecked")
     expected_pids = {int(r["id"]) for r in sanitized_elements if type(r.get("id")) is int}
     try:
@@ -626,8 +648,9 @@ def assess_empirical_origins(
 ) -> list[dict[str, Any]]:
     """Evaluate unified version=2 mode='empirical' origins under #175/#178 rules."""
     track = request.get("track")
-    if track not in ("development_mirror", "prospective_receipt"):
-        raise ValueError("Empirical request requires track in ('development_mirror', 'prospective_receipt')")
+    if track not in EMPIRICAL_TRACKS:
+        raise ValueError(f"Empirical request requires track in {EMPIRICAL_TRACKS}")
+    checkpoint_gw = empirical_checkpoint_scope(track, request.get("purpose"), request.get("checkpoint_gw"))
     if request.get("eligibility_policy") != "empirical-v2":
         raise ValueError("Unsupported empirical eligibility_policy")
 
@@ -685,7 +708,7 @@ def assess_empirical_origins(
             purpose_s: AccessPurpose = (
                 ("historical_filter" if role_s == "historical_filter" else "dev")
                 if track == "development_mirror"
-                else "validation"
+                else ("active_validation" if track == "validation_fplcache" else "validation")
             )
             if gw_int >= 1:
                 lifecycle.assert_access(season, gw_int, purpose=purpose_s)
@@ -713,7 +736,7 @@ def assess_empirical_origins(
 
         if track == "prospective_receipt" and disclosed:
             invalid_pre.append("mirror_disclosure_on_prospective_receipt")
-        elif track == "development_mirror" and any(code not in MIRROR_DISCLOSURE_CODES for code in disclosed):
+        elif track in ("development_mirror", "validation_fplcache") and any(code not in MIRROR_DISCLOSURE_CODES for code in disclosed):
             invalid_pre.append("invalid_disclosed_limitations")
 
         sources = origin.get("sources")
@@ -742,9 +765,22 @@ def assess_empirical_origins(
                     validate_mirror_url(str(spec.get("url", "")), allow_prior_seed=(role == "seed"))
                 except ValueError:
                     inv_bucket.append(f"{role}:unapproved_mirror_url")
-            raw_bytes = resolve_source_bytes(spec, catalog)
+            if track == "validation_fplcache" and role != "bootstrap" and (
+                spec.get("timing_basis") != "receipt" or not str(spec.get("url", "")).startswith("receipt://")
+            ):
+                inv_bucket.append(f"{role}:validation_requires_receipt")
+            if track == "validation_fplcache":
+                source_id = spec.get("source_id")
+                raw_bytes = catalog.get(source_id) if catalog is not None and isinstance(source_id, str) else None
+            else:
+                raw_bytes = resolve_source_bytes(spec, catalog)
             if raw_bytes is None:
                 unr_bucket.append(f"{role}_bytes_missing")
+                continue
+            if track == "validation_fplcache" and role == "bootstrap" and (
+                not raw_bytes.startswith(b"\xfd7zXZ\x00") or not isinstance(spec.get("decompressed_sha256"), str)
+            ):
+                inv_bucket.append("bootstrap:fplcache_requires_retained_xz_and_decompressed_digest")
                 continue
             dec_bytes, err = verify_digests(spec, raw_bytes)
             if err:
@@ -805,6 +841,16 @@ def assess_empirical_origins(
                 if not isinstance(seed_parsed, Mapping):
                     inv_bucket.append("seed:malformed")
                     continue
+                if track == "validation_fplcache" and season in lifecycle.seasons:
+                    if seed_parsed.get("season") != lifecycle.seasons[season].prior_seed:
+                        inv_bucket.append("seed:wrong_prior_seed_season")
+                    try:
+                        seed_cap_lo = _utc(spec.get("capture_lower"))
+                        seed_cap_up = _utc(spec.get("capture_upper"))
+                        if not seed_cap_lo <= seed_cap_up < dl:
+                            inv_bucket.append("seed:invalid_capture_bounds")
+                    except (TypeError, ValueError):
+                        inv_bucket.append("seed:invalid_capture_bounds")
                 if t_err := verify_table_sha256(spec, seed_parsed):
                     inv_bucket.append(f"seed:{t_err}")
                 parsed_seed_obj = seed_parsed
@@ -872,7 +918,16 @@ def assess_empirical_origins(
         and all(r["status"] == "admitted_empirical" for r in raw_reports)
     )
     prefix_is_partial = declared_partial or (not all_38_admitted)
+    checkpoint_complete = (
+        checkpoint_gw is not None
+        and not declared_partial
+        and [rep["gw"] for rep in raw_reports] == list(range(1, checkpoint_gw + 1))
+        and all(rep["status"] == "admitted_empirical" for rep in raw_reports)
+    )
     for rep in raw_reports:
         rep["partial_prefix"] = prefix_is_partial
         rep["promotable"] = (rep["status"] == "admitted_empirical") and (not prefix_is_partial) and all_38_admitted
+        if track == "validation_fplcache":
+            rep["checkpoint_gw"] = checkpoint_gw
+            rep["checkpoint_complete"] = checkpoint_complete
     return raw_reports

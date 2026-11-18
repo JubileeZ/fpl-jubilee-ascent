@@ -703,7 +703,7 @@ Active-season shadow/side-by-side comparison horizon across current season `S` (
 _Avoid_: Tuning on `S`, retweaking parameters after peeking `S GW1..X`, unattended automatic Champion overwrite
 
 **Live Reassessment**:
-Scale-aware Early-Harm Fallback & checkpoint safeguard (`ADR 0069`, `#186`): after `6`-GW warm-up (`df >= 4`), drops failing `Provisional Active` back to `Confirmed Champion` (or auto-rotates to frozen `#2` backup within symmetric `alpha/M` budget) when `S` shows statistical harm (`p_harm <= 0.025` via Kendall-PW + Bartlett HAC on cumulative `S` or completed segment) or demonstrated mandatory guard `FAIL` (`alpha = 0.05`, `INCONCLUSIVE` ignored); rotates `#1 -> #2` if `#1` trails `#2` at `GW15`, and routes close non-harmful `GW15` leads cleanly to `GW30`/`GW38`.
+Scale-aware Early-Harm Fallback & checkpoint safeguard (`ADR 0069`, `#186`): after `6`-GW warm-up (`df >= 4`), drops failing `Provisional Active` back to `Confirmed Champion` or rotates to eligible frozen `#2` when `S` shows statistical harm (`p_harm <= 0.025` via Kendall-PW + Bartlett HAC on cumulative `S` or completed segment) or mandatory guard `FAIL` (`alpha = 0.05`, `INCONCLUSIVE` ignored). At `GW15`, rotate provisionally if `#1` trails Confirmed Champion or triggers Early-Harm and `#2` is at least even with Confirmed Champion without Early-Harm. Otherwise retain an ahead-or-even, non-harmful `#1` pending later checkpoints or fall back if `#1` must drop. Fallback leaves season slate sealed.
 _Avoid_: Arbitrary hardcoded cumulative net-point panic triggers, triggering on `< 6` GWs or `INCONCLUSIVE` guards, retuning after `GW15` miss, ad-hoc weekly hopping across un-frozen variants
 
 **Meaningful Live Lead**:

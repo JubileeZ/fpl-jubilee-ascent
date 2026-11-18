@@ -178,6 +178,7 @@ def _build_empirical_bundle(
     *,
     gws: tuple[int, ...] = (1, 2),
     track: str = "development_mirror",
+    season: str = "2025-26",
     bootstrap_age_hours: float = 4.0,
     fixtures_age_hours: float = 72.0,
     settlement_lag_hours: float = 30.0,
@@ -185,9 +186,11 @@ def _build_empirical_bundle(
     include_gw22_card: bool = False,
     seed_season: str = "2024-25",
     partial_prefix: bool = True,
+    checkpoint_gw: int | None = None,
     with_manager: bool = True,
 ) -> tuple[dict[str, Any], dict[str, bytes], dict[int, str]]:
-    dl1 = datetime(2025, 8, 15, 17, 30, tzinfo=UTC)
+    start_year = int(season[:4])
+    dl1 = datetime(start_year, 8, 15, 17, 30, tzinfo=UTC)
     deadlines = {w: dl1 + timedelta(days=7 * (w - 1)) for w in range(1, 39)}
     catalog: dict[str, bytes] = {}
     origins: list[dict[str, Any]] = []
@@ -224,7 +227,7 @@ def _build_empirical_bundle(
                 "web_name": "BossMgr",
             }
         )
-    seed_ko = datetime(2024, 9, 1, 14, 0, tzinfo=UTC)
+    seed_ko = datetime(int(seed_season[:4]), 9, 1, 14, 0, tzinfo=UTC)
     seed_history = []
     seed_fixtures = []
     for w in range(1, 10):
@@ -321,13 +324,13 @@ def _build_empirical_bundle(
             if disclosed is not None
             else (
                 ["fplcache_mirror_provenance"] + (["fixture_schedule_gt_48h"] if fixtures_age_hours > 48 else [])
-                if track == "development_mirror"
+                if track in ("development_mirror", "validation_fplcache")
                 else []
             )
         )
         origins.append(
             {
-                "season": "2025-26",
+                "season": season,
                 "gw": gw,
                 "deadline": dl.isoformat(),
                 "prev_deadline": prev_dl.isoformat() if prev_dl else None,
@@ -337,11 +340,15 @@ def _build_empirical_bundle(
                     "bootstrap": {
                         "source_id": bs_id,
                         "role": "bootstrap",
-                        "url": f"https://raw.githubusercontent.com/Randdalf/fplcache/{'a'*40}/cache/2025/8/{15 + gw}/1200.json.xz"
-                        if track == "development_mirror"
-                        else f"receipt://2025-26/gw{gw}/bootstrap",
+                        "url": f"https://raw.githubusercontent.com/Randdalf/fplcache/{'a'*40}/cache/{bs_cap_up.year}/{bs_cap_up.month}/{bs_cap_up.day}/{bs_cap_up:%H%M}.json.xz"
+                        if track == "validation_fplcache"
+                        else (
+                            f"https://raw.githubusercontent.com/Randdalf/fplcache/{'a'*40}/cache/2025/8/{15 + gw}/1200.json.xz"
+                            if track == "development_mirror"
+                            else f"receipt://{season}/gw{gw}/bootstrap"
+                        ),
                         "commit_sha": "a" * 40,
-                        "timing_basis": "bounded_reconstruction" if track == "development_mirror" else "receipt",
+                        "timing_basis": "bounded_reconstruction" if track in ("development_mirror", "validation_fplcache") else "receipt",
                         "capture_lower": bs_cap_lo.isoformat(),
                         "capture_upper": bs_cap_up.isoformat(),
                         "blob_sha256": bs_blob_sha,
@@ -350,9 +357,9 @@ def _build_empirical_bundle(
                     "fixtures": {
                         "source_id": fx_id,
                         "role": "fixtures",
-                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'b'*40}/data/2025-26/fixtures.csv"
+                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'b'*40}/data/{season}/fixtures.csv"
                         if track == "development_mirror"
-                        else f"receipt://2025-26/gw{gw}/fixtures",
+                        else f"receipt://{season}/gw{gw}/fixtures",
                         "commit_sha": "b" * 40,
                         "timing_basis": "bounded_reconstruction" if track == "development_mirror" else "receipt",
                         "capture_lower": fx_cap_lo.isoformat(),
@@ -363,9 +370,9 @@ def _build_empirical_bundle(
                     "history": {
                         "source_id": hist_id,
                         "role": "history",
-                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'c'*40}/data/2025-26/gws/merged_gw.csv"
+                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'c'*40}/data/{season}/gws/merged_gw.csv"
                         if track == "development_mirror"
-                        else f"receipt://2025-26/gw{gw}/history",
+                        else f"receipt://{season}/gw{gw}/history",
                         "commit_sha": "c" * 40,
                         "timing_basis": "bounded_reconstruction" if track == "development_mirror" else "receipt",
                         "capture_lower": (dl - timedelta(days=2)).isoformat(),
@@ -376,9 +383,9 @@ def _build_empirical_bundle(
                     "outcomes": {
                         "source_id": out_id,
                         "role": "outcomes",
-                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'d'*40}/data/2025-26/gws/merged_gw.csv"
+                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'d'*40}/data/{season}/gws/merged_gw.csv"
                         if track == "development_mirror"
-                        else f"receipt://2025-26/gw{gw}/outcomes",
+                        else f"receipt://{season}/gw{gw}/outcomes",
                         "commit_sha": "d" * 40,
                         "timing_basis": "bounded_reconstruction" if track == "development_mirror" else "receipt",
                         "finalized_at": finalized_at.isoformat(),
@@ -390,13 +397,13 @@ def _build_empirical_bundle(
                     "seed": {
                         "source_id": "seed_2024_25",
                         "role": "seed",
-                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'a'*40}/data/2024-25/gws/merged_gw.csv"
+                        "url": f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'a'*40}/data/{seed_season}/gws/merged_gw.csv"
                         if track == "development_mirror"
-                        else "receipt://2024-25/seed",
+                        else f"receipt://{seed_season}/seed",
                         "commit_sha": "a" * 40,
                         "timing_basis": "bounded_reconstruction" if track == "development_mirror" else "receipt",
-                        "capture_lower": "2025-06-04T15:20:23+00:00",
-                        "capture_upper": "2025-08-01T00:00:00+00:00",
+                        "capture_lower": f"{start_year}-06-04T15:20:23+00:00",
+                        "capture_upper": f"{start_year}-08-01T00:00:00+00:00",
                         "blob_sha256": seed_sha,
                         "decompressed_sha256": seed_sha,
                     },
@@ -420,7 +427,7 @@ def _build_empirical_bundle(
         "version": 2,
         "mode": "empirical",
         "track": track,
-        "season": "2025-26",
+        "season": season,
         "eligibility_policy": "empirical-v2",
         "partial_prefix": partial_prefix,
         "full_season_required": not partial_prefix,
@@ -428,6 +435,10 @@ def _build_empirical_bundle(
         "anchor": {"squad_ids": list(range(1, 16))},
         "origins": origins,
     }
+    if track == "validation_fplcache":
+        request["purpose"] = "validation"
+        if checkpoint_gw is not None:
+            request["checkpoint_gw"] = checkpoint_gw
 
     # Build content-addressed training bundle authority for each admitted GW after request input digests are computed
     reports = assess_origins(request, catalog)
@@ -511,7 +522,7 @@ def _build_empirical_bundle(
             "mode": "empirical",
             "track": track,
             "input_digest": rep["input_digest"],
-            "season": "2025-26",
+            "season": season,
             "gw": gw,
             "seed_identity": f"seed:{seed_season}:{'a'*40}",
             "source_digest": src_digest,
@@ -976,3 +987,122 @@ def test_verify_training_bundle_accepts_2024_25_admitted_2023_24_seed_url_only()
     )
     with pytest.raises(ValueError, match="admitted origin source|vaastav"):
         verify_training_bundle(require_input(req_24, cat_24, "2024-25", 1), req_24, cat_24, spoof_auth)
+
+
+def test_validation_fplcache_track_admits_active_validation_s_and_blocks_dev_or_unchecked() -> None:
+    from backtesting.empirical_mirrors import validate_mirror_url
+
+    # Historical dev mirror URL guard stays strict unless allow_active_validation_fplcache=True
+    fplcache_26_url = f"https://raw.githubusercontent.com/Randdalf/fplcache/{'a'*40}/cache/2026/8/15/1200.json.xz"
+    with pytest.raises(ValueError, match="active-validation|authorized"):
+        validate_mirror_url(fplcache_26_url)
+    assert validate_mirror_url(fplcache_26_url, allow_active_validation_fplcache=True) == fplcache_26_url
+
+    # GW1..10 is usable as a diagnostic prefix within the 24-hour bound.
+    req_10, cat_10, auth_10 = _build_empirical_bundle(
+        gws=tuple(range(1, 11)),
+        track="validation_fplcache",
+        season="2026-27",
+        seed_season="2025-26",
+        bootstrap_age_hours=12.0,
+        fixtures_age_hours=1.5,
+        partial_prefix=False,
+        checkpoint_gw=15,
+    )
+    rep_10 = assess_origins(req_10, cat_10)
+    assert len(rep_10) == 10
+    assert all(r["status"] == "admitted_empirical" for r in rep_10)
+    assert "fplcache_mirror_provenance" in rep_10[0]["disclosed_limitations"]
+    assert "bootstrap_stale_band_8h_to_24h" in rep_10[0]["disclosed_limitations"]
+    assert all(r["partial_prefix"] is True and r["promotable"] is False for r in rep_10)
+    assert not any(r["checkpoint_complete"] for r in rep_10)
+    cap10 = require_input(req_10, cat_10, "2026-27", 1)
+    assert cap10.track == "validation_fplcache"
+    verify_training_bundle(cap10, req_10, cat_10, auth_10[1])
+
+    # Exact GW1..15 evidence closes only the declared GW15 checkpoint.
+    req_15, cat_15, _ = _build_empirical_bundle(
+        gws=tuple(range(1, 16)),
+        track="validation_fplcache",
+        season="2026-27",
+        seed_season="2025-26",
+        bootstrap_age_hours=6.0,
+        fixtures_age_hours=1.5,
+        partial_prefix=False,
+        checkpoint_gw=15,
+    )
+    rep_15 = assess_origins(req_15, cat_15)
+    assert all(r["status"] == "admitted_empirical" and r["checkpoint_complete"] for r in rep_15)
+    assert all(r["partial_prefix"] and not r["promotable"] for r in rep_15)
+    with pytest.raises(ValueError, match="full season"):
+        require_input(req_15, cat_15, "2026-27", 15, require_full_season=True)
+    assert not any(r["checkpoint_complete"] for r in assess_origins({**req_15, "partial_prefix": True}, cat_15))
+
+    # 3. Fail-closed checks: wrong season role (2025-26), >24h bootstrap, data_checked=False, or vaastav URL
+    req_dev, cat_dev, _ = _build_empirical_bundle(
+        gws=(1,), track="validation_fplcache", season="2025-26", seed_season="2024-25", fixtures_age_hours=1.5
+    )
+    assert assess_origins(req_dev, cat_dev)[0]["status"] == "invalid"
+
+    req_stale, cat_stale, _ = _build_empirical_bundle(
+        gws=(1,), track="validation_fplcache", season="2026-27", seed_season="2025-26", bootstrap_age_hours=25.0, fixtures_age_hours=1.5
+    )
+    assert assess_origins(req_stale, cat_stale)[0]["status"] == "unresolved"
+
+    req_unchk, cat_unchk, _ = _build_empirical_bundle(
+        gws=(1,), track="validation_fplcache", season="2026-27", seed_season="2025-26", fixtures_age_hours=1.5
+    )
+    req_unchk["origins"][0]["sources"]["outcomes"]["data_checked"] = False
+    assert assess_origins(req_unchk, cat_unchk)[0]["status"] == "unresolved"
+
+    req_va, cat_va, _ = _build_empirical_bundle(
+        gws=(1,), track="validation_fplcache", season="2026-27", seed_season="2025-26", fixtures_age_hours=1.5
+    )
+    req_va["origins"][0]["sources"]["bootstrap"]["url"] = f"https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/{'a'*40}/data/2026-27/players_raw.csv"
+    assert assess_origins(req_va, cat_va)[0]["status"] == "invalid"
+
+    with pytest.raises(ValueError, match="requires purpose"):
+        assess_origins({**req_15, "purpose": "dev"}, cat_15)
+    with pytest.raises(ValueError, match="checkpoint_gw"):
+        assess_origins({**req_15, "checkpoint_gw": 14}, cat_15)
+
+
+def test_validation_fplcache_manifest_retains_checkpoint_scope_and_checks_outcomes(tmp_path: Path) -> None:
+    from backtesting.empirical_mirrors import load_empirical_manifest_bundle
+
+    request, catalog, _ = _build_empirical_bundle(
+        gws=tuple(range(1, 16)), track="validation_fplcache", season="2026-27", seed_season="2025-26",
+        fixtures_age_hours=1.5, partial_prefix=False, checkpoint_gw=15,
+    )
+    origins = []
+    for origin in request["origins"]:
+        gw = origin["gw"]
+        entry = {"gw": gw, "deadline_utc": origin["deadline"], "origin_admitted": True}
+        for role, label in (("bootstrap", "bootstrap"), ("fixtures", "fixtures"), ("outcomes", "settled_outcomes")):
+            source = origin["sources"][role]
+            filename = f"{role}-{gw}"
+            (tmp_path / filename).write_bytes(catalog[source["source_id"]])
+            entry[label] = {**source, "status": "supported", "local_relpath": filename}
+        for field in ("capture_lower", "capture_upper"):
+            entry["bootstrap"][f"{field}_utc"] = entry["bootstrap"][field]
+        entry["settled_outcomes"].update(
+            finalized_at_utc=entry["settled_outcomes"]["finalized_at"],
+            max_kickoff_utc=origin["max_kickoff_utc"],
+            meets_plus_24h=True,
+        )
+        origins.append(entry)
+    manifest = {
+        "schema_version": 2, "track": request["track"], "purpose": request["purpose"],
+        "season": request["season"], "checkpoint_gw": request["checkpoint_gw"], "origins": origins,
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_bytes(_canon(manifest))
+    complete = load_empirical_manifest_bundle(manifest_path, quarantine_root=tmp_path)
+    assert complete["checkpoint_complete"] is True
+    assert complete["partial_prefix"] and not complete["promotable"]
+    assert not load_empirical_manifest_bundle(manifest_path, quarantine_root=tmp_path, prefix_end_gw=10)["checkpoint_complete"]
+
+    origins[-1]["settled_outcomes"]["data_checked"] = False
+    manifest_path.write_bytes(_canon(manifest))
+    with pytest.raises(ValueError, match="checked outcomes at GW15"):
+        load_empirical_manifest_bundle(manifest_path, quarantine_root=tmp_path)

@@ -100,6 +100,14 @@ Output yields:
 - **`invalid`**: Contract breach, execution crash, or inert prototype. Does NOT trigger 1-year Dead Lever lock.
 
 ### Stage 7: Manual Champion Adoption
+ADR 0069 checkpoint v1 reports use submitted scores and guards for diagnostics. Live checkpoint adoption requires verified empirical replay material; a request-level admission flag carries no authority.
+
+For ADR 0069, retain `adr0069-checkpoint-v2` request beside its evidence and registry. Include `checkpoint_gw`, `selection_path` (snapshot of sealed podium and serving state), `registry_path`, `model_source_hash`, `protocol` (path and SHA256), `confirmation_attempt_ids` and `development_selections` keyed by frozen finalist, plus `replays` and `guard_outcome_sources` in same shapes as rolling evidence. Development selection binds S-1 Champion trace and frozen identities. Use canonical hash of entire retained protocol in registrations and replay identities, including protocol approval. Declare S checkpoints `[15, 30, 38]`, full registered S schedule, six-GW Strategic replay and GW-clustered projection guards. Freeze S-1 margin baseline schedule before registration.
+
+- S admission uses `track="validation_fplcache"` and matching `checkpoint_gw`. Retain pinned Randdalf/fplcache `.xz` blobs and official fixture, history, seed and checked outcome receipts. Every S replay uses same admitted GW1-to-checkpoint inputs, outcomes and certified opening anchor. `checkpoint_complete` covers that prefix; only full GW1–38 can satisfy full-season admission.
+- Retain one S-1 Champion replay and one S replay per frozen finalist plus Confirmed Champion. Scored replay end equals declared S-1 baseline end or S checkpoint. Keep settled guard outcome sources through scored end. Generate S-1 forecasts before registration and S forecasts after all frozen registrations. Record exact checkpoint trace in registry for each finalist.
+- Run `--checkpoint_request` alone for read-only result. Add `--output_bundle` to retain evidence and finalize a verified passing winner in the registry. Keep request, bundle and frozen selection snapshot at original paths for verification. Use separate `--adopt` only after approving exact bundle hash.
+
 Once an evidence bundle has achieved scientific verdict `pass` and execution status `complete`, the operator executes explicit manual adoption:
 ```bash
 uv run python -m commands.evaluate_model_promotion \

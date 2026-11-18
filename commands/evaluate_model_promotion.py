@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -27,8 +28,6 @@ from backtesting.model_evaluation import (
     promote_candidate,
     write_promotion_evidence,
 )
-from backtesting.evidence_statistics import PairedGameweekScore, assign_gameweek_segment
-from backtesting.projection_guards import GuardOutput
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
     CONFIRMATION_BOOTSTRAP_MIN_P,
@@ -36,8 +35,11 @@ from backtesting.promotion import (
     PromotionVerdict,
 )
 from backtesting.promotion_evidence import (
+    CHECKPOINT_EVIDENCE_V2,
     CHECKPOINT_EVIDENCE_VERSION,
-    evaluate_dual_tier_checkpoint,
+    content_hash,
+    evaluate_checkpoint_payload,
+    evaluate_verified_checkpoint_payload,
     verify_checkpoint_recommendation_bundle,
     verify_recommendation_bundle,
     write_checkpoint_recommendation_bundle,
@@ -307,7 +309,7 @@ def adopt_champion(
                 raw_bundle = loaded
         except (OSError, ValueError):
             raw_bundle = {}
-    if raw_bundle.get("version") == CHECKPOINT_EVIDENCE_VERSION:
+    if raw_bundle.get("version") in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
         data = verify_checkpoint_recommendation_bundle(bundle_path, require_finalized=True)
     else:
         data = verify_recommendation_bundle(bundle_path, require_finalized=True)
@@ -320,6 +322,8 @@ def adopt_champion(
         raise ValueError("Candidate override differs from approved evidence")
     selection_path = config_path or DEFAULT_CONFIG_PATH
     current_sel = load_model_selection(selection_path)
+    if data.get("version") == CHECKPOINT_EVIDENCE_V2 and data["selection_sha256"] != content_hash(asdict(current_sel)):
+        raise ValueError("Current sealed podium differs from the approved checkpoint selection")
     if current_sel.champion != expected_current_champion or data["former_champion"] != expected_current_champion:
         raise ValueError(
             f"Current Champion mismatch: expected '{expected_current_champion}', found '{current_sel.champion}'"
@@ -363,45 +367,12 @@ def evaluate_checkpoint_request(request_path: Path | str) -> dict[str, Any]:
     """Read-only ADR 0069 GW15/GW30/GW38 checkpoint evaluator from a retained JSON request."""
     path = Path(request_path).resolve()
     payload = json.loads(path.read_bytes())
-    raw_sel = payload.get("selection_path")
-    if raw_sel:
-        sel_candidate = Path(raw_sel)
-        if not sel_candidate.is_absolute():
-            sel_candidate = (path.parent / sel_candidate).resolve()
-        selection = load_model_selection(sel_candidate)
+    if payload.get("version") == CHECKPOINT_EVIDENCE_V2:
+        result, _ = evaluate_verified_checkpoint_payload(path.parent, payload)
     else:
-        selection = load_model_selection()
-    traces = {
-        cand: [
-            PairedGameweekScore(
-                season=str(row["season"]),
-                gameweek=int(row["gameweek"]),
-                candidate_net_points=float(row["candidate_net_points"]),
-                champion_net_points=float(row["champion_net_points"]),
-                candidate_gross_points=float(row.get("candidate_gross_points", row["candidate_net_points"])),
-                champion_gross_points=float(row.get("champion_gross_points", row["champion_net_points"])),
-                candidate_hits_deducted=int(row.get("candidate_hits_deducted", 0)),
-                champion_hits_deducted=int(row.get("champion_hits_deducted", 0)),
-                is_chip_gameweek=bool(row.get("is_chip_gameweek", False)),
-                segment=assign_gameweek_segment(int(row["gameweek"])),
-            )
-            for row in rows
-        ]
-        for cand, rows in payload["finalist_traces"].items()
-    }
-    guards = {
-        cand: [GuardOutput(**g) for g in g_list]
-        for cand, g_list in payload["finalist_guards"].items()
-    }
-    result = evaluate_dual_tier_checkpoint(
-        checkpoint_gw=int(payload["checkpoint_gw"]),
-        finalist_traces=traces,
-        finalist_guards=guards,
-        selection=selection,
-        podium_order=tuple(payload["podium_order"]),
-        protocol_approved=bool(payload.get("protocol_approved", True)),
-        inapplicable_guards=tuple(payload.get("inapplicable_guards", ())),
-    )
+        raw_sel = payload.get("selection_path")
+        selection = load_model_selection((path.parent / raw_sel).resolve() if raw_sel else None)
+        result, _ = evaluate_checkpoint_payload(payload, selection)
     return {
         "checkpoint_gw": result.checkpoint_gw,
         "num_finalists": result.num_finalists,

@@ -40,6 +40,7 @@ FIXTURE_TARGET_SECONDS = 7 * 86400
 FIXTURE_MIN_CAP_SECONDS = 14 * 86400
 FIXTURE_MAX_CAP_SECONDS = 21 * 86400
 SETTLEMENT_MIN_WAIT_SECONDS = 24 * 3600
+EMPIRICAL_TRACKS = ("development_mirror", "prospective_receipt", "validation_fplcache")
 
 _MERGED_CSV_PREFIX_COLS = 21
 _MERGED_CSV_SUFFIX_COLS = 20
@@ -127,13 +128,26 @@ def _season_from_fplcache_ym(year: int, month: int) -> str | None:
     return None
 
 
-def validate_mirror_url(url: str, *, allow_prior_seed: bool = False) -> str:
-    """Validate URL stays within allowlisted historical mirror hosts/paths and authorized dev seasons."""
+def validate_mirror_url(
+    url: str, *, allow_prior_seed: bool = False, allow_active_validation_fplcache: bool = False
+) -> str:
+    """Validate the source URL within its authorized mirror season and repository."""
     parsed = urlparse(url)
     if parsed.scheme != "https" or parsed.hostname not in _ALLOWED_HOSTS:
         raise ValueError(f"Mirror URL outside approved GitHub HTTPS hosts: {url}")
     path = parsed.path
     lifecycle = load_season_lifecycle()
+    if allow_active_validation_fplcache:
+        match = _FPLCACHE_PATH_RE.fullmatch(path)
+        if (
+            match is None
+            or parsed.netloc != "raw.githubusercontent.com"
+            or parsed.query or parsed.fragment
+            or re.fullmatch(r"[0-9a-f]{40}", path.split("/")[3]) is None
+            or _season_from_fplcache_ym(int(match[2]), int(match[3])) != lifecycle.active_season
+        ):
+            raise ValueError(f"URL is not an authorized pinned active-validation fplcache snapshot: {url}")
+        return url
     allowed_seasons = _allowed_dev_mirror_seasons(include_prior_seed=allow_prior_seed)
     blocked_seasons = tuple(lifecycle.sealed_seasons()) + (lifecycle.active_season,)
     if any(season in path for season in blocked_seasons):
@@ -150,6 +164,38 @@ def validate_mirror_url(url: str, *, allow_prior_seed: bool = False) -> str:
     raise ValueError(f"Mirror URL outside allowlisted historical repositories/seasons: {url}")
 
 
+def verify_validation_fplcache_snapshot(
+    url: str, *, commit_sha: Any, capture_lower: datetime, capture_upper: datetime
+) -> None:
+    """Bind a retained active validation snapshot to its pinned revision and filename time."""
+    path = urlparse(validate_mirror_url(url, allow_active_validation_fplcache=True)).path
+    _, _, _, revision, repo_path = path.split("/", 4)
+    filename_utc = parse_fplcache_snapshot_path(repo_path)
+    tolerance = timedelta(seconds=FPLCACHE_FILENAME_TOLERANCE_SECONDS)
+    if (
+        revision != commit_sha
+        or filename_utc is None
+        or abs(filename_utc - capture_upper) > tolerance
+        or not timedelta(0) <= capture_upper - capture_lower <= timedelta(seconds=BOOTSTRAP_RECONSTRUCTION_WINDOW_SECONDS)
+    ):
+        raise ValueError("Validation fplcache snapshot revision or filename time differs from capture evidence")
+
+
+def empirical_checkpoint_scope(track: str, purpose: Any, checkpoint_gw: Any) -> int | None:
+    """Validate the explicit ADR 0069 checkpoint scope without granting full-season status."""
+    if track != "validation_fplcache":
+        if checkpoint_gw is not None:
+            raise ValueError("checkpoint_gw requires validation_fplcache")
+        return None
+    if purpose != "validation":
+        raise ValueError("validation_fplcache requires purpose='validation'")
+    if checkpoint_gw is None:
+        return None
+    if type(checkpoint_gw) is not int or checkpoint_gw not in (15, 30, 38):
+        raise ValueError("validation_fplcache checkpoint_gw must be 15, 30, or 38")
+    return checkpoint_gw
+
+
 def build_bootstrap_mirror_record(
     *,
     season: str,
@@ -162,10 +208,11 @@ def build_bootstrap_mirror_record(
     commit_time: datetime,
     raw_bytes: bytes,
     local_relpath: str | None = None,
+    allow_active_validation_fplcache: bool = False,
 ) -> dict[str, Any]:
     """Verify and summarize one pinned Randdalf/fplcache bootstrap snapshot per #175/#178."""
     get_rules(season)
-    validate_mirror_url(url)
+    validate_mirror_url(url, allow_active_validation_fplcache=allow_active_validation_fplcache)
     dl_utc = _utc(deadline)
     commit_utc = _utc(commit_time)
     filename_utc = parse_fplcache_snapshot_path(repo_path)
@@ -197,6 +244,14 @@ def build_bootstrap_mirror_record(
         timing_basis = "unresolved_lower_bound"
 
     capture_upper = commit_utc
+    if allow_active_validation_fplcache:
+        if season != load_season_lifecycle().active_season or capture_lower is None or timing_basis != "bounded_reconstruction":
+            raise ValueError("Active fplcache record requires the validation season and a bounded capture")
+        verify_validation_fplcache_snapshot(
+            url, commit_sha=commit_sha, capture_lower=capture_lower, capture_upper=capture_upper,
+        )
+        if urlparse(url).path.split("/", 4)[-1] != repo_path:
+            raise ValueError("Active fplcache URL differs from the retained snapshot path")
     age_lower = (dl_utc - capture_lower).total_seconds() if capture_lower is not None else None
     disclosed: list[str] = ["fplcache_mirror_provenance"]
     status = "supported"
@@ -767,8 +822,10 @@ def load_empirical_manifest_bundle(
 ) -> dict[str, Any]:
     """Load content-addressed empirical mirror/receipt bundle with fail-closed SHA-256 checks."""
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if data.get("schema_version") != 2 or data.get("track") not in ("development_mirror", "prospective_receipt"):
+    track = data.get("track")
+    if data.get("schema_version") != 2 or track not in EMPIRICAL_TRACKS:
         raise ValueError("Unsupported empirical manifest schema or track")
+    checkpoint_gw = empirical_checkpoint_scope(track, data.get("purpose"), data.get("checkpoint_gw"))
     lifecycle = load_season_lifecycle()
     qroot = lifecycle.assert_unsealed_storage_path(
         quarantine_root if quarantine_root is not None else Path("data/reports/empirical_mirrors"),
@@ -779,8 +836,8 @@ def load_empirical_manifest_bundle(
     role_s = lifecycle.role_of(season)
     purpose_s: AccessPurpose = (
         ("historical_filter" if role_s == "historical_filter" else "dev")
-        if data["track"] == "development_mirror"
-        else "validation"
+        if track == "development_mirror"
+        else ("active_validation" if track == "validation_fplcache" else "validation")
     )
     lifecycle.assert_access(season, purpose=purpose_s)
     origins_raw = list(data.get("origins", []))
@@ -802,8 +859,29 @@ def load_empirical_manifest_bundle(
             or out_meta.get("meets_plus_24h") is not True
         ):
             raise ValueError(f"Non-admitted empirical manifest entry at GW{gw_int}")
+        if track == "validation_fplcache":
+            capture_lower = _utc(bs_meta.get("capture_lower_utc"))
+            capture_upper = _utc(bs_meta.get("capture_upper_utc"))
+            verify_validation_fplcache_snapshot(
+                str(bs_meta.get("url", "")), commit_sha=bs_meta.get("commit_sha"),
+                capture_lower=capture_lower, capture_upper=capture_upper,
+            )
+            if require_admitted:
+                deadline = _utc(entry.get("deadline_utc"))
+                if (
+                    bs_meta.get("timing_basis") != "bounded_reconstruction"
+                    or capture_upper >= deadline
+                    or (deadline - capture_lower).total_seconds() > FPLCACHE_MAX_HARD_SECONDS
+                    or out_meta.get("finished") is not True
+                    or out_meta.get("data_checked") is not True
+                    or (_utc(out_meta.get("finalized_at_utc")) - _utc(out_meta.get("max_kickoff_utc"))).total_seconds() < SETTLEMENT_MIN_WAIT_SECONDS
+                ):
+                    raise ValueError(f"Validation fplcache manifest lacks timely bootstrap and checked outcomes at GW{gw_int}")
+            for receipt in (fx_meta, out_meta):
+                if receipt.get("timing_basis") != "receipt" or not str(receipt.get("url", "")).startswith("receipt://"):
+                    raise ValueError(f"Validation fplcache manifest requires fixture and outcome receipts at GW{gw_int}")
         for label, meta in (("bootstrap", bs_meta), ("fixtures", fx_meta), ("settled_outcomes", out_meta)):
-            if data["track"] == "development_mirror" and isinstance(meta, Mapping) and meta.get("url"):
+            if track == "development_mirror" and isinstance(meta, Mapping) and meta.get("url"):
                 validate_mirror_url(str(meta["url"]))
             rel = meta.get("local_relpath")
             if not rel:
@@ -841,13 +919,26 @@ def load_empirical_manifest_bundle(
         loaded_origins.append(entry)
 
     is_partial = len(loaded_origins) < 38 or not bool(data.get("summary", {}).get("full_season_admitted", False))
-    return {
+    result = {
         "schema_version": 2,
         "mode": "empirical",
-        "track": data["track"],
+        "track": track,
         "season": season,
         "partial_prefix": is_partial,
         "promotable": not is_partial,
         "shared_chip_calendar": data.get("shared_chip_calendar", []),
         "origins": loaded_origins,
     }
+    if track == "validation_fplcache":
+        gameweeks = [entry["gw"] for entry in loaded_origins]
+        full_season = require_admitted and gameweeks == list(range(1, 39))
+        result.update(
+            purpose="validation",
+            checkpoint_gw=checkpoint_gw,
+            checkpoint_complete=(
+                require_admitted and checkpoint_gw is not None and gameweeks == list(range(1, checkpoint_gw + 1))
+            ),
+            partial_prefix=not full_season,
+            promotable=full_season,
+        )
+    return result

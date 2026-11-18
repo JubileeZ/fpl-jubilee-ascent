@@ -1,5 +1,7 @@
 """Unit tests for Phase 9 confirmation admission and attempt registry."""
 
+from dataclasses import replace
+import json
 from pathlib import Path
 import pytest
 
@@ -562,3 +564,62 @@ def test_record_checkpoint_progress_records_gw15_and_gw30_without_completing(tmp
             execution_status="complete",
             completed_gameweeks=tuple(range(1, 16)),
         )
+
+
+def test_verify_checkpoint_attempt_binds_registration_trace_and_final_bundle(tmp_path: Path) -> None:
+    registry = ConfirmationRegistry(tmp_path / "registry.jsonl")
+    identity = {
+        "candidate_name": "cand_1",
+        "champion_name": "champ",
+        "model_source_hash": "a" * 64,
+        "parameters_hash": "b" * 64,
+        "protocol_hash": "c" * 64,
+        "max_family_attempts": 2,
+    }
+    attempt = registry.register_finalist(
+        **identity, mechanism_family="fam_a", dev_selection_record_ref="dev-ref", requested_seasons=("2026-27",)
+    )
+    scope = {**identity, "active_season": "2026-27", "checkpoint_gw": 15, "score_trace_hash": "d" * 64}
+    with pytest.raises(ValueError, match="exact completed"):
+        registry.verify_checkpoint_attempt(attempt.attempt_id, **scope)
+
+    progress = registry.record_checkpoint(
+        attempt.attempt_id, checkpoint_gw=15, completed_gameweeks=tuple(range(1, 16)), score_trace_hash="d" * 64
+    )
+    assert registry.verify_checkpoint_attempt(attempt.attempt_id, **scope) == progress
+    bundle_path = tmp_path / "bundle.json"
+    with pytest.raises(ValueError, match="finalized with a complete pass"):
+        registry.verify_checkpoint_attempt(attempt.attempt_id, **scope, finalized_bundle_path=bundle_path)
+
+    mismatches = {
+        "candidate_name": ("cand_2", "candidate_name"),
+        "champion_name": ("different_champ", "champion_name"),
+        "model_source_hash": ("e" * 64, "model_source_hash"),
+        "parameters_hash": ("e" * 64, "parameters_hash"),
+        "protocol_hash": ("e" * 64, "protocol_hash"),
+        "score_trace_hash": ("e" * 64, "score_trace_hash"),
+        "max_family_attempts": (3, "history or budget"),
+        "active_season": ("2025-26", "prohibits active_validation"),
+        "checkpoint_gw": (30, "exact completed"),
+    }
+    for field, (value, message) in mismatches.items():
+        with pytest.raises(ValueError, match=message):
+            registry.verify_checkpoint_attempt(attempt.attempt_id, **{**scope, field: value})
+
+    finalized = registry.finalize_early_checkpoint_pass(
+        attempt.attempt_id, checkpoint_gw=15, completed_gameweeks=tuple(range(1, 16)),
+        score_trace_hash="d" * 64, bundle_path=bundle_path.name,
+    )
+    assert registry.verify_checkpoint_attempt(attempt.attempt_id, **scope, finalized_bundle_path=bundle_path) == finalized
+    with pytest.raises(ValueError, match="different bundle path"):
+        registry.verify_checkpoint_attempt(attempt.attempt_id, **scope, finalized_bundle_path=tmp_path / "other.json")
+
+    changed_budget = replace(finalized, max_family_attempts=3)
+    changed_budget = replace(changed_budget, record_hash=changed_budget.compute_record_hash())
+    registry.registry_file.write_text(
+        "\n".join(json.dumps(record.to_dict()) for record in (attempt, progress, changed_budget)) + "\n",
+        encoding="utf-8",
+    )
+    assert registry.verify_integrity()
+    with pytest.raises(ValueError, match="history or budget"):
+        registry.verify_checkpoint_attempt(attempt.attempt_id, **scope, finalized_bundle_path=bundle_path)

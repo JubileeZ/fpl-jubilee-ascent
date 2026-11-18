@@ -49,7 +49,7 @@ def _verify_empirical_training_bundle(
     if set(authority) != required or authority["version"] != 2 or authority["mode"] != "empirical":
         raise ValueError("Unsupported empirical training authority")
     track = authority["track"]
-    if track not in ("development_mirror", "prospective_receipt") or track != capability.track:
+    if track != capability.track:
         raise ValueError("Training authority track mismatch")
     origin = next((o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw), None)
     if origin is None:
@@ -78,8 +78,7 @@ def _verify_empirical_training_bundle(
         raise ValueError("Invalid empirical training source")
     sources = origin["sources"]
     url = str(source["url"])
-    if track == "development_mirror":
-        seed_url = sources["seed"].get("url")
+    if track in ("development_mirror", "validation_fplcache"):
         allowed_urls = {
             sources[role].get("url")
             for role in ("bootstrap", "fixtures", "history", "seed")
@@ -87,7 +86,8 @@ def _verify_empirical_training_bundle(
         }
         if url not in allowed_urls:
             raise ValueError("Empirical training source url must match an admitted origin source")
-        validate_mirror_url(url, allow_prior_seed=(url == seed_url))
+        if track == "development_mirror":
+            validate_mirror_url(url, allow_prior_seed=(url == sources["seed"].get("url")))
     elif not url.startswith("receipt://"):
         raise ValueError("Prospective receipt track requires receipt:// URL")
 

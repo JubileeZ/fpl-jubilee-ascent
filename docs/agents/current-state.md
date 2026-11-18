@@ -17,6 +17,13 @@ No open frontier ticket (`explore-candidate` / `ideate-candidate` active under `
 Historical Oct–Nov 2026 session logs archived to [2026-11-18 Session History](../archive/2026-11-18-session-history.md).
 Eval canon: `docs/research/INDEX.md`. Prior residual work: `docs/research/champion-component-gap/`.
 
+### ADR 0069 review follow-up
+
+- GW15 provisional queue keeps ahead/even, unharmed #1. Rotate only to unharmed, non-trailing #2 after #1 drops. Fallback preserves season seal.
+- `validation_fplcache` admits complete GW15/GW30/GW38 prefixes separately from full-season eligibility. `adr0069-checkpoint-v2` reconstructs native replay scores and S-1-calibrated guards, verifies frozen registry bindings and finalizes passing bundles for explicit manual adoption. V1 diagnostic only. [Operator workflow](../testing/operator-workflow.md#stage-7-manual-champion-adoption)
+- Retained GW15 fixture verified through bundle reconstruction. Fixture verdict inconclusive. Manual adoption verified separately at passing-verdict boundary. Live winning checkpoint pending first qualified slate; evidence collection and checkpoint execution operator-run.
+- `solve` default documented. Dashboard refresh/model labels and config-driven forecast defaults deferred.
+
 ## Research truth
 
 Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metrics vs component-gap metrics (read first for Candidate/Champion work). Companions live in topic folders. Production minutes/rates = Club Fixture shrinkage + Trailing Start Window (ADR 0035). Production difficulty = **Modified FDR** (difficulty only). Fixture xP scale = **Calibrated Matchup Share** when this-season Official club xG exists (ADR 0040); else Club Strength; else neutral ×1.0 (ADR 0037). `Confirmed Champion` = `def_xg_shrink_challenger` (`ADR 0055`); `Provisional Active` = `null`; `podium_sealed` = `false` (`M <= 2` slate and `<= 5%` FWER budget open under `ADR 0069`). Component-gap crown = `xp_goals` structural (`docs/research/champion-component-gap/component_gap_summary.csv` `mse_share`). Research ranking = **DCS**. Dual-Vector Strength not in production Python.

@@ -49,8 +49,9 @@ Replace hardcoded year checks (`2023-24`, `2024-25`, `2025-26`, `2026-27`) with 
 - **Pre-Declared Checkpoints**:
   - **`GW15` (`>= 15` GWs)**:
     - Clears `<= 5%` FWER + zero harm -> eligible for early manual confirmation (`retiring prior Confirmed Champion`).
-    - Trails `Confirmed Champion` or hits harm limit -> drop `Provisional Active`; test pre-frozen `#2` podium candidate (`within M <= 2 FWER budget`).
-    - Ahead/even without `<= 5%` statistical certainty -> retain Dual-Tier cleanly (`Provisional Active` remains weekly default) until **`GW30` / `GW38`**.
+    - Trails `Confirmed Champion` or triggers Early-Harm -> rotate to pre-frozen downstream finalist only if at least even with `Confirmed Champion` on cumulative net points and no Early-Harm trigger. Otherwise fall back to `Confirmed Champion`; preserve season seal.
+    - Ahead/even without Early-Harm or statistical confirmation -> retain `Provisional Active` until **`GW30` / `GW38`**, including when backup has higher cumulative net points.
+    - Permanent confirmation evaluates eligible frozen finalists against same `Confirmed Champion`, within `M <= 2` FWER budget. Recommend one finalist for manual adoption; higher cumulative net points wins simultaneous passes.
   - **`GW30` / `GW38`**: Final in-season confirmation vs drop decision prior to summer rollover.
 
 ---

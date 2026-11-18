@@ -289,7 +289,6 @@ def assess_origins(
         isinstance(request, dict)
         and request.get("version") == 2
         and request.get("mode") == "empirical"
-        and request.get("track") in ("development_mirror", "prospective_receipt")
     ):
         from backtesting.empirical_admission import assess_empirical_origins
 

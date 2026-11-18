@@ -170,7 +170,8 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
     attempts.mkdir(parents=True, exist_ok=True)
     attempt = attempts / uuid.uuid4().hex
     attempt.mkdir()
-    (attempt / "started.json").write_bytes(_canonical_json_bytes({"version": 1, "started_at": datetime.now(UTC).isoformat(), "season": capability.season, "issue": capability.gw, "model": model_name}))
+    started_at = datetime.now(UTC).isoformat()
+    (attempt / "started.json").write_bytes(_canonical_json_bytes({"version": 1, "started_at": started_at, "season": capability.season, "issue": capability.gw, "model": model_name}))
     try:
         material = forecast_material(capability, request, catalog, training_authority, model_name)
         forecast_id = _sha256_hex(_canonical_json_bytes(material))
@@ -202,6 +203,7 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
                 "forecast_id": forecast_id,
                 "model": model_name,
                 "generation": meta,
+                "started_at": started_at,
                 "completed_at": datetime.now(UTC).isoformat(),
             }
             rep_bytes = _canonical_json_bytes(coverage_report)

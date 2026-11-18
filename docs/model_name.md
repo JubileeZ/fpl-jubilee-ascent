@@ -44,7 +44,7 @@ Fallback if `model_selection.json` missing: `calibrated_matchup_hybrid` (`models
 | `uv run python -m commands.report` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
 | `uv run python -m commands.dashboard --model NAME` | `--model` optional | Champion; Primary for Explorer / Dream Team; Transfer Plan Scenarios stay Champion; `--models` exports a Comparison Slate |
 | `uv run python -m commands.decision_regret` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
-| `uv run python -m commands.solve` | `--model` optional, `--champion`, `--no_hit` | Champion (`config/model_selection.json`); stale `data/user_settings.json` `datasource` is ignored |
+| `uv run python -m commands.solve` | `--model` optional, `--champion`, `--no_hit` | Provisional Active when set, else Confirmed Champion (`config/model_selection.json`); `--champion` selects Confirmed Champion; stale `data/user_settings.json` `datasource` ignored |
 
 Outputs: `data/<name>.csv` projections; `data/reports/top_picks_<name>.csv` from `commands.report`.
 
