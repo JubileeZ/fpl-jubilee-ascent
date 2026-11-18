@@ -691,7 +691,7 @@ Append-only JSONL registry with SHA-256 tamper-evident integrity chaining, recor
 _Avoid_: Overwriting past attempts, unregistered confirmation runs, adaptive parameter tuning on confirmation
 
 **Incremental Promotion**:
-A Candidate that passes the Historical Promotion Gate may be adopted as Model Champion via explicit manual adoption; the former Champion remains in the comparison slate for live validation and rollback.
+Explicitly approved replacement of Confirmed Champion by frozen finalist with verified active-season confirmation pass (ADR 0069). Historical qualification grants finalist eligibility. Former Champion remains in comparison slate for rollback.
 _Avoid_: Margin threshold, discard previous model, automatic adoption
 
 **Provisional Active (`Dual-Tier`, ADR 0069)**:

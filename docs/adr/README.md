@@ -114,10 +114,11 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | [0066](0066-backtesting-and-promotion-foundation.md) | Backtesting and Promotion Foundation | Amended | Sections 1–7 retained (rolling replay net FPL points, neutral £100m GW1 anchor, projection guards, 4 verdicts, immutable registry, manual adoption); Section 8 & static holdout superseded by ADR 0069. |
 | [0068](0068-two-axis-pre-execution-candidate-review.md) | Two-Axis Pre-Execution Candidate Review Protocol | Accepted | Mandatory 3-subagent team per candidate (Implementer, Reviewer A Spec/Math, Reviewer B Standards/Arch) with bounded 3-round repair loop and atomic checkpoints. |
 | [0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Annual Rolling Validation & Dual-Tier Promotion Governance | Accepted | Annual rolling firewall (`S`=`2026-27` quarantined validation via `Randdalf/fplcache` `<= 24h`, `S-1` Dev, `S-2` Filter, summer rollover), Dual-Tier `Provisional Active` + `Confirmed Champion`, and `GW15`/`GW30`/`GW38` checks. |
+| [0070](0070-weekly-planner-selection-and-champion-adoption.md) | Weekly Transfer Planner Selection and Champion Adoption | Accepted design | Weekly points-based model selection, GitHub approval, and first-pass confirmation from GW15 pending calibration. |
 
 ---
 
-## Chronological Index (0001–0069)
+## Chronological Index (0001–0070)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -190,3 +191,4 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0067 | [planning-horizon-architecture](0067-planning-horizon-architecture.md) | Accepted | Solver |
 | 0068 | [two-axis-pre-execution-candidate-review](0068-two-axis-pre-execution-candidate-review.md) | Accepted | Evaluation |
 | 0069 | [annual-rolling-validation-and-dual-tier-promotion](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Accepted | Evaluation |
+| 0070 | [weekly-planner-selection-and-champion-adoption](0070-weekly-planner-selection-and-champion-adoption.md) | Accepted design | Evaluation |

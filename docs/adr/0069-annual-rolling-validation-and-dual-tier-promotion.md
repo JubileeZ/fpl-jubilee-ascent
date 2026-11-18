@@ -3,6 +3,8 @@
 **Status**: Accepted (2026-11-13, Wayfinder Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) governance reset)  
 **Scope Note (Policy vs Implementation)**: Policy effective immediately. Hardcoded `2026-27 GW6+` guards refactored into [`config/season_lifecycle.json`](../../config/season_lifecycle.json) under [#185](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/185) (`Dual-Tier` serving & checkpoints queued under [#187](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/187)). Existing Champion `def_xg_shrink_challenger` and `candidate_ledger.csv` Dead Lever locks remain unchanged.
 
+**Follow-up design**: [ADR 0070](0070-weekly-planner-selection-and-champion-adoption.md) specifies weekly points-based Transfer Planner selection, GitHub approval, and first-pass confirmation from GW15 pending calibration.
+
 **Amends / Supersedes**:
 - Supersedes Section 8 (`#180`, 2026-11-12) and static `2026-27 GW6+` holdout/provisional-ban clauses of [ADR 0066](0066-backtesting-and-promotion-foundation.md); **retains ADR 0066 Sections 1–7 intact** (6-GW rolling replay net FPL points primary, neutral `£100.0m` GW1 ownership anchor, `GW1` locked / `GW2+` transfers / `1..5 FT`, 15 projection guards, non-wrapping MBB `L=5`, `FWER <= 0.05`, 4-way verdicts, immutable attempt registry, manual `adopt_champion`, frozen [ADR 0065](0065-strategic-arm-horizon-penalty-scaling-and-ft-schedule.md) Strategic constants).
 - Amends [ADR 0046](0046-point-in-time-backtest-and-statistical-gate.md) and [ADR 0047](0047-two-season-promotion-gate.md): replaces static `2026-27 GW6+` freeze and archive-only serial confirmation with annual rolling quarantine (`S`, `S-1`, `S-2`) and Dual-Tier `Provisional Active` operation.
