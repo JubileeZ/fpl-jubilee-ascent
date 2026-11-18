@@ -4,6 +4,7 @@ The product solver assumes modern FT rules. This adapter shares its Strategic
 objective while expressing historical FT transitions from the native rule table.
 """
 
+from collections import Counter
 from typing import Any, TYPE_CHECKING, cast
 import math
 
@@ -230,6 +231,18 @@ def _build_native_milp(
         for f in ft_states
     }
     clubs = sorted({p.club for p in players.values()})
+    held_club_counts: Counter[int] = Counter(p.club for p in state.squad)
+    club_excess: dict[int, int] = (
+        {club: max(0, held_club_counts.get(club, 0) - 3) for club in clubs}
+        if state.deadline > 1
+        else {}
+    )
+    has_club_overage: bool = any(v > 0 for v in club_excess.values())
+    no_transfer: dict[int, Any] = (
+        binary("notr_", [gw for gw in weeks if chip_by_gw.get(gw) != "free_hit"])
+        if has_club_overage
+        else {}
+    )
     hit_lim = int(options["weekly_hit_limit"])
     cum_nonfree_buys: list[Any] = []
     max_ft = state.free_transfers
@@ -294,8 +307,6 @@ def _build_native_milp(
         model.addConstr(bank[gw] == (prior_bank if chip == "free_hit" else cash))
         for position, count in (("GK", 2), ("D", 5), ("M", 5), ("F", 3)):
             model.addConstr(total(active[p] for p in ids if players[p].position == position) == count)
-        for club in clubs:
-            model.addConstr(total(active[p] for p in ids if players[p].club == club) <= 3)
         for position, low, high in (("GK", 1, 1), ("D", 3, 5), ("M", 2, 5), ("F", 1, 3)):
             count = total(start[p, gw] for p in ids if players[p].position == position)
             model.addConstr(count >= low)
@@ -318,6 +329,14 @@ def _build_native_milp(
         model.addConstr(total(jvars.values()) == 1)
         gw_buys = total(buy[p, gw] for p in ids)
         model.addConstr(total(n * v for (_, n), v in jvars.items()) == gw_buys)
+        allow_hold_overage: bool = has_club_overage and chip != "free_hit"
+        if allow_hold_overage:
+            model.addConstr(gw_buys <= 15 * (1 - no_transfer[gw]))
+            model.addConstr(gw_buys >= 1 - 15 * no_transfer[gw])
+        for club in clubs:
+            excess = club_excess.get(club, 0)
+            club_limit: Any = 3 + excess * no_transfer[gw] if allow_hold_overage and excess > 0 else 3
+            model.addConstr(total(active[p] for p in ids if players[p].club == club) <= club_limit)
         if not free and not has_free_so_far:
             if gw > 1:
                 model.addConstr(gw_buys <= min(15, rules.free_transfer_cap + hit_lim, max_ft + hit_lim))
@@ -383,7 +402,7 @@ def _build_native_milp(
         "bench0": bench0, "bench_out": bench_out, "old": old, "sell_old": sell_old,
         "new": new, "buy": buy, "sell_new": sell_new, "active_old_fh": active_old_fh,
         "active_new_fh": active_new_fh, "bank": bank, "ft": ft,
-        "cover": cover_vars, "slack": slack_vars, "j": joints,
+        "cover": cover_vars, "slack": slack_vars, "j": joints, "no_transfer": no_transfer,
     }
     return model, handles, asm_elapsed
 
@@ -462,7 +481,7 @@ def _inject_mip_start(seed_model: highspy.Highs, seed_vars: dict[str, Any], targ
         return False
     s_sol = seed_model.getSolution().col_value
     col_vals = [0.0] * target_model.getNumCol()
-    for key_group in ("start", "captain", "vice", "bench0", "bench_out", "old", "sell_old", "new", "buy", "sell_new", "active_old_fh", "active_new_fh", "bank", "ft", "cover", "slack"):
+    for key_group in ("start", "captain", "vice", "bench0", "bench_out", "old", "sell_old", "new", "buy", "sell_new", "active_old_fh", "active_new_fh", "bank", "ft", "cover", "slack", "no_transfer"):
         s_map, t_map = seed_vars[key_group], target_vars[key_group]
         for key, s_var in s_map.items():
             if key in t_map:
@@ -481,7 +500,7 @@ def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.Dat
     from backtesting.rolling_replay import SolverCertificate, UncertifiedSolveError
 
     rules = get_rules(state.rules_version)
-    validate_squad(state.squad)
+    validate_squad(state.squad, allow_club_overage=state.deadline > 1)
     if type(horizon) is not int or not 1 <= horizon <= 6 or state.deadline + horizon > 39:
         raise ValueError("Native replay horizon must contain one to six in-season deadlines")
     if state.rules_id != rules.rules_id or options.get("rules_version") != rules.version:

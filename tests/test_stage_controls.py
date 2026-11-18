@@ -42,6 +42,7 @@ from backtesting.replay_state import (
     initial_state,
     selling_price,
     state_hash,
+    transfer_squad,
     transition,
 )
 from backtesting.rolling_replay import (
@@ -605,3 +606,116 @@ def test_lp_kernel_candidate_ids_free_hit_retains_reduced_cost_enablers() -> Non
     assert dec.chip == "free_hit"
     assert cert.termination_status == "OPTIMAL"
     assert cert.relative_gap == 0.0
+
+
+def test_native_solver_and_rolling_replay_handle_midseason_irl_club_overage(tmp_path: Path) -> None:
+    """IRL club transfer pushing held squad to 4-from-1-club allows 0-transfer hold, forces <=3 on permanent transfer, and enforces <=3 on FH."""
+    from backtesting.rolling_replay import run_rolling_replay
+
+    # GW1 legal 15: 3 on club 1 (pids 1, 3, 4), 1 on club 2 (pid 5), rest clubs 3..6
+    clubs = (1, 3, 1, 1, 2, 3, 4, 4, 5, 5, 6, 6, 3, 4, 5)
+    squad = tuple(Player(pid, pos, clubs[pid - 1], 50, 50, True) for pid, pos in enumerate(POSITIONS, 1))
+    extra = [
+        Player(16, "M", 6, 50, 50, True),
+        Player(17, "D", 7, 50, 50, True),
+    ]
+    pool_gw1 = [*squad, *extra]
+    bs_df = pd.DataFrame(
+        [
+            {
+                "player_id": pl.player_id,
+                "position_id": POS_ID[pl.position],
+                "club_id": pl.club,
+                "now_cost": pl.market,
+                "selected_by_percent": 20.0 if pl.player_id <= 15 else 1.0,
+                "purchase_eligible": True,
+            }
+            for pl in pool_gw1
+        ]
+    )
+    anchor = solve_ownership_anchor(
+        bs_df,
+        "2026-27",
+        1,
+        anchor_type="opening",
+        schema=UniverseSchema(eligibility_col="purchase_eligible"),
+    )
+
+    # Case A: IRL transfer moves pid 5 from club 2 -> club 1 at GW2, and holding is optimal
+    pool_gw2 = [replace(pl, club=1) if pl.player_id == 5 else pl for pl in pool_gw1]
+
+    def _forecast_hold(gw: int, _state: Any) -> pd.DataFrame:
+        cur_pool = pool_gw1 if gw == 1 else pool_gw2
+        weeks = list(range(gw, min(gw + 6, 39)))
+        return _forecast_df(cur_pool, weeks, lambda pid, _w: 5.0 if pid <= 15 else 1.0)
+
+    def _outcome(gw: int) -> OutcomeBatch:
+        return OutcomeBatch(
+            "2026-27",
+            gw,
+            f"src-{gw}",
+            tuple((pl.player_id, Outcome(2, 90, True, 0, 0, 2)) for pl in pool_gw1),
+        )
+
+    traj = run_rolling_replay(
+        "champ",
+        "2026-27",
+        anchor,
+        _forecast_hold,
+        _outcome,
+        start_gw=1,
+        end_gw=3,
+        horizon=6,
+        solve_fn=native_strategic_solve,
+        policy=QualityPolicy(mode="certified", target_gap=0.0, time_limit_seconds=60.0),
+        checkpoint_dir=tmp_path / "hold_ckpt",
+        model_version_hash="v1",
+        protocol_hash="p1",
+    )
+    assert traj.records[1].decision.transfers == ()
+    assert sum(1 for p in traj.records[1].transition_result.state.squad if p.club == 1) == 4
+    assert traj.audit_reconstructed_net_score() == traj.cumulative_net
+
+    # Case B: Making ANY permanent transfer at GW2 (buying high-EV pid 16) forces reducing club 1 to <= 3
+    opening_b = initial_state("2026-27", squad)
+    st2_over = replace(
+        opening_b,
+        squad=tuple(replace(pl, club=1) if pl.player_id == 5 else pl for pl in squad),
+        deadline=2,
+        free_transfers=1,
+        bank=20,
+        parent_hash=state_hash(opening_b),
+    )
+    w_resolve = _forecast_df(
+        pool_gw2,
+        [2, 3],
+        lambda pid, _w: 20.0 if pid == 16 else (9.0 if pid == 17 else (0.0 if pid in (5, 11) else 5.0)),
+    )
+    dec_res, cert_res = native_strategic_solve(
+        st2_over, 2, w_resolve, get_strategic_replay_options(2, rules_version="2026-27")
+    )
+    assert cert_res.termination_status == "OPTIMAL"
+    assert dec_res.transfers
+    post_squad_b, _ = transfer_squad(
+        st2_over.squad, st2_over.bank, dec_res.transfers, allow_pre_transfer_club_overage=True
+    )
+    assert max(pd.Series([p.club for p in post_squad_b]).value_counts()) <= 3
+
+    # Case C: Free Hit on 4-from-1-club backing squad enforces <= 3 in temporary FH squad
+    fh_opts = {
+        **get_strategic_replay_options(2, rules_version="2026-27"),
+        "chip_calendar": ((2, "free_hit"),),
+    }
+    w_fh = _forecast_df(
+        pool_gw2,
+        [2, 3],
+        lambda pid, w: (10.0 if pid == 17 else (5.0 if pid <= 15 else 2.0)) if w == 2 else (5.0 if pid <= 15 else 1.0),
+    )
+    dec_fh, cert_fh = native_strategic_solve(st2_over, 2, w_fh, fh_opts)
+    assert cert_fh.termination_status == "OPTIMAL"
+    assert dec_fh.chip == "free_hit"
+    fh_squad, _ = transfer_squad(
+        st2_over.squad, st2_over.bank, dec_fh.transfers, allow_pre_transfer_club_overage=True
+    )
+    assert max(pd.Series([p.club for p in fh_squad]).value_counts()) <= 3
+

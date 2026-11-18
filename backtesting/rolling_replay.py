@@ -393,7 +393,7 @@ def refresh_replay_market(state: ReplayState, forecasts: pd.DataFrame) -> Replay
             raise ValueError("Invalid owned issue metadata")
         refreshed.append(replace(player, position=positions[row["position_id"]], club=row["club_id"],
                                  market=row["now_cost"], purchase_eligible=row["purchase_eligible"]))
-    validate_squad(tuple(refreshed))
+    validate_squad(tuple(refreshed), allow_club_overage=state.deadline > 1)
     return replace(state, squad=tuple(refreshed))
 
 
@@ -595,7 +595,14 @@ def validate_decision_legality(
 
     # Squad and financial transition validation
     try:
-        updated_squad, updated_bank = transfer_squad(state.squad, state.bank, decision.transfers)
+        updated_squad, updated_bank = transfer_squad(
+            state.squad,
+            state.bank,
+            decision.transfers,
+            allow_pre_transfer_club_overage=state.deadline > 1,
+        )
+        if decision.chip == "free_hit":
+            validate_squad(updated_squad)
     except ValueError as e:
         raise ReplayLegalityError(f"Financial or transfer legality failure: {e}") from e
 
@@ -631,9 +638,11 @@ def validate_decision_legality(
 def solve_lineup_milp(
     squad: tuple[Player, ...],
     target_xp: dict[int, float],
+    *,
+    allow_club_overage: bool = False,
 ) -> Lineup:
     """Select the optimal legal starting XI and bench order maximizing projected points."""
-    validate_squad(squad)
+    validate_squad(squad, allow_club_overage=allow_club_overage)
     pids = [p.player_id for p in squad]
     xp_vals = [target_xp.get(pid, 0.0) for pid in pids]
 
@@ -697,7 +706,7 @@ def heuristic_zero_transfer_solve(
         else {}
     )
 
-    lineup = solve_lineup_milp(state.squad, target_xp)
+    lineup = solve_lineup_milp(state.squad, target_xp, allow_club_overage=state.deadline > 1)
     decision = Decision(
         transfers=(),
         lineup=lineup,

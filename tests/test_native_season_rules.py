@@ -342,3 +342,98 @@ def test_2026_27_native_rules_chips_ft_and_defcon() -> None:
         _build_actual_components(pd.DataFrame([perf_no_defcon]), feature_26)
     built = _build_actual_components(pd.DataFrame([{**perf_no_defcon, "defensive_contribution": 10}]), feature_26)
     assert built.iloc[0]["actual_xp_defcon"] == 2.0
+
+
+def test_midseason_irl_club_transfer_overage_hold_transfer_and_free_hit() -> None:
+    from backtesting.rolling_replay import ReplayLegalityError, refresh_replay_market, validate_decision_legality
+
+    # Construct legal GW1 15-man squad: 3 from club 1 (pids 1, 3, 4), 1 from club 2 (pid 5), rest clubs 3..6
+    positions: tuple[Position, ...] = ("GK", "GK", "D", "D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F")
+    clubs = (1, 3, 1, 1, 2, 3, 4, 4, 5, 5, 6, 6, 3, 4, 5)
+    squad = tuple(Player(i + 1, pos, clubs[i], 50, 50) for i, pos in enumerate(positions))
+
+    # Opening GW1 squad must still strictly reject >3 players from one club
+    bad_opening = (squad[0], replace(squad[1], club=1), *squad[2:])
+    with pytest.raises(ValueError, match="More than three players from one club"):
+        initial_state("2026-27", bad_opening)
+
+    st1 = initial_state("2026-27", squad)
+    lineup = Lineup((1, 3, 4, 5, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9)
+    outcomes1 = {p.player_id: Outcome(2, 90, True) for p in squad}
+    st2 = apply_decision(st1, (), lineup, outcomes1).state
+    assert st2.deadline == 2
+
+    # Between GW1 and GW2, IRL club transfer moves pid 5 from club 2 -> club 1 (4 players on club 1)
+    pos_id_map = {"GK": 1, "D": 2, "M": 3, "F": 4}
+    gw2_forecast = pd.DataFrame(
+        [
+            {
+                "player_id": p.player_id,
+                "position_id": pos_id_map[p.position],
+                "club_id": 1 if p.player_id == 5 else p.club,
+                "now_cost": p.market,
+                "purchase_eligible": p.purchase_eligible,
+            }
+            for p in squad
+        ]
+    )
+    refreshed = refresh_replay_market(st2, gw2_forecast)
+    assert sum(1 for p in refreshed.squad if p.club == 1) == 4
+
+    # 1. Holding with 0 transfers at GW2 is valid
+    hold_dec = Decision((), lineup, state_hash(refreshed), 2)
+    validate_decision_legality(refreshed, hold_dec)
+    outcomes2 = {p.player_id: Outcome(2, 90, True) for p in refreshed.squad}
+    tr_hold = transition(refreshed, hold_dec, OutcomeBatch("2026-27", 2, "fplcache", tuple(outcomes2.items())))
+    assert sum(1 for p in tr_hold.state.squad if p.club == 1) == 4
+
+    # 2. Making a non-resolving transfer that leaves 4 on club 1 fails closed
+    non_resolving = Player(100, "M", 6, 50, 50)
+    bad_lineup = Lineup((1, 3, 4, 5, 6, 8, 9, 10, 100, 13, 14), (2, 7, 12, 15), 8, 9)
+    bad_dec = Decision(((11, non_resolving),), bad_lineup, state_hash(refreshed), 2)
+    with pytest.raises(ReplayLegalityError, match="More than three players from one club"):
+        validate_decision_legality(refreshed, bad_dec)
+    with pytest.raises(ValueError, match="More than three players from one club"):
+        transition(
+            refreshed,
+            bad_dec,
+            OutcomeBatch("2026-27", 2, "fplcache", (*outcomes2.items(), (100, Outcome(2, 90, True)))),
+        )
+
+    # 3. Free Hit with 0 swaps leaves 4 on club 1 in FH XI/15 and must fail; swapping down to <=3 passes & restores 4 in st3
+    fh_zero_dec = Decision((), lineup, state_hash(refreshed), 2, chip="free_hit")
+    with pytest.raises(ReplayLegalityError, match="More than three players from one club"):
+        validate_decision_legality(refreshed, fh_zero_dec)
+    with pytest.raises(ValueError, match="More than three players from one club"):
+        transition(refreshed, fh_zero_dec, OutcomeBatch("2026-27", 2, "fplcache", tuple(outcomes2.items())))
+
+    fh_rep = Player(101, "D", 6, 50, 50)
+    fh_lineup = Lineup((1, 3, 4, 101, 6, 8, 9, 10, 11, 13, 14), (2, 7, 12, 15), 8, 9)
+    fh_dec = Decision(((5, fh_rep),), fh_lineup, state_hash(refreshed), 2, chip="free_hit")
+    validate_decision_legality(refreshed, fh_dec)
+    tr_fh = transition(
+        refreshed,
+        fh_dec,
+        OutcomeBatch("2026-27", 2, "fplcache", (*outcomes2.items(), (101, Outcome(2, 90, True)))),
+    )
+    assert sum(1 for p in tr_fh.state.squad if p.club == 1) == 4
+
+    # 4. Permanent transfer selling 1 club-1 player (pid 5 -> pid 101) resolves to <=3 per club
+    resolve_dec = Decision(((5, fh_rep),), fh_lineup, state_hash(refreshed), 2)
+    validate_decision_legality(refreshed, resolve_dec)
+    tr_res = transition(
+        refreshed,
+        resolve_dec,
+        OutcomeBatch("2026-27", 2, "fplcache", (*outcomes2.items(), (101, Outcome(2, 90, True)))),
+    )
+    assert sum(1 for p in tr_res.state.squad if p.club == 1) == 3
+
+    # 5. Non-FH chips: triple_captain can hold 0-transfer overage; wildcard >=1 transfer forces <=3
+    tc_hold = Decision((), lineup, state_hash(refreshed), 2, chip="triple_captain")
+    validate_decision_legality(refreshed, tc_hold)
+    wc_bad = Decision(((11, non_resolving),), bad_lineup, state_hash(refreshed), 2, chip="wildcard")
+    with pytest.raises(ReplayLegalityError, match="More than three players from one club"):
+        validate_decision_legality(refreshed, wc_bad)
+    wc_res = Decision(((5, fh_rep),), fh_lineup, state_hash(refreshed), 2, chip="wildcard")
+    validate_decision_legality(refreshed, wc_res)
+

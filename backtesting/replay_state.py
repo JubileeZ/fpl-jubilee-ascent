@@ -84,14 +84,14 @@ def state_hash(state: ReplayState) -> str:
     return sha256(json.dumps(asdict(state), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def validate_squad(squad: tuple[Player, ...]) -> None:
+def validate_squad(squad: tuple[Player, ...], *, allow_club_overage: bool = False) -> None:
     if not isinstance(squad, tuple) or any(not isinstance(p, Player) for p in squad):
         raise ValueError("Squad must be immutable players")
     if len(squad) != 15 or len({p.player_id for p in squad}) != 15:
         raise ValueError("Squad must contain fifteen distinct players")
     if Counter(p.position for p in squad) != {"GK": 2, "D": 5, "M": 5, "F": 3}:
         raise ValueError("Invalid squad positions")
-    if any(count > 3 for count in Counter(p.club for p in squad).values()):
+    if not allow_club_overage and any(count > 3 for count in Counter(p.club for p in squad).values()):
         raise ValueError("More than three players from one club")
     if any(
         type(value) is not int or value <= 0
@@ -127,9 +127,13 @@ def refresh_owned(squad: tuple[Player, ...], refreshed: tuple[Player, ...]) -> t
 
 
 def transfer_squad(
-    squad: tuple[Player, ...], bank: int, transfers: tuple[tuple[int, Player], ...]
+    squad: tuple[Player, ...],
+    bank: int,
+    transfers: tuple[tuple[int, Player], ...],
+    *,
+    allow_pre_transfer_club_overage: bool = False,
 ) -> tuple[tuple[Player, ...], int]:
-    validate_squad(squad)
+    validate_squad(squad, allow_club_overage=allow_pre_transfer_club_overage)
     if type(bank) is not int or bank < 0:
         raise ValueError("Negative bank")
     sold = [player_id for player_id, _ in transfers]
@@ -148,7 +152,7 @@ def transfer_squad(
     if updated_bank < 0:
         raise ValueError("Unaffordable transfers")
     updated = tuple(p for p in squad if p.player_id not in sold) + tuple(p for _, p in transfers)
-    validate_squad(updated)
+    validate_squad(updated, allow_club_overage=allow_pre_transfer_club_overage and not transfers)
     return updated, updated_bank
 
 
@@ -188,9 +192,14 @@ def _validate_outcome(outcome: Outcome) -> None:
 
 
 def score_lineup(
-    squad: tuple[Player, ...], lineup: Lineup, outcomes: dict[int, Outcome], chip: Chip | None
+    squad: tuple[Player, ...],
+    lineup: Lineup,
+    outcomes: dict[int, Outcome],
+    chip: Chip | None,
+    *,
+    allow_club_overage: bool = False,
 ) -> tuple[int, int]:
-    validate_squad(squad)
+    validate_squad(squad, allow_club_overage=allow_club_overage)
     if chip not in (None, "wildcard", "free_hit", "bench_boost", "triple_captain"):
         raise ValueError("Unsupported chip")
     players = {p.player_id: p for p in squad}
@@ -249,7 +258,7 @@ def transition(state: ReplayState, decision: Decision, batch: OutcomeBatch) -> T
         raise ValueError("Duplicate outcome player")
     if type(state.deadline) is not int or not 1 <= state.deadline <= 38:
         raise ValueError("Invalid deadline")
-    validate_squad(state.squad)
+    validate_squad(state.squad, allow_club_overage=state.deadline > 1)
     if type(state.bank) is not int or state.bank < 0:
         raise ValueError("Invalid bank")
     if type(state.free_transfers) is not int or (state.deadline > 1 and not 1 <= state.free_transfers <= rules.free_transfer_cap) or (state.deadline == 1 and state.free_transfers != 0):
@@ -293,8 +302,19 @@ def transition(state: ReplayState, decision: Decision, batch: OutcomeBatch) -> T
             raise ValueError("Consecutive Free Hits are unsupported")
         chip_event: tuple[int, Chip, int] = (state.deadline, cast(Chip, decision.chip), window)
         history = (*history, chip_event)
-    squad, bank = transfer_squad(state.squad, state.bank, decision.transfers)
-    gross, captain_increment = score_lineup(squad, decision.lineup, outcomes, decision.chip)
+    squad, bank = transfer_squad(
+        state.squad,
+        state.bank,
+        decision.transfers,
+        allow_pre_transfer_club_overage=state.deadline > 1,
+    )
+    gross, captain_increment = score_lineup(
+        squad,
+        decision.lineup,
+        outcomes,
+        decision.chip,
+        allow_club_overage=state.deadline > 1 and not decision.transfers and decision.chip != "free_hit",
+    )
     transfers = len(decision.transfers)
     hit = 0 if decision.chip in ("wildcard", "free_hit") else 4 * max(transfers - state.free_transfers, 0)
     next_ft = next_free_transfers(rules, state.free_transfers, transfers, decision.chip, state.deadline)

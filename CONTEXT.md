@@ -873,8 +873,8 @@ Non-synthetic causal origin and independent settlement admission (`mode="empiric
 _Avoid_: Admitting offline diagnostics as empirical capability, relaxing `synthetic`-only checks by hash match alone
 
 **Development Mirror**:
-Historical reconstruction (`Randdalf/fplcache` `<= 24h` pre-deadline `.json.xz` `8h` target / `24h` cap + `vaastav/Fantasy-Premier-League` for `2025-26`, or `Randdalf/fplcache` + official settled FPL outcomes for active `S`) carrying explicit `disclosed_limitations` (late <24h news lag; `Randdalf/fplcache` formally credited per ADR 0069).
-_Avoid_: Terminal post-season bootstrap as point-in-time, undocumented mirror staleness, omitting `Randdalf/fplcache` credit
+Historical reconstruction (`Randdalf/fplcache` `<= 24h` pre-deadline `.json.xz` `8h` target / `24h` cap + `vaastav/Fantasy-Premier-League` for `2025-26`/`2024-25`, or `Randdalf/fplcache` + official settled FPL outcomes for active `S`) carrying explicit `disclosed_limitations` (late <24h news lag; `Randdalf/fplcache` credited per ADR 0069). Two-part boundary (`#188`, `ADR 0069`): `S-1`/`S-2` finalist qualification (`GW1–38` Season Archive, `< gw` `model.fit()`, `position_id != 5`) + admitted `2025-26 GW1..7` / `2024-25 GW1..1` mirror `Partial Prefix` parity (`#189`); active `S` mandates strict `Randdalf/fplcache` `<= 24h` across `GW1–38`.
+_Avoid_: Terminal post-season bootstrap as point-in-time, undocumented mirror staleness, omitting `Randdalf/fplcache` credit, treating `Partial Prefix` mirror as standalone full-season promotion authority
 
 **Prospective Receipt**:
 Optional manual local pre-deadline Official capture (`2h` target / `6h` cap) paired with `+24h` `data_checked=True` settlement. Not required for `GW1–38` validation under ADR 0069 (`Randdalf/fplcache` `<= 24h` is canonical base).
