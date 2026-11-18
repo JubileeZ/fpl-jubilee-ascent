@@ -13,7 +13,7 @@ from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.season_rules import get_rules
 from features.availability_snapshots import write_availability_snapshot
 from features.builder import EVENT_RATE_MAP, build_features
-from models import get_model
+from models import get_default_model_name, get_model
 from models.base import BaseModel
 
 
@@ -23,7 +23,7 @@ def predict_issue(
     catalog: dict[str, bytes],
     training_authority: str,
     staging_root: Path,
-    model_name: str = "def_xg_shrink_challenger",
+    model_name: str | None = None,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Stage verified synthetic or empirical data and call the supported concrete model once."""
     source = verify_training_bundle(capability, request, catalog, training_authority)
@@ -122,7 +122,7 @@ def predict_issue(
             raise ValueError("Oracle minutes prohibited in evidence forecasts")
         features["native_rules_version"] = rules.version
         features.attrs["issue_gameweek"] = capability.gw
-        model = get_model(model_name)
+        model = get_model(get_default_model_name() if model_name is None else model_name)
         if not isinstance(model, BaseModel):
             raise ValueError("Unexpected model factory")
         fit_fn = getattr(model, "fit", None)
@@ -162,7 +162,7 @@ def predict_synthetic_issue(
     catalog: dict[str, bytes],
     training_authority: str,
     staging_root: Path,
-    model_name: str = "def_xg_shrink_challenger",
+    model_name: str | None = None,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Stage verified synthetic data and call the supported concrete model once.
 

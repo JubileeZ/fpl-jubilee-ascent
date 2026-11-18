@@ -802,12 +802,15 @@ def run_dashboard_export(
         raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
 
     names = projection_model_names(model_name, model_names, config_path=config_path)
-    if model_name is None or model_name.strip().lower() in ("", "default"):
-        default_model = names[0]
-    elif model_name.strip().lower() == "champion":
+    requested_model = (model_name or "").strip()
+    explicit_primary = requested_model.lower() not in ("", "default")
+    if not explicit_primary:
+        # Serving order is Champion followed by Provisional Active, when present.
+        default_model = names[0] if model_names else names[-1]
+    elif requested_model.lower() == "champion":
         default_model = selection_default_model_name(config_path)
     else:
-        default_model = resolve_model_or_champion(model_name)
+        default_model = resolve_model_or_champion(requested_model)
     horizon = clamp_planning_horizon(horizon)
     earliest_unfinished = resolve_horizon_start(processed_dir)
     default_target = resolve_default_target_gw(processed_dir)
@@ -846,6 +849,7 @@ def run_dashboard_export(
         with_squad=with_squad,
         selection_path=config_path,
     )
+    dataset["meta"]["primary_model_explicit"] = explicit_primary or bool(model_names)
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
     write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")

@@ -724,6 +724,26 @@ def test_handle_dashboard_api_strategy_solve(monkeypatch: pytest.MonkeyPatch) ->
     assert captured["options"]["locked"] == "10,15"
 
 
+def test_strategy_solve_keeps_explicit_champion_when_provisional_is_active(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from commands import dashboard as dash
+    from models.selection import ModelSelection, save_model_selection
+
+    champion, provisional = "linear_baseline", "component_baseline"
+    config_path = tmp_path / "model_selection.json"
+    save_model_selection(ModelSelection(champion, (provisional,), provisional_active=provisional), config_path)
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", config_path)
+    monkeypatch.setattr(dash, "resolve_operational_processed_dir", lambda _root: tmp_path)
+    monkeypatch.setattr(dash, "load_settings", dict)
+    monkeypatch.setattr(dash, "execute_transfer_plan", lambda options, **_: {"model": options["datasource"]})
+    monkeypatch.setattr(dash, "_strategy_state", {})
+
+    for options, expected in (({}, provisional), ({"datasource": champion}, champion), ({"datasource": "champion"}, champion)):
+        dash.run_strategy_solve_job(options=options)
+        assert dash.strategy_solve_status()["payload"] == {"model": expected}
+
+
 def test_handle_dashboard_api_research_and_methodology() -> None:
     from commands import dashboard as dash
 
@@ -1069,8 +1089,12 @@ def test_build_branch_nodes_stores_solver_recommendation() -> None:
     assert node["solverRecommendation"]["transfers"][0]["playerInName"] == "Saka"
 
 
+@pytest.mark.parametrize(
+    ("model_name", "expected_primary"),
+    [(None, "component_baseline"), ("champion", "linear_baseline"), ("component_baseline", "component_baseline")],
+)
 def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, model_name: str | None, expected_primary: str
 ) -> None:
     from commands import export_dashboard
     from models.selection import ModelSelection, save_model_selection
@@ -1155,10 +1179,11 @@ def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export
         lambda name: _StubModel(9.0 if name == "component_baseline" else 7.0),
     )
 
-    out_json = export_dashboard.run_dashboard_export(horizon=1, target_gw=1, config_path=sel_path)
+    out_json = export_dashboard.run_dashboard_export(model_name=model_name, horizon=1, target_gw=1, config_path=sel_path)
     exported = json.loads(out_json.read_text(encoding="utf-8"))
     assert exported["meta"]["models"] == ["linear_baseline", "component_baseline"]
-    assert exported["meta"]["default_model"] == "linear_baseline"
+    assert exported["meta"]["default_model"] == expected_primary
+    assert exported["meta"]["primary_model_explicit"] is (model_name is not None)
     assert exported["meta"]["confirmed_champion"] == "linear_baseline"
     assert exported["meta"]["provisional_active"] == "component_baseline"
     assert exported["meta"]["active_transfer_plan_model"] == "component_baseline"

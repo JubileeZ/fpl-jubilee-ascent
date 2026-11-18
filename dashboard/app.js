@@ -593,8 +593,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const modelSel = document.getElementById("strategy-model");
     if (modelSel) {
       const catalog = metaData.models || [];
-      const champ = (metaData.champion_trust && metaData.champion_trust.champion) || metaData.default_model;
-      modelSel.innerHTML = `<option value="">${champ ? `${champ} (Champion)` : "Champion Model"}</option>`;
+      const champ = metaData.confirmed_champion || metaData.champion_trust?.champion;
+      const championOption = document.createElement("option");
+      championOption.value = champ || "champion";
+      championOption.textContent = champ ? `${champ} (Confirmed Champion)` : "Confirmed Champion";
+      modelSel.replaceChildren(championOption);
       catalog.forEach((m) => {
         if (m !== champ) {
           const opt = document.createElement("option");

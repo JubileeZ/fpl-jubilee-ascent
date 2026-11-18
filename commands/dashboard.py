@@ -580,7 +580,10 @@ def run_strategy_solve_job(*, options: dict[str, object], target_gw: int = 1) ->
 
         solver_opts = load_settings()
         solver_opts.update(options)
-        solver_opts["datasource"] = options.get("datasource") or get_active_transfer_plan_model_name()
+        datasource = options.get("datasource")
+        solver_opts["datasource"] = (
+            get_default_model_name() if datasource == "champion" else datasource or get_active_transfer_plan_model_name()
+        )
 
         horizon = clamp_planning_horizon(int(solver_opts.get("horizon", DEFAULT_PLANNING_HORIZON)))
         solver_opts["horizon"] = horizon

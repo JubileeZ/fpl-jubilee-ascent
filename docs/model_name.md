@@ -42,7 +42,7 @@ Fallback if `model_selection.json` missing: `calibrated_matchup_hybrid` (`models
 | `uv run python -m commands.run_model [NAME]` | positional optional, `--model`, or `--champion` | Champion (`config/model_selection.json`) |
 | `uv run python -m commands.backtest NAME` | positional | required |
 | `uv run python -m commands.report` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
-| `uv run python -m commands.dashboard --model NAME` | `--model` optional | Champion; Primary for Explorer / Dream Team; Transfer Plan Scenarios stay Champion; `--models` exports a Comparison Slate |
+| `uv run python -m commands.dashboard --model NAME` | `--model` optional | Explorer and Transfer Plan default to Provisional Active when set, else Confirmed Champion. Refresh retains both tiers when either is selected. `--models` exports a Comparison Slate. |
 | `uv run python -m commands.decision_regret` | `--model` optional or `--champion` | Champion (`config/model_selection.json`) |
 | `uv run python -m commands.solve` | `--model` optional, `--champion`, `--no_hit` | Provisional Active when set, else Confirmed Champion (`config/model_selection.json`); `--champion` selects Confirmed Champion; stale `data/user_settings.json` `datasource` ignored |
 

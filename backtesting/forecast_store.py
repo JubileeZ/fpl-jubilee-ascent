@@ -18,6 +18,7 @@ from backtesting.forecast_adapter import predict_issue
 from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.forecast_inputs import validate_storage_path, verify_training_bundle
 from backtesting.season_rules import get_rules, load_season_lifecycle
+from models import get_default_model_name
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -75,8 +76,10 @@ def _collect_code_closure() -> dict[str, str]:
     return code
 
 
-def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str = "def_xg_shrink_challenger") -> dict[str, Any]:
+def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> dict[str, Any]:
     """Capture a conservative source closure, including dirty/generated Python bytes."""
+    if model_name is None:
+        model_name = get_default_model_name()
     verify_input(capability, request, catalog)
     source = verify_training_bundle(capability, request, catalog, training_authority)
     origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
@@ -150,11 +153,9 @@ def load_forecast_verified(store: Path, forecast_id: str, capability: AdmittedIn
     forecast_dir = store / "forecasts" / forecast_id
     if model_name is None and (forecast_dir / "material.json").exists():
         try:
-            model_name = json.loads((forecast_dir / "material.json").read_bytes()).get("model", "def_xg_shrink_challenger")
-        except Exception:
-            model_name = "def_xg_shrink_challenger"
-    if model_name is None:
-        model_name = "def_xg_shrink_challenger"
+            model_name = json.loads((forecast_dir / "material.json").read_bytes()).get("model")
+        except (OSError, ValueError, AttributeError):
+            model_name = None
     material = forecast_material(capability, request, catalog, training_authority, model_name)
     frame = _load_forecast_content(store, forecast_id, material)
     strict_solver_table(frame, capability, request, catalog)
@@ -163,8 +164,10 @@ def load_forecast_verified(store: Path, forecast_id: str, capability: AdmittedIn
     return frame, material
 
 
-def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str = "def_xg_shrink_challenger") -> tuple[str, pd.DataFrame, bool]:
+def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> tuple[str, pd.DataFrame, bool]:
     """Append an attempt, verify a matching cache or publish a complete diagnostic table."""
+    if model_name is None:
+        model_name = get_default_model_name()
     resolved = validate_storage_path(store)
     attempts, forecasts = resolved / "attempts", resolved / "forecasts"
     attempts.mkdir(parents=True, exist_ok=True)

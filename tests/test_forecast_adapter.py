@@ -1,18 +1,21 @@
 import copy
 import json
+import os
+from pathlib import Path
 
 import pytest
 
 from backtesting.data_admission import require_input
 from backtesting.forecast_adapter import predict_synthetic_issue
-from backtesting.forecast_store import generate_forecast, load_forecast_verified
+from backtesting.forecast_store import forecast_material, generate_forecast, load_forecast_verified
 from backtesting.forecast_solver_export import export_solver_csv
 from features.builder import EVENT_RATE_MAP
+from models.selection import ModelSelection, save_model_selection
 from test_data_admission import catalog, request
 from test_forecast_inputs import retain
 
 
-def test_admitted_issue_uses_real_model_once(tmp_path) -> None:
+def test_admitted_issue_uses_real_model_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     value = request()
     entries = catalog(value)
     origin = value["origins"][0]
@@ -30,7 +33,17 @@ def test_admitted_issue_uses_real_model_once(tmp_path) -> None:
         item["parent_manifest"] = value["authority_digest"]
     cap = require_input(value, entries, "2024-25", 1)
     authority = {"version": 2, "mode": "synthetic", "input_digest": cap.input_digest, "season": "2024-25", "gw": 1, "seed_identity": origin["seed_identity"], "source_digest": source_digest}
-    predictions, meta = predict_synthetic_issue(cap, value, entries, retain(entries, authority), tmp_path)
+    authority_digest = retain(entries, authority)
+    config_path = tmp_path / "model_selection.json"
+    champion, provisional = "club_def_prior_challenger", "def_xg_shrink_challenger"
+    save_model_selection(ModelSelection(champion, (provisional,), provisional_active=provisional), config_path)
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", config_path)
+    predictions, meta = predict_synthetic_issue(cap, value, entries, authority_digest, tmp_path)
+    assert meta["model"] == champion
+    _, override = predict_synthetic_issue(cap, value, entries, authority_digest, tmp_path, model_name=provisional)
+    assert override["model"] == provisional
+    assert forecast_material(cap, value, entries, authority_digest)["model"] == champion
+    assert forecast_material(cap, value, entries, authority_digest, provisional)["model"] == provisional
     assert set(predictions.gameweek_id) == set(range(1, 7))
     assert len(predictions) == 12
     assert meta["fit_count"] == meta["predict_count"] == 1
@@ -44,11 +57,12 @@ def test_admitted_issue_uses_real_model_once(tmp_path) -> None:
     changed["origins"][0]["outcomes"][0]["points"] = 99
     repeated, _ = predict_synthetic_issue(cap, changed, entries, retain(entries, authority), tmp_path)
     assert predictions.equals(repeated)
-    authority_digest = retain(entries, authority)
     first_id, first, hit = generate_forecast(tmp_path, cap, value, entries, authority_digest)
     assert hit is False
+    assert set(first["model"]) == {champion}
     second_id, second, hit = generate_forecast(tmp_path, cap, changed, entries, authority_digest)
     assert hit is True and first_id == second_id and first.equals(second)
+    save_model_selection(ModelSelection(provisional, ()), config_path)
     path, csv_manifest = export_solver_csv(tmp_path, first_id, cap, value, entries, authority_digest)
     assert csv_manifest["forecast_id"] == first_id
     assert "6_Pts" in path.read_text().splitlines()[0]
@@ -59,7 +73,7 @@ def test_admitted_issue_uses_real_model_once(tmp_path) -> None:
     table = tmp_path / "forecasts" / first_id / "forecast.csv"
     table.write_bytes(table.read_bytes() + b"corrupt")
     with pytest.raises(ValueError, match="corruption"):
-        generate_forecast(tmp_path, cap, value, entries, authority_digest)
+        generate_forecast(tmp_path, cap, value, entries, authority_digest, model_name=champion)
     attempts = list((tmp_path / "attempts").iterdir())
     assert len(attempts) == 3 and all((attempt / "started.json").exists() for attempt in attempts)
     assert sum((attempt / "failed.json").exists() for attempt in attempts) == 1
@@ -189,7 +203,7 @@ def test_pad_solver_csv_prohibited_in_evaluation(tmp_path) -> None:
         pad_solver_csv_horizon(fake_csv, 1, 6, forbid_padding=True)
 
 
-def test_solver_csv_columns_and_contract(tmp_path) -> None:
+def test_solver_csv_columns_and_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     value = request()
     entries = catalog(value)
     origin = value["origins"][0]
@@ -210,7 +224,21 @@ def test_solver_csv_columns_and_contract(tmp_path) -> None:
     authority_digest = retain(entries, authority)
 
     forecast_id, _, _ = generate_forecast(tmp_path, cap, value, entries, authority_digest)
+    rename = os.rename
+    calls = 0
+
+    def rename_after_scanner_releases(source_path: Path, destination_path: Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            error = PermissionError("temporary Windows scanner lock")
+            setattr(error, "winerror", 5)
+            raise error
+        rename(source_path, destination_path)
+
+    monkeypatch.setattr(os, "rename", rename_after_scanner_releases)
     path, manifest = export_solver_csv(tmp_path, forecast_id, cap, value, entries, authority_digest)
+    assert calls >= 2
 
     import pandas as pd
     solver_df = pd.read_csv(path)

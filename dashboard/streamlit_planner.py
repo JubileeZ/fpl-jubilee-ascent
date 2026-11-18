@@ -510,11 +510,16 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     if len(dual_models) > 1:
         active_model = planner.state.get("model") if planner.state.get("model") in dual_models else dual_models[0]
         confirmed_champ = meta.get("confirmed_champion")
+        provisional_active = meta.get("provisional_active")
+        model_labels = {
+            confirmed_champ: "Confirmed Champion",
+            provisional_active: "Provisional Active",
+        }
         chosen_model = controls[0].selectbox(
             "Transfer Plan model",
             dual_models,
             index=dual_models.index(active_model),
-            format_func=lambda m: f"{m} (Confirmed Champion)" if m == confirmed_champ else f"{m} (Provisional Active)",
+            format_func=lambda model: f"{model} ({model_labels[model]})" if model in model_labels else model,
             key="planner-model-select",
         )
         if chosen_model != planner.state.get("model"):

@@ -105,17 +105,12 @@ def projection_model_names(
     """Models to project for Explorer/Dual-Tier serving. `--models` overrides slate."""
     if model_names:
         return list(dict.fromkeys(model_names))
-    if model_name is not None:
-        cleaned = model_name.strip()
-        if cleaned.lower() == "champion":
-            try:
-                return [default_model_name(config_path)]
-            except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
-                return [FALLBACK_CHAMPION]
-        if cleaned and cleaned.lower() != "default":
-            return [cleaned]
+    cleaned = (model_name or "").strip()
     try:
-        return dual_tier_models(config_path)
-    except (FileNotFoundError, ValueError, KeyError, OSError, json.JSONDecodeError):
-        return [FALLBACK_CHAMPION]
+        serving_models = dual_tier_models(config_path)
+    except (ValueError, KeyError, OSError):
+        serving_models = [FALLBACK_CHAMPION]
+    if cleaned.lower() in ("", "default", "champion") or cleaned in serving_models:
+        return serving_models
+    return [cleaned]
 

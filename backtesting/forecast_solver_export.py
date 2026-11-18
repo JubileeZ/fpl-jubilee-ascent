@@ -1,6 +1,6 @@
 """Derive a strict synthetic solver CSV from a verified forecast ID."""
 
-import os
+import shutil
 import uuid
 from pathlib import Path
 from typing import Any, cast
@@ -10,7 +10,13 @@ import pandas as pd
 from backtesting.data_admission import AdmittedInput
 from backtesting.forecast_export import strict_solver_table
 from backtesting.forecast_inputs import verify_training_bundle
-from backtesting.forecast_store import _canonical_json_bytes, _sha256_hex, load_forecast_verified, validate_storage_path
+from backtesting.forecast_store import (
+    _canonical_json_bytes,
+    _publish_forecast_directory,
+    _sha256_hex,
+    load_forecast_verified,
+    validate_storage_path,
+)
 
 
 def export_solver_csv(store: Path, forecast_id: str, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str) -> tuple[Path, dict[str, Any]]:
@@ -41,11 +47,7 @@ def export_solver_csv(store: Path, forecast_id: str, capability: AdmittedInput, 
         stage.mkdir()
         (stage / "solver.csv").write_bytes(data)
         (stage / "manifest.json").write_bytes(_canonical_json_bytes(manifest))
-        try:
-            os.rename(stage, destination)
-        except FileExistsError:
-            import shutil
-
+        if not _publish_forecast_directory(stage, destination):
             shutil.rmtree(stage)
     if (destination / "solver.csv").read_bytes() != data or (destination / "manifest.json").read_bytes() != _canonical_json_bytes(manifest):
         raise ValueError("Solver export corruption")

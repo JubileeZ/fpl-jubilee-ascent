@@ -24,6 +24,41 @@ def test_saved_draft_rejects_stale_browser_write(tmp_path: Path) -> None:
     assert store.load() == {"revision": 2}
 
 
+def test_transfer_planner_labels_only_the_serving_models(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    champion = "def_xg_shrink_challenger"
+    provisional = "adaptive_causal_challenger"
+    candidate = "club_def_prior_challenger"
+    data = dataset()
+    data["meta"].update(
+        models=[champion, provisional, candidate], confirmed_champion=champion, provisional_active=provisional,
+    )
+    data_path = tmp_path / "dataset.json"
+    data_path.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
+    monkeypatch.setenv("FPL_PLANNER_STORAGE", str(tmp_path / "storage"))
+    monkeypatch.setenv("FPL_PLANNER_PROCESSED_DIR", str(tmp_path / "processed"))
+    script = tmp_path / "planner_app.py"
+    script.write_text(
+        """
+import streamlit as st
+from dashboard.planner import Planner, PlanStore
+from dashboard.planner_jobs import PlannerJobs
+from dashboard.planner_service import PlannerPaths, load_dataset
+from dashboard.streamlit_planner import main
+
+paths = PlannerPaths.configured()
+st.session_state['planner'] = Planner(load_dataset(paths))
+main(paths, PlanStore(paths.storage / 'draft.json'), PlannerJobs(paths.storage / 'jobs'))
+""",
+        encoding="utf-8",
+    )
+    app = AppTest.from_file(script, default_timeout=30).run()
+    assert not app.exception
+    assert app.selectbox(key="planner-model-select").options == [
+        f"{champion} (Confirmed Champion)", f"{provisional} (Provisional Active)", candidate,
+    ]
+
+
 def test_dashboard_navigation_remembers_view_and_omits_transfer_planner(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     data_path = tmp_path / "dataset.json"
     data_path.write_text(json.dumps(dataset()), encoding="utf-8")
@@ -44,9 +79,12 @@ def test_dashboard_navigation_remembers_view_and_omits_transfer_planner(tmp_path
 
 
 
-@pytest.mark.parametrize("provisional_active", ["adaptive_causal_challenger", None])
+@pytest.mark.parametrize(
+    ("provisional_active", "explicit_champion"),
+    [("adaptive_causal_challenger", False), ("adaptive_causal_challenger", True), (None, False)],
+)
 def test_explorer_and_planner_default_to_active_tier(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, provisional_active: str | None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, provisional_active: str | None, explicit_champion: bool
 ) -> None:
     champion = "def_xg_shrink_challenger"
     candidate = "adaptive_causal_challenger"
@@ -59,6 +97,8 @@ def test_explorer_and_planner_default_to_active_tier(
         provisional_active=provisional_active,
         active_transfer_plan_model=expected_model,
     )
+    if explicit_champion:
+        data["meta"]["primary_model_explicit"] = True
     data_path = tmp_path / "dataset.json"
     data_path.write_text(json.dumps(data), encoding="utf-8")
     monkeypatch.setenv("FPL_PLANNER_DATASET", str(data_path))
@@ -68,7 +108,8 @@ def test_explorer_and_planner_default_to_active_tier(
     app.radio(key="dashboard-page").set_value("Explorer").run()
     assert not app.exception
     planner = Planner(data)
-    assert app.selectbox(key="explorer-model").value == planner.active_model == expected_model
+    assert app.selectbox(key="explorer-model").value == (champion if explicit_champion else expected_model)
+    assert planner.active_model == expected_model
 
     if provisional_active:
         app.selectbox(key="explorer-model").set_value(champion).run()

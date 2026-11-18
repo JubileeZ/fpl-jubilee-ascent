@@ -181,9 +181,13 @@ def test_dual_tier_selection_validation_and_serving_order(tmp_path: Path) -> Non
         "def_xg_shrink_challenger",
         "adaptive_causal_challenger",
     ]
-    assert projection_model_names("champion", config_path=config_path) == [
-        "def_xg_shrink_challenger"
-    ]
+    for model in (None, "", "default", "Champion", selection.champion, selection.provisional_active):
+        assert projection_model_names(model, config_path=config_path) == [
+            "def_xg_shrink_challenger",
+            "adaptive_causal_challenger",
+        ]
+    assert projection_model_names("linear_baseline", config_path=config_path) == ["linear_baseline"]
+    assert projection_model_names("champion", ["linear_baseline"], config_path=config_path) == ["linear_baseline"]
 
     with pytest.raises(ValueError, match="Confirmed Champion"):
         ModelSelection(
