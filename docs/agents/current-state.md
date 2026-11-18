@@ -6,7 +6,10 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
-[ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted design. Ready tickets: [Inventory admissible active-season evidence for the first checkpoint](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/191) and [Define weekly Transfer Planner selection and finalist eligibility](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/192). Implementation and calibration pending.
+[ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted design. Implementation and calibration pending.
+
+- [Inventory admissible active-season evidence for the first checkpoint](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/191#issuecomment-6984434844) closed. `2026-27 GW1–10` pinned bootstrap verified, ingest settlement recorded. `origin/availability-snapshots` holds pre-deadline fixture captures for `GW1–10`, with package hashes reproduced for `GW1–6`. `adr0069-checkpoint-v2` prefix empty from `GW1`. Fixture, history, seed and independent settlement receipts plus certified opening anchor missing. `2026-27 GW15` conditional on authentic receipt recovery, full prefix and frozen slate. Without early receipts, earliest prospective opportunity `2027-28 GW15` with capture from `GW1`.
+- [Choose the checkpoint evidence producer and portable registry contract](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/193) unblocked and unassigned. [Define weekly Transfer Planner selection and finalist eligibility](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/192) claimed by JubileeZ, decision pending.
 
 Completed ADR 0069 routes:
 - **Preserved `#175`–`#179` Foundations (CLOSED under superseded Map #174):** Freshness/input bounds (`#175`), `< gw` lineage/coverage audit (`#176`), primary-source inference review on `research/promotion-inference-177` (`#177`), unified `mode="empirical"` design (`#178`), Strategic 6-GW replay/Stage A->B controls & 15 `MANDATORY_GUARDS` (`#179`).
@@ -53,7 +56,6 @@ Live index: `docs/research/INDEX.md` — **Eval canon** block = promotion metric
 - Official `2027-28` native `SeasonRules` alignment and `protocol_hash` lock pending next summer's official FPL rules release.
 - `GW38` summer-rollover carryover policy when an active `Provisional Active` finalist holds a practical lead without yet clearing `<= 5%` FWER confirmation.
 - Snapshot-backed nonzero-chance calibration not implemented; opt-in model applies next-GW `0%` hard DNP only.
-- `availability-snapshots` branch missing on `origin`.
 
 ## Safe commands today
 
