@@ -4,6 +4,10 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 **Current phase:** [Weekly Transfer Planner Selection and Champion Adoption](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190) charted. `explore-candidate` / `ideate-candidate` active under `ADR 0069` (`2025-26` Dev `S-1`, `2024-25` Filter `S-2`, `2026-27` quarantined; `96` active `candidate_ledger.csv` dead locks preserved). Champion `def_xg_shrink_challenger` unchanged; `provisional_active=null`, `podium_sealed=false`; `2026-27 GW1–10` Champion baseline `604`.
 
+## Weekly Transfer Planner
+
+- 2026-27 GW11 pre-deadline official refresh pinned. Local Strategic GW11–20 solve verified at 0% gap, GW14 Free Hit, availability audit passed. Manager-specific plan and minutes overrides stored locally at `data/solution.json` and `data/planner/xmins_override.csv`.
+
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
 [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted design. Implementation and calibration pending.

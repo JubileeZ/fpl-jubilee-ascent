@@ -187,7 +187,7 @@
       "finished": false,
       "minutes": 0,
       "provisional_start_time": false,
-      "kickoff_time": "2027-01-23T15:00:00Z",
+      "kickoff_time": "2027-01-25T20:00:00Z",
       "event_name": "Gameweek 22",
       "is_home": false,
       "difficulty": 3
@@ -203,7 +203,7 @@
       "finished": false,
       "minutes": 0,
       "provisional_start_time": false,
-      "kickoff_time": "2027-01-30T15:00:00Z",
+      "kickoff_time": "2027-01-30T17:30:00Z",
       "event_name": "Gameweek 23",
       "is_home": true,
       "difficulty": 3
