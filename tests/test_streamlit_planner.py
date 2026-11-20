@@ -211,3 +211,83 @@ def test_planner_service_dual_tier_digest_request_and_switch(
     champ_only_data["meta"].update({"default_model": "def_xg_shrink_challenger", "models": ["def_xg_shrink_challenger"]})
     with pytest.raises(ValueError, match="omit active Dual-Tier"):
         make_solve_request(Planner(champ_only_data), paths)
+
+
+def test_planner_service_allows_second_sealed_finalist_and_blocks_stale_remote_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dashboard.planner_service import PlannerPaths, make_solve_request, solver_options
+    from models.planner_selection import StaleCheckoutError
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+            provisional_active=None,
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    for m in ("def_xg_shrink_challenger", "adaptive_causal_challenger", "club_def_prior_challenger"):
+        (data_dir / f"{m}.csv").write_text("id\n1\n", encoding="utf-8")
+    monkeypatch.setattr("solver.paths.DATA_DIR", data_dir)
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    ds_path = tmp_path / "dashboard_data.json"
+    ds_path.write_text("{}", encoding="utf-8")
+    paths = PlannerPaths(dataset=ds_path, processed=processed, storage=tmp_path / "storage")
+
+    data = dataset()
+    data["meta"].update(
+        {
+            "default_model": "club_def_prior_challenger",
+            "confirmed_champion": "def_xg_shrink_challenger",
+            "provisional_active": None,
+            "active_transfer_plan_model": "club_def_prior_challenger",
+            "models": [
+                "def_xg_shrink_challenger",
+                "adaptive_causal_challenger",
+                "club_def_prior_challenger",
+            ],
+            "planner_preflight": {
+                "effective_model": "club_def_prior_challenger",
+                "selection_reason": "verified_scorecard_leader",
+                "freshness_status": "verified_current",
+                "comparable_scores": {
+                    "def_xg_shrink_challenger": 820.0,
+                    "adaptive_causal_challenger": 830.0,
+                    "club_def_prior_challenger": 845.0,
+                },
+                "latest_settled_gw": 15,
+                "verified_prefix_end_gw": 15,
+            },
+        }
+    )
+    planner = Planner(data)
+    assert planner.active_model == "club_def_prior_challenger"
+    req = make_solve_request(planner, paths)
+    assert req["state"]["model"] == "club_def_prior_challenger"
+    opts = solver_options(planner, paths)
+    assert opts["datasource"] == "club_def_prior_challenger"
+
+    # When preflight marks stale_remote_changed, make_solve_request blocks with StaleCheckoutError
+    stale_data = dataset()
+    stale_data["meta"].update(
+        {
+            **data["meta"],
+            "planner_preflight": {
+                **data["meta"]["planner_preflight"],
+                "freshness_status": "stale_remote_changed",
+            },
+        }
+    )
+    with pytest.raises(StaleCheckoutError, match="manual 'git pull'"):
+        make_solve_request(Planner(stale_data), paths)
+

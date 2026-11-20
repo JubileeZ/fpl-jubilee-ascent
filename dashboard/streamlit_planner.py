@@ -14,6 +14,7 @@ from dashboard.planner_jobs import PlannerJobs
 from dashboard.planner_service import (PlannerPaths, import_cached_recommendations, load_dataset,
                                        make_solve_request, player_history, refresh_request,
                                        solve_request, source_digest)
+from models.planner_selection import STALE_CHECKOUT_MESSAGE
 from solver.scenarios import ARM_NAMES, DEFAULT_STRATEGIC_OPTIONS
 from solver.transfer_plan import format_strategic_audit_lines
 from dashboard.presentation import availability, data_age, fixture, utc_time
@@ -550,6 +551,30 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     week = planner.week(gw)
     label = "Needs recalculation" if week["needs_recalculation"] else "Draft" if planner.state["edits"] or planner.state["overrides"] else "Solver recommendation" if week["has_recommendation"] else "Unsolved hold draft"
     st.write(f"**{ARM_NAMES[planner.state['scenario']]} · GW{gw} · {label}**")
+    preflight_meta = dataset.get("meta", {}).get("planner_preflight")
+    if isinstance(preflight_meta, dict):
+        f_status = preflight_meta.get("freshness_status")
+        if f_status == "stale_remote_changed":
+            st.error(STALE_CHECKOUT_MESSAGE)
+        elif f_status == "unverified":
+            st.warning(
+                "Remote protected main freshness is unverified (GitHub unreachable). "
+                "Serving locally recorded Confirmed Champion only."
+            )
+        comp_scores = preflight_meta.get("comparable_scores") or {}
+        scores_txt = (
+            ", ".join(f"{m}: {float(s):.1f}" for m, s in comp_scores.items())
+            if isinstance(comp_scores, dict) and comp_scores
+            else "none"
+        )
+        settled_gw_val = preflight_meta.get("latest_settled_gw", 0)
+        eff_mod = preflight_meta.get("effective_model") or planner.active_model
+        fb_reason = preflight_meta.get("fallback_reason")
+        fb_txt = f" · fallback: {fb_reason}" if fb_reason else ""
+        st.caption(
+            f"Serving model: {eff_mod} · Freshness: {f_status or 'verified_current'} · "
+            f"Latest settled: GW{settled_gw_val} · Comparable net points: {scores_txt}{fb_txt}"
+        )
     deadline = utc_time(dataset.get("meta", {}).get("transfer_plan_deadline"))
     st.caption(f"GW{planner.state['start']} deadline: {deadline:%d %b %Y, %H:%M UTC}" if deadline else "Deadline time unavailable; refresh before acting.")
     st.caption(data_age(dataset.get("meta", {}).get("projection_generated_at")))
@@ -592,10 +617,14 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
     for conflict in dict.fromkeys(week["conflicts"]):
         st.warning(conflict)
     scout_transfer_review(planner, store, gw)
+    stale_remote = (
+        isinstance(preflight_meta, dict)
+        and preflight_meta.get("freshness_status") == "stale_remote_changed"
+    )
     actions = st.columns(3)
-    if actions[0].button("Generate plan", key="generate-plan", type="primary", disabled=busy or planner.stale or not all(row["complete"] for row in planner.weeks())):
+    if actions[0].button("Generate plan", key="generate-plan", type="primary", disabled=busy or planner.stale or stale_remote or not all(row["complete"] for row in planner.weeks())):
         begin_job(planner, store, jobs, paths)
-    if actions[1].button("Optimize remaining transfers", key="optimize-plan", disabled=busy or planner.stale or not all(row["complete"] for row in planner.weeks())):
+    if actions[1].button("Optimize remaining transfers", key="optimize-plan", disabled=busy or planner.stale or stale_remote or not all(row["complete"] for row in planner.weeks())):
         begin_job(planner, store, jobs, paths)
     if actions[2].button("Reset to solver", key="reset-plan", disabled=not planner.recommendation_valid()):
         st.session_state["reset_scenario"] = planner.state["scenario"]

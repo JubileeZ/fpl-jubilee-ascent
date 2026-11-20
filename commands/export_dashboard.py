@@ -24,6 +24,8 @@ from features.builder import (
     resolve_operational_processed_dir,
 )
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
+from models.planner_selection import resolve_weekly_planner_model
+from models.selection import active_transfer_plan_model_name
 from models.selection import default_model_name as selection_default_model_name
 from models.selection import projection_model_names
 from projections.exporter import write_solver_projection_csvs
@@ -742,6 +744,17 @@ def build_dashboard_dataset(
             }
 
     trust = load_champion_trust(selection_path=selection_path)
+    preflight = resolve_weekly_planner_model(
+        selection_path,
+        processed_dir=processed_dir,
+        check_remote=False,
+    )
+    active_tp_model = (
+        preflight.effective_model
+        if (preflight.fallback_reason is None or preflight.freshness_status == "unverified")
+        and preflight.effective_model in model_names
+        else trust["active_transfer_plan_model"]
+    )
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -759,7 +772,8 @@ def build_dashboard_dataset(
             "confirmed_champion": trust["confirmed_champion"],
             "provisional_active": trust["provisional_active"],
             "dual_tier_active": trust["dual_tier_active"],
-            "active_transfer_plan_model": trust["active_transfer_plan_model"],
+            "active_transfer_plan_model": active_tp_model,
+            "planner_preflight": preflight.to_dict(),
             "catalog_models": list_model_names(),
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
@@ -805,8 +819,22 @@ def run_dashboard_export(
     requested_model = (model_name or "").strip()
     explicit_primary = requested_model.lower() not in ("", "default")
     if not explicit_primary:
-        # Serving order is Champion followed by Provisional Active, when present.
-        default_model = names[0] if model_names else names[-1]
+        if model_names:
+            default_model = names[0]
+        else:
+            preflight = resolve_weekly_planner_model(
+                config_path,
+                processed_dir=processed_dir,
+                check_remote=False,
+            )
+            if preflight.fallback_reason is None and preflight.effective_model in names:
+                default_model = preflight.effective_model
+            else:
+                try:
+                    active_tier = active_transfer_plan_model_name(config_path)
+                except (ValueError, KeyError, OSError):
+                    active_tier = names[0]
+                default_model = active_tier if active_tier in names else names[-1]
     elif requested_model.lower() == "champion":
         default_model = selection_default_model_name(config_path)
     else:

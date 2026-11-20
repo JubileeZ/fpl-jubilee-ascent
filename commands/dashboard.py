@@ -37,7 +37,7 @@ from commands import refresh_data
 from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_active_transfer_plan_model_name, get_default_model_name
-from models.selection import dual_tier_models
+from models.selection import dual_tier_models, eligible_slate_models
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
@@ -393,7 +393,7 @@ def start_transfer_plan(
     force_keep: list[dict[str, object]] | None = None,
     datasource: str | None = None,
 ) -> tuple[int, dict[str, object]]:
-    if datasource is not None and datasource not in set(dual_tier_models()):
+    if datasource is not None and datasource not in set(eligible_slate_models()):
         return 400, {
             "status": "error",
             "error": f"Transfer Plan model '{datasource}' must belong to active Dual-Tier / Confirmed Champion slate.",

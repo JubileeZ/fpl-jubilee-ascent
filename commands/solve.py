@@ -4,7 +4,7 @@ import logging
 import sys
 import pandas as pd
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Set up path to include root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -14,9 +14,10 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import resolve_operational_processed_dir
-from models import (
-    get_active_transfer_plan_model_name,
-    resolve_model_or_transfer_plan_default,
+from models import get_active_transfer_plan_model_name
+from models.planner_selection import (
+    StaleCheckoutError,
+    resolve_weekly_planner_model,
 )
 from projections.exporter import pad_solver_csv_horizon
 from solver.paths import DATA_DIR
@@ -182,7 +183,7 @@ def validate_booked_chips(options: dict[str, object], next_gw: int, horizon: int
             if isinstance(raw_gameweek, bool):
                 raise ValueError(f"{chip_key} contains invalid gameweek {raw_gameweek!r}")
             try:
-                gameweek = int(raw_gameweek)
+                gameweek = int(cast(Any, raw_gameweek))
             except (TypeError, ValueError) as exc:
                 raise ValueError(f"{chip_key} contains invalid gameweek {raw_gameweek!r}") from exc
             if gameweek not in planning_gameweeks:
@@ -208,7 +209,7 @@ def booked_chips_from_options(options: dict[str, object]) -> dict[str, list[int]
         chips[chip_key] = []
         for raw in _chip_values(options.get(chip_key), chip_key):
             try:
-                chips[chip_key].append(int(raw))
+                chips[chip_key].append(int(cast(Any, raw)))
             except (TypeError, ValueError):
                 continue
     return chips
@@ -246,7 +247,7 @@ def transfer_plan_options_for_dashboard(
 
 
 def execute_transfer_plan(
-    options: dict[str, object],
+    options: dict[str, Any],
     *,
     processed_dir: Path,
     target_gw: int,
@@ -265,7 +266,7 @@ def execute_transfer_plan(
         my_data = {"picks": [], "chips": [], "transfers": {"limit": None, "cost": 4, "bank": 1000, "value": 0}}
     elif options.get("parent_state") or options.get("parentNode"):
         logger.info(f"Loading squad picks and state from parent node for GW {target_gw}...")
-        parent_data = options.get("parent_state") or options.get("parentNode")
+        parent_data = cast(dict[str, Any], options.get("parent_state") or options.get("parentNode") or {})
         my_data = build_my_data_from_parent_state(parent_data, processed_dir)
     else:
         logger.info("Loading current squad picks and state from processed Parquet...")
@@ -292,6 +293,9 @@ def execute_transfer_plan(
         next_gw=target_gw,
         decay_base=float(options.get("decay_base", 0.85)),
         booked_chips=booked_chips_from_options(options),
+        preflight=options.get("planner_preflight"),
+        base_model=str(options["base_model"]) if options.get("base_model") else None,
+        target_gw_deadline=str(options["target_gw_deadline"]) if options.get("target_gw_deadline") else None,
     )
     solution_path.parent.mkdir(parents=True, exist_ok=True)
     with open(solution_path, "w", encoding="utf-8") as f:
@@ -367,7 +371,7 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
     player_pos_map = df_players.set_index("id")["position_id"].to_dict()
     
     picks_list = []
-    for _, row in df_picks.iterrows():
+    for row in df_picks.to_dict(orient="records"):
         pid = int(row["player_id"])
         picks_list.append({
             "element": pid,
@@ -376,10 +380,11 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
             "element_type": player_pos_map.get(pid, 3)
         })
         
-    state_row = df_state.iloc[0]
+    state_row = df_state.to_dict(orient="records")[0]
     
     # Transfers limit/free transfers
-    limit = None if pd.isna(state_row["free_transfers"]) else int(state_row["free_transfers"])
+    raw_ft = state_row.get("free_transfers")
+    limit = None if raw_ft is None or bool(pd.isna(raw_ft)) else int(raw_ft)
     
     return {
         "chips": chips,
@@ -414,7 +419,7 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
     if picks_path.exists():
         try:
             df_picks = pd.read_parquet(picks_path)
-            for _, r in df_picks.iterrows():
+            for r in df_picks.to_dict(orient="records"):
                 live_sell_map[int(r["player_id"])] = int(r["selling_price"])
         except Exception:
             pass
@@ -646,6 +651,38 @@ def main() -> None:
         dest="xmins_override",
         help="Optional CSV of external player xMins predictions to project and solve against",
     )
+    parser.add_argument(
+        "--pin-reviewed-model",
+        "--pin_reviewed_model",
+        type=str,
+        default=None,
+        dest="pin_reviewed_model",
+        help="Pin the reviewed base model for an injury-audit minutes-correction rerun",
+    )
+    parser.add_argument(
+        "--evidence-dir",
+        "--evidence_dir",
+        type=Path,
+        default=None,
+        dest="evidence_dir",
+        help="Optional validation evidence directory containing latest_scorecard.json and exclusions.jsonl",
+    )
+    parser.add_argument(
+        "--check-remote-main",
+        "--check_remote_main",
+        action="store_true",
+        default=False,
+        dest="check_remote_main",
+        help="Verify local config/model_selection.json against protected origin/main before solving",
+    )
+    parser.add_argument(
+        "--remote-main-path",
+        "--remote_main_path",
+        type=Path,
+        default=None,
+        dest="remote_main_path",
+        help="Optional path to remote main checkout or selection JSON for freshness verification",
+    )
     args, unknown = parser.parse_known_args()
     
     # 1. Load configuration settings
@@ -667,9 +704,6 @@ def main() -> None:
             RECOMMENDED_MAX_HORIZON,
         )
     options["horizon"] = clamped_horizon
-    options["datasource"] = resolve_model_or_transfer_plan_default(
-        args.model, force_champion=bool(args.champion)
-    )
     try:
         _apply_dynamic_overrides(options, unknown)
     except ValueError as exc:
@@ -710,10 +744,56 @@ def main() -> None:
         
     options["override_next_gw"] = target_gw
 
+    target_gw_deadline: str | None = None
+    gw_parquet = processed_dir / "gameweeks.parquet"
+    if gw_parquet.is_file():
+        try:
+            df_gw = pd.read_parquet(gw_parquet)
+            if {"id", "deadline_time"}.issubset(df_gw.columns):
+                dl_rows = df_gw.loc[df_gw["id"] == int(target_gw), "deadline_time"]
+                if not dl_rows.empty and pd.notna(dl_rows.iloc[0]):
+                    target_gw_deadline = str(dl_rows.iloc[0])
+        except Exception:
+            target_gw_deadline = None
+
+    prior_sol_path = (
+        (PROJECT_ROOT / "data" / "solution.json")
+        if (args.xmins_override is not None or args.pin_reviewed_model)
+        else None
+    )
+    try:
+        preflight = resolve_weekly_planner_model(
+            evidence_dir=args.evidence_dir,
+            processed_dir=processed_dir,
+            override_model=args.model,
+            force_champion=bool(args.champion),
+            pinned_review_model=args.pin_reviewed_model,
+            is_rerun=bool(args.xmins_override is not None or args.pin_reviewed_model),
+            target_gw=target_gw,
+            prior_solution_path=prior_sol_path,
+            remote_main_path=args.remote_main_path,
+            check_remote=True if args.check_remote_main else None,
+        )
+    except StaleCheckoutError as exc:
+        logger.error(str(exc))
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    for line in preflight.format_preflight_lines():
+        logger.info(line)
+
+    base_model = preflight.effective_model
+    options["datasource"] = base_model
+    options["base_model"] = base_model
+    options["planner_preflight"] = preflight
+    if target_gw_deadline is not None:
+        options["target_gw_deadline"] = target_gw_deadline
+
     if args.xmins_override is not None:
         from commands.run_model import generate_model_projections
 
-        base_model = str(options["datasource"])
         datasource_stem = f"{base_model}_external_xmins"
         logger.info(
             "Generating projections using external xMins from %s for datasource '%s'...",
@@ -785,6 +865,7 @@ def main() -> None:
                 datasource=str(options["datasource"]),
                 xmins_override=args.xmins_override,
                 strategic_options=options.get("strategic_options"),
+                preflight=preflight,
             )
         except UserSquadRequired as exc:
             logger.warning(f"{exc}")
@@ -810,8 +891,8 @@ def main() -> None:
             plan_obj = s.get("plan") or {}
             weeks = plan_obj.get("weeks") or []
             w1 = weeks[0] if weeks else {}
-            buys = [b.get("name") for b in (w1.get("buy") or []) if isinstance(b, dict)]
-            sells = [b.get("name") for b in (w1.get("sell") or []) if isinstance(b, dict)]
+            buys = [str(b.get("name") or "") for b in (w1.get("buy") or []) if isinstance(b, dict) and b.get("name")]
+            sells = [str(b.get("name") or "") for b in (w1.get("sell") or []) if isinstance(b, dict) and b.get("name")]
             moves = f"+{', '.join(buys)} / -{', '.join(sells)}" if buys or sells else "Roll FT"
             print(f"Rank {rank}: {name:<14} | Σ EGS: {score:5.1f} | Hits: {w1.get('hits', 0)} | Start: {moves}")
         print("=" * 50 + "\n")

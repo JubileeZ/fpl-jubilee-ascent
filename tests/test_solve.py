@@ -317,6 +317,7 @@ def test_solve_cli_single_flag_runs_single_plan(capsys: pytest.CaptureFixture[st
 def test_solve_cli_routes_default_to_provisional_active_and_champion_flag_switches_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from backtesting.portable_evidence import VerificationScorecard, write_scorecard
     from models.selection import ModelSelection, save_model_selection
 
     sel_path = tmp_path / "model_selection.json"
@@ -332,12 +333,41 @@ def test_solve_cli_routes_default_to_provisional_active_and_champion_flag_switch
     )
     monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
 
+    evidence_dir = tmp_path / "evidence"
+    write_scorecard(
+        evidence_dir,
+        VerificationScorecard(
+            season="2026-27",
+            checkpoint_gw=15,
+            slate_id="slate-2026-27",
+            slate_sealed=True,
+            confirmed_champion="def_xg_shrink_challenger",
+            podium_order=("adaptive_causal_challenger",),
+            provisional_active="adaptive_causal_challenger",
+            serving_model_closure_hash="a" * 64,
+            model_runtime_bindings={},
+            evaluator_code_hash="b" * 64,
+            producer_git_sha="c" * 40,
+            settled_through_gw=15,
+            gap_status="complete",
+            first_blocked_gw=None,
+            reason_codes=(),
+            cumulative_net_points={
+                "def_xg_shrink_challenger": 820.0,
+                "adaptive_causal_challenger": 835.0,
+            },
+            weekly_leader="adaptive_causal_challenger",
+            active_exclusions=(),
+            generated_at="2026-11-20T12:00:00+00:00",
+        ),
+    )
+
     with (
         patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5, "preseason": True}),
         patch("commands.solve.prep_data", return_value={}),
         patch("commands.solve.pad_solver_csv_horizon") as pad_mock,
         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
-        patch("sys.argv", ["commands.solve", "--preseason"]),
+        patch("sys.argv", ["commands.solve", "--preseason", "--evidence-dir", str(evidence_dir)]),
     ):
         main()
     assert pad_mock.call_args.args[0].name == "adaptive_causal_challenger.csv"
@@ -347,8 +377,153 @@ def test_solve_cli_routes_default_to_provisional_active_and_champion_flag_switch
         patch("commands.solve.prep_data", return_value={}),
         patch("commands.solve.pad_solver_csv_horizon") as pad_mock_champ,
         patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
-        patch("sys.argv", ["commands.solve", "--preseason", "--champion"]),
+        patch("sys.argv", ["commands.solve", "--preseason", "--champion", "--evidence-dir", str(evidence_dir)]),
     ):
         main()
     assert pad_mock_champ.call_args.args[0].name == "def_xg_shrink_challenger.csv"
+
+
+def test_solve_cli_xmins_override_rerun_pins_prior_reviewed_base_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import json
+    from backtesting.portable_evidence import VerificationScorecard, write_scorecard
+    from models.selection import ModelSelection, save_model_selection
+
+    sel_path = tmp_path / "model_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger",),
+            provisional_active=None,
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+        ),
+        sel_path,
+    )
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+    monkeypatch.setattr("commands.solve.PROJECT_ROOT", tmp_path)
+
+    evidence_dir = tmp_path / "evidence"
+    # Initial solve at GW16: adaptive_causal_challenger leads (835 vs 820)
+    write_scorecard(
+        evidence_dir,
+        VerificationScorecard(
+            season="2026-27",
+            checkpoint_gw=15,
+            slate_id="slate-2026-27",
+            slate_sealed=True,
+            confirmed_champion="def_xg_shrink_challenger",
+            podium_order=("adaptive_causal_challenger",),
+            provisional_active=None,
+            serving_model_closure_hash="a" * 64,
+            model_runtime_bindings={},
+            evaluator_code_hash="b" * 64,
+            producer_git_sha="c" * 40,
+            settled_through_gw=15,
+            gap_status="complete",
+            first_blocked_gw=None,
+            reason_codes=(),
+            cumulative_net_points={
+                "def_xg_shrink_challenger": 820.0,
+                "adaptive_causal_challenger": 835.0,
+            },
+            weekly_leader="adaptive_causal_challenger",
+            active_exclusions=(),
+            generated_at="2026-11-20T12:00:00+00:00",
+        ),
+    )
+    override_csv = tmp_path / "xmins_override.csv"
+    override_csv.write_text("ID,16_xMins\n1,90\n", encoding="utf-8")
+
+    projected_models: list[str] = []
+
+    def _fake_gen_proj(*, model_name: str, **_kwargs: object) -> None:
+        projected_models.append(model_name)
+
+    with (
+        patch("commands.solve.load_settings", return_value={"horizon": 5, "preseason": True}),
+        patch("commands.solve.prep_data", return_value={}),
+        patch("commands.solve.pad_solver_csv_horizon"),
+        patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
+        patch("commands.run_model.generate_model_projections", side_effect=_fake_gen_proj),
+        patch(
+            "sys.argv",
+            [
+                "commands.solve",
+                "--preseason",
+                "--target_gw",
+                "16",
+                "--evidence-dir",
+                str(evidence_dir),
+                "--xmins-override",
+                str(override_csv),
+            ],
+        ),
+    ):
+        main()
+
+    assert projected_models == ["adaptive_causal_challenger"]
+    sol_data = json.loads((tmp_path / "data" / "solution.json").read_text(encoding="utf-8"))
+    assert sol_data["meta"]["reviewed_base_model"] == "adaptive_causal_challenger"
+    assert sol_data["meta"]["champion"] == "adaptive_causal_challenger_external_xmins"
+
+    # Now scorecard flips to Champion leading (845 vs 835) before Step 6 rerun!
+    write_scorecard(
+        evidence_dir,
+        VerificationScorecard(
+            season="2026-27",
+            checkpoint_gw=15,
+            slate_id="slate-2026-27",
+            slate_sealed=True,
+            confirmed_champion="def_xg_shrink_challenger",
+            podium_order=("adaptive_causal_challenger",),
+            provisional_active=None,
+            serving_model_closure_hash="a" * 64,
+            model_runtime_bindings={},
+            evaluator_code_hash="b" * 64,
+            producer_git_sha="c" * 40,
+            settled_through_gw=15,
+            gap_status="complete",
+            first_blocked_gw=None,
+            reason_codes=(),
+            cumulative_net_points={
+                "def_xg_shrink_challenger": 845.0,
+                "adaptive_causal_challenger": 835.0,
+            },
+            weekly_leader="def_xg_shrink_challenger",
+            active_exclusions=(),
+            generated_at="2026-11-20T12:05:00+00:00",
+        ),
+    )
+
+    projected_models.clear()
+    with (
+        patch("commands.solve.load_settings", return_value={"horizon": 5, "preseason": True}),
+        patch("commands.solve.prep_data", return_value={}),
+        patch("commands.solve.pad_solver_csv_horizon"),
+        patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
+        patch("commands.run_model.generate_model_projections", side_effect=_fake_gen_proj),
+        patch(
+            "sys.argv",
+            [
+                "commands.solve",
+                "--preseason",
+                "--target_gw",
+                "16",
+                "--evidence-dir",
+                str(evidence_dir),
+                "--xmins-override",
+                str(override_csv),
+            ],
+        ),
+    ):
+        main()
+
+    # Rerun stayed pinned to adaptive_causal_challenger!
+    assert projected_models == ["adaptive_causal_challenger"]
+    sol_rerun = json.loads((tmp_path / "data" / "solution.json").read_text(encoding="utf-8"))
+    assert sol_rerun["meta"]["reviewed_base_model"] == "adaptive_causal_challenger"
+    assert sol_rerun["meta"]["pinned_for_rerun"] is True
+
 
