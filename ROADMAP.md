@@ -17,7 +17,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ## Current Project Status: **Map #184 (`#185`–`#189`) complete; Candidate Search (`explore-candidate` / `ideate-candidate`) active under ADR 0069**
 
-- **Adoption planning frontier:** [Weekly Transfer Planner Selection and Champion Adoption](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190) charted under [ADR 0070](docs/adr/0070-weekly-planner-selection-and-champion-adoption.md). Evidence inventory, weekly selection, evidence producer, and GitHub approval transaction decided. Closed-ticket review amendments recorded in ADR 0070. Weekly confirmation simulation/calibration, pilot acceptance, and implementation pending.
+- **Adoption planning frontier:** [Weekly Transfer Planner Selection and Champion Adoption](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190) charted under [ADR 0070](docs/adr/0070-weekly-planner-selection-and-champion-adoption.md). Evidence inventory, weekly selection, evidence producer, and GitHub approval transaction decided. [Confirmation simulation](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/195#issuecomment-7036229048) closed. GW15/GW30/GW38 advances to [formal cadence and preregistration](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/196). [Pilot acceptance](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/197) independently ready. Implementation pending.
 
 ### Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) Decision & Implementation Schedule (ADR 0069)
 
