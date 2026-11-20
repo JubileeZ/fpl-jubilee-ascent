@@ -237,6 +237,7 @@ def _build_empirical_bundle(
                 "gameweek_id": w,
                 "home_club_id": 1,
                 "away_club_id": 2,
+                "finished": True,
                 "kickoff_time": (seed_ko + timedelta(days=7 * (w - 1))).isoformat(),
                 "team_h_difficulty": 3,
                 "team_a_difficulty": 3,
@@ -298,22 +299,41 @@ def _build_empirical_bundle(
         catalog[hist_id] = hist_bytes
 
         finalized_at = max_ko + timedelta(hours=settlement_lag_hours)
+        club_fixtures_gw: dict[int, list[int]] = {}
+        for offset, (h, a) in enumerate(((1, 2), (3, 4), (5, 1)), 1):
+            fid = (gw - 1) * 10 + offset
+            club_fixtures_gw.setdefault(h, []).append(fid)
+            club_fixtures_gw.setdefault(a, []).append(fid)
+            past_fixtures.append(
+                {
+                    "id": fid,
+                    "gameweek_id": gw,
+                    "home_club_id": h,
+                    "away_club_id": a,
+                    "finished": True,
+                    "kickoff_time": max_ko.isoformat(),
+                    "team_h_difficulty": 3,
+                    "team_a_difficulty": 3,
+                }
+            )
         gw_outcomes = []
         for pid in range(1, 18):
             is_card = include_gw22_card and pid == 17
-            row = _history_row(
-                pid,
-                gw,
-                (gw - 1) * 10 + 1,
-                max_ko,
-                minutes=0 if is_card else 90,
-                total_points=-1 if is_card else 2,
-                yellow_cards=1 if is_card else 0,
-                include_defcon=True,
-            )
-            row["appeared"] = not is_card
-            gw_outcomes.append(row)
-            settled_history_rows.append(row)
+            club_id = (pid % 5) + 1
+            for fid in club_fixtures_gw[club_id]:
+                row = _history_row(
+                    pid,
+                    gw,
+                    fid,
+                    max_ko,
+                    minutes=0 if is_card else 90,
+                    total_points=-1 if is_card else 2,
+                    yellow_cards=1 if is_card else 0,
+                    include_defcon=True,
+                )
+                row["appeared"] = not is_card
+                gw_outcomes.append(row)
+                settled_history_rows.append(row)
         history_gws[gw] = finalized_at
         out_bytes = _canon(gw_outcomes)
         out_id = f"outcomes_gw{gw}"
@@ -410,18 +430,7 @@ def _build_empirical_bundle(
                 },
             }
         )
-        # Keep past fixtures updated after outcomes
-        past_fixtures.append(
-            {
-                "id": (gw - 1) * 10 + 1,
-                "gameweek_id": gw,
-                "home_club_id": 1,
-                "away_club_id": 2,
-                "kickoff_time": max_ko.isoformat(),
-                "team_h_difficulty": 3,
-                "team_a_difficulty": 3,
-            }
-        )
+        # Past fixtures populated for gw before constructing next GW history tables
 
     request = {
         "version": 2,
@@ -1106,3 +1115,108 @@ def test_validation_fplcache_manifest_retains_checkpoint_scope_and_checks_outcom
     manifest_path.write_bytes(_canon(manifest))
     with pytest.raises(ValueError, match="checked outcomes at GW15"):
         load_empirical_manifest_bundle(manifest_path, quarantine_root=tmp_path)
+
+
+def test_empirical_outcomes_support_double_gameweek_and_blank_gameweek_without_fabrication() -> None:
+    # 1. Double Gameweek (club 1 plays 2 fixtures in GW1): missing one DGW row or bad component fails, complete DGW succeeds
+    req, cat, _ = _build_empirical_bundle(gws=(1,))
+    assert assess_origins(req, cat)[0]["status"] == "admitted_empirical"
+
+    out_rows = json.loads(cat["outcomes_gw1"])
+    dgw_rows = [r for r in out_rows if r["player_id"] == 5]
+    assert len(dgw_rows) == 2 and len({r["fixture_id"] for r in dgw_rows}) == 2
+    # Give player 5 (DEF) distinct stats in each DGW fixture (1 goal = +6 + 2 = 8 in fixture 1, 1 assist = +3 + 2 = 5 in fixture 2)
+    for idx, row in enumerate(out_rows):
+        if row["player_id"] == 5:
+            if row["fixture_id"] == 1:
+                row["goals_scored"] = 1
+                row["total_points"] = 8
+            else:
+                row["assists"] = 1
+                row["total_points"] = 5
+    cat_dgw = dict(cat)
+    cat_dgw["outcomes_gw1"] = _canon(out_rows)
+    req_dgw = json.loads(json.dumps(req))
+    req_dgw["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(cat_dgw["outcomes_gw1"])
+    req_dgw["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(cat_dgw["outcomes_gw1"])
+    assert assess_origins(req_dgw, cat_dgw)[0]["status"] == "admitted_empirical"
+
+    # Drop 2nd DGW fixture for player 5 -> invalid
+    missing_second = [r for r in out_rows if not (r["player_id"] == 5 and r["fixture_id"] == 3)]
+    cat_drop = dict(cat_dgw)
+    cat_drop["outcomes_gw1"] = _canon(missing_second)
+    req_drop = json.loads(json.dumps(req_dgw))
+    req_drop["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(cat_drop["outcomes_gw1"])
+    req_drop["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(cat_drop["outcomes_gw1"])
+    assert assess_origins(req_drop, cat_drop)[0]["status"] == "invalid"
+
+    # 2. Blank Gameweek: club 5 has 0 fixtures in GW1 -> 0 outcomes rows for club 5 (pids 4, 9, 14) admitted without fabrication
+    req_bgw, cat_bgw, _ = _build_empirical_bundle(gws=(1,))
+    fx_lines = [
+        line for line in cat_bgw["fixtures_gw1"].decode("utf-8").splitlines()
+        if not line.startswith("3,1,")
+    ]
+    fx_bgw_bytes = ("\n".join(fx_lines) + "\n").encode("utf-8")
+    cat_bgw["fixtures_gw1"] = fx_bgw_bytes
+    req_bgw["origins"][0]["sources"]["fixtures"]["blob_sha256"] = _sha(fx_bgw_bytes)
+    req_bgw["origins"][0]["sources"]["fixtures"]["decompressed_sha256"] = _sha(fx_bgw_bytes)
+
+    bgw_outcomes = [
+        r for r in json.loads(cat_bgw["outcomes_gw1"])
+        if r["fixture_id"] != 3
+    ]
+    assert not any(r["player_id"] in (4, 9, 14) for r in bgw_outcomes)
+    cat_bgw["outcomes_gw1"] = _canon(bgw_outcomes)
+    req_bgw["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(cat_bgw["outcomes_gw1"])
+    req_bgw["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(cat_bgw["outcomes_gw1"])
+    assert assess_origins(req_bgw, cat_bgw)[0]["status"] == "admitted_empirical"
+
+    # Fabricated outcome row for blanking club 5 player fails invalid
+    fab_outcomes = list(bgw_outcomes) + [{**bgw_outcomes[0], "player_id": 4, "fixture_id": 1}]
+    cat_fab = dict(cat_bgw)
+    cat_fab["outcomes_gw1"] = _canon(fab_outcomes)
+    req_fab = json.loads(json.dumps(req_bgw))
+    req_fab["origins"][0]["sources"]["outcomes"]["blob_sha256"] = _sha(cat_fab["outcomes_gw1"])
+    req_fab["origins"][0]["sources"]["outcomes"]["decompressed_sha256"] = _sha(cat_fab["outcomes_gw1"])
+    assert assess_origins(req_fab, cat_fab)[0]["status"] == "invalid"
+
+
+def test_validation_fplcache_receipt_bootstrap_fixtures_and_disk_fallback_disable(tmp_path: Path) -> None:
+    # 1. validation_fplcache accepts receipt:// first-party .json.xz bootstrap within 6h and GW2 fixtures receipt in window
+    req, cat, _ = _build_empirical_bundle(
+        gws=(1, 2),
+        track="validation_fplcache",
+        season="2026-27",
+        seed_season="2025-26",
+        bootstrap_age_hours=2.0,
+        fixtures_age_hours=12.0,
+        disclosed=[],
+    )
+    for origin in req["origins"]:
+        origin["sources"]["bootstrap"]["timing_basis"] = "receipt"
+        origin["sources"]["bootstrap"]["url"] = f"receipt://2026-27/gw{origin['gw']}/bootstrap"
+    reports = assess_origins(req, cat)
+    assert [r["status"] for r in reports] == ["admitted_empirical", "admitted_empirical"]
+    assert all("fplcache_mirror_provenance" not in r["disclosed_limitations"] for r in reports)
+
+    # Bootstrap receipt >6h old fails unresolved even on validation_fplcache
+    req_stale, cat_stale, _ = _build_empirical_bundle(
+        gws=(1,),
+        track="validation_fplcache",
+        season="2026-27",
+        seed_season="2025-26",
+        bootstrap_age_hours=8.0,
+        fixtures_age_hours=1.5,
+        disclosed=[],
+    )
+    req_stale["origins"][0]["sources"]["bootstrap"]["timing_basis"] = "receipt"
+    req_stale["origins"][0]["sources"]["bootstrap"]["url"] = "receipt://2026-27/gw1/bootstrap"
+    assert assess_origins(req_stale, cat_stale)[0]["status"] == "unresolved"
+
+    # 2. allow_disk_path_fallback=False blocks spec["path"] disk fallback during offline verification
+    req_dev, cat_dev, _ = _build_empirical_bundle(gws=(1,))
+    disk_file = tmp_path / "bs.json.xz"
+    disk_file.write_bytes(cat_dev.pop("bootstrap_gw1"))
+    req_dev["origins"][0]["sources"]["bootstrap"]["path"] = str(disk_file)
+    assert assess_origins(req_dev, cat_dev)[0]["status"] == "admitted_empirical"
+    assert assess_origins(req_dev, cat_dev, allow_disk_path_fallback=False)[0]["status"] == "unresolved"

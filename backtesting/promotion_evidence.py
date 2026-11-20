@@ -13,7 +13,7 @@ import pandas as pd
 
 from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.data_admission import AdmittedOrigin, assess_origins, require_admitted, require_input
-from backtesting.evaluation_protocol import material_digest
+from backtesting.portable_evidence import BlobStore, compute_serving_model_closure, validate_relative_posix_path
 from backtesting.evidence_statistics import (
     EARLY_HARM_P_THRESHOLD,
     EarlyHarmAssessment,
@@ -86,28 +86,29 @@ def content_hash(value: Any) -> str:
     return sha256(canonical_bytes(value)).hexdigest()
 
 
-def current_model_source_hash() -> str:
-    """Use the retained forecast generator's conservative modeling dependency closure."""
-    material: dict[str, bytes] = {}
-    for name in ("backtesting", "features", "models", "projections", "solver", "config"):
-        directory = PROJECT_ROOT / name
-        for path in sorted(directory.rglob("*.py")):
-            if not path.resolve().is_relative_to(directory.resolve()):
-                raise ValueError("Model source escapes dependency closure")
-            material[path.relative_to(PROJECT_ROOT).as_posix()] = path.read_bytes()
-    for name in ("pyproject.toml", "uv.lock"):
-        material[name] = (PROJECT_ROOT / name).read_bytes()
-    return material_digest(material)
+def current_model_source_hash(model_names: Sequence[str] = ()) -> str:
+    """Return the portable transitive serving model closure SHA-256."""
+    return compute_serving_model_closure(tuple(model_names)).serving_model_closure_hash
 
 
 def _local_path(root: Path, relative: Any) -> Path:
-    if not isinstance(relative, str) or not relative:
+    rel = validate_relative_posix_path(str(relative)) if isinstance(relative, str) else ""
+    if not rel:
         raise ValueError("Missing retained evidence path")
-    path = Path(relative)
+    path = Path(rel)
     result = (root / path).resolve()
     if path.is_absolute() or ".." in path.parts or not result.is_relative_to(root.resolve()):
         raise ValueError("Evidence path must remain within request directory")
     return load_season_lifecycle().assert_unsealed_storage_path(result, error_message="Protected evidence path")
+
+
+def _relative_bundle_path(registry: ConfirmationRegistry, bundle_path: Path) -> str:
+    reg_dir = registry.registry_file.parent.resolve()
+    try:
+        rel = bundle_path.resolve().relative_to(reg_dir).as_posix()
+    except ValueError as exc:
+        raise ValueError("Bundle path must remain within confirmation registry directory") from exc
+    return validate_relative_posix_path(rel)
 
 
 def _read_material(root: Path, reference: Mapping[str, Any]) -> dict[str, Any]:
@@ -132,10 +133,36 @@ def _restore_bytes(value: Any) -> Any:
     return value
 
 
-def _admit_context(context: dict[str, Any], season: str, gw: int) -> tuple[AdmittedOrigin, dict[str, Any], dict[str, bytes]]:
+def _resolve_context_catalog(root: Path | None, context: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, bytes]]:
     request = _restore_bytes(context["request"])
-    catalog = {digest: bytes.fromhex(raw) for digest, raw in context["catalog"].items()}
-    return require_admitted(request, catalog, season, gw), request, catalog
+    raw_catalog = context["catalog"]
+    if not isinstance(raw_catalog, Mapping):
+        raise ValueError("Admission context catalog must be a mapping")
+    blob_store = BlobStore(root) if root is not None else None
+    catalog: dict[str, bytes] = {}
+    for digest, raw in raw_catalog.items():
+        if isinstance(raw, str):
+            catalog[str(digest)] = bytes.fromhex(raw)
+        elif isinstance(raw, Mapping):
+            if blob_store is None:
+                raise ValueError("Externalized blob catalog requires request root")
+            expected_sha = str(raw.get("blob_sha256", ""))
+            relpath = str(raw.get("relpath") or raw.get("path") or f"blobs/{expected_sha}")
+            catalog[str(digest)] = blob_store.read_bytes(relpath, expected_sha256=expected_sha)
+        else:
+            raise ValueError(f"Unsupported catalog entry type for {digest!r}")
+    return request, catalog
+
+
+def _admit_context(
+    context: dict[str, Any],
+    season: str,
+    gw: int,
+    *,
+    root: Path | None = None,
+) -> tuple[AdmittedOrigin, dict[str, Any], dict[str, bytes]]:
+    request, catalog = _resolve_context_catalog(root, context)
+    return require_admitted(request, catalog, season, gw, allow_disk_path_fallback=False), request, catalog
 
 
 def protocol_from_payload(payload: dict[str, Any]) -> StatisticalProtocolConfig:
@@ -355,9 +382,9 @@ def _verify_replay(
     parent_id: str | None = None
     for record, issue in zip(records, entry["issues"], strict=True):
         context = _read_material(root, issue["admission"])
-        admitted, request, catalog = _admit_context(context, season, record.deadline)
+        admitted, request, catalog = _admit_context(context, season, record.deadline, root=root)
         empirical = empirical and (admitted.mode == "empirical" and admitted.promotable and not admitted.partial_prefix)
-        capability = require_input(request, catalog, season, record.deadline)
+        capability = require_input(request, catalog, season, record.deadline, allow_disk_path_fallback=False)
         origin = next(origin for origin in request["origins"] if origin["season"] == season and origin["gw"] == record.deadline)
         origin_players, origin_outcomes = _extract_origin_players_and_outcomes(origin, catalog)
         origin_universe = [player["id"] for player in origin_players]
@@ -395,6 +422,13 @@ def _verify_replay(
             raise ValueError("Replay model or protocol identity mismatch")
         if material["model"] != model or material["input_digest"] != capability.input_digest:
             raise ValueError("Forecast model or admitted input mismatch")
+        if "serving_model_closure_hash" in material:
+            model_closure = compute_serving_model_closure((model,))
+            if (
+                material.get("serving_model_closure_hash") != model_closure.serving_model_closure_hash
+                or material.get("model_runtime_bindings") != model_closure.model_runtime_bindings
+            ):
+                raise ValueError("Forecast serving closure or runtime binding mismatch")
         if material["model_parameters"] != {}:
             raise ValueError("Unsupported forecast generator parameterization")
         if record.outcomes.source_identity != admitted.evidence_digest:
@@ -682,7 +716,7 @@ def evaluate_replay_evidence(request_path: Path | str) -> dict[str, Any]:
     guard_windows: set[tuple[str, int]] = set()
     for reference in request["guard_outcome_sources"]:
         season, gw = reference["season"], reference["gameweek"]
-        admitted, source_request, source_catalog = _admit_context(_read_material(root, reference["admission"]), season, gw)
+        admitted, source_request, source_catalog = _admit_context(_read_material(root, reference["admission"]), season, gw, root=root)
         empirical = empirical and (admitted.mode == "empirical" and admitted.promotable and not admitted.partial_prefix)
         partial_prefix_seen = partial_prefix_seen or (admitted.mode == "empirical" and admitted.partial_prefix)
         for lim in admitted.disclosed_limitations:
@@ -758,7 +792,12 @@ def write_recommendation_bundle(request_path: Path | str, output_path: Path | st
     registry = ConfirmationRegistry(_local_path(request.parent, payload["registry_path"]))
     registration = registry.get_attempt(bundle["confirmation_attempt_id"])
     if registration is not None and registration.status == "in_progress" and registration.execution_status == "complete":
-        registry.transition_attempt_status(registration.attempt_id, "completed", scientific_verdict=bundle["scientific_verdict"], bundle_path=str(path))
+        registry.transition_attempt_status(
+            registration.attempt_id,
+            "completed",
+            scientific_verdict=bundle["scientific_verdict"],
+            bundle_path=_relative_bundle_path(registry, path),
+        )
     return bundle
 
 
@@ -1190,11 +1229,30 @@ def evaluate_verified_checkpoint_payload(
     source_hash = current_model_source_hash()
     if payload["model_source_hash"] != source_hash:
         raise ValueError("Frozen model source changed")
+    closure = compute_serving_model_closure((champion, *podium))
+    if (
+        payload.get("serving_model_closure_hash") is not None
+        and payload["serving_model_closure_hash"] != closure.serving_model_closure_hash
+    ):
+        raise ValueError("Serving model closure changed")
+    if (
+        payload.get("model_runtime_bindings") is not None
+        and payload["model_runtime_bindings"] != closure.model_runtime_bindings
+    ):
+        raise ValueError("Model runtime bindings mismatch")
     protocol = _read_material(root, payload["protocol"])
     config = protocol_from_payload(protocol)
     protocol_hash = content_hash(protocol)
     if (config.development_season, config.confirmation_season) != (development_season, season):
         raise ValueError("Checkpoint protocol differs from the active season lifecycle")
+    s1_mode = protocol.get("s1_guard_baseline_mode")
+    disclosed_transition: list[str] = []
+    if s1_mode is not None:
+        if s1_mode != "s1_guard_baseline_season_archive_transition":
+            raise ValueError(f"Unsupported s1_guard_baseline_mode: {s1_mode!r}")
+        if season != "2027-28":
+            raise ValueError("s1_guard_baseline_season_archive_transition is permitted only for 2027-28")
+        disclosed_transition.append("s1_guard_baseline_season_archive_transition")
     if (config.approved_by_human is not True or not isinstance(config.approval_reference, str) or not config.approval_reference.strip()
             or config.approval_reference == "UNAPPROVED" or config.nominal_alpha != 0.05):
         raise ValueError("Approved ADR 0069 checkpoint protocol required")
@@ -1226,7 +1284,22 @@ def evaluate_verified_checkpoint_payload(
     if any(value.utcoffset() is None for value in registered_times):
         raise ValueError("Timezone-aware frozen finalist registration required")
 
-    windows = {**protocol["windows"], season: list(range(1, checkpoint + 1))}
+    s1_baseline: dict[str, Any] | None = None
+    if s1_mode == "s1_guard_baseline_season_archive_transition" and payload.get("s1_guard_baseline") is not None:
+        s1_baseline = _read_material(root, payload["s1_guard_baseline"])
+        archive_sha = str(s1_baseline.get("archive_manifest_sha256", ""))
+        if (
+            s1_baseline.get("season") != development_season
+            or s1_baseline.get("champion_name") != champion
+            or len(archive_sha) != 64
+            or any(c not in "0123456789abcdef" for c in archive_sha)
+            or not isinstance(s1_baseline.get("rows"), list)
+            or not s1_baseline["rows"]
+        ):
+            raise ValueError("Invalid 2027-28 S-1 Season Archive transition baseline")
+        windows = {season: list(range(1, checkpoint + 1))}
+    else:
+        windows = {**protocol["windows"], season: list(range(1, checkpoint + 1))}
     expected_admissions = {(year, gw) for year, weeks in windows.items() for gw in weeks}
     admission_refs: dict[tuple[str, int], dict[str, Any]] = {}
     guard_outcomes: dict[tuple[str, int, int], dict[str, Any]] = {}
@@ -1234,11 +1307,10 @@ def evaluate_verified_checkpoint_payload(
     if validation_ref is None:
         raise ValueError("Missing active-season fplcache admission")
     context = _read_material(root, validation_ref)
-    request = _restore_bytes(context["request"])
-    catalog = {digest: bytes.fromhex(raw) for digest, raw in context["catalog"].items()}
+    request, catalog = _resolve_context_catalog(root, context)
     if request.get("track") != "validation_fplcache" or request.get("checkpoint_gw") != checkpoint:
         raise ValueError("Verified checkpoint requires a matching validation_fplcache request")
-    reports = assess_origins(request, catalog)
+    reports = assess_origins(request, catalog, allow_disk_path_fallback=False)
     if ([(row["season"], row["gw"]) for row in reports] != [(season, gw) for gw in windows[season]]
             or not all(row.get("checkpoint_complete") is True and row["status"] == "admitted_empirical" for row in reports)):
         raise ValueError("Incomplete admitted fplcache checkpoint")
@@ -1252,7 +1324,7 @@ def evaluate_verified_checkpoint_payload(
         if year == season:
             source_request, source_catalog = request, catalog
         else:
-            admitted, source_request, source_catalog = _admit_context(_read_material(root, reference), year, gw)
+            admitted, source_request, source_catalog = _admit_context(_read_material(root, reference), year, gw, root=root)
             if admitted.mode != "empirical":
                 raise ValueError("S-1 guard baseline requires admitted empirical observations")
         origin = next(origin for origin in source_request["origins"] if (origin["season"], origin["gw"]) == (year, gw))
@@ -1263,8 +1335,12 @@ def evaluate_verified_checkpoint_payload(
     records = {}
     rows = {}
     anchors = {}
-    expected_replays = {(development_season, champion), *((season, model) for model in (champion, *podium))}
-    replay_protocol = {**protocol, "windows": windows}
+    expected_replays = (
+        {(season, model) for model in (champion, *podium)}
+        if s1_baseline is not None
+        else {(development_season, champion), *((season, model) for model in (champion, *podium))}
+    )
+    replay_protocol = {**protocol, "windows": {**protocol["windows"], season: list(range(1, checkpoint + 1))}}
     for entry in payload["replays"]:
         year, model = entry["season"], entry["model_name"]
         key = year, model
@@ -1290,7 +1366,8 @@ def evaluate_verified_checkpoint_payload(
         for candidate in podium
     }
     margins = derive_s1_guard_margins(
-        rows[development_season, champion], weights=protocol["projection_evaluation"]["weights"],
+        s1_baseline["rows"] if s1_baseline is not None else rows[development_season, champion],
+        weights=protocol["projection_evaluation"]["weights"],
         guard_specs=protocol["guard_specs"],
     )
     guard_protocol = {**protocol, "guard_specs": {
@@ -1317,9 +1394,12 @@ def evaluate_verified_checkpoint_payload(
         )
     return result, {
         "candidate_name": winner or selection.provisional_active or podium[0], "former_champion": champion,
-        "model_source_hash": source_hash, "protocol_hash": protocol_hash, "empirical_admission": True,
+        "model_source_hash": source_hash,
+        "serving_model_closure_hash": closure.serving_model_closure_hash,
+        "model_runtime_bindings": closure.model_runtime_bindings,
+        "protocol_hash": protocol_hash, "empirical_admission": True,
         "selection_sha256": content_hash(asdict(selection)),
-        "admitted_limitations": sorted({limitation for row in reports for limitation in row["disclosed_limitations"]}),
+        "admitted_limitations": sorted({*disclosed_transition, *(limitation for row in reports for limitation in row["disclosed_limitations"])}),
         "confirmation_attempt_id": attempts[winner] if winner else None,
         "score_trace_hash": trace_hashes[winner] if winner else None,
     }
@@ -1413,11 +1493,19 @@ def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path
                 raise ValueError("Checkpoint registry was finalized for a different evidence bundle")
         elif bundle["checkpoint_gw"] in (15, 30):
             registry.finalize_early_checkpoint_pass(
-                attempt.attempt_id, checkpoint_gw=bundle["checkpoint_gw"], completed_gameweeks=attempt.completed_gameweeks,
-                score_trace_hash=bundle["score_trace_hash"], bundle_path=str(path),
+                attempt.attempt_id,
+                checkpoint_gw=bundle["checkpoint_gw"],
+                completed_gameweeks=attempt.completed_gameweeks,
+                score_trace_hash=bundle["score_trace_hash"],
+                bundle_path=_relative_bundle_path(registry, path),
             )
         else:
-            registry.transition_attempt_status(attempt.attempt_id, "completed", scientific_verdict="pass", bundle_path=str(path))
+            registry.transition_attempt_status(
+                attempt.attempt_id,
+                "completed",
+                scientific_verdict="pass",
+                bundle_path=_relative_bundle_path(registry, path),
+            )
     return bundle
 
 

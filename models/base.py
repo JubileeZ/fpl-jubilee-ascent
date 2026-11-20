@@ -29,11 +29,12 @@ def iter_feature_rows(
 
 
 def cap_projected_minutes(row: pd.Series, expected_minutes: float) -> float:
-    """Apply an optional availability cap from the Feature Contract."""
+    """Apply an optional availability cap and per-fixture [0, 90] minutes bound."""
+    bounded = min(90.0, max(0.0, float(expected_minutes)))
     cap = row.get("xmins_cap")
     if cap is None or pd.isna(cap):
-        return expected_minutes
-    return min(expected_minutes, float(cap))
+        return bounded
+    return min(bounded, max(0.0, float(cap)))
 
 
 def resolve_asof_target_gw(features_df: pd.DataFrame, history_df: pd.DataFrame) -> int:

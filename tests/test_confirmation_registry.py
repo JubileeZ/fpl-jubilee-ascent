@@ -623,3 +623,107 @@ def test_verify_checkpoint_attempt_binds_registration_trace_and_final_bundle(tmp
     assert registry.verify_integrity()
     with pytest.raises(ValueError, match="history or budget"):
         registry.verify_checkpoint_attempt(attempt.attempt_id, **scope, finalized_bundle_path=bundle_path)
+
+
+def test_confirmation_registry_enforces_relative_posix_bundle_path_and_prefix_progression(tmp_path: Path) -> None:
+    from backtesting.portable_evidence import AdoptionLedger
+
+    registry = ConfirmationRegistry(tmp_path / "registry.jsonl")
+    identity = {
+        "candidate_name": "cand_1",
+        "champion_name": "champ",
+        "model_source_hash": "a" * 64,
+        "parameters_hash": "b" * 64,
+        "protocol_hash": "c" * 64,
+        "max_family_attempts": 2,
+    }
+    rec = registry.register_finalist(
+        **identity,
+        mechanism_family="fam_a",
+        dev_selection_record_ref="dev-ref",
+        requested_seasons=("2026-27",),
+    )
+    h15, h30, h38 = "1" * 64, "2" * 64, "3" * 64
+
+    for bad_path in (str(tmp_path / "abs.json"), "../outside.json", r"sub\win.json", ""):
+        with pytest.raises(ValueError):
+            registry.record_checkpoint(
+                rec.attempt_id,
+                checkpoint_gw=15,
+                completed_gameweeks=tuple(range(1, 16)),
+                score_trace_hash=h15,
+                bundle_path=bad_path,
+            )
+        with pytest.raises(ValueError):
+            registry.finalize_early_checkpoint_pass(
+                rec.attempt_id,
+                checkpoint_gw=15,
+                completed_gameweeks=tuple(range(1, 16)),
+                score_trace_hash=h15,
+                bundle_path=bad_path,
+            )
+
+    gw15_bundle = tmp_path / "gw15/bundle.json"
+    gw15_bundle.parent.mkdir(parents=True)
+    gw15_bundle.write_text("{}", encoding="utf-8")
+    p15 = registry.finalize_early_checkpoint_pass(
+        rec.attempt_id,
+        checkpoint_gw=15,
+        completed_gameweeks=tuple(range(1, 16)),
+        score_trace_hash=h15,
+        bundle_path="gw15/bundle.json",
+    )
+    assert p15.status == "completed" and p15.scientific_verdict == "pass"
+    assert p15.human_approval_ref is None
+
+    # Human rejection in AdoptionLedger does not block advancing canonical confirmation to GW30 / GW38.
+    adopt_ledger = AdoptionLedger(tmp_path / "adoption_ledger.jsonl")
+    adopt_ledger.record_disposition(
+        request_id="req-gw15",
+        slate_id="slate-2026-27",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="cand_1",
+        expected_champion="champ",
+        bundle_hash="f" * 64,
+        disposition="rejected",
+        actor="human-op",
+    )
+
+    p30_prog = registry.record_checkpoint(
+        rec.attempt_id,
+        checkpoint_gw=30,
+        completed_gameweeks=tuple(range(1, 31)),
+        score_trace_hash=h30,
+    )
+    assert p30_prog.status == "in_progress" and p30_prog.completed_gameweeks == tuple(range(1, 31))
+    gw30_bundle = tmp_path / "gw30/bundle.json"
+    gw30_bundle.parent.mkdir(parents=True)
+    gw30_bundle.write_text("{}", encoding="utf-8")
+    p30_pass = registry.finalize_early_checkpoint_pass(
+        rec.attempt_id,
+        checkpoint_gw=30,
+        completed_gameweeks=tuple(range(1, 31)),
+        score_trace_hash=h30,
+        bundle_path="gw30/bundle.json",
+    )
+    assert p30_pass.status == "completed" and p30_pass.human_approval_ref is None
+
+    # Advancing past GW15 must NOT break earlier GW15 verification against canonical registry.jsonl!
+    scope15 = {**identity, "active_season": "2026-27", "checkpoint_gw": 15, "score_trace_hash": h15}
+    verified15 = registry.verify_checkpoint_attempt(rec.attempt_id, **scope15, finalized_bundle_path=gw15_bundle)
+    assert verified15.completed_gameweeks == tuple(range(1, 16))
+
+    # Full GW38 completion becomes strictly terminal.
+    p38 = registry.transition_attempt_status(
+        rec.attempt_id,
+        "completed",
+        execution_status="complete",
+        scientific_verdict="pass",
+        completed_gameweeks=tuple(range(1, 39)),
+        score_trace_hash=h38,
+        bundle_path="gw38/bundle.json",
+    )
+    assert p38.status == "completed" and p38.completed_gameweeks == tuple(range(1, 39))
+    with pytest.raises(AdaptiveRunViolationError):
+        registry.transition_attempt_status(rec.attempt_id, "withdrawn")

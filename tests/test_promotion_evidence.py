@@ -193,18 +193,20 @@ def test_capture_cli_rejects_backdating_and_late_actual_clock(retained_request: 
         capture_live_evidence.capture_verified_issue(request_path, retained_request.parent / "backdated-capture")
 
 
-def test_solver_identity_includes_installed_binary_and_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_solver_identity_is_portable_while_binary_recorded_separately(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from importlib.machinery import ModuleSpec
     from importlib import util
     from backtesting.native_transfer_solver import native_strategic_solve
-    from backtesting.rolling_replay import replay_solver_identity
+    from backtesting.rolling_replay import replay_solver_binary_sha256, replay_solver_identity
 
     binary = tmp_path / "core.pyd"
     binary.write_bytes(b"fixture-installed-binary-v1")
     monkeypatch.setattr(util, "find_spec", lambda name: ModuleSpec(name, loader=None, origin=str(binary)))
-    before = replay_solver_identity(native_strategic_solve)
+    before_id = replay_solver_identity(native_strategic_solve)
+    before_bin = replay_solver_binary_sha256()
     binary.write_bytes(b"fixture-installed-binary-v2")
-    assert replay_solver_identity(native_strategic_solve) != before
+    assert replay_solver_identity(native_strategic_solve) == before_id
+    assert replay_solver_binary_sha256() != before_bin
 
 
 def test_derive_s1_guard_margins_all_15_mandatory_guards_and_rare_se_floor() -> None:
@@ -585,3 +587,86 @@ def test_verify_live_readiness_supports_adr0069_fplcache_mode(tmp_path: Path) ->
         "early_harm_p_threshold": 0.025,
     }
     _verify_live_readiness(tmp_path, payload, CANDIDATE, CHAMPION, "p" * 64, "s" * 64, frozen_review)
+
+
+def test_checkpoint_payload_supports_externalized_blob_catalog_relative_bundle_and_2027_28_s1_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backtesting.portable_evidence import BlobStore, compute_serving_model_closure
+    from backtesting.promotion_evidence import _admit_context, evaluate_verified_checkpoint_payload
+    from test_empirical_admission import _build_empirical_bundle
+
+    # 1. _admit_context resolves BlobStore externalized catalog entries cleanly without disk fallback
+    req, cat, _ = _build_empirical_bundle(gws=(1,), with_manager=False)
+    store = BlobStore(tmp_path)
+    ext_catalog = {
+        key: {"blob_sha256": (digest := store.write_bytes(raw)), "relpath": store.relpath(digest)}
+        for key, raw in cat.items()
+    }
+    admitted, decoded_req, decoded_cat = _admit_context({"request": req, "catalog": ext_catalog}, "2025-26", 1, root=tmp_path)
+    assert admitted.season == "2025-26" and admitted.gw == 1
+    assert decoded_cat == cat
+    assert decoded_req["season"] == "2025-26"
+
+    # 2. current_model_source_hash matches serving model closure, and serving_model_closure_hash mismatch fails closed
+    closure = compute_serving_model_closure((CHAMPION, CANDIDATE))
+    assert isinstance(promotion_evidence.current_model_source_hash(), str) and len(promotion_evidence.current_model_source_hash()) == 64
+
+    # 3. 2027-28 s1_guard_baseline_season_archive_transition forbidden on 2026-27
+    root_bad = tmp_path / "bad_transition"
+    root_bad.mkdir()
+    save_model_selection(ModelSelection(CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season="2026-27", podium_sealed=True), root_bad / "selection.json")
+    bad_proto = {
+        "horizon": 6,
+        "windows": {"2025-26": [1, 2], "2026-27": list(range(1, 39))},
+        "s1_guard_baseline_mode": "s1_guard_baseline_season_archive_transition",
+        "guard_specs": {
+            name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3], "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+            for name, spec in promotion_evidence.GUARD_SEMANTICS.items()
+        },
+        "quality_policy": {"mode": "certified", "target_gap": 0.0, "time_limit_seconds": 60.0, "require_proven_optimal": True, "raise_on_failure": True},
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": promotion_evidence.native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)),
+            "weights": [1.0] * 6,
+            "population": "all_admitted_players",
+            "missingness": "fail_closed",
+            "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {
+                s: dict.fromkeys(promotion_evidence.MANDATORY_GUARDS, "required")
+                for s in ("2025-26", "2026-27")
+            },
+        },
+        "live_review": {"mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24, "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025},
+    }
+    bad_proto["statistics"] = promotion_evidence.StatisticalProtocolConfig(
+        development_season="2025-26",
+        confirmation_season="2026-27",
+        approved_by_human=True,
+        approval_reference="approved-ref",
+        max_family_attempts=1,
+        required_projection_guards=tuple(promotion_evidence.MANDATORY_GUARDS),
+        evidence_protocol_hash=promotion_evidence.content_hash(bad_proto),
+    ).to_dict()
+    proto_ref = save_material(root_bad, "protocol.json", bad_proto)
+    src_hash = promotion_evidence.current_model_source_hash()
+    with pytest.raises(ValueError, match="2027-28"):
+        evaluate_verified_checkpoint_payload(
+            root_bad,
+            {
+                "version": promotion_evidence.CHECKPOINT_EVIDENCE_V2,
+                "checkpoint_gw": 15,
+                "selection_path": "selection.json",
+                "registry_path": "registry.jsonl",
+                "model_source_hash": src_hash,
+                "serving_model_closure_hash": closure.serving_model_closure_hash,
+                "model_runtime_bindings": closure.model_runtime_bindings,
+                "protocol": proto_ref,
+                "confirmation_attempt_ids": {CANDIDATE: "att"},
+                "development_selections": {CANDIDATE: proto_ref},
+                "guard_outcome_sources": [],
+                "replays": [],
+            },
+        )

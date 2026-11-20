@@ -280,7 +280,9 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
     monkeypatch.setattr(promotion_evidence, "evaluate_verified_checkpoint_payload", retained_scientific_pass)
     bundle_path = tmp_path / "bundle.json"
     bundle = promotion_evidence.write_checkpoint_recommendation_bundle(request_path, bundle_path)
-    assert registry.get_attempt(attempt.attempt_id).status == "completed"
+    final_attempt = registry.get_attempt(attempt.attempt_id)
+    assert final_attempt is not None and final_attempt.status == "completed"
+    assert final_attempt.bundle_path == "bundle.json" and final_attempt.human_approval_ref is None
     assert load_model_selection(active_config) == selection
     with pytest.raises(ValueError, match="human approval"):
         adopt_champion(bundle_path, config_path=active_config, expected_current_champion=CHAMPION,
@@ -291,3 +293,21 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
     )
     assert adopted.champion == CANDIDATE
     assert load_model_selection(active_config) == adopted
+
+
+def test_real_checkpoint_bundle_writes_relative_bundle_path_and_packs_snapshot(
+    retained_verified_checkpoint: Path,
+    tmp_path: Path,
+) -> None:
+    from backtesting.portable_evidence import pack_checkpoint_snapshot
+    from backtesting.promotion_evidence import verify_checkpoint_recommendation_bundle, write_checkpoint_recommendation_bundle
+
+    bundle_path = retained_verified_checkpoint.with_name("bundle.json")
+    bundle = write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+    assert "serving_model_closure_hash" in bundle
+    assert "model_runtime_bindings" in bundle
+    assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
+
+    # Inconclusive pilot fixture cannot pack an immutable release pass snapshot
+    with pytest.raises(ValueError, match="finalized empirical scientific pass"):
+        pack_checkpoint_snapshot(bundle_path, output_dir=tmp_path / "snapshots")

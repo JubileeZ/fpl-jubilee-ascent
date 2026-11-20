@@ -497,7 +497,7 @@ def _inject_mip_start(seed_model: highspy.Highs, seed_vars: dict[str, Any], targ
 def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.DataFrame, options: dict[str, Any]) -> tuple[Decision, "SolverCertificate"]:
     """Optimize all horizon weeks; return the immediate native decision and real HiGHS certificate."""
     import time
-    from backtesting.rolling_replay import SolverCertificate, UncertifiedSolveError
+    from backtesting.rolling_replay import SolverCertificate, UncertifiedSolveError, replay_solver_binary_sha256
 
     rules = get_rules(state.rules_version)
     validate_squad(state.squad, allow_club_overage=state.deadline > 1)
@@ -623,5 +623,6 @@ def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.Dat
         f"highs-{model.version()}-native-v1",
         "certified" if status == highspy.HighsModelStatus.kOptimal else "time_capped",
         {**options, "native_adapter": "native-v1", "price_assumption": "issue_prices_constant", "assembly_time_seconds": assembly_time_seconds, "plans": plans},
+        solver_binary_sha256=replay_solver_binary_sha256(),
     )
     return decision, certificate

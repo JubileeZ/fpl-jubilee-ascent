@@ -614,3 +614,93 @@ def test_acquire_seed_manifest_accepts_prior_seed_only_season(
     assert manifest["role"] == "prior_season_seed"
     assert manifest["defensive_contribution_status"] == "inapplicable_native"
     assert manifest["retained_player_count"] == 1
+
+
+def test_validation_fplcache_manifest_accepts_first_party_bootstrap_receipt_and_custom_checkpoints(
+    tmp_path: Path,
+) -> None:
+    import hashlib
+    from backtesting.empirical_mirrors import empirical_checkpoint_scope, load_empirical_manifest_bundle
+
+    with pytest.raises(ValueError, match="checkpoint_gw"):
+        empirical_checkpoint_scope("validation_fplcache", "validation", 20)
+    assert empirical_checkpoint_scope("validation_fplcache", "validation", 20, allowed_checkpoints=(15, 20, 30, 38)) == 20
+
+    dl1 = datetime(2026, 8, 15, 17, 30, tzinfo=UTC)
+    cap1 = dl1 - timedelta(hours=2)
+    qroot = tmp_path / "q"
+    (qroot / "2026-27/receipts").mkdir(parents=True)
+    bs_raw = _bootstrap_xz(gw=1, deadline=dl1)
+    bs_dec = lzma.decompress(bs_raw)
+    (qroot / "2026-27/receipts/gw01_bs.json.xz").write_bytes(bs_raw)
+    fx_raw = b"id,event,team_h,team_a,kickoff_time\n1,1,1,2,2026-08-15T18:00:00Z\n"
+    (qroot / "2026-27/receipts/gw01_fx.csv").write_bytes(fx_raw)
+    out_raw = b"[]"
+    (qroot / "2026-27/receipts/gw01_out.json").write_bytes(out_raw)
+
+    manifest = {
+        "schema_version": 2,
+        "season": "2026-27",
+        "track": "validation_fplcache",
+        "purpose": "validation",
+        "checkpoint_gw": 20,
+        "origins": [
+            {
+                "gw": 1,
+                "deadline_utc": dl1.isoformat(),
+                "origin_admitted": True,
+                "bootstrap": {
+                    "status": "supported",
+                    "timing_basis": "receipt",
+                    "url": "receipt://2026-27/gw1/bootstrap",
+                    "local_relpath": "2026-27/receipts/gw01_bs.json.xz",
+                    "capture_lower_utc": cap1.isoformat(),
+                    "capture_upper_utc": cap1.isoformat(),
+                    "blob_sha256": hashlib.sha256(bs_raw).hexdigest(),
+                    "decompressed_sha256": hashlib.sha256(bs_dec).hexdigest(),
+                },
+                "fixtures": {
+                    "status": "supported",
+                    "timing_basis": "receipt",
+                    "url": "receipt://2026-27/gw1/fixtures",
+                    "local_relpath": "2026-27/receipts/gw01_fx.csv",
+                    "capture_lower_utc": cap1.isoformat(),
+                    "capture_upper_utc": cap1.isoformat(),
+                    "blob_sha256": hashlib.sha256(fx_raw).hexdigest(),
+                    "decompressed_sha256": hashlib.sha256(fx_raw).hexdigest(),
+                },
+                "settled_outcomes": {
+                    "status": "supported",
+                    "timing_basis": "receipt",
+                    "url": "receipt://2026-27/gw1/outcomes",
+                    "local_relpath": "2026-27/receipts/gw01_out.json",
+                    "finished": True,
+                    "data_checked": True,
+                    "max_kickoff_utc": (dl1 + timedelta(hours=2)).isoformat(),
+                    "finalized_at_utc": (dl1 + timedelta(hours=28)).isoformat(),
+                    "meets_plus_24h": True,
+                    "blob_sha256": hashlib.sha256(out_raw).hexdigest(),
+                    "decompressed_sha256": hashlib.sha256(out_raw).hexdigest(),
+                },
+            }
+        ],
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    loaded = load_empirical_manifest_bundle(
+        manifest_path,
+        quarantine_root=qroot,
+        allowed_checkpoints=(15, 20, 30, 38),
+    )
+    assert loaded["checkpoint_gw"] == 20
+    assert loaded["partial_prefix"] is True
+
+    # >6h stale bootstrap receipt must fail closed
+    manifest["origins"][0]["bootstrap"]["capture_lower_utc"] = (dl1 - timedelta(hours=7)).isoformat()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="timely bootstrap"):
+        load_empirical_manifest_bundle(
+            manifest_path,
+            quarantine_root=qroot,
+            allowed_checkpoints=(15, 20, 30, 38),
+        )

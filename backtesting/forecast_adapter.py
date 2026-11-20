@@ -1,6 +1,7 @@
 """Verified synthetic or empirical inputs to one issue-wide model prediction."""
 
 from datetime import UTC, datetime
+import math
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -15,6 +16,63 @@ from features.availability_snapshots import write_availability_snapshot
 from features.builder import EVENT_RATE_MAP, build_features
 from models import get_default_model_name, get_model
 from models.base import BaseModel
+
+
+_STRING_NUMERIC_STATS = frozenset(
+    {
+        "expected_goals",
+        "expected_assists",
+        "expected_goals_conceded",
+        "expected_goal_involvements",
+        "threat",
+        "creativity",
+        "influence",
+        "ict_index",
+    }
+)
+_OPTIONAL_PERF_COLUMNS = (
+    "expected_goals_conceded",
+    "expected_goal_involvements",
+    "influence",
+    "ict_index",
+)
+
+
+def _coerce_perf_number(key: str, raw: Any) -> int | float:
+    if isinstance(raw, bool):
+        raise ValueError("Invalid performance value")
+    if type(raw) in (int, float):
+        num = float(raw)
+        if not math.isfinite(num):
+            raise ValueError("Invalid performance value")
+        return raw
+    if isinstance(raw, str) and key in _STRING_NUMERIC_STATS:
+        try:
+            num = float(raw.strip())
+        except ValueError:
+            raise ValueError("Invalid performance value") from None
+        if not math.isfinite(num):
+            raise ValueError("Invalid performance value")
+        return num
+    raise ValueError("Invalid performance value")
+
+
+def _normalize_perf_rows(
+    rows: list[dict[str, Any]],
+    req_cols: set[str],
+) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        if not req_cols <= set(row) or type(row["was_home"]) is not bool:
+            raise ValueError("Incomplete performance schema")
+        clean = dict(row)
+        for key in req_cols - {"kickoff_time", "was_home"}:
+            clean[key] = _coerce_perf_number(key, clean[key])
+        for key in _OPTIONAL_PERF_COLUMNS:
+            if key in clean and clean[key] is not None:
+                clean[key] = _coerce_perf_number(key, clean[key])
+        normalized.append(clean)
+    return normalized
 
 
 def predict_issue(
@@ -40,6 +98,7 @@ def predict_issue(
         if empirical
         else set()
     )
+    normalized_tables: dict[str, list[dict[str, Any]]] = {}
     for name in ("history", "seed_history"):
         req_cols = (
             required_history - {"defensive_contribution"}
@@ -51,18 +110,15 @@ def predict_issue(
             if (empirical and name == "seed_history")
             else tables[name]
         )
-        for row in rows_to_check:
-            if not req_cols <= set(row) or type(row["was_home"]) is not bool:
-                raise ValueError("Incomplete performance schema")
-            for key in req_cols - {"kickoff_time", "was_home"}:
-                if type(row[key]) not in (int, float) or isinstance(row[key], bool) or not pd.notna(row[key]) or not float("-inf") < float(row[key]) < float("inf"):
-                    raise ValueError("Invalid performance value")
+        normalized_tables[name] = _normalize_perf_rows(rows_to_check, req_cols)
     for name in ("history_fixtures", "seed_fixtures"):
         if any(any(type(row.get(k)) is not int or row[k] <= 0 for k in ("home_club_id", "away_club_id")) or row["home_club_id"] == row["away_club_id"] for row in tables[name]):
             raise ValueError("Historical fixture clubs missing")
     current_fixture_ids = {row["id"] for row in tables["target_fixtures"]}
     if any(row["id"] in current_fixture_ids or row["gameweek_id"] >= capability.gw for row in tables["history_fixtures"]):
         raise ValueError("Historical fixture outside issue scope")
+    if any(row.get("finished") is not True for row in tables["history_fixtures"]):
+        raise ValueError("Historical fixture missing finished=True")
     if not empirical and any(p["availability"] not in ("available", "unavailable") for p in origin["players"]):
         raise ValueError("Unsupported availability semantics")
     root = validate_storage_path(staging_root)
@@ -91,17 +147,28 @@ def predict_issue(
             for p in tables["seed_players"]
             if int(p.get("position_id", 0)) in (1, 2, 3, 4)
         ]
-        seed_history_cols = sorted(required_history - ({"defensive_contribution"} if seed_defcon_inapplicable else set()))
-        seed_hist_rows = [r for r in tables["seed_history"] if int(r.get("player_id", -1)) not in mgr_seed_ids]
+        seed_history_cols = sorted(
+            (required_history - ({"defensive_contribution"} if seed_defcon_inapplicable else set()))
+            | {col for col in _OPTIONAL_PERF_COLUMNS if any(col in row for row in normalized_tables["seed_history"])}
+        )
+        seed_hist_rows = normalized_tables["seed_history"]
     else:
         current = [{"id": p["id"], "club_id": p["club"], "position_id": p["position"], "now_cost": p["price"], "code": source["seed_mapping"][str(p["id"])].removeprefix("absent:"), "status": "a" if p["availability"] == "available" else "u", "chance_of_playing_next_round": 100.0 if p["availability"] == "available" else 0.0} for p in origin["players"]]
         seed = [{**p, "code": p["seed_key"]} for p in tables["seed_players"]]
-        seed_history_cols = sorted(required_history)
-        seed_hist_rows = tables["seed_history"]
+        seed_history_cols = sorted(
+            required_history
+            | {col for col in _OPTIONAL_PERF_COLUMNS if any(col in row for row in normalized_tables["seed_history"])}
+        )
+        seed_hist_rows = normalized_tables["seed_history"]
 
-    fixtures = [{**f, "finished": False} for f in tables["target_fixtures"]] + tables["history_fixtures"]
-    history_columns = sorted(required_history)
-    history = pd.DataFrame(tables["history"], columns=history_columns)
+    fixtures = [{**f, "finished": False} for f in tables["target_fixtures"]] + [
+        {**f, "finished": True} for f in tables["history_fixtures"]
+    ]
+    history_columns = sorted(
+        required_history
+        | {col for col in _OPTIONAL_PERF_COLUMNS if any(col in row for row in normalized_tables["history"])}
+    )
+    history = pd.DataFrame(normalized_tables["history"], columns=history_columns)
     seed_history = pd.DataFrame(seed_hist_rows, columns=seed_history_cols)
     with TemporaryDirectory(prefix="issue-", dir=root) as temporary:
         stage = Path(temporary)

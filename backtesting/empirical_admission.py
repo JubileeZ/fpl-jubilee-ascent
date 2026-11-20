@@ -56,16 +56,22 @@ MIRROR_DISCLOSURE_CODES = frozenset(
 ALLOWED_STATUSES = frozenset({"a", "d", "i", "s", "u", "n"})
 
 
-def resolve_source_bytes(spec: Mapping[str, Any], catalog: Mapping[str, bytes] | None) -> bytes | None:
+def resolve_source_bytes(
+    spec: Mapping[str, Any],
+    catalog: Mapping[str, bytes] | None,
+    *,
+    allow_disk_path_fallback: bool = True,
+) -> bytes | None:
     """Resolve raw source bytes from in-memory catalog or verified local disk path."""
     sid = spec.get("source_id")
     if isinstance(sid, str) and catalog is not None and sid in catalog:
         return catalog[sid]
-    path_raw = spec.get("path")
-    if isinstance(path_raw, str) and path_raw:
-        p = Path(path_raw)
-        if p.exists() and p.is_file():
-            return p.read_bytes()
+    if allow_disk_path_fallback:
+        path_raw = spec.get("path")
+        if isinstance(path_raw, str) and path_raw:
+            p = Path(path_raw)
+            if p.exists() and p.is_file():
+                return p.read_bytes()
     return None
 
 
@@ -104,9 +110,10 @@ def resolve_and_verify_source_bytes(
     catalog: Mapping[str, bytes] | None,
     *,
     role_label: str = "source",
+    allow_disk_path_fallback: bool = True,
 ) -> bytes:
     """Resolve raw bytes and verify blob/decompressed SHA-256 digests cleanly."""
-    raw_bytes = resolve_source_bytes(spec, catalog)
+    raw_bytes = resolve_source_bytes(spec, catalog, allow_disk_path_fallback=allow_disk_path_fallback)
     if raw_bytes is None:
         raise ValueError(f"Missing {role_label} source bytes")
     dec_bytes, err = verify_digests(spec, raw_bytes)
@@ -283,24 +290,39 @@ def _valid_outcomes_payload(
     rows: Any,
     *,
     rules_version: str,
+    expected_player_fixtures: set[tuple[int, int]] | None = None,
     expected_player_ids: set[int] | None = None,
     position_by_id: Mapping[int, int] | None = None,
 ) -> list[str]:
     issues: list[str] = []
-    if not isinstance(rows, list) or not rows:
+    if not isinstance(rows, list):
         return ["outcomes_empty"]
+    if not rows:
+        return [] if expected_player_fixtures == set() else ["outcomes_empty"]
     get_rules(rules_version)
     comp_keys_no_pos = _FULL_COMPONENT_KEYS - {"position_id"}
+    seen_pairs: set[tuple[int, int]] = set()
     seen_ids: set[int] = set()
     for row in rows:
         if not isinstance(row, Mapping):
             issues.append("malformed_outcome_row")
             break
         pid = row.get("player_id")
-        if type(pid) is not int or pid <= 0 or pid in seen_ids:
+        if type(pid) is not int or pid <= 0:
             issues.append("invalid_or_duplicate_outcome_player")
             break
-        seen_ids.add(pid)
+        if expected_player_fixtures is not None or "fixture_id" in row:
+            fid = row.get("fixture_id")
+            if type(fid) is not int or fid <= 0 or (pid, fid) in seen_pairs:
+                issues.append("invalid_or_duplicate_outcome_player_fixture")
+                break
+            seen_pairs.add((pid, fid))
+            seen_ids.add(pid)
+        else:
+            if pid in seen_ids:
+                issues.append("invalid_or_duplicate_outcome_player")
+                break
+            seen_ids.add(pid)
         pts = row.get("total_points")
         mins = row.get("minutes")
         appeared = row.get("appeared")
@@ -346,8 +368,14 @@ def _valid_outcomes_payload(
         except ValueError:
             issues.append("unreconciled_zero_min_or_invalid_outcome")
             break
-    if not issues and expected_player_ids and not expected_player_ids <= seen_ids:
-        issues.append("outcomes_missing_admitted_players")
+    if not issues:
+        if expected_player_fixtures is not None:
+            if expected_player_fixtures - seen_pairs:
+                issues.append("outcomes_missing_admitted_player_fixtures")
+            if seen_pairs - expected_player_fixtures:
+                issues.append("outcomes_unexpected_player_fixture")
+        elif expected_player_ids and not expected_player_ids <= seen_ids:
+            issues.append("outcomes_missing_admitted_players")
     return issues
 
 
@@ -400,15 +428,20 @@ def _assess_bootstrap_role(
     if track == "prospective_receipt" and spec.get("timing_basis") != "receipt":
         inv_bucket.append("bootstrap:prospective_requires_receipt")
     if track == "validation_fplcache":
-        if spec.get("timing_basis") != "bounded_reconstruction":
+        bs_timing = spec.get("timing_basis")
+        if bs_timing == "bounded_reconstruction":
+            try:
+                verify_validation_fplcache_snapshot(
+                    str(spec.get("url", "")),
+                    commit_sha=spec.get("commit_sha"), capture_lower=cap_lo, capture_upper=cap_up,
+                )
+            except ValueError:
+                inv_bucket.append("bootstrap:invalid_fplcache_provenance")
+        elif bs_timing == "receipt":
+            if not str(spec.get("url", "")).startswith("receipt://"):
+                inv_bucket.append("bootstrap:validation_requires_receipt_url")
+        else:
             inv_bucket.append("bootstrap:validation_requires_bounded_reconstruction")
-        try:
-            verify_validation_fplcache_snapshot(
-                str(spec.get("url", "")),
-                commit_sha=spec.get("commit_sha"), capture_lower=cap_lo, capture_upper=cap_up,
-            )
-        except ValueError:
-            inv_bucket.append("bootstrap:invalid_fplcache_provenance")
         try:
             event_deadlines = [
                 _utc(event.get("deadline_time")) for event in bs_payload.get("events", ())
@@ -422,7 +455,7 @@ def _assess_bootstrap_role(
     if max_news is not None and max_news > cap_up:
         inv_bucket.append("bootstrap:news_added_after_capture")
     age = (dl - cap_lo).total_seconds()
-    if track in ("development_mirror", "validation_fplcache"):
+    if track == "development_mirror" or (track == "validation_fplcache" and spec.get("timing_basis") == "bounded_reconstruction"):
         url_path = urlparse(str(spec.get("url", ""))).path
         if (url_path.startswith("/Randdalf/fplcache/") or url_path.startswith("/repos/Randdalf/fplcache/")) and "fplcache_mirror_provenance" not in disclosed:
             disclosed.append("fplcache_mirror_provenance")
@@ -528,6 +561,12 @@ def _assess_fixtures_role(
             inv_bucket.append("fixtures:prospective_requires_receipt")
         if (dl - cap_lo).total_seconds() > PROSPECTIVE_MAX_SECONDS:
             unr_bucket.append("fixtures:prospective_stale_gt_6h")
+    elif track == "validation_fplcache":
+        if spec.get("timing_basis") != "receipt":
+            inv_bucket.append("fixtures:validation_requires_receipt")
+        in_window = (cap_up < dl) if gw_int == 1 else (prev_dl is not None and prev_dl < cap_up < dl)
+        if not in_window:
+            unr_bucket.append("fixtures:out_of_window")
     else:
         in_window = (cap_up < dl) if gw_int == 1 else (prev_dl is not None and prev_dl < cap_up < dl)
         if not in_window:
@@ -621,6 +660,9 @@ def _assess_outcomes_role(
         unr_bucket.append("outcomes:fixture_unfinished")
     if track in ("prospective_receipt", "validation_fplcache") and spec.get("data_checked") is not True:
         unr_bucket.append("outcomes:prospective_data_unchecked")
+    if not sanitized_elements:
+        unr_bucket.append("outcomes:awaiting_bootstrap")
+        return
     expected_pids = {int(r["id"]) for r in sanitized_elements if type(r.get("id")) is int}
     try:
         get_rules(season)
@@ -632,9 +674,24 @@ def _assess_outcomes_role(
             for r in sanitized_elements
             if type(r.get("id")) is int and type(r.get("element_type")) is int
         }
+        gw_fx_rows = [r for r in fx_rows if int(r["event"]) == gw_int]
+        expected_player_fixtures: set[tuple[int, int]] | None = None
+        if gw_fx_rows and sanitized_elements:
+            club_fixtures: dict[int, list[int]] = {}
+            for fx in gw_fx_rows:
+                fid = int(fx["id"])
+                club_fixtures.setdefault(int(fx["team_h"]), []).append(fid)
+                club_fixtures.setdefault(int(fx["team_a"]), []).append(fid)
+            expected_player_fixtures = {
+                (int(el["id"]), fid)
+                for el in sanitized_elements
+                if type(el.get("id")) is int and type(el.get("team")) is int
+                for fid in club_fixtures.get(int(el["team"]), ())
+            }
         out_issues = _valid_outcomes_payload(
             out_rows,
             rules_version=season,
+            expected_player_fixtures=expected_player_fixtures,
             expected_player_ids=expected_pids if expected_pids else None,
             position_by_id=pos_map if pos_map else None,
         )
@@ -645,12 +702,20 @@ def _assess_outcomes_role(
 def assess_empirical_origins(
     request: Mapping[str, Any],
     catalog: Mapping[str, bytes] | None = None,
+    *,
+    allow_disk_path_fallback: bool = True,
+    allowed_checkpoints: Sequence[int] = (15, 30, 38),
 ) -> list[dict[str, Any]]:
     """Evaluate unified version=2 mode='empirical' origins under #175/#178 rules."""
     track = request.get("track")
     if track not in EMPIRICAL_TRACKS:
         raise ValueError(f"Empirical request requires track in {EMPIRICAL_TRACKS}")
-    checkpoint_gw = empirical_checkpoint_scope(track, request.get("purpose"), request.get("checkpoint_gw"))
+    checkpoint_gw = empirical_checkpoint_scope(
+        track,
+        request.get("purpose"),
+        request.get("checkpoint_gw"),
+        allowed_checkpoints=allowed_checkpoints,
+    )
     if request.get("eligibility_policy") != "empirical-v2":
         raise ValueError("Unsupported empirical eligibility_policy")
 
@@ -769,11 +834,11 @@ def assess_empirical_origins(
                 spec.get("timing_basis") != "receipt" or not str(spec.get("url", "")).startswith("receipt://")
             ):
                 inv_bucket.append(f"{role}:validation_requires_receipt")
-            if track == "validation_fplcache":
-                source_id = spec.get("source_id")
-                raw_bytes = catalog.get(source_id) if catalog is not None and isinstance(source_id, str) else None
-            else:
-                raw_bytes = resolve_source_bytes(spec, catalog)
+            raw_bytes = resolve_source_bytes(
+                spec,
+                catalog,
+                allow_disk_path_fallback=(allow_disk_path_fallback and track != "validation_fplcache"),
+            )
             if raw_bytes is None:
                 unr_bucket.append(f"{role}_bytes_missing")
                 continue

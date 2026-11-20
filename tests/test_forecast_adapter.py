@@ -2,6 +2,7 @@ import copy
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -60,6 +61,9 @@ def test_admitted_issue_uses_real_model_once(tmp_path: Path, monkeypatch: pytest
     first_id, first, hit = generate_forecast(tmp_path, cap, value, entries, authority_digest)
     assert hit is False
     assert set(first["model"]) == {champion}
+    gen_log = json.loads((tmp_path / "forecasts" / first_id / "generator_log.json").read_bytes())
+    assert "runner_identity" in gen_log
+    assert "python" in gen_log["runner_identity"] and "platform" in gen_log["runner_identity"]
     second_id, second, hit = generate_forecast(tmp_path, cap, changed, entries, authority_digest)
     assert hit is True and first_id == second_id and first.equals(second)
     save_model_selection(ModelSelection(provisional, ()), config_path)
@@ -121,9 +125,14 @@ def test_forecast_id_mutation_sensitivity(tmp_path) -> None:
     mut_material = forecast_material(mut_cap, mut_value, entries, mut_auth_digest)
     assert _hash(_bytes(mut_material)) != base_forecast_id
 
-    # Mutating code changes forecast_id
+    # Material must exclude OS/python specifics and bind portable serving closure
+    assert "python" not in base_material and "platform" not in base_material
+    assert "serving_model_closure_hash" in base_material
+    assert "model_runtime_bindings" in base_material
+
+    # Mutating serving closure changes forecast_id
     code_mutated = copy.deepcopy(base_material)
-    code_mutated["code"]["pyproject.toml"] = "ff" * 32
+    code_mutated["serving_model_closure_hash"] = "ff" * 32
     assert _hash(_bytes(code_mutated)) != base_forecast_id
 
     # Mutating parameters changes forecast_id
@@ -250,3 +259,86 @@ def test_solver_csv_columns_and_contract(tmp_path: Path, monkeypatch: pytest.Mon
     # Check Pos conversion: 1 -> G, 2 -> D
     assert solver_df.loc[solver_df.ID == 1, "Pos"].iloc[0] == "G"
     assert solver_df.loc[solver_df.ID == 2, "Pos"].iloc[0] == "D"
+
+
+def test_empirical_forecast_adapter_casts_strings_validates_finished_and_preserves_matchup_share(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import hashlib
+    from backtesting.forecast_adapter import predict_issue
+    from backtesting.forecast_inputs import verify_training_bundle
+    from test_empirical_admission import _build_empirical_bundle
+
+    req, cat, auth_map = _build_empirical_bundle(gws=(1, 2), seed_season="2024-25")
+    cap = require_input(req, cat, "2025-26", 2)
+    auth_obj = json.loads(cat[auth_map[2]].decode("utf-8"))
+    src_obj = json.loads(cat[auth_obj["source_digest"]].decode("utf-8"))
+
+    # 1. History fixtures without finished=True must fail verify_training_bundle
+    bad_src = copy.deepcopy(src_obj)
+    bad_src["tables"]["history_fixtures"][0].pop("finished", None)
+    bad_src_bytes = json.dumps(bad_src, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    bad_src_digest = hashlib.sha256(bad_src_bytes).hexdigest()
+    bad_cat = dict(cat)
+    bad_cat[bad_src_digest] = bad_src_bytes
+    bad_auth = {**auth_obj, "source_digest": bad_src_digest}
+    bad_auth_bytes = json.dumps(bad_auth, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    bad_auth_digest = hashlib.sha256(bad_auth_bytes).hexdigest()
+    bad_cat[bad_auth_digest] = bad_auth_bytes
+    with pytest.raises(ValueError, match="finished"):
+        verify_training_bundle(cap, req, bad_cat, bad_auth_digest)
+
+    # 2. String numeric stats cast to float and expected_goals_conceded / Matchup-Share preserved
+    str_req = copy.deepcopy(req)
+    str_cat = dict(cat)
+    hist_rows = json.loads(str_cat["history_gw2"].decode("utf-8"))
+    for row in hist_rows:
+        row["expected_goals"] = "0.42"
+        row["expected_assists"] = "0.19"
+        row["expected_goals_conceded"] = f"{0.5 + (row['player_id'] % 5) * 0.4:.2f}"
+        row["expected_goal_involvements"] = "0.61"
+        row["threat"] = "24.5"
+        row["creativity"] = "18.0"
+        row["influence"] = "21.0"
+        row["ict_index"] = "6.3"
+    hist_bytes = json.dumps(hist_rows, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    hist_sha = hashlib.sha256(hist_bytes).hexdigest()
+    str_cat["history_gw2"] = hist_bytes
+    str_req["origins"][1]["sources"]["history"]["blob_sha256"] = hist_sha
+    str_req["origins"][1]["sources"]["history"]["decompressed_sha256"] = hist_sha
+    str_cap = require_input(str_req, str_cat, "2025-26", 2)
+
+    str_src = copy.deepcopy(src_obj)
+    str_src["tables"]["history"] = hist_rows
+    str_src_bytes = json.dumps(str_src, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    str_src_digest = hashlib.sha256(str_src_bytes).hexdigest()
+    str_cat[str_src_digest] = str_src_bytes
+    str_auth = {**auth_obj, "input_digest": str_cap.input_digest, "source_digest": str_src_digest}
+    str_auth_bytes = json.dumps(str_auth, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    str_auth_digest = hashlib.sha256(str_auth_bytes).hexdigest()
+    str_cat[str_auth_digest] = str_auth_bytes
+
+    captured: dict[str, Any] = {}
+    import features.builder as fb_mod
+    real_overlay = fb_mod.apply_matchup_share_overlay
+
+    def spy_overlay(df_feat: Any, df_hist: Any, df_fixtures: Any, **kwargs: Any) -> tuple[Any, bool]:
+        captured["hist_columns"] = set(df_hist.columns)
+        captured["xgc_dtype"] = str(df_hist["expected_goals_conceded"].dtype) if "expected_goals_conceded" in df_hist.columns else None
+        captured["xgc_mean"] = float(df_hist["expected_goals_conceded"].mean()) if "expected_goals_conceded" in df_hist.columns else 0.0
+        out_df, applied = real_overlay(df_feat, df_hist, df_fixtures, **kwargs)
+        captured["matchup_applied"] = applied
+        captured["features"] = out_df
+        return out_df, applied
+
+    monkeypatch.setattr(fb_mod, "apply_matchup_share_overlay", spy_overlay)
+    preds, _ = predict_issue(str_cap, str_req, str_cat, str_auth_digest, tmp_path / "work", model_name="calibrated_matchup_hybrid")
+    assert not preds.empty
+    assert "expected_goals_conceded" in captured["hist_columns"]
+    assert captured["xgc_dtype"].startswith("float")
+    assert captured["xgc_mean"] > 1.0
+    assert captured["matchup_applied"] is True
+    feat_df = captured["features"]
+    assert (feat_df["defence_multiplier"] == 1.0).all()
+    assert feat_df["per90_goals_conceded"].nunique() > 1
