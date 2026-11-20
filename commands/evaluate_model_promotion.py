@@ -9,7 +9,8 @@ import os
 import subprocess
 import sys
 import tempfile
-from dataclasses import asdict
+from dataclasses import asdict, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from clients.env_loader import configure_utf8_stdio, load_env
 load_env()
 configure_utf8_stdio()
 
+from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.model_evaluation import (
     CandidateComparison,
     build_evidence_record,
@@ -27,6 +29,13 @@ from backtesting.model_evaluation import (
     compare_two_season_gate,
     promote_candidate,
     write_promotion_evidence,
+)
+from backtesting.portable_evidence import (
+    AdoptionLedger,
+    ExclusionLedger,
+    compute_serving_model_closure,
+    verify_chain_extends,
+    verify_checkpoint_snapshot_archive,
 )
 from backtesting.promotion import (
     BOOTSTRAP_MIN_P,
@@ -292,6 +301,14 @@ def adopt_champion(
     expected_current_champion: str | None = None,
     candidate_name: str | None = None,
     approved_bundle_hash: str | None = None,
+    snapshot_archive_path: Path | str | None = None,
+    expected_archive_sha256: str | None = None,
+    canonical_registry_path: Path | str | None = None,
+    canonical_exclusions_path: Path | str | None = None,
+    adoption_ledger_path: Path | str | None = None,
+    request_id: str | None = None,
+    slate_id: str | None = None,
+    approved_commit_sha: str | None = None,
 ) -> ModelSelection:
     """Explicitly adopt an approved candidate as the new Model Champion with human approval."""
     if not approval_ref or not approval_ref.strip():
@@ -300,30 +317,96 @@ def adopt_champion(
         raise ValueError("Cannot adopt candidate: explicit expected current Champion required")
     if not approved_bundle_hash:
         raise ValueError("Cannot adopt candidate: exact approved bundle hash required")
-    raw_bundle: dict[str, Any] = {}
+
     bundle_file = Path(bundle_path)
-    if bundle_file.is_file():
-        try:
-            loaded = json.loads(bundle_file.read_bytes())
-            if isinstance(loaded, dict):
-                raw_bundle = loaded
-        except (OSError, ValueError):
-            raw_bundle = {}
-    if raw_bundle.get("version") in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
-        data = verify_checkpoint_recommendation_bundle(bundle_path, require_finalized=True)
+    is_archive_bundle = str(bundle_path).endswith((".tar.gz", ".tgz"))
+    archive_target = (
+        Path(snapshot_archive_path)
+        if snapshot_archive_path is not None
+        else (bundle_file if is_archive_bundle else None)
+    )
+    archive_sha256: str | None = None
+    if archive_target is not None:
+        verified_snap = verify_checkpoint_snapshot_archive(
+            archive_target,
+            expected_archive_sha256=expected_archive_sha256,
+            expected_champion=expected_current_champion,
+            canonical_registry_path=canonical_registry_path,
+            canonical_exclusions_path=canonical_exclusions_path,
+        )
+        data: dict[str, Any] = dict(verified_snap["bundle"])
+        archive_sha256 = str(verified_snap["archive_sha256"])
     else:
-        data = verify_recommendation_bundle(bundle_path, require_finalized=True)
+        if expected_archive_sha256 is not None:
+            raise ValueError("Cannot verify expected_archive_sha256 without a snapshot archive")
+        raw_bundle: dict[str, Any] = {}
+        if bundle_file.is_file():
+            try:
+                loaded = json.loads(bundle_file.read_bytes())
+                if isinstance(loaded, dict):
+                    raw_bundle = loaded
+            except (OSError, ValueError):
+                raw_bundle = {}
+        if raw_bundle.get("version") in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
+            data = verify_checkpoint_recommendation_bundle(bundle_path, require_finalized=True)
+        else:
+            data = verify_recommendation_bundle(bundle_path, require_finalized=True)
+
+        if canonical_registry_path is not None and data.get("request_path"):
+            req_file = (bundle_file.parent / str(data["request_path"])).resolve()
+            if req_file.is_file():
+                req_payload = json.loads(req_file.read_bytes())
+                if req_payload.get("registry_path"):
+                    snap_reg = ConfirmationRegistry((bundle_file.parent / str(req_payload["registry_path"])).resolve())
+                    canon_reg = ConfirmationRegistry(canonical_registry_path)
+                    verify_chain_extends(snap_reg.load_all_records(), canon_reg.load_all_records())
+                    att_id = data.get("confirmation_attempt_id")
+                    if att_id:
+                        latest_canon = canon_reg.get_attempt(str(att_id))
+                        if latest_canon is None or latest_canon.status in ("withdrawn", "invalidated"):
+                            raise ValueError(f"Canonical registry invalidated or withdrew attempt '{att_id}'")
+
     if approved_bundle_hash != data["bundle_hash"]:
         raise ValueError("Human approval refers to a different evidence bundle hash")
     if data["scientific_verdict"] != "pass" or data["execution_status"] != "complete" or not data["empirical_admission"]:
         raise ValueError("Cannot adopt candidate: complete empirical scientific pass required")
-    cand_name = data["candidate_name"]
+    cand_name = str(data.get("recommended_champion") or data["candidate_name"])
     if candidate_name is not None and candidate_name != cand_name:
         raise ValueError("Candidate override differs from approved evidence")
+
     selection_path = config_path or DEFAULT_CONFIG_PATH
     current_sel = load_model_selection(selection_path)
-    if data.get("version") == CHECKPOINT_EVIDENCE_V2 and data["selection_sha256"] != content_hash(asdict(current_sel)):
-        raise ValueError("Current sealed podium differs from the approved checkpoint selection")
+
+    if canonical_exclusions_path is not None:
+        canon_excl = ExclusionLedger(canonical_exclusions_path)
+        if archive_target is None and bundle_file.is_file():
+            local_excl_file = bundle_file.parent / "exclusions.jsonl"
+            if local_excl_file.is_file():
+                verify_chain_extends(
+                    ExclusionLedger(local_excl_file).load_all_records(),
+                    canon_excl.load_all_records(),
+                )
+        if canon_excl.is_excluded(cand_name, slate_id=slate_id, season=current_sel.podium_frozen_season) or (
+            canon_excl.is_excluded(cand_name, season=current_sel.podium_frozen_season)
+        ):
+            raise ValueError(f"Candidate '{cand_name}' was excluded in canonical ExclusionLedger")
+    elif archive_target is None and bundle_file.is_file():
+        local_excl_file = bundle_file.parent / "exclusions.jsonl"
+        if local_excl_file.is_file() and ExclusionLedger(local_excl_file).is_excluded(
+            cand_name, season=current_sel.podium_frozen_season
+        ):
+            raise ValueError(f"Candidate '{cand_name}' is excluded in ExclusionLedger")
+
+    if data.get("version") == CHECKPOINT_EVIDENCE_V2:
+        possible_provisional = dict.fromkeys((current_sel.provisional_active, None, *current_sel.candidates))
+        valid_sel_hashes = {
+            content_hash(asdict(replace(current_sel, provisional_active=pa)))
+            for pa in possible_provisional
+            if pa != current_sel.champion
+        }
+        if not current_sel.podium_sealed or data.get("selection_sha256") not in valid_sel_hashes:
+            raise ValueError("Current sealed podium differs from the approved checkpoint selection")
+
     if current_sel.champion != expected_current_champion or data["former_champion"] != expected_current_champion:
         raise ValueError(
             f"Current Champion mismatch: expected '{expected_current_champion}', found '{current_sel.champion}'"
@@ -332,28 +415,82 @@ def adopt_champion(
         raise ValueError(f"Candidate '{cand_name}' is already the active Model Champion")
     if cand_name not in current_sel.candidates:
         raise ValueError("Approved candidate is absent from current Comparison Slate")
+
+    serving_closure_hash: str | None = data.get("serving_model_closure_hash")
+    if serving_closure_hash is not None:
+        closure = compute_serving_model_closure((current_sel.champion, *current_sel.candidates))
+        if closure.serving_model_closure_hash != serving_closure_hash:
+            raise ValueError("Current serving model closure differs from approved evidence")
+        if data.get("model_runtime_bindings") is not None and closure.model_runtime_bindings != data["model_runtime_bindings"]:
+            raise ValueError("Current model runtime bindings differ from approved evidence")
+
     updated = promote_candidate(current_sel, cand_name, snapshot_backed=False)
-    receipt = {
-        "version": 1, "bundle_hash": approved_bundle_hash, "protocol_hash": data["protocol_hash"],
-        "approval_ref": approval_ref, "former_champion": current_sel.champion,
-        "candidate_name": cand_name, "selection_before": {
-            "champion": current_sel.champion, "candidates": list(current_sel.candidates),
-            "promotion_status": current_sel.promotion_status, "schema_version": current_sel.schema_version,
+    adopted_at_utc = datetime.now(UTC).isoformat()
+    receipt: dict[str, Any] = {
+        "version": 1,
+        "request_id": request_id,
+        "slate_id": slate_id,
+        "bundle_hash": approved_bundle_hash,
+        "archive_sha256": archive_sha256,
+        "protocol_hash": data["protocol_hash"],
+        "serving_model_closure_hash": serving_closure_hash,
+        "approval_ref": approval_ref,
+        "approved_commit_sha": approved_commit_sha,
+        "adopted_at_utc": adopted_at_utc,
+        "former_champion": current_sel.champion,
+        "candidate_name": cand_name,
+        "selection_before": {
+            "champion": current_sel.champion,
+            "candidates": list(current_sel.candidates),
+            "promotion_status": current_sel.promotion_status,
+            "schema_version": current_sel.schema_version,
             "provisional_active": current_sel.provisional_active,
             "podium_frozen_season": current_sel.podium_frozen_season,
             "podium_sealed": current_sel.podium_sealed,
         },
+        "selection_after": {
+            "champion": updated.champion,
+            "candidates": list(updated.candidates),
+            "promotion_status": updated.promotion_status,
+            "schema_version": updated.schema_version,
+            "provisional_active": updated.provisional_active,
+            "podium_frozen_season": updated.podium_frozen_season,
+            "podium_sealed": updated.podium_sealed,
+        },
     }
-    with tempfile.NamedTemporaryFile(dir=selection_path.parent, suffix=".json", delete=False) as temporary:
-        temporary_path = Path(temporary.name)
+    receipt_path = selection_path.with_suffix(".adoption.json")
+    selection_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=selection_path.parent, suffix=".selection.tmp", delete=False) as tmp_sel:
+        temp_selection_path = Path(tmp_sel.name)
+    with tempfile.NamedTemporaryFile(dir=selection_path.parent, suffix=".adoption.tmp", delete=False) as tmp_rec:
+        temp_receipt_path = Path(tmp_rec.name)
     try:
-        save_model_selection(updated, temporary_path)
-        selection_path.with_suffix(".adoption.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        save_model_selection(updated, temp_selection_path)
+        temp_receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
         if load_model_selection(selection_path) != current_sel:
             raise ValueError("Current Champion configuration changed during adoption")
-        os.replace(temporary_path, selection_path)
+        os.replace(temp_selection_path, selection_path)
+        os.replace(temp_receipt_path, receipt_path)
     finally:
-        temporary_path.unlink(missing_ok=True)
+        temp_selection_path.unlink(missing_ok=True)
+        temp_receipt_path.unlink(missing_ok=True)
+
+    if adoption_ledger_path is not None:
+        AdoptionLedger(adoption_ledger_path).record_disposition(
+            request_id=request_id or f"adopt-{approved_bundle_hash[:12]}",
+            slate_id=slate_id or (current_sel.podium_frozen_season or "default-slate"),
+            season=str(current_sel.podium_frozen_season or data.get("season") or "unknown"),
+            checkpoint_gw=int(data.get("checkpoint_gw", 38)),
+            candidate_name=cand_name,
+            expected_champion=current_sel.champion,
+            bundle_hash=approved_bundle_hash,
+            disposition="adopted",
+            actor=approval_ref,
+            approval_ref=approval_ref,
+            reason="Adopted as Confirmed Champion",
+            recorded_at=adopted_at_utc,
+        )
+
     logger.info(
         "Successfully adopted candidate '%s' as Model Champion (approval: %s, former: %s)",
         cand_name,
@@ -450,6 +587,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--approval_ref", type=str, default=None, help="Human approval reference for manual adoption")
     parser.add_argument("--expected_champion", type=str, default=None, help="Expected current champion name for safe adoption")
     parser.add_argument("--bundle_hash", type=str, default=None, help="Exact evidence bundle hash approved by human")
+    parser.add_argument("--snapshot_archive", type=Path, default=None, help="Immutable checkpoint snapshot archive (.tar.gz)")
+    parser.add_argument("--archive_sha256", type=str, default=None, help="Expected SHA-256 of snapshot archive")
+    parser.add_argument("--canonical_registry", type=Path, default=None, help="Canonical registry.jsonl for chain extension check")
+    parser.add_argument("--canonical_exclusions", type=Path, default=None, help="Canonical exclusions.jsonl for eligibility check")
+    parser.add_argument("--adoption_ledger", type=Path, default=None, help="Adoption ledger jsonl to record adopted disposition")
+    parser.add_argument("--request_id", type=str, default=None, help="Durable adoption request identifier")
+    parser.add_argument("--slate_id", type=str, default=None, help="Frozen comparison slate identifier")
+    parser.add_argument("--approved_commit_sha", type=str, default=None, help="Exact approved commit SHA")
     parser.add_argument("--evidence_request", type=Path, default=None, help="Reconstruct final recommendation from registered retained replay evidence")
     parser.add_argument("--checkpoint_request", type=Path, default=None, help="Evaluate ADR 0069 GW15/GW30/GW38 checkpoint request (read-only)")
     parser.add_argument("--output_bundle", type=Path, default=None, help="Verified bundle destination alongside retained request")
@@ -466,6 +611,14 @@ def main(argv: list[str] | None = None) -> None:
                 approval_ref=args.approval_ref,
                 expected_current_champion=args.expected_champion,
                 approved_bundle_hash=args.bundle_hash,
+                snapshot_archive_path=args.snapshot_archive,
+                expected_archive_sha256=args.archive_sha256,
+                canonical_registry_path=args.canonical_registry,
+                canonical_exclusions_path=args.canonical_exclusions,
+                adoption_ledger_path=args.adoption_ledger,
+                request_id=args.request_id,
+                slate_id=args.slate_id,
+                approved_commit_sha=args.approved_commit_sha,
             )
             print("\n" + "=" * 60)
             print("MANUAL CHAMPION ADOPTION COMPLETED")
@@ -533,7 +686,7 @@ def main(argv: list[str] | None = None) -> None:
         snapshot_season = args.season or (data_dir.parent.name if data_dir.parent.name != "data" else None)
 
         seed_season = args.seed_season
-        if seed_season is None and args.confirmation and snapshot_season in ("2024-25", None):
+        if seed_season is None and args.confirmation and (args.season is None or snapshot_season in ("2024-25", None)):
             seed_season = "2023-24"
 
         updated, comparisons, evidence_paths = evaluate_and_apply(
