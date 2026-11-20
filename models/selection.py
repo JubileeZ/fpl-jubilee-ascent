@@ -108,6 +108,19 @@ def dual_tier_models(path: Path | None = None) -> list[str]:
     return [selection.champion]
 
 
+def eligible_slate_models(path: Path | None = None, *, excluded: Sequence[str] = ()) -> list[str]:
+    """Return Confirmed Champion and all non-excluded frozen finalists when sealed, else Dual-Tier models."""
+    selection = load_model_selection(path)
+    excluded_set = set(excluded)
+    if selection.podium_sealed:
+        return list(
+            dict.fromkeys(
+                [selection.champion, *(c for c in selection.candidates if c not in excluded_set)]
+            )
+        )
+    return [m for m in dual_tier_models(path) if m == selection.champion or m not in excluded_set]
+
+
 def projection_model_names(
     model_name: str | None = None,
     model_names: Sequence[str] | None = None,
@@ -119,7 +132,10 @@ def projection_model_names(
         return list(dict.fromkeys(model_names))
     cleaned = (model_name or "").strip()
     try:
-        serving_models = dual_tier_models(config_path)
+        selection = load_model_selection(config_path)
+        serving_models = (
+            eligible_slate_models(config_path) if selection.podium_sealed else dual_tier_models(config_path)
+        )
     except (ValueError, KeyError, OSError):
         serving_models = [FALLBACK_CHAMPION]
     if cleaned.lower() in ("", "default", "champion") or cleaned in serving_models:

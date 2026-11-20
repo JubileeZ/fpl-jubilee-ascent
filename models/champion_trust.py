@@ -8,7 +8,7 @@ from typing import Any, cast
 import pandas as pd
 from pandas.errors import EmptyDataError
 
-from models.selection import load_model_selection
+from models.selection import eligible_slate_models, load_model_selection
 
 
 def _read_artifact(path: Path) -> pd.DataFrame | None:
@@ -116,6 +116,7 @@ def load_champion_trust(
         "provisional_active": selection.provisional_active,
         "dual_tier_active": selection.provisional_active is not None,
         "active_transfer_plan_model": selection.provisional_active or selection.champion,
+        "eligible_slate_models": eligible_slate_models(selection_path),
         "podium_candidates": list(selection.candidates),
         "podium_frozen_season": selection.podium_frozen_season,
         "podium_sealed": selection.podium_sealed,

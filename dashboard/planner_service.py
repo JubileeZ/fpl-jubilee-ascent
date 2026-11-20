@@ -16,7 +16,12 @@ import pandas as pd
 from dashboard.planner import Planner, digest
 from features.builder import resolve_operational_processed_dir
 from models import get_active_transfer_plan_model_name
-from models.selection import dual_tier_models
+from models.planner_selection import (
+    STALE_CHECKOUT_MESSAGE,
+    StaleCheckoutError,
+    check_remote_main_freshness,
+)
+from models.selection import dual_tier_models, eligible_slate_models
 from solver.scenarios import ARM_NAMES, apply_scenario_arm, compute_scenarios_digest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +56,7 @@ def source_digest(paths: PlannerPaths) -> str:
 
     model_csvs = [
         solver_paths.DATA_DIR / f"{model_name}.csv"
-        for model_name in dict.fromkeys([*dual_tier_models(), get_active_transfer_plan_model_name()])
+        for model_name in dict.fromkeys([*eligible_slate_models(), get_active_transfer_plan_model_name()])
     ]
     files = [paths.dataset, *(paths.processed / name for name in (
         "players.parquet", "user_picks.parquet", "user_state.parquet", "user_chips.parquet",
@@ -64,9 +69,14 @@ def source_digest(paths: PlannerPaths) -> str:
 def make_solve_request(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
     if planner.stale:
         raise ValueError("Draft uses older squad/projections. Start a new plan from refreshed data before solving.")
+    check_remote_main_freshness(raise_on_stale=True)
+    preflight_meta = (planner.dataset.get("meta") or {}).get("planner_preflight")
+    if isinstance(preflight_meta, dict) and preflight_meta.get("freshness_status") == "stale_remote_changed":
+        raise StaleCheckoutError(STALE_CHECKOUT_MESSAGE)
     planner.validate_models(
-        set(dual_tier_models()),
+        set(eligible_slate_models()),
         active_default=get_active_transfer_plan_model_name(),
+        required_models=set(dual_tier_models()),
     )
     if paths.dataset.exists() and any(path.exists() and path.stat().st_mtime > paths.dataset.stat().st_mtime
                                      for path in (paths.processed / name for name in ("players.parquet", "user_picks.parquet", "user_state.parquet", "player_performances.parquet"))):

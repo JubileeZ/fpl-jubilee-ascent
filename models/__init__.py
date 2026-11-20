@@ -28,6 +28,15 @@ def get_active_transfer_plan_model_name() -> str:
         return DEFAULT_MODEL_NAME
 
 
+def get_eligible_slate_models() -> list[str]:
+    try:
+        from models.selection import eligible_slate_models
+
+        return eligible_slate_models()
+    except (FileNotFoundError, ValueError, KeyError):
+        return [DEFAULT_MODEL_NAME]
+
+
 def _resolve_model(model_name: str | None, *, default_fn: Any, force_champion: bool = False, validate: bool = False) -> str:
     if force_champion:
         return get_default_model_name()

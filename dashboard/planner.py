@@ -107,10 +107,17 @@ class Planner:
         val = self.state.get("model")
         return str(val) if val else None
 
-    def validate_models(self, allowed_models: set[str], *, active_default: str | None = None) -> None:
+    def validate_models(
+        self,
+        allowed_models: set[str],
+        *,
+        active_default: str | None = None,
+        required_models: set[str] | None = None,
+    ) -> None:
         meta = self.dataset.get("meta", {})
         exported_models = set(meta.get("models") or ([meta.get("default_model")] if meta.get("default_model") else []))
-        if exported_models and allowed_models and not allowed_models <= exported_models:
+        must_export = required_models if required_models is not None else allowed_models
+        if exported_models and must_export and not must_export <= exported_models:
             raise ValueError("Projections omit active Dual-Tier / Champion model. Refresh before solving.")
         default_model = meta.get("default_model")
         if default_model is not None and default_model not in allowed_models:
@@ -120,7 +127,12 @@ class Planner:
             raise ValueError("Selected model is outside current Champion / Dual-Tier slate. Refresh before solving.")
         if selected_model is not None and exported_models and selected_model not in exported_models:
             raise ValueError("Selected model projections missing from dataset. Refresh before solving.")
-        if active_default is not None and meta.get("active_transfer_plan_model") not in (None, active_default):
+        active_tp = meta.get("active_transfer_plan_model")
+        if (
+            active_default is not None
+            and active_tp not in (None, active_default)
+            and active_tp not in allowed_models
+        ):
             raise ValueError("Dataset Transfer Plan default differs from current active model. Refresh before solving.")
 
     def snapshot(self) -> str:
