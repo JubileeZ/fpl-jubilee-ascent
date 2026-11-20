@@ -239,27 +239,53 @@ def write_execution_manifest(directory: Path, manifest: dict[str, Any]) -> Path:
     return path
 
 
-def validate_protocol(protocol: dict[str, Any]) -> None:
-    """Validate the declaration; approval and admissibility remain separate decisions."""
-    fields = frozenset(
-        {
-            "version",
-            "windows",
-            "issue_cutoff",
-            "horizon",
-            "season_end_clipping",
-            "native_rules",
-            "anchor",
-            "strategic_settings",
-            "chip_calendar",
-            "quality_policy",
-            "forecast_guards",
-            "statistical_procedure",
-            "approval_references",
-        }
-    )
-    _object(protocol, fields)
-    _version(protocol["version"])
+PROTOCOL_V1_FIELDS = frozenset(
+    {
+        "version",
+        "windows",
+        "issue_cutoff",
+        "horizon",
+        "season_end_clipping",
+        "native_rules",
+        "anchor",
+        "strategic_settings",
+        "chip_calendar",
+        "quality_policy",
+        "forecast_guards",
+        "statistical_procedure",
+        "approval_references",
+    }
+)
+PROTOCOL_V2_EXTRA_FIELDS = frozenset(
+    {
+        "look_schedule",
+        "calibrated_superiority_alphas",
+        "gw1_4_material_loss_limit",
+        "completed_segments",
+        "statistical_early_harm_mode",
+        "unused_alpha_policy",
+        "expiry_rules",
+        "certification_digest",
+        "statistical_protocol_hash",
+    }
+)
+EXPECTED_SPARSE_SEGMENTS: dict[int, tuple[tuple[int, int], ...]] = {
+    15: ((1, 4),),
+    30: ((1, 4), (5, 19)),
+    38: ((1, 4), (5, 19), (20, 38)),
+}
+
+
+def _finite_number(value: Any, *, allow_zero: bool = True) -> float:
+    if type(value) not in (int, float) or not math.isfinite(float(value)):
+        raise ValueError("Expected finite number")
+    num = float(value)
+    if num < 0.0 or (not allow_zero and num <= 0.0):
+        raise ValueError("Number out of valid range")
+    return num
+
+
+def _validate_protocol_v1_core(protocol: dict[str, Any], string_fields: frozenset[str]) -> None:
     if protocol["horizon"] != 6 or protocol["season_end_clipping"] is not True:
         raise ValueError("Expected six-GW horizon with season-end clipping")
     if not isinstance(protocol["windows"], list) or not protocol["windows"]:
@@ -286,16 +312,104 @@ def validate_protocol(protocol: dict[str, Any]) -> None:
             or sorted(set(deadlines)) != deadlines
         ):
             raise ValueError("Invalid scored deadlines")
-    for name in fields - {
+    for name in string_fields:
+        if not isinstance(protocol[name], str) or not protocol[name].strip():
+            raise ValueError(f"Missing {name} declaration")
+    _strings(protocol["approval_references"])
+
+
+def _validate_protocol_v2_fields(protocol: dict[str, Any]) -> None:
+    schedule = protocol["look_schedule"]
+    if (
+        not isinstance(schedule, list)
+        or not schedule
+        or any(type(gw) is not int or not 1 <= gw <= 38 for gw in schedule)
+        or sorted(set(schedule)) != schedule
+    ):
+        raise ValueError("Invalid calibrated look schedule")
+
+    schedule_keys = frozenset(str(gw) for gw in schedule)
+    alphas = protocol["calibrated_superiority_alphas"]
+    _object(alphas, frozenset({"1", "2"}))
+    for slate_key in ("1", "2"):
+        per_look = alphas[slate_key]
+        _object(per_look, schedule_keys)
+        for gw_key in schedule_keys:
+            alpha = _finite_number(per_look[gw_key], allow_zero=False)
+            if alpha >= 1.0:
+                raise ValueError("Calibrated superiority alpha must lie in (0, 1)")
+
+    _finite_number(protocol["gw1_4_material_loss_limit"], allow_zero=True)
+
+    raw_segments = protocol["completed_segments"]
+    if not isinstance(raw_segments, dict):
+        raise ValueError("Completed segments must be a mapping")
+    normalized_segments: dict[int, tuple[tuple[int, int], ...]] = {}
+    for raw_gw, segs in raw_segments.items():
+        if type(raw_gw) is int:
+            gw_int = raw_gw
+        elif isinstance(raw_gw, str) and raw_gw.isdigit():
+            gw_int = int(raw_gw)
+        else:
+            raise ValueError("Invalid checkpoint key in completed_segments")
+        if gw_int in normalized_segments:
+            raise ValueError("Duplicate checkpoint key in completed_segments")
+        if not isinstance(segs, (list, tuple)) or not segs:
+            raise ValueError("Completed segments per checkpoint must be nonempty")
+        parsed_pairs: list[tuple[int, int]] = []
+        for pair in segs:
+            if (
+                not isinstance(pair, (list, tuple))
+                or len(pair) != 2
+                or type(pair[0]) is not int
+                or type(pair[1]) is not int
+                or not 1 <= pair[0] <= pair[1] <= gw_int
+            ):
+                raise ValueError("Invalid completed segment bounds")
+            parsed_pairs.append((pair[0], pair[1]))
+        normalized_segments[gw_int] = tuple(parsed_pairs)
+    if set(normalized_segments) != set(schedule):
+        raise ValueError("Completed segments keys must match look_schedule")
+    if schedule == [15, 30, 38] and normalized_segments != EXPECTED_SPARSE_SEGMENTS:
+        raise ValueError("Completed segments differ from ADR 0070 sparse schedule")
+
+    if protocol["statistical_early_harm_mode"] not in {"enforced", "advisory"}:
+        raise ValueError("Invalid statistical_early_harm_mode")
+    if protocol["unused_alpha_policy"] != "discard":
+        raise ValueError("Availability-driven skip requires unused_alpha_policy='discard'")
+
+    expiry = protocol["expiry_rules"]
+    _object(expiry, frozenset({"timezone", "gw38_expiry_hours_after_last_kickoff"}))
+    if expiry["timezone"] != "UTC":
+        raise ValueError("Expiry rules timezone must be UTC")
+    _finite_number(expiry["gw38_expiry_hours_after_last_kickoff"], allow_zero=False)
+
+    _digest(protocol["certification_digest"])
+    _digest(protocol["statistical_protocol_hash"])
+
+
+def validate_protocol(protocol: dict[str, Any]) -> None:
+    """Validate the declaration; approval and admissibility remain separate decisions."""
+    if not isinstance(protocol, dict):
+        raise ValueError("Expected protocol mapping")
+    version = protocol.get("version")
+    v1_strings = PROTOCOL_V1_FIELDS - {
         "version",
         "windows",
         "horizon",
         "season_end_clipping",
         "approval_references",
-    }:
-        if not isinstance(protocol[name], str) or not protocol[name].strip():
-            raise ValueError(f"Missing {name} declaration")
-    _strings(protocol["approval_references"])
+    }
+    if type(version) is int and version == 1:
+        _object(protocol, PROTOCOL_V1_FIELDS)
+        _validate_protocol_v1_core(protocol, v1_strings)
+        return
+    if type(version) is int and version == 2:
+        _object(protocol, PROTOCOL_V1_FIELDS | PROTOCOL_V2_EXTRA_FIELDS)
+        _validate_protocol_v1_core(protocol, v1_strings)
+        _validate_protocol_v2_fields(protocol)
+        return
+    raise ValueError("Unsupported version")
 
 
 def material_digest(material: dict[str, bytes]) -> str:

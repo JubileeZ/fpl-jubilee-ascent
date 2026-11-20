@@ -2,11 +2,12 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 import math
 from pathlib import Path
+import re
 from typing import Any, Literal, cast
 
 import pandas as pd
@@ -19,7 +20,9 @@ from backtesting.evidence_statistics import (
     EarlyHarmAssessment,
     KendallPwHacResult,
     PairedGameweekScore,
+    ScientificVerdict,
     StatisticalProtocolConfig,
+    assess_guard_outputs,
     assign_gameweek_segment,
     compute_score_trace_hash,
     evaluate_early_harm_fallback,
@@ -138,10 +141,117 @@ def _admit_context(context: dict[str, Any], season: str, gw: int) -> tuple[Admit
     return require_admitted(request, catalog, season, gw), request, catalog
 
 
-def protocol_from_payload(payload: dict[str, Any]) -> StatisticalProtocolConfig:
-    settings = dict(payload["statistics"])
+def _is_finite_number(value: Any, *, allow_zero: bool = True, max_exclusive: float | None = None) -> bool:
+    if type(value) not in (int, float) or not math.isfinite(float(value)):
+        return False
+    num = float(value)
+    if num < 0.0 or (not allow_zero and num == 0.0):
+        return False
+    return max_exclusive is None or num < max_exclusive
+
+
+def _parse_utc_timestamp(value: Any, *, field_name: str) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"Expected nonempty UTC ISO timestamp for '{field_name}'")
+    parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    if parsed.utcoffset() is None:
+        raise ValueError(f"Timezone-aware UTC timestamp required for '{field_name}'")
+    return parsed.astimezone(timezone.utc)
+
+
+def _normalize_completed_segments(
+    raw_segments: Mapping[Any, Any], checkpoints: Sequence[int]
+) -> dict[str, tuple[tuple[int, int], ...]]:
+    normalized: dict[str, tuple[tuple[int, int], ...]] = {}
+    for raw_gw, raw_pairs in raw_segments.items():
+        if type(raw_gw) is int:
+            gw_int = raw_gw
+        elif isinstance(raw_gw, str) and raw_gw.isdigit():
+            gw_int = int(raw_gw)
+        else:
+            raise ValueError("Invalid checkpoint key in completed_segments")
+        key = str(gw_int)
+        if key in normalized:
+            raise ValueError("Duplicate checkpoint key in completed_segments")
+        if not isinstance(raw_pairs, (list, tuple)) or not raw_pairs:
+            raise ValueError("Completed segments per checkpoint must be nonempty")
+        pairs: list[tuple[int, int]] = []
+        for pair in raw_pairs:
+            if (
+                not isinstance(pair, (list, tuple))
+                or len(pair) != 2
+                or type(pair[0]) is not int
+                or type(pair[1]) is not int
+                or not 1 <= pair[0] <= pair[1] <= gw_int
+            ):
+                raise ValueError("Invalid completed_segments bounds")
+            pairs.append((pair[0], pair[1]))
+        normalized[key] = tuple(pairs)
+    if {int(k) for k in normalized} != set(checkpoints):
+        raise ValueError("Completed segments keys must match confirmation_checkpoints")
+    return normalized
+
+
+def _validate_v2_protocol_config(config: StatisticalProtocolConfig) -> None:
+    if config.protocol_version != "v2.0":
+        raise ValueError(f"Unsupported checkpoint protocol_version '{config.protocol_version}'")
+    checkpoints = tuple(config.confirmation_checkpoints)
+    if (
+        not checkpoints
+        or any(type(gw) is not int or not 6 <= gw <= 38 for gw in checkpoints)
+        or tuple(sorted(set(checkpoints))) != checkpoints
+    ):
+        raise ValueError("v2 protocol confirmation_checkpoints must be strictly increasing ints in [6, 38]")
+    alphas = config.calibrated_superiority_alphas
+    if not isinstance(alphas, Mapping) or set(alphas) != {"1", "2"}:
+        raise ValueError("v2 protocol requires calibrated_superiority_alphas for slate sizes '1' and '2'")
+    expected_keys = {str(gw) for gw in checkpoints}
+    for slate_key in ("1", "2"):
+        per_look = alphas[slate_key]
+        if not isinstance(per_look, Mapping) or set(per_look) != expected_keys:
+            raise ValueError(f"v2 calibrated_superiority_alphas['{slate_key}'] must cover all registered checkpoints")
+        for gw_key, val in per_look.items():
+            if not _is_finite_number(val, allow_zero=False, max_exclusive=1.0):
+                raise ValueError(f"Invalid calibrated superiority alpha for M={slate_key}, GW{gw_key}")
+    if config.gw1_4_material_loss_limit is None or not _is_finite_number(config.gw1_4_material_loss_limit, allow_zero=True):
+        raise ValueError("v2 protocol requires finite nonnegative gw1_4_material_loss_limit")
+    if config.statistical_early_harm_mode not in ("enforced", "advisory"):
+        raise ValueError("v2 protocol statistical_early_harm_mode must be 'enforced' or 'advisory'")
+    if not _is_finite_number(config.statistical_early_harm_alpha, allow_zero=False, max_exclusive=1.0):
+        raise ValueError("v2 protocol statistical_early_harm_alpha must lie in (0, 1)")
+    if config.availability_skip_unused_alpha is not True:
+        raise ValueError("v2 protocol requires availability_skip_unused_alpha=True")
+    if not _is_finite_number(config.gw38_expiry_hours_after_last_kickoff, allow_zero=False):
+        raise ValueError("v2 protocol requires positive finite gw38_expiry_hours_after_last_kickoff")
+    if config.certification_digest is not None:
+        if not isinstance(config.certification_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", config.certification_digest):
+            raise ValueError("v2 protocol certification_digest must be a lowercase SHA256 hex digest")
+    if config.completed_segments is not None:
+        _normalize_completed_segments(config.completed_segments, checkpoints)
+
+
+def _config_from_statistics_dict(settings_raw: Mapping[str, Any]) -> StatisticalProtocolConfig:
+    settings = dict(settings_raw)
     settings["required_projection_guards"] = tuple(settings.get("required_projection_guards", ()))
+    if "confirmation_checkpoints" in settings and settings["confirmation_checkpoints"] is not None:
+        raw_cps = settings["confirmation_checkpoints"]
+        if not isinstance(raw_cps, (list, tuple)) or any(type(gw) is not int for gw in raw_cps):
+            raise ValueError("confirmation_checkpoints must be a list or tuple of integer gameweeks")
+        settings["confirmation_checkpoints"] = tuple(raw_cps)
+    if "completed_segments" in settings and settings["completed_segments"] is not None:
+        raw_segs = settings["completed_segments"]
+        if not isinstance(raw_segs, Mapping):
+            raise ValueError("completed_segments must be a mapping")
+        checkpoints = settings.get("confirmation_checkpoints", (15, 30, 38))
+        settings["completed_segments"] = _normalize_completed_segments(raw_segs, checkpoints)
     config = StatisticalProtocolConfig(**settings)
+    if config.protocol_version != "v1.0":
+        _validate_v2_protocol_config(config)
+    return config
+
+
+def protocol_from_payload(payload: dict[str, Any]) -> StatisticalProtocolConfig:
+    config = _config_from_statistics_dict(payload["statistics"])
     declaration = {key: value for key, value in payload.items() if key != "statistics"}
     if config.evidence_protocol_hash != content_hash(declaration):
         raise ValueError("Registered evidence protocol declaration mismatch")
@@ -819,6 +929,7 @@ CheckpointAction = Literal[
     "retain_dual_tier",
     "rotate_to_backup",
     "fallback_to_champion",
+    "invalid",
 ]
 
 
@@ -831,6 +942,9 @@ class FinalistCheckpointOutcome:
     early_harm: EarlyHarmAssessment
     guards_passed: bool
     superior: bool
+    guards_invalid: bool = False
+    guards_inconclusive: bool = False
+    excluded: bool = False
 
 
 @dataclass(frozen=True)
@@ -844,6 +958,11 @@ class DualTierCheckpointResult:
     requires_manual_adopt: bool
     outcomes: Mapping[str, FinalistCheckpointOutcome]
     reasons: tuple[str, ...]
+    scientific_verdict: ScientificVerdict | None = None
+    excluded_finalists: tuple[str, ...] = ()
+    newly_excluded_finalists: tuple[str, ...] = ()
+    expired: bool = False
+    skipped: bool = False
 
 
 def _passes_segment_floors(
@@ -864,6 +983,8 @@ def rank_and_freeze_podium(
     current_selection: ModelSelection,
     active_season: str,
     seal_slate: bool = False,
+    protocol_hash: str | None = None,
+    certification_digest: str | None = None,
 ) -> PodiumFreezeResult:
     """Rank S-1+S-2 qualified finalists by 0.5*(delta_S1+delta_S2), enforce M<=2 cap & seal."""
     if current_selection.podium_sealed and current_selection.podium_frozen_season == active_season:
@@ -908,6 +1029,8 @@ def rank_and_freeze_podium(
         provisional_active=provisional_active,
         podium_frozen_season=active_season if (seal_slate and podium) else None,
         podium_sealed=bool(seal_slate and podium),
+        frozen_protocol_hash=protocol_hash if (seal_slate and podium) else None,
+        frozen_certification_digest=certification_digest if (seal_slate and podium) else None,
     )
     return PodiumFreezeResult(
         podium=podium,
@@ -916,6 +1039,378 @@ def rank_and_freeze_podium(
         displaced_candidates=displaced,
         rejected_candidates=tuple(rejected),
         updated_selection=updated,
+    )
+
+
+def _extract_sorted_trace(
+    finalist_traces: Mapping[str, Sequence[PairedGameweekScore]], candidate: str, checkpoint_gw: int
+) -> list[PairedGameweekScore]:
+    if candidate not in finalist_traces:
+        raise ValueError(f"Missing active-season scores for finalist '{candidate}'")
+    scores = sorted(
+        [s for s in finalist_traces[candidate] if s.gameweek <= checkpoint_gw],
+        key=lambda s: s.gameweek,
+    )
+    if [s.gameweek for s in scores] != list(range(1, checkpoint_gw + 1)):
+        raise ValueError(f"Finalist '{candidate}' trace at GW{checkpoint_gw} must cover GW1..{checkpoint_gw}")
+    return scores
+
+
+def _verify_derived_guard_margins(guards: Sequence[GuardOutput], derived_margins: Mapping[str, float] | None) -> None:
+    if derived_margins is None:
+        return
+    for guard in guards:
+        if guard.metric_name in derived_margins and not math.isclose(
+            guard.margin, derived_margins[guard.metric_name], rel_tol=1e-6, abs_tol=1e-9
+        ):
+            raise ValueError(
+                f"Guard '{guard.metric_name}' margin {guard.margin} differs from derived S-1 margin {derived_margins[guard.metric_name]}"
+            )
+
+
+def _validate_v2_expiry(
+    *,
+    checkpoint_gw: int,
+    protocol_config: StatisticalProtocolConfig,
+    evaluated_at_utc: str | None,
+    gw38_final_kickoff_utc: str | None,
+    look_expiry_utc: str | None,
+) -> tuple[bool, list[str]]:
+    if look_expiry_utc is None and gw38_final_kickoff_utc is None:
+        return False, []
+    if evaluated_at_utc is None:
+        raise ValueError("evaluated_at_utc required when expiry deadlines are configured")
+    evaluated_dt = _parse_utc_timestamp(evaluated_at_utc, field_name="evaluated_at_utc")
+    expired = False
+    reasons: list[str] = []
+    if look_expiry_utc is not None:
+        look_exp_dt = _parse_utc_timestamp(look_expiry_utc, field_name="look_expiry_utc")
+        if evaluated_dt > look_exp_dt:
+            expired = True
+            reasons.append(
+                f"Checkpoint GW{checkpoint_gw} evaluation {evaluated_dt.isoformat()} exceeded look expiry {look_exp_dt.isoformat()}"
+            )
+    if gw38_final_kickoff_utc is not None:
+        kickoff_dt = _parse_utc_timestamp(gw38_final_kickoff_utc, field_name="gw38_final_kickoff_utc")
+        gw38_exp_dt = kickoff_dt + timedelta(hours=float(protocol_config.gw38_expiry_hours_after_last_kickoff))
+        if evaluated_dt > gw38_exp_dt:
+            expired = True
+            reasons.append(
+                f"Checkpoint GW{checkpoint_gw} evaluation {evaluated_dt.isoformat()} exceeded GW38 expiry {gw38_exp_dt.isoformat()}"
+            )
+    return expired, reasons
+
+
+def _verify_certification_digest(
+    protocol_config: StatisticalProtocolConfig | None, expected_cert: str | None
+) -> None:
+    if protocol_config is not None and protocol_config.protocol_version != "v1.0" and expected_cert is not None:
+        if protocol_config.certification_digest != expected_cert:
+            raise ValueError("Frozen v2 protocol certification_digest mismatch")
+
+
+def _retained_provisional_after_exclusion(
+    selection: ModelSelection, remaining: Sequence[str], updated_excluded: set[str]
+) -> str | None:
+    if not remaining or selection.provisional_active is None:
+        return None
+    if selection.provisional_active in updated_excluded:
+        return None
+    return selection.provisional_active
+
+
+def _evaluate_v2_checkpoint(
+    *,
+    checkpoint_gw: int,
+    finalist_traces: Mapping[str, Sequence[PairedGameweekScore]],
+    finalist_guards: Mapping[str, Sequence[GuardOutput]],
+    selection: ModelSelection,
+    order: tuple[str, ...],
+    protocol_config: StatisticalProtocolConfig,
+    protocol_approved: bool,
+    inapplicable_guards: Sequence[str],
+    derived_margins: Mapping[str, float] | None,
+    excluded_finalists: Sequence[str],
+    skipped_checkpoints: Sequence[int],
+    evaluated_at_utc: str | None,
+    gw38_final_kickoff_utc: str | None,
+    look_expiry_utc: str | None,
+) -> DualTierCheckpointResult:
+    """Evaluate ADR 0070 calibrated sparse checkpoint independent of provisional_active."""
+    _validate_v2_protocol_config(protocol_config)
+    m_count = len(order)
+    checkpoints = tuple(protocol_config.confirmation_checkpoints)
+    skipped_set = {int(gw) for gw in skipped_checkpoints}
+    if not skipped_set <= set(checkpoints):
+        raise ValueError("skipped_checkpoints must be a subset of registered confirmation_checkpoints")
+    excluded_in_order = set(excluded_finalists)
+    if not excluded_in_order <= set(order):
+        raise ValueError("excluded_finalists must belong to frozen podium_order")
+
+    is_registered_checkpoint = checkpoint_gw in checkpoints
+    is_skipped = checkpoint_gw in skipped_set
+    alphas = protocol_config.calibrated_superiority_alphas
+    assert alphas is not None
+    alpha_spent = float(alphas[str(m_count)][str(checkpoint_gw)]) if (is_registered_checkpoint and not is_skipped) else None
+    hac_alpha = alpha_spent if alpha_spent is not None else float(protocol_config.statistical_early_harm_alpha)
+
+    is_expired, expiry_reasons = _validate_v2_expiry(
+        checkpoint_gw=checkpoint_gw,
+        protocol_config=protocol_config,
+        evaluated_at_utc=evaluated_at_utc,
+        gw38_final_kickoff_utc=gw38_final_kickoff_utc,
+        look_expiry_utc=look_expiry_utc,
+    )
+
+    if is_skipped:
+        remaining_prior = [cand for cand in order if cand not in excluded_in_order]
+        reasons = [
+            f"Checkpoint GW{checkpoint_gw} skipped due to availability; unused alpha discarded and finalist eligibility preserved",
+            *expiry_reasons,
+        ]
+        next_prov = _retained_provisional_after_exclusion(selection, remaining_prior, excluded_in_order)
+        must_fallback = (
+            checkpoint_gw == checkpoints[-1]
+            or not remaining_prior
+            or (selection.provisional_active is not None and selection.provisional_active in excluded_in_order)
+        )
+        action: CheckpointAction = "fallback_to_champion" if must_fallback else "retain_dual_tier"
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=None,
+            action=action,
+            recommended_champion=None,
+            next_provisional_active=None if must_fallback else next_prov,
+            requires_manual_adopt=False,
+            outcomes={},
+            reasons=tuple(reasons),
+            scientific_verdict="fail" if not remaining_prior else "inconclusive",
+            excluded_finalists=tuple(c for c in order if c in excluded_in_order),
+            newly_excluded_finalists=(),
+            expired=is_expired,
+            skipped=True,
+        )
+
+    base_required = set(protocol_config.required_projection_guards) if protocol_config.required_projection_guards else set(MANDATORY_GUARDS)
+    required_guards = tuple(sorted(base_required - set(inapplicable_guards)))
+    completed_segs = protocol_config.completed_segments.get(str(checkpoint_gw)) if protocol_config.completed_segments else None
+
+    outcomes: dict[str, FinalistCheckpointOutcome] = {}
+    newly_excluded: list[str] = []
+    invalid_reasons: list[str] = []
+    any_invalid = False
+
+    for cand in order:
+        if cand in excluded_in_order:
+            continue
+        scores = _extract_sorted_trace(finalist_traces, cand, checkpoint_gw)
+
+        raw_guards = list(finalist_guards.get(cand, ()))
+        if cand not in finalist_guards:
+            any_invalid = True
+            invalid_reasons.append(f"Finalist '{cand}' missing required projection guards")
+            guards_for_eval: list[GuardOutput] = []
+            guards_invalid = True
+            guards_inconclusive = False
+            guards_pass = False
+        else:
+            raw_names = [g.metric_name for g in raw_guards]
+            guards_for_eval = [g for g in raw_guards if g.metric_name in required_guards]
+            guard_eval = assess_guard_outputs(guards_for_eval, required_guards)
+            if len(set(raw_names)) != len(raw_names):
+                any_invalid = True
+                guards_invalid = True
+                invalid_reasons.append(f"Finalist '{cand}' has duplicate projection guard names")
+            else:
+                guards_invalid = guard_eval.invalid
+                if guards_invalid:
+                    any_invalid = True
+                    invalid_reasons.extend(f"{cand}: {msg}" for msg in guard_eval.guard_missing_evidence)
+            guards_inconclusive = bool(guard_eval.inconclusive_names) and not guards_invalid
+            guards_pass = guard_eval.passed and not guards_invalid
+
+        if not guards_invalid:
+            _verify_derived_guard_margins(guards_for_eval, derived_margins)
+
+        harm = evaluate_early_harm_fallback(
+            scores,
+            guards_for_eval,
+            harm_alpha=float(protocol_config.statistical_early_harm_alpha),
+            gw1_4_material_loss_limit=protocol_config.gw1_4_material_loss_limit,
+            statistical_mode=protocol_config.statistical_early_harm_mode,
+            completed_segments=completed_segs,
+        )
+        hac = run_kendall_pw_hac_test([s.delta_net for s in scores], alpha=hac_alpha)
+        net_delta = float(sum(s.delta_net for s in scores))
+        mean_delta = net_delta / float(len(scores))
+        excluded_now = (not guards_invalid) and harm.triggered
+        if excluded_now:
+            newly_excluded.append(cand)
+        superior = bool(
+            protocol_approved
+            and alpha_spent is not None
+            and not is_expired
+            and not guards_invalid
+            and guards_pass
+            and not harm.triggered
+            and hac.point_estimate > 0.0
+            and hac.one_sided_lower > 0.0
+            and hac.p_value_superiority <= alpha_spent
+        )
+        outcomes[cand] = FinalistCheckpointOutcome(
+            candidate_name=cand,
+            net_delta=net_delta,
+            mean_delta=mean_delta,
+            hac_result=hac,
+            early_harm=harm,
+            guards_passed=guards_pass,
+            superior=superior,
+            guards_invalid=guards_invalid,
+            guards_inconclusive=guards_inconclusive,
+            excluded=excluded_now,
+        )
+
+    updated_excluded_set = excluded_in_order | set(newly_excluded)
+    updated_excluded = tuple(c for c in order if c in updated_excluded_set)
+    remaining = [cand for cand in order if cand not in updated_excluded_set]
+
+    if any_invalid:
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="invalid",
+            recommended_champion=None,
+            next_provisional_active=selection.provisional_active,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(invalid_reasons),
+            scientific_verdict="invalid",
+            excluded_finalists=tuple(c for c in order if c in excluded_in_order),
+            newly_excluded_finalists=(),
+            expired=is_expired,
+            skipped=False,
+        )
+
+    if is_expired:
+        provisional_excluded = selection.provisional_active is not None and selection.provisional_active in updated_excluded_set
+        must_fallback = checkpoint_gw == checkpoints[-1] or not remaining or provisional_excluded
+        exp_action: CheckpointAction = "fallback_to_champion" if must_fallback else "retain_dual_tier"
+        next_prov = None if must_fallback else selection.provisional_active
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action=exp_action,
+            recommended_champion=None,
+            next_provisional_active=next_prov,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(expiry_reasons),
+            scientific_verdict="fail" if not remaining else "inconclusive",
+            excluded_finalists=updated_excluded,
+            newly_excluded_finalists=tuple(newly_excluded),
+            expired=True,
+            skipped=False,
+        )
+
+    reasons: list[str] = []
+    passing = [cand for cand in order if cand in outcomes and outcomes[cand].superior]
+    if passing and alpha_spent is not None:
+        winner = max(passing, key=lambda c: (outcomes[c].net_delta, -order.index(c)))
+        if len(passing) > 1:
+            reasons.append(
+                f"Simultaneous pass at GW{checkpoint_gw}: '{winner}' won higher S net delta "
+                f"({outcomes[winner].net_delta:+.2f} pts)"
+            )
+        else:
+            reasons.append(
+                f"'{winner}' cleared calibrated alpha={alpha_spent:.5f} (M={m_count}) at GW{checkpoint_gw} "
+                f"(p={outcomes[winner].hac_result.p_value_superiority:.5f}); manual adopt_champion required"
+            )
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="eligible_for_manual_adopt",
+            recommended_champion=winner,
+            next_provisional_active=winner,
+            requires_manual_adopt=True,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+            scientific_verdict="pass",
+            excluded_finalists=updated_excluded,
+            newly_excluded_finalists=tuple(newly_excluded),
+            expired=False,
+            skipped=False,
+        )
+
+    for cand in newly_excluded:
+        reasons.extend(outcomes[cand].early_harm.reasons)
+    for cand in remaining:
+        if cand in outcomes and outcomes[cand].guards_inconclusive:
+            reasons.append(f"'{cand}' confirmation blocked at GW{checkpoint_gw} by INCONCLUSIVE safeguard; eligibility preserved")
+    if not remaining:
+        reasons.append(f"All frozen finalists excluded by GW{checkpoint_gw}; falling back to Confirmed Champion '{selection.champion}'")
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="fallback_to_champion",
+            recommended_champion=None,
+            next_provisional_active=None,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+            scientific_verdict="fail",
+            excluded_finalists=updated_excluded,
+            newly_excluded_finalists=tuple(newly_excluded),
+            expired=False,
+            skipped=False,
+        )
+
+    if checkpoint_gw == checkpoints[-1]:
+        reasons.append(f"GW{checkpoint_gw} final checkpoint did not confirm superiority; preserving Champion '{selection.champion}'")
+        return DualTierCheckpointResult(
+            checkpoint_gw=checkpoint_gw,
+            num_finalists=m_count,
+            alpha_spent=alpha_spent,
+            action="fallback_to_champion",
+            recommended_champion=None,
+            next_provisional_active=None,
+            requires_manual_adopt=False,
+            outcomes=outcomes,
+            reasons=tuple(reasons),
+            scientific_verdict="inconclusive",
+            excluded_finalists=updated_excluded,
+            newly_excluded_finalists=tuple(newly_excluded),
+            expired=False,
+            skipped=False,
+        )
+
+    if not reasons:
+        reasons.append(f"No finalist cleared GW{checkpoint_gw} threshold; preserving remaining slate eligibility")
+    next_prov = (
+        None
+        if selection.provisional_active is None
+        else (selection.provisional_active if selection.provisional_active in remaining else remaining[0])
+    )
+    return DualTierCheckpointResult(
+        checkpoint_gw=checkpoint_gw,
+        num_finalists=m_count,
+        alpha_spent=alpha_spent,
+        action="retain_dual_tier",
+        recommended_champion=None,
+        next_provisional_active=next_prov,
+        requires_manual_adopt=False,
+        outcomes=outcomes,
+        reasons=tuple(reasons),
+        scientific_verdict="inconclusive",
+        excluded_finalists=updated_excluded,
+        newly_excluded_finalists=tuple(newly_excluded),
+        expired=False,
+        skipped=False,
     )
 
 
@@ -929,6 +1424,12 @@ def evaluate_dual_tier_checkpoint(
     protocol_approved: bool = True,
     inapplicable_guards: Sequence[str] = (),
     s1_champion_rows: Sequence[Mapping[str, Any]] | None = None,
+    protocol_config: StatisticalProtocolConfig | None = None,
+    excluded_finalists: Sequence[str] = (),
+    skipped_checkpoints: Sequence[int] = (),
+    evaluated_at_utc: str | None = None,
+    gw38_final_kickoff_utc: str | None = None,
+    look_expiry_utc: str | None = None,
 ) -> DualTierCheckpointResult:
     """Evaluate frozen M<=2 finalists symmetrically at GW15/GW30/GW38 (or intermediate Early-Harm GW>=6)."""
     if type(checkpoint_gw) is not int or not 6 <= checkpoint_gw <= 38:
@@ -937,35 +1438,44 @@ def evaluate_dual_tier_checkpoint(
     m_count = len(order)
     if not 1 <= m_count <= 2:
         raise ValueError(f"Dual-Tier checkpoint requires 1 or 2 frozen finalists, got {m_count}")
-    is_obf_checkpoint = checkpoint_gw in (15, 30, 38)
-    alpha_spent = obrien_fleming_alpha(checkpoint_gw, num_finalists=m_count) if is_obf_checkpoint else None
-    hac_alpha = alpha_spent if alpha_spent is not None else EARLY_HARM_P_THRESHOLD
-    required_guards = MANDATORY_GUARDS - set(inapplicable_guards)
     derived_margins = (
         derive_s1_guard_margins(s1_champion_rows, inapplicable_metrics=inapplicable_guards)
         if s1_champion_rows is not None
         else None
     )
+    if protocol_config is not None and protocol_config.protocol_version != "v1.0":
+        return _evaluate_v2_checkpoint(
+            checkpoint_gw=checkpoint_gw,
+            finalist_traces=finalist_traces,
+            finalist_guards=finalist_guards,
+            selection=selection,
+            order=order,
+            protocol_config=protocol_config,
+            protocol_approved=protocol_approved,
+            inapplicable_guards=inapplicable_guards,
+            derived_margins=derived_margins,
+            excluded_finalists=excluded_finalists,
+            skipped_checkpoints=skipped_checkpoints,
+            evaluated_at_utc=evaluated_at_utc,
+            gw38_final_kickoff_utc=gw38_final_kickoff_utc,
+            look_expiry_utc=look_expiry_utc,
+        )
+
+    is_obf_checkpoint = checkpoint_gw in (15, 30, 38)
+    alpha_spent = obrien_fleming_alpha(checkpoint_gw, num_finalists=m_count) if is_obf_checkpoint else None
+    hac_alpha = alpha_spent if alpha_spent is not None else EARLY_HARM_P_THRESHOLD
+    required_guards = MANDATORY_GUARDS - set(inapplicable_guards)
 
     outcomes: dict[str, FinalistCheckpointOutcome] = {}
     for cand in order:
-        if cand not in finalist_traces or cand not in finalist_guards:
+        if cand not in finalist_guards:
             raise ValueError(f"Missing active-season scores or guards for finalist '{cand}'")
-        scores = sorted(
-            [s for s in finalist_traces[cand] if s.gameweek <= checkpoint_gw],
-            key=lambda s: s.gameweek,
-        )
-        gws = [s.gameweek for s in scores]
-        if gws != list(range(1, checkpoint_gw + 1)):
-            raise ValueError(f"Finalist '{cand}' trace at GW{checkpoint_gw} must cover GW1..{checkpoint_gw}")
+        scores = _extract_sorted_trace(finalist_traces, cand, checkpoint_gw)
         guards = [g for g in finalist_guards[cand] if g.metric_name in required_guards]
         supplied_names = {g.metric_name for g in guards}
         if not required_guards <= supplied_names:
             raise ValueError(f"Finalist '{cand}' missing mandatory projection guards")
-        if derived_margins is not None:
-            for g in guards:
-                if g.metric_name in derived_margins and not math.isclose(g.margin, derived_margins[g.metric_name], rel_tol=1e-6, abs_tol=1e-9):
-                    raise ValueError(f"Guard '{g.metric_name}' margin {g.margin} differs from derived S-1 margin {derived_margins[g.metric_name]}")
+        _verify_derived_guard_margins(guards, derived_margins)
 
         harm = evaluate_early_harm_fallback(scores, guards)
         hac = run_kendall_pw_hac_test([s.delta_net for s in scores], alpha=hac_alpha)
@@ -1152,7 +1662,20 @@ def evaluate_checkpoint_payload(
                 )
     else:
         for cand, g_list in payload["finalist_guards"].items():
-            guards[cand] = [GuardOutput(**g) for g in g_list]
+            guards[cand] = [g if isinstance(g, GuardOutput) else GuardOutput(**g) for g in g_list]
+
+    protocol_config: StatisticalProtocolConfig | None = None
+    if "protocol" in payload and isinstance(payload["protocol"], Mapping):
+        proto_dict = dict(payload["protocol"])
+        protocol_config = (
+            protocol_from_payload(proto_dict)
+            if "guard_specs" in proto_dict and "windows" in proto_dict
+            else _config_from_statistics_dict(proto_dict.get("statistics", proto_dict))
+        )
+    elif "protocol_config" in payload and isinstance(payload["protocol_config"], Mapping):
+        protocol_config = _config_from_statistics_dict(payload["protocol_config"])
+
+    _verify_certification_digest(protocol_config, payload.get("expected_certification_digest"))
 
     result = evaluate_dual_tier_checkpoint(
         checkpoint_gw=checkpoint_gw,
@@ -1163,20 +1686,28 @@ def evaluate_checkpoint_payload(
         protocol_approved=bool(payload.get("protocol_approved", True)),
         inapplicable_guards=inapplicable,
         s1_champion_rows=s1_rows,
+        protocol_config=protocol_config,
+        excluded_finalists=payload.get("excluded_finalists", ()),
+        skipped_checkpoints=payload.get("skipped_checkpoints", ()),
+        evaluated_at_utc=payload.get("evaluated_at_utc"),
+        gw38_final_kickoff_utc=payload.get("gw38_final_kickoff_utc"),
+        look_expiry_utc=payload.get("look_expiry_utc"),
     )
     return result, traces
 
 
 def evaluate_verified_checkpoint_payload(
-    root: Path, payload: Mapping[str, Any], *, finalized_bundle_path: Path | None = None
+    root: Path,
+    payload: Mapping[str, Any],
+    *,
+    finalized_bundle_path: Path | None = None,
+    expected_certification_digest: str | None = None,
 ) -> tuple[DualTierCheckpointResult, dict[str, Any]]:
     """Rebuild the checkpoint from registered, admitted native replay material."""
     lifecycle = load_season_lifecycle()
     season = lifecycle.season_for_role("active_validation")
     development_season = lifecycle.season_for_role("development")
     checkpoint = payload["checkpoint_gw"]
-    if type(checkpoint) is not int or checkpoint not in (15, 30, 38):
-        raise ValueError("Verified checkpoint must be GW15, GW30 or GW38")
     selection = load_model_selection(_local_path(root, payload["selection_path"]))
     if not selection.podium_sealed or selection.podium_frozen_season != season or not selection.candidates:
         raise ValueError("Verified checkpoint requires the frozen active-season podium")
@@ -1193,19 +1724,63 @@ def evaluate_verified_checkpoint_payload(
     protocol = _read_material(root, payload["protocol"])
     config = protocol_from_payload(protocol)
     protocol_hash = content_hash(protocol)
+    expected_checkpoints = config.confirmation_checkpoints if config.protocol_version != "v1.0" else (15, 30, 38)
+    if type(checkpoint) is not int or checkpoint not in expected_checkpoints:
+        raise ValueError(f"Verified checkpoint must be one of {expected_checkpoints}")
     if (config.development_season, config.confirmation_season) != (development_season, season):
         raise ValueError("Checkpoint protocol differs from the active season lifecycle")
     if (config.approved_by_human is not True or not isinstance(config.approval_reference, str) or not config.approval_reference.strip()
             or config.approval_reference == "UNAPPROVED" or config.nominal_alpha != 0.05):
-        raise ValueError("Approved ADR 0069 checkpoint protocol required")
-    review = {"mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
-              "early_harm_min_gw": 6, "early_harm_p_threshold": EARLY_HARM_P_THRESHOLD}
-    if (protocol["windows"][season] != list(range(1, 39)) or protocol.get("live_review") != review
-            or len(protocol["windows"][development_season]) < 2 or set(protocol["guard_specs"]) != MANDATORY_GUARDS
-            or any(spec["alpha"] != 0.05 for spec in protocol["guard_specs"].values())):
-        raise ValueError("Frozen schedule or guard policy differs from ADR 0069")
+        raise ValueError("Approved checkpoint protocol required")
+    if config.protocol_version == "v1.0":
+        review = {"mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
+                  "early_harm_min_gw": 6, "early_harm_p_threshold": EARLY_HARM_P_THRESHOLD}
+        if (protocol["windows"][season] != list(range(1, 39)) or protocol.get("live_review") != review
+                or len(protocol["windows"][development_season]) < 2 or set(protocol["guard_specs"]) != MANDATORY_GUARDS
+                or any(spec["alpha"] != 0.05 for spec in protocol["guard_specs"].values())):
+            raise ValueError("Frozen schedule or guard policy differs from ADR 0069")
+    else:
+        live_review = protocol.get("live_review") or {}
+        delay = live_review.get("settlement_delay_hours")
+        if (
+            protocol["windows"][season] != list(range(1, 39))
+            or live_review.get("mode") != "fplcache"
+            or live_review.get("review_gameweeks") != list(config.confirmation_checkpoints)
+            or not isinstance(delay, (int, float))
+            or isinstance(delay, bool)
+            or float(delay) < 24.0
+            or live_review.get("early_harm_min_gw") != 6
+            or live_review.get("early_harm_p_threshold") != config.statistical_early_harm_alpha
+            or len(protocol["windows"][development_season]) < 2
+            or set(protocol["guard_specs"]) != MANDATORY_GUARDS
+            or any(spec["alpha"] != 0.05 for spec in protocol["guard_specs"].values())
+        ):
+            raise ValueError("Frozen schedule or guard policy differs from ADR 0070 v2")
+        _verify_certification_digest(
+            config, expected_certification_digest or payload.get("expected_certification_digest")
+        )
+        if config.certification_digest is None:
+            raise ValueError("Verified v2 checkpoint requires certified protocol certification_digest")
+        if selection.frozen_protocol_hash is not None and selection.frozen_protocol_hash != protocol_hash:
+            raise ValueError("Frozen slate protocol_hash mismatch")
+        if selection.frozen_certification_digest is not None and selection.frozen_certification_digest != config.certification_digest:
+            raise ValueError("Frozen slate certification_digest mismatch")
     if protocol["solver_identity"] != native_solver_identity():
         raise ValueError("Checkpoint evidence requires the native Strategic transfer solver")
+
+    excluded_finalists = tuple(payload.get("excluded_finalists", ()))
+    excluded_set = set(excluded_finalists)
+    skipped_checkpoints = tuple(int(gw) for gw in payload.get("skipped_checkpoints", ()))
+    skipped_set = set(skipped_checkpoints)
+    if not excluded_set <= set(podium):
+        raise ValueError("excluded_finalists must belong to frozen podium")
+    if not skipped_set <= set(expected_checkpoints):
+        raise ValueError("skipped_checkpoints must be a subset of registered checkpoints")
+    if config.protocol_version != "v1.0":
+        if payload.get("evaluated_at_utc") is None:
+            raise ValueError("Verified v2 checkpoint requires evaluated_at_utc")
+        if checkpoint == expected_checkpoints[-1] and checkpoint not in skipped_set and payload.get("gw38_final_kickoff_utc") is None:
+            raise ValueError("Verified v2 final checkpoint requires gw38_final_kickoff_utc")
 
     registry = ConfirmationRegistry(_local_path(root, payload["registry_path"]))
     registrations = {}
@@ -1225,6 +1800,30 @@ def evaluate_verified_checkpoint_payload(
     registered_times = [datetime.fromisoformat(registration.registered_at) for registration in registrations.values()]
     if any(value.utcoffset() is None for value in registered_times):
         raise ValueError("Timezone-aware frozen finalist registration required")
+
+    active_podium = [c for c in podium if c not in excluded_set] if config.protocol_version != "v1.0" else list(podium)
+    if config.protocol_version != "v1.0" and (checkpoint in skipped_set or not active_podium):
+        result = evaluate_dual_tier_checkpoint(
+            checkpoint_gw=checkpoint,
+            finalist_traces={},
+            finalist_guards={},
+            selection=selection,
+            podium_order=podium,
+            protocol_config=config,
+            excluded_finalists=excluded_finalists,
+            skipped_checkpoints=skipped_checkpoints,
+            evaluated_at_utc=payload.get("evaluated_at_utc"),
+            gw38_final_kickoff_utc=payload.get("gw38_final_kickoff_utc"),
+            look_expiry_utc=payload.get("look_expiry_utc"),
+        )
+        return result, {
+            "candidate_name": selection.provisional_active or podium[0], "former_champion": champion,
+            "model_source_hash": source_hash, "protocol_hash": protocol_hash, "empirical_admission": False,
+            "selection_sha256": content_hash(asdict(selection)),
+            "admitted_limitations": ["checkpoint_skipped_unavailable"] if checkpoint in skipped_set else ["all_finalists_excluded"],
+            "confirmation_attempt_id": None,
+            "score_trace_hash": None,
+        }
 
     windows = {**protocol["windows"], season: list(range(1, checkpoint + 1))}
     expected_admissions = {(year, gw) for year, weeks in windows.items() for gw in weeks}
@@ -1263,12 +1862,13 @@ def evaluate_verified_checkpoint_payload(
     records = {}
     rows = {}
     anchors = {}
-    expected_replays = {(development_season, champion), *((season, model) for model in (champion, *podium))}
+    required_replays = {(development_season, champion), *((season, model) for model in (champion, *active_podium))}
+    allowed_replays = {(development_season, champion), *((season, model) for model in (champion, *podium))}
     replay_protocol = {**protocol, "windows": windows}
     for entry in payload["replays"]:
         year, model = entry["season"], entry["model_name"]
         key = year, model
-        if key not in expected_replays or key in records:
+        if key not in allowed_replays or key in records:
             raise ValueError("Duplicate or foreign checkpoint replay")
         if [issue["admission"] for issue in entry["issues"]] != [admission_refs[year, gw] for gw in windows[year]]:
             raise ValueError("Replay and guard outcomes must use the same admitted sources")
@@ -1281,13 +1881,13 @@ def evaluate_verified_checkpoint_payload(
             root, entry, replay_protocol, config, source_hash, guard_outcomes, registered_at.isoformat(),
             max_target_gw=windows[year][-1], frozen_protocol_hash=protocol_hash,
         )
-    if set(records) != expected_replays:
+    if not required_replays <= set(records):
         raise ValueError("Missing frozen finalist, Champion or S-1 baseline replay")
 
     traces = {
         candidate: [pair_replay_score(season, cand, champ) for cand, champ in
                     zip(records[season, candidate], records[season, champion], strict=True)]
-        for candidate in podium
+        for candidate in active_podium
     }
     margins = derive_s1_guard_margins(
         rows[development_season, champion], weights=protocol["projection_evaluation"]["weights"],
@@ -1301,19 +1901,30 @@ def evaluate_verified_checkpoint_payload(
             {"candidate_name": candidate, "former_champion": champion}, guard_protocol,
             {(season, model): rows[season, model] for model in (candidate, champion)}, cluster_by_gw=True,
         )
-        for candidate in podium
+        for candidate in active_podium
     }
     result = evaluate_dual_tier_checkpoint(
-        checkpoint_gw=checkpoint, finalist_traces=traces, finalist_guards=guards, selection=selection, podium_order=podium,
+        checkpoint_gw=checkpoint,
+        finalist_traces=traces,
+        finalist_guards=guards,
+        selection=selection,
+        podium_order=podium,
+        protocol_config=config,
+        excluded_finalists=excluded_finalists,
+        skipped_checkpoints=skipped_checkpoints,
+        evaluated_at_utc=payload.get("evaluated_at_utc"),
+        gw38_final_kickoff_utc=payload.get("gw38_final_kickoff_utc"),
+        look_expiry_utc=payload.get("look_expiry_utc"),
     )
     winner = result.recommended_champion
     trace_hashes = {candidate: compute_score_trace_hash(scores) for candidate, scores in traces.items()}
-    for candidate in podium:
+    for candidate in active_podium:
         registry.verify_checkpoint_attempt(
             attempts[candidate], candidate_name=candidate, champion_name=champion, active_season=season,
             checkpoint_gw=checkpoint, model_source_hash=source_hash, parameters_hash=content_hash({}),
             protocol_hash=protocol_hash, score_trace_hash=trace_hashes[candidate], max_family_attempts=config.max_family_attempts,
             finalized_bundle_path=finalized_bundle_path if candidate == winner else None,
+            allowed_checkpoints=expected_checkpoints,
         )
     return result, {
         "candidate_name": winner or selection.provisional_active or podium[0], "former_champion": champion,
@@ -1328,7 +1939,7 @@ def evaluate_verified_checkpoint_payload(
 def evaluate_checkpoint_bundle_evidence(
     request_path: Path | str, *, finalized_bundle_path: Path | None = None
 ) -> dict[str, Any]:
-    """Reconstruct an ADR 0069 checkpoint recommendation from retained evidence."""
+    """Reconstruct an ADR 0069/0070 checkpoint recommendation from retained evidence."""
     path = Path(request_path).resolve()
     root = path.parent
     raw_request = path.read_bytes()
@@ -1339,12 +1950,17 @@ def evaluate_checkpoint_bundle_evidence(
         result, identity = _diagnostic_checkpoint_evidence(root, payload)
     else:
         raise ValueError("Unsupported checkpoint recommendation evidence request")
+    scientific_verdict: ScientificVerdict = (
+        result.scientific_verdict
+        if result.scientific_verdict is not None
+        else ("pass" if result.action == "eligible_for_manual_adopt" else "inconclusive")
+    )
     body = {
         "version": payload["version"],
         "checkpoint_gw": result.checkpoint_gw,
         **identity,
-        "scientific_verdict": "pass" if result.action == "eligible_for_manual_adopt" else "inconclusive",
-        "execution_status": "complete" if result.action == "eligible_for_manual_adopt" else "partial",
+        "scientific_verdict": scientific_verdict,
+        "execution_status": "complete" if scientific_verdict in ("pass", "fail") else "partial",
         "action": result.action,
         "recommended_champion": result.recommended_champion,
         "next_provisional_active": result.next_provisional_active,
@@ -1411,13 +2027,19 @@ def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path
             if (attempt.execution_status != "complete" or attempt.scientific_verdict != "pass"
                     or not attempt.bundle_path or (registry.registry_file.parent / attempt.bundle_path).resolve() != path):
                 raise ValueError("Checkpoint registry was finalized for a different evidence bundle")
-        elif bundle["checkpoint_gw"] in (15, 30):
-            registry.finalize_early_checkpoint_pass(
-                attempt.attempt_id, checkpoint_gw=bundle["checkpoint_gw"], completed_gameweeks=attempt.completed_gameweeks,
-                score_trace_hash=bundle["score_trace_hash"], bundle_path=str(path),
-            )
         else:
-            registry.transition_attempt_status(attempt.attempt_id, "completed", scientific_verdict="pass", bundle_path=str(path))
+            expected_cps: tuple[int, ...] = (15, 30, 38)
+            if "protocol" in payload:
+                proto_cfg = protocol_from_payload(_read_material(request.parent, payload["protocol"]))
+                if proto_cfg.protocol_version != "v1.0":
+                    expected_cps = tuple(proto_cfg.confirmation_checkpoints)
+            if bundle["checkpoint_gw"] != expected_cps[-1]:
+                registry.finalize_early_checkpoint_pass(
+                    attempt.attempt_id, checkpoint_gw=bundle["checkpoint_gw"], completed_gameweeks=attempt.completed_gameweeks,
+                    score_trace_hash=bundle["score_trace_hash"], bundle_path=str(path),
+                )
+            else:
+                registry.transition_attempt_status(attempt.attempt_id, "completed", scientific_verdict="pass", bundle_path=str(path))
     return bundle
 
 

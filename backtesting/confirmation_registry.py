@@ -226,10 +226,11 @@ class ConfirmationRegistry:
         score_trace_hash: str,
         max_family_attempts: int | None = None,
         finalized_bundle_path: Path | None = None,
+        allowed_checkpoints: Sequence[int] = (15, 30, 38),
     ) -> FinalistRegistration:
         """Verify the frozen checkpoint trace and optional final bundle path, relative to the registry."""
-        if checkpoint_gw not in (15, 30, 38):
-            raise ValueError("Confirmation requires a pre-declared GW15, GW30, or GW38 checkpoint")
+        if checkpoint_gw not in set(allowed_checkpoints):
+            raise ValueError(f"Confirmation requires a pre-declared checkpoint in {tuple(allowed_checkpoints)}")
         load_season_lifecycle().assert_access(active_season, checkpoint_gw, purpose="active_validation", allow_test=False)
         records = self.load_all_records()
         history = [record for record in records if record.attempt_id == attempt_id]

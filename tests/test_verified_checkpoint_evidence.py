@@ -291,3 +291,198 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
     )
     assert adopted.champion == CANDIDATE
     assert load_model_selection(active_config) == adopted
+
+
+def test_v2_protocol_from_payload_validates_and_checks_certification_digest() -> None:
+    from backtesting.promotion_evidence import GUARD_SEMANTICS, content_hash, native_solver_identity, protocol_from_payload
+    from backtesting.rolling_replay import QualityPolicy
+
+    windows = {"2025-26": [1, 2], "2026-27": list(range(1, 39))}
+    guards = {
+        name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3],
+               "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+        for name, spec in GUARD_SEMANTICS.items()
+    }
+    declaration = {
+        "horizon": 6,
+        "windows": windows,
+        "guard_specs": guards,
+        "quality_policy": asdict(QualityPolicy()),
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)), "weights": [1.0] * 6, "population": "all_admitted_players",
+            "missingness": "fail_closed", "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+        },
+        "live_review": {
+            "mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
+            "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025,
+        },
+    }
+    alphas = {"1": {"15": 0.0004, "30": 0.008, "38": 0.032}, "2": {"15": 0.0002, "30": 0.004, "38": 0.016}}
+    cert_digest = "f" * 64
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        development_season="2025-26",
+        confirmation_season="2026-27",
+        approved_by_human=True,
+        approval_reference="test-v2-cert",
+        max_family_attempts=1,
+        required_projection_guards=tuple(guards),
+        evidence_protocol_hash=content_hash(declaration),
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas=alphas,
+        gw1_4_material_loss_limit=36.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest=cert_digest,
+    )
+    payload = {**declaration, "statistics": cfg.to_dict()}
+    parsed = protocol_from_payload(payload)
+    assert parsed.protocol_version == "v2.0"
+    assert parsed.certification_digest == cert_digest
+    assert parsed.calibrated_superiority_alphas == alphas
+
+    bad_payload = {**declaration, "statistics": {**cfg.to_dict(), "certification_digest": "bad"}}
+    with pytest.raises(ValueError, match="certification_digest"):
+        protocol_from_payload(bad_payload)
+
+
+def test_verified_v2_checkpoint_enforces_bindings_expiry_and_allows_skip_and_post_exclusion(tmp_path: Path) -> None:
+    from backtesting.promotion_evidence import (
+        CHECKPOINT_EVIDENCE_V2,
+        GUARD_SEMANTICS,
+        content_hash,
+        current_model_source_hash,
+        evaluate_verified_checkpoint_payload,
+        native_solver_identity,
+    )
+    from backtesting.rolling_replay import QualityPolicy
+
+    development, validation = "2025-26", "2026-27"
+    windows = {development: [1, 2], validation: list(range(1, 39))}
+    guards = {
+        name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3],
+               "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+        for name, spec in GUARD_SEMANTICS.items()
+    }
+    declaration = {
+        "horizon": 6,
+        "windows": windows,
+        "guard_specs": guards,
+        "quality_policy": asdict(QualityPolicy()),
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)), "weights": [1.0] * 6, "population": "all_admitted_players",
+            "missingness": "fail_closed", "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+        },
+        "live_review": {
+            "mode": "fplcache", "review_gameweeks": [12, 26, 38], "settlement_delay_hours": 24,
+            "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025,
+        },
+    }
+    alphas = {"1": {"12": 0.0004, "26": 0.008, "38": 0.032}, "2": {"12": 0.0002, "26": 0.004, "38": 0.016}}
+    cert_digest = "f" * 64
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        development_season=development,
+        confirmation_season=validation,
+        approved_by_human=True,
+        approval_reference="test-v2-cert",
+        max_family_attempts=1,
+        required_projection_guards=tuple(guards),
+        evidence_protocol_hash=content_hash(declaration),
+        confirmation_checkpoints=(12, 26, 38),
+        calibrated_superiority_alphas=alphas,
+        gw1_4_material_loss_limit=36.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest=cert_digest,
+    )
+    protocol = {**declaration, "statistics": cfg.to_dict()}
+    protocol_hash = content_hash(protocol)
+    source_hash = current_model_source_hash()
+    selection_path = tmp_path / "selection.json"
+    save_model_selection(
+        ModelSelection(
+            CHAMPION,
+            (CANDIDATE,),
+            provisional_active=CANDIDATE,
+            podium_frozen_season=validation,
+            podium_sealed=True,
+            frozen_protocol_hash=protocol_hash,
+            frozen_certification_digest=cert_digest,
+        ),
+        selection_path,
+    )
+    dev_sel = save_material(
+        tmp_path,
+        "dev-sel.json",
+        {"version": 1, "candidate_name": CANDIDATE, "former_champion": CHAMPION,
+         "model_source_hash": source_hash, "protocol_hash": protocol_hash, "traces": {CHAMPION: None}},
+    )
+    registry = ConfirmationRegistry(tmp_path / "registry.jsonl")
+    attempt = registry.register_finalist(
+        CANDIDATE, CHAMPION, "v2-skip", source_hash, content_hash({}), dev_sel["sha256"],
+        protocol_hash, requested_seasons=(validation,), max_family_attempts=1,
+    )
+    base_payload: dict[str, Any] = {
+        "version": CHECKPOINT_EVIDENCE_V2,
+        "checkpoint_gw": 12,
+        "selection_path": "selection.json",
+        "registry_path": "registry.jsonl",
+        "model_source_hash": source_hash,
+        "protocol": save_material(tmp_path, "protocol.json", protocol),
+        "parameters": save_material(tmp_path, "params.json", {}),
+        "podium_order": [CANDIDATE],
+        "development_selections": {CANDIDATE: dev_sel},
+        "confirmation_attempt_ids": {CANDIDATE: attempt.attempt_id},
+        "replays": [],
+        "guard_outcome_sources": [],
+        "skipped_checkpoints": [12],
+        "evaluated_at_utc": "2026-11-25T12:00:00Z",
+    }
+
+    # Availability-driven skip succeeds without active fplcache admission/replays
+    skip_res, _ = evaluate_verified_checkpoint_payload(tmp_path, base_payload)
+    assert skip_res.skipped is True
+    assert skip_res.alpha_spent is None
+    assert skip_res.action == "retain_dual_tier"
+
+    # Missing evaluated_at_utc fails closed on v2 verified checkpoint
+    with pytest.raises(ValueError, match="evaluated_at_utc"):
+        evaluate_verified_checkpoint_payload(tmp_path, {k: v for k, v in base_payload.items() if k != "evaluated_at_utc"})
+
+    # Post-exclusion slate with empty active podium succeeds at non-skipped GW26 without active replays for excluded finalist
+    excl_payload = {
+        **base_payload,
+        "checkpoint_gw": 26,
+        "skipped_checkpoints": [],
+        "excluded_finalists": [CANDIDATE],
+    }
+    excl_res, _ = evaluate_verified_checkpoint_payload(tmp_path, excl_payload)
+    assert excl_res.action == "fallback_to_champion"
+    assert excl_res.scientific_verdict == "fail"
+    assert excl_res.next_provisional_active is None
+
+    # Mismatched frozen slate protocol_hash on selection fails closed
+    bad_sel_path = tmp_path / "bad_selection.json"
+    save_model_selection(
+        ModelSelection(
+            CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season=validation,
+            podium_sealed=True, frozen_protocol_hash="0" * 64, frozen_certification_digest=cert_digest,
+        ),
+        bad_sel_path,
+    )
+    with pytest.raises(ValueError, match="Frozen slate protocol_hash mismatch"):
+        evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "bad_selection.json"})
+
