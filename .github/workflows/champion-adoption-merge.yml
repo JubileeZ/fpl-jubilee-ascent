@@ -83,7 +83,7 @@ jobs:
           done
           uv run python -m commands.manage_champion_adoption "${ARGS[@]}"
 
-      - name: Persist updated evidence and push atomic adoption commit
+      - name: Push atomic adoption commit to protected main
         shell: bash
         env:
           REQUEST_ID: ${{ github.event.inputs.request_id }}
@@ -97,6 +97,14 @@ jobs:
                 commit -m "adopt(champion): merge ${REQUEST_ID} (${APPROVAL_REF})"
             git push origin HEAD:main
           fi
+
+      - name: Persist validation-evidence reservation and ledger state
+        if: always()
+        shell: bash
+        env:
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          set -euo pipefail
           WORK="$RUNNER_TEMP/evidence-branch"
           git worktree add "$WORK" origin/validation-evidence
           cp -R "$RUNNER_TEMP/validation-evidence/." "$WORK/"
@@ -105,6 +113,6 @@ jobs:
             git add -A
             git -c user.name="github-actions[bot]" \
                 -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-                commit -m "adoption: finalize merge ${REQUEST_ID}"
+                commit -m "adoption: sync reservation/ledger ${REQUEST_ID}"
             git push origin HEAD:validation-evidence
           fi

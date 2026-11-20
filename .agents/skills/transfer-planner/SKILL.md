@@ -252,7 +252,7 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
    - **If `PASS`**: Proceed directly to Step 7 (Presentation).
    - **If `CORRECTION_NEEDED`**:
      a) Re-synthesize `data/planner/xmins_override.csv` applying the subagent's corrected curves (`--set "<pid>:<new_curve>"`).
-     b) Execute **one final re-solve** with the updated overrides (`max_iterations = 1`), pinning the originally reviewed base model from `data/solution.json` (`--model <reviewed_base_model>` or `--pin-reviewed-model <reviewed_base_model>`, which `commands.solve` also enforces automatically from `meta.reviewed_base_model` on same-GW `--xmins-override` reruns unless invalidated by a terminal exclusion, expired deadline, or remote Champion change).
+     b) Execute **one final re-solve** with updated overrides (`max_iterations = 1`), pinning reviewed base model from `data/solution.json` (`--model <reviewed_base_model>` or `--pin-reviewed-model <reviewed_base_model>`; enforced automatically from `meta.reviewed_base_model` on same-GW `--xmins-override` reruns unless invalidated by terminal exclusion, expired deadline, or remote Champion change).
      c) Proceed to Step 7 (Presentation) and include the **Audit & Correction Card** showing the verified delta.
 
 ---

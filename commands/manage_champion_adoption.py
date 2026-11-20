@@ -22,13 +22,7 @@ from backtesting.adoption_transaction import (
     NotificationMessage,
     SharedReservationCoordinator,
 )
-from backtesting.portable_evidence import ExclusionLedger, verify_checkpoint_snapshot_archive
-from backtesting.promotion_evidence import (
-    CHECKPOINT_EVIDENCE_V2,
-    CHECKPOINT_EVIDENCE_VERSION,
-    verify_checkpoint_recommendation_bundle,
-    verify_recommendation_bundle,
-)
+from backtesting.portable_evidence import ExclusionLedger
 from clients.env_loader import configure_utf8_stdio
 from commands.evaluate_model_promotion import adopt_champion
 from commands.inventory_pilot_fixture import build_pilot_fixture_inventory
@@ -245,27 +239,7 @@ def _verify_adoption_pr_command(args: argparse.Namespace) -> int:
         ):
             raise ValueError(f"Candidate '{req.candidate_name}' is excluded in ExclusionLedger")
 
-    reg_path = root / "registry.jsonl"
-    if req.snapshot_archive_path is not None:
-        snap = Path(req.snapshot_archive_path)
-        snap_target = snap if snap.is_absolute() else (root / snap).resolve()
-        verify_checkpoint_snapshot_archive(
-            snap_target,
-            expected_archive_sha256=req.archive_sha256,
-            expected_champion=req.expected_champion,
-            canonical_registry_path=reg_path if reg_path.is_file() else None,
-            canonical_exclusions_path=excl_path if excl_path.is_file() else None,
-        )
-    elif req.bundle_path is not None:
-        bp = Path(req.bundle_path)
-        b_target = bp if bp.is_absolute() else (root / bp).resolve()
-        raw = json.loads(b_target.read_bytes())
-        if raw.get("version") in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
-            verify_checkpoint_recommendation_bundle(b_target, require_finalized=True)
-        else:
-            verify_recommendation_bundle(b_target, require_finalized=True)
-    else:
-        raise ValueError(f"Request '{req.request_id}' lacks snapshot_archive_path and bundle_path")
+    manager._verify_request_evidence(req)
 
     print(
         json.dumps(

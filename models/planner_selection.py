@@ -216,8 +216,15 @@ def check_remote_main_freshness(
                 checked=True,
             )
     else:
-        env_flag = os.environ.get("FPL_CHECK_REMOTE_MAIN", "").strip().lower() in ("1", "true", "yes")
-        should_check = check_remote if check_remote is not None else env_flag
+        env_raw = os.environ.get("FPL_CHECK_REMOTE_MAIN", "").strip().lower()
+        if check_remote is not None:
+            should_check = check_remote
+        elif env_raw in ("1", "true", "yes"):
+            should_check = True
+        elif env_raw in ("0", "false", "no") or os.environ.get("PYTEST_CURRENT_TEST"):
+            should_check = False
+        else:
+            should_check = True
         if not should_check:
             return RemoteFreshnessResult(
                 status="verified_current",
@@ -703,6 +710,10 @@ def resolve_weekly_planner_model(
         ):
             raise ValueError(
                 f"Cannot override Transfer Planner with terminally excluded finalist '{cleaned_override}'."
+            )
+        if freshness.status == "unverified" and cleaned_override != selection.champion:
+            raise ValueError(
+                f"Cannot override Transfer Planner with finalist '{cleaned_override}' while GitHub protected main is unreachable (unverified); only Confirmed Champion '{selection.champion}' is allowed."
             )
         if ledger_tampered and cleaned_override != selection.champion:
             raise TamperedLedgerError(
