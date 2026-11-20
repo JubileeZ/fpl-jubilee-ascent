@@ -236,8 +236,12 @@ def _extract_origin_players_and_outcomes(
     sources = origin["sources"]
     bs_spec = sources["bootstrap"]
     out_spec = sources["outcomes"]
-    bs_dec = resolve_and_verify_source_bytes(bs_spec, catalog, role_label="bootstrap")
-    out_dec = resolve_and_verify_source_bytes(out_spec, catalog, role_label="outcomes")
+    bs_dec = resolve_and_verify_source_bytes(
+        bs_spec, catalog, role_label="bootstrap", allow_disk_path_fallback=catalog is None
+    )
+    out_dec = resolve_and_verify_source_bytes(
+        out_spec, catalog, role_label="outcomes", allow_disk_path_fallback=catalog is None
+    )
 
     sanitized, _, bs_issues = _sanitize_bootstrap(
         json.loads(bs_dec.decode("utf-8")),

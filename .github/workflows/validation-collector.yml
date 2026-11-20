@@ -31,6 +31,26 @@ on:
         description: "Sealed comparison slate identifier"
         required: false
         default: "default-slate"
+      development_season:
+        description: "Development (S-1) season for freeze / bootstrap-s1-baseline"
+        required: false
+        default: "2025-26"
+      champion:
+        description: "Confirmed Champion model name"
+        required: false
+        default: "def_xg_shrink_challenger"
+      candidates:
+        description: "Comma-separated frozen finalist model names (for freeze)"
+        required: false
+        default: ""
+      approval_reference:
+        description: "Human approval reference (for freeze)"
+        required: false
+        default: ""
+      archive_processed_dir:
+        description: "Processed archive directory (for bootstrap-s1-baseline)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -49,6 +69,11 @@ jobs:
       CHECKPOINT_GW: ${{ github.event.inputs.checkpoint_gw || '15' }}
       BATCH_JSON: ${{ github.event.inputs.batch_json || '' }}
       SLATE_ID: ${{ github.event.inputs.slate_id || 'default-slate' }}
+      DEV_SEASON: ${{ github.event.inputs.development_season || '2025-26' }}
+      CHAMPION: ${{ github.event.inputs.champion || 'def_xg_shrink_challenger' }}
+      CANDIDATES: ${{ github.event.inputs.candidates || '' }}
+      APPROVAL_REF: ${{ github.event.inputs.approval_reference || '' }}
+      ARCHIVE_DIR: ${{ github.event.inputs.archive_processed_dir || '' }}
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -78,11 +103,31 @@ jobs:
         run: |
           set -euo pipefail
           echo "has_passing_snapshot=false" >> "$GITHUB_OUTPUT"
-          if [ "$ACTION" = "collect" ] && [ -n "$BATCH_JSON" ]; then
+          if [ "$ACTION" = "collect" ]; then
+            if [ -z "$BATCH_JSON" ]; then
+              echo "collect requires batch_json input" >&2
+              exit 1
+            fi
             uv run python -m commands.produce_validation_evidence collect \
               --evidence-root "$RUNNER_TEMP/validation-evidence" \
               --batch-json "$BATCH_JSON" \
               --slate-id "$SLATE_ID"
+          elif [ "$ACTION" = "freeze" ]; then
+            uv run python -m commands.produce_validation_evidence freeze \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON" \
+              --development-season "$DEV_SEASON" \
+              --champion "$CHAMPION" \
+              --candidates "$CANDIDATES" \
+              --slate-id "$SLATE_ID" \
+              --approval-reference "$APPROVAL_REF"
+          elif [ "$ACTION" = "bootstrap-s1-baseline" ]; then
+            uv run python -m commands.produce_validation_evidence bootstrap-s1-baseline \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON" \
+              --development-season "$DEV_SEASON" \
+              --archive-processed-dir "$ARCHIVE_DIR" \
+              --champion "$CHAMPION"
           elif [ "$ACTION" = "replay" ]; then
             OUT_JSON=$(uv run python -m commands.produce_validation_evidence replay \
               --evidence-root "$RUNNER_TEMP/validation-evidence" \

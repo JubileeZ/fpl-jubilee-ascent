@@ -152,18 +152,9 @@ def _classify_gap_status(reasons: list[str], *, missing_gw: bool = False) -> Gap
 
 
 def _resolve_context_bytes(root: Path, context: dict[str, Any]) -> tuple[dict[str, Any], dict[str, bytes]]:
-    store = BlobStore(root)
-    catalog: dict[str, bytes] = {}
-    for key, val in context["catalog"].items():
-        if isinstance(val, str):
-            catalog[str(key)] = bytes.fromhex(val)
-        elif isinstance(val, dict):
-            sha = str(val["blob_sha256"])
-            rel = str(val.get("relpath") or val.get("path") or f"blobs/{sha}")
-            catalog[str(key)] = store.read_bytes(rel, expected_sha256=sha)
-        else:
-            raise ValueError(f"Unsupported catalog entry type for {key!r}")
-    return context["request"], catalog
+    from backtesting.promotion_evidence import _resolve_context_catalog
+
+    return _resolve_context_catalog(root, context)
 
 
 def _assess_season_admissions(
@@ -395,7 +386,7 @@ def _replay_season_prefix(
     source_hash: str,
     protocol_hash: str,
     policy: QualityPolicy,
-) -> tuple[dict[str, str], list[ReplayDeadlineRecord], list[dict[str, Any]], dict[str, str]]:
+) -> tuple[dict[str, str], list[ReplayDeadlineRecord], list[dict[str, Any]], dict[str, str], dict[str, Any]]:
     req_gws = sorted(gw for gw in admitted_gws if gw <= end_gw)
     if req_gws != list(range(1, end_gw + 1)):
         raise ValueError(f"Incomplete admitted origins for {season} GW1..{end_gw}")
@@ -487,25 +478,44 @@ def _replay_season_prefix(
                             "team_a_difficulty": int(fx["team_a_difficulty"]),
                         }
                     )
-        # Reconstruct seed_fixtures from seed_history fixture IDs
-        seed_fx_seen: set[int] = set()
-        seed_fx: list[dict[str, Any]] = []
-        for srow in seed_obj.get("history", []):
-            sfid = int(srow.get("fixture_id", 0))
-            if sfid > 0 and sfid not in seed_fx_seen:
-                seed_fx_seen.add(sfid)
-                seed_fx.append(
-                    {
-                        "id": sfid,
-                        "gameweek_id": int(srow.get("gameweek_id", 1)),
-                        "home_club_id": 1,
-                        "away_club_id": 2,
-                        "finished": True,
-                        "kickoff_time": str(srow.get("kickoff_time", origin["deadline"])),
-                        "team_h_difficulty": 3,
-                        "team_a_difficulty": 3,
-                    }
-                )
+        # Use explicit seed fixtures when provided; else reconstruct from seed_history
+        raw_seed_fx = seed_obj.get("fixtures")
+        if isinstance(raw_seed_fx, list) and raw_seed_fx:
+            seed_fx = [
+                {
+                    "id": int(fx["id"]),
+                    "gameweek_id": int(fx.get("gameweek_id", fx.get("event", 1))),
+                    "home_club_id": int(fx.get("home_club_id", fx.get("team_h", 1))),
+                    "away_club_id": int(fx.get("away_club_id", fx.get("team_a", 2))),
+                    "finished": True,
+                    "kickoff_time": str(fx.get("kickoff_time", origin["deadline"])),
+                    "team_h_difficulty": int(fx.get("team_h_difficulty", 3)),
+                    "team_a_difficulty": int(fx.get("team_a_difficulty", 3)),
+                }
+                for fx in raw_seed_fx
+            ]
+        else:
+            seed_fx_seen: set[int] = set()
+            seed_fx = []
+            for srow in seed_obj.get("history", []):
+                sfid = int(srow.get("fixture_id", 0))
+                if sfid > 0 and sfid not in seed_fx_seen:
+                    seed_fx_seen.add(sfid)
+                    was_home = bool(srow.get("was_home", True))
+                    club_id = int(srow.get("club_id", 1))
+                    opp_id = int(srow.get("opponent_club_id", 2 if club_id == 1 else 1))
+                    seed_fx.append(
+                        {
+                            "id": sfid,
+                            "gameweek_id": int(srow.get("gameweek_id", 1)),
+                            "home_club_id": club_id if was_home else opp_id,
+                            "away_club_id": opp_id if was_home else club_id,
+                            "finished": True,
+                            "kickoff_time": str(srow.get("kickoff_time", origin["deadline"])),
+                            "team_h_difficulty": int(srow.get("team_h_difficulty", 3)),
+                            "team_a_difficulty": int(srow.get("team_a_difficulty", 3)),
+                        }
+                    )
         src_bundle = {
             "mode": "empirical",
             "track": cap.track,
@@ -655,7 +665,7 @@ def _replay_season_prefix(
         "trace": trace_ref,
         "issues": issues,
     }
-    return anchor_ref, records, issues, trace_ref | {"entry": json.dumps(entry)}  # type: ignore[return-value]
+    return anchor_ref, records, issues, trace_ref, entry
 
 
 def _freeze_command(args: argparse.Namespace) -> int:
@@ -743,7 +753,7 @@ def _freeze_command(args: argparse.Namespace) -> int:
     # Prepare S-1 development selection trace if S-1 admissions exist
     s1_trace_ref: dict[str, str] | None = None
     if dev_prefix_end >= len(dev_windows):
-        _, _, _, trace_meta = _replay_season_prefix(
+        _, _, _, trace_meta, _ = _replay_season_prefix(
             root,
             season=dev_season,
             model_name=champion,
@@ -870,7 +880,7 @@ def _replay_command(args: argparse.Namespace) -> int:
     guard_outcome_sources: list[dict[str, Any]] = []
 
     if s1_baseline_ref is None:
-        _, _, _, s1_meta = _replay_season_prefix(
+        _, _, _, _s1_trace, s1_entry = _replay_season_prefix(
             root,
             season=dev_season,
             model_name=selection.champion,
@@ -880,7 +890,7 @@ def _replay_command(args: argparse.Namespace) -> int:
             protocol_hash=protocol_hash,
             policy=policy,
         )
-        replays.append(json.loads(s1_meta["entry"]))
+        replays.append(s1_entry)
         for gw in dev_windows:
             adm_rel = f"admissions/{dev_season}/gw{gw:02d}.json"
             guard_outcome_sources.append(
@@ -892,7 +902,7 @@ def _replay_command(args: argparse.Namespace) -> int:
             )
 
     # Active season shared guard outcome sources & replays
-    _, champ_records, _, champ_meta = _replay_season_prefix(
+    _, champ_records, _, _champ_trace, champ_entry = _replay_season_prefix(
         root,
         season=season,
         model_name=selection.champion,
@@ -902,7 +912,6 @@ def _replay_command(args: argparse.Namespace) -> int:
         protocol_hash=protocol_hash,
         policy=policy,
     )
-    champ_entry = json.loads(champ_meta["entry"])
     cum_net: dict[str, float] = {selection.champion: float(sum(r.net_points for r in champ_records))}
     cand_entries: list[dict[str, Any]] = []
 
@@ -912,7 +921,7 @@ def _replay_command(args: argparse.Namespace) -> int:
         dev_sel_rel = f"development_selections/{cand}.json"
         dev_selections[cand] = {"path": dev_sel_rel, "sha256": hashlib.sha256((root / dev_sel_rel).read_bytes()).hexdigest()}
 
-        _, cand_records, _, cand_meta = _replay_season_prefix(
+        _, cand_records, _, _cand_trace, cand_entry = _replay_season_prefix(
             root,
             season=season,
             model_name=cand,
@@ -922,7 +931,6 @@ def _replay_command(args: argparse.Namespace) -> int:
             protocol_hash=protocol_hash,
             policy=policy,
         )
-        cand_entry = json.loads(cand_meta["entry"])
         cand_entries.append(cand_entry)
         cum_net[cand] = float(sum(r.net_points for r in cand_records))
 

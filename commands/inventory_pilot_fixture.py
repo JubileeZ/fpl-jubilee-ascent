@@ -15,12 +15,11 @@ import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from backtesting.season_rules import load_season_lifecycle
 from clients.env_loader import configure_utf8_stdio
 from models.selection import load_model_selection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-NON_LIVE_SEASONS = ("2023-24", "2024-25", "2025-26")
-FORBIDDEN_LIVE_SEASON = "2026-27"
 ARCHIVE_PARQUETS = (
     "clubs.parquet",
     "fixtures.parquet",
@@ -30,17 +29,30 @@ ARCHIVE_PARQUETS = (
 )
 
 
+def _non_live_seasons(root: Path | None = None) -> tuple[str, ...]:
+    lifecycle_file = (root or PROJECT_ROOT) / "config" / "season_lifecycle.json"
+    lifecycle = load_season_lifecycle(lifecycle_file) if lifecycle_file.is_file() else load_season_lifecycle()
+    active = lifecycle.active_season
+    return tuple(sorted(s for s in lifecycle.seasons if s != active))
+
+
+def _forbidden_live_season(root: Path | None = None) -> str:
+    lifecycle_file = (root or PROJECT_ROOT) / "config" / "season_lifecycle.json"
+    lifecycle = load_season_lifecycle(lifecycle_file) if lifecycle_file.is_file() else load_season_lifecycle()
+    return lifecycle.active_season
+
+
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _assert_non_live_season(season: str) -> None:
-    if season == FORBIDDEN_LIVE_SEASON or season not in NON_LIVE_SEASONS:
+def _assert_non_live_season(season: str, root: Path | None = None) -> None:
+    if season == _forbidden_live_season(root) or season not in _non_live_seasons(root):
         raise ValueError(f"Inventory refuses live/unlisted season '{season}'")
 
 
 def _inspect_archive_season(root: Path, season: str) -> dict[str, Any]:
-    _assert_non_live_season(season)
+    _assert_non_live_season(season, root)
     season_dir = root / "data" / "archive" / season
     processed_dir = season_dir / "processed"
     parquets: dict[str, dict[str, Any]] = {}
@@ -66,10 +78,13 @@ def _inspect_archive_season(root: Path, season: str) -> dict[str, Any]:
 
 
 def _inspect_mirror_manifest(root: Path, season: str) -> dict[str, Any]:
-    _assert_non_live_season(season)
+    _assert_non_live_season(season, root)
     slug = season.replace("-", "_")
     manifest_path = root / "config" / f"dev_mirror_{slug}_manifest.json"
     if not manifest_path.is_file():
+        lifecycle_file = root / "config" / "season_lifecycle.json"
+        lifecycle = load_season_lifecycle(lifecycle_file) if lifecycle_file.is_file() else load_season_lifecycle()
+        role = lifecycle.role_of(season)
         return {
             "manifest_path": None,
             "manifest_sha256": None,
@@ -82,7 +97,7 @@ def _inspect_mirror_manifest(root: Path, season: str) -> dict[str, Any]:
             "contiguous_admitted_prefix_end_gw": 0,
             "contiguous_admitted_prefix": "0",
             "admitted_gws": [],
-            "first_blocked_gw": 1 if season != "2023-24" else None,
+            "first_blocked_gw": 1 if role != "prior_seed_only" else None,
             "first_blocked_reasons": ["no_dev_mirror_manifest_or_fplcache_series"],
             "full_season_admitted": False,
             "local_blobs_hydrated": False,
@@ -125,7 +140,8 @@ def _inspect_mirror_manifest(root: Path, season: str) -> dict[str, Any]:
 
 def _inspect_seed_manifests(root: Path) -> dict[str, dict[str, Any]]:
     seeds: dict[str, dict[str, Any]] = {}
-    for season in ("2023-24", "2024-25"):
+    non_live = _non_live_seasons(root)
+    for season in non_live[:-1]:
         slug = season.replace("-", "_")
         path = root / "config" / f"seed_manifest_{slug}.json"
         if not path.is_file():
@@ -150,10 +166,11 @@ def _inspect_reports_dir(root: Path) -> dict[str, Any]:
     reports_dir = root / "data" / "reports"
     if not reports_dir.exists():
         return {"exists": False, "entries": []}
+    forbidden = _forbidden_live_season(root)
     entries: list[str] = []
     for item in sorted(reports_dir.rglob("*")):
         rel = item.relative_to(root).as_posix()
-        if FORBIDDEN_LIVE_SEASON in rel:
+        if forbidden in rel:
             continue
         if item.is_file():
             entries.append(rel)
@@ -258,7 +275,7 @@ def build_pilot_fixture_inventory(
     selection = load_model_selection(selection_path)
 
     seasons: list[dict[str, Any]] = []
-    for season in NON_LIVE_SEASONS:
+    for season in _non_live_seasons(root):
         archive_info = _inspect_archive_season(root, season)
         mirror_info = _inspect_mirror_manifest(root, season)
         role_entry = lifecycle_data.get("seasons", {}).get(season, {})
@@ -297,13 +314,18 @@ def build_pilot_fixture_inventory(
         }
     )
 
+    lifecycle = load_season_lifecycle(lifecycle_path) if lifecycle_path.is_file() else load_season_lifecycle()
+    dev_s = lifecycle.season_for_role("development")
+    flt_s = lifecycle.season_for_role("historical_filter")
+    seed_s = lifecycle.season_for_role("prior_seed_only")
+    act_s = lifecycle.active_season
     missing_prerequisites = [
-        "No non-live season achieves >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): 2025-26 stops at GW1..7 (blocked at GW8 by vaastav fixtures out_of_window and delayed GW7 merged_gw settlement), 2024-25 stops at GW1..1 (blocked at GW2 by delayed GW1 settlement), and 2023-24 has 0 admitted mirror origins (designated prior_seed_only with no dev_mirror manifest).",
-        "Retroactive pre-deadline official fixtures receipts cannot be recovered for 2025-26 GW8+ or 2024-25 GW2+ without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py).",
-        "Local quarantined mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json is absent from disk (data/reports/ does not exist locally).",
-        "No non-live candidate qualifies as a frozen passing finalist pair against Confirmed Champion def_xg_shrink_challenger (config/model_selection.json has provisional_active=null, podium_sealed=false; candidate search has 0 S-1+S-2 qualifiers).",
-        "Preregistered approved statistical protocol (approved_by_human=True) with calibrated thresholds (#201) and S-1 guard baseline (or 2023-24 seed_manifest) for a >=15-GW empirical pair is missing.",
-        "SeasonLifecycle currently reserves validation_fplcache strictly for active_validation season 2026-27 (whose outcomes are quarantined and excluded from fixture construction).",
+        f"No non-live season reaches >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): {dev_s} stops at GW1..7 (blocked GW8: vaastav fixtures out_of_window + delayed GW7 merged_gw settlement); {flt_s} stops at GW1..1 (blocked GW2: delayed GW1 settlement); {seed_s} has 0 admitted mirror origins (prior_seed_only).",
+        f"Retroactive pre-deadline official fixture receipts unrecoverable for {dev_s} GW8+ or {flt_s} GW2+ without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py).",
+        "Local mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json absent from disk.",
+        "No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion def_xg_shrink_challenger (provisional_active=null, podium_sealed=false; 0 S-1+S-2 qualifiers).",
+        "Preregistered human-approved statistical protocol (approved_by_human=True) with calibrated thresholds (#201) and S-1 guard baseline for >=15-GW empirical pair missing.",
+        f"SeasonLifecycle reserves validation_fplcache strictly for active_validation season {act_s} (quarantined outcomes excluded from fixture construction).",
     ]
 
     return {
