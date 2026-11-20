@@ -1,0 +1,8 @@
+{
+  "binary_agreement_rate": 1.0,
+  "edge_cases_checked": 56,
+  "max_abs_numeric_diff": 1.2278178473934531e-11,
+  "num_prefixes_checked": 525,
+  "passed": true,
+  "tolerance": 1e-10
+}

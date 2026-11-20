@@ -144,13 +144,22 @@ class StatisticalProtocolConfig:
     confirmation_season: str = "2024-25"
     evidence_protocol_hash: str = ""
     inference_method: InferenceMethod = "bootstrap"
+    confirmation_checkpoints: tuple[int, ...] = (15, 30, 38)
+    calibrated_superiority_alphas: dict[str, dict[str, float]] | None = None
+    gw1_4_material_loss_limit: float | None = None
+    statistical_early_harm_mode: Literal["enforced", "advisory"] = "enforced"
+    statistical_early_harm_alpha: float = EARLY_HARM_P_THRESHOLD
+    availability_skip_unused_alpha: bool = True
+    gw38_expiry_hours_after_last_kickoff: float = 24.0 + 14.0 * 24.0
+    certification_digest: str | None = None
+    completed_segments: dict[str, tuple[tuple[int, int], ...]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def compute_hash(self) -> str:
         """Compute deterministic SHA256 digest of frozen protocol parameters."""
-        canonical_data = {
+        canonical_data: dict[str, Any] = {
             "protocol_version": self.protocol_version,
             "nominal_alpha": self.nominal_alpha,
             "bootstrap_draws": self.bootstrap_draws,
@@ -169,6 +178,30 @@ class StatisticalProtocolConfig:
         }
         if self.inference_method != "bootstrap":
             canonical_data["inference_method"] = self.inference_method
+        if self.protocol_version != "v1.0":
+            canonical_data["confirmation_checkpoints"] = list(self.confirmation_checkpoints)
+            canonical_data["calibrated_superiority_alphas"] = (
+                {
+                    str(slate): {str(gw): float(val) for gw, val in sorted(per_look.items())}
+                    for slate, per_look in sorted(self.calibrated_superiority_alphas.items())
+                }
+                if self.calibrated_superiority_alphas is not None
+                else None
+            )
+            canonical_data["gw1_4_material_loss_limit"] = self.gw1_4_material_loss_limit
+            canonical_data["statistical_early_harm_mode"] = self.statistical_early_harm_mode
+            canonical_data["statistical_early_harm_alpha"] = self.statistical_early_harm_alpha
+            canonical_data["availability_skip_unused_alpha"] = self.availability_skip_unused_alpha
+            canonical_data["gw38_expiry_hours_after_last_kickoff"] = self.gw38_expiry_hours_after_last_kickoff
+            canonical_data["certification_digest"] = self.certification_digest
+            canonical_data["completed_segments"] = (
+                {
+                    str(cp): [[int(lo), int(hi)] for lo, hi in pairs]
+                    for cp, pairs in sorted(self.completed_segments.items(), key=lambda kv: int(kv[0]))
+                }
+                if self.completed_segments is not None
+                else None
+            )
         encoded = json.dumps(canonical_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
@@ -207,6 +240,11 @@ class EarlyHarmAssessment:
     failed_guards: tuple[str, ...]
     ignored_inconclusive_guards: tuple[str, ...]
     reasons: tuple[str, ...]
+    statistical_triggered: bool = False
+    guard_triggered: bool = False
+    gw1_4_floor_breached: bool = False
+    advisory_reasons: tuple[str, ...] = ()
+    gw1_4_net_delta: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -217,7 +255,118 @@ class EarlyHarmAssessment:
             "failed_guards": list(self.failed_guards),
             "ignored_inconclusive_guards": list(self.ignored_inconclusive_guards),
             "reasons": list(self.reasons),
+            "statistical_triggered": self.statistical_triggered,
+            "guard_triggered": self.guard_triggered,
+            "gw1_4_floor_breached": self.gw1_4_floor_breached,
+            "advisory_reasons": list(self.advisory_reasons),
+            "gw1_4_net_delta": self.gw1_4_net_delta,
         }
+
+
+@dataclass(frozen=True)
+class GuardOutputsAssessment:
+    """Fail-closed validation summary across required projection safeguards."""
+
+    guard_regressions: tuple[str, ...]
+    guard_missing_evidence: tuple[str, ...]
+    guard_uncertainty: tuple[str, ...]
+    failed_names: tuple[str, ...]
+    inconclusive_names: tuple[str, ...]
+    passed: bool
+    invalid: bool
+
+
+def assess_guard_outputs(
+    projection_guards: Sequence[GuardOutput] | None,
+    required_guards: Sequence[str],
+) -> GuardOutputsAssessment:
+    """Validate GuardOutput records fail-closed for missing, non-finite, or contradicting evidence."""
+    guard_regressions: list[str] = []
+    guard_missing_evidence: list[str] = []
+    guard_uncertainty: list[str] = []
+    failed_names: list[str] = []
+    inconclusive_names: list[str] = []
+
+    req = tuple(required_guards)
+    if not req or len(set(req)) != len(req) or any(not isinstance(name, str) or not name.strip() for name in req):
+        guard_missing_evidence.append("Required projection guard inventory is missing or contains duplicate/empty names")
+    guards = list(projection_guards or ())
+    actual_guard_names = [guard.metric_name for guard in guards]
+    if len(set(actual_guard_names)) != len(actual_guard_names):
+        guard_missing_evidence.append("Projection guard evidence contains duplicate metric names")
+    if set(actual_guard_names) != set(req):
+        guard_missing_evidence.append(
+            f"Projection guard inventory mismatch: required {sorted(req)}, supplied {sorted(actual_guard_names)}"
+        )
+    if not guards:
+        guard_missing_evidence.append("Projection guards missing required evidence")
+
+    for guard in guards:
+        if guard.status not in ("PASS", "FAIL", "INCONCLUSIVE", "MISSING_EVIDENCE", "UNASSESSED"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has unknown status evidence: {guard.status}")
+        elif guard.status in ("MISSING_EVIDENCE", "UNASSESSED"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' missing required evidence: {guard.reason}")
+        elif type(guard.passed) is not bool or guard.passed != (guard.status == "PASS"):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has inconsistent pass/status evidence")
+        elif (
+            type(guard.sample_size) is not int
+            or guard.sample_size <= 0
+            or type(guard.estimate) not in (int, float)
+            or type(guard.margin) not in (int, float)
+            or not all(math.isfinite(float(value)) for value in (guard.estimate, guard.margin))
+            or guard.margin < 0.0
+            or guard.direction not in ("lower_is_better", "higher_is_better", "zero_is_ideal")
+        ):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
+        elif (
+            guard.status == "INCONCLUSIVE"
+            and guard.sample_size == 1
+            and guard.standard_error is None
+            and guard.ci_lower is None
+            and guard.ci_upper is None
+            and guard.coverage == 0.0
+        ):
+            inconclusive_names.append(guard.metric_name)
+            guard_uncertainty.append(f"Guard '{guard.metric_name}' has insufficient observations to estimate uncertainty")
+        elif (
+            guard.sample_size < 2
+            or guard.standard_error is None
+            or guard.ci_lower is None
+            or guard.ci_upper is None
+            or type(guard.coverage) not in (int, float)
+            or type(guard.standard_error) not in (int, float)
+            or type(guard.ci_lower) not in (int, float)
+            or type(guard.ci_upper) not in (int, float)
+            or not math.isfinite(float(guard.coverage))
+            or not 0.0 < float(guard.coverage) <= 1.0
+            or not all(math.isfinite(float(value)) for value in (guard.standard_error, guard.ci_lower, guard.ci_upper))
+            or guard.standard_error < 0.0
+            or guard.ci_lower > guard.ci_upper
+        ):
+            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
+        else:
+            interval_status = classify_non_inferiority_interval(
+                float(guard.ci_lower), float(guard.ci_upper), float(guard.margin), guard.direction
+            )
+            if interval_status == "INCONCLUSIVE" and not guard.passed:
+                inconclusive_names.append(guard.metric_name)
+                guard_uncertainty.append(f"Guard '{guard.metric_name}' non-inferiority remains uncertain: {guard.reason}")
+            elif interval_status != guard.status:
+                guard_missing_evidence.append(f"Guard '{guard.metric_name}' status contradicts its uncertainty bounds")
+            elif interval_status == "FAIL":
+                failed_names.append(guard.metric_name)
+                guard_regressions.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
+
+    passed = not guard_regressions and not guard_missing_evidence and not guard_uncertainty
+    return GuardOutputsAssessment(
+        guard_regressions=tuple(guard_regressions),
+        guard_missing_evidence=tuple(guard_missing_evidence),
+        guard_uncertainty=tuple(guard_uncertainty),
+        failed_names=tuple(failed_names),
+        inconclusive_names=tuple(inconclusive_names),
+        passed=passed,
+        invalid=bool(guard_missing_evidence),
+    )
 
 
 @dataclass(frozen=True)
@@ -544,16 +693,36 @@ def run_kendall_pw_hac_test(
     )
 
 
+def _segment_label_for_bounds(lo: int, hi: int) -> str:
+    for name, bounds in CONTIGUOUS_SEGMENT_BOUNDS.items():
+        if bounds == (lo, hi):
+            return name
+    return f"gw{lo}_{hi}"
+
+
 def evaluate_early_harm_fallback(
     paired_scores: Sequence[PairedGameweekScore],
     projection_guards: Sequence[GuardOutput] | None = None,
     *,
     min_gw: int = EARLY_HARM_MIN_GW,
     harm_alpha: float = EARLY_HARM_P_THRESHOLD,
+    gw1_4_material_loss_limit: float | None = None,
+    statistical_mode: Literal["enforced", "advisory"] = "enforced",
+    completed_segments: Sequence[tuple[int, int]] | None = None,
 ) -> EarlyHarmAssessment:
-    """Evaluate statistical Early-Harm Fallback after min_gw=6 warm-up (ignoring INCONCLUSIVE guards)."""
+    """Evaluate Early-Harm Fallback (GW1-4 net floor, min_gw=6 statistical harm, and mandatory guard FAIL)."""
     if min_gw < 6:
         raise ValueError("Early-Harm Fallback requires min_gw >= 6 (df >= 4)")
+    if not 0.0 < harm_alpha < 1.0:
+        raise ValueError("Early-Harm p-value threshold must lie strictly between 0 and 1")
+    if statistical_mode not in ("enforced", "advisory"):
+        raise ValueError(f"Unsupported statistical_mode: {statistical_mode}")
+    if gw1_4_material_loss_limit is not None and (
+        type(gw1_4_material_loss_limit) not in (int, float)
+        or not math.isfinite(float(gw1_4_material_loss_limit))
+        or float(gw1_4_material_loss_limit) < 0.0
+    ):
+        raise ValueError("gw1_4_material_loss_limit must be a finite nonnegative float")
     seasons = {s.season for s in paired_scores}
     if len(seasons) > 1:
         raise ValueError("Early-Harm Fallback evaluates one active validation season at a time")
@@ -565,28 +734,52 @@ def evaluate_early_harm_fallback(
     if len(set(gws)) != len(gws):
         raise ValueError("Duplicate gameweeks in Early-Harm score trace")
 
+    by_gw = {s.gameweek: s for s in ordered}
+    gw1_4_present = all(gw in by_gw for gw in (1, 2, 3, 4))
+    gw1_4_net_delta = float(sum(by_gw[gw].delta_net for gw in (1, 2, 3, 4))) if gw1_4_present else None
+    gw1_4_floor_breached = bool(
+        gw1_4_material_loss_limit is not None
+        and gw1_4_net_delta is not None
+        and gw1_4_net_delta < -float(gw1_4_material_loss_limit)
+    )
+    terminal_reasons: list[str] = []
+    if gw1_4_floor_breached and gw1_4_net_delta is not None and gw1_4_material_loss_limit is not None:
+        terminal_reasons.append(
+            f"Completed cold_start (GW1..4) breached net-points floor "
+            f"({gw1_4_net_delta:+.2f} < -{float(gw1_4_material_loss_limit):.2f})"
+        )
+
     if len(ordered) < min_gw:
         return EarlyHarmAssessment(
-            triggered=False,
+            triggered=gw1_4_floor_breached,
             min_gw_met=False,
             cumulative_p_harm=None,
             segment_p_harms={},
             failed_guards=(),
             ignored_inconclusive_guards=ignored_inc,
-            reasons=(),
+            reasons=tuple(terminal_reasons),
+            statistical_triggered=False,
+            guard_triggered=False,
+            gw1_4_floor_breached=gw1_4_floor_breached,
+            advisory_reasons=(),
+            gw1_4_net_delta=gw1_4_net_delta,
         )
 
-    reasons: list[str] = []
+    stat_reasons: list[str] = []
     cum_res = run_kendall_pw_hac_test([s.delta_net for s in ordered], alpha=harm_alpha)
     if cum_res.p_value_harm <= harm_alpha:
-        reasons.append(
+        stat_reasons.append(
             f"Cumulative S (GW{ordered[0].gameweek}..{ordered[-1].gameweek}) rejected non-inferiority "
             f"(p_harm={cum_res.p_value_harm:.4f} <= {harm_alpha:.3f}, delta={cum_res.point_estimate:+.3f})"
         )
 
-    by_gw = {s.gameweek: s for s in ordered}
     segment_p_harms: dict[str, float] = {}
-    for seg_name, (lo, hi) in CONTIGUOUS_SEGMENT_BOUNDS.items():
+    segment_entries = (
+        [(_segment_label_for_bounds(int(lo), int(hi)), (int(lo), int(hi))) for lo, hi in completed_segments]
+        if completed_segments is not None
+        else list(CONTIGUOUS_SEGMENT_BOUNDS.items())
+    )
+    for seg_name, (lo, hi) in segment_entries:
         seg_len = hi - lo + 1
         if seg_len < min_gw:
             continue
@@ -595,23 +788,39 @@ def evaluate_early_harm_fallback(
             seg_res = run_kendall_pw_hac_test(seg_deltas, alpha=harm_alpha)
             segment_p_harms[seg_name] = seg_res.p_value_harm
             if seg_res.p_value_harm <= harm_alpha:
-                reasons.append(
+                stat_reasons.append(
                     f"Completed segment '{seg_name}' (GW{lo}..{hi}) rejected non-inferiority "
                     f"(p_harm={seg_res.p_value_harm:.4f} <= {harm_alpha:.3f}, delta={seg_res.point_estimate:+.3f})"
                 )
 
     failed_guards = tuple(g.metric_name for g in guards if g.status == "FAIL")
     for name in failed_guards:
-        reasons.append(f"Mandatory projection guard '{name}' hit demonstrated FAIL")
+        terminal_reasons.append(f"Mandatory projection guard '{name}' hit demonstrated FAIL")
+
+    statistical_triggered = bool(stat_reasons)
+    guard_triggered = bool(failed_guards)
+    if statistical_mode == "enforced":
+        reasons = tuple([*stat_reasons, *terminal_reasons])
+        advisory_reasons: tuple[str, ...] = ()
+        triggered = bool(statistical_triggered or guard_triggered or gw1_4_floor_breached)
+    else:
+        reasons = tuple(terminal_reasons)
+        advisory_reasons = tuple(stat_reasons)
+        triggered = bool(guard_triggered or gw1_4_floor_breached)
 
     return EarlyHarmAssessment(
-        triggered=bool(reasons),
+        triggered=triggered,
         min_gw_met=True,
         cumulative_p_harm=cum_res.p_value_harm,
         segment_p_harms=segment_p_harms,
         failed_guards=failed_guards,
         ignored_inconclusive_guards=ignored_inc,
-        reasons=tuple(reasons),
+        reasons=reasons,
+        statistical_triggered=statistical_triggered,
+        guard_triggered=guard_triggered,
+        gw1_4_floor_breached=gw1_4_floor_breached,
+        advisory_reasons=advisory_reasons,
+        gw1_4_net_delta=gw1_4_net_delta,
     )
 
 
@@ -676,66 +885,11 @@ def evaluate_evidence_against_protocol(
                             f"Season {s.season} segment '{seg}' loss of {abs(loss):.1f} pts exceeds segment limit of {config.segment_material_loss_limit:.1f} pts"
                         )
 
-    guard_regressions: list[str] = []
-    guard_missing_evidence: list[str] = []
-    guard_uncertainty: list[str] = []
-    required_guards = config.required_projection_guards
-    if not required_guards or len(set(required_guards)) != len(required_guards) or any(not name.strip() for name in required_guards):
-        guard_missing_evidence.append("Required projection guard inventory is missing or contains duplicate/empty names")
-    guards = list(projection_guards or ())
-    actual_guard_names = [guard.metric_name for guard in guards]
-    if len(set(actual_guard_names)) != len(actual_guard_names):
-        guard_missing_evidence.append("Projection guard evidence contains duplicate metric names")
-    if set(actual_guard_names) != set(required_guards):
-        guard_missing_evidence.append(
-            f"Projection guard inventory mismatch: required {sorted(required_guards)}, supplied {sorted(actual_guard_names)}"
-        )
-    if not guards:
-        guard_missing_evidence.append("Projection guards missing required evidence")
-    for guard in guards:
-        if guard.status not in ("PASS", "FAIL", "INCONCLUSIVE", "MISSING_EVIDENCE", "UNASSESSED"):
-            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has unknown status evidence: {guard.status}")
-        elif guard.status in ("MISSING_EVIDENCE", "UNASSESSED"):
-            guard_missing_evidence.append(f"Guard '{guard.metric_name}' missing required evidence: {guard.reason}")
-        elif not isinstance(guard.passed, bool) or guard.passed != (guard.status == "PASS"):
-            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has inconsistent pass/status evidence")
-        elif (
-            guard.sample_size <= 0
-            or not all(math.isfinite(value) for value in (guard.estimate, guard.margin))
-            or guard.margin < 0.0
-            or guard.direction not in ("lower_is_better", "higher_is_better", "zero_is_ideal")
-        ):
-            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
-        elif (
-            guard.status == "INCONCLUSIVE"
-            and guard.sample_size == 1
-            and guard.standard_error is None
-            and guard.ci_lower is None
-            and guard.ci_upper is None
-            and guard.coverage == 0.0
-        ):
-            guard_uncertainty.append(f"Guard '{guard.metric_name}' has insufficient observations to estimate uncertainty")
-        elif (
-            guard.sample_size < 2
-            or guard.standard_error is None
-            or guard.ci_lower is None
-            or guard.ci_upper is None
-            or not 0.0 < guard.coverage <= 1.0
-            or not all(math.isfinite(value) for value in (guard.standard_error, guard.ci_lower, guard.ci_upper))
-            or guard.standard_error < 0.0
-            or guard.ci_lower > guard.ci_upper
-        ):
-            guard_missing_evidence.append(f"Guard '{guard.metric_name}' has incomplete or non-finite evidence")
-        else:
-            interval_status = classify_non_inferiority_interval(guard.ci_lower, guard.ci_upper, guard.margin, guard.direction)
-            if interval_status == "INCONCLUSIVE" and not guard.passed:
-                guard_uncertainty.append(f"Guard '{guard.metric_name}' non-inferiority remains uncertain: {guard.reason}")
-            elif interval_status != guard.status:
-                guard_missing_evidence.append(f"Guard '{guard.metric_name}' status contradicts its uncertainty bounds")
-            elif interval_status == "FAIL":
-                guard_regressions.append(f"Guard '{guard.metric_name}' failed: {guard.reason}")
-
-    guards_passed = not guard_regressions and not guard_missing_evidence and not guard_uncertainty
+    guard_eval = assess_guard_outputs(projection_guards, config.required_projection_guards)
+    guard_regressions = list(guard_eval.guard_regressions)
+    guard_missing_evidence = list(guard_eval.guard_missing_evidence)
+    guard_uncertainty = list(guard_eval.guard_uncertainty)
+    guards_passed = guard_eval.passed
     guard_failures = guard_regressions + guard_missing_evidence + guard_uncertainty
     if guard_missing_evidence:
         reasons.extend(guard_missing_evidence)

@@ -162,6 +162,88 @@ def test_protocol_declaration_and_unknown_version() -> None:
         validate_protocol(protocol)
 
 
+def _valid_v2_protocol() -> dict[str, Any]:
+    return {
+        "version": 2,
+        "windows": [
+            {
+                "season": "2026-27",
+                "role": "live",
+                "weight": 1.0,
+                "scored_deadlines": list(range(1, 39)),
+            }
+        ],
+        "issue_cutoff": "deadline",
+        "horizon": 6,
+        "season_end_clipping": True,
+        "native_rules": "native-2026-27-v1",
+        "anchor": "neutral-gw1-opening-anchor",
+        "strategic_settings": "adr0065-strategic",
+        "chip_calendar": "shared-causal-calendar",
+        "quality_policy": "certified-zero-gap",
+        "forecast_guards": "s1-derived-15-guards",
+        "statistical_procedure": "kendall-pw-hac-v2",
+        "approval_references": ["ADR-0070-CERT"],
+        "look_schedule": [15, 30, 38],
+        "calibrated_superiority_alphas": {
+            "1": {"15": 0.0004, "30": 0.008, "38": 0.032},
+            "2": {"15": 0.0002, "30": 0.004, "38": 0.016},
+        },
+        "gw1_4_material_loss_limit": 36.0,
+        "completed_segments": {
+            "15": [[1, 4]],
+            "30": [[1, 4], [5, 19]],
+            "38": [[1, 4], [5, 19], [20, 38]],
+        },
+        "statistical_early_harm_mode": "advisory",
+        "unused_alpha_policy": "discard",
+        "expiry_rules": {
+            "timezone": "UTC",
+            "gw38_expiry_hours_after_last_kickoff": 360.0,
+        },
+        "certification_digest": "b" * 64,
+        "statistical_protocol_hash": "c" * 64,
+    }
+
+
+def test_protocol_v2_adr0070_validation_and_rejections() -> None:
+    from backtesting.evaluation_protocol import validate_protocol
+
+    valid = _valid_v2_protocol()
+    validate_protocol(valid)
+
+    # Integer keys in completed_segments also accepted cleanly when non-colliding
+    int_keys = copy.deepcopy(valid)
+    int_keys["completed_segments"] = {15: [(1, 4)], 30: [(1, 4), (5, 19)], 38: [(1, 4), (5, 19), (20, 38)]}
+    validate_protocol(int_keys)
+
+    bad_cases: list[dict[str, Any]] = [
+        {"version": 3},
+        {"look_schedule": [15, 38, 30]},
+        {"calibrated_superiority_alphas": {"1": {"15": 0.0004, "30": 0.008, "38": 0.032}}},
+        {"calibrated_superiority_alphas": {"1": {"15": 0.0, "30": 0.008, "38": 0.032}, "2": {"15": 0.0002, "30": 0.004, "38": 0.016}}},
+        {"gw1_4_material_loss_limit": -1.0},
+        {"gw1_4_material_loss_limit": True},
+        {"completed_segments": {"15": [[1, 5]], "30": [[1, 4], [5, 19]], "38": [[1, 4], [5, 19], [20, 38]]}},
+        {"statistical_early_harm_mode": "disabled"},
+        {"unused_alpha_policy": "reallocate"},
+        {"expiry_rules": {"timezone": "America/New_York", "gw38_expiry_hours_after_last_kickoff": 360.0}},
+        {"expiry_rules": {"timezone": "UTC", "gw38_expiry_hours_after_last_kickoff": 0.0}},
+        {"certification_digest": "not-a-digest"},
+        {"statistical_protocol_hash": "z" * 64},
+    ]
+    for mutation in bad_cases:
+        broken = copy.deepcopy(valid)
+        broken.update(mutation)
+        with pytest.raises(ValueError):
+            validate_protocol(broken)
+
+    missing = copy.deepcopy(valid)
+    missing.pop("certification_digest")
+    with pytest.raises(ValueError):
+        validate_protocol(missing)
+
+
 def test_material_digest_binds_names_bytes_and_order() -> None:
     from backtesting.evaluation_protocol import material_digest
 

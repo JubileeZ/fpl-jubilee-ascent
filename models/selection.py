@@ -22,6 +22,8 @@ class ModelSelection:
     provisional_active: str | None = None
     podium_frozen_season: str | None = None
     podium_sealed: bool = False
+    frozen_protocol_hash: str | None = None
+    frozen_certification_digest: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.candidates) > _MAX_CANDIDATES:
@@ -52,6 +54,10 @@ def load_model_selection(path: Path | None = None) -> ModelSelection:
     prov = str(raw_prov).strip() if isinstance(raw_prov, str) and raw_prov.strip() else None
     raw_season = payload.get("podium_frozen_season")
     frozen_season = str(raw_season).strip() if isinstance(raw_season, str) and raw_season.strip() else None
+    raw_proto = payload.get("frozen_protocol_hash")
+    frozen_proto = str(raw_proto).strip() if isinstance(raw_proto, str) and raw_proto.strip() else None
+    raw_cert = payload.get("frozen_certification_digest")
+    frozen_cert = str(raw_cert).strip() if isinstance(raw_cert, str) and raw_cert.strip() else None
     return ModelSelection(
         champion=str(payload["champion"]),
         candidates=candidates,
@@ -60,6 +66,8 @@ def load_model_selection(path: Path | None = None) -> ModelSelection:
         provisional_active=prov,
         podium_frozen_season=frozen_season,
         podium_sealed=bool(payload.get("podium_sealed", False)),
+        frozen_protocol_hash=frozen_proto,
+        frozen_certification_digest=frozen_cert,
     )
 
 
@@ -68,7 +76,7 @@ def save_model_selection(selection: ModelSelection, path: Path | None = None) ->
         raise ValueError("Comparison Slate allows at most two Model Candidates")
     config_path = path or DEFAULT_CONFIG_PATH
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    payload: dict[str, object] = {
         "schema_version": selection.schema_version,
         "champion": selection.champion,
         "candidates": list(selection.candidates),
@@ -77,6 +85,10 @@ def save_model_selection(selection: ModelSelection, path: Path | None = None) ->
         "podium_frozen_season": selection.podium_frozen_season,
         "podium_sealed": selection.podium_sealed,
     }
+    if selection.frozen_protocol_hash is not None:
+        payload["frozen_protocol_hash"] = selection.frozen_protocol_hash
+    if selection.frozen_certification_digest is not None:
+        payload["frozen_certification_digest"] = selection.frozen_certification_digest
     config_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 

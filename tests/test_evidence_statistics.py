@@ -868,3 +868,119 @@ def test_early_harm_fallback_min_gw_contiguous_segments_and_guard_rules() -> Non
     assert seg_harm.segment_p_harms["early_mid"] <= 0.025
     assert "cold_start" not in seg_harm.segment_p_harms  # cold_start len=4 < min_gw=6
 
+
+def test_protocol_config_v1_hash_preserved_and_v2_fields_bound() -> None:
+    v1_default = StatisticalProtocolConfig(protocol_version="v1.0")
+    assert v1_default.compute_hash() == "2fbdcd5531958853f0afdf27be0919b155f15656ddefabe62c24eac962534bfc"
+    v1_hac = StatisticalProtocolConfig(protocol_version="v1.0", inference_method="kendall_pw_hac_t")
+    assert v1_hac.compute_hash() == "1d63216d15cc67c73d8594d1892a501225c5879e5e7adc3075704968a8fc9ca6"
+
+    alphas = {"1": {"15": 0.0004, "30": 0.008, "38": 0.032}, "2": {"15": 0.0002, "30": 0.004, "38": 0.016}}
+    v2 = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas=alphas,
+        gw1_4_material_loss_limit=36.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest="a" * 64,
+    )
+    h = v2.compute_hash()
+    assert h != replace(v2, gw1_4_material_loss_limit=35.0).compute_hash()
+    assert h != replace(v2, statistical_early_harm_mode="enforced").compute_hash()
+    assert h != replace(v2, statistical_early_harm_alpha=0.01).compute_hash()
+    assert h != replace(v2, availability_skip_unused_alpha=False).compute_hash()
+    assert h != replace(v2, gw38_expiry_hours_after_last_kickoff=361.0).compute_hash()
+    assert h != replace(v2, certification_digest="b" * 64).compute_hash()
+    assert h != replace(v2, calibrated_superiority_alphas={"1": {"15": 0.0005, "30": 0.008, "38": 0.032}, "2": alphas["2"]}).compute_hash()
+
+
+def test_early_harm_fallback_v2_advisory_mode_and_gw1_4_floor() -> None:
+    # 1. GW1-4 net-points floor breaches immediately at GW4 (does not require min_gw=6)
+    gw4_collapse = [
+        PairedGameweekScore("2026-27", gw, 50.0, 60.0, 50.0, 60.0, 0, 0, segment=assign_gameweek_segment(gw))
+        for gw in range(1, 5)
+    ]
+    floor_hit = evaluate_early_harm_fallback(
+        gw4_collapse,
+        [_passing_guard()],
+        gw1_4_material_loss_limit=36.0,
+        statistical_mode="advisory",
+    )
+    assert floor_hit.min_gw_met is False
+    assert floor_hit.gw1_4_floor_breached is True
+    assert floor_hit.gw1_4_net_delta == pytest.approx(-40.0)
+    assert floor_hit.triggered is True
+    assert floor_hit.statistical_triggered is False
+    assert floor_hit.guard_triggered is False
+    assert floor_hit.advisory_reasons == ()
+
+    # Boundary: exact -limit does NOT breach (< -limit breaches)
+    gw4_boundary = [
+        PairedGameweekScore("2026-27", gw, 51.0, 60.0, 51.0, 60.0, 0, 0, segment=assign_gameweek_segment(gw))
+        for gw in range(1, 5)
+    ]
+    boundary_ok = evaluate_early_harm_fallback(
+        gw4_boundary,
+        [_passing_guard()],
+        gw1_4_material_loss_limit=36.0,
+        statistical_mode="advisory",
+    )
+    assert boundary_ok.gw1_4_floor_breached is False
+    assert boundary_ok.triggered is False
+
+    # 2. Advisory mode records statistical_triggered and advisory_reasons without terminal triggered=True
+    stat_harm_scores = _make_paired_scores(season="2026-27", gameweek_count=15, mean_cand=57.0, mean_champ=60.0, noise_std=1.0, seed=99)
+    advisory = evaluate_early_harm_fallback(
+        stat_harm_scores,
+        [_passing_guard()],
+        gw1_4_material_loss_limit=50.0,
+        statistical_mode="advisory",
+    )
+    assert advisory.statistical_triggered is True
+    assert advisory.guard_triggered is False
+    assert advisory.gw1_4_floor_breached is False
+    assert advisory.triggered is False
+    assert advisory.reasons == ()
+    assert len(advisory.advisory_reasons) >= 1
+
+    # 3. Advisory mode STILL triggers terminal exclusion on mandatory guard FAIL
+    failed_guard = replace(_passing_guard(), passed=False, status="FAIL", estimate=3.0, ci_lower=2.0, ci_upper=4.0)
+    guard_in_advisory = evaluate_early_harm_fallback(
+        stat_harm_scores,
+        [failed_guard],
+        gw1_4_material_loss_limit=50.0,
+        statistical_mode="advisory",
+    )
+    assert guard_in_advisory.statistical_triggered is True
+    assert guard_in_advisory.guard_triggered is True
+    assert guard_in_advisory.triggered is True
+    assert len(guard_in_advisory.reasons) == 1
+    assert len(guard_in_advisory.advisory_reasons) >= 1
+
+
+def test_v2_completed_segments_bound_in_protocol_hash_and_early_harm() -> None:
+    segs = {"15": ((1, 4),), "30": ((1, 4), (5, 19)), "38": ((1, 4), (5, 19), (20, 38))}
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        completed_segments=segs,
+    )
+    alt = replace(cfg, completed_segments={"15": ((1, 4),), "30": ((1, 4), (5, 20)), "38": ((1, 4), (5, 20), (21, 38))})
+    assert cfg.compute_hash() != alt.compute_hash()
+
+    scores = _make_paired_scores(season="2026-27", gameweek_count=20, mean_cand=57.0, mean_champ=60.0, noise_std=1.0, seed=77)
+    res = evaluate_early_harm_fallback(
+        scores,
+        [_passing_guard()],
+        gw1_4_material_loss_limit=50.0,
+        statistical_mode="enforced",
+        completed_segments=((1, 4), (5, 12)),
+    )
+    assert "gw5_12" in res.segment_p_harms
+    assert "early_mid" not in res.segment_p_harms
+    assert res.triggered is True
+
