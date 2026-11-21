@@ -1,7 +1,7 @@
 # Champion Adoption Pilot & Production Preflight Report
 
-**Tested Canonical Branch:** `feat/champion-adoption-v1` (`origin/feat/champion-adoption-v1`, verified code commit [`06b96f0a`](https://github.com/JubileeZ/fpl-jubilee-ascent/commit/06b96f0a85038ee64ceb8a22af00ab106a7e83e0) over checkpoint `8248c4ce`; `1217` pytest passed, `29/29` `verify.sh` passed, `0` ruff/scoped pyright errors)
-**Base `main` Commit:** `86d16bb057fc848997190118db0963d952e20e66` (untouched)
+**Canonical `main` Merge:** [PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202) (`d07d642d`, merging `fac9e2bb` `1220` pytest passed / `0` ruff & scoped pyright errors + `7791f1b0` `verify-adoption-pr` diff-gate fix over `06b96f0a` / `8248c4ce`)
+**Throwaway Pilot Repo:** `JubileeZ/fpl-champion-adoption-pilot` (seeded from `3f6babc3`, deleted post-pilot; App `5858656` installed on `JubileeZ/fpl-jubilee-ascent`)
 **Live Rollout Status:** Disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`)
 **Quarantine Status:** `2026-27` active-season outcomes untouched
 
@@ -17,7 +17,7 @@
 | Protected adoption transaction (atomic `adopt_champion`, 1 active request/slate, 30d default expiry, `(net_delta, -podium_index)` priority, webhook/outbox single deduplicated notice + lost-ack reconciliation, shared reservation with `ExclusionLedger` writers, App-token PR API merge without auto-merge, interrupted-merge reconciliation) | [#200](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/200#issuecomment-7048591053) | **PASS (Local Harness + Workflow Audit)** | `backtesting/adoption_transaction.py`, `commands/manage_champion_adoption.py`, `.github/workflows/champion-adoption-{request,pr-checks,merge}.yml`, `tests/test_adoption_transaction.py`, `tests/test_pilot_acceptance_harness.py` |
 | Weekly Transfer Planner selection, remote protected `main` freshness (`StaleCheckoutError` manual-sync guard, live `"unverified"` offline Champion-only fallback, root+season evidence sync, never auto-pull), injury-audit rerun model pinning | [#200](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/200#issuecomment-7048591053) | **PASS (Local Harness)** | `models/planner_selection.py`, `models/selection.py`, `commands/solve.py`, `commands/export_dashboard.py`, `commands/dashboard.py`, `solver/transfer_plan.py`, `dashboard/*`, `tests/test_planner_freshness.py` |
 | Isolated Private/Free-Parity GitHub Pilot live execution (`JubileeZ/fpl-champion-adoption-pilot`, $0 GitHub Free amendment [#199#issuecomment-7057665143](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7057665143), `8/10` preflight) | [#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7048591328) | **PARTIAL PASS (Control/Notice/Queue/Fail-Closed PASS; Positive Passing Merge OPEN)** | Live webhook notice + native GitHub email, `champion-adoption-approval` human approve/reject, GitHub App `5858656` token minting, single-notice dedup (`1`), overlapping pass queue (`0` premature notices), `validation-collector.yml` (`availability`), and fail-closed reject (`0` PRs, `main` unchanged) PASS (Section 6); positive native passing merge + `StaleCheckoutError` OPEN (`has_admissible_historical_gw15_passing_fixture=False`) |
-| Read-only production preflight attestation (`JubileeZ/fpl-jubilee-ascent`) | [#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7048591328) | **PASS (Preflight executed read-only at `2026-11-21T06:30:27Z`; `4/10` live gates pass, `6/10` open/blocked)** | `docs/testing/production-preflight-report.json` (`mail_delivery_and_reconciliation`: `mode=github_review_issue`, `shared_reservation_wiring`: `true`) |
+| Read-only production preflight attestation (`JubileeZ/fpl-jubilee-ascent`) | [#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7048591328) | **PASS (`2026-11-21T07:22:14Z`; `8/10` live gates pass, `2/10` open/blocked)** | `docs/testing/production-preflight-report.json` (`branch_protection_main`, `protected_environment`, `github_app_and_no_bypass`, `immutable_evidence_and_releases`, `mail_delivery_and_reconciliation` `mode=github_review_issue`, `live_rollout_disabled`, `certified_protocol`, `shared_reservation_wiring` pass) |
 
 ---
 
@@ -47,32 +47,35 @@
 
 ## 4. Read-Only Production Preflight Summary (`docs/testing/production-preflight-report.json`)
 
-- **Passing (`4/10`):** `certified_protocol`, `live_rollout_disabled`, `mail_delivery_and_reconciliation` (`mode="github_review_issue"` per 2026-11-21 ADR 0070 amendment), `shared_reservation_wiring`.
-- **Open / Blocked (`6/10`):** `admissible_historical_passing_fixture`, `branch_protection_main`, `protected_environment`, `github_app_and_no_bypass`, `immutable_evidence_and_releases`, `sealed_slate_and_operator_signoff`.
-- **Live Activation Ready:** `false` (remains disabled pending infrastructure provisioning on `main`, qualified frozen slate, complete admissible prefix, and explicit operator sign-off).
+- **Refreshed Timestamp:** `2026-11-21T07:22:14Z` (`JubileeZ/fpl-jubilee-ascent`, `$0` GitHub Free public setup).
+- **Passing (`8/10`):** `branch_protection_main`, `certified_protocol`, `github_app_and_no_bypass`, `immutable_evidence_and_releases`, `live_rollout_disabled`, `mail_delivery_and_reconciliation` (`mode="github_review_issue"` per 2026-11-21 ADR 0070 amendment), `protected_environment` (`champion-adoption-approval` reviewer `JubileeZ`), `shared_reservation_wiring`.
+- **Open / Blocked (`2/10`):** `admissible_historical_passing_fixture`, `sealed_slate_and_operator_signoff`.
+- **Live Activation Ready:** `false` (remains disabled pending qualified frozen slate, `>=15`-GW admissible common prefix, and explicit operator sign-off).
 
 ---
 
-## 5. Next-Step Runbook (Operator Manual vs Agent-Automatable)
+## 5. Next-Step Runbook (Post-PR #202 Merge & Pilot Retirement)
 
-| Step | Operator Must Do Yourself | Agent Can Do With Explicit Authorization |
+- **Done — Step 1 (Merge `feat/champion-adoption-v1` -> `main`):** Merged [PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202) (`d07d642d`); `#201` and `#200` closed; `CHAMPION_ADOPTION_LIVE_ENABLED="false"`.
+- **Done — Step 2 (Retire pilot repo & apply `$0` production protections):** Deleted throwaway `JubileeZ/fpl-champion-adoption-pilot`, switched App `5858656` installation & secrets to `JubileeZ/fpl-jubilee-ascent`, and enabled `$0` protections/Environment (`8/10` preflight).
+
+| Remaining Step | Operator Must Do Yourself | Agent Can Do With Explicit Authorization |
 |---|---|---|
-| **1. Merge `feat/champion-adoption-v1` -> `main`** | Review & approve [PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202) on GitHub; click Merge on protected `main`; keep `CHAMPION_ADOPTION_LIVE_ENABLED` unset/`false`. | Push updates & summary onto `feat/champion-adoption-v1` (`PR #202`). |
-| **2. Retire pilot repo & apply `$0` production protections** | Switch App `5858656`'s GitHub App installation from the pilot repo to `JubileeZ/fpl-jubilee-ascent` (reusing existing `.pem`; optional `MAIL_PROVIDER_WEBHOOK_URL`). | Delete throwaway `JubileeZ/fpl-champion-adoption-pilot`; initialize `validation-evidence`, `main` branch protection, `champion-adoption-approval` reviewer, and `App` secrets on `JubileeZ/fpl-jubilee-ascent` (`8/10` preflight, live disabled). |
-| **3. Historical passing fixture ([#198](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/198)/[#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199))** | Supply authentic non-live `>=15`-GW pre-deadline mirror archive if available, or keep gate **OPEN** until prospective `2027-28 GW1–15` capture (without relaxing `empirical_admission.py`). | Run `commands.inventory_pilot_fixture` and `commands.produce_validation_evidence` (`collect`/`freeze`/`replay`) on any authentic archive supplied; update `docs/testing/pilot-fixture-inventory.md`. |
-| **4. Candidate Search & Slate** | Approve & seal any qualifying `M <= 2` Comparison Slate and choose `approval_reference` before freezing. | Run `ideate-candidate` / `explore-candidate` loops on `2025-26` (`S-1`) + `2024-25` (`S-2`), keeping `2026-27` outcomes quarantined. |
-| **5. Production live activation** | Explicitly authorize & set `CHAMPION_ADOPTION_LIVE_ENABLED=true` once all 10 gates pass. | Run read-only `commands.manage_champion_adoption production-preflight --repo JubileeZ/fpl-jubilee-ascent` and confirm `10/10` pass. |
+| **3. Run Candidate Search & qualify `M <= 2` finalists** | Approve any promising mechanism/slate before freezing. Weekly planner & `ideate-candidate` / `explore-candidate` run normally today. | Run `ideate-candidate` / `explore-candidate` loops on `2025-26` (`S-1`) + `2024-25` (`S-2`) against `def_xg_shrink_challenger`, keeping `2026-27` quarantined. |
+| **4. Optional auto-chaining PR before live activation** | Decide whether scheduled `validation-collector.yml` should automatically trigger `replay` -> `champion-adoption-request.yml` at `GW15`/`GW30`/`GW38`. | Implement & PR auto-chaining in `.github/workflows/validation-collector.yml` (currently `schedule` runs `collect` + `scorecard`; `replay` and request workflow are `workflow_dispatch`). |
+| **5. Close `#198`/`#199` historical `>=15`-GW fixture gate** | Supply authentic non-live `>=15`-GW pre-deadline mirror archive if available, or defer positive merge gate to prospective `2027-28 GW1–15` capture (`2026-27` lacks `GW1–10` v2 receipts per `#191`). | Run `commands.inventory_pilot_fixture` and `commands.produce_validation_evidence` without relaxing `empirical_admission.py`. |
+| **6. Freeze slate, verify `10/10`, & enable live rollout** | Freeze `M <= 2` slate (`action=freeze`), record named operator sign-off, and set `CHAMPION_ADOPTION_LIVE_ENABLED=true`. | Run read-only `commands.manage_champion_adoption production-preflight --repo JubileeZ/fpl-jubilee-ascent` to verify `10/10` pass. |
 
-### Fastest Order to Proceed
-1. Review & merge canonical **[PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202)** (`feat/champion-adoption-v1` → `main`), keeping `CHAMPION_ADOPTION_LIVE_ENABLED` false.
-2. Switch App `5858656` installation to `JubileeZ/fpl-jubilee-ascent` and authorize the agent to delete `JubileeZ/fpl-champion-adoption-pilot` + configure `$0` GitHub Free protections & secrets on `JubileeZ/fpl-jubilee-ascent` (`8/10` preflight; GitHub-native `Adoption Review Issue` + Environment email already satisfy notice delivery with zero webhook server).
-3. Decide historical `>=15`-GW archive vs prospective `2027-28 GW1–15` capture (`#198`), and run `ideate-candidate` / `explore-candidate` to qualify an `M <= 2` slate.
+### Current Order to Proceed
+1. **Use & Search today:** Run weekly planner (`commands.dashboard` / `commands.solve`) and Candidate Search (`ideate-candidate` / `explore-candidate`) on `S-1` + `S-2` to qualify `1–2` finalists.
+2. **Optional unattended alerting PR:** Wire `collect` (on `GW15`/`GW30`/`GW38`) -> `replay` -> `champion-adoption-request.yml` before enabling live rollout, so GW15 auto-opens an `Adoption Review Issue` without manual workflow dispatch.
+3. **Close `#198`/`#199` & go live:** Obtain authentic `>=15`-GW empirical passing fixture (or start clean `2027-28 GW1` capture), freeze slate with named sign-off, verify `10/10` preflight, and enable `CHAMPION_ADOPTION_LIVE_ENABLED=true`.
 
 ---
 
 ## 6. Live Isolated GitHub Pilot Results (`#199`)
 
-- **Pilot Repository:** [JubileeZ/fpl-champion-adoption-pilot](https://github.com/JubileeZ/fpl-champion-adoption-pilot) (`main` seeded from `3f6babc3`; switched to public at $0 per operator GitHub Free amendment [#199#issuecomment-7057665143](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7057665143); GitHub App `5858656`; Webhook.site endpoint + native GitHub approval emails).
+- **Pilot Repository (Historical, Now Deleted):** `JubileeZ/fpl-champion-adoption-pilot` (`main` seeded from `3f6babc3`; switched to public at $0 per operator GitHub Free amendment [#199#issuecomment-7057665143](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7057665143); GitHub App `5858656`; Webhook.site endpoint + native GitHub approval emails; deleted post-pilot cleanup after migrating App `5858656` to production).
 - **Pilot Preflight (`2026-11-21T05:39:00Z`):** **8/10 PASS** (`branch_protection_main`, `certified_protocol`, `github_app_and_no_bypass`, `immutable_evidence_and_releases`, `live_rollout_disabled`, `mail_delivery_and_reconciliation`, `protected_environment`, `shared_reservation_wiring`); only `admissible_historical_passing_fixture` and `sealed_slate_and_operator_signoff` open.
 
 | Run | Workflow / Scenario | Request ID / Slate | Observed Result |

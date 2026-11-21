@@ -18,19 +18,21 @@
       "status": "blocked"
     },
     "branch_protection_main": {
-      "blocker": "Protected main branch lacks strict up-to-date required status check 'verify-adoption-pr'",
+      "blocker": null,
       "details": {
-        "enabled": false,
-        "enforce_admins": false,
+        "enabled": true,
+        "enforce_admins": true,
         "http_status": 200,
         "required_status_checks": {
-          "contexts": [],
-          "strict": false
+          "contexts": [
+            "verify-adoption-pr"
+          ],
+          "strict": true
         }
       },
-      "passed": false,
+      "passed": true,
       "recovery_action": "Enable branch protection on main requiring strict up-to-date status check 'verify-adoption-pr'.",
-      "status": "blocked"
+      "status": "pass"
     },
     "certified_protocol": {
       "blocker": null,
@@ -46,29 +48,29 @@
       "status": "pass"
     },
     "github_app_and_no_bypass": {
-      "blocker": "Dedicated GitHub App merger not configured, independent auto-merge enabled, or admin bypass permitted",
+      "blocker": null,
       "details": {
-        "enforce_admins": false,
+        "enforce_admins": true,
         "repo_settings": {
           "allow_auto_merge": false,
-          "github_app_configured": false,
+          "github_app_configured": true,
           "http_status": 200
         }
       },
-      "passed": false,
+      "passed": true,
       "recovery_action": "Configure dedicated Champion adoption GitHub App, disable repository allow_auto_merge, and enable enforce_admins on main.",
-      "status": "blocked"
+      "status": "pass"
     },
     "immutable_evidence_and_releases": {
-      "blocker": "Orphan branch 'validation-evidence' or GitHub Releases endpoint not initialized on remote",
+      "blocker": null,
       "details": {
-        "branch_http_status": 404,
-        "exists": false,
+        "branch_http_status": 200,
+        "exists": true,
         "releases_accessible": true
       },
-      "passed": false,
+      "passed": true,
       "recovery_action": "Initialize 'validation-evidence' branch and verify release publishing permissions.",
-      "status": "blocked"
+      "status": "pass"
     },
     "live_rollout_disabled": {
       "blocker": null,
@@ -92,16 +94,49 @@
       "status": "pass"
     },
     "protected_environment": {
-      "blocker": "Protected GitHub Environment 'champion-adoption-approval' missing or has no required human reviewers",
+      "blocker": null,
       "details": {
-        "exists": false,
-        "http_status": 404,
+        "exists": true,
+        "http_status": 200,
         "name": "champion-adoption-approval",
-        "required_reviewers": []
+        "required_reviewers": [
+          {
+            "id": 73370603,
+            "node_id": "GA_kwDOSrhg8c4EX4vr",
+            "prevent_self_review": false,
+            "reviewers": [
+              {
+                "reviewer": {
+                  "avatar_url": "https://avatars.githubusercontent.com/u/18217057?v=4",
+                  "events_url": "https://api.github.com/users/JubileeZ/events{/privacy}",
+                  "followers_url": "https://api.github.com/users/JubileeZ/followers",
+                  "following_url": "https://api.github.com/users/JubileeZ/following{/other_user}",
+                  "gists_url": "https://api.github.com/users/JubileeZ/gists{/gist_id}",
+                  "gravatar_id": "",
+                  "html_url": "https://github.com/JubileeZ",
+                  "id": 18217057,
+                  "login": "JubileeZ",
+                  "node_id": "MDQ6VXNlcjE4MjE3MDU3",
+                  "organizations_url": "https://api.github.com/users/JubileeZ/orgs",
+                  "received_events_url": "https://api.github.com/users/JubileeZ/received_events",
+                  "repos_url": "https://api.github.com/users/JubileeZ/repos",
+                  "site_admin": false,
+                  "starred_url": "https://api.github.com/users/JubileeZ/starred{/owner}{/repo}",
+                  "subscriptions_url": "https://api.github.com/users/JubileeZ/subscriptions",
+                  "type": "User",
+                  "url": "https://api.github.com/users/JubileeZ",
+                  "user_view_type": "public"
+                },
+                "type": "User"
+              }
+            ],
+            "type": "required_reviewers"
+          }
+        ]
       },
-      "passed": false,
+      "passed": true,
       "recovery_action": "Create 'champion-adoption-approval' GitHub Environment and assign required human reviewer(s).",
-      "status": "blocked"
+      "status": "pass"
     },
     "sealed_slate_and_operator_signoff": {
       "blocker": "Comparison Slate not sealed for active validation (champion='def_xg_shrink_challenger', provisional_active=None, podium_sealed=False) and operator sign-off pending",
@@ -133,7 +168,7 @@
       "status": "pass"
     }
   },
-  "generated_at_utc": "2026-11-21T06:37:35.260574+00:00",
+  "generated_at_utc": "2026-11-21T07:22:14.431920+00:00",
   "live_activation_ready": false,
   "read_only": true,
   "repo": "JubileeZ/fpl-jubilee-ascent"

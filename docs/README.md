@@ -11,7 +11,7 @@ Core data structures, official rules, and model registries.
 - **[Domain Vocabulary & Concepts](../CONTEXT.md)**: Authoritative glossary covering Realized Points, Process Points, Blended Eval Target, Model Champion, and Solver Scenarios.
 - **[Projection Model Catalog](model_name.md)**: Catalog of active Champion, Candidates, and historical baseline projection models.
 - **[Data Dictionary](data_dictionary.md)**: Field mappings from raw Official FPL API payloads to clean Parquet schemas (`players`, `clubs`, `fixtures`).
-- **[FPL Official Rules Registry](rules/README.md)**: Season-by-season official Premier League scoring rules and matrix definitions ([2025/26 Rules](rules/scoring-rules-2025-26.md)).
+- **[FPL Official Rules Registry](rules/README.md)**: Season-by-season official Premier League scoring rules and matrix definitions ([2025/26 Rules](rules/scoring-rules-2025-26.md), [2026/27 Rules](rules/scoring-rules-2026-27.md)).
 
 ---
 
@@ -19,12 +19,12 @@ Core data structures, official rules, and model registries.
 
 Immutable records of technical decisions, trade-offs, and design agreements.
 
-- **[ADR Master Index](adr/README.md)**: Complete catalog of all 65 ADRs organized by functional subsystem and lifecycle status:
+- **[ADR Master Index](adr/README.md)**: Complete catalog of all 70 ADRs organized by functional subsystem and lifecycle status:
   - **Modeling & Score Projections**: ADRs 0001, 0003, 0005, 0006, 0007, 0010, 0013, 0014, 0015, 0022, 0024, 0025, 0026, 0035, 0037, 0039, 0040, 0041, 0045, 0048, 0050, 0051, 0055, 0056, 0063.
-  - **Optimization, Scenarios & Solver**: ADRs 0020, 0029, 0030, 0031, 0033, 0042, 0043, 0053, 0057, 0061, 0065.
+  - **Optimization, Scenarios & Solver**: ADRs 0020, 0029, 0030, 0031, 0033, 0042, 0043, 0053, 0057, 0061, 0065, 0067.
   - **Dashboard, UI & Product**: ADRs 0008, 0011, 0017, 0018, 0021, 0027, 0028, 0034, 0052, 0058, 0059, 0060.
   - **Data Ingestion & Pipeline**: ADRs 0002, 0004, 0012, 0019, 0023, 0032, 0036.
-  - **Evaluation & Promotion Gates**: ADRs 0038, 0044, 0046, 0047, 0049, 0054, 0062, 0064.
+  - **Evaluation & Promotion Gates**: ADRs 0038, 0044, 0046, 0047, 0049, 0054, 0062, 0064, 0066, 0068, 0069, 0070.
 
 ---
 
@@ -38,6 +38,7 @@ User guides, operator manuals, and layout architecture for the unified Streamlit
 - **[Production Deployment Guide](product/streamlit-planner-deployment.md)**: Safe operator deployment, memory bounds, and credential isolation.
 - **[Single-Product Integration Spec](product/dashboard-planner-integration.md)**: Architecture integrating the Transfer Planner and Explorer in a unified process.
 - **[Responsive Layout Standards](product/dashboard-responsive-layout.md)**: Standards for pinned columns and 390px mobile viewport compliance.
+- **[Champion Adoption Implementation Spec](product/champion-adoption-implementation.md)**: Weekly Transfer Planner model selection, portable checkpoint evidence, and protected GitHub adoption lifecycle.
 
 ---
 
@@ -58,6 +59,7 @@ Empirical investigations, statistical promotion gates, and model exploration led
 Verification commands, backtest protocol, and autonomous agent workflows.
 
 - **[Testing Architecture Hub](testing/README.md)**: Test layer overview: unit tests, delivery gate `verify.sh`, and HTTP mock policies.
+- **[Pilot & Preflight Reports](testing/champion-adoption-pilot-report.md)**: Isolated GitHub adoption pilot verification, [historical fixture inventory](testing/pilot-fixture-inventory.md), and production parity preflight.
 - **[Archive Testing Protocol](testing/archive-testing.md)**: Mandatory protocol for running leak-free historical season evaluations.
 - **[Agent Instructions & Key Commands](../AGENTS.md)**: Core developer and agent instructions, invariants, and commands.
 - **[Current Implementation State](agents/current-state.md)**: Ground-truth record of currently built and verified capabilities.

@@ -1,6 +1,6 @@
 # Weekly Transfer Planner Selection and Champion Adoption (ADR 0070)
 
-**Status**: Accepted design (2026-11-18). Implementation and numerical calibration pending.
+**Status**: Accepted (2026-11-18; amended 2026-11-20, 2026-11-21). Core implementation & sparse certification landed on `main` (PR `#202`, `d07d642d`; `8/10` production preflight); live activation disabled pending qualified slate and `>=15`-GW empirical fixture.
 
 **Scope**: Amend [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) sections 4–5 as changes ship. Preserve annual firewall, sealed slate of up to two frozen finalists, independent Strategic replay, empirical admission, and explicit human adoption authority.
 
