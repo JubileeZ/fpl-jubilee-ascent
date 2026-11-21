@@ -79,6 +79,21 @@ PYTHONPATH=. uv run python "$topic/compare_historical_replays.py" \
 
 Require positive full-season net delta, all applicable projection guards, all three segment floors and exact GW1 parity before presenting EXT-01_1 for slate-freeze approval. Changing the 180-second time budget changes the replay identity. Any longer-budget historical replay needs an explicitly reviewed replacement protocol before it can inform lock-in. Keep the other ideas queued with their existing dispositions.
 
+### Best feasible at 180 seconds diagnostic
+
+Run from repository root with both original reserved arms and their inputs available:
+
+```bash
+PYTHONPATH=. uv run python -u docs/research/candidate-ideation/run_s2_incumbent_diagnostic.py \
+  --pin docs/research/candidate-ideation/prototypes/ext_01_1/development_selection.json
+```
+
+Both arms start at GW1 from the same neutral ownership anchor and independently replay the six-GW Strategic plan through GW38. Each solve targets zero relative gap with a 180-second budget. A feasible `TIME_LIMIT` decision advances only after the same legality checks and keeps the original solver certificate. No incumbent stops execution. Diagnose on one host with the same solver binary across both arms and resume with the same command.
+
+The paired `diagnostic_report.json` under `.tmp/agent/explore-candidate/pre-slate/s2_incumbent_diagnostic/ext_01_1/` requires both complete trajectories and admitted GW1 parity. It records net points, solver status, runtime, objective bounds, gaps and action agreement where an original certified checkpoint has the exact same state and forecast. The diagnostic protocol and checkpoints are separate from the qualification reservation. Do not use diagnostic results for slate freeze or adoption.
+
+2026-11-22 solve-only probe used retained candidate GW23 state and GW24 issue market and forecasts. Native `TIME_LIMIT` incumbent passed independent decision legality checks after `179.450659` seconds of solver time, relative gap `0.0008749054732374218`. No GW24 settlement or paired season score produced by this probe.
+
 ## Bounded queue
 
 Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13 already closed. One ideation batch used freshly generated brief with lock mechanisms and Dev context. Excluded historical-filter results and active-season outcomes. User narrowed evaluation to EXT-01_1 only. EXT-02_1 implementation stopped before review or replay. [Queue and dossiers](idea_queue.csv)
