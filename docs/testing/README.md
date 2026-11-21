@@ -41,3 +41,8 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 - **Lifecycle**: `register -> capture/generate -> verify/admit -> replay -> evaluate -> recommend -> human adopt -> prospective review/rollback`.
 - **Primary Estimand**: Rolling 6-GW Strategic transfer plan net score from neutral GW1 ownership anchor.
 - **Manual Adoption**: CLI and CI are read-only; Champion adoption requires explicit verified bundle and human approval.
+
+### 5. Champion Adoption Pilot & Preflight
+- **Pilot & Preflight Report**: [`champion-adoption-pilot-report.md`](champion-adoption-pilot-report.md) · [`production-preflight-report.json`](production-preflight-report.json) (ADR 0070 live parity status & run audit).
+- **Historical Fixture Inventory**: [`pilot-fixture-inventory.md`](pilot-fixture-inventory.md) (`commands.inventory_pilot_fixture` provenance status).
+- **Archived Phase 0–3 Working Notes**: Superseded proposal/boundary drafts moved to [`../archive/foundation-phase-notes/`](../archive/foundation-phase-notes/).

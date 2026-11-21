@@ -30,6 +30,7 @@ App launcher: `uv run python -m commands.dashboard` (or `uv run python -m comman
 | [`streamlit-planner-deployment.md`](streamlit-planner-deployment.md) | **Production Deployment Guide**: Configuration for hosting the dashboard publicly without credential leakage, memory isolation, and state management. |
 | [`dashboard-planner-integration.md`](dashboard-planner-integration.md) | **Architecture Integration Spec**: How the Transfer Planner and Explorer state caches communicate inside a single unified process. |
 | [`dashboard-responsive-layout.md`](dashboard-responsive-layout.md) | **Responsive Layout & Viewport Standards**: Pinned column rules, 390px mobile viewport compliance, and table component layout standards. |
+| [`champion-adoption-implementation.md`](champion-adoption-implementation.md) | **Champion Adoption Implementation Spec**: Weekly planner selection, portable checkpoint evidence, GitHub-native `Adoption Review Issue`, & protected merge lifecycle. |
 
 ---
 

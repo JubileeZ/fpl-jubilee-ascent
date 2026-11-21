@@ -1,6 +1,6 @@
 # Champion adoption implementation
 
-Status: implementation queued. Authority: [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) (amended 2026-11-21 for GitHub-native Adoption Review Issue default, optional webhook, and $0 public pilot parity), [Wayfinder decisions](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190).
+Status: implemented on `main` (PR `#202`, `d07d642d`); live rollout disabled (`8/10` production preflight); [#198](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/198) historical passing fixture & [#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199) positive merge remain open. Authority: [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) (amended 2026-11-21 for GitHub-native Adoption Review Issue default, optional webhook, and $0 public pilot parity), [Wayfinder decisions](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190).
 
 ## Parallel entry points
 
