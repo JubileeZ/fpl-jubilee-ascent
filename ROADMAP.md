@@ -22,6 +22,8 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ### Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) Decision & Implementation Schedule (ADR 0069)
 
+- **Pre-slate Candidate Search (2026-11-21):** EXT-01_1 only. Historical schedules pinned through GW38 with empirical prefix parity. `a10` passed S-1 (+82 net points, 15/15 projection guards, 3/3 segment floors). Pinned S-2 trajectory blocked at GW24 by missing zero-gap certificate. Candidate save pending qualification. [Input audit and queue dispositions](docs/research/candidate-ideation/pre-slate-search-2026-11-21.md).
+
 Governs **Annual Rolling Validation (`S`=`2026-27` quarantined via `Randdalf/fplcache` `<= 24h`, `S-1`=`2025-26` Dev, `S-2`=`2024-25` Filter)** and **Dual-Tier (`Provisional Active` + `Confirmed Champion`)** readiness, preserving `#175`–`#179` engineering designs from superseded Map [#174](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/174).
 
 | Ticket | State | Scope & Decision |
