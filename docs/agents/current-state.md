@@ -2,7 +2,7 @@
 
 Read if no prior context. `ROADMAP.md` = target. This file = what exists today. Historical dumps → `docs/archive/` (`docs/agents/progress.md`).
 
-**Current phase:** [Weekly Transfer Planner Selection and Champion Adoption](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190) landed on `main` (`d07d642d`, [PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202); `CHAMPION_ADOPTION_LIVE_ENABLED=false`). `#201` & `#200` CLOSED; throwaway `JubileeZ/fpl-champion-adoption-pilot` deleted after 6-run live pilot (`$0` GitHub Free parity, App `5858656`); `JubileeZ/fpl-jubilee-ascent` preflight **`8/10` PASS** (`2/10` blocked: `admissible_historical_passing_fixture` `#198`/`#199`, `sealed_slate_and_operator_signoff`). `explore-candidate` / `ideate-candidate` active under `ADR 0069` (`2025-26` Dev `S-1`, `2024-25` Filter `S-2`, `96` active `candidate_ledger.csv` dead locks preserved); `2026-27` outcomes untouched. Champion `def_xg_shrink_challenger`; `provisional_active=null`, `podium_sealed=false`; `2026-27 GW1–10` Champion baseline `604`.
+**Current phase:** [Weekly Transfer Planner Selection and Champion Adoption](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190) landed on `main` (`d07d642d`, [PR #202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202); `CHAMPION_ADOPTION_LIVE_ENABLED=false`). `#201` & `#200` CLOSED; throwaway `JubileeZ/fpl-champion-adoption-pilot` deleted after 6-run live pilot (`$0` GitHub Free parity, App `5858656`); `JubileeZ/fpl-jubilee-ascent` preflight **`8/10` PASS** (`2/10` blocked: `admissible_historical_passing_fixture` `#198`/`#199`, `sealed_slate_and_operator_signoff`). `explore-candidate` / `ideate-candidate` active under `ADR 0069` (`2025-26` Dev `S-1`, `2024-25` Filter `S-2`, `97` active `candidate_ledger.csv` dead locks preserved); `2026-27` outcomes untouched. Champion `def_xg_shrink_challenger`; `provisional_active=null`, `podium_sealed=false`; `2026-27 GW1–10` Champion baseline `604`.
 
 ## Weekly Transfer Planner
 
@@ -10,7 +10,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
-- Pre-slate search scoped to EXT-01_1. Full S-1 replay passed with exact GW1–7 parity. Pinned `ext_01_1_a10` S-2 replay certified GW1–23, blocked at GW24 (`TIME_LIMIT`, gap `0.0009130622341009918`). Both reserved input inventories verified. Full S-2 pending compatible faster host. [Input audit and resume commands](../research/candidate-ideation/pre-slate-search-2026-11-21.md#resume-before-slate-freeze).
+- Pre-slate search (`#208` closed): `EXT-01_1` `S-1` verified identically on Apple M2 (`a05 +73`, `a10 +82`, `15/15` guards, `3/3` floors, `21/21` GW1–7 parity). Pinned `ext_01_1_a10` `S-2` (`2024-25`) completed `GW1–38` certified `OPTIMAL` on Apple M2 (GW24 `147.53s`, gap `0.0`) and **FAILED** (`2,232` vs `2,299`, `-67`, `14/14` applicable guards, `1/3` segments: `cold_start -18`, `early_mid -62`, `late +13`; GW1 parity exact); dead-locked to `2027-11-22`. `0` qualifiers remain; next `#206` (`EXT-02_1`). [S-1/S-2 report and artifacts](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
 
 [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted & implemented on `main` (`d07d642d`, PR `#202`); live rollout disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`).
 

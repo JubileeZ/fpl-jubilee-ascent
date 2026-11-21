@@ -1,6 +1,6 @@
 # Pre-slate Candidate Search — 2026-11-21
 
-**Disposition:** `ext_01_1_a10` passed S-1. Its single reserved S-2 filter is blocked at GW24 by a missing zero-gap solver certificate. No finalist yet.
+**Disposition:** `ext_01_1_a10` passed S-1 (`+82`, reproduced identically on Apple M2 `arm64`) and **failed** the certified S-2 Historical Filter (`2,232` vs `2,299`, `-67` net points, `1/3` segments, `14/14` applicable projection guards). Dead-locked until `2027-11-22`. No finalist yet; next queue candidate `EXT-02_1` (`#206`).
 
 ## Evaluation contract
 
@@ -42,9 +42,18 @@ Both variants meet positive Dev net delta and segment floors. Highest eligible S
 
 ## S-2 Historical Filter
 
-Both reserved arms matched admitted GW1 solver inputs and settled outcomes exactly. Common neutral opening anchor `opening-anchor-e253552e72848433`. Champion completed GW1–38 with 2,299 net FPL points. [GW1 parity](prototypes/ext_01_1/s2_prefix_parity.csv) · [Attempt](prototypes/ext_01_1/s2_attempt.json) · [Protocol](prototypes/ext_01_1/s2_protocol.json) · [Replay status](prototypes/ext_01_1/s2_execution_status.csv)
+Both reserved arms matched admitted GW1 solver inputs and settled outcomes exactly. Common neutral opening anchor `opening-anchor-e253552e72848433`, protocol `f9da5685a3d64f66696956354aa239fb43d1e8a2d7f735d737f98b9e71fa058a`. [GW1 parity](prototypes/ext_01_1/s2_prefix_parity.csv) · [Attempt](prototypes/ext_01_1/s2_attempt.json) · [Protocol](prototypes/ext_01_1/s2_protocol.json) · [Replay status](prototypes/ext_01_1/s2_execution_status.csv)
 
-First candidate execution certified GW1–23. GW24 hit 180-second native solve limit with `TIME_LIMIT`, relative gap `0.0009130622341009918`. Identical solo retry exited with no additional certificate. Terminal diagnostics unavailable for that retry. Whole-process CPU affinity retry stopped at GW9 exact forecast equality check due to floating-point differences in projected points. Final retry preserved normal forecasting environment, verified GW1–23 from checkpoints, and applied preferred CPU affinity to main thread after GW24 forecast. Same `TIME_LIMIT` and exact same relative gap at GW24. Shared attempt and protocol remained bound. Full paired S-2 evidence unavailable. No model performance verdict.
+On the original PR `#204` host, Champion completed GW1–38 with `2,299` net FPL points; candidate `ext_01_1_a10` certified GW1–23 before GW24 hit the 180-second `TIME_LIMIT` (relative gap `0.0009130622341009918`). Whole-process CPU affinity retry stopped at GW9 exact forecast equality check; solver-only affinity reproduced the GW24 timeout.
+
+**2026-11-22 Apple M2 (`arm64`) certified completion (`#208`):** Uncontended sequential execution completed **all 38 Gameweeks** for both arms under unchanged source, inputs, and frozen 180-second `target_gap=0.0` solver policy (candidate GW24 solved exact `OPTIMAL`, `relative_gap=0.0` in `147.530253s`; Apple M2 GW1 forecast hash `de57412cb7628d8a...` matched identically across both arms and `audit_historical_prefix.py`, `0.0` component diff).
+
+| Model | Verified Net (`S-2`) | Net Delta | Segments (`cold_start` / `early_mid` / `late`) | Projection Guards | Segment Floors | Paired L=5 MBB 95% CI (pts/GW) |
+|---|---:|---:|---|---|---|---|
+| `def_xg_shrink_challenger` | `2,299` | — | — | — | — | — |
+| `ext_01_1_a10` | `2,232` | **`-67`** | `-18 / -62 / +13` (`-4.50` / `-4.13` / `+0.68` per GW) | `14/14 PASS` (`defcon` inapplicable) | **`1/3 PASS`** (`cold_start` FAIL, `early_mid` FAIL, `late` PASS) | `-5.61` to `+1.00` (est `-1.76`, `p_sup=0.8975`) |
+
+`ext_01_1_a10` fails the S-2 Historical Filter (`delta_net <= 0`, `1/3` segments) and does not qualify for slate freeze. [S-2 summary](prototypes/ext_01_1/s2/summary.json) · [S-2 weekly paired scores](prototypes/ext_01_1/s2/paired_weekly_scores.csv) · [S-2 projection guards](prototypes/ext_01_1/s2/projection_guards.csv) · [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)
 
 ### Resume before slate freeze
 
@@ -100,7 +109,7 @@ Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13
 
 | Idea | Disposition | Mechanism |
 |---|---|---|
-| EXT-01_1 | S-1 passed. S-2 blocked at GW24. | Within-player xGC-minus-GC rate adjustment. Distinct from fitted multifeature concessions GLM. |
+| EXT-01_1 | S-1 passed (`+82`). S-2 failed (`-67`, dead until `2027-11-22`). | Within-player xGC-minus-GC rate adjustment. Distinct from fitted multifeature concessions GLM. |
 | EXT-02_1 | Deferred, no replay | Player exposure weights incumbent assist branches. Distinct from start/sub attack intensity split. |
 | EXT-03_1 | Deferred, no replay | Club peer contrast on conditional cameo duration. Distinct from fitted start or appearance models. |
 | EXT-04_1 | Deferred, no replay | Dismissal-dependent reliability weight on historical xG. Distinct from predicting red-card rates or opponent-strength adjustment. |
