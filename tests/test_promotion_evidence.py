@@ -193,18 +193,20 @@ def test_capture_cli_rejects_backdating_and_late_actual_clock(retained_request: 
         capture_live_evidence.capture_verified_issue(request_path, retained_request.parent / "backdated-capture")
 
 
-def test_solver_identity_includes_installed_binary_and_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_solver_identity_is_portable_while_binary_recorded_separately(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from importlib.machinery import ModuleSpec
     from importlib import util
     from backtesting.native_transfer_solver import native_strategic_solve
-    from backtesting.rolling_replay import replay_solver_identity
+    from backtesting.rolling_replay import replay_solver_binary_sha256, replay_solver_identity
 
     binary = tmp_path / "core.pyd"
     binary.write_bytes(b"fixture-installed-binary-v1")
     monkeypatch.setattr(util, "find_spec", lambda name: ModuleSpec(name, loader=None, origin=str(binary)))
-    before = replay_solver_identity(native_strategic_solve)
+    before_id = replay_solver_identity(native_strategic_solve)
+    before_bin = replay_solver_binary_sha256()
     binary.write_bytes(b"fixture-installed-binary-v2")
-    assert replay_solver_identity(native_strategic_solve) != before
+    assert replay_solver_identity(native_strategic_solve) == before_id
+    assert replay_solver_binary_sha256() != before_bin
 
 
 def test_derive_s1_guard_margins_all_15_mandatory_guards_and_rare_se_floor() -> None:
@@ -585,3 +587,473 @@ def test_verify_live_readiness_supports_adr0069_fplcache_mode(tmp_path: Path) ->
         "early_harm_p_threshold": 0.025,
     }
     _verify_live_readiness(tmp_path, payload, CANDIDATE, CHAMPION, "p" * 64, "s" * 64, frozen_review)
+
+
+def test_checkpoint_payload_supports_externalized_blob_catalog_relative_bundle_and_2027_28_s1_transition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from backtesting.portable_evidence import BlobStore, compute_serving_model_closure
+    from backtesting.promotion_evidence import _admit_context, evaluate_verified_checkpoint_payload
+    from test_empirical_admission import _build_empirical_bundle
+
+    # 1. _admit_context resolves BlobStore externalized catalog entries cleanly without disk fallback
+    req, cat, _ = _build_empirical_bundle(gws=(1,), with_manager=False)
+    store = BlobStore(tmp_path)
+    ext_catalog = {
+        key: {"blob_sha256": (digest := store.write_bytes(raw)), "relpath": store.relpath(digest)}
+        for key, raw in cat.items()
+    }
+    admitted, decoded_req, decoded_cat = _admit_context({"request": req, "catalog": ext_catalog}, "2025-26", 1, root=tmp_path)
+    assert admitted.season == "2025-26" and admitted.gw == 1
+    assert decoded_cat == cat
+    assert decoded_req["season"] == "2025-26"
+
+    # 2. current_model_source_hash matches serving model closure, and serving_model_closure_hash mismatch fails closed
+    closure = compute_serving_model_closure((CHAMPION, CANDIDATE))
+    assert isinstance(promotion_evidence.current_model_source_hash(), str) and len(promotion_evidence.current_model_source_hash()) == 64
+
+    # 3. 2027-28 s1_guard_baseline_season_archive_transition forbidden on 2026-27
+    root_bad = tmp_path / "bad_transition"
+    root_bad.mkdir()
+    save_model_selection(ModelSelection(CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season="2026-27", podium_sealed=True), root_bad / "selection.json")
+    bad_proto = {
+        "horizon": 6,
+        "windows": {"2025-26": [1, 2], "2026-27": list(range(1, 39))},
+        "s1_guard_baseline_mode": "s1_guard_baseline_season_archive_transition",
+        "guard_specs": {
+            name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3], "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+            for name, spec in promotion_evidence.GUARD_SEMANTICS.items()
+        },
+        "quality_policy": {"mode": "certified", "target_gap": 0.0, "time_limit_seconds": 60.0, "require_proven_optimal": True, "raise_on_failure": True},
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": promotion_evidence.native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)),
+            "weights": [1.0] * 6,
+            "population": "all_admitted_players",
+            "missingness": "fail_closed",
+            "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {
+                s: dict.fromkeys(promotion_evidence.MANDATORY_GUARDS, "required")
+                for s in ("2025-26", "2026-27")
+            },
+        },
+        "live_review": {"mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24, "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025},
+    }
+    bad_proto["statistics"] = promotion_evidence.StatisticalProtocolConfig(
+        development_season="2025-26",
+        confirmation_season="2026-27",
+        approved_by_human=True,
+        approval_reference="approved-ref",
+        max_family_attempts=1,
+        required_projection_guards=tuple(promotion_evidence.MANDATORY_GUARDS),
+        evidence_protocol_hash=promotion_evidence.content_hash(bad_proto),
+    ).to_dict()
+    proto_ref = save_material(root_bad, "protocol.json", bad_proto)
+    src_hash = promotion_evidence.current_model_source_hash()
+    with pytest.raises(ValueError, match="2027-28"):
+        evaluate_verified_checkpoint_payload(
+            root_bad,
+            {
+                "version": promotion_evidence.CHECKPOINT_EVIDENCE_V2,
+                "checkpoint_gw": 15,
+                "selection_path": "selection.json",
+                "registry_path": "registry.jsonl",
+                "model_source_hash": src_hash,
+                "serving_model_closure_hash": closure.serving_model_closure_hash,
+                "model_runtime_bindings": closure.model_runtime_bindings,
+                "protocol": proto_ref,
+                "confirmation_attempt_ids": {CANDIDATE: "att"},
+                "development_selections": {CANDIDATE: proto_ref},
+                "guard_outcome_sources": [],
+                "replays": [],
+            },
+        )
+
+
+def test_evaluate_v2_checkpoint_independence_skips_expiry_guards_and_segments() -> None:
+    from backtesting.evidence_statistics import PairedGameweekScore, StatisticalProtocolConfig, assign_gameweek_segment
+    from backtesting.projection_guards import GuardOutput
+    from backtesting.promotion_evidence import MANDATORY_GUARDS, evaluate_dual_tier_checkpoint
+
+    def _scores(deltas: list[float]) -> list[PairedGameweekScore]:
+        return [
+            PairedGameweekScore(
+                "2026-27", gw, 60.0 + deltas[gw - 1], 60.0, 60.0 + deltas[gw - 1], 60.0, 0, 0, segment=assign_gameweek_segment(gw)
+            )
+            for gw in range(1, len(deltas) + 1)
+        ]
+
+    def _guards(status: str = "PASS", *, bad_metric: str | None = None, bad_status: str = "FAIL") -> list[GuardOutput]:
+        out: list[GuardOutput] = []
+        for name in sorted(MANDATORY_GUARDS):
+            st = bad_status if name == bad_metric else status
+            if st == "PASS":
+                out.append(GuardOutput(name, True, "PASS", 0.0, 0.5, 0.1, -0.2, 0.2, 0.95, 15, "lower_is_better", "ok"))
+            elif st == "INCONCLUSIVE":
+                out.append(GuardOutput(name, False, "INCONCLUSIVE", 0.4, 0.5, 0.2, 0.0, 0.8, 0.95, 15, "lower_is_better", "uncertain"))
+            elif st == "MISSING_EVIDENCE":
+                out.append(GuardOutput(name, False, "MISSING_EVIDENCE", 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0, "lower_is_better", "missing"))
+            else:
+                out.append(GuardOutput(name, False, "FAIL", 2.0, 0.5, 0.1, 1.8, 2.2, 0.95, 15, "lower_is_better", "harm"))
+        return out
+
+    alphas = {
+        "1": {"15": 0.0004, "30": 0.008, "38": 0.032},
+        "2": {"15": 0.0002, "30": 0.004, "38": 0.016},
+    }
+    cfg_adv = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas=alphas,
+        gw1_4_material_loss_limit=36.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest="e" * 64,
+        required_projection_guards=tuple(sorted(MANDATORY_GUARDS)),
+        completed_segments={
+            "15": ((1, 4),),
+            "30": ((1, 4), (5, 19)),
+            "38": ((1, 4), (5, 19), (20, 38)),
+        },
+    )
+    cfg_enf = replace(cfg_adv, statistical_early_harm_mode="enforced")
+
+    # 1. Completely independent of selection.provisional_active (even None or cand_2!) and no trail_at_gw15 drop
+    sel_none = ModelSelection("def_xg_shrink_challenger", ("cand_1", "cand_2"), provisional_active=None, podium_frozen_season="2026-27", podium_sealed=True)
+    trail_15 = [-1.0 if gw % 2 == 0 else 0.8 for gw in range(1, 16)]  # mildly trailing at GW15, above -36 floor and p_harm > 0.025
+    mild_15 = [0.4 if gw % 2 == 0 else -0.2 for gw in range(1, 16)]
+    mild_30 = [0.4 if gw % 2 == 0 else -0.2 for gw in range(1, 31)]
+    mild_38 = [0.4 if gw % 2 == 0 else -0.2 for gw in range(1, 39)]
+    win_15 = [2.5 + (0.2 if gw % 2 == 0 else -0.2) for gw in range(1, 16)]
+    res_indep = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(trail_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_indep.action == "eligible_for_manual_adopt"
+    assert res_indep.recommended_champion == "cand_1"
+    assert res_indep.alpha_spent == pytest.approx(0.0002)
+
+    # Trailing cand_1 at GW15 preserves eligibility (not in newly_excluded_finalists)
+    res_trail = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(trail_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_trail.action == "retain_dual_tier"
+    assert res_trail.newly_excluded_finalists == ()
+
+    # 2. Original slate size M=2 threshold preserved even after cand_1 was excluded!
+    win_30 = [2.0 + (0.2 if gw % 2 == 0 else -0.2) for gw in range(1, 31)]
+    res_m2_retained = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=30,
+        finalist_traces={"cand_1": _scores([-5.0] * 30), "cand_2": _scores(win_30)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        excluded_finalists=("cand_1",),
+    )
+    assert res_m2_retained.num_finalists == 2
+    assert res_m2_retained.alpha_spent == pytest.approx(0.004)  # NOT 0.008 (M=1)!
+    assert res_m2_retained.action == "eligible_for_manual_adopt"
+    assert res_m2_retained.recommended_champion == "cand_2"
+
+    # 3. Advisory vs Enforced Early-Harm & GW1-4 net-points floor & mandatory guard FAIL
+    harm_d = [-2.5 if gw % 2 == 0 else -1.5 for gw in range(1, 16)]  # GW1-4 = -8.0 (within 36 floor), p_harm << 0.025
+    res_adv_stat = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(harm_d), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_adv_stat.outcomes["cand_1"].early_harm.statistical_triggered is True
+    assert res_adv_stat.outcomes["cand_1"].early_harm.triggered is False
+    assert "cand_1" not in res_adv_stat.newly_excluded_finalists
+
+    res_enf_stat = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(harm_d), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_enf,
+    )
+    assert "cand_1" in res_enf_stat.newly_excluded_finalists
+
+    # GW1-4 collapse excludes even in advisory mode
+    gw14_collapse = [-10.0] * 4 + [0.1] * 11
+    res_gw14 = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(gw14_collapse), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_gw14.outcomes["cand_1"].early_harm.gw1_4_floor_breached is True
+    assert "cand_1" in res_gw14.newly_excluded_finalists
+
+    # Mandatory guard FAIL excludes even in advisory mode
+    res_guard_fail = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS", bad_metric="minutes_mae", bad_status="FAIL"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert "cand_1" in res_guard_fail.newly_excluded_finalists
+    assert res_guard_fail.recommended_champion is None
+
+    # 4. INCONCLUSIVE required safeguard blocks confirmation while preserving eligibility
+    res_inc = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS", bad_metric="minutes_mae", bad_status="INCONCLUSIVE"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_inc.action == "retain_dual_tier"
+    assert res_inc.scientific_verdict == "inconclusive"
+    assert res_inc.recommended_champion is None
+    assert "cand_1" not in res_inc.newly_excluded_finalists
+
+    # 5. Missing/unassessed/non-finite/inconsistent GuardOutput fails closed as invalid
+    res_missing = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS", bad_metric="minutes_mae", bad_status="MISSING_EVIDENCE"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_missing.action == "invalid"
+    assert res_missing.scientific_verdict == "invalid"
+    assert res_missing.recommended_champion is None
+    assert res_missing.requires_manual_adopt is False
+
+    inconsistent_guards = _guards("PASS")
+    inconsistent_guards[0] = replace(inconsistent_guards[0], passed=False)  # status PASS != passed False
+    res_inconsistent = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": inconsistent_guards, "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+    )
+    assert res_inconsistent.action == "invalid"
+    assert res_inconsistent.scientific_verdict == "invalid"
+
+    # 6. Availability-driven skip discards unused alpha; later checkpoints keep exact calibrated alpha
+    res_skip = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(win_15), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        skipped_checkpoints=(15,),
+    )
+    assert res_skip.skipped is True
+    assert res_skip.alpha_spent is None
+    assert res_skip.recommended_champion is None
+    assert res_skip.action == "retain_dual_tier"
+
+    res_after_skip = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=30,
+        finalist_traces={"cand_1": _scores(win_30), "cand_2": _scores(mild_30)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        skipped_checkpoints=(15,),
+    )
+    assert res_after_skip.alpha_spent == pytest.approx(0.004)  # unused GW15 alpha NOT added to GW30!
+    assert res_after_skip.action == "eligible_for_manual_adopt"
+
+    # 7. Registered UTC expiry validation: final_kickoff + 24h + 14d (360h) UTC
+    win_38 = [2.0 + (0.2 if gw % 2 == 0 else -0.2) for gw in range(1, 39)]
+    res_expired = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=38,
+        finalist_traces={"cand_1": _scores(win_38), "cand_2": _scores(mild_38)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        gw38_final_kickoff_utc="2027-05-23T15:00:00Z",
+        evaluated_at_utc="2027-06-07T15:00:01Z",  # 1 second past +360h!
+    )
+    assert res_expired.expired is True
+    assert res_expired.recommended_champion is None
+    assert res_expired.requires_manual_adopt is False
+    assert res_expired.action != "eligible_for_manual_adopt"
+
+    res_timely = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=38,
+        finalist_traces={"cand_1": _scores(win_38), "cand_2": _scores(mild_38)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        gw38_final_kickoff_utc="2027-05-23T15:00:00Z",
+        evaluated_at_utc="2027-06-07T15:00:00Z",  # exact boundary <= expiry
+    )
+    assert res_timely.expired is False
+    assert res_timely.action == "eligible_for_manual_adopt"
+    assert res_timely.recommended_champion == "cand_1"
+
+    # 8. Expiry + simultaneous exclusion of provisional_active MUST NOT retain excluded provisional_active!
+    sel_prov1 = ModelSelection(
+        "def_xg_shrink_challenger", ("cand_1", "cand_2"), provisional_active="cand_1",
+        podium_frozen_season="2026-27", podium_sealed=True,
+    )
+    res_exp_excl = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(gw14_collapse), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_prov1,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_adv,
+        look_expiry_utc="2026-12-01T12:00:00Z",
+        evaluated_at_utc="2026-12-02T12:00:00Z",
+    )
+    assert res_exp_excl.expired is True
+    assert "cand_1" in res_exp_excl.newly_excluded_finalists
+    assert res_exp_excl.action == "fallback_to_champion"
+    assert res_exp_excl.next_provisional_active is None
+
+
+def test_rank_and_freeze_podium_binds_protocol_and_certification_digest_preserving_legacy_reads(tmp_path: Path) -> None:
+    from backtesting.promotion_evidence import PodiumCandidateRecord, rank_and_freeze_podium
+    from models.selection import ModelSelection, load_model_selection, save_model_selection
+
+    # Legacy selection file without frozen digest keys still reads cleanly
+    legacy_path = tmp_path / "legacy_selection.json"
+    legacy_path.write_text(
+        json.dumps({"schema_version": 1, "champion": CHAMPION, "candidates": [CANDIDATE], "promotion_status": "provisional"}),
+        encoding="utf-8",
+    )
+    legacy = load_model_selection(legacy_path)
+    assert legacy.frozen_protocol_hash is None
+    assert legacy.frozen_certification_digest is None
+
+    rec = PodiumCandidateRecord(
+        candidate_name=CANDIDATE,
+        champion_name=CHAMPION,
+        delta_s1=30.0,
+        delta_s2=25.0,
+        s1_guards_ok=True,
+        s2_guards_ok=True,
+        s1_segment_deltas={"gw1_12": 10.0, "gw13_25": 10.0, "gw26_38": 10.0},
+        s1_segment_tolerances={"gw1_12": 5.0, "gw13_25": 5.0, "gw26_38": 5.0},
+        s2_segment_deltas={"gw1_12": 8.0, "gw13_25": 8.0, "gw26_38": 9.0},
+        s2_segment_tolerances={"gw1_12": 5.0, "gw13_25": 5.0, "gw26_38": 5.0},
+    )
+    p_hash = "1" * 64
+    c_dig = "2" * 64
+    res = rank_and_freeze_podium(
+        [rec],
+        current_selection=ModelSelection(CHAMPION, (CANDIDATE,)),
+        active_season="2026-27",
+        seal_slate=True,
+        protocol_hash=p_hash,
+        certification_digest=c_dig,
+    )
+    assert res.updated_selection.frozen_protocol_hash == p_hash
+    assert res.updated_selection.frozen_certification_digest == c_dig
+    bound_path = tmp_path / "bound_selection.json"
+    save_model_selection(res.updated_selection, bound_path)
+    reloaded = load_model_selection(bound_path)
+    assert reloaded.frozen_protocol_hash == p_hash
+    assert reloaded.frozen_certification_digest == c_dig
+
+
+def test_v2_protocol_requires_completed_segments() -> None:
+    from dataclasses import asdict
+    from backtesting.evidence_statistics import StatisticalProtocolConfig
+    from backtesting.promotion_evidence import (
+        GUARD_SEMANTICS,
+        MANDATORY_GUARDS,
+        content_hash,
+        native_solver_identity,
+        protocol_from_payload,
+    )
+    from backtesting.rolling_replay import QualityPolicy
+
+    windows = {"2025-26": [1, 2], "2026-27": list(range(1, 39))}
+    guards = {
+        name: {
+            "forecast_field": spec[0],
+            "outcome_field": spec[1],
+            "loss": spec[2],
+            "units": spec[3],
+            "margin": 0.0,
+            "alpha": 0.05,
+            "direction": "lower_is_better",
+        }
+        for name, spec in GUARD_SEMANTICS.items()
+    }
+    declaration = {
+        "horizon": 6,
+        "windows": windows,
+        "guard_specs": guards,
+        "quality_policy": asdict(QualityPolicy()),
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)),
+            "weights": [1.0] * 6,
+            "population": "all_admitted_players",
+            "missingness": "fail_closed",
+            "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+        },
+        "live_review": {
+            "mode": "fplcache",
+            "review_gameweeks": [15, 30, 38],
+            "settlement_delay_hours": 24,
+            "early_harm_min_gw": 6,
+            "early_harm_p_threshold": 0.025,
+        },
+    }
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        development_season="2025-26",
+        confirmation_season="2026-27",
+        approved_by_human=True,
+        approval_reference="test-missing-seg",
+        max_family_attempts=1,
+        required_projection_guards=tuple(sorted(MANDATORY_GUARDS)),
+        evidence_protocol_hash=content_hash(declaration),
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas={
+            "1": {"15": 0.0004, "30": 0.008, "38": 0.032},
+            "2": {"15": 0.0002, "30": 0.004, "38": 0.016},
+        },
+        gw1_4_material_loss_limit=25.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest="a" * 64,
+        completed_segments=None,
+    )
+    with pytest.raises(ValueError, match="v2 protocol requires completed_segments"):
+        protocol_from_payload({**declaration, "statistics": cfg.to_dict()})

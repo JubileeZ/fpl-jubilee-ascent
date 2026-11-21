@@ -1,0 +1,164 @@
+name: Champion adoption reserved merge
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: "Approved adoption request identifier"
+        required: true
+      slate_id:
+        description: "Frozen comparison slate identifier"
+        required: true
+      pr_number:
+        description: "Approved adoption pull request number"
+        required: true
+      approval_ref:
+        description: "Protected GitHub Actions approval reference"
+        required: true
+      approved_pr_head_sha:
+        description: "Exact approved PR head commit SHA"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: validation-evidence
+  cancel-in-progress: false
+
+jobs:
+  execute-protected-merge:
+    if: github.event_name == 'workflow_dispatch' || vars.CHAMPION_ADOPTION_LIVE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Mint dedicated GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CHAMPION_ADOPTION_APP_ID }}
+          private-key: ${{ secrets.CHAMPION_ADOPTION_APP_PRIVATE_KEY }}
+
+      - name: Check out protected main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate validation-evidence branch and reservation worktree
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/validation-evidence"
+          git fetch origin validation-evidence || true
+          if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
+            git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+            git worktree add "$RUNNER_TEMP/evidence-branch" origin/validation-evidence
+          else
+            git worktree add --orphan -b validation-evidence "$RUNNER_TEMP/evidence-branch"
+          fi
+
+      - name: Reconcile prior reservation and execute GitHub PR API reserved merge
+        id: reserved-merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+          SLATE_ID: ${{ github.event.inputs.slate_id }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          APPROVAL_REF: ${{ github.event.inputs.approval_ref }}
+          APPROVED_PR_HEAD_SHA: ${{ github.event.inputs.approved_pr_head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -f "$RUNNER_TEMP/validation-evidence/reservation.json" ]; then
+            REC_JSON=$(uv run python -m commands.manage_champion_adoption reconcile-merge \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --remote-main-ref origin/main)
+            echo "$REC_JSON"
+            ALREADY_MERGED=$(printf '%s' "$REC_JSON" | python3 -c "import json, sys; print('true' if json.load(sys.stdin).get('merged') else 'false')")
+            if [ "$ALREADY_MERGED" = "true" ]; then
+              echo "Interrupted merge already landed on main and was reconciled; skipping duplicate PR merge."
+              exit 0
+            fi
+          fi
+          git fetch origin "adoption/${REQUEST_ID}"
+          PR_HEAD_SHA=$(git rev-parse "origin/adoption/${REQUEST_ID}")
+          uv run python -m commands.manage_champion_adoption execute-protected-merge \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --request-id "$REQUEST_ID" \
+            --slate-id "$SLATE_ID" \
+            --approval-ref "$APPROVAL_REF" \
+            --approved-pr-head-sha "$APPROVED_PR_HEAD_SHA" \
+            --pr-head-sha "$PR_HEAD_SHA" \
+            --repo "${{ github.repository }}" \
+            --pr-number "$PR_NUMBER" \
+            --merge-via-github-api \
+            --require-live-checks \
+            --worktree-dir "$RUNNER_TEMP/evidence-branch"
+
+      - name: Persist validation-evidence reservation and ledger state
+        if: always()
+        shell: bash
+        env:
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          if [ ! -d "$WORK" ]; then
+            git worktree add "$WORK" origin/validation-evidence
+          fi
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adoption: sync reservation/ledger ${REQUEST_ID}"
+            git push origin HEAD:validation-evidence
+          fi
+
+      - name: Update and close Adoption Review Issue
+        if: steps.reserved-merge.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+          SLATE_ID: ${{ github.event.inputs.slate_id }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          APPROVAL_REF: ${{ github.event.inputs.approval_ref }}
+          APPROVED_PR_HEAD_SHA: ${{ github.event.inputs.approved_pr_head_sha }}
+        run: |
+          set -euo pipefail
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "${{ github.repository }}" \
+            --request-id "$REQUEST_ID" \
+            --comment "Champion adoption merged onto protected \`main\` (PR #${PR_NUMBER}, approval \`${APPROVAL_REF}\`, head SHA \`${APPROVED_PR_HEAD_SHA}\`). Comparison Slate \`${SLATE_ID}\` closed." \
+            --close
+
+      - name: Close Adoption Review Issue if request expired or invalidated
+        if: failure() && steps.reserved-merge.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          set -euo pipefail
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "${{ github.repository }}" \
+            --request-id "$REQUEST_ID" \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --close-if-terminal

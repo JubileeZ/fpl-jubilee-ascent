@@ -110,7 +110,11 @@ Check the user's prompt for an external minutes CSV path (e.g. `/path/to/project
 2. **Path omitted**: Ask once:
    > *"Do you have an external xMins CSV to apply on top of the base? (Reply with file path, or reply 'skip' / 'no' to use native Champion minutes)."*
    - If user provides path: wire file into Layer 2.
-   - If user skips or provides no file: proceed with **Layer 1 (Native In-House Champion)** (`adaptive_causal_challenger` / `def_xg_shrink_challenger`) as complete baseline.
+   - If user skips or provides no file: proceed with **Layer 1 (Weekly Planner Model Preflight)** resolved automatically by `commands.solve` (`resolve_weekly_planner_model`):
+     - Checks remote protected `origin/main` first; if remote Champion changed, stops with `StaleCheckoutError` requiring manual `git pull` (auto-pull is disabled).
+     - Syncs read-only `validation-evidence` scorecards and `ExclusionLedger`.
+     - If offline (`unverified`), serves only locally recorded Confirmed Champion (`selection.champion`).
+     - On a sealed slate with complete common settled GW1..N prefix, ranks non-excluded slate models by cumulative paired replay net points (`verified_scorecard_leader`, ties Champion first then frozen podium rank). Supports one-plan overrides `--champion` or `--model <candidate>`.
 
 ---
 
@@ -173,7 +177,9 @@ Present consolidated preflight card to user:
 • Horizon: {horizon} Gameweeks (GW{target_gw}–GW{target_gw + horizon - 1})
 • Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
 • Strategic Controls: 1.8 pt hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per club · 1.5 pt GK friction
-• Minutes Stack: Layer 1 (Native Champion) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield & Confirmed Curves)
+• Minutes Stack: Layer 1 (Weekly Preflight: {effective_model} · {selection_reason} · {freshness_status}) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield & Confirmed Curves)
+• Settled Prefix: Local GW{latest_settled_gw} · Verified Scorecard GW1..GW{verified_prefix_end_gw} · Scores: {comparable_scores}
+• Overrides: One-plan override available via `--champion` or `--model <eligible_model>` (manual edit never mutates `config/model_selection.json`).
 • Booked Chips: {None | e.g. Free Hit on GW16}
 • Solver Gap: {0.0}
 • User Squad: Live squad loaded from `data/processed/user_picks.parquet`
@@ -207,6 +213,7 @@ Wait for user confirmation or adjustments before invoking solver.
      --gap <gap> \
      --arm <strategic | unconstrained | no_hit> \
      --xmins-override data/planner/xmins_override.csv \
+     [--champion | --model <eligible_model>] \
      [--use-fh <gw>] \
      [--use-wc <gw>] \
      [--use-bb <gw>] \
@@ -214,6 +221,7 @@ Wait for user confirmation or adjustments before invoking solver.
      [--scenarios] \
      --force
    ```
+   *Note: Initial `--xmins-override` runs do NOT pin prior `data/solution.json` models; pass `--rerun` only for Step 6 injury-audit reruns.*
 
 ---
 
@@ -252,7 +260,7 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
    - **If `PASS`**: Proceed directly to Step 7 (Presentation).
    - **If `CORRECTION_NEEDED`**:
      a) Re-synthesize `data/planner/xmins_override.csv` applying the subagent's corrected curves (`--set "<pid>:<new_curve>"`).
-     b) Execute **one final re-solve** with the updated overrides (`max_iterations = 1`).
+     b) Execute **one final re-solve** with updated overrides (`max_iterations = 1`), passing `--rerun` (or `--pin-reviewed-model <reviewed_base_model>`) so the reviewed base model from `data/solution.json` (`meta.reviewed_base_model`) is preserved unless invalidated by terminal exclusion, expired deadline, or remote protected Champion change.
      c) Proceed to Step 7 (Presentation) and include the **Audit & Correction Card** showing the verified delta.
 
 ---

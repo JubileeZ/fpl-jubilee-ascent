@@ -17,7 +17,8 @@ from backtesting.data_admission import AdmittedInput, assess_origins, verify_inp
 from backtesting.forecast_adapter import predict_issue
 from backtesting.forecast_export import strict_solver_table, validate_components
 from backtesting.forecast_inputs import validate_storage_path, verify_training_bundle
-from backtesting.season_rules import get_rules, load_season_lifecycle
+from backtesting.portable_evidence import compute_serving_model_closure
+from backtesting.season_rules import get_rules
 from models import get_default_model_name
 
 
@@ -55,38 +56,18 @@ def _publish_forecast_directory(stage: Path, destination: Path) -> bool:
     raise RuntimeError("Forecast publication retry exhausted")
 
 
-def _collect_code_closure() -> dict[str, str]:
-    project = Path(__file__).resolve().parent.parent
-    code: dict[str, str] = {}
-    sealed = load_season_lifecycle().sealed_seasons()
-    for directory in ("backtesting", "features", "models", "projections", "solver", "config"):
-        root = project / directory
-        if not root.is_dir() or not root.resolve().is_relative_to(project):
-            raise ValueError("Source closure directory missing")
-        for path in sorted(root.rglob("*.py")):
-            resolved = path.resolve()
-            if not resolved.is_relative_to(root.resolve()) or any(part in {".git", ".agents", *sealed} for part in resolved.parts):
-                raise ValueError("Unsealed source path")
-            code[path.relative_to(project).as_posix()] = resolved.read_bytes().hex()
-    for name in ("pyproject.toml", "uv.lock"):
-        path = project / name
-        if not path.is_file() or not path.resolve().is_relative_to(project):
-            raise ValueError("Dependency lock missing")
-        code[name] = path.read_bytes().hex()
-    return code
-
-
 def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> dict[str, Any]:
-    """Capture a conservative source closure, including dirty/generated Python bytes."""
+    """Capture portable forecast material bound to exact serving model closure and inputs."""
     if model_name is None:
         model_name = get_default_model_name()
-    verify_input(capability, request, catalog)
-    source = verify_training_bundle(capability, request, catalog, training_authority)
+    allow_fallback = capability.mode != "empirical"
+    verify_input(capability, request, catalog, allow_disk_path_fallback=allow_fallback)
+    source = verify_training_bundle(
+        capability, request, catalog, training_authority, allow_disk_path_fallback=allow_fallback
+    )
     origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
-    code = _collect_code_closure()
+    closure = compute_serving_model_closure((model_name,))
     if capability.mode == "empirical":
-        from backtesting.season_rules import get_rules
-
         issue_payload = {
             "season": origin["season"],
             "gw": origin["gw"],
@@ -108,9 +89,9 @@ def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalo
             "fit_policy": "current-history-once",
             "seed_policy": "verified-prior-season",
             "schema": "empirical-v2",
-            "code": code,
-            "python": sys.version,
-            "platform": platform.platform(),
+            "serving_model_closure_hash": closure.serving_model_closure_hash,
+            "model_runtime_bindings": closure.model_runtime_bindings,
+            "package_pins": closure.package_pins,
         }
     authority = json.loads(catalog[request["authority_digest"]])
     report = next(r for r in assess_origins(request, catalog) if r["season"] == capability.season and r["gw"] == capability.gw)
@@ -118,7 +99,27 @@ def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalo
     if len(matches) != 1:
         raise ValueError("Ambiguous retained input source")
     input_source = matches[0]
-    return {"version": 1, "mode": "synthetic_diagnostic", "issue": {k: origin[k] for k in ("season", "gw", "deadline", "target_gws", "universe", "players", "fixtures", "schedule", "native_rules", "seed_identity")}, "input_digest": capability.input_digest, "input_authority": {k: v for k, v in authority.items() if k != "source_manifests"}, "input_source": {k: (v.hex() if isinstance(v, bytes) else v) for k, v in input_source.items() if k != "parent_manifest"}, "training_authority": catalog[training_authority].hex(), "training_source": _canonical_json_bytes(source).hex(), "model": model_name, "model_parameters": {}, "fit_policy": "current-history-once", "seed_policy": "verified-prior-season", "schema": "synthetic-fixture-v1", "code": code, "python": sys.version, "platform": platform.platform()}
+    return {
+        "version": 1,
+        "mode": "synthetic_diagnostic",
+        "issue": {
+            k: origin[k]
+            for k in ("season", "gw", "deadline", "target_gws", "universe", "players", "fixtures", "schedule", "native_rules", "seed_identity")
+        },
+        "input_digest": capability.input_digest,
+        "input_authority": {k: v for k, v in authority.items() if k != "source_manifests"},
+        "input_source": {k: (v.hex() if isinstance(v, bytes) else v) for k, v in input_source.items() if k != "parent_manifest"},
+        "training_authority": catalog[training_authority].hex(),
+        "training_source": _canonical_json_bytes(source).hex(),
+        "model": model_name,
+        "model_parameters": {},
+        "fit_policy": "current-history-once",
+        "seed_policy": "verified-prior-season",
+        "schema": "synthetic-fixture-v1",
+        "serving_model_closure_hash": closure.serving_model_closure_hash,
+        "model_runtime_bindings": closure.model_runtime_bindings,
+        "package_pins": closure.package_pins,
+    }
 
 
 def _load_forecast_content(store: Path, forecast_id: str, material: dict[str, Any]) -> pd.DataFrame:
@@ -201,11 +202,19 @@ def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str,
                 "blanks": int((frame["fixture_id"] == -1).sum()),
                 "fixtures": int((frame["fixture_id"] != -1).sum()),
             }
+            closure = compute_serving_model_closure((model_name,))
             generator_log = {
                 "version": 1,
                 "forecast_id": forecast_id,
                 "model": model_name,
                 "generation": meta,
+                "runner_identity": {
+                    "python": sys.version,
+                    "platform": platform.platform(),
+                    "executable": sys.executable,
+                    "evaluator_code_hash": closure.evaluator_code_hash,
+                    "producer_git_sha": closure.producer_git_sha,
+                },
                 "started_at": started_at,
                 "completed_at": datetime.now(UTC).isoformat(),
             }

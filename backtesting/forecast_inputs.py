@@ -40,6 +40,8 @@ def _verify_empirical_training_bundle(
     request: dict[str, Any],
     catalog: dict[str, bytes],
     authority: dict[str, Any],
+    *,
+    allow_disk_path_fallback: bool = True,
 ) -> dict[str, Any]:
     from backtesting.empirical_admission import resolve_and_verify_source_bytes, validate_seed_mapping
     from backtesting.empirical_mirrors import parse_fixtures_csv_window, validate_mirror_url
@@ -118,16 +120,38 @@ def _verify_empirical_training_bundle(
         if _parse_iso_time(row["kickoff_time"]) >= dl:
             raise ValueError("Empirical history kickoff exceeds deadline")
     for row in tables["history_fixtures"]:
+        if row.get("finished") is not True:
+            raise ValueError("Empirical history_fixtures must declare finished=True")
         if type(row.get("gameweek_id")) is not int or not 1 <= row["gameweek_id"] < capability.gw:
             raise ValueError("Empirical history_fixtures outside causal gameweek bounds")
         if _parse_iso_time(row["kickoff_time"]) >= dl:
             raise ValueError("Empirical history_fixtures kickoff exceeds deadline")
 
     # Cryptographically bind tables back to admitted origin sources
-    bs_dec = resolve_and_verify_source_bytes(sources["bootstrap"], catalog, role_label="bootstrap")
-    fx_dec = resolve_and_verify_source_bytes(sources["fixtures"], catalog, role_label="fixtures")
-    hist_dec = resolve_and_verify_source_bytes(sources["history"], catalog, role_label="history")
-    seed_dec = resolve_and_verify_source_bytes(sources["seed"], catalog, role_label="seed")
+    bs_dec = resolve_and_verify_source_bytes(
+        sources["bootstrap"],
+        catalog,
+        role_label="bootstrap",
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
+    fx_dec = resolve_and_verify_source_bytes(
+        sources["fixtures"],
+        catalog,
+        role_label="fixtures",
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
+    hist_dec = resolve_and_verify_source_bytes(
+        sources["history"],
+        catalog,
+        role_label="history",
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
+    seed_dec = resolve_and_verify_source_bytes(
+        sources["seed"],
+        catalog,
+        role_label="seed",
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
 
     admitted_bs_elements, _, _ = _sanitize_bootstrap(
         json.loads(bs_dec.decode("utf-8")),
@@ -174,14 +198,22 @@ def verify_training_bundle(
     request: dict[str, Any],
     catalog: dict[str, bytes],
     authority_digest: str,
+    *,
+    allow_disk_path_fallback: bool = True,
 ) -> dict[str, Any]:
     """Resolve source-authorized rows for synthetic diagnostics or verified empirical bundles."""
-    verify_input(capability, request, catalog)
+    verify_input(capability, request, catalog, allow_disk_path_fallback=allow_disk_path_fallback)
     if capability.season in load_season_lifecycle().sealed_seasons():
         raise ValueError("Protected season")
     authority = _read_canonical_json(catalog, authority_digest)
     if isinstance(authority, dict) and authority.get("mode") == "empirical":
-        return _verify_empirical_training_bundle(capability, request, catalog, authority)
+        return _verify_empirical_training_bundle(
+            capability,
+            request,
+            catalog,
+            authority,
+            allow_disk_path_fallback=allow_disk_path_fallback,
+        )
     required = {"version", "mode", "input_digest", "season", "gw", "seed_identity", "source_digest"}
     if set(authority) != required or authority["version"] != 2 or authority["mode"] != "synthetic":
         raise ValueError("Unsupported training authority")

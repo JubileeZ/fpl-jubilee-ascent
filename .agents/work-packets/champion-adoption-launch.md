@@ -1,18 +1,14 @@
 # Active Task: Champion adoption launch
 
-- **Status:** Ready for device handoff.
-- **Objective:** Launch Champion adoption implementation from new Codex session.
-- **Acceptance:** Receiving session displays saved goal and awaits operator submission.
-- **Issue/Ticket:** [Wayfinder map](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190), New-session launch.
+- **Status:** In Progress
+- **Objective:** Implement Champion adoption (#198, #201, #200) on canonical review branches, run read-only production preflight, and execute isolated private GitHub pilot (#199).
+- **Acceptance:** Verified #201 certification, #198 portable evidence & fixture inventory, #200 protected adoption & planner freshness, read-only production preflight, and isolated pilot pass/fail report with open gates documented.
+- **Issue/Ticket:** [Wayfinder map](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190), [#198](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/198), [#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199), [#200](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/200), [#201](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201).
 
 ## Work Packet (SFDBN)
 
-- **Status:** Goal unstarted.
-- **Files:** [Implementation spec](../../docs/product/champion-adoption-implementation.md).
-- **Decisions:** Start [portable evidence and fixture inventory](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/198) and [sparse certification](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201) in parallel after goal starts.
-- **Blocked:** Admissible passing fixture unverified. Protected pilot approval and live sign-off remain human decisions.
-- **Next:** Pull current main. Invoke command below. Verify ticket status, display map goal, await operator submission.
-
-```text
-/wayfinder next https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190
-```
+- **Status:** In Progress — PR [#202](https://github.com/JubileeZ/fpl-jubilee-ascent/pull/202) open (`feat/champion-adoption-v1` -> `main`). Live pilot on `JubileeZ/fpl-champion-adoption-pilot` ($0 GitHub Free amendment [#199#issuecomment-7057665143](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199#issuecomment-7057665143), `8/10` preflight, App `5858656`) passed `6`-run control matrix; implemented `2026-11-21` ADR 0070 amendment switching default notice to deduplicated GitHub `Adoption Review Issue` (`GitHubIssueMailProvider`, `update-review-issue`, optional webhook) & updating canonical `production-preflight` to `4/10` pass. Positive native passing merge (`#198`/`#199`) remains OPEN (`has_admissible_historical_gw15_passing_fixture=False`).
+- **Files:** `CONTEXT.md`, `docs/adr/0070-weekly-planner-selection-and-champion-adoption.md`, `docs/product/champion-adoption-implementation.md`, `backtesting/{sparse_certification,portable_evidence,promotion_evidence,adoption_transaction,forecast_adapter,forecast_export,forecast_store}.py`, `models/planner_selection.py`, `commands/{certify_sparse_confirmation,inventory_pilot_fixture,produce_validation_evidence,manage_champion_adoption,evaluate_model_promotion,export_dashboard,dashboard,refresh_data,solve,transfer_plan_scenarios}.py`, `dashboard/{planner_service,streamlit_dashboard,streamlit_planner}.py`, `features/processor.py`, `solver/transfer_plan.py`, `tests/test_pilot_acceptance_harness.py`, `docs/research/sparse-confirmation-certification/`, `docs/testing/{pilot-fixture-inventory,champion-adoption-pilot-report}.md`, `docs/testing/production-preflight-report.json`, `.github/workflows/{validation-collector,champion-adoption-request,champion-adoption-pr-checks,champion-adoption-merge}.yml`.
+- **Decisions:** Default `Adoption Review Issue` (`champion-adoption-review`, assigned `JubileeZ`, zero approval authority) + native Environment email; keep `MAIL_PROVIDER_WEBHOOK_URL` optional; routine weekly runs stay quiet on `validation-evidence`; `$0` public GitHub Free parity & reuse App `5858656` after pilot deletion (`Q1–Q7` confirmed). Leave `CHAMPION_ADOPTION_LIVE_ENABLED=false`.
+- **Blocked:** Positive native-verifier passing merge & live `StaleCheckoutError` check require admissible `>=15`-GW non-live empirical passing fixture (`#198`). Production activation awaits PR `#202` merge, retiring pilot repo + applying `$0` protections & App `5858656` secrets on `JubileeZ/fpl-jubilee-ascent`, qualified `S-1`+`S-2` slate, and explicit operator sign-off.
+- **Next:** (1) Review & merge PR `#202` (`feat/champion-adoption-v1` -> `main`, keep `CHAMPION_ADOPTION_LIVE_ENABLED` false); (2) Switch App `5858656` install to `JubileeZ/fpl-jubilee-ascent`, delete `JubileeZ/fpl-champion-adoption-pilot`, & apply `$0` protections/secrets (`8/10` preflight); (3) Decide historical `>=15`-GW archive vs `2027-28 GW1` capture (`#198`); (4) Run Candidate Search (`ideate-candidate` / `explore-candidate`) for `M<=2` slate; (5) Separate operator sign-off & `10/10` preflight before live activation.

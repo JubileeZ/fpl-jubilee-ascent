@@ -185,3 +185,303 @@ def test_perform_annual_rollover_resets_provisional_and_carries_confirmed_champi
     assert new_sel.podium_sealed is False
     persisted = load_model_selection(sel_path)
     assert persisted == new_sel
+
+
+def test_adopt_champion_race_check_failure_leaves_zero_receipt_on_disk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from commands import evaluate_model_promotion
+
+    config_path = tmp_path / "model_selection.json"
+    initial_sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("adaptive_causal_challenger",),
+        provisional_active="adaptive_causal_challenger",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+    save_model_selection(initial_sel, config_path)
+    bundle_path = tmp_path / "bundle.json"
+    written = {
+        "candidate_name": "adaptive_causal_challenger",
+        "former_champion": "def_xg_shrink_challenger",
+        "scientific_verdict": "pass",
+        "execution_status": "complete",
+        "empirical_admission": True,
+        "bundle_hash": "a" * 64,
+        "protocol_hash": "b" * 64,
+    }
+    monkeypatch.setattr(evaluate_model_promotion, "verify_recommendation_bundle", lambda *args, **kwargs: written)
+
+    calls = 0
+    mutated_sel = ModelSelection(
+        champion="club_def_prior_challenger",
+        candidates=("adaptive_causal_challenger",),
+    )
+
+    def fake_load(path: Path | None = None) -> ModelSelection:
+        nonlocal calls
+        calls += 1
+        return initial_sel if calls == 1 else mutated_sel
+
+    monkeypatch.setattr(evaluate_model_promotion, "load_model_selection", fake_load)
+
+    receipt_path = config_path.with_suffix(".adoption.json")
+    with pytest.raises(ValueError, match="Current Champion configuration changed during adoption"):
+        adopt_champion(
+            bundle_path,
+            config_path=config_path,
+            approval_ref="GH-APPROVAL-1",
+            expected_current_champion="def_xg_shrink_challenger",
+            approved_bundle_hash="a" * 64,
+            request_id="req-race-1",
+            slate_id="slate-2026-27",
+        )
+    assert not receipt_path.exists()
+    assert list(tmp_path.glob("*.tmp*")) == []
+
+
+def test_adopt_champion_allows_weekly_provisional_active_rotation_but_blocks_slate_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import asdict
+    from backtesting.portable_evidence import compute_serving_model_closure
+    from backtesting.promotion_evidence import CHECKPOINT_EVIDENCE_V2, content_hash
+    from commands import evaluate_model_promotion
+
+    frozen_sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+        provisional_active="adaptive_causal_challenger",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+    frozen_sel_sha = content_hash(asdict(frozen_sel))
+    closure = compute_serving_model_closure((frozen_sel.champion, *frozen_sel.candidates))
+
+    config_path = tmp_path / "model_selection.json"
+    # Weekly serving rotated provisional_active to club_def_prior_challenger while slate stayed frozen
+    rotated_sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+        provisional_active="club_def_prior_challenger",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+    save_model_selection(rotated_sel, config_path)
+
+    bundle_path = tmp_path / "bundle.json"
+    bundle_data = {
+        "version": CHECKPOINT_EVIDENCE_V2,
+        "checkpoint_gw": 15,
+        "candidate_name": "adaptive_causal_challenger",
+        "former_champion": "def_xg_shrink_challenger",
+        "scientific_verdict": "pass",
+        "execution_status": "complete",
+        "empirical_admission": True,
+        "selection_sha256": frozen_sel_sha,
+        "serving_model_closure_hash": closure.serving_model_closure_hash,
+        "model_runtime_bindings": closure.model_runtime_bindings,
+        "bundle_hash": "c" * 64,
+        "protocol_hash": "d" * 64,
+    }
+    bundle_path.write_text(json.dumps(bundle_data), encoding="utf-8")
+    monkeypatch.setattr(
+        evaluate_model_promotion,
+        "verify_checkpoint_recommendation_bundle",
+        lambda *args, **kwargs: bundle_data,
+    )
+
+    # First test that unsealing or changing candidate set fails closed
+    unsealed_path = tmp_path / "unsealed_selection.json"
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+            provisional_active="club_def_prior_challenger",
+            podium_frozen_season="2026-27",
+            podium_sealed=False,
+        ),
+        unsealed_path,
+    )
+    with pytest.raises(ValueError, match="Current sealed podium differs"):
+        adopt_champion(
+            bundle_path,
+            config_path=unsealed_path,
+            approval_ref="GH-APPROVAL-2",
+            expected_current_champion="def_xg_shrink_challenger",
+            approved_bundle_hash="c" * 64,
+        )
+    assert not unsealed_path.with_suffix(".adoption.json").exists()
+
+    # Now test that weekly provisional_active rotation succeeds and closes slate
+    updated = adopt_champion(
+        bundle_path,
+        config_path=config_path,
+        approval_ref="GH-APPROVAL-2",
+        expected_current_champion="def_xg_shrink_challenger",
+        approved_bundle_hash="c" * 64,
+        request_id="req-v2-1",
+        slate_id="slate-2026-27",
+        approved_commit_sha="e" * 40,
+    )
+    assert updated.champion == "adaptive_causal_challenger"
+    assert updated.podium_sealed is False
+    assert updated.provisional_active is None
+    assert updated.podium_frozen_season is None
+    receipt = json.loads(config_path.with_suffix(".adoption.json").read_text(encoding="utf-8"))
+    assert receipt["request_id"] == "req-v2-1"
+    assert receipt["slate_id"] == "slate-2026-27"
+    assert receipt["approved_commit_sha"] == "e" * 40
+    assert receipt["serving_model_closure_hash"] == closure.serving_model_closure_hash
+    assert receipt["selection_after"]["champion"] == "adaptive_causal_challenger"
+    assert receipt["selection_after"]["podium_sealed"] is False
+
+
+def test_adopt_champion_with_portable_snapshot_and_ledgers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import asdict
+    from backtesting import portable_evidence, promotion_evidence
+    from backtesting.confirmation_registry import ConfirmationRegistry
+    from backtesting.portable_evidence import (
+        AdoptionLedger,
+        BlobStore,
+        ExclusionLedger,
+        compute_serving_model_closure,
+        pack_checkpoint_snapshot,
+    )
+    from backtesting.promotion_evidence import CHECKPOINT_EVIDENCE_V2, content_hash
+
+    root = tmp_path / "evidence"
+    root.mkdir()
+    frozen_sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("adaptive_causal_challenger",),
+        provisional_active="adaptive_causal_challenger",
+        podium_frozen_season="2026-27",
+        podium_sealed=True,
+    )
+    save_model_selection(frozen_sel, root / "selection.json")
+    (root / "protocol.json").write_text('{"windows":{"2025-26":[1,2],"2026-27":[1,2,3]}}', encoding="utf-8")
+    (root / "parameters.json").write_text("{}", encoding="utf-8")
+    reg = ConfirmationRegistry(root / "registry.jsonl")
+    reg.register_finalist(
+        candidate_name="adaptive_causal_challenger",
+        champion_name="def_xg_shrink_challenger",
+        mechanism_family="fam-a",
+        model_source_hash="1" * 64,
+        parameters_hash="2" * 64,
+        dev_selection_record_ref="3" * 64,
+        protocol_hash="4" * 64,
+        attempt_id="att-1",
+        requested_seasons=("2026-27",),
+        max_family_attempts=1,
+    )
+    reg.finalize_early_checkpoint_pass(
+        "att-1",
+        checkpoint_gw=15,
+        completed_gameweeks=tuple(range(1, 16)),
+        score_trace_hash="5" * 64,
+        bundle_path="bundle.json",
+    )
+    ExclusionLedger(root / "exclusions.jsonl")
+    (root / "exclusions.jsonl").write_bytes(b"")
+
+    closure = compute_serving_model_closure(("def_xg_shrink_challenger", "adaptive_causal_challenger"))
+    blob_ref = BlobStore(root).write_canonical_json({"hello": "world"})
+    request = {
+        "version": CHECKPOINT_EVIDENCE_V2,
+        "checkpoint_gw": 15,
+        "selection_path": "selection.json",
+        "registry_path": "registry.jsonl",
+        "protocol": {"path": "protocol.json", "sha256": content_hash({"p": 1})},
+        "parameters": {"path": "parameters.json", "sha256": content_hash({})},
+        "guard_outcome_sources": [{"season": "2026-27", "gameweek": 15, "admission": blob_ref}],
+        "development_selections": {},
+        "replays": [],
+    }
+    req_bytes = json.dumps(request, sort_keys=True).encode("utf-8")
+    (root / "request.json").write_bytes(req_bytes)
+    bundle = {
+        "version": CHECKPOINT_EVIDENCE_V2,
+        "checkpoint_gw": 15,
+        "candidate_name": "adaptive_causal_challenger",
+        "former_champion": "def_xg_shrink_challenger",
+        "recommended_champion": "adaptive_causal_challenger",
+        "scientific_verdict": "pass",
+        "execution_status": "complete",
+        "empirical_admission": True,
+        "confirmation_attempt_id": "att-1",
+        "request_path": "request.json",
+        "request_sha256": "6" * 64,
+        "selection_sha256": content_hash(asdict(frozen_sel)),
+        "serving_model_closure_hash": closure.serving_model_closure_hash,
+        "model_runtime_bindings": closure.model_runtime_bindings,
+        "protocol_hash": "4" * 64,
+        "bundle_hash": "a" * 64,
+    }
+    bundle_path = root / "bundle.json"
+    bundle_path.write_text(json.dumps(bundle, sort_keys=True), encoding="utf-8")
+
+    monkeypatch.setattr(promotion_evidence, "verify_checkpoint_recommendation_bundle", lambda bp, **kw: json.loads(Path(bp).read_bytes()))
+    monkeypatch.setattr(portable_evidence, "_verify_bundle_in_dir", lambda bp, **kw: json.loads(Path(bp).read_bytes()))
+
+    packed = pack_checkpoint_snapshot(bundle_path, output_dir=tmp_path / "snapshots")
+    archive_path = Path(packed["archive_path"])
+    archive_sha = str(packed["archive_sha256"])
+
+    config_path = tmp_path / "live_selection.json"
+    save_model_selection(frozen_sel, config_path)
+    adoption_ledger_file = tmp_path / "adoption_ledger.jsonl"
+
+    # If candidate becomes excluded in canonical exclusions ledger, adopt_champion fails closed
+    excl_blocked = tmp_path / "blocked_exclusions.jsonl"
+    ExclusionLedger(excl_blocked).record_exclusion(
+        slate_id="slate-2026-27",
+        season="2026-27",
+        candidate_name="adaptive_causal_challenger",
+        checkpoint_gw=16,
+        reason_code="early_harm",
+        details="Excluded after GW15 snapshot",
+    )
+    with pytest.raises(ValueError, match="excluded"):
+        adopt_champion(
+            bundle_path,
+            config_path=config_path,
+            approval_ref="GH-APPROVAL-SNAP",
+            expected_current_champion="def_xg_shrink_challenger",
+            approved_bundle_hash="a" * 64,
+            snapshot_archive_path=archive_path,
+            expected_archive_sha256=archive_sha,
+            canonical_registry_path=root / "registry.jsonl",
+            canonical_exclusions_path=excl_blocked,
+            adoption_ledger_path=adoption_ledger_file,
+        )
+    assert not config_path.with_suffix(".adoption.json").exists()
+
+    # Clean canonical exclusions ledger succeeds
+    updated = adopt_champion(
+        archive_path,
+        config_path=config_path,
+        approval_ref="GH-APPROVAL-SNAP",
+        expected_current_champion="def_xg_shrink_challenger",
+        approved_bundle_hash="a" * 64,
+        expected_archive_sha256=archive_sha,
+        canonical_registry_path=root / "registry.jsonl",
+        canonical_exclusions_path=root / "exclusions.jsonl",
+        adoption_ledger_path=adoption_ledger_file,
+        request_id="req-snap-1",
+        slate_id="slate-2026-27",
+        approved_commit_sha="f" * 40,
+    )
+    assert updated.champion == "adaptive_causal_challenger"
+    receipt = json.loads(config_path.with_suffix(".adoption.json").read_text(encoding="utf-8"))
+    assert receipt["archive_sha256"] == archive_sha
+    assert receipt["request_id"] == "req-snap-1"
+    assert receipt["slate_id"] == "slate-2026-27"
+    ledger_rec = AdoptionLedger(adoption_ledger_file).latest_for_request("req-snap-1")
+    assert ledger_rec is not None
+    assert ledger_rec.disposition == "adopted"
+    assert ledger_rec.bundle_hash == "a" * 64
+

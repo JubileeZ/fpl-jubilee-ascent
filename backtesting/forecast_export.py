@@ -42,8 +42,12 @@ def _expected_empirical_coverage(
     from backtesting.fplcache_ingest import _sanitize_bootstrap, _utc
 
     sources = origin["sources"]
-    bs_dec = resolve_and_verify_source_bytes(sources["bootstrap"], catalog, role_label="bootstrap")
-    fx_dec = resolve_and_verify_source_bytes(sources["fixtures"], catalog, role_label="fixtures")
+    bs_dec = resolve_and_verify_source_bytes(
+        sources["bootstrap"], catalog, role_label="bootstrap", allow_disk_path_fallback=False
+    )
+    fx_dec = resolve_and_verify_source_bytes(
+        sources["fixtures"], catalog, role_label="fixtures", allow_disk_path_fallback=False
+    )
     bs_payload = json.loads(bs_dec.decode("utf-8"))
     elements, _, _ = _sanitize_bootstrap(bs_payload, capture_upper=_utc(sources["bootstrap"]["capture_upper"]))
     fx_rows = parse_fixtures_csv_window(fx_dec, capability.gw, horizon=len(targets))
@@ -82,7 +86,7 @@ def strict_solver_table(
     A blank is represented by fixture_id -1 and must carry zero points/minutes.
     This function does not establish forecast provenance or promotion eligibility.
     """
-    verify_input(capability, request, catalog)
+    verify_input(capability, request, catalog, allow_disk_path_fallback=(capability.mode != "empirical"))
     origins = [o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw]
     if len(origins) != 1:
         raise ValueError("Ambiguous issue")

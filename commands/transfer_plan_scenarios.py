@@ -12,6 +12,7 @@ from typing import Any, Callable, Mapping
 from commands.export_dashboard import load_owned_picks, load_user_chips, load_user_state
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
 from models import get_active_transfer_plan_model_name, get_default_model_name
+from models.planner_selection import strip_external_xmins_suffix
 from models.participation_state_hybrid import target_to_states
 from projections.expected_gw_score import _POS_ID, PlayerGw, player_gw_from_dashboard
 from solver.paths import DATA_DIR
@@ -86,26 +87,50 @@ def build_scenarios_payload(
     stale: bool = False,
     data_digest: str | None = None,
     datasource: str | None = None,
+    preflight: Any | None = None,
 ) -> dict[str, Any]:
     completed = [str(row["id"]) for row in rows]
     pending = [arm for arm in arms if arm not in set(completed)]
     ranked = rank_scenarios(rows) if rows else []
     active_model = datasource or get_active_transfer_plan_model_name()
+    meta: dict[str, Any] = {
+        "champion": active_model,
+        "active_model": active_model,
+        "confirmed_champion": get_default_model_name(),
+        "target_gw": int(target_gw),
+        "horizon": int(horizon),
+        "free_transfers": int(free_transfers),
+        "arms": list(arms),
+        "status": status,
+        "stale": bool(stale),
+        "completed_arms": completed,
+        "pending_arms": pending,
+        "data_digest": data_digest,
+    }
+    if preflight is not None:
+        p_dict: dict[str, Any] = (
+            dict(preflight.to_dict())
+            if hasattr(preflight, "to_dict")
+            else (dict(preflight) if isinstance(preflight, Mapping) else {})
+        )
+        clean_base = strip_external_xmins_suffix(str(p_dict.get("effective_model") or active_model))
+        meta.update(
+            {
+                "reviewed_base_model": clean_base,
+                "base_model": clean_base,
+                "model_override": bool(p_dict.get("override_applied", False)),
+                "pinned_for_rerun": bool(p_dict.get("pinned_for_rerun", False)),
+                "selection_reason": p_dict.get("selection_reason"),
+                "freshness_status": p_dict.get("freshness_status"),
+                "comparable_scores": dict(p_dict.get("comparable_scores") or {}),
+                "latest_settled_gw": p_dict.get("latest_settled_gw"),
+                "verified_prefix_end_gw": p_dict.get("verified_prefix_end_gw"),
+                "scorecard_hash": p_dict.get("scorecard_hash"),
+                "fallback_reason": p_dict.get("fallback_reason"),
+            }
+        )
     return {
-        "meta": {
-            "champion": active_model,
-            "active_model": active_model,
-            "confirmed_champion": get_default_model_name(),
-            "target_gw": int(target_gw),
-            "horizon": int(horizon),
-            "free_transfers": int(free_transfers),
-            "arms": list(arms),
-            "status": status,
-            "stale": bool(stale),
-            "completed_arms": completed,
-            "pending_arms": pending,
-            "data_digest": data_digest,
-        },
+        "meta": meta,
         "scenarios": ranked,
     }
 
@@ -129,6 +154,7 @@ def execute_transfer_plan_scenarios(
     datasource: str | None = None,
     xmins_override: Path | str | None = None,
     strategic_options: Mapping[str, Any] | None = None,
+    preflight: Any | None = None,
 ) -> dict[str, Any]:
     owned_ids, _c, _v, _meta = load_owned_picks(processed_dir)
     if not owned_ids:
@@ -197,6 +223,8 @@ def execute_transfer_plan_scenarios(
     )
     if datasource:
         base["datasource"] = datasource
+    if preflight is not None:
+        base["planner_preflight"] = preflight
     if strategic_options:
         base["strategic_options"] = dict(strategic_options)
 
@@ -232,6 +260,7 @@ def execute_transfer_plan_scenarios(
                 stale=False,
                 data_digest=digest,
                 datasource=active_model,
+                preflight=preflight,
             )
             write_scenarios_payload(scenarios_path, payload)
             if status == "ok" and payload["scenarios"]:

@@ -1,6 +1,6 @@
 # Champion adoption implementation
 
-Status: implementation queued. Authority: [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md), [Wayfinder decisions](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190).
+Status: implementation queued. Authority: [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) (amended 2026-11-21 for GitHub-native Adoption Review Issue default, optional webhook, and $0 public pilot parity), [Wayfinder decisions](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/190).
 
 ## Parallel entry points
 
@@ -25,7 +25,7 @@ Planner selects highest eligible net points on verified common prefix, retains e
 
 ### [Run the isolated GitHub Champion adoption pilot](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199)
 
-Run [acceptance checklist](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/197#issuecomment-7043511729) after evidence and transaction integration. Develop and fix in `fpl-jubilee-ascent`. Copy exact canonical commit one way to private pilot repository. Use separate App installation, state and controlled inbox with production-equivalent protections. Retain source SHA, workflow runs, request/slate IDs, delivery evidence, merge and receipt in pilot report. Positive native path requires admitted historical passing fixture. Missing fixture blocks pilot acceptance while synthetic cases can proceed.
+Run [acceptance checklist](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/197#issuecomment-7043511729) after evidence and transaction integration. Develop and fix in `fpl-jubilee-ascent`. Copy exact canonical commit one way to private or $0 public parity pilot repository. Use separate App installation, state and controlled inbox/review surface with production-equivalent protections. Retain source SHA, workflow runs, request/slate IDs, delivery evidence, merge and receipt in pilot report. Positive native path requires admitted historical passing fixture. Missing fixture blocks pilot acceptance while synthetic cases can proceed.
 
 ## Live activation
 

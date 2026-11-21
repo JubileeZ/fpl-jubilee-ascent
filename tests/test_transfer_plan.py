@@ -135,6 +135,51 @@ def test_serialize_transfer_plan_records_an_unproven_solver_objective() -> None:
     assert plan["meta"]["solver_objective_note"] == "Within 1% of the best Solver Objective."
 
 
+def test_serialize_transfer_plan_records_preflight_and_reviewed_base_model(tmp_path: Path) -> None:
+    from models.planner_selection import PlannerSelectionPreflight
+
+    preflight = PlannerSelectionPreflight(
+        effective_model="adaptive_causal_challenger",
+        selection_reason="verified_scorecard_leader",
+        freshness_status="verified_current",
+        comparable_scores={"def_xg_shrink_challenger": 820.0, "adaptive_causal_challenger": 835.0},
+        eligible_models=("def_xg_shrink_challenger", "adaptive_causal_challenger"),
+        excluded_models=(),
+        latest_settled_gw=15,
+        verified_prefix_end_gw=15,
+        scorecard_hash="a" * 64,
+        fallback_reason=None,
+        override_applied=False,
+        pinned_for_rerun=True,
+        slate_id="slate-2026-27",
+        confirmed_champion="def_xg_shrink_challenger",
+    )
+    plan = serialize_transfer_plan(
+        {"picks": _picks(), "total_xp": 15.0, "score": 14.2, "statistics": {}, "summary": "GW plan"},
+        champion="adaptive_causal_challenger_external_xmins",
+        horizon=6,
+        next_gw=16,
+        decay_base=0.85,
+        preflight=preflight,
+    )
+    meta = plan["meta"]
+    assert meta["champion"] == "adaptive_causal_challenger_external_xmins"
+    assert meta["reviewed_base_model"] == "adaptive_causal_challenger"
+    assert meta["base_model"] == "adaptive_causal_challenger"
+    assert meta["model_override"] is False
+    assert meta["selection_reason"] == "verified_scorecard_leader"
+    assert meta["freshness_status"] == "verified_current"
+    assert meta["comparable_scores"] == {
+        "def_xg_shrink_challenger": 820.0,
+        "adaptive_causal_challenger": 835.0,
+    }
+    assert meta["latest_settled_gw"] == 15
+    assert meta["verified_prefix_end_gw"] == 15
+    assert meta["scorecard_hash"] == "a" * 64
+    assert meta["fallback_reason"] is None
+    assert meta["pinned_for_rerun"] is True
+
+
 def test_load_settings_defaults_planning_horizon_to_ten(tmp_path: Path, monkeypatch: Any) -> None:
     monkeypatch.setattr("solver.utils.DATA_DIR", tmp_path)
     assert DEFAULT_PLANNING_HORIZON == 10

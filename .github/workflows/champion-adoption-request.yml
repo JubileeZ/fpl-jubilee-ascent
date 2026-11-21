@@ -1,0 +1,495 @@
+name: Champion adoption request and protected approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      slate_id:
+        description: "Frozen comparison slate identifier"
+        required: true
+        default: "slate-2026-27"
+      season:
+        description: "Active validation season"
+        required: true
+        default: "2026-27"
+      checkpoint_gw:
+        description: "Checkpoint gameweek (15, 30, or 38)"
+        required: true
+        default: "15"
+      candidate_name:
+        description: "Passing finalist model name"
+        required: true
+      expected_champion:
+        description: "Expected Confirmed Champion model name"
+        required: true
+        default: "def_xg_shrink_challenger"
+      bundle_hash:
+        description: "Verified recommendation bundle SHA-256"
+        required: true
+      archive_sha256:
+        description: "Immutable checkpoint snapshot archive SHA-256"
+        required: true
+      snapshot_archive:
+        description: "Relative path to snapshot archive inside validation-evidence"
+        required: true
+      protocol_hash:
+        description: "Frozen protocol SHA-256"
+        required: false
+        default: ""
+      net_delta:
+        description: "Cumulative net points delta vs Confirmed Champion"
+        required: false
+        default: "0.0"
+      podium_index:
+        description: "Frozen podium rank index (0 or 1)"
+        required: false
+        default: "0"
+      decision:
+        description: "Protected reviewer decision (approve | reject)"
+        required: false
+        default: "approve"
+        type: choice
+        options:
+          - approve
+          - reject
+      reason:
+        description: "Reviewer disposition note"
+        required: false
+        default: "Protected GitHub Actions human review"
+      outbox_dir:
+        description: "Optional controlled pilot file outbox path relative to evidence root (blank uses GitHub Review Issue; webhook if secret set)"
+        required: false
+        default: ""
+      expires_at_utc:
+        description: "Optional UTC expiry timestamp (ISO-8601) overriding default 30d review expiry"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  issues: write
+
+jobs:
+  enqueue-and-notify:
+    if: github.event_name == 'workflow_dispatch' || vars.CHAMPION_ADOPTION_LIVE_ENABLED == 'true'
+    concurrency:
+      group: validation-evidence
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    outputs:
+      request_id: ${{ steps.enqueue.outputs.request_id }}
+      status: ${{ steps.enqueue.outputs.status }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate validation-evidence branch
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/validation-evidence"
+          git fetch origin validation-evidence || true
+          if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
+            git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+          fi
+
+      - name: Enqueue verified pass
+        id: enqueue
+        shell: bash
+        env:
+          SLATE_ID: ${{ github.event.inputs.slate_id }}
+          SEASON: ${{ github.event.inputs.season }}
+          CHECKPOINT_GW: ${{ github.event.inputs.checkpoint_gw }}
+          CANDIDATE_NAME: ${{ github.event.inputs.candidate_name }}
+          EXPECTED_CHAMPION: ${{ github.event.inputs.expected_champion }}
+          BUNDLE_HASH: ${{ github.event.inputs.bundle_hash }}
+          ARCHIVE_SHA256: ${{ github.event.inputs.archive_sha256 }}
+          SNAPSHOT_ARCHIVE: ${{ github.event.inputs.snapshot_archive }}
+          PROTOCOL_HASH: ${{ github.event.inputs.protocol_hash }}
+          NET_DELTA: ${{ github.event.inputs.net_delta || '0.0' }}
+          PODIUM_INDEX: ${{ github.event.inputs.podium_index || '0' }}
+          EXPIRES_AT_UTC: ${{ github.event.inputs.expires_at_utc }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            enqueue-pass
+            --evidence-root "$RUNNER_TEMP/validation-evidence"
+            --slate-id "$SLATE_ID"
+            --season "$SEASON"
+            --checkpoint-gw "$CHECKPOINT_GW"
+            --candidate-name "$CANDIDATE_NAME"
+            --expected-champion "$EXPECTED_CHAMPION"
+            --bundle-hash "$BUNDLE_HASH"
+            --archive-sha256 "$ARCHIVE_SHA256"
+            --snapshot-archive "$SNAPSHOT_ARCHIVE"
+            --protocol-hash "$PROTOCOL_HASH"
+            --net-delta "$NET_DELTA"
+            --podium-index "$PODIUM_INDEX"
+          )
+          if [ -n "$EXPIRES_AT_UTC" ]; then
+            ARGS+=(--expires-at-utc "$EXPIRES_AT_UTC")
+          fi
+          ENQ_JSON=$(uv run python -m commands.manage_champion_adoption "${ARGS[@]}")
+          echo "$ENQ_JSON"
+          REQ_ID=$(printf '%s' "$ENQ_JSON" | python3 -c "import json, sys; print(json.load(sys.stdin)['request_id'])")
+          REQ_STATUS=$(printf '%s' "$ENQ_JSON" | python3 -c "import json, sys; print(json.load(sys.stdin)['status'])")
+          echo "request_id=$REQ_ID" >> "$GITHUB_OUTPUT"
+          echo "status=$REQ_STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Persist request state before notice dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          git worktree add "$WORK" origin/validation-evidence 2>/dev/null || git worktree add --orphan -b validation-evidence "$WORK"
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adoption: enqueue request ${{ steps.enqueue.outputs.request_id }}"
+            git push origin HEAD:validation-evidence
+          fi
+
+      - name: Dispatch single notice
+        if: steps.enqueue.outputs.status == 'pending_approval'
+        shell: bash
+        env:
+          REQ_ID: ${{ steps.enqueue.outputs.request_id }}
+          REVIEW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO_NAME: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          SLATE_ID: ${{ github.event.inputs.slate_id }}
+          SEASON: ${{ github.event.inputs.season }}
+          CHECKPOINT_GW: ${{ github.event.inputs.checkpoint_gw }}
+          CANDIDATE_NAME: ${{ github.event.inputs.candidate_name }}
+          EXPECTED_CHAMPION: ${{ github.event.inputs.expected_champion }}
+          BUNDLE_HASH: ${{ github.event.inputs.bundle_hash }}
+          ARCHIVE_SHA256: ${{ github.event.inputs.archive_sha256 }}
+          OUTBOX_DIR: ${{ github.event.inputs.outbox_dir }}
+          MAIL_PROVIDER_WEBHOOK_URL: ${{ secrets.MAIL_PROVIDER_WEBHOOK_URL }}
+          MAIL_PROVIDER_API_KEY: ${{ secrets.MAIL_PROVIDER_API_KEY }}
+          MAIL_PROVIDER_STATUS_URL: ${{ secrets.MAIL_PROVIDER_STATUS_URL }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            dispatch-notice
+            --evidence-root "$RUNNER_TEMP/validation-evidence"
+            --request-id "$REQ_ID"
+            --review-url "$REVIEW_URL"
+            --github-repo "$REPO_NAME"
+            --assignee "$REPO_OWNER"
+          )
+          if [ -n "$OUTBOX_DIR" ]; then
+            ARGS+=(--outbox-dir "$RUNNER_TEMP/validation-evidence/$OUTBOX_DIR")
+          fi
+          uv run python -m commands.manage_champion_adoption "${ARGS[@]}"
+          {
+            echo "### Champion Adoption Review Required"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Request ID | \`${REQ_ID}\` |"
+            echo "| Slate | \`${SLATE_ID}\` |"
+            echo "| Season / GW | \`${SEASON}\` GW${CHECKPOINT_GW} |"
+            echo "| Candidate | \`${CANDIDATE_NAME}\` vs \`${EXPECTED_CHAMPION}\` |"
+            echo "| Bundle SHA-256 | \`${BUNDLE_HASH}\` |"
+            echo "| Archive SHA-256 | \`${ARCHIVE_SHA256}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Persist notification ledger to validation-evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          if [ ! -d "$WORK" ]; then
+            git worktree add "$WORK" origin/validation-evidence 2>/dev/null || git worktree add --orphan -b validation-evidence "$WORK"
+          fi
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adoption: record notice ledger for ${{ steps.enqueue.outputs.request_id }}"
+            git push origin HEAD:validation-evidence
+          fi
+
+  protected-human-approval:
+    needs: enqueue-and-notify
+    if: needs.enqueue-and-notify.outputs.status == 'pending_approval'
+    runs-on: ubuntu-24.04
+    environment: champion-adoption-approval
+    outputs:
+      started: ${{ steps.mark.outputs.started }}
+      actor: ${{ steps.mark.outputs.actor }}
+    steps:
+      - name: Mark protected environment gate approved
+        id: mark
+        run: |
+          echo "started=true" >> "$GITHUB_OUTPUT"
+          echo "actor=${{ github.actor }}" >> "$GITHUB_OUTPUT"
+
+  apply-human-disposition:
+    needs: [enqueue-and-notify, protected-human-approval]
+    if: needs.enqueue-and-notify.outputs.status == 'pending_approval' && needs.protected-human-approval.outputs.started == 'true'
+    concurrency:
+      group: validation-evidence
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Mint dedicated GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CHAMPION_ADOPTION_APP_ID }}
+          private-key: ${{ secrets.CHAMPION_ADOPTION_APP_PRIVATE_KEY }}
+
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate validation-evidence branch
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/validation-evidence"
+          git fetch origin validation-evidence || true
+          if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
+            git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+          fi
+
+      - name: Process human disposition (reject or open adoption PR without auto-merge)
+        id: disposition
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REQUEUE_GH_TOKEN: ${{ github.token }}
+          REPO_NAME: ${{ github.repository }}
+          OUTBOX_DIR_INPUT: ${{ github.event.inputs.outbox_dir }}
+          EXPIRES_AT_UTC_INPUT: ${{ github.event.inputs.expires_at_utc }}
+          REQUEST_ID: ${{ needs.enqueue-and-notify.outputs.request_id }}
+          DECISION: ${{ github.event.inputs.decision || 'approve' }}
+          REASON: ${{ github.event.inputs.reason || 'Protected GitHub Actions human review' }}
+          ACTOR: ${{ needs.protected-human-approval.outputs.actor }}
+          APPROVAL_REF: "gh-run-${{ github.run_id }}-${{ needs.protected-human-approval.outputs.actor }}"
+        run: |
+          set -euo pipefail
+          if [ "$DECISION" = "reject" ]; then
+            REJ_JSON=$(uv run python -m commands.manage_champion_adoption record-rejection \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --request-id "$REQUEST_ID" \
+              --actor "$ACTOR" \
+              --reason "$REASON" \
+              --advance-queue)
+            echo "$REJ_JSON"
+            GH_TOKEN="$REQUEUE_GH_TOKEN" GITHUB_TOKEN="$REQUEUE_GH_TOKEN" uv run python -m commands.manage_champion_adoption update-review-issue \
+              --repo "$REPO_NAME" \
+              --request-id "$REQUEST_ID" \
+              --comment "Adoption request rejected by \`${ACTOR}\`: ${REASON}" \
+              --close
+            HAS_NEXT=$(printf '%s' "$REJ_JSON" | python3 -c "import json, sys; print('true' if json.load(sys.stdin).get('next_active') else 'false')")
+            if [ "$HAS_NEXT" = "true" ]; then
+              NEXT_FIELDS=$(printf '%s' "$REJ_JSON" | python3 -c "import json, sys; n=json.load(sys.stdin)['next_active']; print('\t'.join([str(n['slate_id']), str(n['season']), str(n['checkpoint_gw']), str(n['candidate_name']), str(n['expected_champion']), str(n['bundle_hash']), str(n.get('archive_sha256') or ''), str(n.get('snapshot_archive_path') or ''), str(n.get('protocol_hash') or ''), str(n.get('net_delta', 0.0)), str(n.get('podium_index', 0)), str(n.get('expires_at_utc') or '')]))")
+              IFS=$'\t' read -r N_SLATE N_SEASON N_GW N_CAND N_CHAMP N_BHASH N_ASHA N_SNAP N_PROTO N_DELTA N_PIDX N_EXP <<< "$NEXT_FIELDS"
+              GH_TOKEN="$REQUEUE_GH_TOKEN" gh workflow run champion-adoption-request.yml \
+                --repo "$REPO_NAME" \
+                -f "slate_id=$N_SLATE" \
+                -f "season=$N_SEASON" \
+                -f "checkpoint_gw=$N_GW" \
+                -f "candidate_name=$N_CAND" \
+                -f "expected_champion=$N_CHAMP" \
+                -f "bundle_hash=$N_BHASH" \
+                -f "archive_sha256=$N_ASHA" \
+                -f "snapshot_archive=$N_SNAP" \
+                -f "protocol_hash=$N_PROTO" \
+                -f "net_delta=$N_DELTA" \
+                -f "podium_index=$N_PIDX" \
+                -f "expires_at_utc=${EXPIRES_AT_UTC_INPUT:-$N_EXP}" \
+                -f "outbox_dir=$OUTBOX_DIR_INPUT"
+            fi
+          else
+            git checkout -B "adoption/${REQUEST_ID}" origin/main
+            uv run python -m commands.manage_champion_adoption prepare-adoption-pr \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --request-id "$REQUEST_ID" \
+              --approval-ref "$APPROVAL_REF" \
+              --actor "$ACTOR"
+            git add config/model_selection.json config/model_selection.adoption.json
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adopt(champion): ${REQUEST_ID} (${APPROVAL_REF})"
+            PR_HEAD_SHA=$(git rev-parse HEAD)
+            uv run python -m commands.manage_champion_adoption record-approval \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --request-id "$REQUEST_ID" \
+              --approval-ref "$APPROVAL_REF" \
+              --approved-pr-head-sha "$PR_HEAD_SHA" \
+              --actor "$ACTOR"
+            git push origin "HEAD:refs/heads/adoption/${REQUEST_ID}"
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "adoption/${REQUEST_ID}" \
+              --title "adopt(champion): ${REQUEST_ID} (${APPROVAL_REF})" \
+              --body "Protected Champion adoption PR for request \`${REQUEST_ID}\` (head SHA \`${PR_HEAD_SHA}\`). Manual protected merge required; auto-merge disabled.")
+            echo "$PR_URL"
+            GH_TOKEN="$REQUEUE_GH_TOKEN" GITHUB_TOKEN="$REQUEUE_GH_TOKEN" uv run python -m commands.manage_champion_adoption update-review-issue \
+              --repo "$REPO_NAME" \
+              --request-id "$REQUEST_ID" \
+              --comment "Protected approval recorded (\`${APPROVAL_REF}\`). Adoption PR opened: ${PR_URL} (head SHA \`${PR_HEAD_SHA}\`). Review issue remains open until merge completes."
+          fi
+
+      - name: Persist disposition to validation-evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          git worktree add "$WORK" origin/validation-evidence
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adoption: record disposition for ${{ needs.enqueue-and-notify.outputs.request_id }}"
+            git push origin HEAD:validation-evidence
+          fi
+
+      - name: Close Adoption Review Issue if request became terminal
+        if: failure() && steps.disposition.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ needs.enqueue-and-notify.outputs.request_id }}
+        run: |
+          set -euo pipefail
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "${{ github.repository }}" \
+            --request-id "$REQUEST_ID" \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --close-if-terminal
+
+  handle-environment-rejection:
+    needs: [enqueue-and-notify, protected-human-approval]
+    if: always() && needs.enqueue-and-notify.outputs.status == 'pending_approval' && needs.protected-human-approval.outputs.started != 'true' && (needs.protected-human-approval.result == 'cancelled' || needs.protected-human-approval.result == 'failure')
+    concurrency:
+      group: validation-evidence
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate validation-evidence branch
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/validation-evidence"
+          git fetch origin validation-evidence || true
+          if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
+            git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+          fi
+
+      - name: Record protected environment rejection and advance queue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO_NAME: ${{ github.repository }}
+          OUTBOX_DIR_INPUT: ${{ github.event.inputs.outbox_dir }}
+          EXPIRES_AT_UTC_INPUT: ${{ github.event.inputs.expires_at_utc }}
+          REQUEST_ID: ${{ needs.enqueue-and-notify.outputs.request_id }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          REJ_JSON=$(uv run python -m commands.manage_champion_adoption record-rejection \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --request-id "$REQUEST_ID" \
+            --actor "$ACTOR" \
+            --reason "Rejected at GitHub Environment gate 'champion-adoption-approval'" \
+            --advance-queue)
+          echo "$REJ_JSON"
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "$REPO_NAME" \
+            --request-id "$REQUEST_ID" \
+            --comment "Rejected at GitHub Environment gate \`champion-adoption-approval\` by \`${ACTOR}\`." \
+            --close
+          HAS_NEXT=$(printf '%s' "$REJ_JSON" | python3 -c "import json, sys; print('true' if json.load(sys.stdin).get('next_active') else 'false')")
+          if [ "$HAS_NEXT" = "true" ]; then
+            NEXT_FIELDS=$(printf '%s' "$REJ_JSON" | python3 -c "import json, sys; n=json.load(sys.stdin)['next_active']; print('\t'.join([str(n['slate_id']), str(n['season']), str(n['checkpoint_gw']), str(n['candidate_name']), str(n['expected_champion']), str(n['bundle_hash']), str(n.get('archive_sha256') or ''), str(n.get('snapshot_archive_path') or ''), str(n.get('protocol_hash') or ''), str(n.get('net_delta', 0.0)), str(n.get('podium_index', 0)), str(n.get('expires_at_utc') or '')]))")
+            IFS=$'\t' read -r N_SLATE N_SEASON N_GW N_CAND N_CHAMP N_BHASH N_ASHA N_SNAP N_PROTO N_DELTA N_PIDX N_EXP <<< "$NEXT_FIELDS"
+            gh workflow run champion-adoption-request.yml \
+              --repo "$REPO_NAME" \
+              -f "slate_id=$N_SLATE" \
+              -f "season=$N_SEASON" \
+              -f "checkpoint_gw=$N_GW" \
+              -f "candidate_name=$N_CAND" \
+              -f "expected_champion=$N_CHAMP" \
+              -f "bundle_hash=$N_BHASH" \
+              -f "archive_sha256=$N_ASHA" \
+              -f "snapshot_archive=$N_SNAP" \
+              -f "protocol_hash=$N_PROTO" \
+              -f "net_delta=$N_DELTA" \
+              -f "podium_index=$N_PIDX" \
+              -f "expires_at_utc=${EXPIRES_AT_UTC_INPUT:-$N_EXP}" \
+              -f "outbox_dir=$OUTBOX_DIR_INPUT"
+          fi
+
+      - name: Persist rejection to validation-evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          git worktree add "$WORK" origin/validation-evidence
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "adoption: record environment rejection for ${{ needs.enqueue-and-notify.outputs.request_id }}"
+            git push origin HEAD:validation-evidence
+          fi

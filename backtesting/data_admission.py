@@ -283,7 +283,10 @@ def _issue_errors(
 
 
 def assess_origins(
-    request: dict[str, Any], catalog: dict[str, bytes]
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    *,
+    allow_disk_path_fallback: bool = True,
 ) -> list[dict[str, Any]]:
     if (
         isinstance(request, dict)
@@ -292,7 +295,11 @@ def assess_origins(
     ):
         from backtesting.empirical_admission import assess_empirical_origins
 
-        return assess_empirical_origins(request, catalog)
+        return assess_empirical_origins(
+            request,
+            catalog,
+            allow_disk_path_fallback=allow_disk_path_fallback,
+        )
     if (
         not isinstance(request, dict)
         or set(request)
@@ -710,15 +717,45 @@ def require_admitted(
     gw: int,
     *,
     require_full_season: bool = False,
+    allow_disk_path_fallback: bool = True,
 ) -> AdmittedOrigin:
-    reports = assess_origins(request, catalog)
+    reports = assess_origins(
+        request,
+        catalog,
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
     match = [r for r in reports if r["season"] == season and r["gw"] == gw]
     if len(match) != 1 or match[0]["status"] not in ("admitted_synthetic", "admitted_empirical"):
         raise ValueError("Origin not admitted")
     if require_full_season and match[0].get("partial_prefix", True):
         raise ValueError("Origin is partial_prefix and cannot satisfy full season requirement")
+    if request.get("mode") == "empirical":
+        origin_obj = next(
+            o for o in request["origins"] if o.get("season") == season and o.get("gw") == gw
+        )
+        origin_scope = {k: v for k, v in origin_obj.items() if k != "sources"}
+        raw_sources = origin_obj.get("sources", {})
+        sources_scope = {
+            role: {k: v for k, v in spec.items() if k != "path"}
+            for role, spec in raw_sources.items()
+            if isinstance(spec, dict)
+        }
+        evidence_payload: dict[str, Any] = {
+            "version": 2,
+            "mode": "empirical",
+            "track": str(match[0].get("track", request["mode"])),
+            "season": season,
+            "gw": gw,
+            "origin": origin_scope,
+            "sources": sources_scope,
+            "role_digests": match[0].get("role_digests", {}),
+            "chip_calendar": match[0].get("chip_calendar", []),
+            "disclosed_limitations": match[0].get("disclosed_limitations", []),
+        }
+    else:
+        evidence_payload = {"request": request, "catalog": catalog}
     serialized = json.dumps(
-        {"request": request, "catalog": catalog},
+        evidence_payload,
         sort_keys=True,
         separators=(",", ":"),
         default=lambda value: value.hex() if isinstance(value, bytes) else value,
@@ -737,7 +774,11 @@ def require_admitted(
 
 
 def verify_admitted(
-    capability: AdmittedOrigin, request: dict[str, Any], catalog: dict[str, bytes]
+    capability: AdmittedOrigin,
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    *,
+    allow_disk_path_fallback: bool = True,
 ) -> None:
     """Revalidate retained payload at each consumer boundary; never trust a record alone."""
     if capability != require_admitted(
@@ -746,6 +787,7 @@ def verify_admitted(
         capability.season,
         capability.gw,
         require_full_season=capability.promotable,
+        allow_disk_path_fallback=allow_disk_path_fallback,
     ):
         raise ValueError("Admission capability does not match inputs")
 
@@ -769,10 +811,15 @@ def require_input(
     gw: int,
     *,
     require_full_season: bool = False,
+    allow_disk_path_fallback: bool = True,
 ) -> AdmittedInput:
     matches = [
         report
-        for report in assess_origins(request, catalog)
+        for report in assess_origins(
+            request,
+            catalog,
+            allow_disk_path_fallback=allow_disk_path_fallback,
+        )
         if report["season"] == season and report["gw"] == gw
     ]
     if len(matches) != 1 or matches[0].get("input_ready") is not True:
@@ -792,7 +839,11 @@ def require_input(
 
 
 def verify_input(
-    capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes]
+    capability: AdmittedInput,
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    *,
+    allow_disk_path_fallback: bool = True,
 ) -> None:
     if capability != require_input(
         request,
@@ -800,5 +851,6 @@ def verify_input(
         capability.season,
         capability.gw,
         require_full_season=capability.promotable,
+        allow_disk_path_fallback=allow_disk_path_fallback,
     ):
         raise ValueError("Input capability does not match inputs")

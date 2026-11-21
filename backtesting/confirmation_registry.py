@@ -25,6 +25,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from backtesting.evidence_statistics import ScientificVerdict
+from backtesting.portable_evidence import validate_relative_posix_path
 from backtesting.season_rules import AccessPurpose, SeasonLifecycle, load_season_lifecycle
 
 AttemptStatus = Literal["registered", "in_progress", "completed", "withdrawn", "invalidated"]
@@ -226,10 +227,11 @@ class ConfirmationRegistry:
         score_trace_hash: str,
         max_family_attempts: int | None = None,
         finalized_bundle_path: Path | None = None,
+        allowed_checkpoints: Sequence[int] = (15, 30, 38),
     ) -> FinalistRegistration:
         """Verify the frozen checkpoint trace and optional final bundle path, relative to the registry."""
-        if checkpoint_gw not in (15, 30, 38):
-            raise ValueError("Confirmation requires a pre-declared GW15, GW30, or GW38 checkpoint")
+        if checkpoint_gw not in set(allowed_checkpoints):
+            raise ValueError(f"Confirmation requires a pre-declared checkpoint in {tuple(allowed_checkpoints)}")
         load_season_lifecycle().assert_access(active_season, checkpoint_gw, purpose="active_validation", allow_test=False)
         records = self.load_all_records()
         history = [record for record in records if record.attempt_id == attempt_id]
@@ -284,34 +286,50 @@ class ConfirmationRegistry:
 
         prefix = tuple(range(1, checkpoint_gw + 1))
         completed_counts = [len(record.completed_gameweeks) for record in history]
+        matching = [record for record in history if record.completed_gameweeks == prefix]
         if (
-            latest.completed_gameweeks != prefix
+            not matching
             or completed_counts != sorted(completed_counts)
             or any(
-                record.completed_gameweeks != prefix[:len(record.completed_gameweeks)]
+                record.completed_gameweeks != tuple(range(1, len(record.completed_gameweeks) + 1))
                 or any(type(gw) is not int for gw in record.completed_gameweeks)
                 for record in history
             )
         ):
             raise ValueError(f"Checkpoint attempt '{attempt_id}' requires the exact completed GW1..{checkpoint_gw} prefix")
-        if latest.score_trace_hash != score_trace_hash or any(
-            record.completed_gameweeks == prefix and record.score_trace_hash != score_trace_hash for record in history
-        ):
+        latest_at_prefix = matching[-1]
+        if any(record.score_trace_hash != score_trace_hash for record in matching):
             raise ValueError(f"Checkpoint attempt '{attempt_id}' has a score_trace_hash mismatch")
-        if latest.status not in ("in_progress", "completed"):
-            raise ValueError(f"Checkpoint attempt '{attempt_id}' has status '{latest.status}'")
+        if latest.status in ("withdrawn", "invalidated") or latest_at_prefix.status not in ("in_progress", "completed"):
+            raise ValueError(f"Checkpoint attempt '{attempt_id}' has status '{latest_at_prefix.status}'")
 
         if finalized_bundle_path is not None:
-            if latest.status != "completed" or latest.execution_status != "complete" or latest.scientific_verdict != "pass":
+            finalized_matching = [
+                record for record in matching
+                if record.status == "completed" and record.execution_status == "complete" and record.scientific_verdict == "pass"
+            ]
+            if not finalized_matching:
                 raise ValueError(f"Checkpoint attempt '{attempt_id}' must be finalized with a complete pass")
-            completed_at = datetime.fromisoformat(latest.completed_at) if latest.completed_at else None
+            final_rec = finalized_matching[-1]
+            completed_at = datetime.fromisoformat(final_rec.completed_at) if final_rec.completed_at else None
             if completed_at is None or completed_at.utcoffset() is None or completed_at < registered_at:
                 raise ValueError(f"Checkpoint attempt '{attempt_id}' has invalid completion timing")
-            if not latest.bundle_path or (self.registry_file.parent / latest.bundle_path).resolve() != finalized_bundle_path.resolve():
+            rel_bundle = self._validate_bundle_path(final_rec.bundle_path)
+            if not rel_bundle or (self.registry_file.parent / rel_bundle).resolve() != finalized_bundle_path.resolve():
                 raise ValueError(f"Checkpoint attempt '{attempt_id}' is finalized for a different bundle path")
-        elif latest.execution_status != ("complete" if latest.status == "completed" or checkpoint_gw == 38 else "partial"):
+            return final_rec
+        if latest_at_prefix.execution_status != ("complete" if latest_at_prefix.status == "completed" or checkpoint_gw == 38 else "partial"):
             raise ValueError(f"Checkpoint attempt '{attempt_id}' has inconsistent execution status")
-        return latest
+        return latest_at_prefix
+
+    def _validate_bundle_path(self, bundle_path: str | None) -> str | None:
+        if bundle_path is None:
+            return None
+        rel = validate_relative_posix_path(bundle_path)
+        reg_dir = self.registry_file.parent.resolve()
+        if not (reg_dir / rel).resolve().is_relative_to(reg_dir):
+            raise ValueError(f"Bundle path escapes confirmation registry directory: {bundle_path!r}")
+        return rel
 
     def find_family_history(
         self,
@@ -501,6 +519,7 @@ class ConfirmationRegistry:
         if prior is None:
             raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
 
+        rel_bundle_path = self._validate_bundle_path(bundle_path)
         transition_graph: dict[AttemptStatus, tuple[AttemptStatus, ...]] = {
             "registered": ("in_progress", "completed", "withdrawn", "invalidated"),
             "in_progress": ("in_progress", "completed", "withdrawn", "invalidated"),
@@ -512,7 +531,7 @@ class ConfirmationRegistry:
             "execution_status": execution_status,
             "scientific_verdict": scientific_verdict,
             "completed_gameweeks": tuple(completed_gameweeks) if completed_gameweeks is not None else None,
-            "bundle_path": bundle_path,
+            "bundle_path": rel_bundle_path,
             "human_approval_ref": human_approval_ref,
             "score_trace_hash": score_trace_hash,
         }
@@ -521,18 +540,32 @@ class ConfirmationRegistry:
         )
         if unchanged:
             return prior
-        if status not in transition_graph.get(prior.status, ()):
+
+        new_completed_gws = tuple(completed_gameweeks) if completed_gameweeks is not None else prior.completed_gameweeks
+        early_checkpoint_pass = (
+            prior.status == "completed"
+            and prior.scientific_verdict == "pass"
+            and len(prior.completed_gameweeks) < len(prior.registered_gameweeks)
+        )
+        extending_early_pass = (
+            early_checkpoint_pass
+            and len(new_completed_gws) > len(prior.completed_gameweeks)
+            and (
+                status == "in_progress"
+                or (status == "completed" and set(new_completed_gws) == set(prior.registered_gameweeks))
+            )
+        )
+        if status not in transition_graph.get(prior.status, ()) and not extending_early_pass:
             raise AdaptiveRunViolationError(
                 f"Cannot re-open or overwrite {prior.status} confirmation attempt '{attempt_id}' with status '{status}'"
             )
 
-        new_completed_gws = tuple(completed_gameweeks) if completed_gameweeks is not None else prior.completed_gameweeks
         if (
             len(set(new_completed_gws)) != len(new_completed_gws)
             or not set(prior.completed_gameweeks) <= set(new_completed_gws) <= set(prior.registered_gameweeks)
         ):
             raise IncompleteScheduleError("Completed gameweeks must progress monotonically within the registered schedule")
-        if prior.execution_status == "complete" and (
+        if prior.execution_status == "complete" and not extending_early_pass and (
             (execution_status is not None and execution_status != "complete")
             or new_completed_gws != prior.completed_gameweeks
             or (score_trace_hash is not None and score_trace_hash != prior.score_trace_hash)
@@ -561,14 +594,17 @@ class ConfirmationRegistry:
         updated_dict = prior.to_dict()
         updated_dict["status"] = status
         updated_dict["prev_record_hash"] = prev_hash
+        if extending_early_pass and status == "in_progress":
+            updated_dict["completed_at"] = None
+            updated_dict["scientific_verdict"] = None
         if execution_status is not None:
             updated_dict["execution_status"] = execution_status
         if scientific_verdict is not None:
             updated_dict["scientific_verdict"] = scientific_verdict
         if completed_gameweeks is not None:
             updated_dict["completed_gameweeks"] = list(new_completed_gws)
-        if bundle_path is not None:
-            updated_dict["bundle_path"] = bundle_path
+        if rel_bundle_path is not None:
+            updated_dict["bundle_path"] = rel_bundle_path
         if human_approval_ref is not None:
             updated_dict["human_approval_ref"] = human_approval_ref
         if score_trace_hash is not None:
@@ -654,14 +690,21 @@ class ConfirmationRegistry:
         """Finalize an ADR 0069 pre-declared GW15/GW30 early OBF confirmation pass."""
         if checkpoint_gw not in (15, 30):
             raise IncompleteScheduleError(f"Early checkpoint finalization permitted only at GW15/GW30, got GW{checkpoint_gw}")
+        rel_bundle_path = self._validate_bundle_path(bundle_path)
         prior = self.get_attempt(attempt_id)
         if prior is None:
             raise RegistryError(f"Attempt '{attempt_id}' not found in registry")
-        if prior.status in ("completed", "withdrawn", "invalidated"):
-            raise AdaptiveRunViolationError(f"Cannot finalize {prior.status} attempt '{attempt_id}'")
         gws = tuple(sorted(set(int(g) for g in completed_gameweeks)))
         if gws != tuple(range(1, checkpoint_gw + 1)) or not set(gws) <= set(prior.registered_gameweeks):
             raise IncompleteScheduleError(f"Early checkpoint GW{checkpoint_gw} requires contiguous GW1..{checkpoint_gw}")
+        early_checkpoint_pass = (
+            prior.status == "completed"
+            and prior.scientific_verdict == "pass"
+            and len(prior.completed_gameweeks) < len(prior.registered_gameweeks)
+            and len(gws) > len(prior.completed_gameweeks)
+        )
+        if prior.status in ("withdrawn", "invalidated") or (prior.status == "completed" and not early_checkpoint_pass):
+            raise AdaptiveRunViolationError(f"Cannot finalize {prior.status} attempt '{attempt_id}'")
         if len(score_trace_hash) != 64 or any(c not in "0123456789abcdef" for c in score_trace_hash):
             raise RegistryError("Score trace hash must be a SHA256 hex digest")
         existing = self.load_all_records()
@@ -682,8 +725,8 @@ class ConfirmationRegistry:
             attempt_number_in_family=prior.attempt_number_in_family,
             registered_at=prior.registered_at,
             completed_at=datetime.now(timezone.utc).isoformat(),
-            bundle_path=bundle_path,
-            human_approval_ref=prior.human_approval_ref,
+            bundle_path=rel_bundle_path,
+            human_approval_ref=None,
             known_aliases=prior.known_aliases,
             registered_gameweeks=prior.registered_gameweeks,
             completed_gameweeks=gws,

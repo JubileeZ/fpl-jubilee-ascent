@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 import pandas as pd
+
+from models.planner_selection import strip_external_xmins_suffix
 
 LIVE_SOLVER_REL_GAP = 0.0
 PROVEN_SOLVER_REL_GAP = 1e-4
@@ -72,6 +74,9 @@ def serialize_transfer_plan(
     next_gw: int,
     decay_base: float,
     booked_chips: dict[str, list[int]] | None = None,
+    preflight: Any | None = None,
+    base_model: str | None = None,
+    target_gw_deadline: str | None = None,
 ) -> dict[str, Any]:
     picks = solution.get("picks")
     if not isinstance(picks, pd.DataFrame) or picks.empty or "week" not in picks.columns:
@@ -94,6 +99,33 @@ def serialize_transfer_plan(
             "use_tc": [int(g) for g in chips.get("use_tc", [])],
         },
     }
+    if preflight is not None or base_model is not None:
+        to_dict_fn = getattr(preflight, "to_dict", None)
+        if callable(to_dict_fn):
+            p_dict: dict[str, Any] = dict(cast(Mapping[str, Any], to_dict_fn()))
+        elif isinstance(preflight, Mapping):
+            p_dict = {str(k): v for k, v in preflight.items()}
+        else:
+            p_dict = {}
+        raw_base = base_model or p_dict.get("effective_model") or champion
+        clean_base = strip_external_xmins_suffix(str(raw_base))
+        meta["reviewed_base_model"] = clean_base
+        meta["base_model"] = clean_base
+        meta["model_override"] = bool(p_dict.get("override_applied", False))
+        meta["pinned_for_rerun"] = bool(p_dict.get("pinned_for_rerun", False))
+        meta["selection_reason"] = p_dict.get("selection_reason")
+        meta["freshness_status"] = p_dict.get("freshness_status")
+        meta["comparable_scores"] = {
+            str(k): _json_value(v) for k, v in dict(p_dict.get("comparable_scores") or {}).items()
+        }
+        meta["latest_settled_gw"] = p_dict.get("latest_settled_gw")
+        meta["verified_prefix_end_gw"] = p_dict.get("verified_prefix_end_gw")
+        meta["scorecard_hash"] = p_dict.get("scorecard_hash")
+        meta["fallback_reason"] = p_dict.get("fallback_reason")
+        if p_dict.get("confirmed_champion"):
+            meta["confirmed_champion"] = str(p_dict["confirmed_champion"])
+    if target_gw_deadline is not None:
+        meta["target_gw_deadline"] = str(target_gw_deadline)
     if solution.get("strategic_audit"):
         meta["strategic_audit"] = solution["strategic_audit"]
     note = solver_objective_stop_note(
@@ -172,7 +204,7 @@ def format_strategic_audit_lines(audit: Mapping[str, Any] | None) -> list[str]:
 def _weeks_from_picks(picks: pd.DataFrame, statistics: dict[Any, Any]) -> list[dict[str, Any]]:
     weeks: list[dict[str, Any]] = []
     for gw, group in picks.groupby("week", sort=True):
-        gw_int = int(gw)
+        gw_int = int(cast(Any, gw))
         stats = statistics.get(gw_int) or statistics.get(gw) or {}
         squad = group[group["squad"] == 1]
         lineup = group[group["lineup"] == 1]
@@ -187,6 +219,8 @@ def _weeks_from_picks(picks: pd.DataFrame, statistics: dict[Any, Any]) -> list[d
         xp = stats.get("xP")
         if xp is None:
             xp = lineup["xp_cont"].sum() if "xp_cont" in lineup else 0
+        cap_ids = captains["id"].tolist()
+        vice_ids = vices["id"].tolist()
         weeks.append(
             {
                 "gw": gw_int,
@@ -202,8 +236,8 @@ def _weeks_from_picks(picks: pd.DataFrame, statistics: dict[Any, Any]) -> list[d
                 "squad_ids": [int(i) for i in squad["id"].tolist()],
                 "lineup_ids": [int(i) for i in lineup["id"].tolist()],
                 "bench_ids": [int(i) for i in bench["id"].tolist()],
-                "captain_id": int(captains["id"].iloc[0]) if len(captains) else None,
-                "vice_id": int(vices["id"].iloc[0]) if len(vices) else None,
+                "captain_id": int(cap_ids[0]) if cap_ids else None,
+                "vice_id": int(vice_ids[0]) if vice_ids else None,
             }
         )
     return weeks

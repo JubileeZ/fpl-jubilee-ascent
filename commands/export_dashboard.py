@@ -24,8 +24,13 @@ from features.builder import (
     resolve_operational_processed_dir,
 )
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
+from models.planner_selection import (
+    PlannerSelectionPreflight,
+    check_remote_main_freshness,
+    resolve_weekly_planner_model,
+)
 from models.selection import default_model_name as selection_default_model_name
-from models.selection import projection_model_names
+from models.selection import load_model_selection, projection_model_names
 from projections.exporter import write_solver_projection_csvs
 from projections.explorer_slice import (
     COMPONENT_KEYS,
@@ -742,6 +747,12 @@ def build_dashboard_dataset(
             }
 
     trust = load_champion_trust(selection_path=selection_path)
+    preflight = _resolve_export_preflight(selection_path, processed_dir)
+    active_tp_model = (
+        preflight.effective_model
+        if preflight.effective_model in model_names
+        else trust["confirmed_champion"]
+    )
     dataset = {
         "meta": {
             "target_gw": horizon_start,
@@ -759,7 +770,8 @@ def build_dashboard_dataset(
             "confirmed_champion": trust["confirmed_champion"],
             "provisional_active": trust["provisional_active"],
             "dual_tier_active": trust["dual_tier_active"],
-            "active_transfer_plan_model": trust["active_transfer_plan_model"],
+            "active_transfer_plan_model": active_tp_model,
+            "planner_preflight": preflight.to_dict(),
             "catalog_models": list_model_names(),
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
@@ -778,6 +790,33 @@ def build_dashboard_dataset(
     }
     return dataset
 
+
+
+def _resolve_export_preflight(
+    selection_path: Path | None,
+    processed_dir: Path,
+) -> PlannerSelectionPreflight:
+    freshness = check_remote_main_freshness(selection_path, raise_on_stale=False)
+    if freshness.status == "stale_remote_changed":
+        sel = load_model_selection(selection_path)
+        return PlannerSelectionPreflight(
+            effective_model=sel.champion,
+            selection_reason="stale_checkout_blocked",
+            freshness_status="stale_remote_changed",
+            comparable_scores={},
+            eligible_models=(sel.champion,),
+            excluded_models=(),
+            latest_settled_gw=0,
+            verified_prefix_end_gw=0,
+            fallback_reason="stale_remote_changed",
+            confirmed_champion=sel.champion,
+        )
+    return resolve_weekly_planner_model(
+        selection_path,
+        processed_dir=processed_dir,
+        remote_freshness=freshness,
+        sync_evidence=True,
+    )
 
 
 def export_dashboard_data(data: Dict[str, Any], output_path: Path) -> None:
@@ -801,12 +840,24 @@ def run_dashboard_export(
     if not (processed_dir / "players.parquet").exists():
         raise FileNotFoundError("No processed data found. Run Dashboard Refresh or commands.refresh_data first.")
 
+    preflight = _resolve_export_preflight(config_path, processed_dir)
     names = projection_model_names(model_name, model_names, config_path=config_path)
+    if not model_names and preflight.excluded_models:
+        excluded_set = set(preflight.excluded_models)
+        names = [
+            m for m in names if m == preflight.confirmed_champion or m not in excluded_set
+        ] or [preflight.confirmed_champion]
     requested_model = (model_name or "").strip()
     explicit_primary = requested_model.lower() not in ("", "default")
     if not explicit_primary:
-        # Serving order is Champion followed by Provisional Active, when present.
-        default_model = names[0] if model_names else names[-1]
+        if model_names:
+            default_model = names[0]
+        elif preflight.effective_model in names:
+            default_model = preflight.effective_model
+        elif preflight.confirmed_champion in names:
+            default_model = preflight.confirmed_champion
+        else:
+            default_model = names[0]
     elif requested_model.lower() == "champion":
         default_model = selection_default_model_name(config_path)
     else:

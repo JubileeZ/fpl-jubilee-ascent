@@ -49,7 +49,7 @@ def process_directory(input_dir: Path, output_dir: Path):
     if events:
         df_gw = pd.DataFrame(events)
         keep_gw_cols = [
-            "id", "name", "deadline_time", "finished", "is_current", "is_next",
+            "id", "name", "deadline_time", "finished", "data_checked", "is_current", "is_next",
             "average_entry_score", "highest_score", "chip_plays", "ranked_count"
         ]
         df_gw = df_gw[[c for c in keep_gw_cols if c in df_gw.columns]].copy()

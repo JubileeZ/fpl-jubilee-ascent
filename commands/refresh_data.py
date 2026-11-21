@@ -34,6 +34,7 @@ from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
 from features.season_archive import pin_season_archive, prune_stale_element_summaries
 from features.expected_role_prior import LIVE_SEASON
+from models.planner_selection import sync_validation_evidence_readonly
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -390,6 +391,12 @@ async def main(argv: list[str] | None = None) -> None:
                 pin.content_hash,
                 pin.processed_dir,
             )
+
+        try:
+            if sync_validation_evidence_readonly():
+                logger.info("Synced read-only validation-evidence scorecards and ExclusionLedger.")
+        except Exception as exc:
+            logger.warning(f"Read-only validation-evidence sync skipped: {exc}")
 
 if __name__ == "__main__":
     asyncio.run(main())

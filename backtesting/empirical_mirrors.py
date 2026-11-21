@@ -19,6 +19,7 @@ import pandas as pd
 from backtesting.fplcache_ingest import (
     FPLCACHE_HARD_MAX_AGE_SECONDS,
     FPLCACHE_NORMAL_MAX_AGE_SECONDS,
+    LOCAL_RECEIPT_HARD_MAX_AGE_SECONDS,
     _sanitize_bootstrap,
     _unpack_bootstrap_xz,
     _utc,
@@ -181,7 +182,13 @@ def verify_validation_fplcache_snapshot(
         raise ValueError("Validation fplcache snapshot revision or filename time differs from capture evidence")
 
 
-def empirical_checkpoint_scope(track: str, purpose: Any, checkpoint_gw: Any) -> int | None:
+def empirical_checkpoint_scope(
+    track: str,
+    purpose: Any,
+    checkpoint_gw: Any,
+    *,
+    allowed_checkpoints: Sequence[int] = (15, 30, 38),
+) -> int | None:
     """Validate the explicit ADR 0069 checkpoint scope without granting full-season status."""
     if track != "validation_fplcache":
         if checkpoint_gw is not None:
@@ -191,8 +198,11 @@ def empirical_checkpoint_scope(track: str, purpose: Any, checkpoint_gw: Any) -> 
         raise ValueError("validation_fplcache requires purpose='validation'")
     if checkpoint_gw is None:
         return None
-    if type(checkpoint_gw) is not int or checkpoint_gw not in (15, 30, 38):
-        raise ValueError("validation_fplcache checkpoint_gw must be 15, 30, or 38")
+    allowed = tuple(int(c) for c in allowed_checkpoints if type(c) is int and 1 <= c <= 38)
+    if not allowed:
+        raise ValueError("allowed_checkpoints cannot be empty")
+    if type(checkpoint_gw) is not int or checkpoint_gw not in allowed:
+        raise ValueError(f"validation_fplcache checkpoint_gw must be in {allowed}")
     return checkpoint_gw
 
 
@@ -819,13 +829,19 @@ def load_empirical_manifest_bundle(
     quarantine_root: Path | None = None,
     prefix_end_gw: int | None = None,
     require_admitted: bool = True,
+    allowed_checkpoints: Sequence[int] = (15, 30, 38),
 ) -> dict[str, Any]:
     """Load content-addressed empirical mirror/receipt bundle with fail-closed SHA-256 checks."""
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     track = data.get("track")
     if data.get("schema_version") != 2 or track not in EMPIRICAL_TRACKS:
         raise ValueError("Unsupported empirical manifest schema or track")
-    checkpoint_gw = empirical_checkpoint_scope(track, data.get("purpose"), data.get("checkpoint_gw"))
+    checkpoint_gw = empirical_checkpoint_scope(
+        track,
+        data.get("purpose"),
+        data.get("checkpoint_gw"),
+        allowed_checkpoints=allowed_checkpoints,
+    )
     lifecycle = load_season_lifecycle()
     qroot = lifecycle.assert_unsealed_storage_path(
         quarantine_root if quarantine_root is not None else Path("data/reports/empirical_mirrors"),
@@ -852,9 +868,15 @@ def load_empirical_manifest_bundle(
         bs_meta = entry.get("bootstrap", {})
         fx_meta = entry.get("fixtures", {})
         out_meta = entry.get("settled_outcomes", {})
+        bs_timing = bs_meta.get("timing_basis")
+        bs_status_ok = bs_meta.get("status") == "supported" or (
+            track == "validation_fplcache"
+            and bs_timing == "receipt"
+            and bs_meta.get("status") == "admitted_local_receipt"
+        )
         if require_admitted and (
             entry.get("origin_admitted") is not True
-            or bs_meta.get("status") != "supported"
+            or not bs_status_ok
             or fx_meta.get("status") != "supported"
             or out_meta.get("meets_plus_24h") is not True
         ):
@@ -862,16 +884,26 @@ def load_empirical_manifest_bundle(
         if track == "validation_fplcache":
             capture_lower = _utc(bs_meta.get("capture_lower_utc"))
             capture_upper = _utc(bs_meta.get("capture_upper_utc"))
-            verify_validation_fplcache_snapshot(
-                str(bs_meta.get("url", "")), commit_sha=bs_meta.get("commit_sha"),
-                capture_lower=capture_lower, capture_upper=capture_upper,
-            )
+            if bs_timing == "bounded_reconstruction":
+                verify_validation_fplcache_snapshot(
+                    str(bs_meta.get("url", "")), commit_sha=bs_meta.get("commit_sha"),
+                    capture_lower=capture_lower, capture_upper=capture_upper,
+                )
+            elif bs_timing == "receipt":
+                if not str(bs_meta.get("url", "")).startswith("receipt://"):
+                    raise ValueError(f"Validation fplcache bootstrap receipt requires receipt:// URL at GW{gw_int}")
+            else:
+                raise ValueError(f"Validation fplcache manifest requires bounded_reconstruction or receipt bootstrap at GW{gw_int}")
             if require_admitted:
                 deadline = _utc(entry.get("deadline_utc"))
+                max_bs_age = (
+                    LOCAL_RECEIPT_HARD_MAX_AGE_SECONDS
+                    if bs_timing == "receipt"
+                    else FPLCACHE_MAX_HARD_SECONDS
+                )
                 if (
-                    bs_meta.get("timing_basis") != "bounded_reconstruction"
-                    or capture_upper >= deadline
-                    or (deadline - capture_lower).total_seconds() > FPLCACHE_MAX_HARD_SECONDS
+                    capture_upper >= deadline
+                    or (deadline - capture_lower).total_seconds() > max_bs_age
                     or out_meta.get("finished") is not True
                     or out_meta.get("data_checked") is not True
                     or (_utc(out_meta.get("finalized_at_utc")) - _utc(out_meta.get("max_kickoff_utc"))).total_seconds() < SETTLEMENT_MIN_WAIT_SECONDS

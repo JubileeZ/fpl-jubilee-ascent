@@ -190,7 +190,7 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
         checkpoint_gw=30,
         completed_gameweeks=tuple(range(1, 31)),
         score_trace_hash=compute_score_trace_hash(s2_30),
-        bundle_path=str(bundle_path),
+        bundle_path=bundle_path.name,
     )
     bundle = write_checkpoint_recommendation_bundle(req_path, bundle_path)
     assert bundle["action"] == gw30["action"]

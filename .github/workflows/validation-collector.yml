@@ -1,0 +1,262 @@
+name: Validation evidence collector
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Collector action (collect | freeze | replay | scorecard | availability | bootstrap-s1-baseline)"
+        required: true
+        default: "collect"
+        type: choice
+        options:
+          - collect
+          - freeze
+          - replay
+          - scorecard
+          - availability
+          - bootstrap-s1-baseline
+      season:
+        description: "Active validation season"
+        required: true
+        default: "2026-27"
+      checkpoint_gw:
+        description: "Checkpoint gameweek (15, 30, or 38)"
+        required: false
+        default: "15"
+      batch_json:
+        description: "Relative path to collector origin batch descriptor"
+        required: false
+        default: ""
+      slate_id:
+        description: "Sealed comparison slate identifier"
+        required: false
+        default: "default-slate"
+      development_season:
+        description: "Development (S-1) season for freeze / bootstrap-s1-baseline"
+        required: false
+        default: "2025-26"
+      champion:
+        description: "Confirmed Champion model name"
+        required: false
+        default: "def_xg_shrink_challenger"
+      candidates:
+        description: "Comma-separated frozen finalist model names (for freeze)"
+        required: false
+        default: ""
+      approval_reference:
+        description: "Human approval reference (for freeze)"
+        required: false
+        default: ""
+      archive_processed_dir:
+        description: "Processed archive directory (for bootstrap-s1-baseline)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  capture-availability-snapshot:
+    if: github.event_name == 'schedule' || github.event.inputs.action == 'availability'
+    concurrency:
+      group: availability-snapshots
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    env:
+      SEASON: ${{ github.event.inputs.season || '2026-27' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and frozen environment
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate availability-snapshots history
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/availability-snapshots"
+          git fetch origin availability-snapshots || true
+          if git cat-file -e origin/availability-snapshots:data/availability-snapshots 2>/dev/null; then
+            git archive --format=tar origin/availability-snapshots:data/availability-snapshots | tar -x -C "$RUNNER_TEMP/availability-snapshots"
+          fi
+
+      - name: Capture changed availability package
+        run: uv run python -m commands.capture_availability_snapshot --season "$SEASON" --snapshot-root "$RUNNER_TEMP/availability-snapshots"
+
+      - name: Publish changed availability package to availability-snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/availability-work"
+          if git show-ref --verify --quiet refs/remotes/origin/availability-snapshots; then
+            git worktree add --force "$WORK" origin/availability-snapshots
+          else
+            git worktree add --orphan -b availability-snapshots "$WORK"
+          fi
+          mkdir -p "$WORK/data/availability-snapshots"
+          cp -R "$RUNNER_TEMP/availability-snapshots/." "$WORK/data/availability-snapshots/"
+          cd "$WORK"
+          if [ -z "$(git status --porcelain -- data/availability-snapshots)" ]; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git add data/availability-snapshots
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "data: capture availability snapshot"
+          git push origin HEAD:availability-snapshots
+
+  collect-and-evaluate:
+    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'availability') || (github.event_name == 'schedule' && vars.CHAMPION_ADOPTION_LIVE_ENABLED == 'true')
+    concurrency:
+      group: validation-evidence
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    env:
+      SEASON: ${{ github.event.inputs.season || '2026-27' }}
+      ACTION: ${{ github.event.inputs.action || 'collect' }}
+      CHECKPOINT_GW: ${{ github.event.inputs.checkpoint_gw || '15' }}
+      BATCH_JSON: ${{ github.event.inputs.batch_json || '' }}
+      SLATE_ID: ${{ github.event.inputs.slate_id || 'default-slate' }}
+      DEV_SEASON: ${{ github.event.inputs.development_season || '2025-26' }}
+      CHAMPION: ${{ github.event.inputs.champion || 'def_xg_shrink_challenger' }}
+      CANDIDATES: ${{ github.event.inputs.candidates || '' }}
+      APPROVAL_REF: ${{ github.event.inputs.approval_reference || '' }}
+      ARCHIVE_DIR: ${{ github.event.inputs.archive_processed_dir || '' }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and frozen environment
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: Sync frozen dependencies
+        run: uv sync --frozen
+
+      - name: Hydrate validation-evidence branch
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/validation-evidence"
+          git fetch origin validation-evidence || true
+          if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
+            git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+          fi
+
+      - name: Run validation evidence producer
+        id: producer
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "has_passing_snapshot=false" >> "$GITHUB_OUTPUT"
+          if [ "$ACTION" = "collect" ]; then
+            if [ -n "$BATCH_JSON" ]; then
+              COL_JSON=$(uv run python -m commands.produce_validation_evidence collect \
+                --evidence-root "$RUNNER_TEMP/validation-evidence" \
+                --batch-json "$BATCH_JSON" \
+                --slate-id "$SLATE_ID")
+            else
+              COL_JSON=$(uv run python -m commands.produce_validation_evidence collect \
+                --evidence-root "$RUNNER_TEMP/validation-evidence" \
+                --season "$SEASON" \
+                --slate-id "$SLATE_ID" \
+                --mode auto)
+            fi
+            echo "$COL_JSON"
+            SETTLED_GW=$(printf '%s' "$COL_JSON" | python3 -c "import json, sys; print(int(json.load(sys.stdin).get('settled_through_gw', 0)))")
+            if [ "$SETTLED_GW" -ge 1 ] && [ -f "$RUNNER_TEMP/validation-evidence/selection.json" ] && [ -f "$RUNNER_TEMP/validation-evidence/protocol.json" ]; then
+              uv run python -m commands.produce_validation_evidence scorecard \
+                --evidence-root "$RUNNER_TEMP/validation-evidence" \
+                --season "$SEASON" \
+                --through-gw "$SETTLED_GW"
+            fi
+          elif [ "$ACTION" = "scorecard" ]; then
+            uv run python -m commands.produce_validation_evidence scorecard \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON"
+          elif [ "$ACTION" = "freeze" ]; then
+            uv run python -m commands.produce_validation_evidence freeze \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON" \
+              --development-season "$DEV_SEASON" \
+              --champion "$CHAMPION" \
+              --candidates "$CANDIDATES" \
+              --slate-id "$SLATE_ID" \
+              --approval-reference "$APPROVAL_REF"
+          elif [ "$ACTION" = "bootstrap-s1-baseline" ]; then
+            uv run python -m commands.produce_validation_evidence bootstrap-s1-baseline \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON" \
+              --development-season "$DEV_SEASON" \
+              --archive-processed-dir "$ARCHIVE_DIR" \
+              --champion "$CHAMPION"
+          elif [ "$ACTION" = "replay" ]; then
+            OUT_JSON=$(uv run python -m commands.produce_validation_evidence replay \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --season "$SEASON" \
+              --checkpoint-gw "$CHECKPOINT_GW")
+            echo "$OUT_JSON"
+            HAS_SNAP=$(printf '%s' "$OUT_JSON" | python3 -c "import json, sys; print('true' if json.load(sys.stdin).get('has_passing_snapshot') else 'false')")
+            echo "has_passing_snapshot=$HAS_SNAP" >> "$GITHUB_OUTPUT"
+            if [ "$HAS_SNAP" = "true" ]; then
+              ARCHIVE_PATH=$(printf '%s' "$OUT_JSON" | python3 -c "import json, sys; print(json.load(sys.stdin)['snapshot']['archive_path'])")
+              MANIFEST_PATH=$(printf '%s' "$OUT_JSON" | python3 -c "import json, sys; print(json.load(sys.stdin)['snapshot']['manifest_path'])")
+              echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
+              echo "manifest_path=$MANIFEST_PATH" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          {
+            echo "### Validation Collector (${ACTION} - ${SEASON})"
+            echo ""
+            echo "- Slate: \`${SLATE_ID}\`"
+            if [ -n "${SETTLED_GW:-}" ]; then
+              echo "- Settled through GW: \`${SETTLED_GW}\`"
+            fi
+            if [ "${HAS_SNAP:-false}" = "true" ]; then
+              echo "- Checkpoint status: passing snapshot packed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit updated evidence to validation-evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/evidence-branch"
+          git worktree add --force "$WORK" origin/validation-evidence 2>/dev/null || (git worktree add --orphan -b validation-evidence "$WORK")
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+                --source-dir "$RUNNER_TEMP/validation-evidence" \
+                --worktree-dir "$WORK"
+          cd "$WORK"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No validation-evidence changes."
+            exit 0
+          fi
+          git add -A
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "evidence: update ${SEASON} validation-evidence"
+          git push origin HEAD:validation-evidence
+
+      - name: Publish immutable passing snapshot release
+        if: steps.producer.outputs.has_passing_snapshot == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "checkpoint-${SEASON}-gw${CHECKPOINT_GW}-$(date -u +%Y%m%d%H%M%S)" \
+            "${{ steps.producer.outputs.archive_path }}" \
+            "${{ steps.producer.outputs.manifest_path }}" \
+            --title "Verified checkpoint ${SEASON} GW${CHECKPOINT_GW}" \
+            --notes "Immutable verified checkpoint snapshot (manual approval still required)."

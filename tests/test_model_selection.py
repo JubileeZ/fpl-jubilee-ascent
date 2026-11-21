@@ -16,6 +16,7 @@ from models.selection import (
     active_transfer_plan_model_name,
     default_model_name,
     dual_tier_models,
+    eligible_slate_models,
     load_model_selection,
     projection_model_names,
     save_model_selection,
@@ -177,14 +178,33 @@ def test_dual_tier_selection_validation_and_serving_order(tmp_path: Path) -> Non
         "def_xg_shrink_challenger",
         "adaptive_causal_challenger",
     ]
+    assert eligible_slate_models(config_path) == [
+        "def_xg_shrink_challenger",
+        "adaptive_causal_challenger",
+        "club_def_prior_challenger",
+    ]
+    assert eligible_slate_models(config_path, excluded=("adaptive_causal_challenger",)) == [
+        "def_xg_shrink_challenger",
+        "club_def_prior_challenger",
+    ]
     assert projection_model_names(config_path=config_path) == [
         "def_xg_shrink_challenger",
         "adaptive_causal_challenger",
+        "club_def_prior_challenger",
     ]
-    for model in (None, "", "default", "Champion", selection.champion, selection.provisional_active):
+    for model in (
+        None,
+        "",
+        "default",
+        "Champion",
+        selection.champion,
+        selection.provisional_active,
+        "club_def_prior_challenger",
+    ):
         assert projection_model_names(model, config_path=config_path) == [
             "def_xg_shrink_challenger",
             "adaptive_causal_challenger",
+            "club_def_prior_challenger",
         ]
     assert projection_model_names("linear_baseline", config_path=config_path) == ["linear_baseline"]
     assert projection_model_names("champion", ["linear_baseline"], config_path=config_path) == ["linear_baseline"]

@@ -80,6 +80,7 @@ class SolverCertificate:
     solver_version: str
     quality_mode: Literal["certified", "time_capped"]
     strategic_audit: dict[str, Any]
+    solver_binary_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -99,6 +100,7 @@ class SolverCertificate:
             solver_version=str(data["solver_version"]),
             quality_mode=cast(Literal["certified", "time_capped"], str(data["quality_mode"])),
             strategic_audit=dict(data.get("strategic_audit", {})),
+            solver_binary_sha256=(str(data["solver_binary_sha256"]) if data.get("solver_binary_sha256") is not None else None),
         )
 
 
@@ -122,12 +124,14 @@ def validate_quality_policy_gate(policy: QualityPolicy, *, require_certified: bo
         policy.mode != "certified"
         or not policy.require_proven_optimal
         or not policy.raise_on_failure
-        or policy.time_limit_seconds != 60.0
+        or isinstance(policy.time_limit_seconds, bool)
+        or not math.isfinite(policy.time_limit_seconds)
+        or not 0.0 < policy.time_limit_seconds <= 180.0
     ):
         raise UncertifiedSolveError(
             "Promotion evidence requires certified QualityPolicy "
             "(mode='certified', target_gap=0.0 or approved <=2% Stage A relaxation, "
-            "time_limit_seconds=60.0, require_proven_optimal=True, raise_on_failure=True)"
+            "0 < time_limit_seconds <= 180.0, require_proven_optimal=True, raise_on_failure=True)"
         )
     if policy.mode == "certified" and policy.target_gap != 0.0:
         approval = policy.nonzero_gap_approval_ref
@@ -400,23 +404,35 @@ def refresh_replay_market(state: ReplayState, forecasts: pd.DataFrame) -> Replay
 def replay_evaluation_identity(*, model_name: str, model_version_hash: str, protocol_hash: str, season: str,
                                anchor_id: str, horizon: int, last_gw: int, policy: QualityPolicy,
                                chip_calendar: tuple[tuple[int, Chip], ...], solver_identity: str, scored_end_gw: int = 38) -> str:
+    # Keep scored_end_gw accepted for caller compatibility, excluded from hash so GW1..k prefixes remain reusable through GW38.
+    del scored_end_gw
     return _content_hash({"version": 2, "model_name": model_name, "model_version_hash": model_version_hash,
                           "protocol_hash": protocol_hash, "season": season, "anchor_id": anchor_id,
-                          "horizon": horizon, "last_gw": last_gw, "scored_end_gw": scored_end_gw, "policy": asdict(policy),
+                          "horizon": horizon, "last_gw": last_gw, "policy": asdict(policy),
                           "chip_calendar": chip_calendar, "solver_identity": solver_identity,
                           "strategic_options": get_strategic_replay_options(horizon, rules_version=season)})
 
 
-def replay_solver_identity(solve_fn: Callable[..., Any]) -> str:
-    import highspy
-    from importlib.metadata import version
+def replay_solver_binary_sha256() -> str:
+    """Return local highspy._core shared library SHA-256 for runner auditing (excluded from portable solver identity)."""
     from importlib.util import find_spec
 
     core = find_spec("highspy._core")
     if core is None or core.origin is None or not Path(core.origin).is_file():
         raise ValueError("Installed HiGHS binary identity unavailable")
-    runtime = {"distribution_version": version("highspy"), "solver_version": highspy.Highs().version(),
-               "binary_sha256": hashlib.sha256(Path(core.origin).read_bytes()).hexdigest()}
+    return hashlib.sha256(Path(core.origin).read_bytes()).hexdigest()
+
+
+def replay_solver_identity(solve_fn: Callable[..., Any]) -> str:
+    import highspy
+    from importlib.metadata import version
+
+    dist_version = getattr(highspy, "__version__", None) or version("highspy")
+    runtime = {
+        "distribution_version": dist_version,
+        "solver_version": highspy.Highs().version(),
+        "deterministic_options": {"threads": 1, "random_seed": 42, "mip_rel_gap": 0.0},
+    }
     return _content_hash({"module": solve_fn.__module__, "name": solve_fn.__qualname__,
                           "source": Path(inspect.getfile(solve_fn)).read_bytes().hex(), "runtime": runtime})
 

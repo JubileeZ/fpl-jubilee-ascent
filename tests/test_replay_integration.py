@@ -577,7 +577,7 @@ def test_resume_rejects_changed_evaluation_inputs(tmp_path: Path, changed: str) 
     elif changed == "policy":
         kwargs["policy"] = QualityPolicy(target_gap=0.01)
     elif changed == "schedule":
-        kwargs["end_gw"] = 3
+        kwargs["chip_calendar"] = ((2, "wildcard"),)
     elif changed == "forecast":
         forecasts.loc[0, "projected_points"] = 50.0
     else:
@@ -630,3 +630,53 @@ def test_scoring_window_does_not_clip_planning_horizon() -> None:
                               lambda gw: OutcomeBatch("2024-25", gw, "synthetic", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25))),
                               end_gw=2, solve_fn=solve)
     assert horizons == [6, 6]
+
+
+def test_certified_time_limit_up_to_180_and_prefix_reusable_replay_across_end_gw(tmp_path: Path) -> None:
+    from backtesting.rolling_replay import replay_evaluation_identity, validate_quality_policy_gate
+
+    validate_quality_policy_gate(QualityPolicy(time_limit_seconds=180.0), require_certified=True)
+    with pytest.raises(UncertifiedSolveError):
+        validate_quality_policy_gate(QualityPolicy(time_limit_seconds=181.0), require_certified=True)
+    with pytest.raises(UncertifiedSolveError):
+        validate_quality_policy_gate(QualityPolicy(time_limit_seconds=0.0), require_certified=True)
+
+    id15 = replay_evaluation_identity(
+        model_name="m", model_version_hash="v1", protocol_hash="p1", season="2024-25",
+        anchor_id="a1", horizon=6, last_gw=38, policy=QualityPolicy(), chip_calendar=(),
+        solver_identity="s1", scored_end_gw=15,
+    )
+    id38 = replay_evaluation_identity(
+        model_name="m", model_version_hash="v1", protocol_hash="p1", season="2024-25",
+        anchor_id="a1", horizon=6, last_gw=38, policy=QualityPolicy(), chip_calendar=(),
+        solver_identity="s1", scored_end_gw=38,
+    )
+    assert id15 == id38
+
+    anchor = solve_ownership_anchor(_make_test_universe(), season="2024-25")
+    forecasts = pd.DataFrame([{"player_id": pid, "projected_points": 5.0} for pid in range(1, 25)])
+    calls: list[int] = []
+
+    def tracking_solve(state: ReplayState, horizon: int, fc: pd.DataFrame, opts: dict[str, Any]) -> tuple[Decision, SolverCertificate]:
+        calls.append(state.deadline)
+        return heuristic_zero_transfer_solve(state, horizon, fc, opts)
+
+    traj2 = _run_lineup_fixture_replay(
+        "candidate", "2024-25", anchor,
+        lambda gw, state: forecasts,
+        lambda gw: OutcomeBatch("2024-25", gw, "synthetic-source", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25))),
+        end_gw=2, checkpoint_dir=tmp_path, solve_fn=tracking_solve,
+    )
+    assert calls == [1, 2]
+    calls.clear()
+    traj3 = _run_lineup_fixture_replay(
+        "candidate", "2024-25", anchor,
+        lambda gw, state: forecasts,
+        lambda gw: OutcomeBatch("2024-25", gw, "synthetic-source", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 25))),
+        end_gw=3, checkpoint_dir=tmp_path, solve_fn=tracking_solve,
+    )
+    assert calls == [3]
+    assert [r.checkpoint_id for r in traj3.records[:2]] == [r.checkpoint_id for r in traj2.records]
+    assert [json.loads(json.dumps(r.to_dict())) for r in traj3.records[:2]] == [
+        json.loads(json.dumps(r.to_dict())) for r in traj2.records
+    ]
