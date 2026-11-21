@@ -46,6 +46,39 @@ Both reserved arms matched admitted GW1 solver inputs and settled outcomes exact
 
 First candidate execution certified GW1–23. GW24 hit 180-second native solve limit with `TIME_LIMIT`, relative gap `0.0009130622341009918`. Identical solo retry exited with no additional certificate. Terminal diagnostics unavailable for that retry. Whole-process CPU affinity retry stopped at GW9 exact forecast equality check due to floating-point differences in projected points. Final retry preserved normal forecasting environment, verified GW1–23 from checkpoints, and applied preferred CPU affinity to main thread after GW24 forecast. Same `TIME_LIMIT` and exact same relative gap at GW24. Shared attempt and protocol remained bound. Full paired S-2 evidence unavailable. No model performance verdict.
 
+### Resume before slate freeze
+
+Revalidated frozen Dev selection, S-2 reservation, both archive/seed inventories, 76 mirror source hashes and admitted GW1 inputs. Champion `scores.csv` present with 38 certified checkpoints. Candidate retained GW1–23 checkpoints with no full-season `scores.csv`. Same reservation reusable on a host with faster single-thread performance and compatible numerical output. Use the branch checkout and `uv sync --locked`. Bring these inputs to the corresponding paths:
+
+- `data/archive/2024-25/processed/` and `data/archive/2023-24/processed/`.
+- `data/reports/empirical_mirrors/` files referenced by `config/dev_mirror_2024_25_manifest.json`, including all 38 fixture/bootstrap snapshots and admitted GW1 settlement.
+- `.tmp/agent/explore-candidate/pre-slate/s2_filter/ext_01_1/`, including both replay arms and both reservation manifests.
+
+Resume fails closed on forecast, outcome or evaluation identity mismatch. Keep original forecasting environment where possible. Forcing the whole process onto one CPU previously changed floating-point results and tripped exact resume checks.
+
+From repository root, resume candidate and compare completed replays:
+
+```bash
+topic=docs/research/candidate-ideation
+lane="$topic/prototypes/ext_01_1"
+reserved=.tmp/agent/explore-candidate/pre-slate/s2_filter/ext_01_1
+PYTHONPATH=. uv run python -u "$topic/run_s2_filter.py" \
+  --pin "$lane/development_selection.json" --arm candidate
+```
+
+Run only after candidate completes GW38 under the reserved protocol:
+
+```bash
+PYTHONPATH=. uv run python "$topic/compare_historical_replays.py" \
+  --season 2024-25 --pin "$lane/development_selection.json" \
+  --prefix-parity "$lane/s2_prefix_parity.csv" \
+  --champion "$reserved"/champion/replays/def_xg_shrink_challenger-gw01-38-22178f8e-f9da5685 \
+  --candidate "$reserved"/candidate/replays/ext_01_1_a10-gw01-38-a989919c-f9da5685 \
+  --out "$lane/s2"
+```
+
+Require positive full-season net delta, all applicable projection guards, all three segment floors and exact GW1 parity before presenting EXT-01_1 for slate-freeze approval. Changing the 180-second time budget changes the replay identity. Any longer-budget historical replay needs an explicitly reviewed replacement protocol before it can inform lock-in. Keep the other ideas queued with their existing dispositions.
+
 ## Bounded queue
 
 Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13 already closed. One ideation batch used freshly generated brief with lock mechanisms and Dev context. Excluded historical-filter results and active-season outcomes. User narrowed evaluation to EXT-01_1 only. EXT-02_1 implementation stopped before review or replay. [Queue and dossiers](idea_queue.csv)
