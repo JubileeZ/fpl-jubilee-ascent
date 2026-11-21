@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "config/model_selection.json"
-      - "config/model_selection.adoption.json"
   workflow_dispatch:
     inputs:
       request_id:
@@ -30,15 +27,35 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
+      - name: Detect Champion selection diff
+        id: diff-gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "is_adoption_pr=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch origin main
+          if git diff --name-only origin/main...HEAD | grep -Eq '^config/model_selection(\.adoption)?\.json$'; then
+            echo "is_adoption_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Champion selection files modified; non-adoption PR passes verify-adoption-pr."
+            echo "is_adoption_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install uv
+        if: steps.diff-gate.outputs.is_adoption_pr == 'true'
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.14"
 
       - name: Sync frozen dependencies
+        if: steps.diff-gate.outputs.is_adoption_pr == 'true'
         run: uv sync --frozen
 
       - name: Hydrate validation-evidence branch
+        if: steps.diff-gate.outputs.is_adoption_pr == 'true'
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/validation-evidence"
@@ -48,6 +65,7 @@ jobs:
           fi
 
       - name: Verify exact two-file adoption diff, immutable snapshot, and eligibility
+        if: steps.diff-gate.outputs.is_adoption_pr == 'true'
         shell: bash
         env:
           INPUT_REQ_ID: ${{ github.event.inputs.request_id || '' }}
