@@ -10,7 +10,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
-- Pre-slate search active. S-1 GW1–38 certified replays complete with exact GW1–7 empirical parity. EXT-01_1 dual-reviewed. `ext_01_1_a10` selected from S-1 (+82 net points, 15/15 projection guards, 3/3 segment floors). Pinned S-2 replay active. [Input audit and status](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
+- Pre-slate search scoped to EXT-01_1. Full S-1 replay passed with exact GW1–7 parity. Pinned `ext_01_1_a10` S-2 replay certified GW1–23, blocked at GW24 (`TIME_LIMIT`, gap `0.0009130622341009918`). No qualified Candidate. [Input audit and status](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
 
 [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted & implemented on `main` (`d07d642d`, PR `#202`); live rollout disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`).
 

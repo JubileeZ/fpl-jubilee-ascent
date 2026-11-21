@@ -3,7 +3,7 @@ idea_id: EXT-01_1
 name: Shot quality in the conceded-goal rate
 tier: P1
 component: "xp_clean_sheets"
-status: "in-progress-b1"
+status: "blocked-s2-certification"
 replaces: "In the Candidate's predict, adjust a copy of per90_goals_conceded before DefXgShrinkChallengerModel.predict. HoldChaseChallengerModel._apply_hard_fixture_defence and CalibratedMatchupHybridModel._project_event_components then apply the normal fixture treatment, exposure and scoring links. Recover the historical player's club from the other side's opponent ID within each complete fixture. Use unique player-fixture records."
 grid: "a=0.5; a=1.0"
 inputs: features.player_id; features.club_id; features.position_id; features.per90_goals_conceded; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.minutes; history.expected_goals_conceded; history.goals_conceded
@@ -63,5 +63,5 @@ class ShotQualityInTheConcededGoalRateChallengerModel(DefXgShrinkChallengerModel
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `in-progress-b1`. S-1 GW1–38 certified against shared Champion. a05 +73; a10 +82; all 15 projection guards and 3 segment floors for both. a10 pinned pre-S-2. Untuned historical filter in progress.
+- Disposition: `blocked-s2-certification`. S-1 GW1–38 certified against shared Champion. a05 +73, a10 +82. Both passed 15 projection guards and 3 segment floors. Pinned a10 certified GW1–23 in S-2. GW24 `TIME_LIMIT`, relative gap `0.0009130622341009918`, reproduced with solver-only affinity.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).

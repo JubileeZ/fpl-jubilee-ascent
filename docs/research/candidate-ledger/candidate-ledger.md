@@ -147,7 +147,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 
 ## Open (next-lever pool; not proven dead)
 
-2026-11-21 EXT-01_1 Dev grid completed. `ext_01_1_a10` +82 net points with all guards passed. Pinned for single S-2 filter. [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
+2026-11-21 EXT-01_1 Dev grid completed. `ext_01_1_a10` +82 net points with all guards passed. Reserved S-2 filter blocked at GW24 by native zero-gap certification timeout. [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
