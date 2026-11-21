@@ -3,7 +3,7 @@ idea_id: EXT-02_1
 name: Player exposure for the assist model handover
 tier: P1
 component: "xp_assists"
-status: "blocked (replay evidence)"
+status: "untested"
 replaces: "Override MultiFeatureAssistChallengerModel._fit_assist_rates. Start with the parent's dictionary, then edit only its returned player-fixture keys. Obtain F as CalibratedMatchupHybridModel._project_event_components(self, row, position, 90.0, clean_sheet_minutes=90.0, p_sixty_mins=1.0)[\"xp_assists\"]/3. Reuse the inherited state scorer with R, which updates projected points and xBPS together."
 grid: "K=180; K=450"
 inputs: features.player_id; features.fixture_id; features.position_id; features.per90_xa; features.per90_creativity; features.per90_assists; features.attack_multiplier; features.difficulty; features.club_id; features.opponent_id; features.is_home; features.gameweek_id; history.player_id; history.fixture_id; history.gameweek_id; history.minutes; history.expected_goals; history.expected_assists; history.creativity; history.opponent_club_id; history.was_home
@@ -63,5 +63,5 @@ class PlayerExposureForTheAssistModelHandoverChallengerModel(DefXgShrinkChalleng
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `blocked (replay evidence)`. Current-season exposure weights two existing assist rates. Existing lock covers attack intensity split by appearance state. Replay inputs pending.
+- Disposition: `untested`. Current-season exposure weights two existing assist rates. Existing lock covers attack intensity split by appearance state. Queued for serial review after EXT-01_1.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).

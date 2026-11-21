@@ -10,7 +10,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
-- Pre-slate search evidence blocked on verified historical six-GW issue schedules. S-1 GW32 pinned mirror omits announced GW33 fixture reassignments. S-1 GW24/GW30 terminal schedule sees later changes. Empirical prefixes admitted. Five proposals recorded; no candidate replay or finalist. [Audit and resume prerequisite](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
+- Pre-slate search active. S-1 six-GW issue schedules pinned GW1–38; GW1–7 staged from admitted history to avoid terminal revisions. EXT-01_1 dual-reviewed; certified S-1 fixed grid in progress. S-2 candidate replay pending selection and pin. [Input audit and status](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
 
 [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted & implemented on `main` (`d07d642d`, PR `#202`); live rollout disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`).
 

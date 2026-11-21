@@ -3,7 +3,7 @@ idea_id: EXT-04_1
 name: Reduced weight for attacking evidence in dismissal fixtures
 tier: P1
 component: "xp_goals"
-status: "blocked (replay evidence)"
+status: "untested"
 replaces: Override _project_event_components on the Champion subclass. On rows with a positive per90_xg and an eligible position, give super() a row copy with the adjusted per90_xg. Applying this inside the event method holds the inherited minutes calculation fixed. Stock finishing offsets, penalty isolation, exposure, and bonus allocation consume the adjusted rate. Deduplicate prior player-fixture rows and verify that both historical sides are represented before forming a dismissal tag.
 grid: "a=0.50; a=0.80"
 inputs: features.player_id; features.club_id; features.position_id; features.per90_xg; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.minutes; history.red_cards; history.expected_goals
@@ -63,5 +63,5 @@ class ReducedWeightForAttackingEvidenceInDismissalFixturesChallengerModel(DefXgS
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `blocked (replay evidence)`. Observed fixture dismissals weight historical xG reliability. Existing locks cover red-card probability and opponent-strength schedule adjustment. Replay inputs pending.
+- Disposition: `untested`. Observed fixture dismissals weight historical xG reliability. Existing locks cover red-card probability and opponent-strength schedule adjustment. Queued for serial review after EXT-01_1.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).

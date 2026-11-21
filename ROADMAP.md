@@ -22,7 +22,7 @@ This roadmap tracks the development progress, target architecture, and phases fo
 
 ### Map [#184](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/184) Decision & Implementation Schedule (ADR 0069)
 
-- **Pre-slate Candidate Search (2026-11-21):** Evidence blocked. S-1 terminal fixtures expose future rescheduling decisions at GW24/GW30; retained GW32 mirror misses announced GW33 doubles. Required GW1–7 / GW1 prefixes admitted. Five proposals queued, four held for replay inputs and one for Dead Lever ruling. [Input audit and queue dispositions](docs/research/candidate-ideation/pre-slate-search-2026-11-21.md).
+- **Pre-slate Candidate Search (2026-11-21):** S-1 issue schedules recovered and pinned through GW38. Required GW1–7 / GW1 prefixes admitted. EXT-01_1 fixed grid dual-reviewed; certified S-1 replay underway. S-2 preflight pending; EXT-05_1 held for Dead Lever ruling. [Input audit and queue dispositions](docs/research/candidate-ideation/pre-slate-search-2026-11-21.md).
 
 Governs **Annual Rolling Validation (`S`=`2026-27` quarantined via `Randdalf/fplcache` `<= 24h`, `S-1`=`2025-26` Dev, `S-2`=`2024-25` Filter)** and **Dual-Tier (`Provisional Active` + `Confirmed Champion`)** readiness, preserving `#175`–`#179` engineering designs from superseded Map [#174](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/174).
 

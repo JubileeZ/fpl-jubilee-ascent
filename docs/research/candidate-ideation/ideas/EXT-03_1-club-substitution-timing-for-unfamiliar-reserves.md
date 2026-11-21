@@ -3,7 +3,7 @@ idea_id: EXT-03_1
 name: Club substitution timing for unfamiliar reserves
 tier: P1
 component: "xp_minutes"
-status: "blocked (replay evidence)"
+status: "untested"
 replaces: "Adjust xmins_if_sub_in on a feature copy at Candidate.predict before delegating to DefXgShrinkChallengerModel.predict. Count a cameo as starts=0 and 0<minutes\u226490 in unique completed player-fixture rows. Use both observed sides to recover the club at the time. Use current position for current-season player IDs with known position. Hard DNPs, blank fixtures, and explicit external-minute handling follow ParticipationStateHybridModel.predict."
 grid: "a=0.5; a=1.0"
 inputs: features.player_id; features.club_id; features.position_id; features.xmins_if_sub_in; features.p_60_if_sub_in; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.starts; history.minutes
@@ -63,5 +63,5 @@ class ClubSubstitutionTimingForUnfamiliarReservesChallengerModel(DefXgShrinkChal
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `blocked (replay evidence)`. Peer contrast shifts conditional cameo duration. Existing lock covers learned starter and appearance probabilities or starter duration. Replay inputs pending.
+- Disposition: `untested`. Peer contrast shifts conditional cameo duration. Existing lock covers learned starter and appearance probabilities or starter duration. Queued for serial review after EXT-01_1.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).

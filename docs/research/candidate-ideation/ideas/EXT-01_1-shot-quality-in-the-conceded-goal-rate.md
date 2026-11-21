@@ -3,7 +3,7 @@ idea_id: EXT-01_1
 name: Shot quality in the conceded-goal rate
 tier: P1
 component: "xp_clean_sheets"
-status: "blocked (replay evidence)"
+status: "in-progress-b1"
 replaces: "In the Candidate's predict, adjust a copy of per90_goals_conceded before DefXgShrinkChallengerModel.predict. HoldChaseChallengerModel._apply_hard_fixture_defence and CalibratedMatchupHybridModel._project_event_components then apply the normal fixture treatment, exposure and scoring links. Recover the historical player's club from the other side's opponent ID within each complete fixture. Use unique player-fixture records."
 grid: "a=0.5; a=1.0"
 inputs: features.player_id; features.club_id; features.position_id; features.per90_goals_conceded; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.minutes; history.expected_goals_conceded; history.goals_conceded
@@ -63,5 +63,5 @@ class ShotQualityInTheConcededGoalRateChallengerModel(DefXgShrinkChallengerModel
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `blocked (replay evidence)`. Fixed within-player xGC-minus-GC measurement adjustment. Existing lock covers fitted multifeature concession GLM. Replay inputs pending.
+- Disposition: `in-progress-b1`. Distinct fixed within-player xGC-minus-GC adjustment. Dual review passed. Initial smoke invalid after source inventory changed. Certified S-1 replays underway.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).
