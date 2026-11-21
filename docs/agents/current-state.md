@@ -10,6 +10,8 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
+- Pre-slate search evidence blocked on verified historical six-GW issue schedules. S-1 GW32 pinned mirror omits announced GW33 fixture reassignments. S-1 GW24/GW30 terminal schedule sees later changes. Empirical prefixes admitted. Five proposals recorded; no candidate replay or finalist. [Audit and resume prerequisite](../research/candidate-ideation/pre-slate-search-2026-11-21.md).
+
 [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) accepted & implemented on `main` (`d07d642d`, PR `#202`); live rollout disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`).
 
 - [Certify sparse Champion confirmation and statistical Early-Harm](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201) CLOSED (`d07d642d`). `backtesting/sparse_certification.py` + `commands.certify_sparse_confirmation` verified scalar-vs-vectorized parity (`525` prefixes + `56` edge cases, max diff `1.23e-11`, `100%` binary match). Tuned on `seed=20101` (`gw1_4_material_loss_limit=25.0`, `M=1` `3.461e-05`/`0.00173025`/`0.02733795`, `M=2` `6.04e-06`/`0.00060375`/`0.00953925`). Primary enforced `seed=20102` breached statistical Early-Harm false exclusion (`0.2313 > 0.05`); predeclared `advisory` fallback certified on untouched `seed=20103` (`certified=True`, `worst_false_full_pass_upper_95=0.0441 <= 0.05`, `primary_gw38_power_lower_95=0.3665 >= 1/3`, `worst_terminal_false_exclusion_upper_95=0.0214 <= 0.05`, `certification_digest=9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56`). Versioned `v2.0` protocol decoupled from `provisional_active` and `trail_at_gw15`.

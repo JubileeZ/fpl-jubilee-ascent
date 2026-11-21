@@ -147,6 +147,8 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 
 ## Open (next-lever pool; not proven dead)
 
+2026-11-21 pre-slate batch deferred at replay input preflight. [Evidence blocker and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
+
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
 | Fixed-K leave-player-and-club-out creative-role kernel prior (EXT-35) | Operator retired 2026-11-11; not eligible | One Tier 2 oracle selection tie (delta 0, P 0); three inert screen-admission refusals; [complete terminal companion](../candidate-ideation/prototypes/ext_35/execution_results.csv) | Queue closed for negligible effect; no revival without new authorization. Scientific inconclusive; no new Dead lock |
