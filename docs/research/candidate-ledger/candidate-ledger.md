@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-11 (+00:00)
+**Updated**: 2026-11-22 (+00:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -144,10 +144,11 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Continuous match-tempo and counter-transition attack elasticity (point-in-time EB club tempo + player threat/creativity directness, outfield demeaned) | smoke `ext_14_*` (6) | DXS | dev 2025-26 FAIL: best `ext_14_a15_b06` delta -0.6045, 0/3 segments (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation; boot P invalid (smoke.py bug); verdict rests on delta <= 0 | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_14` |
 | Starter-role conditioning and set-piece creative-share xG shrinkage for budget enablers (MID/FWD K_ATK 450-720 toward creative-share prior; DEF K=2400 preserved) | smoke `ext_18_*` (6) | DXS | dev 2025-26 FAIL: best `ext_18_k540_g015` delta -0.2407, 0/3 segments (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation; boot P invalid (smoke.py bug); verdict rests on delta <= 0 | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_18` |
 | Opponent speculative shot-volume and goalkeeper save-floor elasticity (GKP EB save shrink K_GK 540-1080 modulated by opponent shrunk threat volume) | smoke `ext_19_*` (6) | DXS | dev 2025-26 FAIL: best `ext_19_k900_xi035` delta -0.1279, 0/3 segments (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation; boot P invalid (smoke.py bug); verdict rests on delta <= 0 | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_19` |
+| Within-player xGC-minus-GC concession-rate adjustment | `EXT-01_1` (`ext_01_1_a05`, `ext_01_1_a10`) | DXS | S-1 PASS `+82`, S-2 FAIL `-67` (`2,232` vs `2,299`, `1/3` segments, `14/14` guards) | 2026-11-22 | 2027-11-22 | [pre-slate-search-2026-11-21](../candidate-ideation/pre-slate-search-2026-11-21.md) · `prototypes/ext_01_1/s2/summary.json` |
 
 ## Open (next-lever pool; not proven dead)
 
-2026-11-21 EXT-01_1 Dev grid completed. `ext_01_1_a10` +82 net points with all guards passed. Reserved S-2 filter blocked at GW24 by native zero-gap certification timeout. [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
+2026-11-22 `EXT-01_1` completed certified S-2 filter (`-67` net points FAIL, `1/3` segments) and moved to Dead (`revisit_after 2027-11-22`). `EXT-02_1` next in queue (`#206`). [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|

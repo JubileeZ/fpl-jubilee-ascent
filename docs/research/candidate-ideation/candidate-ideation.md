@@ -1,9 +1,9 @@
 # Candidate Ideation & External Model Collaboration
 
-**Updated**: 2026-11-11 (+00:00)
-**Data stamp**: 152 development smoke rows, 120 unique saved variants; EXT-35 terminal companion additionally records three inert admission refusals; no confirmation or holdout results
+**Updated**: 2026-11-22 (+00:00)
+**Data stamp**: 152 development smoke rows, 120 unique saved variants; EXT-35 terminal companion additionally records three inert admission refusals; EXT-01_1 certified S-1 (`+82`) & S-2 (`-67` FAIL) replays recorded under `prototypes/ext_01_1/`; no confirmation or holdout results
 **Season**: Multi-season (2024-25, 2025-26, 2026-27)  
-**Status**: Legacy queue dispositioned. 2026-11-21 search scoped to EXT-01_1. S-1 passed. Pinned S-2 trajectory blocked by GW24 solve timeout. [Audit and queue status](pre-slate-search-2026-11-21.md).
+**Status**: Legacy queue dispositioned. 2026-11-21/22 pre-slate search completed `EXT-01_1` (S-1 `+82` PASS; S-2 `-67` FAIL, dead until `2027-11-22`); `0` finalists yet; `EXT-02_1` next in queue (`#206`). [Audit and queue status](pre-slate-search-2026-11-21.md).
 **Purpose**: Generate, curate, and queue innovative candidate projection model hypotheses from frontier LLMs for empirical gating.  
 **Scope**: Ingests external model ideation proposals, filters against proven dead-lever archetypes, and executes autonomous gating via `explore-candidate`.  
 **Related**: [Eval canon](../INDEX.md) · [Candidate Ledger](../candidate-ledger/candidate-ledger.md) · [ADR 0068](../../adr/0068-two-axis-pre-execution-candidate-review.md) · [ADR 0066](../../adr/0066-backtesting-and-promotion-foundation.md) · [ADR 0064](../../adr/0064-promotion-gate-and-evaluation-rigor-overhaul.md) · [ADR 0063](../../adr/0063-champion-adaptive-causal-challenger.md)  
