@@ -31,7 +31,6 @@ from backtesting.evidence_statistics import (
     obrien_fleming_alpha,
     run_kendall_pw_hac_test,
 )
-from backtesting.promotion import segment_regression_tolerance
 from models.selection import ModelSelection, load_model_selection, save_model_selection
 from backtesting.forecast_export import strict_solver_table
 from backtesting.forecast_store import load_forecast_verified
@@ -939,9 +938,43 @@ def verify_recommendation_bundle(bundle_path: Path | str, *, require_finalized: 
     return bundle
 
 
+PODIUM_S1_WEIGHT: float = 0.3
+PODIUM_S2_WEIGHT: float = 0.7
+REQUIRED_MILP_SEGMENTS: tuple[str, ...] = ("cold_start", "early_mid", "late")
+# Rolling-MILP z = -1.50 SE floors at empirical sigma_gw=11.0, phi=0.10 (ADR 0071):
+# SE(cold_start, early_mid, late) = (5.925, 3.119, 2.775) pts/GW -> (-35.6 / -70.5 / -79.8) cum pts.
+MILP_SEGMENT_REGRESSION_TOLERANCES: dict[str, float] = {
+    "cold_start": 8.9,
+    "early_mid": 4.7,
+    "late": 4.2,
+}
+
+
+def milp_segment_regression_tolerance(
+    segment: str,
+    *,
+    tolerances: Mapping[str, float] | None = None,
+) -> float:
+    """Return rolling-MILP per-GW segment regression tolerance after strict key validation."""
+    lookup = tolerances if tolerances is not None else MILP_SEGMENT_REGRESSION_TOLERANCES
+    if segment not in lookup:
+        raise ValueError(f"Missing segment regression tolerance for {segment!r}")
+    raw = lookup[segment]
+    if isinstance(raw, bool):
+        raise ValueError(f"Invalid boolean segment tolerance for {segment!r}")
+    val = float(raw)
+    if not math.isfinite(val) or val < 0.0:
+        raise ValueError(f"Invalid segment tolerance for {segment!r}: {raw!r}")
+    return val
+
+
 @dataclass(frozen=True)
 class PodiumCandidateRecord:
-    """Two-season qualification record for ADR 0069 Max-2 Podium selection."""
+    """Two-season qualification record for ADR 0069/0071 Max-2 Podium selection.
+
+    ``s1_segment_deltas`` and ``s2_segment_deltas`` must be per-GW mean net deltas
+    keyed strictly by ``("cold_start", "early_mid", "late")``.
+    """
 
     candidate_name: str
     champion_name: str
@@ -957,6 +990,10 @@ class PodiumCandidateRecord:
     @property
     def mean_two_season_delta(self) -> float:
         return 0.5 * (float(self.delta_s1) + float(self.delta_s2))
+
+    @property
+    def podium_ranking_score(self) -> float:
+        return PODIUM_S1_WEIGHT * float(self.delta_s1) + PODIUM_S2_WEIGHT * float(self.delta_s2)
 
 
 @dataclass(frozen=True)
@@ -1014,11 +1051,21 @@ def _passes_segment_floors(
     segment_deltas: Mapping[str, float],
     tolerances: Mapping[str, float] | None = None,
 ) -> bool:
-    for seg in ("cold_start", "early_mid", "late"):
-        if seg in segment_deltas:
-            tol = segment_regression_tolerance(seg, tolerances=tolerances)
-            if float(segment_deltas[seg]) < -tol:
-                return False
+    required = set(REQUIRED_MILP_SEGMENTS)
+    if set(segment_deltas) != required:
+        raise ValueError(f"Segment deltas must contain exact keys {REQUIRED_MILP_SEGMENTS}, got {tuple(sorted(segment_deltas))}")
+    if tolerances is not None and set(tolerances) != required:
+        raise ValueError(f"Segment tolerances must contain exact keys {REQUIRED_MILP_SEGMENTS}, got {tuple(sorted(tolerances))}")
+    for seg in REQUIRED_MILP_SEGMENTS:
+        raw = segment_deltas[seg]
+        if isinstance(raw, bool):
+            raise ValueError(f"Invalid boolean segment delta for {seg!r}")
+        val = float(raw)
+        if not math.isfinite(val):
+            raise ValueError(f"Non-finite segment delta for {seg!r}: {raw!r}")
+        tol = milp_segment_regression_tolerance(seg, tolerances=tolerances)
+        if val < -tol:
+            return False
     return True
 
 
@@ -1031,7 +1078,7 @@ def rank_and_freeze_podium(
     protocol_hash: str | None = None,
     certification_digest: str | None = None,
 ) -> PodiumFreezeResult:
-    """Rank S-1+S-2 qualified finalists by 0.5*(delta_S1+delta_S2), enforce M<=2 cap & seal."""
+    """Rank S-1+S-2 qualified finalists by 0.3*delta_S1 + 0.7*delta_S2 (ADR 0071), enforce M<=2 cap & seal."""
     if current_selection.podium_sealed and current_selection.podium_frozen_season == active_season:
         raise ValueError(
             f"Podium slate is sealed for active validation season {active_season}; "
@@ -1059,7 +1106,7 @@ def rank_and_freeze_podium(
 
     ranked = sorted(
         qualified,
-        key=lambda c: (-c.mean_two_season_delta, -float(c.delta_s2), c.candidate_name),
+        key=lambda c: (-c.podium_ranking_score, -float(c.delta_s2), c.candidate_name),
     )
     selected = ranked[:2]
     displaced = tuple(c.candidate_name for c in ranked[2:])

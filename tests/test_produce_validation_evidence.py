@@ -1025,3 +1025,28 @@ def test_pre_deadline_live_fallback_away_player_and_weekly_scorecard_subcommand(
     }
     assert latest_sc.weekly_leader in latest_sc.cumulative_net_points
     assert gw02_sc.scorecard_hash == latest_sc.scorecard_hash
+
+
+def test_freeze_parser_defaults_certified_time_limit_to_600() -> None:
+    from commands.produce_validation_evidence import _build_parser
+
+    parsed = _build_parser().parse_args(
+        [
+            "freeze",
+            "--evidence-root",
+            "/tmp/ev",
+            "--season",
+            "2026-27",
+            "--development-season",
+            "2025-26",
+            "--champion",
+            "def_xg_shrink_challenger",
+            "--candidates",
+            "cand_a",
+            "--slate-id",
+            "slate-1",
+            "--approval-reference",
+            "ref-1",
+        ]
+    )
+    assert parsed.time_limit_seconds == 600.0

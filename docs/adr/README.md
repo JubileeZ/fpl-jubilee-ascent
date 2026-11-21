@@ -115,10 +115,11 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | [0068](0068-two-axis-pre-execution-candidate-review.md) | Two-Axis Pre-Execution Candidate Review Protocol | Accepted | Mandatory 3-subagent team per candidate (Implementer, Reviewer A Spec/Math, Reviewer B Standards/Arch) with bounded 3-round repair loop and atomic checkpoints. |
 | [0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Annual Rolling Validation & Dual-Tier Promotion Governance | Accepted | Annual rolling firewall (`S`=`2026-27` quarantined validation via `Randdalf/fplcache` `<= 24h`, `S-1` Dev, `S-2` Filter, summer rollover), Dual-Tier `Provisional Active` + `Confirmed Champion`, and `GW15`/`GW30`/`GW38` checks. |
 | [0070](0070-weekly-planner-selection-and-champion-adoption.md) | Weekly Transfer Planner Selection and Champion Adoption | Accepted | Weekly points-based model selection, sparse GW15/GW30/GW38 certification, GitHub-native Adoption Review Issue + Environment approval, App reserved merge, and $0 public parity (live rollout disabled). |
+| [0071](0071-certified-solver-budget-and-milp-qualification-calibration.md) | Certified Solver Budget & Rolling-MILP Qualification Calibration | Accepted | Raises certified solver ceiling/default to `600s` (closing `#207`), calibrates `z = -1.50 SE` MILP segment floors (`-8.9/-4.7/-4.2` pts/GW) + strict key validation, switches podium ranking to `0.3*S1 + 0.7*S2`, and mandates batch-before-freeze / `M=1` slate discipline. |
 
 ---
 
-## Chronological Index (0001–0070)
+## Chronological Index (0001–0071)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -192,3 +193,4 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0068 | [two-axis-pre-execution-candidate-review](0068-two-axis-pre-execution-candidate-review.md) | Accepted | Evaluation |
 | 0069 | [annual-rolling-validation-and-dual-tier-promotion](0069-annual-rolling-validation-and-dual-tier-promotion.md) | Accepted | Evaluation |
 | 0070 | [weekly-planner-selection-and-champion-adoption](0070-weekly-planner-selection-and-champion-adoption.md) | Accepted | Evaluation |
+| 0071 | [certified-solver-budget-and-milp-qualification-calibration](0071-certified-solver-budget-and-milp-qualification-calibration.md) | Accepted | Evaluation |

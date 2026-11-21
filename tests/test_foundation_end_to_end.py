@@ -88,9 +88,36 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
     monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
 
     cand_specs = [
-        PodiumCandidateRecord("cand_1", "def_xg_shrink_challenger", 0.30, 0.25, {"early_mid": 0.2}, {"early_mid": 0.2}, True, True),
-        PodiumCandidateRecord("cand_2", "def_xg_shrink_challenger", 0.50, 0.45, {"early_mid": 0.4}, {"early_mid": 0.4}, True, True),
-        PodiumCandidateRecord("cand_3", "def_xg_shrink_challenger", 0.70, 0.60, {"early_mid": 0.6}, {"early_mid": 0.6}, True, True),
+        PodiumCandidateRecord(
+            "cand_1",
+            "def_xg_shrink_challenger",
+            0.30,
+            0.25,
+            {"cold_start": 0.1, "early_mid": 0.2, "late": 0.2},
+            {"cold_start": 0.1, "early_mid": 0.2, "late": 0.2},
+            True,
+            True,
+        ),
+        PodiumCandidateRecord(
+            "cand_2",
+            "def_xg_shrink_challenger",
+            0.50,
+            0.45,
+            {"cold_start": 0.2, "early_mid": 0.4, "late": 0.4},
+            {"cold_start": 0.2, "early_mid": 0.4, "late": 0.4},
+            True,
+            True,
+        ),
+        PodiumCandidateRecord(
+            "cand_3",
+            "def_xg_shrink_challenger",
+            0.70,
+            0.60,
+            {"cold_start": 0.3, "early_mid": 0.6, "late": 0.6},
+            {"cold_start": 0.3, "early_mid": 0.6, "late": 0.6},
+            True,
+            True,
+        ),
     ]
     frozen = rank_and_freeze_podium(cand_specs, current_selection=initial_sel, active_season="2026-27", seal_slate=True)
     save_model_selection(frozen.updated_selection, sel_path)

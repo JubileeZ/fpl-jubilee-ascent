@@ -104,6 +104,10 @@ class SolverCertificate:
         )
 
 
+MAX_CERTIFIED_TIME_LIMIT_SECONDS: float = 600.0
+DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS: float = 600.0
+
+
 @dataclass(frozen=True)
 class QualityPolicy:
     """Requested solution quality and timeout policy."""
@@ -126,12 +130,13 @@ def validate_quality_policy_gate(policy: QualityPolicy, *, require_certified: bo
         or not policy.raise_on_failure
         or isinstance(policy.time_limit_seconds, bool)
         or not math.isfinite(policy.time_limit_seconds)
-        or not 0.0 < policy.time_limit_seconds <= 180.0
+        or not 0.0 < policy.time_limit_seconds <= MAX_CERTIFIED_TIME_LIMIT_SECONDS
     ):
         raise UncertifiedSolveError(
             "Promotion evidence requires certified QualityPolicy "
             "(mode='certified', target_gap=0.0 or approved <=2% Stage A relaxation, "
-            "0 < time_limit_seconds <= 180.0, require_proven_optimal=True, raise_on_failure=True)"
+            f"0 < time_limit_seconds <= {MAX_CERTIFIED_TIME_LIMIT_SECONDS:.1f}, "
+            "require_proven_optimal=True, raise_on_failure=True)"
         )
     if policy.mode == "certified" and policy.target_gap != 0.0:
         approval = policy.nonzero_gap_approval_ref
