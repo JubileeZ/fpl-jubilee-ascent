@@ -1,6 +1,6 @@
 # Pre-slate Candidate Search — 2026-11-21
 
-**Disposition:** S-1 fixture blocker resolved. First reviewed lane in certified S-1 replay. S-2 input preflight and candidate selection pending. No finalist or scientific verdict.
+**Disposition:** `ext_01_1_a10` passed S-1 and was pinned for the single untuned S-2 filter. S-2 evaluation in progress. No finalist yet.
 
 ## Evaluation contract
 
@@ -27,20 +27,31 @@ Recovered S-1 GW8–38 schedules from an hourly mirror of the official FPL all-f
 
 S-1 prefix history parity preflight found a GW7 archive revision in creativity/ICT for player 12, fixture 59. The Champion forecast varied by up to 0.001805 xP per player-fixture. Stage admitted prior settlement bytes for GW1–7. Use complete pre-issue archive performance rows for GW8–38, bounded by GW, kickoff and the issue fixture's completed flag. Later revisions remain an unmeasured limitation outside the admitted prefix. Full empirical admission beyond the required prefixes does not apply to historical qualification.
 
-[S-1 replay runner](run_s1_replay.py) verifies joint fixture/market snapshot identity, full forecast fixture coverage including blanks, and projection component reconciliation before passing the table to the native zero-gap solver. Retains immutable run-scoped forecasts, model and protocol hashes, and audited scores. GW1 Champion pilot verified from neutral anchor `opening-anchor-809d4afb3e40c205`. Full certified S-1 replay and model-specific prefix parity pending.
+[S-1 replay runner](run_s1_replay.py) verifies joint fixture/market snapshot identity, full forecast fixture coverage including blanks, and projection component reconciliation before passing the table to the native zero-gap solver. All three S-1 arms completed GW1–38 under runner commit `fa52dc50` and protocol `1775d3f56a224bb1ad2118d720219fd38f072ef550fca78bdf2e5bcd5fda0135`. Shared neutral opening anchor `opening-anchor-809d4afb3e40c205`. Independently rebuilt admitted GW1–7 forecasts and outcomes. 21/21 model-origin checks matched solver hashes and settled scores exactly, with zero fixture-projection component difference. [Admitted prefix parity](prototypes/ext_01_1/s1_prefix_parity.csv)
 
-S-2 schedule preflight verified 38 pinned pre-deadline fixture tables and 19 dated kickoff amendments across GW23, GW33 and GW35 origins. Overlay amends kickoffs with known announcement dates and preserves recorded FPL Gameweek assignments and latest observed FDR. Unresolved conditional Villa–Spurs kickoff at GW33 retains the contemporaneous API time. GW1 admitted inputs preserved. No model was run on S-2. [Dated amendments](s2_historical_fixture_amendments.csv) · [April 17 circular](https://resources.premierleague.pulselive.com/premierleague/document/2025/04/17/cb7dbd1f-35cc-4a63-96ef-8a7febb8159c/Fixture-Amendments-23-Season-2024-25.pdf)
+S-2 schedule preflight verified 38 pinned pre-deadline fixture tables and 19 dated kickoff amendments across GW23, GW33 and GW35 origins. Overlay amends kickoffs with known announcement dates and preserves recorded FPL Gameweek assignments and latest observed FDR. Unresolved conditional Villa–Spurs kickoff at GW33 retains the contemporaneous API time. GW1 admitted inputs preserved. [Dated amendments](s2_historical_fixture_amendments.csv) · [April 17 circular](https://resources.premierleague.pulselive.com/premierleague/document/2025/04/17/cb7dbd1f-35cc-4a63-96ef-8a7febb8159c/Fixture-Amendments-23-Season-2024-25.pdf)
+
+## S-1 development selection
+
+| Candidate | Candidate net | Champion net | Net delta | Segment deltas GW1–4 / GW5–19 / GW20–38 | Projection guards | Paired L=5 MBB 95% interval (points/GW) |
+|---|---:|---:|---:|---:|---|---:|
+| `ext_01_1_a05` | 2,240 | 2,167 | +73 | +5 / +36 / +32 | 15/15 PASS | −0.42 to +3.95 |
+| `ext_01_1_a10` | 2,249 | 2,167 | +82 | +7 / +19 / +56 | 15/15 PASS | −2.03 to +5.74 |
+
+Both variants meet positive Dev net delta and segment floors. Highest eligible S-1 delta selects `ext_01_1_a10`, `a=1.0`. Pin binds both model closures, reviewed source SHA-256, complete S-1 grid report, admitted prefix parity and derived guard margins. S-2 launcher reserves one immutable look for this lane and permits identical retries. Bootstrap intervals describe historical uncertainty. Confirmation multiplicity budget remains reserved for later. [Development pin](prototypes/ext_01_1/development_selection.json) · [Weekly paired scores](prototypes/ext_01_1/s1/paired_weekly_scores.csv) · [Projection guards](prototypes/ext_01_1/s1/projection_guards.csv) · [Run identities and MBB](prototypes/ext_01_1/s1/summary.json)
+
+S-2 GW1 matched the independently admitted reference for both reserved arms. Exact solver inputs and settled outcome parity. Full S-2 replay status remains pending. [GW1 parity](prototypes/ext_01_1/s2_prefix_parity.csv) · [Attempt](prototypes/ext_01_1/s2_attempt.json) · [Protocol](prototypes/ext_01_1/s2_protocol.json)
 
 ## Bounded queue
 
-Initial eligible set empty (`untested` or `in-progress-b<N>`); EXT-10 and EXT-13 already closed. One ideation batch used freshly generated brief with lock mechanisms and Dev context. Excluded historical-filter results and active-season outcomes. Preserved fixed grids and input manifests in [queue and dossiers](idea_queue.csv).
+Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13 already closed. One ideation batch used freshly generated brief with lock mechanisms and Dev context. Excluded historical-filter results and active-season outcomes. First execution batch contains EXT-01_1 and its full fixed grid. Remaining proposals queued serially. [Queue and dossiers](idea_queue.csv)
 
 | Idea | Disposition | Mechanism |
 |---|---|---|
-| EXT-01_1 | Active S-1 replay | Within-player xGC-minus-GC rate adjustment. Distinct from fitted multifeature concessions GLM. |
+| EXT-01_1 | S-1 passed, chosen variant in S-2 filter | Within-player xGC-minus-GC rate adjustment. Distinct from fitted multifeature concessions GLM. |
 | EXT-02_1 | Queued after active lane | Player exposure weights incumbent assist branches. Distinct from start/sub attack intensity split. |
 | EXT-03_1 | Queued after active lane | Club peer contrast on conditional cameo duration. Distinct from fitted start or appearance models. |
 | EXT-04_1 | Queued after active lane | Dismissal-dependent reliability weight on historical xG. Distinct from predicting red-card rates or opponent-strength adjustment. |
 | EXT-05_1 | Held for lineage ruling | Negative-binomial save threshold may overlap locked DEF-08 arm. |
 
-EXT-01_1 implemented fixed variants `ext_01_1_a05` and `ext_01_1_a10`. One repair applied 0.05 minimum rate before fixture treatment on both supported and cold-start GK/DEF rows. Spec & Math and Standards & Pipeline independently approved prototype SHA-256 `90d0558febc907bbceb29ea4f337de1351134482c7b6080350a6735b1ae0c25b`. First smoke attempt invalidated when concurrent research code changed its bound source inventory. No scientific verdict, candidate S-2 look or slate freeze. [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)
+EXT-01_1 implemented fixed variants `ext_01_1_a05` and `ext_01_1_a10`. One repair applied 0.05 minimum rate before fixture treatment on both supported and cold-start GK/DEF rows. Spec & Math and Standards & Pipeline independently approved prototype SHA-256 `90d0558febc907bbceb29ea4f337de1351134482c7b6080350a6735b1ae0c25b`. First smoke attempt invalidated when concurrent research code changed its bound source inventory. Both reviewers approved the separate S-2 pin, replay and evidence checks after two repair rounds. No slate freeze. [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)

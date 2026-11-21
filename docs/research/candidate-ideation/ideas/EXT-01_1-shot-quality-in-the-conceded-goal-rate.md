@@ -63,5 +63,5 @@ class ShotQualityInTheConcededGoalRateChallengerModel(DefXgShrinkChallengerModel
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `in-progress-b1`. Distinct fixed within-player xGC-minus-GC adjustment. Dual review passed. Initial smoke invalid after source inventory changed. Certified S-1 replays underway.
+- Disposition: `in-progress-b1`. S-1 GW1–38 certified against shared Champion. a05 +73; a10 +82; all 15 projection guards and 3 segment floors for both. a10 pinned pre-S-2. Untuned historical filter in progress.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).
