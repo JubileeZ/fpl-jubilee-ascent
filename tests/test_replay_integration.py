@@ -2,6 +2,8 @@
 
 import json
 from dataclasses import replace
+from hashlib import sha256
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -615,6 +617,85 @@ def test_bad_certificate_cannot_supply_successful_evidence(bad: dict[str, Any]) 
 
     with pytest.raises(UncertifiedSolveError):
         execute_replay_deadline(state, forecasts, outcomes, solve_fn=bad_solver)
+
+
+def test_research_incumbent_advances_and_resumes_without_certification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from backtesting.rolling_replay import validate_quality_policy_gate
+
+    monkeypatch.syspath_prepend(str(Path("docs/research/candidate-ideation").resolve()))
+    diagnostic = import_module("run_s2_incumbent_diagnostic")
+    season = "2024-25"
+    market = _make_test_universe().assign(purchase_eligible=True, projected_points=5.0)
+    anchor = solve_ownership_anchor(market, season)
+    sold = anchor.to_replay_state(season).squad[0]
+    bought = replace(sold, player_id=25)
+    market = pd.concat([market, market[market["player_id"].eq(sold.player_id)].assign(player_id=25)])
+    calls: list[int] = []
+    reject: str | None = None
+
+    def solve(
+        state: ReplayState, horizon: int, forecasts: pd.DataFrame, options: dict[str, Any]
+    ) -> tuple[Decision, SolverCertificate]:
+        calls.append(state.deadline)
+        if state.deadline != 2:
+            decision, _ = heuristic_zero_transfer_solve(state, horizon, forecasts, options)
+            return decision, _make_test_certificate(options)
+        updated = replace(state, squad=tuple(bought if player == sold else player for player in state.squad))
+        decision, _ = heuristic_zero_transfer_solve(updated, horizon, forecasts, options)
+        decision = replace(decision, transfers=((sold.player_id, bought),), expected_state_hash=state_hash(state))
+        if reject == "illegal":
+            decision = replace(decision, expected_state_hash="invalid")
+        certificate = _make_test_certificate(
+            options, feasible=reject != "infeasible", quality_mode="time_capped", termination_status="TIME_LIMIT",
+            objective_bound=10.01, absolute_gap=0.01, relative_gap=0.001,
+        )
+        return decision, certificate
+
+    def outcome(gw: int) -> OutcomeBatch:
+        return OutcomeBatch(season, gw, f"synth-{gw}", tuple((pid, Outcome(5, 90, True)) for pid in range(1, 26)))
+
+    def run(name: str, through: int, policy: QualityPolicy = diagnostic.POLICY) -> ReplayTrajectory:
+        return _run_rolling_replay(
+            "diagnostic", season, anchor, lambda gw, state: market, outcome, end_gw=through,
+            checkpoint_dir=tmp_path / name, model_version_hash="synthetic-model", protocol_hash="synthetic-protocol",
+            solve_fn=diagnostic.solve_with_incumbent, policy=policy,
+        )
+
+    monkeypatch.setattr(diagnostic, "native_strategic_solve", solve)
+    with pytest.raises(UncertifiedSolveError, match="Promotion evidence"):
+        validate_quality_policy_gate(diagnostic.POLICY, require_certified=True)
+    with pytest.raises(UncertifiedSolveError, match="TIME_LIMIT"):
+        run("certified", 2, QualityPolicy(time_limit_seconds=180))
+
+    for reject, expected_error in [("infeasible", UncertifiedSolveError), ("illegal", ReplayLegalityError)]:
+        with pytest.raises(expected_error):
+            run(reject, 2)
+        assert not list((tmp_path / reject).glob("checkpoint_gw_2_*.json"))
+    reject = None
+
+    prefix = run("diagnostic", 2)
+    timed = prefix.records[-1]
+    assert timed.execution_status == "SUCCESS"
+    assert timed.certificate.termination_status == "TIME_LIMIT"
+    assert timed.certificate.relative_gap == 0.001
+    assert timed.transition_result.state.free_transfers == 1
+    calls.clear()
+    resumed = run("diagnostic", 3)
+    assert calls == [3]
+    assert [r.checkpoint_id for r in resumed.records[:2]] == [r.checkpoint_id for r in prefix.records]
+    assert resumed.records[2].pre_state == timed.transition_result.state
+    assert resumed.records[2].parent_checkpoint_id == timed.checkpoint_id
+    assert bought.player_id in resumed.final_squad_ids and sold.player_id not in resumed.final_squad_ids
+    assert resumed.audit_reconstructed_net_score() == resumed.cumulative_net
+    certified = tmp_path / "certified"
+    [reference] = certified.glob("checkpoint_gw_*.json")
+    inventory = {reference.name: sha256(reference.read_bytes()).hexdigest()}
+    report = diagnostic.weekly_solver_report(prefix.records[0], certified, "synthetic-protocol", inventory)
+    assert report["certified_reference_checkpoint_id"] == json.loads(reference.read_bytes())["checkpoint_id"]
+    assert report["matches_certified_transfers"] and report["matches_certified_lineup"]
+    assert diagnostic.weekly_solver_report(timed, certified, "synthetic-protocol", inventory)["matches_certified_lineup"] is None
 
 
 def test_scoring_window_does_not_clip_planning_horizon() -> None:
