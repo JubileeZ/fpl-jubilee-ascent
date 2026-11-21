@@ -279,39 +279,45 @@ def _prepare_adoption_pr_command(args: argparse.Namespace) -> int:
         raise ValueError(f"Adoption request '{args.request_id}' not found")
     if req.status not in ("pending_approval", "approved"):
         raise ValueError(f"Cannot prepare adoption PR for request '{req.request_id}' in status '{req.status}'")
+    actor = str(args.actor).strip()
+    approval_ref = str(args.approval_ref).strip()
+    if not actor or not approval_ref:
+        raise ValueError("Approval requires non-empty actor and approval_ref")
+    manager.assert_not_expired(req, actor=actor)
 
-    approved = manager.record_approval(
-        req.request_id,
-        actor=str(args.actor),
-        approval_ref=str(args.approval_ref),
-        approved_pr_head_sha=args.approved_commit_sha,
-    )
     bundle_arg: Path | str
-    if approved.snapshot_archive_path is not None:
-        snap = Path(approved.snapshot_archive_path)
+    if req.snapshot_archive_path is not None:
+        snap = Path(req.snapshot_archive_path)
         bundle_arg = snap if snap.is_absolute() else (root / snap).resolve()
-    elif approved.bundle_path is not None:
-        bp = Path(approved.bundle_path)
+    elif req.bundle_path is not None:
+        bp = Path(req.bundle_path)
         bundle_arg = bp if bp.is_absolute() else (root / bp).resolve()
     else:
-        raise ValueError(f"Request '{approved.request_id}' lacks snapshot_archive_path and bundle_path")
+        raise ValueError(f"Request '{req.request_id}' lacks snapshot_archive_path and bundle_path")
 
     reg_path = root / "registry.jsonl"
     excl_path = root / "exclusions.jsonl"
+    # Verify evidence and mutate PR config BEFORE persisting status='approved' so fail-closed rejections never leave an approved ledger entry.
     updated = adopt_champion(
         bundle_arg,
         config_path=args.selection_path,
-        approval_ref=str(args.approval_ref),
-        expected_current_champion=approved.expected_champion,
-        candidate_name=approved.candidate_name,
-        approved_bundle_hash=approved.bundle_hash,
-        snapshot_archive_path=bundle_arg if approved.snapshot_archive_path is not None else None,
-        expected_archive_sha256=approved.archive_sha256,
+        approval_ref=approval_ref,
+        expected_current_champion=req.expected_champion,
+        candidate_name=req.candidate_name,
+        approved_bundle_hash=req.bundle_hash,
+        snapshot_archive_path=bundle_arg if req.snapshot_archive_path is not None else None,
+        expected_archive_sha256=req.archive_sha256,
         canonical_registry_path=reg_path if reg_path.is_file() else None,
         canonical_exclusions_path=excl_path if excl_path.is_file() else None,
-        request_id=approved.request_id,
-        slate_id=approved.slate_id,
+        request_id=req.request_id,
+        slate_id=req.slate_id,
         approved_commit_sha=args.approved_commit_sha,
+    )
+    approved = manager.record_approval(
+        req.request_id,
+        actor=actor,
+        approval_ref=approval_ref,
+        approved_pr_head_sha=args.approved_commit_sha,
     )
     print(
         json.dumps(

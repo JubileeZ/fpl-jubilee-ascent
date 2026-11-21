@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from backtesting import portable_evidence
+from backtesting.adoption_transaction import AdoptionRequestManager
 from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.portable_evidence import (
     AdoptionLedger,
@@ -770,4 +771,58 @@ def test_webhook_mail_provider_live_pr_checks_api_merge_and_worktree_sync(
 
     # SharedReservationCoordinator type check for unused import sanity
     assert SharedReservationCoordinator is not None
+
+
+def test_prepare_adoption_pr_does_not_record_approval_on_fail_closed_evidence(tmp_path: Path) -> None:
+    """Fail-closed archive/evidence errors in prepare-adoption-pr must leave request pending and ledger clean."""
+    from models.selection import ModelSelection
+
+    root = tmp_path / "evidence_fail_closed"
+    root.mkdir()
+    sel_path = tmp_path / "config" / "model_selection.json"
+    initial_sel = ModelSelection(
+        champion="def_xg_shrink_challenger",
+        candidates=("adaptive_causal_challenger", "club_def_prior_challenger"),
+        provisional_active="adaptive_causal_challenger",
+        podium_frozen_season="2025-26",
+        podium_sealed=True,
+    )
+    save_model_selection(initial_sel, sel_path)
+
+    manager = AdoptionRequestManager(root)
+    req = manager.enqueue_pass(
+        slate_id="pilot-fail-closed-order",
+        season="2025-26",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash="1" * 64,
+        archive_sha256="2" * 64,
+        snapshot_archive_path="snapshots/missing_archive.tar.gz",
+    )
+
+    with pytest.raises(ValueError, match="Snapshot archive not found"):
+        manage_main(
+            [
+                "prepare-adoption-pr",
+                "--evidence-root",
+                str(root),
+                "--request-id",
+                req.request_id,
+                "--approval-ref",
+                "GH-RUN-MISSING",
+                "--actor",
+                "JubileeZ",
+                "--selection-path",
+                str(sel_path),
+            ]
+        )
+
+    after_req = AdoptionRequestManager(root).get_request(req.request_id)
+    assert after_req is not None
+    assert after_req.status == "pending_approval"
+    assert after_req.approval_ref is None
+    assert all(rec.disposition != "approved" for rec in AdoptionLedger(root / "adoption_ledger.jsonl").load_all_records())
+    assert load_model_selection(sel_path).champion == "def_xg_shrink_challenger"
+    assert not sel_path.with_suffix(".adoption.json").exists()
 
