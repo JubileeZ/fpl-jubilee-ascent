@@ -826,3 +826,339 @@ def test_prepare_adoption_pr_does_not_record_approval_on_fail_closed_evidence(tm
     assert load_model_selection(sel_path).champion == "def_xg_shrink_challenger"
     assert not sel_path.with_suffix(".adoption.json").exists()
 
+
+def test_github_issue_mail_provider_dedupe_reconcile_cli_and_lifecycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """GitHubIssueMailProvider opens/reconciles one Adoption Review Issue, updates/closes lifecycle, and enforces fail-closed CLI fallback."""
+    import httpx
+
+    from backtesting.adoption_transaction import NotificationDispatcher, UnresolvedDeliveryError
+    import commands.manage_champion_adoption as mca_mod
+    from commands.manage_champion_adoption import GitHubIssueMailProvider
+
+    root = tmp_path / "evidence_gh_issue"
+    root.mkdir()
+    req = AdoptionRequestManager(root).enqueue_pass(
+        slate_id="slate-2026-27",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash="a" * 64,
+        archive_sha256="b" * 64,
+        snapshot_archive_path="snapshots/gw15.tar.gz",
+        net_delta=14.2,
+    )
+    review_url = "https://github.com/JubileeZ/fpl-jubilee-ascent/actions/runs/777"
+
+    # 1. Direct send creates one issue with label, assignee, marker, summary, and read-only disclaimer
+    issues: list[dict[str, object]] = []
+    comments: list[tuple[int, str]] = []
+    post_count = {"issues": 0}
+    fail_mode: dict[str, object] = {"post_502": False, "get_500": False}
+
+    def gh_issue_handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if request.method == "GET" and path.endswith("/repos/JubileeZ/fpl-jubilee-ascent/issues"):
+            if fail_mode["get_500"]:
+                return httpx.Response(500, json={"message": "server error"})
+            return httpx.Response(200, json=list(issues))
+        if request.method == "POST" and path.endswith("/repos/JubileeZ/fpl-jubilee-ascent/issues"):
+            post_count["issues"] += 1
+            payload = json.loads(request.content.decode("utf-8"))
+            num = len(issues) + 1
+            issues.append(
+                {
+                    "number": num,
+                    "title": payload["title"],
+                    "body": payload["body"],
+                    "labels": [{"name": lbl} for lbl in payload.get("labels", [])],
+                    "assignees": [{"login": a} for a in payload.get("assignees", [])],
+                    "state": "open",
+                }
+            )
+            if fail_mode["post_502"]:
+                return httpx.Response(502, text="Bad Gateway")
+            return httpx.Response(201, json={"number": num})
+        if request.method == "POST" and "/issues/" in path and path.endswith("/comments"):
+            num = int(path.split("/issues/")[1].split("/")[0])
+            payload = json.loads(request.content.decode("utf-8"))
+            comments.append((num, payload["body"]))
+            return httpx.Response(201, json={"id": len(comments)})
+        if request.method == "PATCH" and "/issues/" in path:
+            num = int(path.split("/issues/")[1])
+            payload = json.loads(request.content.decode("utf-8"))
+            for item in issues:
+                if item["number"] == num:
+                    item["state"] = payload.get("state", item["state"])
+            return httpx.Response(200, json={"number": num, "state": "closed"})
+        return httpx.Response(404)
+
+    provider = GitHubIssueMailProvider(
+        "JubileeZ/fpl-jubilee-ascent",
+        token="tok",
+        assignee="JubileeZ",
+        transport=httpx.MockTransport(gh_issue_handler),
+    )
+    msg = NotificationDispatcher.build_message(req, review_url=review_url, recipient="JubileeZ")
+    msg_id = provider.send_adoption_notice(msg)
+    assert msg_id == "gh-issue-1"
+    assert len(issues) == 1
+    created = issues[0]
+    assert str(created["title"]).startswith("[Champion Adoption Review] adaptive_causal_challenger")
+    assert GitHubIssueMailProvider.marker(req.request_id) in str(created["body"])
+    assert "never approves or rejects" in str(created["body"]).lower()
+    assert created["labels"] == [{"name": "champion-adoption-review"}]
+    assert created["assignees"] == [{"login": "JubileeZ"}]
+
+    # 2. Uncertain 502 ack followed by reconcile_and_dispatch finds existing issue without creating a second one
+    req2 = AdoptionRequestManager(root).enqueue_pass(
+        slate_id="slate-2026-27-b",
+        season="2026-27",
+        checkpoint_gw=30,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash="c" * 64,
+        archive_sha256="d" * 64,
+        snapshot_archive_path="snapshots/gw30.tar.gz",
+    )
+    root_reconcile = tmp_path / "evidence_reconcile"
+    root_reconcile.mkdir()
+    disp = NotificationDispatcher(root_reconcile, provider=provider)
+    post_count["issues"] = 0
+    fail_mode["post_502"] = True
+    rec1 = disp.reconcile_and_dispatch(req2, review_url=review_url, recipient="JubileeZ")
+    assert rec1.status == "uncertain"
+    assert post_count["issues"] == 1
+    fail_mode["post_502"] = False
+    rec2 = disp.reconcile_and_dispatch(req2, review_url=review_url, recipient="JubileeZ")
+    assert rec2.status == "delivered"
+    assert post_count["issues"] == 1
+    assert provider.query_delivery_status(req2.request_id) == "delivered"
+
+    # 3. Transient 500 on query_delivery_status fails closed with UnresolvedDeliveryError
+    fail_mode["get_500"] = True
+    assert provider.query_delivery_status(req2.request_id) == "unknown"
+    fail_mode["get_500"] = False
+    req3 = AdoptionRequestManager(root).enqueue_pass(
+        slate_id="slate-2026-27-d",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash="f" * 64,
+    )
+    fail_mode["post_502"] = True
+    assert disp.reconcile_and_dispatch(req3, review_url=review_url, recipient="JubileeZ").status == "uncertain"
+    fail_mode["post_502"] = False
+    fail_mode["get_500"] = True
+    with pytest.raises(UnresolvedDeliveryError):
+        disp.reconcile_and_dispatch(req3, review_url=review_url, recipient="JubileeZ")
+    fail_mode["get_500"] = False
+
+    # 4. CLI dispatch-notice routes --github-repo when MAIL_PROVIDER_WEBHOOK_URL unset, and still fails closed when all providers absent
+    orig_client = httpx.Client
+    monkeypatch.delenv("MAIL_PROVIDER_WEBHOOK_URL", raising=False)
+    monkeypatch.setattr(mca_mod, "_retrieve_github_token_in_memory", lambda: "tok")
+    monkeypatch.setattr(httpx, "Client", lambda **kw: orig_client(transport=httpx.MockTransport(gh_issue_handler)))
+    capsys.readouterr()
+    assert (
+        manage_main(
+            [
+                "dispatch-notice",
+                "--evidence-root",
+                str(root),
+                "--request-id",
+                req.request_id,
+                "--review-url",
+                review_url,
+                "--github-repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--assignee",
+                "JubileeZ",
+            ]
+        )
+        == 0
+    )
+    disp_out = json.loads(capsys.readouterr().out)
+    assert disp_out["status"] == "delivered"
+
+    with pytest.raises(ValueError, match="not configured"):
+        manage_main(
+            [
+                "dispatch-notice",
+                "--evidence-root",
+                str(root),
+                "--request-id",
+                req2.request_id,
+                "--review-url",
+                review_url,
+            ]
+        )
+
+    # 5. CLI update-review-issue comments open PR, closes on reject/merge, and handles missing issue cleanly
+    assert (
+        manage_main(
+            [
+                "update-review-issue",
+                "--repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--request-id",
+                req.request_id,
+                "--comment",
+                "PR opened: https://github.com/JubileeZ/fpl-jubilee-ascent/pull/999",
+            ]
+        )
+        == 0
+    )
+    u1 = json.loads(capsys.readouterr().out)
+    assert u1["updated"] is True and u1["closed"] is False and issues[0]["state"] == "open"
+
+    assert (
+        manage_main(
+            [
+                "update-review-issue",
+                "--repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--request-id",
+                req.request_id,
+                "--comment",
+                "Merged onto protected main.",
+                "--close",
+            ]
+        )
+        == 0
+    )
+    u2 = json.loads(capsys.readouterr().out)
+    assert u2["updated"] is True and u2["closed"] is True and issues[0]["state"] == "closed"
+
+    assert (
+        manage_main(
+            [
+                "update-review-issue",
+                "--repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--request-id",
+                "req-does-not-exist",
+                "--comment",
+                "No-op",
+                "--close",
+            ]
+        )
+        == 0
+    )
+    u3 = json.loads(capsys.readouterr().out)
+    assert u3["updated"] is False
+
+    # 6. CLI update-review-issue --close-if-terminal skips open pending request and closes expired/invalidated request
+    req4 = AdoptionRequestManager(root).enqueue_pass(
+        slate_id="slate-2026-27-e",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash="9" * 64,
+    )
+    msg4 = NotificationDispatcher.build_message(req4, review_url=review_url, recipient="JubileeZ")
+    provider.send_adoption_notice(msg4)
+    assert issues[-1]["state"] == "open"
+    assert (
+        manage_main(
+            [
+                "update-review-issue",
+                "--repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--request-id",
+                req4.request_id,
+                "--evidence-root",
+                str(root),
+                "--close-if-terminal",
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["reason"] == "not_terminal"
+    assert issues[-1]["state"] == "open"
+
+    AdoptionRequestManager(root).expire_or_invalidate_request(req4.request_id, reason="request_expired", expired=True)
+    assert (
+        manage_main(
+            [
+                "update-review-issue",
+                "--repo",
+                "JubileeZ/fpl-jubilee-ascent",
+                "--request-id",
+                req4.request_id,
+                "--evidence-root",
+                str(root),
+                "--close-if-terminal",
+            ]
+        )
+        == 0
+    )
+    u4 = json.loads(capsys.readouterr().out)
+    assert u4["updated"] is True and u4["closed"] is True and issues[-1]["state"] == "closed"
+
+
+def test_production_preflight_mail_gate_with_github_review_issue(tmp_path: Path) -> None:
+    """Preflight passes mail_delivery_and_reconciliation when GitHub Review Issues are enabled & wired, or webhook configured, else fails."""
+    from commands.manage_champion_adoption import PROJECT_ROOT, run_production_preflight
+    from models.selection import ModelSelection
+
+    # Build a self-contained project_root with Review Issue workflow wiring enabled
+    repo_root = tmp_path / "wired_repo"
+    wf_dir = repo_root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True)
+    for wf in (
+        "validation-collector.yml",
+        "champion-adoption-merge.yml",
+        "champion-adoption-pr-checks.yml",
+    ):
+        (wf_dir / wf).write_text((PROJECT_ROOT / ".github" / "workflows" / wf).read_text(encoding="utf-8"), encoding="utf-8")
+    (wf_dir / "champion-adoption-request.yml").write_text(
+        "permissions:\n  issues: write\njobs:\n  enqueue-and-notify:\n    concurrency:\n      group: validation-evidence\n"
+        "    steps:\n      - run: uv run python -m commands.manage_champion_adoption dispatch-notice --github-repo $REPO\n",
+        encoding="utf-8",
+    )
+    (repo_root / "commands").mkdir()
+    (repo_root / "commands" / "produce_validation_evidence.py").write_text(
+        "record_exclusion_under_reservation\n", encoding="utf-8"
+    )
+    cert_dst = repo_root / "docs" / "research" / "sparse-confirmation-certification"
+    cert_dst.mkdir(parents=True)
+    (cert_dst / "certification_result.json").write_bytes(
+        (PROJECT_ROOT / "docs" / "research" / "sparse-confirmation-certification" / "certification_result.json").read_bytes()
+    )
+    save_model_selection(ModelSelection(champion="def_xg_shrink_challenger", candidates=(), podium_sealed=False), repo_root / "config" / "model_selection.json")
+    (repo_root / "config" / "season_lifecycle.json").write_bytes(
+        (PROJECT_ROOT / "config" / "season_lifecycle.json").read_bytes()
+    )
+
+    base_snap = {
+        "api_reachable": True,
+        "branch_protection": {"enabled": True, "enforce_admins": True, "required_status_checks": {"strict": True, "contexts": ["verify-adoption-pr"]}},
+        "protected_environment": {"exists": True, "required_reviewers": [{"type": "User"}]},
+        "repo_settings": {"allow_auto_merge": False, "github_app_configured": True},
+        "validation_evidence_branch": {"exists": True, "releases_accessible": True},
+        "mail_provider": {"configured": False, "github_issues_enabled": True},
+        "variables": {"CHAMPION_ADOPTION_LIVE_ENABLED": "false"},
+    }
+    snap_gh = tmp_path / "snap_gh.json"
+    snap_gh.write_text(json.dumps(base_snap), encoding="utf-8")
+    rep_gh = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_gh, project_root=repo_root)
+    mail_gate = rep_gh["gates"]["mail_delivery_and_reconciliation"]
+    assert mail_gate["passed"] is True
+    assert mail_gate["details"]["mode"] == "github_review_issue"
+
+    # Both webhook and github_issues_enabled disabled -> fails closed
+    off_snap = dict(base_snap)
+    off_snap["mail_provider"] = {"configured": False, "github_issues_enabled": False}
+    snap_off = tmp_path / "snap_off.json"
+    snap_off.write_text(json.dumps(off_snap), encoding="utf-8")
+    rep_off = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_off, project_root=repo_root)
+    assert rep_off["gates"]["mail_delivery_and_reconciliation"]["passed"] is False
+    assert rep_off["gates"]["mail_delivery_and_reconciliation"]["details"]["mode"] == "unconfigured"
+
+
+

@@ -80,13 +80,16 @@
       "status": "pass"
     },
     "mail_delivery_and_reconciliation": {
-      "blocker": "Production mail provider credentials/inbox not configured",
+      "blocker": null,
       "details": {
-        "configured": false
+        "configured": false,
+        "github_issues_enabled": true,
+        "mode": "github_review_issue",
+        "review_issue_workflow_wired": true
       },
-      "passed": false,
-      "recovery_action": "Configure controlled mail provider credentials and verify single-notice reconciliation.",
-      "status": "blocked"
+      "passed": true,
+      "recovery_action": "Enable GitHub Issues with champion-adoption-request.yml Review Issue wiring (or set MAIL_PROVIDER_WEBHOOK_URL).",
+      "status": "pass"
     },
     "protected_environment": {
       "blocker": "Protected GitHub Environment 'champion-adoption-approval' missing or has no required human reviewers",
@@ -130,7 +133,7 @@
       "status": "pass"
     }
   },
-  "generated_at_utc": "2026-11-21T03:58:52.648688+00:00",
+  "generated_at_utc": "2026-11-21T06:37:35.260574+00:00",
   "live_activation_ready": false,
   "read_only": true,
   "repo": "JubileeZ/fpl-jubilee-ascent"

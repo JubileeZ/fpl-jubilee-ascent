@@ -718,6 +718,10 @@ _Avoid_: Unbounded experiment list, Champion replacement by admission
 Requirement that production Model Champion updates in `config/model_selection.json` occur only via explicit user-approved adoption actions (`commands.evaluate_model_promotion --adopt <bundle_path> --approval_ref <ref>`). Evaluation CLI commands and CI promotion workflows are strictly read-only and produce evidence records without mutating selection state (ADR 0066).
 _Avoid_: Automatic promotion, silent configuration writes from CI or CLI `--apply`
 
+**Adoption Review Issue**:
+Deduplicated GitHub Issue opened for one verified Model Champion adoption pass, assigning operator and summarizing checkpoint evidence and approval link. Read-only notification and review surface; closing or commenting never approves or rejects adoption.
+_Avoid_: External mail webhook as sole review surface, issue comment as approval authority, weekly scorecard issue
+
 **Candidate Registration**:
 An explicit committed addition of a Model Candidate to the comparison slate or confirmation attempt registry. Registration enables evaluation but does not itself change the Model Champion.
 _Avoid_: Model auto-discovery, implicit admission

@@ -18,10 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backtesting.adoption_transaction import (
     AUTHORIZED_ADOPTION_DIFF_FILES,
+    TERMINAL_REQUEST_STATUSES,
     AdoptionRequestManager,
     MergeInterruptedError,
     NotificationDispatcher,
     NotificationMessage,
+    ProviderDeliveryStatus,
     ReservationRecord,
     SharedReservationCoordinator,
     UncertainDeliveryAckError,
@@ -34,6 +36,44 @@ from models.selection import DEFAULT_CONFIG_PATH, load_model_selection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CERTIFICATION_DIGEST_EXPECTED = "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56"
+
+
+def _github_api_headers(token: str | None) -> dict[str, str]:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "fpl-jubilee-ascent-coordinator/1.0",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _post_json_delivery(
+    url: str,
+    payload: Mapping[str, Any],
+    headers: Mapping[str, str],
+    *,
+    transport: httpx.BaseTransport | None,
+    timeout_seconds: float,
+    context: str,
+) -> dict[str, Any]:
+    """POST JSON notice payload and classify network/5xx/non-JSON responses as UncertainDeliveryAckError."""
+    try:
+        with httpx.Client(timeout=timeout_seconds, transport=transport) as client:
+            resp = client.post(url, json=dict(payload), headers=dict(headers))
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise UncertainDeliveryAckError(f"{context} ack lost or timed out: {exc}") from exc
+    if resp.status_code >= 500:
+        raise UncertainDeliveryAckError(f"{context} server error {resp.status_code}")
+    if not 200 <= resp.status_code < 300:
+        raise RuntimeError(f"{context} rejected delivery with HTTP {resp.status_code}")
+    try:
+        data = resp.json()
+    except Exception as exc:
+        raise UncertainDeliveryAckError(f"{context} returned non-JSON ack: {exc}") from exc
+    if not isinstance(data, dict):
+        raise UncertainDeliveryAckError(f"{context} returned non-object JSON ack")
+    return data
 
 
 class HttpWebhookMailProvider:
@@ -64,19 +104,14 @@ class HttpWebhookMailProvider:
 
     def send_adoption_notice(self, message: NotificationMessage) -> str:
         payload = {"request_id": message.request_id, "message": message.to_dict()}
-        try:
-            with httpx.Client(timeout=self.timeout_seconds, transport=self.transport) as client:
-                resp = client.post(self.webhook_url, json=payload, headers=self._headers())
-        except (httpx.TimeoutException, httpx.RequestError) as exc:
-            raise UncertainDeliveryAckError(f"Webhook delivery ack lost or timed out: {exc}") from exc
-        if resp.status_code >= 500:
-            raise UncertainDeliveryAckError(f"Webhook provider server error {resp.status_code}")
-        if not 200 <= resp.status_code < 300:
-            raise RuntimeError(f"Webhook provider rejected delivery with HTTP {resp.status_code}")
-        try:
-            data = resp.json()
-        except Exception as exc:
-            raise UncertainDeliveryAckError(f"Webhook provider returned non-JSON ack: {exc}") from exc
+        data = _post_json_delivery(
+            self.webhook_url,
+            payload,
+            self._headers(),
+            transport=self.transport,
+            timeout_seconds=self.timeout_seconds,
+            context="Webhook provider",
+        )
         msg_id = (
             data.get("provider_message_id")
             or data.get("message_id")
@@ -145,6 +180,169 @@ class FileOutboxMailProvider:
         return "delivered" if self._msg_path(request_id).is_file() else "not_found"
 
 
+class GitHubIssueMailProvider:
+    """GitHub-native Adoption Review Issue provider with marker-based idempotency and status reconciliation."""
+
+    REVIEW_LABEL = "champion-adoption-review"
+
+    def __init__(
+        self,
+        repo: str,
+        *,
+        token: str | None = None,
+        assignee: str | None = None,
+        transport: httpx.BaseTransport | None = None,
+        timeout_seconds: float = 15.0,
+    ) -> None:
+        cleaned_repo = repo.strip()
+        if not cleaned_repo or "/" not in cleaned_repo:
+            raise ValueError(f"Invalid GitHub repository '{repo}'")
+        self.repo = cleaned_repo
+        self.token = token.strip() if isinstance(token, str) and token.strip() else None
+        self.assignee = assignee.strip() if isinstance(assignee, str) and assignee.strip() else None
+        self.label = self.REVIEW_LABEL
+        self.transport = transport
+        self.timeout_seconds = float(timeout_seconds)
+
+    @staticmethod
+    def marker(request_id: str) -> str:
+        return f"<!-- adoption-request-id:{request_id} -->"
+
+    def _issues_url(self) -> str:
+        return f"https://api.github.com/repos/{self.repo}/issues"
+
+    def _issue_body(self, message: NotificationMessage) -> str:
+        return "\n".join(
+            [
+                "### Verified Champion Adoption Review",
+                "",
+                (
+                    "**Read-only notification & review surface:** commenting on or closing this issue "
+                    "never approves or rejects Champion adoption. Approve or reject only at the protected "
+                    "GitHub Environment gate (`champion-adoption-approval`)."
+                ),
+                "",
+                "| Field | Value |",
+                "|---|---|",
+                f"| **Request ID** | `{message.request_id}` |",
+                f"| **Slate ID** | `{message.slate_id}` |",
+                f"| **Season / Checkpoint** | `{message.season}` GW{message.checkpoint_gw} |",
+                f"| **Candidate** | `{message.candidate_name}` |",
+                f"| **Expected Champion** | `{message.expected_champion}` |",
+                f"| **Bundle SHA-256** | `{message.bundle_hash}` |",
+                f"| **Archive SHA-256** | `{message.archive_sha256 or 'none'}` |",
+                f"| **Protected Approval Run** | {message.review_url} |",
+                "",
+                self.marker(message.request_id),
+            ]
+        )
+
+    def _lookup_issue_status(self, request_id: str) -> tuple[ProviderDeliveryStatus, int | None]:
+        tag = self.marker(request_id)
+        headers = _github_api_headers(self.token)
+        page = 1
+        try:
+            with httpx.Client(timeout=self.timeout_seconds, transport=self.transport) as client:
+                while True:
+                    resp = client.get(
+                        self._issues_url(),
+                        headers=headers,
+                        params={"state": "all", "labels": self.label, "per_page": 100, "page": page},
+                    )
+                    if resp.status_code != 200:
+                        return "unknown", None
+                    items = resp.json()
+                    if not isinstance(items, list):
+                        return "unknown", None
+                    for item in items:
+                        if not isinstance(item, dict) or "pull_request" in item:
+                            continue
+                        if tag in str(item.get("body") or "") and isinstance(item.get("number"), int):
+                            return "delivered", int(item["number"])
+                    if len(items) < 100:
+                        return "not_found", None
+                    page += 1
+        except (httpx.TimeoutException, httpx.RequestError, ValueError):
+            return "unknown", None
+
+    def find_issue_number(self, request_id: str) -> int | None:
+        status, number = self._lookup_issue_status(request_id)
+        if status == "unknown":
+            raise UncertainDeliveryAckError(f"Unable to reconcile GitHub Review Issue status for '{request_id}'")
+        return number
+
+    def query_delivery_status(self, request_id: str) -> ProviderDeliveryStatus:
+        status, _ = self._lookup_issue_status(request_id)
+        return status
+
+    def send_adoption_notice(self, message: NotificationMessage) -> str:
+        existing = self.find_issue_number(message.request_id)
+        if existing is not None:
+            return f"gh-issue-{existing}"
+        payload: dict[str, Any] = {
+            "title": (
+                f"[Champion Adoption Review] {message.candidate_name} "
+                f"(GW{message.checkpoint_gw}, {message.request_id})"
+            ),
+            "body": self._issue_body(message),
+            "labels": [self.label],
+        }
+        if self.assignee:
+            payload["assignees"] = [self.assignee]
+        data = _post_json_delivery(
+            self._issues_url(),
+            payload,
+            _github_api_headers(self.token),
+            transport=self.transport,
+            timeout_seconds=self.timeout_seconds,
+            context="GitHub Issues API",
+        )
+        number = data.get("number")
+        if not isinstance(number, int) or isinstance(number, bool):
+            raise UncertainDeliveryAckError("GitHub Issues API response missing integer issue number")
+        return f"gh-issue-{number}"
+
+    def update_review_issue(
+        self,
+        request_id: str,
+        *,
+        comment: str | None = None,
+        close: bool = False,
+    ) -> dict[str, Any]:
+        issue_num = self.find_issue_number(request_id)
+        if issue_num is None:
+            return {
+                "request_id": request_id,
+                "issue_number": None,
+                "updated": False,
+                "closed": False,
+                "commented": False,
+            }
+        headers = _github_api_headers(self.token)
+        cleaned_comment = comment.strip() if isinstance(comment, str) and comment.strip() else None
+        issue_url = f"{self._issues_url()}/{issue_num}"
+        with httpx.Client(timeout=self.timeout_seconds, transport=self.transport) as client:
+            if cleaned_comment is not None:
+                c_resp = client.post(f"{issue_url}/comments", json={"body": cleaned_comment}, headers=headers)
+                if not 200 <= c_resp.status_code < 300:
+                    raise RuntimeError(
+                        f"Failed to comment on Adoption Review Issue #{issue_num} (HTTP {c_resp.status_code})"
+                    )
+            if close:
+                p_resp = client.patch(issue_url, json={"state": "closed"}, headers=headers)
+                if not 200 <= p_resp.status_code < 300:
+                    raise RuntimeError(
+                        f"Failed to close Adoption Review Issue #{issue_num} (HTTP {p_resp.status_code})"
+                    )
+        return {
+            "request_id": request_id,
+            "issue_number": issue_num,
+            "updated": True,
+            "closed": bool(close),
+            "commented": cleaned_comment is not None,
+        }
+
+
 def _enqueue_pass_command(args: argparse.Namespace) -> int:
     manager = AdoptionRequestManager(args.evidence_root)
     req = manager.enqueue_pass(
@@ -174,22 +372,30 @@ def _dispatch_or_reconcile_notice_command(args: argparse.Namespace) -> int:
     req = manager.get_request(str(args.request_id))
     if req is None:
         raise ValueError(f"Adoption request '{args.request_id}' not found")
-    provider: FileOutboxMailProvider | HttpWebhookMailProvider
+    provider: FileOutboxMailProvider | HttpWebhookMailProvider | GitHubIssueMailProvider
+    webhook_url = (getattr(args, "webhook_url", None) or os.environ.get("MAIL_PROVIDER_WEBHOOK_URL") or "").strip()
+    github_repo = (getattr(args, "github_repo", None) or "").strip()
     if args.outbox_dir:
         provider = FileOutboxMailProvider(
             Path(args.outbox_dir).resolve(),
             override_status=getattr(args, "provider_status", None),
         )
-    else:
-        webhook_url = (getattr(args, "webhook_url", None) or os.environ.get("MAIL_PROVIDER_WEBHOOK_URL") or "").strip()
-        if not webhook_url:
-            raise ValueError(
-                "Controlled mail provider not configured: set MAIL_PROVIDER_WEBHOOK_URL or pass --outbox-dir explicitly"
-            )
+    elif webhook_url:
         provider = HttpWebhookMailProvider(
             webhook_url,
             api_key=os.environ.get("MAIL_PROVIDER_API_KEY"),
             status_url=os.environ.get("MAIL_PROVIDER_STATUS_URL"),
+        )
+    elif github_repo:
+        assignee = (getattr(args, "assignee", None) or "").strip() or None
+        provider = GitHubIssueMailProvider(
+            github_repo,
+            token=_retrieve_github_token_in_memory(),
+            assignee=assignee,
+        )
+    else:
+        raise ValueError(
+            "Controlled mail provider not configured: set MAIL_PROVIDER_WEBHOOK_URL, --github-repo, or --outbox-dir explicitly"
         )
     dispatcher = NotificationDispatcher(root, provider=provider)
     rec = dispatcher.reconcile_and_dispatch(
@@ -198,6 +404,34 @@ def _dispatch_or_reconcile_notice_command(args: argparse.Namespace) -> int:
         recipient=str(args.recipient),
     )
     print(json.dumps(rec.to_dict(), sort_keys=True))
+    return 0
+
+
+def _update_review_issue_command(args: argparse.Namespace) -> int:
+    request_id = str(args.request_id)
+    comment = args.comment
+    close = bool(args.close)
+    if args.close_if_terminal:
+        if not args.evidence_root:
+            raise ValueError("--close-if-terminal requires --evidence-root")
+        req = AdoptionRequestManager(args.evidence_root).get_request(request_id)
+        if req is None or req.status not in TERMINAL_REQUEST_STATUSES:
+            print(json.dumps({"request_id": request_id, "updated": False, "closed": False, "reason": "not_terminal"}, sort_keys=True))
+            return 0
+        close = True
+        if not comment:
+            detail = f": {req.reason}" if req.reason else ""
+            comment = f"Adoption request closed ({req.status}){detail}."
+    provider = GitHubIssueMailProvider(
+        str(args.repo),
+        token=_retrieve_github_token_in_memory(),
+    )
+    result = provider.update_review_issue(
+        request_id,
+        comment=comment,
+        close=close,
+    )
+    print(json.dumps(result, sort_keys=True))
     return 0
 
 
@@ -409,16 +643,6 @@ def _verify_adoption_pr_command(args: argparse.Namespace) -> int:
         )
     )
     return 0
-
-
-def _github_api_headers(token: str | None) -> dict[str, str]:
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "fpl-jubilee-ascent-coordinator/1.0",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    return headers
 
 
 def _fetch_and_verify_live_pr_checks(
@@ -754,6 +978,7 @@ def _query_live_github_snapshot(repo: str) -> dict[str, Any]:
         },
         "mail_provider": {
             "configured": bool(vars_map.get("MAIL_PROVIDER_ENDPOINT") or "MAIL_PROVIDER_WEBHOOK_URL" in secret_names),
+            "github_issues_enabled": bool(repo_data.get("has_issues", False)) if isinstance(repo_data, dict) else False,
         },
         "variables": {
             "CHAMPION_ADOPTION_LIVE_ENABLED": live_var_val,
@@ -875,14 +1100,36 @@ def run_production_preflight(
     }
 
     # 6. mail_delivery_and_reconciliation
-    mp = gh.get("mail_provider", {})
-    mail_passed = bool(mp.get("configured") and hasattr(NotificationDispatcher, "reconcile_and_dispatch"))
+    mp = gh.get("mail_provider", {}) if isinstance(gh.get("mail_provider"), dict) else {}
+    req_wf = root / ".github" / "workflows" / "champion-adoption-request.yml"
+    merge_wf = root / ".github" / "workflows" / "champion-adoption-merge.yml"
+    req_wf_text = req_wf.read_text(encoding="utf-8") if req_wf.is_file() else ""
+    merge_wf_text = merge_wf.read_text(encoding="utf-8") if merge_wf.is_file() else ""
+    review_issue_wf_wired = (
+        "issues: write" in req_wf_text
+        and "--github-repo" in req_wf_text
+        and "issues: write" in merge_wf_text
+        and "update-review-issue" in merge_wf_text
+        and hasattr(GitHubIssueMailProvider, "query_delivery_status")
+    )
+    webhook_configured = bool(mp.get("configured"))
+    github_issues_enabled = bool(mp.get("github_issues_enabled"))
+    github_issue_ready = bool(github_issues_enabled and review_issue_wf_wired)
+    if github_issue_ready and webhook_configured:
+        notice_mode = "github_review_issue+webhook"
+    elif github_issue_ready:
+        notice_mode = "github_review_issue"
+    elif webhook_configured:
+        notice_mode = "webhook"
+    else:
+        notice_mode = "unconfigured"
+    mail_passed = bool((github_issue_ready or webhook_configured) and hasattr(NotificationDispatcher, "reconcile_and_dispatch"))
     gates["mail_delivery_and_reconciliation"] = {
         "passed": mail_passed,
         "status": "pass" if mail_passed else "blocked",
-        "blocker": None if mail_passed else "Production mail provider credentials/inbox not configured",
-        "recovery_action": "Configure controlled mail provider credentials and verify single-notice reconciliation.",
-        "details": mp,
+        "blocker": None if mail_passed else "Neither GitHub Review Issues nor webhook mail provider configured",
+        "recovery_action": "Enable GitHub Issues with champion-adoption-request.yml Review Issue wiring (or set MAIL_PROVIDER_WEBHOOK_URL).",
+        "details": {**mp, "review_issue_workflow_wired": review_issue_wf_wired, "mode": notice_mode},
     }
 
     # 7. live_rollout_disabled
@@ -1013,6 +1260,8 @@ def main(argv: list[str] | None = None) -> int:
     p_disp.add_argument("--recipient", default="operator@example.com")
     p_disp.add_argument("--outbox-dir", default=None)
     p_disp.add_argument("--webhook-url", default=None)
+    p_disp.add_argument("--github-repo", default=None)
+    p_disp.add_argument("--assignee", default=None)
 
     p_rec_notice = sub.add_parser("reconcile-notice", help="Reconcile uncertain notice delivery state for request_id")
     p_rec_notice.add_argument("--evidence-root", required=True)
@@ -1021,7 +1270,17 @@ def main(argv: list[str] | None = None) -> int:
     p_rec_notice.add_argument("--recipient", default="operator@example.com")
     p_rec_notice.add_argument("--outbox-dir", default=None)
     p_rec_notice.add_argument("--webhook-url", default=None)
+    p_rec_notice.add_argument("--github-repo", default=None)
+    p_rec_notice.add_argument("--assignee", default=None)
     p_rec_notice.add_argument("--provider-status", choices=["delivered", "not_found", "unknown"], default=None)
+
+    p_upd_issue = sub.add_parser("update-review-issue", help="Comment on and optionally close Adoption Review Issue")
+    p_upd_issue.add_argument("--repo", required=True)
+    p_upd_issue.add_argument("--request-id", required=True)
+    p_upd_issue.add_argument("--comment", default=None)
+    p_upd_issue.add_argument("--close", action="store_true")
+    p_upd_issue.add_argument("--close-if-terminal", action="store_true")
+    p_upd_issue.add_argument("--evidence-root", default=None)
 
     p_app = sub.add_parser("record-approval", help="Bind human approval and approved PR head SHA")
     p_app.add_argument("--evidence-root", required=True)
@@ -1094,6 +1353,8 @@ def main(argv: list[str] | None = None) -> int:
         return _enqueue_pass_command(args)
     if args.subcommand in ("dispatch-notice", "reconcile-notice"):
         return _dispatch_or_reconcile_notice_command(args)
+    if args.subcommand == "update-review-issue":
+        return _update_review_issue_command(args)
     if args.subcommand == "record-approval":
         return _record_approval_command(args)
     if args.subcommand == "sync-evidence-worktree":

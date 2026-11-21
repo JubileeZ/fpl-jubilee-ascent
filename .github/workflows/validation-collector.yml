@@ -217,6 +217,17 @@ jobs:
               echo "manifest_path=$MANIFEST_PATH" >> "$GITHUB_OUTPUT"
             fi
           fi
+          {
+            echo "### Validation Collector (${ACTION} - ${SEASON})"
+            echo ""
+            echo "- Slate: \`${SLATE_ID}\`"
+            if [ -n "${SETTLED_GW:-}" ]; then
+              echo "- Settled through GW: \`${SETTLED_GW}\`"
+            fi
+            if [ "${HAS_SNAP:-false}" = "true" ]; then
+              echo "- Checkpoint status: passing snapshot packed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit updated evidence to validation-evidence
         if: always()

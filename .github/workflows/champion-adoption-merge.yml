@@ -22,6 +22,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 concurrency:
   group: validation-evidence
@@ -67,6 +68,7 @@ jobs:
           fi
 
       - name: Reconcile prior reservation and execute GitHub PR API reserved merge
+        id: reserved-merge
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -126,3 +128,37 @@ jobs:
                 commit -m "adoption: sync reservation/ledger ${REQUEST_ID}"
             git push origin HEAD:validation-evidence
           fi
+
+      - name: Update and close Adoption Review Issue
+        if: steps.reserved-merge.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+          SLATE_ID: ${{ github.event.inputs.slate_id }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          APPROVAL_REF: ${{ github.event.inputs.approval_ref }}
+          APPROVED_PR_HEAD_SHA: ${{ github.event.inputs.approved_pr_head_sha }}
+        run: |
+          set -euo pipefail
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "${{ github.repository }}" \
+            --request-id "$REQUEST_ID" \
+            --comment "Champion adoption merged onto protected \`main\` (PR #${PR_NUMBER}, approval \`${APPROVAL_REF}\`, head SHA \`${APPROVED_PR_HEAD_SHA}\`). Comparison Slate \`${SLATE_ID}\` closed." \
+            --close
+
+      - name: Close Adoption Review Issue if request expired or invalidated
+        if: failure() && steps.reserved-merge.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          set -euo pipefail
+          uv run python -m commands.manage_champion_adoption update-review-issue \
+            --repo "${{ github.repository }}" \
+            --request-id "$REQUEST_ID" \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --close-if-terminal
