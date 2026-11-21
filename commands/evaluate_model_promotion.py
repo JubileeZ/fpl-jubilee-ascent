@@ -386,14 +386,12 @@ def adopt_champion(
                     ExclusionLedger(local_excl_file).load_all_records(),
                     canon_excl.load_all_records(),
                 )
-        if canon_excl.is_excluded(cand_name, slate_id=slate_id, season=current_sel.podium_frozen_season) or (
-            canon_excl.is_excluded(cand_name, season=current_sel.podium_frozen_season)
-        ):
+        if canon_excl.is_candidate_excluded(cand_name, slate_id=slate_id, season=current_sel.podium_frozen_season):
             raise ValueError(f"Candidate '{cand_name}' was excluded in canonical ExclusionLedger")
     elif archive_target is None and bundle_file.is_file():
         local_excl_file = bundle_file.parent / "exclusions.jsonl"
-        if local_excl_file.is_file() and ExclusionLedger(local_excl_file).is_excluded(
-            cand_name, season=current_sel.podium_frozen_season
+        if local_excl_file.is_file() and ExclusionLedger(local_excl_file).is_candidate_excluded(
+            cand_name, slate_id=slate_id, season=current_sel.podium_frozen_season
         ):
             raise ValueError(f"Candidate '{cand_name}' is excluded in ExclusionLedger")
 
@@ -686,7 +684,7 @@ def main(argv: list[str] | None = None) -> None:
         snapshot_season = args.season or (data_dir.parent.name if data_dir.parent.name != "data" else None)
 
         seed_season = args.seed_season
-        if seed_season is None and args.confirmation and (args.season is None or snapshot_season in ("2024-25", None)):
+        if seed_season is None and args.confirmation and snapshot_season in ("2024-25", None):
             seed_season = "2023-24"
 
         updated, comparisons, evidence_paths = evaluate_and_apply(

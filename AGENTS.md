@@ -49,6 +49,10 @@ docs/          # Durable project documentation and decision records
 | `uv run python -m commands.snapshot_season --season 2024-25 --from-raw-dir <raw>` | Process local FPL raw JSON into `data/archive/<season>/processed` |
 | `uv run python -m commands.transfer_plan_walkforward` | First-Half Transfer Plan Walk-Forward; blocked summary without 2024-25 seed; MILP ranking when seed exists |
 | `uv run python -m commands.measure_champion_bias` | Champion signed bias vs Realized Points; writes `docs/research/champion-signed-bias-2025-26/champion_bias_summary.csv` |
+| `uv run python -m commands.certify_sparse_confirmation` | Calibrate & certify ADR 0070 sparse confirmation + Early-Harm protocol on non-live paths |
+| `uv run python -m commands.inventory_pilot_fixture` | Audit non-live seasons & retained GW15 fixture for admissible passing pilot evidence |
+| `uv run python -m commands.produce_validation_evidence` | Collect live/batch `validation-evidence`, freeze v2 slate, replay checkpoints, bootstrap S-1 transition baseline |
+| `uv run python -m commands.manage_champion_adoption` | Enqueue adoption passes, deduplicate notices, verify/merge adoption PRs under shared reservation, run read-only production preflight |
 
 **Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
 

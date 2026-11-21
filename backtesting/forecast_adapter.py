@@ -84,7 +84,13 @@ def predict_issue(
     model_name: str | None = None,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Stage verified synthetic or empirical data and call the supported concrete model once."""
-    source = verify_training_bundle(capability, request, catalog, training_authority)
+    source = verify_training_bundle(
+        capability,
+        request,
+        catalog,
+        training_authority,
+        allow_disk_path_fallback=(capability.mode != "empirical"),
+    )
     empirical = capability.mode == "empirical"
     origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
     rules = get_rules(capability.season)

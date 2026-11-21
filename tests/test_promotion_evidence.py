@@ -715,6 +715,11 @@ def test_evaluate_v2_checkpoint_independence_skips_expiry_guards_and_segments() 
         gw38_expiry_hours_after_last_kickoff=360.0,
         certification_digest="e" * 64,
         required_projection_guards=tuple(sorted(MANDATORY_GUARDS)),
+        completed_segments={
+            "15": ((1, 4),),
+            "30": ((1, 4), (5, 19)),
+            "38": ((1, 4), (5, 19), (20, 38)),
+        },
     )
     cfg_enf = replace(cfg_adv, statistical_early_harm_mode="enforced")
 
@@ -977,3 +982,78 @@ def test_rank_and_freeze_podium_binds_protocol_and_certification_digest_preservi
     reloaded = load_model_selection(bound_path)
     assert reloaded.frozen_protocol_hash == p_hash
     assert reloaded.frozen_certification_digest == c_dig
+
+
+def test_v2_protocol_requires_completed_segments() -> None:
+    from dataclasses import asdict
+    from backtesting.evidence_statistics import StatisticalProtocolConfig
+    from backtesting.promotion_evidence import (
+        GUARD_SEMANTICS,
+        MANDATORY_GUARDS,
+        content_hash,
+        native_solver_identity,
+        protocol_from_payload,
+    )
+    from backtesting.rolling_replay import QualityPolicy
+
+    windows = {"2025-26": [1, 2], "2026-27": list(range(1, 39))}
+    guards = {
+        name: {
+            "forecast_field": spec[0],
+            "outcome_field": spec[1],
+            "loss": spec[2],
+            "units": spec[3],
+            "margin": 0.0,
+            "alpha": 0.05,
+            "direction": "lower_is_better",
+        }
+        for name, spec in GUARD_SEMANTICS.items()
+    }
+    declaration = {
+        "horizon": 6,
+        "windows": windows,
+        "guard_specs": guards,
+        "quality_policy": asdict(QualityPolicy()),
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)),
+            "weights": [1.0] * 6,
+            "population": "all_admitted_players",
+            "missingness": "fail_closed",
+            "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+        },
+        "live_review": {
+            "mode": "fplcache",
+            "review_gameweeks": [15, 30, 38],
+            "settlement_delay_hours": 24,
+            "early_harm_min_gw": 6,
+            "early_harm_p_threshold": 0.025,
+        },
+    }
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        development_season="2025-26",
+        confirmation_season="2026-27",
+        approved_by_human=True,
+        approval_reference="test-missing-seg",
+        max_family_attempts=1,
+        required_projection_guards=tuple(sorted(MANDATORY_GUARDS)),
+        evidence_protocol_hash=content_hash(declaration),
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas={
+            "1": {"15": 0.0004, "30": 0.008, "38": 0.032},
+            "2": {"15": 0.0002, "30": 0.004, "38": 0.016},
+        },
+        gw1_4_material_loss_limit=25.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest="a" * 64,
+        completed_segments=None,
+    )
+    with pytest.raises(ValueError, match="v2 protocol requires completed_segments"):
+        protocol_from_payload({**declaration, "statistics": cfg.to_dict()})

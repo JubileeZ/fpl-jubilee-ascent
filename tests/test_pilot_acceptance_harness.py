@@ -541,3 +541,233 @@ def test_cli_rejection_queue_advancement_and_reconcile_subcommands(
     assert rec_merge_out["status"] == "reconciled_not_merged_reset_for_retry"
     assert coord.current_reservation() is None
 
+
+def test_webhook_mail_provider_live_pr_checks_api_merge_and_worktree_sync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Exercise HttpWebhookMailProvider, fail-closed unconfigured dispatch, live PR checks/API merge, and worktree sync."""
+    import httpx
+    from backtesting.adoption_transaction import AdoptionRequestManager, MergeInterruptedError, NotificationDispatcher, SharedReservationCoordinator
+    from commands.manage_champion_adoption import (
+        HttpWebhookMailProvider,
+        _execute_github_pr_merge,
+        _fetch_and_verify_live_pr_checks,
+        _sync_evidence_worktree,
+    )
+    from models.selection import ModelSelection, save_model_selection
+
+    root, bundle_path, archive_path, bundle_hash, archive_sha = _build_verified_snapshot_fixture(
+        tmp_path, monkeypatch, candidate_name="adaptive_causal_challenger", checkpoint_gw=15, bundle_seed="f"
+    )
+    req = AdoptionRequestManager(root).enqueue_pass(
+        slate_id="slate-2026-27",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash=bundle_hash,
+        archive_sha256=archive_sha,
+        snapshot_archive_path=str(archive_path),
+        bundle_path=str(bundle_path),
+        protocol_hash="4" * 64,
+    )
+
+    # 1. dispatch-notice without --outbox-dir or MAIL_PROVIDER_WEBHOOK_URL fails closed
+    monkeypatch.delenv("MAIL_PROVIDER_WEBHOOK_URL", raising=False)
+    with pytest.raises(ValueError, match="not configured"):
+        manage_main(
+            [
+                "dispatch-notice",
+                "--evidence-root",
+                str(root),
+                "--request-id",
+                req.request_id,
+                "--review-url",
+                "https://github.com/org/repo/actions/runs/1",
+            ]
+        )
+
+    # 2. HttpWebhookMailProvider uncertain 502 ack + status reconciliation -> no duplicate send
+    calls: dict[str, int] = {"post": 0, "status": 0}
+
+    def mail_handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            calls["post"] += 1
+            if calls["post"] == 1:
+                return httpx.Response(502)
+            return httpx.Response(200, json={"provider_message_id": "wh-1"})
+        if request.method == "GET":
+            calls["status"] += 1
+            return httpx.Response(200, json={"status": "delivered"})
+        return httpx.Response(404)
+
+    provider = HttpWebhookMailProvider(
+        "https://mail.mock/send",
+        api_key="tok",
+        status_url="https://mail.mock/status/{request_id}",
+        transport=httpx.MockTransport(mail_handler),
+    )
+    disp = NotificationDispatcher(root, provider=provider)
+    r1 = disp.reconcile_and_dispatch(req, review_url="https://github.com/org/repo/actions/runs/1")
+    assert r1.status == "uncertain"
+    r2 = disp.reconcile_and_dispatch(req, review_url="https://github.com/org/repo/actions/runs/1")
+    assert r2.status == "delivered"
+    assert calls["post"] == 1 and calls["status"] == 1
+
+    # 3. Live PR checks and squash merge via GitHub API mock
+    head_sha = "c" * 40
+    pr_state = {"conclusion": "success", "auto_merge": None, "merge_code": 200}
+
+    def gh_handler(request: httpx.Request) -> httpx.Response:
+        p = request.url.path
+        if p.endswith("/pulls/12"):
+            return httpx.Response(
+                200,
+                json={"state": "open", "head": {"sha": head_sha}, "auto_merge": pr_state["auto_merge"]},
+            )
+        if p.endswith("/pulls/12/files"):
+            return httpx.Response(
+                200,
+                json=[
+                    {"filename": "config/model_selection.json"},
+                    {"filename": "config/model_selection.adoption.json"},
+                ],
+            )
+        if p.endswith(f"/commits/{head_sha}/check-runs"):
+            return httpx.Response(
+                200,
+                json={
+                    "check_runs": [
+                        {"name": "verify-adoption-pr", "status": "completed", "conclusion": pr_state["conclusion"]}
+                    ]
+                },
+            )
+        if p.endswith("/pulls/12/merge") and request.method == "PUT":
+            if pr_state["merge_code"] != 200:
+                return httpx.Response(int(pr_state["merge_code"]), json={"message": "server error"})
+            return httpx.Response(200, json={"merged": True, "sha": "m" * 40})
+        return httpx.Response(404)
+
+    gh_transport = httpx.MockTransport(gh_handler)
+    files = _fetch_and_verify_live_pr_checks(
+        repo="org/repo", pr_number=12, approved_pr_head_sha=head_sha, pr_head_sha=head_sha,
+        token="t", transport=gh_transport,
+    )
+    assert set(files) == {"config/model_selection.json", "config/model_selection.adoption.json"}
+
+    pr_state["conclusion"] = "failure"
+    with pytest.raises(ValueError, match="not green"):
+        _fetch_and_verify_live_pr_checks(
+            repo="org/repo", pr_number=12, approved_pr_head_sha=head_sha, pr_head_sha=head_sha,
+            token="t", transport=gh_transport,
+        )
+    pr_state["conclusion"] = "success"
+    pr_state["auto_merge"] = {"enabled_by": {"login": "bot"}}
+    with pytest.raises(ValueError, match="auto-merge"):
+        _fetch_and_verify_live_pr_checks(
+            repo="org/repo", pr_number=12, approved_pr_head_sha=head_sha, pr_head_sha=head_sha,
+            token="t", transport=gh_transport,
+        )
+    pr_state["auto_merge"] = None
+    merged = _execute_github_pr_merge(
+        repo="org/repo", pr_number=12, approved_pr_head_sha=head_sha, token="t", transport=gh_transport
+    )
+    assert merged["merge_commit_sha"] == "m" * 40
+    pr_state["merge_code"] = 500
+    with pytest.raises(MergeInterruptedError):
+        _execute_github_pr_merge(
+            repo="org/repo", pr_number=12, approved_pr_head_sha=head_sha, token="t", transport=gh_transport
+        )
+
+    # 4. Idempotent execute-protected-merge after reconcile-merge marks request adopted (closed PR)
+    closed_pr = {"state": "closed"}
+
+    def reconciled_pr_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/pulls/12"):
+            return httpx.Response(200, json={"state": closed_pr["state"], "head": {"sha": head_sha}, "auto_merge": None})
+        return gh_handler(request)
+
+    coord_idem = SharedReservationCoordinator(root)
+    mgr_idem = coord_idem.request_manager
+    mgr_idem.record_approval(
+        req.request_id,
+        actor="op",
+        approval_ref="APP-IDEM",
+        approved_pr_head_sha=head_sha,
+    )
+    coord_idem.acquire_reservation(
+        holder="github-app-adoption-merger",
+        purpose="adoption_merge",
+        slate_id="slate-2026-27",
+        request_id=req.request_id,
+        approved_pr_head_sha=head_sha,
+    )
+    res_rec = coord_idem._update_reservation_state(coord_idem.current_reservation(), "merge_outcome_unknown")  # type: ignore[arg-type]
+    assert res_rec.merge_state == "merge_outcome_unknown"
+    main_sel_idem = tmp_path / "idem_config" / "model_selection.json"
+    main_sel_idem.parent.mkdir(parents=True, exist_ok=True)
+    save_model_selection(ModelSelection(champion="adaptive_causal_challenger", candidates=(), podium_sealed=False), main_sel_idem)
+    main_sel_idem.with_suffix(".adoption.json").write_text(
+        json.dumps(
+            {
+                "request_id": req.request_id,
+                "slate_id": "slate-2026-27",
+                "candidate_name": "adaptive_causal_challenger",
+                "approval_ref": "APP-IDEM",
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert coord_idem.reconcile_unknown_merge(main_selection_path=main_sel_idem)["status"] == "reconciled_merged"
+    import commands.manage_champion_adoption as mca_mod
+
+    monkeypatch.setattr(mca_mod, "_retrieve_github_token_in_memory", lambda: "tok")
+    monkeypatch.setattr(httpx, "Client", lambda **kw: httpx.Client(transport=httpx.MockTransport(reconciled_pr_handler)))
+    capsys.readouterr()
+    assert (
+        manage_main(
+            [
+                "execute-protected-merge",
+                "--evidence-root",
+                str(root),
+                "--request-id",
+                req.request_id,
+                "--slate-id",
+                "slate-2026-27",
+                "--approval-ref",
+                "APP-IDEM",
+                "--approved-pr-head-sha",
+                head_sha,
+                "--pr-head-sha",
+                head_sha,
+                "--repo",
+                "org/repo",
+                "--pr-number",
+                "12",
+                "--merge-via-github-api",
+                "--require-live-checks",
+                "--main-selection-path",
+                str(main_sel_idem),
+            ]
+        )
+        == 0
+    )
+    idem_out = json.loads(capsys.readouterr().out)
+    assert idem_out["status"] == "already_adopted"
+
+    # 5. sync-evidence-worktree copies files and removes released reservation.json preserving .git
+    src_dir = tmp_path / "sync_src"
+    wt_dir = tmp_path / "sync_wt"
+    (src_dir / "scorecards").mkdir(parents=True)
+    (src_dir / "scorecards" / "gw01.json").write_text("{}", encoding="utf-8")
+    (wt_dir / ".git").mkdir(parents=True)
+    (wt_dir / ".git" / "HEAD").write_text("ref: refs/heads/validation-evidence\n", encoding="utf-8")
+    (wt_dir / "reservation.json").write_text('{"stale": true}', encoding="utf-8")
+    _sync_evidence_worktree(src_dir, wt_dir)
+    assert (wt_dir / "scorecards" / "gw01.json").is_file()
+    assert not (wt_dir / "reservation.json").exists()
+    assert (wt_dir / ".git" / "HEAD").is_file()
+
+    # SharedReservationCoordinator type check for unused import sanity
+    assert SharedReservationCoordinator is not None
+

@@ -382,6 +382,12 @@ def test_shared_reservation_exclusion_race_and_interrupted_merge_recovery(
         net_delta=15.0,
         podium_index=0,
     )
+    req = manager.record_approval(
+        req.request_id,
+        actor="operator",
+        approval_ref="GH-ENV-APPROVAL-1",
+        approved_pr_head_sha="1" * 40,
+    )
 
     # 1. Independent auto-merge enabled must be rejected
     with pytest.raises(ValueError, match="auto-merge"):
@@ -505,6 +511,12 @@ def test_exclusion_arriving_after_green_checks_and_before_reservation_blocks_sta
         net_delta=15.0,
         podium_index=0,
     )
+    req = manager.record_approval(
+        req.request_id,
+        actor="operator",
+        approval_ref="GH-ENV-APPROVAL-2",
+        approved_pr_head_sha="2" * 40,
+    )
 
     # Exclusion writer acquires shared reservation after green PR checks and before merger acquires reservation
     coordinator.record_exclusion_under_reservation(
@@ -536,3 +548,197 @@ def test_exclusion_arriving_after_green_checks_and_before_reservation_blocks_sta
     assert not main_selection_path.with_suffix(".adoption.json").exists()
     assert manager.get_request(req.request_id).status == "stale_closed"  # type: ignore[union-attr]
     assert AdoptionLedger(root / "adoption_ledger.jsonl").latest_for_request(req.request_id).disposition == "invalidated"  # type: ignore[union-attr]
+
+
+def test_step3_approval_expiry_evidence_verification_and_api_merge_hooks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify unapproved/mismatched/expired request blocking, public verify_request_evidence, and merge hooks."""
+    root, bundle, archive, bhash, asha = _build_verified_snapshot_fixture(tmp_path, monkeypatch)
+    main_selection_path = tmp_path / "config" / "model_selection.json"
+    save_model_selection(load_model_selection(root / "selection.json"), main_selection_path)
+    manager = AdoptionRequestManager(root)
+    coordinator = SharedReservationCoordinator(root, request_manager=manager)
+
+    # 1. Pending approval request cannot bypass execute_reserved_adoption_merge
+    req = manager.enqueue_pass(
+        slate_id="slate-2026-27",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash=bhash,
+        archive_sha256=asha,
+        snapshot_archive_path=str(archive),
+        bundle_path=str(bundle),
+        protocol_hash="4" * 64,
+        expires_at_utc="2026-12-31T00:00:00Z",
+    )
+    with pytest.raises(StaleAdoptionBlockedError, match="requires prior human approval"):
+        coordinator.execute_reserved_adoption_merge(
+            request_id=req.request_id,
+            slate_id="slate-2026-27",
+            approval_ref="GH-BYPASS",
+            approved_pr_head_sha="1" * 40,
+            pr_head_sha="1" * 40,
+            changed_files=("config/model_selection.json", "config/model_selection.adoption.json"),
+            checks_green=True,
+            main_selection_path=main_selection_path,
+            now_utc="2026-12-01T00:00:00Z",
+        )
+
+    # 2. Expired request is rejected by record_approval, verify_request_evidence, and expire_stale_requests
+    with pytest.raises(StaleAdoptionBlockedError, match="expired"):
+        manager.record_approval(
+            req.request_id,
+            actor="op",
+            approval_ref="APP-1",
+            approved_pr_head_sha="1" * 40,
+            now_utc="2027-01-02T00:00:00Z",
+        )
+    assert manager.get_request(req.request_id).status == "expired"  # type: ignore[union-attr]
+
+    # 3. verify_request_evidence on bundle_path-only fallback checks expected_champion and canonical exclusions
+    from backtesting import adoption_transaction as at_mod
+
+    monkeypatch.setattr(
+        at_mod,
+        "verify_checkpoint_recommendation_bundle",
+        lambda bp, **kw: json.loads(Path(bp).read_bytes()),
+    )
+    req2 = manager.enqueue_pass(
+        slate_id="slate-2026-27-b",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash=bhash,
+        archive_sha256=asha,
+        snapshot_archive_path=None,
+        bundle_path=str(bundle),
+        protocol_hash="4" * 64,
+        expires_at_utc="2026-12-31T00:00:00Z",
+    )
+    bad_champ_req = manager.enqueue_pass(
+        slate_id="slate-2026-27-c",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="adaptive_causal_challenger",
+        expected_champion="metrics_component_hybrid",
+        bundle_hash=bhash,
+        snapshot_archive_path=None,
+        bundle_path=str(bundle),
+        protocol_hash="4" * 64,
+        expires_at_utc="2026-12-31T00:00:00Z",
+    )
+    with pytest.raises(ValueError, match="expected_champion mismatch"):
+        manager.verify_request_evidence(bad_champ_req, now_utc="2026-12-01T00:00:00Z")
+
+    coordinator.record_exclusion_under_reservation(
+        holder="collector",
+        slate_id="slate-2026-27-b",
+        season="2026-27",
+        candidate_name="adaptive_causal_challenger",
+        checkpoint_gw=15,
+        reason_code="early_harm",
+        details="Harm in fallback check",
+    )
+    with pytest.raises(ValueError, match="excluded in canonical ExclusionLedger"):
+        manager.verify_request_evidence(req2, now_utc="2026-12-01T00:00:00Z")
+
+    # 4. merge_executor + persist_reservation_hook lifecycle (plus under-reservation archive tamper check & 30d default expiry)
+    root_h, bundle_h, archive_h, bhash_h, asha_h = _build_verified_snapshot_fixture(
+        tmp_path / "hook_isolated", monkeypatch, candidate_name="club_def_prior_challenger", bundle_seed="b"
+    )
+    mgr_h = AdoptionRequestManager(root_h)
+    coord_h = SharedReservationCoordinator(root_h, request_manager=mgr_h)
+    req3 = mgr_h.enqueue_pass(
+        slate_id="slate-2026-27-hook",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="club_def_prior_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash=bhash_h,
+        archive_sha256=asha_h,
+        snapshot_archive_path=str(archive_h),
+        bundle_path=str(bundle_h),
+        protocol_hash="4" * 64,
+    )
+    assert req3.expires_at_utc is not None
+    req3 = mgr_h.record_approval(
+        req3.request_id,
+        actor="op",
+        approval_ref="APP-HOOK",
+        approved_pr_head_sha="a" * 40,
+    )
+    # Wrong approval_ref fails closed
+    with pytest.raises(ValueError, match="Approval reference mismatch"):
+        coord_h.execute_reserved_adoption_merge(
+            request_id=req3.request_id,
+            slate_id="slate-2026-27-hook",
+            approval_ref="APP-OTHER",
+            approved_pr_head_sha="a" * 40,
+            pr_head_sha="a" * 40,
+            changed_files=("config/model_selection.json", "config/model_selection.adoption.json"),
+            checks_green=True,
+            main_selection_path=main_selection_path,
+        )
+
+    save_model_selection(
+        ModelSelection("def_xg_shrink_challenger", ("adaptive_causal_challenger", "club_def_prior_challenger"), podium_frozen_season="2026-27", podium_sealed=True),
+        main_selection_path,
+    )
+    # Tampered archive fails closed under reservation even when merge_executor is supplied
+    orig_arch_bytes = archive_h.read_bytes()
+    exec_called: list[int] = []
+    archive_h.write_bytes(b"tampered-archive-bytes")
+    with pytest.raises(ValueError):
+        coord_h.execute_reserved_adoption_merge(
+            request_id=req3.request_id,
+            slate_id="slate-2026-27-hook",
+            approval_ref="APP-HOOK",
+            approved_pr_head_sha="a" * 40,
+            pr_head_sha="a" * 40,
+            changed_files=("config/model_selection.json", "config/model_selection.adoption.json"),
+            checks_green=True,
+            main_selection_path=main_selection_path,
+            merge_executor=lambda: exec_called.append(1) or {"merge_commit_sha": "f" * 40},
+        )
+    assert exec_called == []
+    assert coord_h.current_reservation() is None
+    archive_h.write_bytes(orig_arch_bytes)
+
+    hook_states: list[str] = []
+    res = coord_h.execute_reserved_adoption_merge(
+        request_id=req3.request_id,
+        slate_id="slate-2026-27-hook",
+        approval_ref="APP-HOOK",
+        approved_pr_head_sha="a" * 40,
+        pr_head_sha="a" * 40,
+        changed_files=("config/model_selection.json", "config/model_selection.adoption.json"),
+        checks_green=True,
+        main_selection_path=main_selection_path,
+        merge_executor=lambda: {"merge_commit_sha": "f" * 40},
+        persist_reservation_hook=lambda r: hook_states.append(r.merge_state if r else "released"),
+    )
+    assert res["merged"] is True
+    assert res["merge_commit_sha"] == "f" * 40
+    assert hook_states == ["held", "merge_in_flight", "released"]
+
+    # 5. expire_stale_requests expires queued/pending requests past deadline
+    req4 = manager.enqueue_pass(
+        slate_id="slate-2026-27-exp",
+        season="2026-27",
+        checkpoint_gw=15,
+        candidate_name="club_def_prior_challenger",
+        expected_champion="def_xg_shrink_challenger",
+        bundle_hash=bhash,
+        archive_sha256=asha,
+        snapshot_archive_path=str(archive),
+        bundle_path=str(bundle),
+        protocol_hash="4" * 64,
+        expires_at_utc="2026-12-10T00:00:00Z",
+    )
+    expired = manager.expire_stale_requests(slate_id="slate-2026-27-exp", now_utc="2026-12-11T00:00:00Z")
+    assert [e.request_id for e in expired] == [req4.request_id]
+    assert manager.get_request(req4.request_id).status == "expired"  # type: ignore[union-attr]

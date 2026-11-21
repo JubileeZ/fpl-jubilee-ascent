@@ -904,8 +904,10 @@ def trigger_public_refresh(paths: PlannerPaths) -> tuple[bool, str]:
         import httpx
         from commands.refresh_data import main as refresh_main
         from commands.export_dashboard import run_dashboard_export
+        from models.planner_selection import sync_validation_evidence_readonly
 
         asyncio.run(refresh_main([]))
+        sync_validation_evidence_readonly()
         run_dashboard_export(output_path=paths.dataset, with_squad=False)
         msg = "Public data successfully refreshed."
 

@@ -18,6 +18,7 @@ load_env()
 configure_utf8_stdio()
 
 from backtesting.evaluation_protocol import validate_protocol
+from backtesting.season_rules import get_rules, load_season_lifecycle
 from backtesting.sparse_certification import (
     DEFAULT_NUM_SIMULATIONS,
     certify_sparse_confirmation,
@@ -77,11 +78,18 @@ def _build_v2_protocol_declaration(result: dict[str, Any]) -> dict[str, Any] | N
     cfg = result.get("certified_protocol_config")
     if not result["certified"] or not isinstance(cfg, dict):
         return None
+    lifecycle = load_season_lifecycle()
+    conf_season = str(cfg.get("confirmation_season") or lifecycle.season_for_role("active_validation"))
+    native_rules = (
+        lifecycle.seasons[conf_season].rules_id
+        if conf_season in lifecycle.seasons
+        else get_rules(conf_season).rules_id
+    )
     declaration = {
         "version": 2,
         "windows": [
             {
-                "season": cfg.get("confirmation_season", "2026-27"),
+                "season": conf_season,
                 "role": "live",
                 "weight": 1.0,
                 "scored_deadlines": list(range(1, 39)),
@@ -90,7 +98,7 @@ def _build_v2_protocol_declaration(result: dict[str, Any]) -> dict[str, Any] | N
         "issue_cutoff": "deadline",
         "horizon": 6,
         "season_end_clipping": True,
-        "native_rules": "native-2026-27-v1",
+        "native_rules": native_rules,
         "anchor": "neutral-gw1-opening-anchor",
         "strategic_settings": "adr0065-strategic",
         "chip_calendar": "shared-causal-calendar",

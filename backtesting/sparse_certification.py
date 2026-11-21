@@ -26,6 +26,7 @@ from backtesting.evidence_statistics import (
     run_kendall_pw_hac_test,
 )
 from backtesting.promotion_evidence import MANDATORY_GUARDS
+from backtesting.season_rules import load_season_lifecycle
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -1227,13 +1228,18 @@ def build_certified_protocol_config(
     gw1_4_material_loss_limit: float,
     statistical_early_harm_mode: Literal["enforced", "advisory"],
     certification_digest: str,
+    development_season: str | None = None,
+    confirmation_season: str | None = None,
 ) -> StatisticalProtocolConfig:
     """Build certified ADR 0070 v2.0 StatisticalProtocolConfig aligned with the Annual Firewall."""
+    lifecycle = load_season_lifecycle()
+    dev_season = development_season or lifecycle.season_for_role("development")
+    conf_season = confirmation_season or lifecycle.season_for_role("active_validation")
     return StatisticalProtocolConfig(
         protocol_version="v2.0",
         inference_method="kendall_pw_hac_t",
-        development_season="2025-26",
-        confirmation_season="2026-27",
+        development_season=dev_season,
+        confirmation_season=conf_season,
         required_projection_guards=tuple(sorted(MANDATORY_GUARDS)),
         confirmation_checkpoints=REGISTERED_CHECKPOINTS,
         calibrated_superiority_alphas=calibrated_superiority_alphas,

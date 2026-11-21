@@ -37,7 +37,13 @@ from commands import refresh_data
 from features.builder import resolve_operational_processed_dir
 from features.expected_role_prior import LIVE_SEASON
 from models import get_active_transfer_plan_model_name, get_default_model_name
-from models.selection import dual_tier_models, eligible_slate_models
+from models.planner_selection import (
+    StaleCheckoutError,
+    TamperedLedgerError,
+    resolve_weekly_planner_model,
+    sync_validation_evidence_readonly,
+)
+from models.selection import dual_tier_models
 from solver.planning import clamp_planning_horizon, planning_window, resolve_default_target_gw
 from solver.utils import DEFAULT_PLANNING_HORIZON, load_settings
 
@@ -182,6 +188,10 @@ def run_refresh_job(
                 payload=stale,
             )
         ingest_live_data()
+        try:
+            sync_validation_evidence_readonly()
+        except Exception as sync_exc:
+            logger.warning("Read-only validation-evidence sync skipped: %s", sync_exc)
         _set_refresh_state(status="running", error=None, detail="Projecting models…")
         run_dashboard_export(model_name=model_name, horizon=horizon, model_names=model_names)
         _set_refresh_state(status="ok", error=None, detail="Charts updated.")
@@ -195,12 +205,13 @@ def run_refresh_job(
                 from commands.transfer_plan_scenarios import write_scenarios_payload
                 target_gw = int(payload["meta"].get("target_gw", 1))
                 h = int(payload["meta"].get("horizon", horizon))
+                preflight = resolve_weekly_planner_model(processed_dir=processed_dir, check_remote=False)
                 active_cached_model = str(
                     payload["meta"].get("active_model")
                     or payload["meta"].get("champion")
-                    or get_active_transfer_plan_model_name()
+                    or preflight.effective_model
                 )
-                current_active = get_active_transfer_plan_model_name()
+                current_active = preflight.effective_model
                 if active_cached_model == current_active:
                     new_digest = compute_scenarios_digest(
                         processed_dir=processed_dir,
@@ -393,7 +404,28 @@ def start_transfer_plan(
     force_keep: list[dict[str, object]] | None = None,
     datasource: str | None = None,
 ) -> tuple[int, dict[str, object]]:
-    if datasource is not None and datasource not in set(eligible_slate_models()):
+    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
+    try:
+        preflight = resolve_weekly_planner_model(
+            processed_dir=processed_dir,
+            override_model=datasource,
+            target_gw=target_gw,
+        )
+    except StaleCheckoutError as exc:
+        return 409, {
+            "status": "error",
+            "error": str(exc),
+            "detail": str(exc),
+        }
+    except (ValueError, TamperedLedgerError) as exc:
+        return 400, {
+            "status": "error",
+            "error": str(exc),
+            "detail": "Invalid model selection.",
+        }
+    if datasource is None:
+        datasource = preflight.effective_model
+    elif datasource != "champion" and datasource not in set(preflight.eligible_models):
         return 400, {
             "status": "error",
             "error": f"Transfer Plan model '{datasource}' must belong to active Dual-Tier / Confirmed Champion slate.",

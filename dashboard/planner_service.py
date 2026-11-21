@@ -20,8 +20,9 @@ from models.planner_selection import (
     STALE_CHECKOUT_MESSAGE,
     StaleCheckoutError,
     check_remote_main_freshness,
+    sync_validation_evidence_readonly,
 )
-from models.selection import dual_tier_models, eligible_slate_models
+from models.selection import dual_tier_models, eligible_slate_models, load_model_selection
 from solver.scenarios import ARM_NAMES, apply_scenario_arm, compute_scenarios_digest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -69,14 +70,47 @@ def source_digest(paths: PlannerPaths) -> str:
 def make_solve_request(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
     if planner.stale:
         raise ValueError("Draft uses older squad/projections. Start a new plan from refreshed data before solving.")
-    check_remote_main_freshness(raise_on_stale=True)
+    live_freshness = check_remote_main_freshness(raise_on_stale=True)
     preflight_meta = (planner.dataset.get("meta") or {}).get("planner_preflight")
-    if isinstance(preflight_meta, dict) and preflight_meta.get("freshness_status") == "stale_remote_changed":
-        raise StaleCheckoutError(STALE_CHECKOUT_MESSAGE)
+    excluded_models: set[str] = set()
+    if isinstance(preflight_meta, dict):
+        if preflight_meta.get("freshness_status") == "stale_remote_changed":
+            raise StaleCheckoutError(STALE_CHECKOUT_MESSAGE)
+        excluded_models.update(str(m) for m in (preflight_meta.get("excluded_models") or ()))
+        if preflight_meta.get("freshness_status") == "unverified":
+            confirmed_champ = str(preflight_meta.get("confirmed_champion") or "").strip()
+            active_choice = str(planner.active_model or preflight_meta.get("effective_model") or "").strip()
+            if confirmed_champ and active_choice != confirmed_champ:
+                raise ValueError(
+                    f"Remote protected main is unverified; only Confirmed Champion '{confirmed_champ}' may serve, not '{active_choice}'."
+                )
+    if live_freshness.status == "unverified":
+        fallback_eff = preflight_meta.get("effective_model") if isinstance(preflight_meta, dict) else ""
+        active_choice = str(planner.active_model or fallback_eff or "").strip()
+        if active_choice and active_choice != live_freshness.local_champion:
+            raise ValueError(
+                f"Remote protected main is unverified; only Confirmed Champion '{live_freshness.local_champion}' may serve, not '{active_choice}'."
+            )
+
+    selection = load_model_selection()
+    if selection.podium_sealed and selection.podium_frozen_season:
+        excl_file = PROJECT_ROOT / "data" / "reports" / "validation_evidence" / selection.podium_frozen_season / "exclusions.jsonl"
+        if excl_file.is_file():
+            from backtesting.portable_evidence import ExclusionLedger
+
+            excluded_models.update(
+                ExclusionLedger(excl_file).excluded_candidates(season=selection.podium_frozen_season)
+            )
+    active_model = str(planner.active_model or "").strip()
+    if active_model and active_model in excluded_models:
+        raise ValueError(f"Model '{active_model}' is excluded in ExclusionLedger and cannot solve.")
+
+    required_dual = {m for m in dual_tier_models() if m not in excluded_models or m == selection.champion}
+    eligible_set = set(eligible_slate_models(excluded=sorted(excluded_models)))
     planner.validate_models(
-        set(eligible_slate_models()),
+        eligible_set,
         active_default=get_active_transfer_plan_model_name(),
-        required_models=set(dual_tier_models()),
+        required_models=required_dual,
     )
     if paths.dataset.exists() and any(path.exists() and path.stat().st_mtime > paths.dataset.stat().st_mtime
                                      for path in (paths.processed / name for name in ("players.parquet", "user_picks.parquet", "user_state.parquet", "player_performances.parquet"))):
@@ -200,6 +234,10 @@ def refresh_request(request: dict[str, Any], paths: PlannerPaths) -> dict[str, A
     if os.environ.get("FPL_PLANNER_PROCESSED_DIR"):
         raise ValueError("Live Refresh targets repository data. Clear custom processed path or refresh that dataset separately.")
     asyncio.run(main([]))
+    try:
+        sync_validation_evidence_readonly()
+    except Exception:
+        pass
     run_dashboard_export(output_path=paths.dataset)
     return {"refreshed": True}
 

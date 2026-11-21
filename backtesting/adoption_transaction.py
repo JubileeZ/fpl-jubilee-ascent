@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import hashlib
 import json
 import os
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
+from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.portable_evidence import (
     AdoptionDisposition,
     AdoptionLedger,
@@ -21,6 +22,7 @@ from backtesting.portable_evidence import (
     _compute_chain_record_hash,
     _load_chained_jsonl,
     _validate_sha256_hex,
+    compute_serving_model_closure,
     verify_checkpoint_snapshot_archive,
 )
 from backtesting.promotion_evidence import (
@@ -318,7 +320,7 @@ class AdoptionRequestManager:
         requests, closed_slates, next_seq = self._load_state()
         if slate_id in closed_slates or any(r.slate_id == slate_id and r.status == "adopted" for r in requests):
             raise ValueError(f"Frozen slate '{slate_id}' is already closed by an adopted Champion")
-        if self.exclusion_ledger.ledger_file.is_file() and self.exclusion_ledger.is_excluded(
+        if self.exclusion_ledger.ledger_file.is_file() and self.exclusion_ledger.is_candidate_excluded(
             candidate_name, slate_id=slate_id, season=season
         ):
             raise ValueError(f"Cannot enqueue excluded candidate '{candidate_name}' on slate '{slate_id}'")
@@ -333,7 +335,11 @@ class AdoptionRequestManager:
 
         has_active = any(r.slate_id == slate_id and r.status in ("pending_approval", "approved") for r in requests)
         initial_status: RequestStatus = "queued" if has_active else "pending_approval"
-        now_iso = datetime.now(UTC).isoformat()
+        now_dt = datetime.now(UTC)
+        now_iso = now_dt.isoformat()
+        resolved_expiry = (
+            expires_at_utc if expires_at_utc is not None else (now_dt + timedelta(days=30)).isoformat()
+        )
         created = AdoptionRequest(
             request_id=request_id,
             slate_id=slate_id,
@@ -352,7 +358,7 @@ class AdoptionRequestManager:
             status=initial_status,
             created_at_utc=now_iso,
             updated_at_utc=now_iso,
-            expires_at_utc=expires_at_utc,
+            expires_at_utc=resolved_expiry,
             actor=actor,
             sequence_number=next_seq,
         )
@@ -374,6 +380,62 @@ class AdoptionRequestManager:
             )
         return created
 
+    @staticmethod
+    def _is_expired(req: AdoptionRequest, *, now_utc: str | None = None) -> bool:
+        if not req.expires_at_utc:
+            return False
+        now_dt = (
+            datetime.fromisoformat(now_utc.replace("Z", "+00:00"))
+            if now_utc is not None
+            else datetime.now(UTC)
+        )
+        exp_dt = datetime.fromisoformat(req.expires_at_utc.replace("Z", "+00:00"))
+        return now_dt > exp_dt
+
+    def assert_not_expired(
+        self,
+        req: AdoptionRequest,
+        *,
+        now_utc: str | None = None,
+        actor: str = "adoption-coordinator",
+    ) -> None:
+        """Raise StaleAdoptionBlockedError (and mark expired) if request exceeded its UTC expiry."""
+        if self._is_expired(req, now_utc=now_utc):
+            if req.status not in TERMINAL_REQUEST_STATUSES:
+                self.expire_or_invalidate_request(
+                    req.request_id,
+                    reason="request_expired",
+                    expired=True,
+                    actor=actor,
+                )
+            raise StaleAdoptionBlockedError(
+                f"Adoption request '{req.request_id}' expired at {req.expires_at_utc}"
+            )
+
+    def _assert_not_expired(self, req: AdoptionRequest, *, now_utc: str | None = None, actor: str = "adoption-coordinator") -> None:
+        self.assert_not_expired(req, now_utc=now_utc, actor=actor)
+
+    def expire_stale_requests(
+        self,
+        slate_id: str | None = None,
+        *,
+        now_utc: str | None = None,
+        actor: str = "adoption-coordinator",
+    ) -> list[AdoptionRequest]:
+        """Expire any active/queued adoption requests whose `expires_at_utc` has passed."""
+        expired_list: list[AdoptionRequest] = []
+        for req in self.all_requests(slate_id=slate_id):
+            if req.status in ("queued", "pending_approval", "approved") and self._is_expired(req, now_utc=now_utc):
+                expired_list.append(
+                    self.expire_or_invalidate_request(
+                        req.request_id,
+                        reason="request_expired",
+                        expired=True,
+                        actor=actor,
+                    )
+                )
+        return expired_list
+
     def record_approval(
         self,
         request_id: str,
@@ -382,8 +444,13 @@ class AdoptionRequestManager:
         approval_ref: str,
         approved_pr_head_sha: str | None = None,
         reason: str = "Human approved protected adoption request",
+        now_utc: str | None = None,
     ) -> AdoptionRequest:
         """Bind human approval and optional PR head SHA to the active request."""
+        existing_req = self.get_request(request_id)
+        if existing_req is None:
+            raise ValueError(f"Adoption request '{request_id}' not found")
+        self._assert_not_expired(existing_req, now_utc=now_utc, actor=actor)
         requests, closed_slates, next_seq = self._load_state()
         updated_list: list[AdoptionRequest] = []
         target: AdoptionRequest | None = None
@@ -597,7 +664,9 @@ class AdoptionRequestManager:
         )
         return target
 
-    def _verify_request_evidence(self, req: AdoptionRequest) -> None:
+    def verify_request_evidence(self, req: AdoptionRequest, *, now_utc: str | None = None) -> None:
+        """Verify request expiry, snapshot archive or bundle integrity, candidate identity, closure, and ledger status."""
+        self.assert_not_expired(req, now_utc=now_utc)
         canon_reg = self.evidence_root / "registry.jsonl"
         canon_excl = self.evidence_root / "exclusions.jsonl"
         if req.snapshot_archive_path:
@@ -621,9 +690,44 @@ class AdoptionRequestManager:
                 bundle = verify_checkpoint_recommendation_bundle(bpath, require_finalized=True)
             else:
                 bundle = verify_recommendation_bundle(bpath, require_finalized=True)
+            if bundle.get("former_champion") != req.expected_champion:
+                raise ValueError(
+                    f"Request '{req.request_id}' expected_champion mismatch: "
+                    f"bundle has '{bundle.get('former_champion')}', expected '{req.expected_champion}'"
+                )
+            sel_candidate_path = self.evidence_root / "selection.json"
+            if sel_candidate_path.is_file():
+                ev_sel = load_model_selection(sel_candidate_path)
+                closure_models: tuple[str, ...] = (ev_sel.champion, *ev_sel.candidates)
+            else:
+                closure_models = (req.expected_champion, req.candidate_name)
+            closure = compute_serving_model_closure(closure_models)
+            if bundle.get("serving_model_closure_hash") and (
+                bundle["serving_model_closure_hash"] != closure.serving_model_closure_hash
+            ):
+                raise ValueError(f"Request '{req.request_id}' serving_model_closure_hash mismatch")
+            if bundle.get("model_runtime_bindings") and (
+                bundle["model_runtime_bindings"] != closure.model_runtime_bindings
+            ):
+                raise ValueError(f"Request '{req.request_id}' model_runtime_bindings mismatch")
+            if canon_reg.is_file():
+                ConfirmationRegistry(canon_reg).load_all_records()
+            if canon_excl.is_file():
+                excl = ExclusionLedger(canon_excl)
+                excl.verify_integrity()
+                if excl.is_candidate_excluded(req.candidate_name, slate_id=req.slate_id, season=req.season):
+                    raise ValueError(
+                        f"Candidate '{req.candidate_name}' is excluded in canonical ExclusionLedger"
+                    )
         else:
             raise ValueError(f"Request '{req.request_id}' has neither snapshot_archive_path nor bundle_path")
 
+        bundle_cand = bundle.get("recommended_champion") or bundle.get("candidate_name")
+        if bundle_cand != req.candidate_name:
+            raise ValueError(
+                f"Request '{req.request_id}' candidate mismatch: "
+                f"bundle has '{bundle_cand}', expected '{req.candidate_name}'"
+            )
         if bundle.get("bundle_hash") != req.bundle_hash:
             raise ValueError(f"Request '{req.request_id}' bundle_hash mismatch")
         if (
@@ -685,11 +789,8 @@ class AdoptionRequestManager:
                     actor=actor,
                 )
                 continue
-            if self.exclusion_ledger.ledger_file.is_file() and (
-                self.exclusion_ledger.is_excluded(
-                    queued_req.candidate_name, slate_id=slate_id, season=queued_req.season
-                )
-                or self.exclusion_ledger.is_excluded(queued_req.candidate_name, season=queued_req.season)
+            if self.exclusion_ledger.ledger_file.is_file() and self.exclusion_ledger.is_candidate_excluded(
+                queued_req.candidate_name, slate_id=slate_id, season=queued_req.season
             ):
                 self.expire_or_invalidate_request(
                     queued_req.request_id,
@@ -698,7 +799,7 @@ class AdoptionRequestManager:
                 )
                 continue
             try:
-                self._verify_request_evidence(queued_req)
+                self.verify_request_evidence(queued_req, now_utc=now_utc)
             except Exception as exc:
                 self.expire_or_invalidate_request(
                     queued_req.request_id,
@@ -1154,8 +1255,11 @@ class SharedReservationCoordinator:
         auto_merge_enabled: bool = False,
         main_selection_path: Path | None = None,
         holder: str = "github-app-adoption-merger",
+        now_utc: str | None = None,
         pre_merge_hook: Callable[[], None] | None = None,
         post_merge_ack_hook: Callable[[], None] | None = None,
+        merge_executor: Callable[[], dict[str, Any]] | None = None,
+        persist_reservation_hook: Callable[[ReservationRecord | None], None] | None = None,
     ) -> dict[str, Any]:
         """Acquire shared reservation, recheck eligibility & freshness, and atomically merge selection + receipt."""
         sel_path = main_selection_path or DEFAULT_CONFIG_PATH
@@ -1186,19 +1290,31 @@ class SharedReservationCoordinator:
             request_id=request_id,
             approved_pr_head_sha=approved_pr_head_sha,
         )
+        if persist_reservation_hook is not None:
+            persist_reservation_hook(reservation)
         retain_unknown_reservation = False
         try:
             if auto_merge_enabled:
                 raise ValueError("Independent auto-merge must be disabled for Champion adoption PRs")
             if not checks_green:
                 raise ValueError("Required PR checks must be green before Champion adoption merge")
-            if req.status not in ("pending_approval", "approved"):
+            self.request_manager.assert_not_expired(req, now_utc=now_utc, actor=holder)
+            if req.status != "approved":
                 raise StaleAdoptionBlockedError(
-                    f"Request '{request_id}' is in non-mergeable status '{req.status}'"
+                    f"Request '{request_id}' requires prior human approval (status='{req.status}')"
                 )
-            if not approved_pr_head_sha.strip() or pr_head_sha != approved_pr_head_sha:
+            if not req.approval_ref or req.approval_ref != approval_ref:
                 raise ValueError(
-                    f"Approved PR head SHA mismatch: approved '{approved_pr_head_sha}', current '{pr_head_sha}'"
+                    f"Approval reference mismatch: recorded '{req.approval_ref}', got '{approval_ref}'"
+                )
+            if (
+                not approved_pr_head_sha.strip()
+                or pr_head_sha != approved_pr_head_sha
+                or (req.approved_pr_head_sha is not None and req.approved_pr_head_sha != approved_pr_head_sha)
+            ):
+                raise ValueError(
+                    f"Approved PR head SHA mismatch: recorded '{req.approved_pr_head_sha}', "
+                    f"approved '{approved_pr_head_sha}', current '{pr_head_sha}'"
                 )
             if set(changed_files) != AUTHORIZED_ADOPTION_DIFF_FILES:
                 raise ValueError(
@@ -1208,9 +1324,7 @@ class SharedReservationCoordinator:
             # Recheck fresh ExclusionLedger under reservation before merging
             if self.exclusions_path.is_file():
                 excl_ledger = ExclusionLedger(self.exclusions_path)
-                if excl_ledger.is_excluded(req.candidate_name, slate_id=slate_id, season=req.season) or (
-                    excl_ledger.is_excluded(req.candidate_name, season=req.season)
-                ):
+                if excl_ledger.is_candidate_excluded(req.candidate_name, slate_id=slate_id, season=req.season):
                     self.request_manager.expire_or_invalidate_request(
                         request_id,
                         reason="candidate_excluded_after_pr_checks_before_merge",
@@ -1236,14 +1350,6 @@ class SharedReservationCoordinator:
                     "Protected main selection changed or slate unsealed before adoption merge"
                 )
 
-            if req.status == "pending_approval":
-                req = self.request_manager.record_approval(
-                    request_id,
-                    actor=holder,
-                    approval_ref=approval_ref,
-                    approved_pr_head_sha=approved_pr_head_sha,
-                )
-
             bundle_arg: Path | str
             if req.snapshot_archive_path is not None:
                 snap = Path(req.snapshot_archive_path)
@@ -1254,33 +1360,48 @@ class SharedReservationCoordinator:
             else:
                 raise ValueError(f"Request '{request_id}' lacks snapshot_archive_path and bundle_path")
 
+            # Re-verify snapshot archive, bundle, closure, registry, and exclusions under reservation for all merge paths
+            self.request_manager.verify_request_evidence(req, now_utc=now_utc)
+
             # Enter merge_in_flight: any interruption from here retains reservation as merge_outcome_unknown
             reservation = self._update_reservation_state(reservation, "merge_in_flight")
+            if persist_reservation_hook is not None:
+                persist_reservation_hook(reservation)
             try:
                 if pre_merge_hook is not None:
                     pre_merge_hook()
 
-                updated_sel = adopt_champion(
-                    bundle_arg,
-                    config_path=sel_path,
-                    approval_ref=approval_ref,
-                    expected_current_champion=req.expected_champion,
-                    candidate_name=req.candidate_name,
-                    approved_bundle_hash=req.bundle_hash,
-                    snapshot_archive_path=bundle_arg if req.snapshot_archive_path is not None else None,
-                    expected_archive_sha256=req.archive_sha256,
-                    canonical_registry_path=self.registry_path if self.registry_path.is_file() else None,
-                    canonical_exclusions_path=self.exclusions_path if self.exclusions_path.is_file() else None,
-                    request_id=req.request_id,
-                    slate_id=req.slate_id,
-                    approved_commit_sha=approved_pr_head_sha,
-                )
+                exec_meta: dict[str, Any] = {}
+                if merge_executor is not None:
+                    exec_meta = dict(merge_executor() or {})
+                    new_champ = str(exec_meta.get("champion") or req.candidate_name)
+                    new_sealed = bool(exec_meta.get("podium_sealed", False))
+                else:
+                    updated_sel = adopt_champion(
+                        bundle_arg,
+                        config_path=sel_path,
+                        approval_ref=approval_ref,
+                        expected_current_champion=req.expected_champion,
+                        candidate_name=req.candidate_name,
+                        approved_bundle_hash=req.bundle_hash,
+                        snapshot_archive_path=bundle_arg if req.snapshot_archive_path is not None else None,
+                        expected_archive_sha256=req.archive_sha256,
+                        canonical_registry_path=self.registry_path if self.registry_path.is_file() else None,
+                        canonical_exclusions_path=self.exclusions_path if self.exclusions_path.is_file() else None,
+                        request_id=req.request_id,
+                        slate_id=req.slate_id,
+                        approved_commit_sha=approved_pr_head_sha,
+                    )
+                    new_champ = updated_sel.champion
+                    new_sealed = updated_sel.podium_sealed
 
                 if post_merge_ack_hook is not None:
                     post_merge_ack_hook()
             except Exception:
                 retain_unknown_reservation = True
-                self._update_reservation_state(reservation, "merge_outcome_unknown")
+                unknown_res = self._update_reservation_state(reservation, "merge_outcome_unknown")
+                if persist_reservation_hook is not None:
+                    persist_reservation_hook(unknown_res)
                 raise
 
             self.request_manager.mark_adopted(
@@ -1294,17 +1415,22 @@ class SharedReservationCoordinator:
                 "merged": True,
                 "request_id": request_id,
                 "slate_id": slate_id,
-                "champion": updated_sel.champion,
-                "podium_sealed": updated_sel.podium_sealed,
+                "champion": new_champ,
+                "podium_sealed": new_sealed,
+                **exec_meta,
             }
         finally:
             if not retain_unknown_reservation:
                 self.release_reservation()
+                if persist_reservation_hook is not None:
+                    persist_reservation_hook(None)
 
     def reconcile_unknown_merge(
         self,
         *,
         main_selection_path: Path | None = None,
+        remote_main_selection: Mapping[str, Any] | None = None,
+        remote_main_receipt: Mapping[str, Any] | None = None,
         actor: str = "adoption-reconciler",
     ) -> dict[str, Any]:
         """Reconcile an in-flight or unknown merge reservation by inspecting protected main's selection & receipt."""
@@ -1316,32 +1442,47 @@ class SharedReservationCoordinator:
                 f"Cannot reconcile reservation with purpose='{cur.purpose}', merge_state='{cur.merge_state}'"
             )
 
-        sel_path = main_selection_path or DEFAULT_CONFIG_PATH
-        receipt_path = sel_path.with_suffix(".adoption.json")
-        if receipt_path.is_file() and cur.request_id is not None:
-            receipt = json.loads(receipt_path.read_bytes())
-            main_sel = load_model_selection(sel_path)
+        matched_champion: str | None = None
+        matched_approval_ref: str | None = None
+        if remote_main_selection is not None and remote_main_receipt is not None and cur.request_id is not None:
             if (
-                receipt.get("request_id") == cur.request_id
-                and receipt.get("slate_id") == cur.slate_id
-                and main_sel.champion == receipt.get("candidate_name")
+                remote_main_receipt.get("request_id") == cur.request_id
+                and remote_main_receipt.get("slate_id") == cur.slate_id
+                and remote_main_selection.get("champion") == remote_main_receipt.get("candidate_name")
             ):
-                self.request_manager.mark_adopted(
-                    cur.request_id,
-                    actor=actor,
-                    approval_ref=str(receipt.get("approval_ref") or "reconciled-from-main"),
-                    approved_pr_head_sha=cur.approved_pr_head_sha,
-                    reason="Reconciled unknown merge from matching receipt on protected main",
-                )
-                self.release_reservation(force_unknown=True)
-                return {
-                    "status": "reconciled_merged",
-                    "reconciled": True,
-                    "merged": True,
-                    "request_id": cur.request_id,
-                    "slate_id": cur.slate_id,
-                    "champion": main_sel.champion,
-                }
+                matched_champion = str(remote_main_selection["champion"])
+                matched_approval_ref = str(remote_main_receipt.get("approval_ref") or "reconciled-from-main")
+        else:
+            sel_path = main_selection_path or DEFAULT_CONFIG_PATH
+            receipt_path = sel_path.with_suffix(".adoption.json")
+            if receipt_path.is_file() and cur.request_id is not None:
+                receipt = json.loads(receipt_path.read_bytes())
+                main_sel = load_model_selection(sel_path)
+                if (
+                    receipt.get("request_id") == cur.request_id
+                    and receipt.get("slate_id") == cur.slate_id
+                    and main_sel.champion == receipt.get("candidate_name")
+                ):
+                    matched_champion = main_sel.champion
+                    matched_approval_ref = str(receipt.get("approval_ref") or "reconciled-from-main")
+
+        if matched_champion is not None and cur.request_id is not None:
+            self.request_manager.mark_adopted(
+                cur.request_id,
+                actor=actor,
+                approval_ref=matched_approval_ref or "reconciled-from-main",
+                approved_pr_head_sha=cur.approved_pr_head_sha,
+                reason="Reconciled unknown merge from matching receipt on protected main",
+            )
+            self.release_reservation(force_unknown=True)
+            return {
+                "status": "reconciled_merged",
+                "reconciled": True,
+                "merged": True,
+                "request_id": cur.request_id,
+                "slate_id": cur.slate_id,
+                "champion": matched_champion,
+            }
 
         # Protected main still has pre-adoption selection: reset unknown reservation so retry re-verifies from scratch
         self.release_reservation(force_unknown=True)

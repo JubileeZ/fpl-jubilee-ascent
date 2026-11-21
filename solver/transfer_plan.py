@@ -7,6 +7,8 @@ from typing import Any, Mapping, cast
 
 import pandas as pd
 
+from models.planner_selection import strip_external_xmins_suffix
+
 LIVE_SOLVER_REL_GAP = 0.0
 PROVEN_SOLVER_REL_GAP = 1e-4
 WITHIN_ONE_PERCENT = "Within 1% of the best Solver Objective."
@@ -106,9 +108,7 @@ def serialize_transfer_plan(
         else:
             p_dict = {}
         raw_base = base_model or p_dict.get("effective_model") or champion
-        clean_base = str(raw_base)
-        if clean_base.endswith("_external_xmins"):
-            clean_base = clean_base[: -len("_external_xmins")]
+        clean_base = strip_external_xmins_suffix(str(raw_base))
         meta["reviewed_base_model"] = clean_base
         meta["base_model"] = clean_base
         meta["model_override"] = bool(p_dict.get("override_applied", False))

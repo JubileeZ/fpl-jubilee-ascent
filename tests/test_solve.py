@@ -403,7 +403,15 @@ def test_solve_cli_xmins_override_rerun_pins_prior_reviewed_base_model(
     )
     monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
     monkeypatch.setattr("commands.solve.PROJECT_ROOT", tmp_path)
-
+    proc_dir = tmp_path / "data" / "processed"
+    proc_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        [
+            {"id": gw, "finished": True, "data_checked": True, "is_next": False, "deadline_time": f"2026-11-{gw:02d}T11:00:00Z"}
+            for gw in range(1, 16)
+        ]
+        + [{"id": 16, "finished": False, "data_checked": False, "is_next": True, "deadline_time": "2099-12-08T11:00:00Z"}]
+    ).to_parquet(proc_dir / "gameweeks.parquet")
     evidence_dir = tmp_path / "evidence"
     # Initial solve at GW16: adaptive_causal_challenger leads (835 vs 820)
     write_scorecard(
@@ -497,6 +505,7 @@ def test_solve_cli_xmins_override_rerun_pins_prior_reviewed_base_model(
         ),
     )
 
+    # 1. --xmins-override WITHOUT --rerun does NOT pin prior reviewed model -> switches to new scorecard leader
     projected_models.clear()
     with (
         patch("commands.solve.load_settings", return_value={"horizon": 5, "preseason": True}),
@@ -515,6 +524,36 @@ def test_solve_cli_xmins_override_rerun_pins_prior_reviewed_base_model(
                 str(evidence_dir),
                 "--xmins-override",
                 str(override_csv),
+            ],
+        ),
+    ):
+        main()
+
+    assert projected_models == ["def_xg_shrink_challenger"]
+    sol_fresh = json.loads((tmp_path / "data" / "solution.json").read_text(encoding="utf-8"))
+    assert sol_fresh["meta"]["pinned_for_rerun"] is False
+
+    # Restore prior GW16 solution from initial solve, then pass explicit --rerun -> stays pinned!
+    (tmp_path / "data" / "solution.json").write_text(json.dumps(sol_data), encoding="utf-8")
+    projected_models.clear()
+    with (
+        patch("commands.solve.load_settings", return_value={"horizon": 5, "preseason": True}),
+        patch("commands.solve.prep_data", return_value={}),
+        patch("commands.solve.pad_solver_csv_horizon"),
+        patch("commands.solve.solve_multi_period_fpl", return_value=[{"summary": "", "statistics": {}, "picks": pd.DataFrame()}]),
+        patch("commands.run_model.generate_model_projections", side_effect=_fake_gen_proj),
+        patch(
+            "sys.argv",
+            [
+                "commands.solve",
+                "--preseason",
+                "--target_gw",
+                "16",
+                "--evidence-dir",
+                str(evidence_dir),
+                "--xmins-override",
+                str(override_csv),
+                "--rerun",
             ],
         ),
     ):

@@ -9,6 +9,9 @@ on:
       slate_id:
         description: "Frozen comparison slate identifier"
         required: true
+      pr_number:
+        description: "Approved adoption pull request number"
+        required: true
       approval_ref:
         description: "Protected GitHub Actions approval reference"
         required: true
@@ -21,7 +24,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: validation-evidence-reservation
+  group: validation-evidence
   cancel-in-progress: false
 
 jobs:
@@ -29,10 +32,18 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || vars.CHAMPION_ADOPTION_LIVE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     steps:
+      - name: Mint dedicated GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CHAMPION_ADOPTION_APP_ID }}
+          private-key: ${{ secrets.CHAMPION_ADOPTION_APP_PRIVATE_KEY }}
+
       - name: Check out protected main
         uses: actions/checkout@v5
         with:
           ref: main
+          token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
       - name: Install uv
@@ -43,60 +54,55 @@ jobs:
       - name: Sync frozen dependencies
         run: uv sync --frozen
 
-      - name: Hydrate validation-evidence branch
+      - name: Hydrate validation-evidence branch and reservation worktree
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/validation-evidence"
           git fetch origin validation-evidence || true
           if git show-ref --verify --quiet refs/remotes/origin/validation-evidence; then
             git archive --format=tar origin/validation-evidence | tar -x -C "$RUNNER_TEMP/validation-evidence"
+            git worktree add "$RUNNER_TEMP/evidence-branch" origin/validation-evidence
+          else
+            git worktree add --orphan -b validation-evidence "$RUNNER_TEMP/evidence-branch"
           fi
 
-      - name: Reconcile any prior interrupted merge and execute reserved adoption merge
+      - name: Reconcile prior reservation and execute GitHub PR API reserved merge
         shell: bash
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           REQUEST_ID: ${{ github.event.inputs.request_id }}
           SLATE_ID: ${{ github.event.inputs.slate_id }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
           APPROVAL_REF: ${{ github.event.inputs.approval_ref }}
           APPROVED_PR_HEAD_SHA: ${{ github.event.inputs.approved_pr_head_sha }}
         run: |
           set -euo pipefail
           if [ -f "$RUNNER_TEMP/validation-evidence/reservation.json" ]; then
-            uv run python -m commands.manage_champion_adoption reconcile-merge \
-              --evidence-root "$RUNNER_TEMP/validation-evidence"
+            REC_JSON=$(uv run python -m commands.manage_champion_adoption reconcile-merge \
+              --evidence-root "$RUNNER_TEMP/validation-evidence" \
+              --remote-main-ref origin/main)
+            echo "$REC_JSON"
+            ALREADY_MERGED=$(printf '%s' "$REC_JSON" | python3 -c "import json, sys; print('true' if json.load(sys.stdin).get('merged') else 'false')")
+            if [ "$ALREADY_MERGED" = "true" ]; then
+              echo "Interrupted merge already landed on main and was reconciled; skipping duplicate PR merge."
+              exit 0
+            fi
           fi
           git fetch origin "adoption/${REQUEST_ID}"
           PR_HEAD_SHA=$(git rev-parse "origin/adoption/${REQUEST_ID}")
-          mapfile -t CHANGED < <(git diff --name-only origin/main..."origin/adoption/${REQUEST_ID}")
-          ARGS=(
-            execute-protected-merge
-            --evidence-root "$RUNNER_TEMP/validation-evidence"
-            --request-id "$REQUEST_ID"
-            --slate-id "$SLATE_ID"
-            --approval-ref "$APPROVAL_REF"
-            --approved-pr-head-sha "$APPROVED_PR_HEAD_SHA"
-            --pr-head-sha "$PR_HEAD_SHA"
-            --checks-green
-          )
-          for f in "${CHANGED[@]}"; do
-            ARGS+=(--changed-file "$f")
-          done
-          uv run python -m commands.manage_champion_adoption "${ARGS[@]}"
-
-      - name: Push atomic adoption commit to protected main
-        shell: bash
-        env:
-          REQUEST_ID: ${{ github.event.inputs.request_id }}
-          APPROVAL_REF: ${{ github.event.inputs.approval_ref }}
-        run: |
-          set -euo pipefail
-          if [ -n "$(git status --porcelain config/model_selection.json config/model_selection.adoption.json)" ]; then
-            git add config/model_selection.json config/model_selection.adoption.json
-            git -c user.name="github-actions[bot]" \
-                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-                commit -m "adopt(champion): merge ${REQUEST_ID} (${APPROVAL_REF})"
-            git push origin HEAD:main
-          fi
+          uv run python -m commands.manage_champion_adoption execute-protected-merge \
+            --evidence-root "$RUNNER_TEMP/validation-evidence" \
+            --request-id "$REQUEST_ID" \
+            --slate-id "$SLATE_ID" \
+            --approval-ref "$APPROVAL_REF" \
+            --approved-pr-head-sha "$APPROVED_PR_HEAD_SHA" \
+            --pr-head-sha "$PR_HEAD_SHA" \
+            --repo "${{ github.repository }}" \
+            --pr-number "$PR_NUMBER" \
+            --merge-via-github-api \
+            --require-live-checks \
+            --worktree-dir "$RUNNER_TEMP/evidence-branch"
 
       - name: Persist validation-evidence reservation and ledger state
         if: always()
@@ -106,8 +112,12 @@ jobs:
         run: |
           set -euo pipefail
           WORK="$RUNNER_TEMP/evidence-branch"
-          git worktree add "$WORK" origin/validation-evidence
-          cp -R "$RUNNER_TEMP/validation-evidence/." "$WORK/"
+          if [ ! -d "$WORK" ]; then
+            git worktree add "$WORK" origin/validation-evidence
+          fi
+          uv run python -m commands.manage_champion_adoption sync-evidence-worktree \
+            --source-dir "$RUNNER_TEMP/validation-evidence" \
+            --worktree-dir "$WORK"
           cd "$WORK"
           if [ -n "$(git status --porcelain)" ]; then
             git add -A

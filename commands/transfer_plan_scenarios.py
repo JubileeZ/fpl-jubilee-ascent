@@ -12,6 +12,7 @@ from typing import Any, Callable, Mapping
 from commands.export_dashboard import load_owned_picks, load_user_chips, load_user_state
 from commands.solve import execute_transfer_plan, transfer_plan_options_for_dashboard
 from models import get_active_transfer_plan_model_name, get_default_model_name
+from models.planner_selection import strip_external_xmins_suffix
 from models.participation_state_hybrid import target_to_states
 from projections.expected_gw_score import _POS_ID, PlayerGw, player_gw_from_dashboard
 from solver.paths import DATA_DIR
@@ -112,9 +113,7 @@ def build_scenarios_payload(
             if hasattr(preflight, "to_dict")
             else (dict(preflight) if isinstance(preflight, Mapping) else {})
         )
-        clean_base = str(p_dict.get("effective_model") or active_model)
-        if clean_base.endswith("_external_xmins"):
-            clean_base = clean_base[: -len("_external_xmins")]
+        clean_base = strip_external_xmins_suffix(str(p_dict.get("effective_model") or active_model))
         meta.update(
             {
                 "reviewed_base_model": clean_base,

@@ -7,20 +7,24 @@ from datetime import UTC, datetime
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
-from typing import Any
-import urllib.error
-import urllib.request
+from typing import Any, Mapping
+
+import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backtesting.adoption_transaction import (
     AUTHORIZED_ADOPTION_DIFF_FILES,
     AdoptionRequestManager,
+    MergeInterruptedError,
     NotificationDispatcher,
     NotificationMessage,
+    ReservationRecord,
     SharedReservationCoordinator,
+    UncertainDeliveryAckError,
 )
 from backtesting.portable_evidence import ExclusionLedger
 from clients.env_loader import configure_utf8_stdio
@@ -29,7 +33,82 @@ from commands.inventory_pilot_fixture import build_pilot_fixture_inventory
 from models.selection import DEFAULT_CONFIG_PATH, load_model_selection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CERTIFICATION_Digest_EXPECTED = "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56"
+CERTIFICATION_DIGEST_EXPECTED = "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56"
+
+
+class HttpWebhookMailProvider:
+    """Controlled HTTP webhook MailProvider for remote single-notice delivery & status reconciliation."""
+
+    def __init__(
+        self,
+        webhook_url: str,
+        *,
+        api_key: str | None = None,
+        status_url: str | None = None,
+        transport: httpx.BaseTransport | None = None,
+        timeout_seconds: float = 15.0,
+    ) -> None:
+        if not webhook_url.strip():
+            raise ValueError("MAIL_PROVIDER_WEBHOOK_URL cannot be empty")
+        self.webhook_url = webhook_url.strip()
+        self.api_key = api_key.strip() if isinstance(api_key, str) and api_key.strip() else None
+        self.status_url = status_url.strip() if isinstance(status_url, str) and status_url.strip() else None
+        self.transport = transport
+        self.timeout_seconds = float(timeout_seconds)
+
+    def _headers(self) -> dict[str, str]:
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
+
+    def send_adoption_notice(self, message: NotificationMessage) -> str:
+        payload = {"request_id": message.request_id, "message": message.to_dict()}
+        try:
+            with httpx.Client(timeout=self.timeout_seconds, transport=self.transport) as client:
+                resp = client.post(self.webhook_url, json=payload, headers=self._headers())
+        except (httpx.TimeoutException, httpx.RequestError) as exc:
+            raise UncertainDeliveryAckError(f"Webhook delivery ack lost or timed out: {exc}") from exc
+        if resp.status_code >= 500:
+            raise UncertainDeliveryAckError(f"Webhook provider server error {resp.status_code}")
+        if not 200 <= resp.status_code < 300:
+            raise RuntimeError(f"Webhook provider rejected delivery with HTTP {resp.status_code}")
+        try:
+            data = resp.json()
+        except Exception as exc:
+            raise UncertainDeliveryAckError(f"Webhook provider returned non-JSON ack: {exc}") from exc
+        msg_id = (
+            data.get("provider_message_id")
+            or data.get("message_id")
+            or data.get("id")
+        )
+        return str(msg_id).strip() if isinstance(msg_id, str) and msg_id.strip() else f"webhook-{message.request_id}"
+
+    def query_delivery_status(self, request_id: str) -> str:
+        if not self.status_url:
+            return "unknown"
+        url = (
+            self.status_url.format(request_id=request_id)
+            if "{request_id}" in self.status_url
+            else f"{self.status_url.rstrip('/')}/{request_id}"
+        )
+        try:
+            with httpx.Client(timeout=self.timeout_seconds, transport=self.transport) as client:
+                resp = client.get(url, headers=self._headers())
+        except (httpx.TimeoutException, httpx.RequestError):
+            return "unknown"
+        if resp.status_code == 404:
+            return "not_found"
+        if resp.status_code != 200:
+            return "unknown"
+        try:
+            data = resp.json()
+        except Exception:
+            return "unknown"
+        status = str(data.get("status", "")).strip().lower()
+        if status in ("delivered", "not_found"):
+            return status
+        return "unknown"
 
 
 class FileOutboxMailProvider:
@@ -95,11 +174,23 @@ def _dispatch_or_reconcile_notice_command(args: argparse.Namespace) -> int:
     req = manager.get_request(str(args.request_id))
     if req is None:
         raise ValueError(f"Adoption request '{args.request_id}' not found")
-    outbox_dir = Path(args.outbox_dir).resolve() if args.outbox_dir else (root / "outbox")
-    provider = FileOutboxMailProvider(
-        outbox_dir,
-        override_status=getattr(args, "provider_status", None),
-    )
+    provider: FileOutboxMailProvider | HttpWebhookMailProvider
+    if args.outbox_dir:
+        provider = FileOutboxMailProvider(
+            Path(args.outbox_dir).resolve(),
+            override_status=getattr(args, "provider_status", None),
+        )
+    else:
+        webhook_url = (getattr(args, "webhook_url", None) or os.environ.get("MAIL_PROVIDER_WEBHOOK_URL") or "").strip()
+        if not webhook_url:
+            raise ValueError(
+                "Controlled mail provider not configured: set MAIL_PROVIDER_WEBHOOK_URL or pass --outbox-dir explicitly"
+            )
+        provider = HttpWebhookMailProvider(
+            webhook_url,
+            api_key=os.environ.get("MAIL_PROVIDER_API_KEY"),
+            status_url=os.environ.get("MAIL_PROVIDER_STATUS_URL"),
+        )
     dispatcher = NotificationDispatcher(root, provider=provider)
     rec = dispatcher.reconcile_and_dispatch(
         req,
@@ -107,6 +198,49 @@ def _dispatch_or_reconcile_notice_command(args: argparse.Namespace) -> int:
         recipient=str(args.recipient),
     )
     print(json.dumps(rec.to_dict(), sort_keys=True))
+    return 0
+
+
+def _record_approval_command(args: argparse.Namespace) -> int:
+    root = Path(args.evidence_root).resolve()
+    manager = AdoptionRequestManager(root)
+    approved = manager.record_approval(
+        str(args.request_id),
+        actor=str(args.actor),
+        approval_ref=str(args.approval_ref),
+        approved_pr_head_sha=args.approved_pr_head_sha,
+        reason=str(args.reason),
+    )
+    print(json.dumps(approved.to_dict(), sort_keys=True))
+    return 0
+
+
+def _sync_evidence_worktree(source_dir: Path, worktree_dir: Path) -> None:
+    """Copy evidence files into `worktree_dir` and prune released `reservation.json` without touching `.git`."""
+    src = Path(source_dir).resolve()
+    dst = Path(worktree_dir).resolve()
+    if src.is_dir():
+        for item in sorted(src.rglob("*")):
+            if item.is_symlink():
+                raise ValueError(f"Symlink forbidden in evidence sync: {item}")
+            rel = item.relative_to(src)
+            if rel.parts and rel.parts[0] == ".git":
+                continue
+            target = dst / rel
+            if item.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+            elif item.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, target)
+    src_res = src / "reservation.json"
+    dst_res = dst / "reservation.json"
+    if not src_res.is_file() and dst_res.is_file():
+        dst_res.unlink(missing_ok=True)
+
+
+def _sync_evidence_worktree_command(args: argparse.Namespace) -> int:
+    _sync_evidence_worktree(Path(args.source_dir), Path(args.worktree_dir))
+    print(json.dumps({"synced": True, "source": str(args.source_dir), "worktree": str(args.worktree_dir)}, sort_keys=True))
     return 0
 
 
@@ -203,13 +337,29 @@ def _verify_adoption_pr_command(args: argparse.Namespace) -> int:
         raise ValueError(f"Adoption request '{args.request_id}' not found")
     if req.slate_id != str(args.slate_id):
         raise ValueError(f"Request '{req.request_id}' slate_id mismatch: expected '{req.slate_id}', got '{args.slate_id}'")
+    manager.assert_not_expired(req)
     if req.status not in ("pending_approval", "approved"):
         raise ValueError(f"Request '{req.request_id}' is not open for PR checks (status='{req.status}')")
+    if args.head_sha and req.approved_pr_head_sha and req.approved_pr_head_sha != str(args.head_sha):
+        raise ValueError(
+            f"PR head SHA mismatch: approved '{req.approved_pr_head_sha}', got '{args.head_sha}'"
+        )
 
     if args.changed_file:
         changed = set(args.changed_file)
         if changed != AUTHORIZED_ADOPTION_DIFF_FILES:
             raise ValueError(f"Adoption PR contains unauthorized file diff: {sorted(changed)}")
+
+    if args.base_selection_path is not None:
+        base_sel = load_model_selection(Path(args.base_selection_path).resolve())
+        if (
+            base_sel.champion != req.expected_champion
+            or not base_sel.podium_sealed
+            or req.candidate_name not in base_sel.candidates
+        ):
+            raise ValueError(
+                f"Base protected main selection does not match sealed slate for '{req.request_id}'"
+            )
 
     sel_path = Path(args.selection_path).resolve()
     receipt_path = sel_path.with_suffix(".adoption.json")
@@ -234,12 +384,10 @@ def _verify_adoption_pr_command(args: argparse.Namespace) -> int:
     excl_path = root / "exclusions.jsonl"
     if excl_path.is_file():
         excl = ExclusionLedger(excl_path)
-        if excl.is_excluded(req.candidate_name, slate_id=req.slate_id, season=req.season) or excl.is_excluded(
-            req.candidate_name, season=req.season
-        ):
+        if excl.is_candidate_excluded(req.candidate_name, slate_id=req.slate_id, season=req.season):
             raise ValueError(f"Candidate '{req.candidate_name}' is excluded in ExclusionLedger")
 
-    manager._verify_request_evidence(req)
+    manager.verify_request_evidence(req)
 
     print(
         json.dumps(
@@ -257,10 +405,173 @@ def _verify_adoption_pr_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _github_api_headers(token: str | None) -> dict[str, str]:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "fpl-jubilee-ascent-coordinator/1.0",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _fetch_and_verify_live_pr_checks(
+    *,
+    repo: str,
+    pr_number: int,
+    approved_pr_head_sha: str,
+    pr_head_sha: str,
+    token: str | None,
+    transport: httpx.BaseTransport | None = None,
+) -> list[str]:
+    """Query GitHub PR state, files, auto_merge flag, and `verify-adoption-pr` check run."""
+    base = f"https://api.github.com/repos/{repo}"
+    headers = _github_api_headers(token)
+    with httpx.Client(timeout=20.0, transport=transport) as client:
+        pr_resp = client.get(f"{base}/pulls/{pr_number}", headers=headers)
+        if pr_resp.status_code != 200:
+            raise ValueError(f"Failed to query PR #{pr_number} (HTTP {pr_resp.status_code})")
+        pr = pr_resp.json()
+        if pr.get("state") != "open":
+            raise ValueError(f"PR #{pr_number} is not open (state={pr.get('state')})")
+        if pr.get("auto_merge") is not None:
+            raise ValueError(f"Independent auto-merge is enabled on PR #{pr_number}")
+        head_sha = str((pr.get("head") or {}).get("sha") or "")
+        if head_sha != approved_pr_head_sha or head_sha != pr_head_sha:
+            raise ValueError(
+                f"Live PR #{pr_number} head SHA '{head_sha}' mismatches approved '{approved_pr_head_sha}'"
+            )
+
+        files_resp = client.get(f"{base}/pulls/{pr_number}/files", headers=headers)
+        if files_resp.status_code != 200:
+            raise ValueError(f"Failed to query PR #{pr_number} files (HTTP {files_resp.status_code})")
+        changed_files = [str(f["filename"]) for f in files_resp.json() if isinstance(f, Mapping) and "filename" in f]
+        if set(changed_files) != AUTHORIZED_ADOPTION_DIFF_FILES:
+            raise ValueError(f"Live PR #{pr_number} contains unauthorized diff: {sorted(changed_files)}")
+
+        checks_resp = client.get(f"{base}/commits/{head_sha}/check-runs", headers=headers)
+        if checks_resp.status_code != 200:
+            raise ValueError(f"Failed to query check-runs for {head_sha} (HTTP {checks_resp.status_code})")
+        runs = [r for r in checks_resp.json().get("check_runs", ()) if isinstance(r, Mapping)]
+        matching = [r for r in runs if str(r.get("name", "")) == "verify-adoption-pr"]
+        if not any(r.get("status") == "completed" and r.get("conclusion") == "success" for r in matching):
+            raise ValueError(f"Required check 'verify-adoption-pr' is not green on PR #{pr_number} ({head_sha})")
+    return changed_files
+
+
+def _execute_github_pr_merge(
+    *,
+    repo: str,
+    pr_number: int,
+    approved_pr_head_sha: str,
+    token: str | None,
+    transport: httpx.BaseTransport | None = None,
+) -> dict[str, Any]:
+    url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/merge"
+    headers = _github_api_headers(token)
+    payload = {"sha": approved_pr_head_sha, "merge_method": "squash"}
+    try:
+        with httpx.Client(timeout=30.0, transport=transport) as client:
+            resp = client.put(url, json=payload, headers=headers)
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise MergeInterruptedError(f"GitHub PR #{pr_number} merge request interrupted: {exc}") from exc
+    if resp.status_code != 200:
+        raise MergeInterruptedError(f"GitHub PR #{pr_number} merge failed (HTTP {resp.status_code})")
+    data = resp.json()
+    if not data.get("merged"):
+        raise MergeInterruptedError(f"GitHub PR #{pr_number} merge response returned merged=False")
+    return {
+        "merge_commit_sha": data.get("sha"),
+        "pr_number": pr_number,
+    }
+
+
+def _push_worktree_reservation_state(source_dir: Path, worktree_dir: Path, message: str) -> None:
+    _sync_evidence_worktree(source_dir, worktree_dir)
+    status_proc = subprocess.run(
+        ["git", "-C", str(worktree_dir), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    if not status_proc.stdout.strip():
+        return
+    subprocess.run(["git", "-C", str(worktree_dir), "add", "-A"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(worktree_dir),
+            "-c",
+            "user.name=github-actions[bot]",
+            "-c",
+            "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+            "commit",
+            "-m",
+            message,
+        ],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(worktree_dir), "push", "origin", "HEAD:validation-evidence"], check=True)
+
+
 def _execute_protected_merge_command(args: argparse.Namespace) -> int:
     root = Path(args.evidence_root).resolve()
     coordinator = SharedReservationCoordinator(root)
-    changed_files = tuple(args.changed_file) if args.changed_file else tuple(sorted(AUTHORIZED_ADOPTION_DIFF_FILES))
+    changed_files: tuple[str, ...] = (
+        tuple(args.changed_file) if args.changed_file else tuple(sorted(AUTHORIZED_ADOPTION_DIFF_FILES))
+    )
+    checks_green = bool(args.checks_green)
+    existing_req = coordinator.request_manager.get_request(str(args.request_id))
+    already_done = bool(
+        existing_req is not None
+        and existing_req.slate_id == str(args.slate_id)
+        and existing_req.status == "adopted"
+        and coordinator.current_reservation() is None
+    )
+    need_gh_token = (not already_done) and bool(args.require_live_checks or args.merge_via_github_api)
+    token = _retrieve_github_token_in_memory() if need_gh_token else None
+
+    if already_done:
+        checks_green = True
+    elif args.require_live_checks:
+        if not args.repo or args.pr_number is None:
+            raise ValueError("--require-live-checks requires --repo and --pr-number")
+        live_files = _fetch_and_verify_live_pr_checks(
+            repo=str(args.repo),
+            pr_number=int(args.pr_number),
+            approved_pr_head_sha=str(args.approved_pr_head_sha),
+            pr_head_sha=str(args.pr_head_sha),
+            token=token,
+        )
+        changed_files = tuple(live_files)
+        checks_green = True
+
+    merge_executor = None
+    if not already_done and args.merge_via_github_api:
+        if not args.repo or args.pr_number is None:
+            raise ValueError("--merge-via-github-api requires --repo and --pr-number")
+
+        def _do_api_merge() -> dict[str, Any]:
+            return _execute_github_pr_merge(
+                repo=str(args.repo),
+                pr_number=int(args.pr_number),
+                approved_pr_head_sha=str(args.approved_pr_head_sha),
+                token=token,
+            )
+
+        merge_executor = _do_api_merge
+
+    persist_hook = None
+    if args.worktree_dir is not None:
+        wt_dir = Path(args.worktree_dir).resolve()
+
+        def _sync_res(rec: ReservationRecord | None) -> None:
+            label = f"sync reservation ({rec.merge_state})" if rec is not None else "release reservation"
+            _push_worktree_reservation_state(root, wt_dir, f"adoption: {args.request_id} {label}")
+
+        persist_hook = _sync_res
+
     result = coordinator.execute_reserved_adoption_merge(
         request_id=str(args.request_id),
         slate_id=str(args.slate_id),
@@ -268,10 +579,12 @@ def _execute_protected_merge_command(args: argparse.Namespace) -> int:
         approved_pr_head_sha=str(args.approved_pr_head_sha),
         pr_head_sha=str(args.pr_head_sha),
         changed_files=changed_files,
-        checks_green=bool(args.checks_green),
+        checks_green=checks_green,
         auto_merge_enabled=bool(args.auto_merge_enabled),
         main_selection_path=args.main_selection_path,
         holder=str(args.holder),
+        merge_executor=merge_executor,
+        persist_reservation_hook=persist_hook,
     )
     print(json.dumps(result, sort_keys=True))
     return 0
@@ -280,8 +593,29 @@ def _execute_protected_merge_command(args: argparse.Namespace) -> int:
 def _reconcile_merge_command(args: argparse.Namespace) -> int:
     root = Path(args.evidence_root).resolve()
     coordinator = SharedReservationCoordinator(root)
+    remote_sel: Mapping[str, Any] | None = None
+    remote_rec: Mapping[str, Any] | None = None
+    if args.remote_main_ref:
+        ref = str(args.remote_main_ref)
+        sel_proc = subprocess.run(
+            ["git", "show", f"{ref}:config/model_selection.json"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        rec_proc = subprocess.run(
+            ["git", "show", f"{ref}:config/model_selection.adoption.json"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if sel_proc.returncode == 0 and rec_proc.returncode == 0:
+            remote_sel = json.loads(sel_proc.stdout)
+            remote_rec = json.loads(rec_proc.stdout)
     result = coordinator.reconcile_unknown_merge(
         main_selection_path=args.main_selection_path,
+        remote_main_selection=remote_sel,
+        remote_main_receipt=remote_rec,
         actor=str(args.actor),
     )
     print(json.dumps(result, sort_keys=True))
@@ -320,13 +654,12 @@ def _github_get_json(url: str, token: str | None) -> tuple[int, dict[str, Any] |
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(url, headers=headers, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            raw = resp.read().decode("utf-8")
-            return int(resp.status), json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as exc:
-        return int(exc.code), None
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url, headers=headers)
+        if not 200 <= resp.status_code < 300:
+            return int(resp.status_code), None
+        return int(resp.status_code), (resp.json() if resp.content else {})
     except Exception:
         return 0, None
 
@@ -337,12 +670,28 @@ def _query_live_github_snapshot(repo: str) -> dict[str, Any]:
 
     repo_code, repo_data = _github_get_json(base, token)
     bp_code, bp_data = _github_get_json(f"{base}/branches/main/protection", token)
+    rules_code, rules_data = _github_get_json(f"{base}/rules/branches/main", token)
     env_code, env_data = _github_get_json(f"{base}/environments/champion-adoption-approval", token)
     var_code, var_data = _github_get_json(f"{base}/actions/variables/CHAMPION_ADOPTION_LIVE_ENABLED", token)
+    vars_code, vars_list_data = _github_get_json(f"{base}/actions/variables", token)
+    secrets_code, secrets_data = _github_get_json(f"{base}/actions/secrets", token)
     ev_code, _ = _github_get_json(f"{base}/branches/validation-evidence", token)
     rel_code, _ = _github_get_json(f"{base}/releases?per_page=1", token)
 
     req_checks = bp_data.get("required_status_checks", {}) if isinstance(bp_data, dict) else {}
+    strict_checks = bool(req_checks.get("strict"))
+    contexts = list(req_checks.get("contexts", ()))
+    bp_enabled = bp_code == 200
+    if not bp_enabled and rules_code == 200 and isinstance(rules_data, list):
+        for rule in rules_data:
+            if isinstance(rule, dict) and rule.get("type") == "required_status_checks":
+                bp_enabled = True
+                params = rule.get("parameters", {})
+                if isinstance(params, dict):
+                    strict_checks = strict_checks or bool(params.get("strict_required_status_checks_policy"))
+                    for chk in params.get("required_status_checks", ()):
+                        if isinstance(chk, dict) and chk.get("context"):
+                            contexts.append(str(chk["context"]))
     enforce_admins = (
         bool(bp_data.get("enforce_admins", {}).get("enabled"))
         if isinstance(bp_data, dict) and isinstance(bp_data.get("enforce_admins"), dict)
@@ -351,17 +700,31 @@ def _query_live_github_snapshot(repo: str) -> dict[str, Any]:
     protection_rules = env_data.get("protection_rules", []) if isinstance(env_data, dict) else []
     reviewers = [r for r in protection_rules if isinstance(r, dict) and r.get("type") == "required_reviewers"]
 
+    secret_names = (
+        {str(s["name"]) for s in secrets_data.get("secrets", ()) if isinstance(s, dict) and s.get("name")}
+        if secrets_code == 200 and isinstance(secrets_data, dict)
+        else set()
+    )
+    vars_map = (
+        {
+            str(v["name"]): str(v.get("value", ""))
+            for v in vars_list_data.get("variables", ())
+            if isinstance(v, dict) and v.get("name")
+        }
+        if vars_code == 200 and isinstance(vars_list_data, dict)
+        else {}
+    )
     live_var_val = str(var_data.get("value", "false")).lower() if (var_code == 200 and isinstance(var_data, dict)) else "false"
     allow_auto_merge = bool(repo_data.get("allow_auto_merge", False)) if isinstance(repo_data, dict) else False
 
     return {
         "api_reachable": repo_code == 200,
         "branch_protection": {
-            "http_status": bp_code,
-            "enabled": bp_code == 200,
+            "http_status": bp_code if bp_code == 200 else rules_code,
+            "enabled": bp_enabled,
             "required_status_checks": {
-                "strict": bool(req_checks.get("strict")),
-                "contexts": list(req_checks.get("contexts", ())),
+                "strict": strict_checks,
+                "contexts": contexts,
             },
             "enforce_admins": enforce_admins,
         },
@@ -374,7 +737,9 @@ def _query_live_github_snapshot(repo: str) -> dict[str, Any]:
         "repo_settings": {
             "http_status": repo_code,
             "allow_auto_merge": allow_auto_merge,
-            "github_app_configured": False,
+            "github_app_configured": {"CHAMPION_ADOPTION_APP_ID", "CHAMPION_ADOPTION_APP_PRIVATE_KEY"}.issubset(
+                secret_names
+            ),
         },
         "validation_evidence_branch": {
             "branch_http_status": ev_code,
@@ -382,7 +747,7 @@ def _query_live_github_snapshot(repo: str) -> dict[str, Any]:
             "releases_accessible": rel_code == 200,
         },
         "mail_provider": {
-            "configured": False,
+            "configured": bool(vars_map.get("MAIL_PROVIDER_ENDPOINT") or "MAIL_PROVIDER_WEBHOOK_URL" in secret_names),
         },
         "variables": {
             "CHAMPION_ADOPTION_LIVE_ENABLED": live_var_val,
@@ -454,22 +819,40 @@ def run_production_preflight(
     }
 
     # 4. shared_reservation_wiring
-    wf_files = (
+    writer_wfs = (
+        ".github/workflows/validation-collector.yml",
         ".github/workflows/champion-adoption-request.yml",
-        ".github/workflows/champion-adoption-pr-checks.yml",
         ".github/workflows/champion-adoption-merge.yml",
     )
-    wf_present = all((root / rel).is_file() for rel in wf_files)
+    all_wfs = (*writer_wfs, ".github/workflows/champion-adoption-pr-checks.yml")
+    wf_present = all((root / rel).is_file() for rel in all_wfs)
+    shared_concurrency_ok = wf_present and all(
+        "group: validation-evidence" in (root / rel).read_text(encoding="utf-8")
+        for rel in writer_wfs
+    )
+    no_direct_push_ok = wf_present and (
+        "git push origin HEAD:main" not in (root / ".github/workflows/champion-adoption-merge.yml").read_text(encoding="utf-8")
+    )
+    prod_ev_path = root / "commands" / "produce_validation_evidence.py"
+    collector_wired = prod_ev_path.is_file() and (
+        "record_exclusion_under_reservation" in prod_ev_path.read_text(encoding="utf-8")
+    )
     coord_wired = hasattr(SharedReservationCoordinator, "record_exclusion_under_reservation") and hasattr(
         SharedReservationCoordinator, "execute_reserved_adoption_merge"
     )
-    wiring_passed = wf_present and coord_wired
+    wiring_passed = wf_present and coord_wired and shared_concurrency_ok and no_direct_push_ok and collector_wired
     gates["shared_reservation_wiring"] = {
         "passed": wiring_passed,
         "status": "pass" if wiring_passed else "blocked",
-        "blocker": None if wiring_passed else "SharedReservationCoordinator or protected workflows missing",
-        "recovery_action": "Ensure SharedReservationCoordinator and champion-adoption-*.yml workflows are committed.",
-        "details": {"workflows_present": wf_present, "coordinator_wired": coord_wired},
+        "blocker": None if wiring_passed else "SharedReservationCoordinator, shared workflow concurrency, or PR-only merge wiring incomplete",
+        "recovery_action": "Ensure all evidence workflows share group validation-evidence, collector reserves exclusions, and merge uses GitHub PR merge API.",
+        "details": {
+            "workflows_present": wf_present,
+            "shared_concurrency_group": shared_concurrency_ok,
+            "no_direct_main_push": no_direct_push_ok,
+            "collector_exclusion_reservation": collector_wired,
+            "coordinator_wired": coord_wired,
+        },
     }
 
     # 5. immutable_evidence_and_releases
@@ -516,7 +899,7 @@ def run_production_preflight(
         cert_passed = bool(
             cert_data.get("certified") is True
             and cert_data.get("certified_mode") == "advisory"
-            and cert_data.get("certification_digest") == CERTIFICATION_Digest_EXPECTED
+            and cert_data.get("certification_digest") == CERTIFICATION_DIGEST_EXPECTED
         )
         cert_details.update(
             {
@@ -623,6 +1006,7 @@ def main(argv: list[str] | None = None) -> int:
     p_disp.add_argument("--review-url", required=True)
     p_disp.add_argument("--recipient", default="operator@example.com")
     p_disp.add_argument("--outbox-dir", default=None)
+    p_disp.add_argument("--webhook-url", default=None)
 
     p_rec_notice = sub.add_parser("reconcile-notice", help="Reconcile uncertain notice delivery state for request_id")
     p_rec_notice.add_argument("--evidence-root", required=True)
@@ -630,7 +1014,20 @@ def main(argv: list[str] | None = None) -> int:
     p_rec_notice.add_argument("--review-url", required=True)
     p_rec_notice.add_argument("--recipient", default="operator@example.com")
     p_rec_notice.add_argument("--outbox-dir", default=None)
+    p_rec_notice.add_argument("--webhook-url", default=None)
     p_rec_notice.add_argument("--provider-status", choices=["delivered", "not_found", "unknown"], default=None)
+
+    p_app = sub.add_parser("record-approval", help="Bind human approval and approved PR head SHA")
+    p_app.add_argument("--evidence-root", required=True)
+    p_app.add_argument("--request-id", required=True)
+    p_app.add_argument("--approval-ref", required=True)
+    p_app.add_argument("--approved-pr-head-sha", default=None)
+    p_app.add_argument("--actor", default="operator")
+    p_app.add_argument("--reason", default="Human approved protected adoption request")
+
+    p_sync = sub.add_parser("sync-evidence-worktree", help="Mirror evidence updates and released reservation into git worktree")
+    p_sync.add_argument("--source-dir", required=True)
+    p_sync.add_argument("--worktree-dir", required=True)
 
     p_rej = sub.add_parser("record-rejection", help="Terminally reject active request and optionally advance queue")
     p_rej.add_argument("--evidence-root", required=True)
@@ -653,6 +1050,8 @@ def main(argv: list[str] | None = None) -> int:
     p_ver.add_argument("--request-id", required=True)
     p_ver.add_argument("--slate-id", required=True)
     p_ver.add_argument("--selection-path", type=Path, default=DEFAULT_CONFIG_PATH)
+    p_ver.add_argument("--base-selection-path", type=Path, default=None)
+    p_ver.add_argument("--head-sha", default=None)
     p_ver.add_argument("--changed-file", action="append", default=None)
 
     p_merge = sub.add_parser("execute-protected-merge", help="Acquire shared reservation and execute atomic merge")
@@ -667,10 +1066,16 @@ def main(argv: list[str] | None = None) -> int:
     p_merge.add_argument("--auto-merge-enabled", action="store_true")
     p_merge.add_argument("--main-selection-path", type=Path, default=DEFAULT_CONFIG_PATH)
     p_merge.add_argument("--holder", default="github-app-adoption-merger")
+    p_merge.add_argument("--repo", default=None)
+    p_merge.add_argument("--pr-number", type=int, default=None)
+    p_merge.add_argument("--merge-via-github-api", action="store_true")
+    p_merge.add_argument("--require-live-checks", action="store_true")
+    p_merge.add_argument("--worktree-dir", type=Path, default=None)
 
     p_rec_merge = sub.add_parser("reconcile-merge", help="Reconcile interrupted merge reservation from protected main")
     p_rec_merge.add_argument("--evidence-root", required=True)
     p_rec_merge.add_argument("--main-selection-path", type=Path, default=DEFAULT_CONFIG_PATH)
+    p_rec_merge.add_argument("--remote-main-ref", default=None)
     p_rec_merge.add_argument("--actor", default="adoption-reconciler")
 
     p_preflight = sub.add_parser("production-preflight", help="Run read-only production parity preflight (#197)")
@@ -683,6 +1088,10 @@ def main(argv: list[str] | None = None) -> int:
         return _enqueue_pass_command(args)
     if args.subcommand in ("dispatch-notice", "reconcile-notice"):
         return _dispatch_or_reconcile_notice_command(args)
+    if args.subcommand == "record-approval":
+        return _record_approval_command(args)
+    if args.subcommand == "sync-evidence-worktree":
+        return _sync_evidence_worktree_command(args)
     if args.subcommand == "record-rejection":
         return _record_rejection_command(args)
     if args.subcommand == "prepare-adoption-pr":

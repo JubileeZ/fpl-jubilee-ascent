@@ -568,12 +568,18 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
             else "none"
         )
         settled_gw_val = preflight_meta.get("latest_settled_gw", 0)
+        verified_gw_val = preflight_meta.get("verified_prefix_end_gw", 0)
         eff_mod = preflight_meta.get("effective_model") or planner.active_model
+        sel_reason = preflight_meta.get("selection_reason")
+        excl_mods = preflight_meta.get("excluded_models") or []
         fb_reason = preflight_meta.get("fallback_reason")
+        reason_txt = f" ({sel_reason})" if sel_reason else ""
+        excl_txt = f" · Excluded: {', '.join(excl_mods)}" if excl_mods else ""
         fb_txt = f" · fallback: {fb_reason}" if fb_reason else ""
         st.caption(
-            f"Serving model: {eff_mod} · Freshness: {f_status or 'verified_current'} · "
-            f"Latest settled: GW{settled_gw_val} · Comparable net points: {scores_txt}{fb_txt}"
+            f"Serving model: {eff_mod}{reason_txt} · Freshness: {f_status or 'verified_current'} · "
+            f"Settled: GW{settled_gw_val} (verified prefix GW1..{verified_gw_val}) · "
+            f"Comparable net points: {scores_txt}{excl_txt}{fb_txt}"
         )
     deadline = utc_time(dataset.get("meta", {}).get("transfer_plan_deadline"))
     st.caption(f"GW{planner.state['start']} deadline: {deadline:%d %b %Y, %H:%M UTC}" if deadline else "Deadline time unavailable; refresh before acting.")
@@ -621,10 +627,20 @@ def main(paths: PlannerPaths, store: PlanStore, jobs: PlannerJobs) -> None:
         isinstance(preflight_meta, dict)
         and preflight_meta.get("freshness_status") == "stale_remote_changed"
     )
+    excluded_active = (
+        isinstance(preflight_meta, dict)
+        and (planner.active_model or "") in set(preflight_meta.get("excluded_models") or ())
+    )
+    unverified_non_champ = (
+        isinstance(preflight_meta, dict)
+        and preflight_meta.get("freshness_status") == "unverified"
+        and bool(preflight_meta.get("confirmed_champion"))
+        and (planner.active_model or preflight_meta.get("effective_model")) != preflight_meta.get("confirmed_champion")
+    )
     actions = st.columns(3)
-    if actions[0].button("Generate plan", key="generate-plan", type="primary", disabled=busy or planner.stale or stale_remote or not all(row["complete"] for row in planner.weeks())):
+    if actions[0].button("Generate plan", key="generate-plan", type="primary", disabled=busy or planner.stale or stale_remote or excluded_active or unverified_non_champ or not all(row["complete"] for row in planner.weeks())):
         begin_job(planner, store, jobs, paths)
-    if actions[1].button("Optimize remaining transfers", key="optimize-plan", disabled=busy or planner.stale or stale_remote or not all(row["complete"] for row in planner.weeks())):
+    if actions[1].button("Optimize remaining transfers", key="optimize-plan", disabled=busy or planner.stale or stale_remote or excluded_active or unverified_non_champ or not all(row["complete"] for row in planner.weeks())):
         begin_job(planner, store, jobs, paths)
     if actions[2].button("Reset to solver", key="reset-plan", disabled=not planner.recommendation_valid()):
         st.session_state["reset_scenario"] = planner.state["scenario"]

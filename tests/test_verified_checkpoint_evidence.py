@@ -360,6 +360,7 @@ def test_v2_protocol_from_payload_validates_and_checks_certification_digest() ->
         availability_skip_unused_alpha=True,
         gw38_expiry_hours_after_last_kickoff=360.0,
         certification_digest=cert_digest,
+        completed_segments={"15": ((1, 4),), "30": ((1, 4), (5, 19)), "38": ((1, 4), (5, 19), (20, 38))},
     )
     payload = {**declaration, "statistics": cfg.to_dict()}
     parsed = protocol_from_payload(payload)
@@ -427,6 +428,7 @@ def test_verified_v2_checkpoint_enforces_bindings_expiry_and_allows_skip_and_pos
         availability_skip_unused_alpha=True,
         gw38_expiry_hours_after_last_kickoff=360.0,
         certification_digest=cert_digest,
+        completed_segments={"12": ((1, 4),), "26": ((1, 4), (5, 19)), "38": ((1, 4), (5, 19), (20, 38))},
     )
     protocol = {**declaration, "statistics": cfg.to_dict()}
     protocol_hash = content_hash(protocol)
@@ -505,3 +507,153 @@ def test_verified_v2_checkpoint_enforces_bindings_expiry_and_allows_skip_and_pos
     )
     with pytest.raises(ValueError, match="Frozen slate protocol_hash mismatch"):
         evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "bad_selection.json"})
+
+
+def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
+    retained_verified_checkpoint: Path,
+    tmp_path: Path,
+) -> None:
+    from backtesting.promotion_evidence import (
+        CHECKPOINT_EVIDENCE_V2,
+        GUARD_SEMANTICS,
+        content_hash,
+        current_model_source_hash,
+        evaluate_checkpoint_bundle_evidence,
+        evaluate_verified_checkpoint_payload,
+        native_solver_identity,
+    )
+
+    # v1 bundle preserves canonical v1 output keys without v2-only exclusion fields
+    v1_bundle = evaluate_checkpoint_bundle_evidence(retained_verified_checkpoint)
+    assert "newly_excluded_finalists" not in v1_bundle
+    assert "exclusion_details" not in v1_bundle
+
+    # Final v2 checkpoint rejects gw38_final_kickoff_utc earlier than admitted GW fixture kickoff
+    development, validation = "2025-26", "2026-27"
+    windows = {development: [1, 2], validation: list(range(1, 39))}
+    guards = {
+        name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3],
+               "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+        for name, spec in GUARD_SEMANTICS.items()
+    }
+    declaration = {
+        "horizon": 6,
+        "windows": windows,
+        "guard_specs": guards,
+        "quality_policy": asdict(QualityPolicy()),
+        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+        "solver_identity": native_solver_identity(),
+        "projection_evaluation": {
+            "leads": list(range(6)), "weights": [1.0] * 6, "population": "all_admitted_players",
+            "missingness": "fail_closed", "aggregation": "weighted_paired_player_gameweek",
+            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+        },
+        "live_review": {
+            "mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
+            "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025,
+        },
+    }
+    alphas = {"1": {"15": 0.0004, "30": 0.008, "38": 0.032}, "2": {"15": 0.0002, "30": 0.004, "38": 0.016}}
+    cert_digest = "e" * 64
+    cfg = StatisticalProtocolConfig(
+        protocol_version="v2.0",
+        inference_method="kendall_pw_hac_t",
+        development_season=development,
+        confirmation_season=validation,
+        approved_by_human=True,
+        approval_reference="test-final-ko",
+        max_family_attempts=1,
+        required_projection_guards=tuple(guards),
+        evidence_protocol_hash=content_hash(declaration),
+        confirmation_checkpoints=(15, 30, 38),
+        calibrated_superiority_alphas=alphas,
+        gw1_4_material_loss_limit=25.0,
+        statistical_early_harm_mode="advisory",
+        statistical_early_harm_alpha=0.025,
+        availability_skip_unused_alpha=True,
+        gw38_expiry_hours_after_last_kickoff=360.0,
+        certification_digest=cert_digest,
+        completed_segments={"15": ((1, 4),), "30": ((1, 4), (5, 19)), "38": ((1, 4), (5, 19), (20, 38))},
+    )
+    protocol = {**declaration, "statistics": cfg.to_dict()}
+    protocol_hash = content_hash(protocol)
+    source_hash = current_model_source_hash()
+    save_model_selection(
+        ModelSelection(
+            CHAMPION,
+            (CANDIDATE,),
+            provisional_active=CANDIDATE,
+            podium_frozen_season=validation,
+            podium_sealed=True,
+            frozen_protocol_hash=protocol_hash,
+            frozen_certification_digest=cert_digest,
+        ),
+        tmp_path / "selection.json",
+    )
+    dev_sel = save_material(
+        tmp_path,
+        "dev-sel.json",
+        {"version": 1, "candidate_name": CANDIDATE, "former_champion": CHAMPION,
+         "model_source_hash": source_hash, "protocol_hash": protocol_hash, "traces": {CHAMPION: None}},
+    )
+    reg = ConfirmationRegistry(tmp_path / "registry.jsonl")
+    attempt = reg.register_finalist(
+        CANDIDATE, CHAMPION, "v2-ko", source_hash, content_hash({}), dev_sel["sha256"],
+        protocol_hash, requested_seasons=(validation,), max_family_attempts=1,
+    )
+    req_s, cat_s, adm_s = _build_empirical_bundle(
+        gws=tuple(range(1, 39)),
+        track="validation_fplcache",
+        season=validation,
+        seed_season=development,
+        bootstrap_age_hours=6.0,
+        fixtures_age_hours=1.5,
+        partial_prefix=False,
+        checkpoint_gw=38,
+        with_manager=False,
+    )
+    ctx_s_ref = save_material(
+        tmp_path,
+        "adm_s_gw38.json",
+        {
+            "request": req_s,
+            "catalog": {k: v.hex() for k, v in cat_s.items()},
+        },
+    )
+    # Admitted GW38 fixture kickoff is in 2027-05; declaring 2026-09-20 fails closed
+    payload = {
+        "version": CHECKPOINT_EVIDENCE_V2,
+        "checkpoint_gw": 38,
+        "selection_path": "selection.json",
+        "registry_path": "registry.jsonl",
+        "model_source_hash": source_hash,
+        "protocol": save_material(tmp_path, "protocol.json", protocol),
+        "parameters": save_material(tmp_path, "params.json", {}),
+        "podium_order": [CANDIDATE],
+        "development_selections": {CANDIDATE: dev_sel},
+        "confirmation_attempt_ids": {CANDIDATE: attempt.attempt_id},
+        "replays": [],
+        "guard_outcome_sources": [{"season": validation, "gameweek": gw, "admission": ctx_s_ref} for gw in range(1, 39)],
+        "evaluated_at_utc": "2027-05-10T12:00:00Z",
+        "gw38_final_kickoff_utc": "2026-09-20T12:00:00Z",
+    }
+    with pytest.raises(ValueError, match="precedes final admitted GW38"):
+        evaluate_verified_checkpoint_payload(tmp_path, payload)
+
+    # v2 post-exclusion bundle emits structured exclusion metadata
+    excl_req = tmp_path / "req_excl.json"
+    excl_req.write_text(
+        json.dumps(
+            {
+                **payload,
+                "excluded_finalists": [CANDIDATE],
+                "guard_outcome_sources": [],
+                "gw38_final_kickoff_utc": req_s["origins"][-1]["max_kickoff_utc"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    excl_bundle = evaluate_checkpoint_bundle_evidence(excl_req)
+    assert excl_bundle["excluded_finalists"] == [CANDIDATE]
+    assert excl_bundle["newly_excluded_finalists"] == []
+    assert excl_bundle["exclusion_details"] == {}

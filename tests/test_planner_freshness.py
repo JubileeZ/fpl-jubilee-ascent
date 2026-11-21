@@ -532,3 +532,268 @@ def test_sync_validation_evidence_readonly_and_tampered_ledger_guard(tmp_path: P
             override_model=FINALIST_1,
         )
 
+
+def test_processor_preserves_data_checked_and_contiguous_settlement_and_surface_guards(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify processor data_checked column, contiguous settled prefix + 24h default, no_settled fallback, and dashboard/planner guards."""
+    from datetime import UTC, datetime, timedelta
+    from features.processor import process_directory
+    from commands import dashboard as dash
+    from commands import export_dashboard
+    from dashboard.planner import Planner
+    from dashboard.planner_service import PlannerPaths, make_solve_request
+
+    # 1. features/processor.py preserves data_checked in gameweeks.parquet
+    raw_dir = tmp_path / "raw"
+    proc_dir = tmp_path / "proc"
+    raw_dir.mkdir()
+    (raw_dir / "bootstrap_static.json").write_text(
+        json.dumps(
+            {
+                "teams": [{"id": 1, "name": "C1", "short_name": "C1"}],
+                "events": [
+                    {"id": 1, "name": "GW1", "deadline_time": "2026-08-15T10:00:00Z", "finished": True, "data_checked": True, "is_current": False, "is_next": False},
+                    {"id": 2, "name": "GW2", "deadline_time": "2026-08-22T10:00:00Z", "finished": True, "data_checked": False, "is_current": True, "is_next": False},
+                ],
+                "elements": [
+                    {"id": 1, "code": 101, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "selected_by_percent": "1.0"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (raw_dir / "fixtures_all.json").write_text("[]", encoding="utf-8")
+    process_directory(raw_dir, proc_dir)
+    gw_out = pd.read_parquet(proc_dir / "gameweeks.parquet")
+    assert "data_checked" in gw_out.columns
+    assert bool(gw_out.loc[gw_out["id"] == 1, "data_checked"].iloc[0]) is True
+    assert bool(gw_out.loc[gw_out["id"] == 2, "data_checked"].iloc[0]) is False
+
+    # 2. Contiguous settled prefix stops before GW15 when GW15 is unchecked even if GW16 is checked
+    p2 = tmp_path / "proc2"
+    p2.mkdir()
+    pd.DataFrame(
+        [
+            {"id": gw, "finished": True, "data_checked": (gw != 15)}
+            for gw in range(1, 17)
+        ]
+    ).to_parquet(p2 / "gameweeks.parquet")
+    assert resolve_latest_officially_settled_gw(p2) == 14
+
+    # Default now_utc enforces >=24h post-kickoff window without explicit now_utc argument
+    recent_ko = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+    pd.DataFrame(
+        [
+            {"id": 1, "finished": True, "data_checked": True},
+        ]
+    ).to_parquet(p2 / "gameweeks.parquet")
+    pd.DataFrame(
+        [
+            {"id": 10, "gameweek_id": 1, "finished": True, "kickoff_time": recent_ko},
+        ]
+    ).to_parquet(p2 / "fixtures.parquet")
+    assert resolve_latest_officially_settled_gw(p2) == 0
+
+    # 3. Missing local settled GWs (latest_settled_gw == 0) NEVER trusts a stale scorecard
+    sel_path = tmp_path / "model_selection.json"
+    _write_sealed_selection(sel_path, candidates=(FINALIST_1,))
+    ev_dir = tmp_path / "ev"
+    _write_verified_scorecard(
+        ev_dir,
+        checkpoint_gw=15,
+        settled_through_gw=15,
+        candidates=(FINALIST_1,),
+        cumulative_net_points={CHAMPION: 800.0, FINALIST_1: 850.0},
+    )
+    preflight_zero = resolve_weekly_planner_model(
+        sel_path,
+        evidence_dir=ev_dir,
+        processed_dir=p2,
+        remote_loader=lambda: json.loads(sel_path.read_text(encoding="utf-8")),
+    )
+    assert preflight_zero.effective_model == CHAMPION
+    assert preflight_zero.fallback_reason == "no_settled_gameweeks"
+
+    # 4. export_dashboard never falls back to provisional_active when scorecard is missing/stale
+    monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
+    monkeypatch.setattr("models.planner_selection.PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(export_dashboard, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(export_dashboard, "resolve_operational_processed_dir", lambda _r: p2)
+    monkeypatch.setattr(
+        export_dashboard,
+        "check_remote_main_freshness",
+        lambda *_a, **_kw: RemoteFreshnessResult(
+            status="stale_remote_changed",
+            local_champion=CHAMPION,
+            local_candidates=(FINALIST_1,),
+            local_podium_sealed=True,
+            local_podium_frozen_season=SEASON,
+            remote_champion=FINALIST_1,
+        ),
+    )
+    pd.DataFrame(
+        [{"id": 1, "club_id": 1, "position_id": 3, "now_cost": 50, "web_name": "P1", "status": "a", "selected_by_percent": 1.0}]
+    ).to_parquet(p2 / "players.parquet")
+    pd.DataFrame([{"id": 1, "name": "C1", "short_name": "C1", "strength": 3, "strength_overall_home": 1000, "strength_overall_away": 1000, "strength_attack_home": 1000, "strength_attack_away": 1000, "strength_defence_home": 1000, "strength_defence_away": 1000}]).to_parquet(p2 / "clubs.parquet")
+    pd.DataFrame(
+        [{"id": 2, "name": "GW2", "is_next": True, "finished": False, "data_checked": False}]
+    ).to_parquet(p2 / "gameweeks.parquet")
+    pd.DataFrame([{"id": 20, "gameweek_id": 2, "home_club_id": 1, "away_club_id": 1, "team_h_difficulty": 3, "team_a_difficulty": 3, "kickoff_time": None, "finished": False}]).to_parquet(p2 / "fixtures.parquet")
+    pd.DataFrame(columns=["player_id", "fixture_id", "gameweek_id", "minutes", "total_points"]).to_parquet(p2 / "player_performances.parquet")
+
+    class _StubModel:
+        def fit(self, _h: pd.DataFrame) -> None:
+            return None
+
+        def predict(self, df_f: pd.DataFrame, _hz: int) -> pd.DataFrame:
+            return pd.DataFrame(
+                [
+                    {
+                        "player_id": int(r["player_id"]),
+                        "gameweek_id": int(r["gameweek_id"]),
+                        "projected_points": 5.0,
+                        "projected_minutes": 90.0,
+                        "xp_goals": 0.0,
+                        "xp_assists": 0.0,
+                        "xp_clean_sheet": 0.0,
+                        "xp_defcon": 0.0,
+                        "xp_bonus": 0.0,
+                    }
+                    for _, r in df_f.iterrows()
+                ]
+            )
+
+    monkeypatch.setattr(export_dashboard, "get_model", lambda _n: _StubModel())
+    _write_sealed_selection(sel_path, candidates=(FINALIST_1,), provisional_active=FINALIST_1)
+    out_stale = export_dashboard.run_dashboard_export(config_path=sel_path)
+    stale_doc = json.loads(out_stale.read_text(encoding="utf-8"))
+    assert stale_doc["meta"]["default_model"] == CHAMPION
+    assert stale_doc["meta"]["active_transfer_plan_model"] == CHAMPION
+    assert stale_doc["meta"]["planner_preflight"]["freshness_status"] == "stale_remote_changed"
+
+    # 5. dashboard/planner_service.make_solve_request blocks unverified non-Champion solving
+    dataset_unver = {
+        "meta": {
+            "target_gw": 2,
+            "horizon": 1,
+            "horizon_start": 2,
+            "horizon_end": 2,
+            "default_model": FINALIST_1,
+            "models": [CHAMPION, FINALIST_1],
+            "owned_squad_ids": [],
+            "itb": 0.0,
+            "free_transfers": 1,
+            "planner_preflight": {
+                "freshness_status": "unverified",
+                "confirmed_champion": CHAMPION,
+                "effective_model": CHAMPION,
+                "excluded_models": [],
+            },
+        },
+        "players": [],
+    }
+    monkeypatch.setattr("dashboard.planner_service.check_remote_main_freshness", lambda **_kw: RemoteFreshnessResult("unverified", CHAMPION, (FINALIST_1,), True, SEASON))
+    with pytest.raises(ValueError, match="unverified"):
+        make_solve_request(Planner(dataset_unver), PlannerPaths(tmp_path / "d.json", p2, tmp_path / "st"))
+
+    # 6. commands/dashboard.start_transfer_plan rejects stale checkout with HTTP 409
+    monkeypatch.setattr(dash, "resolve_operational_processed_dir", lambda _r: p2)
+    monkeypatch.setattr(
+        "commands.dashboard.resolve_weekly_planner_model",
+        lambda **_kw: (_ for _ in ()).throw(StaleCheckoutError("Run manual 'git pull'")),
+    )
+    st_code, st_body = dash.start_transfer_plan(
+        target_gw=2, horizon=1, booked_chips={"use_wc": [], "use_bb": [], "use_fh": [], "use_tc": []}, enabled_chips=[]
+    )
+    assert st_code == 409
+    assert "git pull" in str(st_body["error"])
+
+
+def test_sync_root_evidence_and_live_unverified_override_when_cached_meta_stale_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify root-level validation-evidence sync filtering and live unverified blocking even when cached meta says verified_current."""
+    import subprocess
+    from dashboard.planner import Planner
+    from dashboard.planner_service import PlannerPaths, make_solve_request
+
+    repo = tmp_path / "repo"
+    bare = tmp_path / "bare.git"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    (repo / "README.md").write_text("hi\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+
+    # Create orphan validation-evidence branch with root-level scorecards + exclusions
+    subprocess.run(["git", "checkout", "--orphan", "validation-evidence"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "rm", "-rf", "."], cwd=repo, check=True, capture_output=True)
+    ev_stage = tmp_path / "ev_stage"
+    ev_stage.mkdir()
+    sc = _write_verified_scorecard(
+        ev_stage,
+        checkpoint_gw=6,
+        settled_through_gw=6,
+        candidates=(FINALIST_1, FINALIST_2),
+        cumulative_net_points={CHAMPION: 300.0, FINALIST_1: 315.0, FINALIST_2: 295.0},
+    )
+    assert sc.checkpoint_gw == 6
+    (repo / "latest_scorecard.json").write_text((ev_stage / "latest_scorecard.json").read_text(encoding="utf-8"), encoding="utf-8")
+    (repo / "scorecards").mkdir()
+    (repo / "scorecards" / "gw06.json").write_text((ev_stage / "scorecards" / "gw06.json").read_text(encoding="utf-8"), encoding="utf-8")
+    (repo / "scorecards" / "gw01.json").write_text(
+        json.dumps({"season": "2027-28", "checkpoint_gw": 1}), encoding="utf-8"
+    )
+    (repo / "exclusions.jsonl").write_bytes(b"")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "evidence root"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True)
+    subprocess.run(["git", "remote", "add", "origin", str(bare)], cwd=repo, check=True)
+    subprocess.run(["git", "push", "origin", "validation-evidence"], cwd=repo, check=True, capture_output=True)
+
+    work = tmp_path / "work"
+    work.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=work, check=True, capture_output=True)
+    subprocess.run(["git", "remote", "add", "origin", str(bare)], cwd=work, check=True)
+    sel_path = work / "config" / "model_selection.json"
+    _write_sealed_selection(sel_path, candidates=(FINALIST_1, FINALIST_2), podium_sealed=True)
+    sync_dest = tmp_path / "synced_ev"
+    assert sync_validation_evidence_readonly(sel_path, evidence_dir=sync_dest, project_root=work) is True
+    assert (sync_dest / "latest_scorecard.json").is_file()
+    assert (sync_dest / "scorecards" / "gw06.json").is_file()
+    assert not (sync_dest / "scorecards" / "gw01.json").exists()
+    assert (sync_dest / "exclusions.jsonl").is_file()
+
+    # Cached dataset claims verified_current, but live check_remote_main_freshness fails -> non-Champion blocked
+    proc_dir = tmp_path / "proc2"
+    proc_dir.mkdir()
+    cached_verified_dataset = {
+        "meta": {
+            "target_gw": 7,
+            "horizon": 1,
+            "horizon_start": 7,
+            "horizon_end": 7,
+            "default_model": FINALIST_1,
+            "models": [CHAMPION, FINALIST_1],
+            "owned_squad_ids": [],
+            "itb": 0.0,
+            "free_transfers": 1,
+            "planner_preflight": {
+                "freshness_status": "verified_current",
+                "confirmed_champion": CHAMPION,
+                "effective_model": FINALIST_1,
+                "excluded_models": [],
+            },
+        },
+        "players": [],
+    }
+    monkeypatch.setattr(
+        "dashboard.planner_service.check_remote_main_freshness",
+        lambda **_kw: RemoteFreshnessResult("unverified", CHAMPION, (FINALIST_1,), True, SEASON),
+    )
+    with pytest.raises(ValueError, match="unverified"):
+        make_solve_request(Planner(cached_verified_dataset), PlannerPaths(tmp_path / "d2.json", proc_dir, tmp_path / "s2"))
+

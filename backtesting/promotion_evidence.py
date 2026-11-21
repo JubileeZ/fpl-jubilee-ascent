@@ -14,6 +14,7 @@ import pandas as pd
 
 from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.data_admission import AdmittedOrigin, assess_origins, require_admitted, require_input
+from backtesting.empirical_mirrors import parse_fixtures_csv_window
 from backtesting.portable_evidence import BlobStore, compute_serving_model_closure, validate_relative_posix_path
 from backtesting.evidence_statistics import (
     EARLY_HARM_P_THRESHOLD,
@@ -253,8 +254,9 @@ def _validate_v2_protocol_config(config: StatisticalProtocolConfig) -> None:
     if config.certification_digest is not None:
         if not isinstance(config.certification_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", config.certification_digest):
             raise ValueError("v2 protocol certification_digest must be a lowercase SHA256 hex digest")
-    if config.completed_segments is not None:
-        _normalize_completed_segments(config.completed_segments, checkpoints)
+    if config.completed_segments is None:
+        raise ValueError("v2 protocol requires completed_segments")
+    _normalize_completed_segments(config.completed_segments, checkpoints)
 
 
 def _config_from_statistics_dict(settings_raw: Mapping[str, Any]) -> StatisticalProtocolConfig:
@@ -1888,6 +1890,7 @@ def evaluate_verified_checkpoint_payload(
             "admitted_limitations": ["checkpoint_skipped_unavailable"] if checkpoint in skipped_set else ["all_finalists_excluded"],
             "confirmation_attempt_id": None,
             "score_trace_hash": None,
+            "_protocol_version": config.protocol_version,
         }
 
     s1_baseline: dict[str, Any] | None = None
@@ -1920,6 +1923,26 @@ def evaluate_verified_checkpoint_payload(
     if ([(row["season"], row["gw"]) for row in reports] != [(season, gw) for gw in windows[season]]
             or not all(row.get("checkpoint_complete") is True and row["status"] == "admitted_empirical" for row in reports)):
         raise ValueError("Incomplete admitted fplcache checkpoint")
+    if config.protocol_version != "v1.0" and checkpoint == expected_checkpoints[-1] and checkpoint not in skipped_set:
+        gw_origin = next(o for o in request["origins"] if (o["season"], o["gw"]) == (season, checkpoint))
+        admitted_kickoffs = [_parse_utc_timestamp(gw_origin["max_kickoff_utc"], field_name="origin.max_kickoff_utc")]
+        fx_spec = gw_origin["sources"]["fixtures"]
+        fx_bytes = catalog.get(str(fx_spec.get("source_id")))
+        if fx_bytes is not None:
+            for fx_row in parse_fixtures_csv_window(fx_bytes, checkpoint):
+                if int(fx_row["event"]) == checkpoint and fx_row.get("kickoff_time"):
+                    admitted_kickoffs.append(
+                        _parse_utc_timestamp(str(fx_row["kickoff_time"]), field_name="fixture.kickoff_time")
+                    )
+        latest_admitted_ko = max(admitted_kickoffs)
+        declared_ko = _parse_utc_timestamp(
+            payload.get("gw38_final_kickoff_utc"), field_name="gw38_final_kickoff_utc"
+        )
+        if declared_ko < latest_admitted_ko:
+            raise ValueError(
+                f"gw38_final_kickoff_utc ({declared_ko.isoformat()}) precedes final admitted GW{checkpoint} "
+                f"fixture kickoff ({latest_admitted_ko.isoformat()})"
+            )
     for item in payload["guard_outcome_sources"]:
         year, gw, reference = item["season"], item["gameweek"], item["admission"]
         if (year, gw) not in expected_admissions or (year, gw) in admission_refs:
@@ -2024,6 +2047,7 @@ def evaluate_verified_checkpoint_payload(
         "admitted_limitations": sorted({*disclosed_transition, *(limitation for row in reports for limitation in row["disclosed_limitations"])}),
         "confirmation_attempt_id": attempts[winner] if winner else None,
         "score_trace_hash": trace_hashes[winner] if winner else None,
+        "_protocol_version": config.protocol_version,
     }
 
 
@@ -2046,7 +2070,8 @@ def evaluate_checkpoint_bundle_evidence(
         if result.scientific_verdict is not None
         else ("pass" if result.action == "eligible_for_manual_adopt" else "inconclusive")
     )
-    body = {
+    proto_ver = str(identity.pop("_protocol_version", "v1.0"))
+    body: dict[str, Any] = {
         "version": payload["version"],
         "checkpoint_gw": result.checkpoint_gw,
         **identity,
@@ -2060,6 +2085,24 @@ def evaluate_checkpoint_bundle_evidence(
         "request_path": path.name,
         "reasons": list(result.reasons),
     }
+    if proto_ver != "v1.0":
+        body["excluded_finalists"] = list(result.excluded_finalists)
+        body["newly_excluded_finalists"] = list(result.newly_excluded_finalists)
+        body["exclusion_details"] = {
+            cand: {
+                "reason_code": (
+                    "mandatory_guard_fail"
+                    if (cand in result.outcomes and result.outcomes[cand].early_harm.guard_triggered)
+                    else "early_harm"
+                ),
+                "reasons": (
+                    list(result.outcomes[cand].early_harm.reasons)
+                    if cand in result.outcomes and result.outcomes[cand].early_harm.reasons
+                    else list(result.reasons)
+                ),
+            }
+            for cand in result.newly_excluded_finalists
+        }
     return {**body, "bundle_hash": content_hash(body)}
 
 

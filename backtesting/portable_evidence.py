@@ -542,6 +542,21 @@ class ExclusionLedger:
     ) -> bool:
         return candidate_name in self.excluded_candidates(slate_id=slate_id, season=season, up_to_gw=up_to_gw)
 
+    def is_candidate_excluded(
+        self,
+        candidate_name: str,
+        *,
+        slate_id: str | None,
+        season: str | None,
+        up_to_gw: int | None = None,
+    ) -> bool:
+        """Check whether candidate is excluded on this slate/season or globally across the season."""
+        if self.is_excluded(candidate_name, slate_id=slate_id, season=season, up_to_gw=up_to_gw):
+            return True
+        if slate_id is not None:
+            return self.is_excluded(candidate_name, season=season, up_to_gw=up_to_gw)
+        return False
+
     def excluded_candidates(
         self,
         *,

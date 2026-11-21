@@ -22,7 +22,7 @@
       "details": {
         "enabled": false,
         "enforce_admins": false,
-        "http_status": 404,
+        "http_status": 200,
         "required_status_checks": {
           "contexts": [],
           "strict": false
@@ -119,15 +119,18 @@
     "shared_reservation_wiring": {
       "blocker": null,
       "details": {
+        "collector_exclusion_reservation": true,
         "coordinator_wired": true,
+        "no_direct_main_push": true,
+        "shared_concurrency_group": true,
         "workflows_present": true
       },
       "passed": true,
-      "recovery_action": "Ensure SharedReservationCoordinator and champion-adoption-*.yml workflows are committed.",
+      "recovery_action": "Ensure all evidence workflows share group validation-evidence, collector reserves exclusions, and merge uses GitHub PR merge API.",
       "status": "pass"
     }
   },
-  "generated_at_utc": "2026-11-20T19:16:47.939256+00:00",
+  "generated_at_utc": "2026-11-21T03:58:52.648688+00:00",
   "live_activation_ready": false,
   "read_only": true,
   "repo": "JubileeZ/fpl-jubilee-ascent"

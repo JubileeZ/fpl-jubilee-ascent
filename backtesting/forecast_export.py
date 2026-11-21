@@ -86,7 +86,7 @@ def strict_solver_table(
     A blank is represented by fixture_id -1 and must carry zero points/minutes.
     This function does not establish forecast provenance or promotion eligibility.
     """
-    verify_input(capability, request, catalog)
+    verify_input(capability, request, catalog, allow_disk_path_fallback=(capability.mode != "empirical"))
     origins = [o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw]
     if len(origins) != 1:
         raise ValueError("Ambiguous issue")

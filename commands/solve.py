@@ -1,4 +1,5 @@
 import argparse
+from datetime import UTC, datetime
 import json
 import logging
 import sys
@@ -660,6 +661,12 @@ def main() -> None:
         help="Pin the reviewed base model for an injury-audit minutes-correction rerun",
     )
     parser.add_argument(
+        "--rerun",
+        action="store_true",
+        default=False,
+        help="Mark this invocation as a Step 6 injury-audit rerun pinning meta.reviewed_base_model from data/solution.json",
+    )
+    parser.add_argument(
         "--evidence-dir",
         "--evidence_dir",
         type=Path,
@@ -756,11 +763,8 @@ def main() -> None:
         except Exception:
             target_gw_deadline = None
 
-    prior_sol_path = (
-        (PROJECT_ROOT / "data" / "solution.json")
-        if (args.xmins_override is not None or args.pin_reviewed_model)
-        else None
-    )
+    is_rerun = bool(args.rerun or args.pin_reviewed_model)
+    prior_sol_path = (PROJECT_ROOT / "data" / "solution.json") if is_rerun else None
     try:
         preflight = resolve_weekly_planner_model(
             evidence_dir=args.evidence_dir,
@@ -768,11 +772,13 @@ def main() -> None:
             override_model=args.model,
             force_champion=bool(args.champion),
             pinned_review_model=args.pin_reviewed_model,
-            is_rerun=bool(args.xmins_override is not None or args.pin_reviewed_model),
+            is_rerun=is_rerun,
             target_gw=target_gw,
             prior_solution_path=prior_sol_path,
             remote_main_path=args.remote_main_path,
             check_remote=True if args.check_remote_main else None,
+            sync_evidence=(args.evidence_dir is None),
+            now_utc=datetime.now(UTC),
         )
     except StaleCheckoutError as exc:
         logger.error(str(exc))

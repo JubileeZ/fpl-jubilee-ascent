@@ -27,6 +27,7 @@ jobs:
       - name: Check out PR head
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Install uv
@@ -60,8 +61,17 @@ jobs:
             SLATE_ID=$(python3 -c "import json; print(json.load(open('config/model_selection.adoption.json'))['slate_id'])")
           fi
           git fetch origin main
+          git show origin/main:config/model_selection.json > "$RUNNER_TEMP/base_model_selection.json"
+          HEAD_SHA=$(git rev-parse HEAD)
           mapfile -t CHANGED < <(git diff --name-only origin/main...HEAD)
-          ARGS=(verify-adoption-pr --evidence-root "$RUNNER_TEMP/validation-evidence" --request-id "$REQ_ID" --slate-id "$SLATE_ID")
+          ARGS=(
+            verify-adoption-pr
+            --evidence-root "$RUNNER_TEMP/validation-evidence"
+            --request-id "$REQ_ID"
+            --slate-id "$SLATE_ID"
+            --base-selection-path "$RUNNER_TEMP/base_model_selection.json"
+            --head-sha "$HEAD_SHA"
+          )
           for f in "${CHANGED[@]}"; do
             ARGS+=(--changed-file "$f")
           done

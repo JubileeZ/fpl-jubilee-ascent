@@ -34,6 +34,14 @@ STALE_CHECKOUT_MESSAGE = (
 )
 
 
+def strip_external_xmins_suffix(model_name: str) -> str:
+    """Return canonical base model name without trailing `_external_xmins` suffix."""
+    cleaned = str(model_name).strip()
+    if cleaned.endswith("_external_xmins"):
+        return cleaned[: -len("_external_xmins")]
+    return cleaned
+
+
 class StaleCheckoutError(ValueError):
     """Raised when remote protected main selection has changed and local checkout requires manual sync."""
 
@@ -351,33 +359,47 @@ def sync_validation_evidence_readonly(
             check=True,
         )
         ls_proc = subprocess.run(
-            ["git", "ls-tree", "-r", "--name-only", f"{remote_name}/{branch_name}", f"{season}/"],
+            ["git", "ls-tree", "-r", "--name-only", f"{remote_name}/{branch_name}"],
             cwd=root,
             capture_output=True,
             text=True,
             timeout=timeout_secs,
             check=True,
         )
-        rel_files: list[str] = []
+        chosen: dict[str, tuple[str, bool]] = {}
         for raw_line in ls_proc.stdout.splitlines():
             clean = raw_line.strip()
-            if not clean.startswith(f"{season}/"):
+            if not clean:
                 continue
-            sub = validate_relative_posix_path(clean[len(season) + 1 :])
+            if clean.startswith(f"{season}/"):
+                sub = validate_relative_posix_path(clean[len(season) + 1 :])
+                is_root = False
+            else:
+                sub = validate_relative_posix_path(clean)
+                is_root = True
             if sub in ("latest_scorecard.json", "exclusions.jsonl") or (
                 sub.startswith("scorecards/gw") and sub.endswith(".json")
             ):
-                rel_files.append(sub)
-        if not rel_files:
+                if (not is_root) or (sub not in chosen):
+                    chosen[sub] = (clean, is_root)
+        if not chosen:
             return False
-        for sub in rel_files:
+        wrote_any = False
+        for sub, (git_path, is_root) in sorted(chosen.items()):
             show_proc = subprocess.run(
-                ["git", "show", f"{remote_name}/{branch_name}:{season}/{sub}"],
+                ["git", "show", f"{remote_name}/{branch_name}:{git_path}"],
                 cwd=root,
                 capture_output=True,
                 timeout=timeout_secs,
                 check=True,
             )
+            if is_root and sub != "exclusions.jsonl":
+                try:
+                    sc_doc = json.loads(show_proc.stdout.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
+                if isinstance(sc_doc, Mapping) and sc_doc.get("season") != season:
+                    continue
             dest = (dest_root / sub).resolve()
             if not dest.is_relative_to(dest_root):
                 continue
@@ -385,7 +407,8 @@ def sync_validation_evidence_readonly(
             tmp = dest.with_suffix(dest.suffix + ".tmp")
             tmp.write_bytes(show_proc.stdout)
             os.replace(tmp, dest)
-        return True
+            wrote_any = True
+        return wrote_any
     except (subprocess.SubprocessError, OSError, ValueError) as exc:
         logger.debug("Read-only validation-evidence sync skipped: %s", exc)
         return False
@@ -437,22 +460,30 @@ def resolve_latest_officially_settled_gw(
         except Exception:
             df_fix = None
 
-    effective_now = now_utc.astimezone(UTC) if now_utc is not None else None
-    settled_ids: list[int] = []
+    effective_now = now_utc.astimezone(UTC) if now_utc is not None else datetime.now(UTC)
+    gw_settled: dict[int, bool] = {}
     for row in df_gw.to_dict(orient="records"):
         try:
             gw_id = int(row["id"])
         except (TypeError, ValueError, KeyError):
             continue
         if not bool(row.get("finished", False)):
+            gw_settled[gw_id] = False
             continue
         if has_data_checked_col:
             val = row.get("data_checked")
             if val is None or bool(pd.isna(val)) or not bool(val):
+                gw_settled[gw_id] = False
                 continue
-        elif gw_id in bootstrap_checked and not bootstrap_checked[gw_id]:
+        elif gw_id in bootstrap_checked:
+            if not bootstrap_checked[gw_id]:
+                gw_settled[gw_id] = False
+                continue
+        else:
+            gw_settled[gw_id] = False
             continue
 
+        settled_flag = True
         if df_fix is not None and not df_fix.empty and "gameweek_id" in df_fix.columns:
             fix_rows = [
                 r for r in df_fix.to_dict(orient="records") if int(r.get("gameweek_id", -1)) == gw_id
@@ -462,8 +493,8 @@ def resolve_latest_officially_settled_gw(
                     bool(r.get("finished", False)) and not bool(pd.isna(r.get("finished")))
                     for r in fix_rows
                 ):
-                    continue
-                if effective_now is not None and "kickoff_time" in df_fix.columns:
+                    settled_flag = False
+                elif "kickoff_time" in df_fix.columns:
                     parsed_ko: list[datetime] = []
                     for r in fix_rows:
                         raw_ko = r.get("kickoff_time")
@@ -472,10 +503,18 @@ def resolve_latest_officially_settled_gw(
                             if not bool(pd.isna(ts)):
                                 parsed_ko.append(ts.to_pydatetime())
                     if parsed_ko and effective_now < max(parsed_ko) + timedelta(hours=24):
-                        continue
-        settled_ids.append(gw_id)
+                        settled_flag = False
+        gw_settled[gw_id] = settled_flag
 
-    return max(settled_ids, default=0)
+    if not gw_settled:
+        return 0
+    start_gw = 1 if 1 in gw_settled else min(gw_settled)
+    last_settled = 0
+    gw_cursor = start_gw
+    while gw_settled.get(gw_cursor, False):
+        last_settled = gw_cursor
+        gw_cursor += 1
+    return last_settled
 
 
 def _extract_prior_reviewed_model_and_state(
@@ -494,9 +533,7 @@ def _extract_prior_reviewed_model_and_state(
     if not isinstance(meta, Mapping):
         return None, None, None, None
     raw_model = meta.get("reviewed_base_model") or meta.get("base_model") or meta.get("champion")
-    base_model = str(raw_model).strip() if isinstance(raw_model, str) and raw_model.strip() else None
-    if base_model and base_model.endswith("_external_xmins"):
-        base_model = base_model[: -len("_external_xmins")]
+    base_model = strip_external_xmins_suffix(raw_model) if isinstance(raw_model, str) and raw_model.strip() else None
     raw_gw = meta.get("next_gw")
     next_gw = int(raw_gw) if isinstance(raw_gw, int) or (isinstance(raw_gw, str) and raw_gw.isdigit()) else None
     raw_dl = meta.get("target_gw_deadline") or meta.get("transfer_plan_deadline")
@@ -663,9 +700,7 @@ def resolve_weekly_planner_model(
                 if excl_file is None or not excl_file.is_file():
                     fallback_reason = "exclusion_ledger_missing"
             if fallback_reason is None:
-                required_gw = latest_settled_gw if latest_settled_gw > 0 else scorecard.settled_through_gw
-                if latest_settled_gw == 0 and settled_gw is None:
-                    latest_settled_gw = scorecard.settled_through_gw
+                required_gw = latest_settled_gw
                 if required_gw <= 0 or scorecard.settled_through_gw <= 0:
                     fallback_reason = "no_settled_gameweeks"
                 elif scorecard.settled_through_gw < required_gw:
@@ -745,8 +780,8 @@ def resolve_weekly_planner_model(
         if isinstance(pinned_review_model, str) and pinned_review_model.strip()
         else (prior_model if is_rerun else None)
     )
-    if candidate_pin and candidate_pin.endswith("_external_xmins"):
-        candidate_pin = candidate_pin[: -len("_external_xmins")]
+    if candidate_pin:
+        candidate_pin = strip_external_xmins_suffix(candidate_pin)
 
     if candidate_pin:
         pin_valid = True

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 import csv
 import hashlib
@@ -13,16 +14,28 @@ import lzma
 from pathlib import Path
 import re
 import sys
-from typing import Any, cast
+import time
+from typing import Any, Literal, Mapping, cast
 
+import httpx
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from backtesting.adoption_transaction import SharedReservationCoordinator
 from backtesting.confirmation_registry import ConfirmationRegistry
 from backtesting.data_admission import require_admitted, require_input
-from backtesting.empirical_admission import assess_empirical_origins
-from backtesting.empirical_mirrors import parse_fixtures_csv_window
+from backtesting.empirical_admission import (
+    _compute_outcome_component_sum,
+    assess_empirical_origins,
+    build_empirical_seed_mapping,
+)
+from backtesting.empirical_mirrors import (
+    canonical_bootstrap_table,
+    canonical_json_sha256,
+    parse_fixtures_csv_window,
+    sha256_bytes,
+)
 from backtesting.evidence_statistics import (
     EARLY_HARM_P_THRESHOLD,
     StatisticalProtocolConfig,
@@ -64,7 +77,19 @@ from backtesting.rolling_replay import (
     validate_quality_policy_gate,
 )
 from backtesting.season_rules import Chip, load_season_lifecycle
+from backtesting.sparse_certification import build_certified_protocol_config
+from backtesting.walkforward import _build_actual_components, history_before_target
+from clients.env_loader import configure_utf8_stdio
+from features.builder import build_features
+from models import get_model
 from models.selection import ModelSelection, load_model_selection, save_model_selection
+from models.scoring_matrix import event_points
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CERTIFICATION_RESULT_PATH = (
+    PROJECT_ROOT / "docs" / "research" / "sparse-confirmation-certification" / "certification_result.json"
+)
+DEFAULT_FPL_API_BASE = "https://fantasy.premierleague.com/api"
 
 _TRANSIENT_REASONS = frozenset(
     {
@@ -157,6 +182,676 @@ def _resolve_context_bytes(root: Path, context: dict[str, Any]) -> tuple[dict[st
     return _resolve_context_catalog(root, context)
 
 
+def _load_existing_season_state(
+    root: Path,
+    season: str,
+) -> tuple[dict[int, dict[str, Any]], dict[str, dict[str, str]], dict[str, Any]]:
+    adm_dir = root / "admissions" / season
+    if not adm_dir.is_dir():
+        return {}, {}, {}
+    files = sorted(p for p in adm_dir.glob("gw*.json") if p.is_file())
+    if not files:
+        return {}, {}, {}
+    latest_ctx = json.loads(files[-1].read_bytes())
+    req = dict(latest_ctx.get("request", {}))
+    ext_cat: dict[str, dict[str, str]] = {
+        str(k): dict(v) for k, v in dict(latest_ctx.get("catalog", {})).items() if isinstance(v, Mapping)
+    }
+    by_gw: dict[int, dict[str, Any]] = {}
+    for origin in req.get("origins", ()):
+        if isinstance(origin, Mapping) and type(origin.get("gw")) is int:
+            by_gw[int(origin["gw"])] = dict(origin)
+    return by_gw, ext_cat, req
+
+
+def _persist_cumulative_admissions(
+    root: Path,
+    season: str,
+    *,
+    track: str,
+    purpose: str,
+    checkpoint_gw: Any,
+    shared_chip_calendar: list[Any],
+    anchor: dict[str, Any],
+    origins_by_gw: Mapping[int, dict[str, Any]],
+    ext_catalog: Mapping[str, dict[str, str]],
+) -> None:
+    adm_dir = root / "admissions" / season
+    adm_dir.mkdir(parents=True, exist_ok=True)
+    acc_origins: list[dict[str, Any]] = []
+    acc_catalog: dict[str, dict[str, str]] = {}
+    for gw in sorted(origins_by_gw):
+        origin = dict(origins_by_gw[gw])
+        acc_origins.append(origin)
+        for spec in dict(origin.get("sources", {})).values():
+            sid = str(spec.get("source_id", ""))
+            if sid and sid in ext_catalog:
+                acc_catalog[sid] = dict(ext_catalog[sid])
+        req_prefix = {
+            "version": 2,
+            "mode": "empirical",
+            "track": track,
+            "season": season,
+            "purpose": purpose,
+            "checkpoint_gw": checkpoint_gw,
+            "eligibility_policy": "empirical-v2",
+            "partial_prefix": False,
+            "full_season_required": False,
+            "shared_chip_calendar": shared_chip_calendar,
+            "anchor": anchor,
+            "origins": list(acc_origins),
+        }
+        ctx_path = adm_dir / f"gw{gw:02d}.json"
+        new_bytes = canonical_bytes({"request": req_prefix, "catalog": dict(acc_catalog)}) + b"\n"
+        # Preserve byte-identical or already-committed prefix files unless this exact GW's origin changed
+        if ctx_path.is_file() and ctx_path.read_bytes() == new_bytes:
+            continue
+        if ctx_path.is_file():
+            existing_ctx = json.loads(ctx_path.read_bytes())
+            existing_orig = next(
+                (o for o in existing_ctx.get("request", {}).get("origins", ()) if o.get("gw") == gw),
+                None,
+            )
+            if existing_orig == origin:
+                continue
+        ctx_path.write_bytes(new_bytes)
+
+
+def _http_get_with_retry(
+    client: httpx.Client,
+    url: str,
+    *,
+    max_attempts: int = 3,
+) -> httpx.Response:
+    for attempt in range(max_attempts):
+        resp = client.get(url)
+        if resp.status_code == 429 and attempt + 1 < max_attempts:
+            retry_raw = resp.headers.get("Retry-After", "0").strip()
+            delay = float(retry_raw) if retry_raw.replace(".", "", 1).isdigit() else 0.5
+            time.sleep(min(max(delay, 0.0), 5.0))
+            continue
+        resp.raise_for_status()
+        return resp
+    raise RuntimeError(f"Exhausted retries fetching {url}")
+
+
+def _fixtures_to_csv_bytes(fixtures: list[dict[str, Any]]) -> bytes:
+    buf = io.StringIO()
+    fieldnames = [
+        "id",
+        "event",
+        "team_h",
+        "team_a",
+        "kickoff_time",
+        "team_h_difficulty",
+        "team_a_difficulty",
+        "finished",
+        "finished_provisional",
+        "minutes",
+    ]
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    for fx in fixtures:
+        ev = fx.get("event")
+        ko = (fx.get("kickoff_time") or "")
+        if ev is None or not str(ko).strip():
+            continue
+        writer.writerow(
+            {
+                "id": int(fx["id"]),
+                "event": int(ev),
+                "team_h": int(fx["team_h"]),
+                "team_a": int(fx["team_a"]),
+                "kickoff_time": str(ko),
+                "team_h_difficulty": int(fx.get("team_h_difficulty") or 3),
+                "team_a_difficulty": int(fx.get("team_a_difficulty") or 3),
+                "finished": bool(fx.get("finished", False)),
+                "finished_provisional": bool(fx.get("finished_provisional", fx.get("finished", False))),
+                "minutes": int(fx.get("minutes") or 0),
+            }
+        )
+    return buf.getvalue().encode("utf-8")
+
+
+def _build_outcome_row_from_stats(
+    *,
+    pid: int,
+    fid: int,
+    pos_id: int,
+    stats: Mapping[str, Any],
+    rules_version: str,
+) -> dict[str, Any]:
+    mins = int(stats.get("minutes", 0) or 0)
+    yc = int(stats.get("yellow_cards", 0) or 0)
+    rc = int(stats.get("red_cards", 0) or 0)
+    pts = int(stats.get("total_points", 0) or 0)
+    row: dict[str, Any] = {
+        "player_id": int(pid),
+        "fixture_id": int(fid),
+        "position_id": int(pos_id),
+        "minutes": mins,
+        "total_points": pts,
+        "appeared": mins > 0,
+        "goals_scored": int(stats.get("goals_scored", 0) or 0),
+        "assists": int(stats.get("assists", 0) or 0),
+        "clean_sheets": int(stats.get("clean_sheets", 0) or 0),
+        "goals_conceded": int(stats.get("goals_conceded", 0) or 0),
+        "own_goals": int(stats.get("own_goals", 0) or 0),
+        "penalties_saved": int(stats.get("penalties_saved", 0) or 0),
+        "penalties_missed": int(stats.get("penalties_missed", 0) or 0),
+        "yellow_cards": yc,
+        "red_cards": rc,
+        "saves": int(stats.get("saves", 0) or 0),
+        "bonus": int(stats.get("bonus", 0) or 0),
+        "defensive_contribution": int(stats.get("defensive_contribution", 0) or 0),
+    }
+    row["component_points_sum"] = _compute_outcome_component_sum(row, rules_version)
+    return row
+
+
+def _build_history_row(
+    *,
+    pid: int,
+    fid: int,
+    pgw: int,
+    ko_str: str,
+    was_home: bool,
+    opp_id: int,
+    stats: Mapping[str, Any],
+) -> dict[str, Any]:
+    mins = int(stats.get("minutes", 0) or 0)
+    return {
+        "player_id": int(pid),
+        "fixture_id": int(fid),
+        "gameweek_id": int(pgw),
+        "kickoff_time": ko_str,
+        "was_home": bool(was_home),
+        "opponent_club_id": int(opp_id),
+        "minutes": mins,
+        "total_points": int(stats.get("total_points", 0) or 0),
+        "starts": 1 if mins > 0 else 0,
+        "goals_scored": int(stats.get("goals_scored", 0) or 0),
+        "assists": int(stats.get("assists", 0) or 0),
+        "clean_sheets": int(stats.get("clean_sheets", 0) or 0),
+        "goals_conceded": int(stats.get("goals_conceded", 0) or 0),
+        "own_goals": int(stats.get("own_goals", 0) or 0),
+        "penalties_saved": int(stats.get("penalties_saved", 0) or 0),
+        "penalties_missed": int(stats.get("penalties_missed", 0) or 0),
+        "yellow_cards": int(stats.get("yellow_cards", 0) or 0),
+        "red_cards": int(stats.get("red_cards", 0) or 0),
+        "saves": int(stats.get("saves", 0) or 0),
+        "bonus": int(stats.get("bonus", 0) or 0),
+        "bps": int(stats.get("bps", 0) or 0),
+        "influence": float(stats.get("influence", 0.0) or 0.0),
+        "creativity": float(stats.get("creativity", 0.0) or 0.0),
+        "threat": float(stats.get("threat", 0.0) or 0.0),
+        "ict_index": float(stats.get("ict_index", 0.0) or 0.0),
+        "expected_goals": float(stats.get("expected_goals", 0.0) or 0.0),
+        "expected_assists": float(stats.get("expected_assists", 0.0) or 0.0),
+        "expected_goal_involvements": float(stats.get("expected_goal_involvements", 0.0) or 0.0),
+        "expected_goals_conceded": float(stats.get("expected_goals_conceded", 0.0) or 0.0),
+        "defensive_contribution": int(stats.get("defensive_contribution", 0) or 0),
+    }
+
+
+def _load_origin_team_map(
+    *,
+    store: BlobStore,
+    prior_origin: Mapping[str, Any] | None,
+    ext_catalog: Mapping[str, dict[str, str]],
+    default_teams: Mapping[int, int] | None,
+) -> dict[int, int]:
+    teams = dict(default_teams or {})
+    bs_spec = dict(prior_origin.get("sources", {})).get("bootstrap") if prior_origin else None
+    if isinstance(bs_spec, Mapping) and str(bs_spec.get("source_id", "")) in ext_catalog:
+        bs_raw = (store.root / ext_catalog[str(bs_spec["source_id"])]["relpath"]).read_bytes()
+        bs_dec = lzma.decompress(bs_raw) if bs_raw.startswith(b"\xfd7zXZ\x00") else bs_raw
+        for el in json.loads(bs_dec).get("elements", ()):
+            if isinstance(el, Mapping) and "id" in el and "team" in el:
+                teams[int(el["id"])] = int(el["team"])
+    return teams
+
+
+def _compose_pre_deadline_history(
+    *,
+    store: BlobStore,
+    season: str,
+    target_gw: int,
+    deadline_dt: datetime,
+    origins_by_gw: Mapping[int, dict[str, Any]],
+    ext_catalog: Mapping[str, dict[str, str]],
+    client: httpx.Client,
+    events_by_id: Mapping[int, Mapping[str, Any]],
+    fixtures_by_gw: Mapping[int, list[dict[str, Any]]],
+    pos_by_id: Mapping[int, int],
+    team_by_id: Mapping[int, int] | None = None,
+) -> list[dict[str, Any]]:
+    """Compose causal history strictly settled < target deadline (admitted slices or <24h event/live fallback)."""
+    rows: list[dict[str, Any]] = []
+    if target_gw <= 1:
+        return rows
+    for pgw in range(1, target_gw):
+        prior_origin = origins_by_gw.get(pgw)
+        out_spec = dict(prior_origin.get("sources", {})).get("outcomes") if prior_origin else None
+        if isinstance(out_spec, Mapping) and str(out_spec.get("source_id", "")) in ext_catalog:
+            fin_raw = out_spec.get("finalized_at")
+            if isinstance(fin_raw, str) and _utc(fin_raw) < deadline_dt:
+                meta = ext_catalog[str(out_spec["source_id"])]
+                out_list = json.loads((store.root / meta["relpath"]).read_bytes().decode("utf-8"))
+                fx_rows = fixtures_by_gw.get(pgw, [])
+                fx_by_id = {int(f["id"]): f for f in fx_rows}
+                bs_teams = _load_origin_team_map(
+                    store=store,
+                    prior_origin=prior_origin,
+                    ext_catalog=ext_catalog,
+                    default_teams=team_by_id,
+                )
+                for r in out_list:
+                    fid = int(r["fixture_id"])
+                    pid = int(r["player_id"])
+                    fx = fx_by_id.get(fid, {})
+                    ko_str = str(fx.get("kickoff_time") or deadline_dt.isoformat())
+                    if _utc(ko_str) >= deadline_dt:
+                        continue
+                    team_id = bs_teams.get(pid, int(fx.get("team_h", 1) or 1))
+                    was_home = int(fx.get("team_h", 0) or 0) == team_id
+                    opp_id = int(fx.get("team_a", 2) if was_home else fx.get("team_h", 1))
+                    rows.append(
+                        _build_history_row(
+                            pid=pid,
+                            fid=fid,
+                            pgw=pgw,
+                            ko_str=ko_str,
+                            was_home=was_home,
+                            opp_id=opp_id,
+                            stats=r,
+                        )
+                    )
+                continue
+
+        # Fallback on tight <24h turnaround: fetch single /event/{pgw}/live/ if fixtures finished < deadline
+        ev_meta = events_by_id.get(pgw, {})
+        if ev_meta.get("finished") is True:
+            gw_fxs = [f for f in fixtures_by_gw.get(pgw, []) if f.get("finished") is True and f.get("kickoff_time") and _utc(f["kickoff_time"]) < deadline_dt]
+            if not gw_fxs:
+                continue
+            live_resp = _http_get_with_retry(client, f"/event/{pgw}/live/").json()
+            live_elems = {int(el["id"]): el for el in live_resp.get("elements", ()) if isinstance(el, Mapping) and "id" in el}
+            fb_teams = _load_origin_team_map(
+                store=store,
+                prior_origin=prior_origin,
+                ext_catalog=ext_catalog,
+                default_teams=team_by_id,
+            )
+            for fx in gw_fxs:
+                fid = int(fx["id"])
+                ko_str = str(fx["kickoff_time"])
+                for pid, el in live_elems.items():
+                    if pid not in pos_by_id:
+                        continue
+                    stats = el.get("stats") or {}
+                    explain = [e for e in el.get("explain", ()) if isinstance(e, Mapping) and int(e.get("fixture", -1)) == fid]
+                    if not explain:
+                        continue
+                    team_id = fb_teams.get(pid, int(fx.get("team_h", 1) or 1))
+                    was_home = int(fx.get("team_h", 0) or 0) == team_id
+                    opp_id = int(fx.get("team_a", 2) if was_home else fx.get("team_h", 1))
+                    rows.append(
+                        _build_history_row(
+                            pid=pid,
+                            fid=fid,
+                            pgw=pgw,
+                            ko_str=ko_str,
+                            was_home=was_home,
+                            opp_id=opp_id,
+                            stats=stats,
+                        )
+                    )
+    return rows
+
+
+def collect_live_validation_evidence(
+    *,
+    evidence_root: Path,
+    season: str,
+    slate_id: str = "default-slate",
+    mode: str = "auto",
+    fpl_api_base: str = DEFAULT_FPL_API_BASE,
+    now_utc: str | None = None,
+    max_concurrency: int = 3,
+    seed_file: Path | None = None,
+    transport: httpx.BaseTransport | None = None,
+) -> dict[str, Any]:
+    """Collect live pre-deadline (2-call) and post-settlement (3-call + bounded disambiguation) v2 receipts."""
+    root = Path(evidence_root).resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    store = BlobStore(root)
+    concurrency = max(1, min(3, int(max_concurrency)))
+    now_dt = _utc(now_utc) if now_utc else datetime.now(UTC)
+    now_iso = now_dt.isoformat()
+    lifecycle = load_season_lifecycle()
+    dev_season = lifecycle.seasons[season].prior_seed if season in lifecycle.seasons and lifecycle.seasons[season].prior_seed else lifecycle.season_for_role("development")
+
+    origins_by_gw, ext_catalog, existing_req = _load_existing_season_state(root, season)
+    shared_chip_calendar = list(
+        existing_req.get(
+            "shared_chip_calendar",
+            [{"gameweek": 3, "chip": "triple_captain"}, {"gameweek": 25, "chip": "wildcard"}],
+        )
+    )
+    anchor = dict(existing_req.get("anchor", {}))
+    checkpoint_gw_meta = existing_req.get("checkpoint_gw")
+
+    with httpx.Client(base_url=fpl_api_base.rstrip("/"), timeout=30.0, transport=transport) as client:
+        bootstrap = _http_get_with_retry(client, "/bootstrap-static/").json()
+        raw_fixtures = _http_get_with_retry(client, "/fixtures/").json()
+
+        events = [ev for ev in bootstrap.get("events", ()) if isinstance(ev, Mapping) and "id" in ev]
+        events_by_id = {int(ev["id"]): ev for ev in events}
+        fixtures_by_gw: dict[int, list[dict[str, Any]]] = {}
+        for fx in raw_fixtures:
+            if isinstance(fx, Mapping) and fx.get("event") is not None:
+                fixtures_by_gw.setdefault(int(fx["event"]), []).append(dict(fx))
+
+        elements = [el for el in bootstrap.get("elements", ()) if isinstance(el, Mapping) and "id" in el]
+        pos_by_id = {
+            int(el["id"]): int(el["element_type"])
+            for el in elements
+            if int(el.get("element_type", 0) or 0) in (1, 2, 3, 4)
+        }
+        team_by_id = {int(el["id"]): int(el["team"]) for el in elements if "team" in el}
+        fx_csv_bytes = _fixtures_to_csv_bytes([dict(f) for f in raw_fixtures if isinstance(f, Mapping)])
+
+        # 1. Pre-deadline capture (2 primary HTTP calls + conditional <24h history)
+        if mode in ("auto", "pre_deadline"):
+            future_evs = [
+                ev
+                for ev in events
+                if ev.get("deadline_time") and _utc(ev["deadline_time"]) > now_dt
+            ]
+            target_ev = next(
+                (ev for ev in future_evs if ev.get("is_next") is True),
+                min(future_evs, key=lambda e: _utc(e["deadline_time"])) if future_evs else None,
+            )
+            if target_ev is not None:
+                tgw = int(target_ev["id"])
+                dl_dt = _utc(target_ev["deadline_time"])
+                secs_to_dl = (dl_dt - now_dt).total_seconds()
+                if 0 < secs_to_dl <= 48 * 3600 or mode == "pre_deadline":
+                    prev_ev = events_by_id.get(tgw - 1) if tgw > 1 else None
+                    prev_dl_str = str(prev_ev["deadline_time"]) if (prev_ev and prev_ev.get("deadline_time")) else None
+
+                    bs_raw_json = canonical_bytes(bootstrap)
+                    bs_xz = lzma.compress(bs_raw_json)
+                    bs_sha = store.write_bytes(bs_xz)
+                    bs_sid = f"{season}_gw{tgw:02d}_bootstrap_{bs_sha[:12]}"
+                    ext_catalog[bs_sid] = {"blob_sha256": bs_sha, "relpath": store.relpath(bs_sha)}
+                    sanitized_bs, bs_clubs, _ = _sanitize_bootstrap(bootstrap, capture_upper=now_dt)
+                    bs_table = canonical_bootstrap_table(bootstrap, sanitized_bs, bs_clubs, tgw)
+                    bs_spec = {
+                        "source_id": bs_sid,
+                        "blob_sha256": bs_sha,
+                        "decompressed_sha256": sha256_bytes(bs_raw_json),
+                        "table_sha256": canonical_json_sha256(bs_table),
+                        "timing_basis": "receipt",
+                        "url": f"receipt://official/bootstrap-static/gw{tgw:02d}",
+                        "capture_lower": now_iso,
+                        "capture_upper": now_iso,
+                    }
+
+                    fx_sha = store.write_bytes(fx_csv_bytes)
+                    fx_sid = f"{season}_gw{tgw:02d}_fixtures_{fx_sha[:12]}"
+                    ext_catalog[fx_sid] = {"blob_sha256": fx_sha, "relpath": store.relpath(fx_sha)}
+                    fx_table = parse_fixtures_csv_window(fx_csv_bytes, tgw)
+                    fx_spec = {
+                        "source_id": fx_sid,
+                        "blob_sha256": fx_sha,
+                        "table_sha256": canonical_json_sha256(fx_table),
+                        "timing_basis": "receipt",
+                        "url": f"receipt://official/fixtures/gw{tgw:02d}",
+                        "capture_lower": now_iso,
+                        "capture_upper": now_iso,
+                    }
+
+                    hist_rows = _compose_pre_deadline_history(
+                        store=store,
+                        season=season,
+                        target_gw=tgw,
+                        deadline_dt=dl_dt,
+                        origins_by_gw=origins_by_gw,
+                        ext_catalog=ext_catalog,
+                        client=client,
+                        events_by_id=events_by_id,
+                        fixtures_by_gw=fixtures_by_gw,
+                        pos_by_id=pos_by_id,
+                        team_by_id=team_by_id,
+                    )
+                    hist_bytes = canonical_bytes(hist_rows)
+                    hist_sha = store.write_bytes(hist_bytes)
+                    hist_sid = f"{season}_gw{tgw:02d}_history_{hist_sha[:12]}"
+                    ext_catalog[hist_sid] = {"blob_sha256": hist_sha, "relpath": store.relpath(hist_sha)}
+                    hist_spec = {
+                        "source_id": hist_sid,
+                        "blob_sha256": hist_sha,
+                        "table_sha256": canonical_json_sha256(hist_rows),
+                        "timing_basis": "receipt",
+                        "url": f"receipt://official/history/gw{tgw:02d}",
+                        "capture_lower": now_iso,
+                        "capture_upper": now_iso,
+                    }
+
+                    sources_map: dict[str, Any] = {
+                        "bootstrap": bs_spec,
+                        "fixtures": fx_spec,
+                        "history": hist_spec,
+                    }
+                    seed_candidate = seed_file or (root / "seeds" / f"{dev_season}.json")
+                    if seed_candidate.is_file():
+                        seed_base = json.loads(seed_candidate.read_bytes())
+                        non_mgr_bs = [e for e in sanitized_bs if int(e.get("element_type", 0) or 0) != 5]
+                        seed_obj = {
+                            "season": dev_season,
+                            "defensive_contribution_status": seed_base.get("defensive_contribution_status", "native"),
+                            **seed_base,
+                            "seed_mapping": build_empirical_seed_mapping(non_mgr_bs, seed_base.get("players", [])),
+                        }
+                        seed_bytes = canonical_bytes(seed_obj)
+                        seed_sha = store.write_bytes(seed_bytes)
+                        seed_sid = f"{season}_gw{tgw:02d}_seed_{seed_sha[:12]}"
+                        ext_catalog[seed_sid] = {"blob_sha256": seed_sha, "relpath": store.relpath(seed_sha)}
+                        sources_map["seed"] = {
+                            "source_id": seed_sid,
+                            "blob_sha256": seed_sha,
+                            "table_sha256": canonical_json_sha256(seed_obj),
+                            "timing_basis": "receipt",
+                            "url": f"receipt://seed/{dev_season}/gw{tgw:02d}",
+                            "capture_lower": now_iso,
+                            "capture_upper": now_iso,
+                        }
+
+                    gw_fxs = fixtures_by_gw.get(tgw, [])
+                    gw_kickoffs = [str(f["kickoff_time"]) for f in gw_fxs if f.get("kickoff_time")]
+                    max_ko_str = max(gw_kickoffs, key=_utc) if gw_kickoffs else str(target_ev["deadline_time"])
+                    origins_by_gw[tgw] = {
+                        "season": season,
+                        "gw": tgw,
+                        "deadline": str(target_ev["deadline_time"]),
+                        "prev_deadline": prev_dl_str,
+                        "max_kickoff_utc": max_ko_str,
+                        "disclosed_limitations": [],
+                        "sources": sources_map,
+                    }
+
+        # 2. Post-settlement capture (3rd primary HTTP call /event/{gw}/live/ + bounded <=3 element-summary disambiguation)
+        if mode in ("auto", "post_settlement"):
+            for gw in sorted(origins_by_gw):
+                origin = origins_by_gw[gw]
+                existing_out = dict(origin.get("sources", {})).get("outcomes")
+                if isinstance(existing_out, Mapping) and existing_out.get("data_checked") is True and existing_out.get("finished") is True:
+                    continue
+                ev = events_by_id.get(gw)
+                if not ev or ev.get("finished") is not True or ev.get("data_checked") is not True:
+                    continue
+                gw_fxs = fixtures_by_gw.get(gw, [])
+                if any(f.get("finished") is not True for f in gw_fxs):
+                    continue
+                gw_ko_dts = [_utc(f["kickoff_time"]) for f in gw_fxs if f.get("kickoff_time")]
+                if not gw_ko_dts:
+                    continue
+                max_ko_dt = max(gw_ko_dts)
+                if (now_dt - max_ko_dt).total_seconds() < 24 * 3600:
+                    continue
+
+                live_resp = _http_get_with_retry(client, f"/event/{gw}/live/").json()
+                live_elems = {
+                    int(el["id"]): el
+                    for el in live_resp.get("elements", ())
+                    if isinstance(el, Mapping) and "id" in el
+                }
+
+                # Use pre-deadline bootstrap/fixtures when available to keep player-fixture universe immutable
+                pre_bs_spec = dict(origin.get("sources", {})).get("bootstrap")
+                if isinstance(pre_bs_spec, Mapping) and str(pre_bs_spec.get("source_id", "")) in ext_catalog:
+                    pre_bs_raw = (store.root / ext_catalog[str(pre_bs_spec["source_id"])]["relpath"]).read_bytes()
+                    pre_bs_dec = json.loads(lzma.decompress(pre_bs_raw).decode("utf-8"))
+                    pre_sanitized, _, _ = _sanitize_bootstrap(pre_bs_dec, capture_upper=_utc(pre_bs_spec["capture_upper"]))
+                    origin_elems = pre_sanitized
+                else:
+                    origin_elems = [
+                        {"id": int(el["id"]), "team": int(el["team"]), "element_type": int(el["element_type"])}
+                        for el in elements
+                        if int(el.get("element_type", 0) or 0) in (1, 2, 3, 4)
+                    ]
+
+                pre_fx_spec = dict(origin.get("sources", {})).get("fixtures")
+                if isinstance(pre_fx_spec, Mapping) and str(pre_fx_spec.get("source_id", "")) in ext_catalog:
+                    pre_fx_bytes = (store.root / ext_catalog[str(pre_fx_spec["source_id"])]["relpath"]).read_bytes()
+                    admitted_gw_fxs = [r for r in parse_fixtures_csv_window(pre_fx_bytes, gw) if int(r["event"]) == gw]
+                else:
+                    admitted_gw_fxs = gw_fxs
+
+                club_fxs: dict[int, list[int]] = {}
+                for fx in admitted_gw_fxs:
+                    fid = int(fx["id"])
+                    club_fxs.setdefault(int(fx["team_h"]), []).append(fid)
+                    club_fxs.setdefault(int(fx["team_a"]), []).append(fid)
+
+                disambig_pids: list[int] = []
+                for el in origin_elems:
+                    pid = int(el["id"])
+                    pre_team = int(el["team"])
+                    cur_team = team_by_id.get(pid, pre_team)
+                    fids = club_fxs.get(pre_team, [])
+                    if len(fids) >= 2 or cur_team != pre_team:
+                        disambig_pids.append(pid)
+
+                summaries_by_pid: dict[int, list[Mapping[str, Any]]] = {}
+                if disambig_pids:
+                    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+                        futures = {
+                            pool.submit(_http_get_with_retry, client, f"/element-summary/{pid}/"): pid
+                            for pid in sorted(disambig_pids)
+                        }
+                        for fut in as_completed(futures):
+                            pid = futures[fut]
+                            payload = fut.result().json()
+                            summaries_by_pid[pid] = [
+                                h
+                                for h in payload.get("history", ())
+                                if isinstance(h, Mapping) and int(h.get("round", -1)) == gw
+                            ]
+
+                rules_ver = season
+                out_rows: list[dict[str, Any]] = []
+                for el in sorted(origin_elems, key=lambda r: int(r["id"])):
+                    pid = int(el["id"])
+                    pre_team = int(el["team"])
+                    pos_id = int(el["element_type"])
+                    fids = club_fxs.get(pre_team, [])
+                    if not fids:
+                        continue  # Blank Gameweek: zero outcome rows for non-playing club
+                    if pid in summaries_by_pid:
+                        by_fid = {int(h["fixture"]): h for h in summaries_by_pid[pid] if "fixture" in h}
+                        for fid in fids:
+                            stats_src = by_fid.get(fid, {})
+                            out_rows.append(
+                                _build_outcome_row_from_stats(
+                                    pid=pid,
+                                    fid=fid,
+                                    pos_id=pos_id,
+                                    stats=stats_src,
+                                    rules_version=rules_ver,
+                                )
+                            )
+                    else:
+                        live_stats = (live_elems.get(pid) or {}).get("stats") or {}
+                        out_rows.append(
+                            _build_outcome_row_from_stats(
+                                pid=pid,
+                                fid=fids[0],
+                                pos_id=pos_id,
+                                stats=live_stats,
+                                rules_version=rules_ver,
+                            )
+                        )
+
+                out_bytes = canonical_bytes(out_rows)
+                out_sha = store.write_bytes(out_bytes)
+                out_sid = f"{season}_gw{gw:02d}_outcomes_{out_sha[:12]}"
+                ext_catalog[out_sid] = {"blob_sha256": out_sha, "relpath": store.relpath(out_sha)}
+                updated_origin = dict(origin)
+                updated_origin["max_kickoff_utc"] = max_ko_dt.isoformat()
+                updated_sources = dict(updated_origin.get("sources", {}))
+                updated_sources["outcomes"] = {
+                    "source_id": out_sid,
+                    "blob_sha256": out_sha,
+                    "table_sha256": canonical_json_sha256(out_rows),
+                    "timing_basis": "receipt",
+                    "url": f"receipt://official/outcomes/gw{gw:02d}",
+                    "finalized_at": now_iso,
+                    "finished": True,
+                    "data_checked": True,
+                }
+                updated_origin["sources"] = updated_sources
+                origins_by_gw[gw] = updated_origin
+
+    if origins_by_gw:
+        _persist_cumulative_admissions(
+            root,
+            season,
+            track="validation_fplcache",
+            purpose="validation",
+            checkpoint_gw=checkpoint_gw_meta,
+            shared_chip_calendar=shared_chip_calendar,
+            anchor=anchor,
+            origins_by_gw=origins_by_gw,
+            ext_catalog=ext_catalog,
+        )
+
+    _, prefix_end, first_blocked, gap_status, gap_reasons = _assess_season_admissions(root, season)
+    max_gw = max(origins_by_gw, default=0)
+    scorecard = _build_scorecard(
+        root,
+        slate_id=slate_id,
+        season=season,
+        checkpoint_gw=max_gw,
+        settled_through_gw=prefix_end,
+        gap_status=gap_status,
+        first_blocked_gw=first_blocked,
+        reason_codes=tuple(gap_reasons),
+    )
+    write_scorecard(root, scorecard)
+    return {
+        "command": "collect",
+        "mode": mode,
+        "season": season,
+        "settled_through_gw": prefix_end,
+        "gap_status": gap_status,
+        "first_blocked_gw": first_blocked,
+        "reason_codes": gap_reasons,
+    }
+
+
 def _assess_season_admissions(
     root: Path,
     season: str,
@@ -200,6 +895,22 @@ def _assess_season_admissions(
 def _collect_command(args: argparse.Namespace) -> int:
     root = Path(args.evidence_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
+    if args.batch_json is None:
+        lifecycle = load_season_lifecycle()
+        season = str(args.season or lifecycle.season_for_role("active_validation"))
+        summary = collect_live_validation_evidence(
+            evidence_root=root,
+            season=season,
+            slate_id=str(args.slate_id),
+            mode=str(args.mode),
+            fpl_api_base=str(args.fpl_api_base),
+            now_utc=args.now_utc,
+            max_concurrency=int(args.max_concurrency),
+            seed_file=Path(args.seed_file).resolve() if args.seed_file else None,
+        )
+        print(json.dumps(summary, sort_keys=True))
+        return 0
+
     store = BlobStore(root)
     batch_path = Path(args.batch_json).resolve()
     batch = json.loads(batch_path.read_text(encoding="utf-8"))
@@ -210,12 +921,11 @@ def _collect_command(args: argparse.Namespace) -> int:
     checkpoint_gw = batch.get("checkpoint_gw")
     origins_in = sorted(batch["origins"], key=lambda o: int(o["gw"]))
 
-    ext_catalog: dict[str, dict[str, str]] = {}
-    raw_catalog: dict[str, bytes] = {}
-    req_origins: list[dict[str, Any]] = []
-
-    adm_dir = root / "admissions" / season
-    adm_dir.mkdir(parents=True, exist_ok=True)
+    origins_by_gw, ext_catalog, existing_req = _load_existing_season_state(root, season)
+    shared_chip_calendar = list(batch.get("shared_chip_calendar", existing_req.get("shared_chip_calendar", [])))
+    anchor = dict(batch.get("anchor", existing_req.get("anchor", {})))
+    if checkpoint_gw is None:
+        checkpoint_gw = existing_req.get("checkpoint_gw")
 
     for origin in origins_in:
         gw = int(origin["gw"])
@@ -231,42 +941,34 @@ def _collect_command(args: argparse.Namespace) -> int:
             blob_sha = store.write_bytes(raw)
             sid = f"{season}_gw{gw:02d}_{role}_{blob_sha[:12]}"
             ext_catalog[sid] = {"blob_sha256": blob_sha, "relpath": store.relpath(blob_sha)}
-            raw_catalog[sid] = raw
             sources_out[role] = {
                 **{k: v for k, v in spec.items() if k not in ("file", "path")},
                 "source_id": sid,
             }
-        req_origins.append(
-            {
-                "season": season,
-                "gw": gw,
-                "deadline": origin["deadline"],
-                "prev_deadline": origin.get("prev_deadline"),
-                "max_kickoff_utc": origin["max_kickoff_utc"],
-                "disclosed_limitations": origin.get("disclosed_limitations", []),
-                "sources": sources_out,
-            }
-        )
-        req_prefix = {
-            "version": 2,
-            "mode": "empirical",
-            "track": track,
+        origins_by_gw[gw] = {
             "season": season,
-            "purpose": purpose,
-            "checkpoint_gw": checkpoint_gw,
-            "eligibility_policy": "empirical-v2",
-            "partial_prefix": False,
-            "full_season_required": False,
-            "shared_chip_calendar": batch.get("shared_chip_calendar", []),
-            "anchor": batch.get("anchor", {}),
-            "origins": list(req_origins),
+            "gw": gw,
+            "deadline": origin["deadline"],
+            "prev_deadline": origin.get("prev_deadline"),
+            "max_kickoff_utc": origin["max_kickoff_utc"],
+            "disclosed_limitations": origin.get("disclosed_limitations", []),
+            "sources": sources_out,
         }
-        ctx_path = adm_dir / f"gw{gw:02d}.json"
-        ctx_payload = {"request": req_prefix, "catalog": dict(ext_catalog)}
-        ctx_path.write_bytes(canonical_bytes(ctx_payload) + b"\n")
+
+    _persist_cumulative_admissions(
+        root,
+        season,
+        track=track,
+        purpose=purpose,
+        checkpoint_gw=checkpoint_gw,
+        shared_chip_calendar=shared_chip_calendar,
+        anchor=anchor,
+        origins_by_gw=origins_by_gw,
+        ext_catalog=ext_catalog,
+    )
 
     _, prefix_end, first_blocked, gap_status, gap_reasons = _assess_season_admissions(root, season)
-    max_gw = max((int(o["gw"]) for o in req_origins), default=0)
+    max_gw = max(origins_by_gw, default=0)
     scorecard = _build_scorecard(
         root,
         slate_id=str(args.slate_id),
@@ -294,6 +996,16 @@ def _collect_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_certified_sparse_v2_params(cert_path: Path | None = None) -> dict[str, Any]:
+    path = cert_path or DEFAULT_CERTIFICATION_RESULT_PATH
+    if not path.is_file():
+        raise FileNotFoundError(f"Certified sparse v2 artifact not found: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("certified") is not True:
+        raise ValueError(f"Sparse confirmation artifact is not certified: {path}")
+    return data
+
+
 def _build_default_protocol(
     *,
     development_season: str,
@@ -303,6 +1015,7 @@ def _build_default_protocol(
     time_limit_seconds: float,
     max_family_attempts: int,
     s1_guard_baseline_mode: str | None = None,
+    protocol_version: str = "v2.0",
 ) -> dict[str, Any]:
     guards = {
         name: {
@@ -320,6 +1033,13 @@ def _build_default_protocol(
         development_season: list(dev_windows),
         validation_season: list(range(1, 39)),
     }
+    review_gws = [15, 30, 38]
+    cert_v2: dict[str, Any] | None = None
+    if protocol_version == "v2.0":
+        cert_v2 = _load_certified_sparse_v2_params()
+        c_cfg = cert_v2["certified_protocol_config"]
+        review_gws = [int(g) for g in c_cfg.get("confirmation_checkpoints", [15, 30, 38])]
+
     protocol: dict[str, Any] = {
         "horizon": 6,
         "windows": windows,
@@ -333,11 +1053,21 @@ def _build_default_protocol(
             "population": "all_admitted_players",
             "missingness": "fail_closed",
             "aggregation": "weighted_paired_player_gameweek",
-            "applicability": {s: dict.fromkeys(guards, "required") for s in windows},
+            "applicability": {
+                s: {
+                    name: (
+                        "inapplicable_native"
+                        if name == "defcon_points_mse" and s in ("2023-24", "2024-25")
+                        else "required"
+                    )
+                    for name in guards
+                }
+                for s in windows
+            },
         },
         "live_review": {
             "mode": "fplcache",
-            "review_gameweeks": [15, 30, 38],
+            "review_gameweeks": review_gws,
             "settlement_delay_hours": 24,
             "early_harm_min_gw": 6,
             "early_harm_p_threshold": EARLY_HARM_P_THRESHOLD,
@@ -345,15 +1075,38 @@ def _build_default_protocol(
     }
     if s1_guard_baseline_mode is not None:
         protocol["s1_guard_baseline_mode"] = s1_guard_baseline_mode
-    protocol["statistics"] = StatisticalProtocolConfig(
-        development_season=development_season,
-        confirmation_season=validation_season,
-        approved_by_human=True,
-        approval_reference=approval_reference,
-        max_family_attempts=max_family_attempts,
-        required_projection_guards=tuple(guards),
-        evidence_protocol_hash=content_hash(protocol),
-    ).to_dict()
+    proto_decl_hash = content_hash(protocol)
+    if protocol_version == "v2.0":
+        assert cert_v2 is not None
+        c_cfg = cert_v2["certified_protocol_config"]
+        base_cfg = build_certified_protocol_config(
+            calibrated_superiority_alphas=c_cfg["calibrated_superiority_alphas"],
+            gw1_4_material_loss_limit=float(c_cfg["gw1_4_material_loss_limit"]),
+            statistical_early_harm_mode=c_cfg["statistical_early_harm_mode"],
+            certification_digest=str(cert_v2["certification_digest"]),
+            development_season=development_season,
+            confirmation_season=validation_season,
+        )
+        stat_cfg = replace(
+            base_cfg,
+            approved_by_human=True,
+            approval_reference=approval_reference,
+            max_family_attempts=max_family_attempts,
+            evidence_protocol_hash=proto_decl_hash,
+        )
+    elif protocol_version == "v1.0":
+        stat_cfg = StatisticalProtocolConfig(
+            development_season=development_season,
+            confirmation_season=validation_season,
+            approved_by_human=True,
+            approval_reference=approval_reference,
+            max_family_attempts=max_family_attempts,
+            required_projection_guards=tuple(guards),
+            evidence_protocol_hash=proto_decl_hash,
+        )
+    else:
+        raise ValueError(f"Unsupported protocol_version '{protocol_version}'")
+    protocol["statistics"] = stat_cfg.to_dict()
     return protocol
 
 
@@ -376,6 +1129,38 @@ def _parse_fixtures_with_difficulty(raw_bytes: bytes, gw: int, *, horizon: int =
     ]
 
 
+def _write_staged_checkpoint_admission(
+    root: Path,
+    *,
+    season: str,
+    end_gw: int,
+    training_blob_refs: Mapping[str, Mapping[str, str]],
+    tag: str = "",
+) -> dict[str, str]:
+    """Assemble an immutable staged admission context for a checkpoint without mutating `admissions/`."""
+    adm_dir = root / "admissions" / season
+    exact_file = adm_dir / f"gw{end_gw:02d}.json"
+    if not exact_file.is_file():
+        files = sorted(adm_dir.glob("gw*.json"))
+        if not files:
+            raise ValueError(f"No admission files found for {season}")
+        exact_file = files[-1]
+    base_ctx = json.loads(exact_file.read_bytes())
+    merged_cat: dict[str, Any] = {}
+    for gw in range(1, end_gw + 1):
+        gw_file = adm_dir / f"gw{gw:02d}.json"
+        if gw_file.is_file():
+            merged_cat.update(json.loads(gw_file.read_bytes()).get("catalog", {}))
+    merged_cat.update({k: dict(v) for k, v in training_blob_refs.items()})
+    req = dict(base_ctx["request"])
+    req["origins"] = [o for o in req.get("origins", ()) if int(o["gw"]) <= end_gw]
+    if req.get("track") == "validation_fplcache":
+        req["checkpoint_gw"] = end_gw
+    suffix = f"_{tag}" if tag else ""
+    rel = f"checkpoints/{season}/gw{end_gw:02d}{suffix}_admission.json"
+    return _write_rel_json(root, rel, {"request": req, "catalog": merged_cat})
+
+
 def _replay_season_prefix(
     root: Path,
     *,
@@ -386,7 +1171,14 @@ def _replay_season_prefix(
     source_hash: str,
     protocol_hash: str,
     policy: QualityPolicy,
-) -> tuple[dict[str, str], list[ReplayDeadlineRecord], list[dict[str, Any]], dict[str, str], dict[str, Any]]:
+) -> tuple[
+    dict[str, str],
+    list[ReplayDeadlineRecord],
+    list[dict[str, Any]],
+    dict[str, str],
+    dict[str, Any],
+    dict[str, dict[str, str]],
+]:
     req_gws = sorted(gw for gw in admitted_gws if gw <= end_gw)
     if req_gws != list(range(1, end_gw + 1)):
         raise ValueError(f"Incomplete admitted origins for {season} GW1..{end_gw}")
@@ -428,6 +1220,7 @@ def _replay_season_prefix(
     )
 
     issues: list[dict[str, Any]] = []
+    training_blob_refs: dict[str, dict[str, str]] = {}
     frames_by_gw: dict[int, pd.DataFrame] = {}
     outcomes_by_gw: dict[int, OutcomeBatch] = {}
 
@@ -577,16 +1370,8 @@ def _replay_season_prefix(
         auth_blob_sha = store.write_bytes(auth_bytes)
         local_cat[auth_digest] = auth_bytes
 
-        # Persist externalized training blobs into the referenced admission context for offline snapshot verification.
-        adm_file = root / adm_rel
-        adm_ctx = json.loads(adm_file.read_bytes())
-        src_ref = {"blob_sha256": src_blob_sha, "relpath": store.relpath(src_blob_sha)}
-        auth_ref = {"blob_sha256": auth_blob_sha, "relpath": store.relpath(auth_blob_sha)}
-        if adm_ctx["catalog"].get(src_digest) != src_ref or adm_ctx["catalog"].get(auth_digest) != auth_ref:
-            adm_ctx["catalog"][src_digest] = src_ref
-            adm_ctx["catalog"][auth_digest] = auth_ref
-            adm_file.write_bytes(canonical_bytes(adm_ctx) + b"\n")
-        adm_ref = {"path": adm_rel, "sha256": hashlib.sha256(adm_file.read_bytes()).hexdigest()}
+        training_blob_refs[src_digest] = {"blob_sha256": src_blob_sha, "relpath": store.relpath(src_blob_sha)}
+        training_blob_refs[auth_digest] = {"blob_sha256": auth_blob_sha, "relpath": store.relpath(auth_blob_sha)}
 
         forecast_id, predictions, _ = generate_forecast(
             forecast_cache,
@@ -665,7 +1450,7 @@ def _replay_season_prefix(
         "trace": trace_ref,
         "issues": issues,
     }
-    return anchor_ref, records, issues, trace_ref, entry
+    return anchor_ref, records, issues, trace_ref, entry, training_blob_refs
 
 
 def _freeze_command(args: argparse.Namespace) -> int:
@@ -687,6 +1472,32 @@ def _freeze_command(args: argparse.Namespace) -> int:
     validate_quality_policy_gate(policy, require_certified=True)
 
     closure = compute_serving_model_closure((champion, *candidates))
+    s1_mode: str | None = None
+    if args.s1_guard_baseline is not None or (season == "2027-28" and (root / "s1_guard_baseline.json").is_file()):
+        if season != "2027-28":
+            raise ValueError("s1_guard_baseline_season_archive_transition permitted only on 2027-28")
+        s1_mode = "s1_guard_baseline_season_archive_transition"
+
+    dev_gws, dev_prefix_end, _, _, _ = _assess_season_admissions(root, dev_season)
+    dev_windows = list(range(1, dev_prefix_end + 1)) if dev_prefix_end >= 2 else [1, 2]
+    if (root / "protocol.json").is_file():
+        protocol = json.loads((root / "protocol.json").read_bytes())
+        protocol_hash = content_hash(protocol)
+    else:
+        protocol = _build_default_protocol(
+            development_season=dev_season,
+            validation_season=season,
+            approval_reference=str(args.approval_reference),
+            dev_windows=dev_windows,
+            time_limit_seconds=float(args.time_limit_seconds),
+            max_family_attempts=int(args.max_family_attempts),
+            s1_guard_baseline_mode=s1_mode,
+            protocol_version=str(args.protocol_version),
+        )
+        _write_rel_json(root, "protocol.json", protocol)
+        _write_rel_json(root, "parameters.json", {})
+        protocol_hash = content_hash(protocol)
+
     slate_file = root / "slate.json"
     slate_payload = {
         "slate_id": str(args.slate_id),
@@ -706,12 +1517,15 @@ def _freeze_command(args: argparse.Namespace) -> int:
     else:
         _write_rel_json(root, "slate.json", slate_payload)
 
+    cert_digest_val = protocol.get("statistics", {}).get("certification_digest")
     selection = ModelSelection(
         champion=champion,
         candidates=candidates,
         provisional_active=candidates[0],
         podium_frozen_season=season,
         podium_sealed=True,
+        frozen_protocol_hash=protocol_hash,
+        frozen_certification_digest=str(cert_digest_val) if isinstance(cert_digest_val, str) else None,
     )
     sel_file = root / "selection.json"
     if sel_file.is_file():
@@ -720,40 +1534,13 @@ def _freeze_command(args: argparse.Namespace) -> int:
     else:
         save_model_selection(selection, sel_file)
 
-    s1_mode: str | None = None
-    if args.s1_guard_baseline is not None or (season == "2027-28" and (root / "s1_guard_baseline.json").is_file()):
-        if season != "2027-28":
-            raise ValueError("s1_guard_baseline_season_archive_transition permitted only on 2027-28")
-        s1_mode = "s1_guard_baseline_season_archive_transition"
-
-    dev_gws, dev_prefix_end, _, _, _ = _assess_season_admissions(root, dev_season)
-    dev_windows = list(range(1, dev_prefix_end + 1)) if dev_prefix_end >= 2 else [1, 2]
-    if (root / "protocol.json").is_file():
-        protocol = json.loads((root / "protocol.json").read_bytes())
-        protocol_hash = content_hash(protocol)
-        params_ref = {"path": "parameters.json", "sha256": content_hash({})}
-    else:
-        protocol = _build_default_protocol(
-            development_season=dev_season,
-            validation_season=season,
-            approval_reference=str(args.approval_reference),
-            dev_windows=dev_windows,
-            time_limit_seconds=float(args.time_limit_seconds),
-            max_family_attempts=int(args.max_family_attempts),
-            s1_guard_baseline_mode=s1_mode,
-        )
-        _write_rel_json(root, "protocol.json", protocol)
-        params_ref = _write_rel_json(root, "parameters.json", {})
-        del params_ref
-        protocol_hash = content_hash(protocol)
-
     source_hash = current_model_source_hash()
     parameters_hash = content_hash({})
 
     # Prepare S-1 development selection trace if S-1 admissions exist
     s1_trace_ref: dict[str, str] | None = None
     if dev_prefix_end >= len(dev_windows):
-        _, _, _, trace_meta, _ = _replay_season_prefix(
+        _, _, _, trace_meta, _, _s1_blobs = _replay_season_prefix(
             root,
             season=dev_season,
             model_name=champion,
@@ -813,12 +1600,15 @@ def _replay_command(args: argparse.Namespace) -> int:
     root = Path(args.evidence_root).resolve()
     season = str(args.season)
     checkpoint_gw = int(args.checkpoint_gw)
-    if checkpoint_gw not in (15, 30, 38):
-        raise ValueError(f"Replay checkpoint_gw must be 15, 30, or 38; got {checkpoint_gw}")
 
     slate = json.loads((root / "slate.json").read_bytes())
     selection = load_model_selection(root / "selection.json")
     protocol = json.loads((root / "protocol.json").read_bytes())
+    expected_checkpoints = tuple(
+        int(gw) for gw in protocol.get("statistics", {}).get("confirmation_checkpoints", [15, 30, 38])
+    )
+    if checkpoint_gw not in expected_checkpoints:
+        raise ValueError(f"Replay checkpoint_gw must be in {expected_checkpoints}; got {checkpoint_gw}")
     protocol_hash = content_hash(protocol)
     source_hash = current_model_source_hash()
     closure = compute_serving_model_closure((selection.champion, *selection.candidates))
@@ -851,21 +1641,24 @@ def _replay_command(args: argparse.Namespace) -> int:
 
     exclusions = ExclusionLedger(root / "exclusions.jsonl")
     active_candidates = [
-        c for c in selection.candidates if not exclusions.is_excluded(c, slate_id=str(slate["slate_id"]), season=season)
+        c
+        for c in selection.candidates
+        if not exclusions.is_candidate_excluded(c, slate_id=str(slate["slate_id"]), season=season)
     ]
+    prior_excluded = [c for c in selection.candidates if c not in active_candidates]
     if not active_candidates:
         raise ValueError("All frozen finalists have been excluded in ExclusionLedger")
 
     dev_season = str(slate["development_season"])
     dev_windows = list(protocol["windows"][dev_season])
-    admitted_s1, prefix_end_s1, first_blocked_s1, _gap_s1, gap_reasons_s1 = _assess_season_admissions(root, dev_season)
+    admitted_s1, _prefix_end_s1, first_blocked_s1, _gap_s1, gap_reasons_s1 = _assess_season_admissions(root, dev_season)
     s1_baseline_ref: dict[str, str] | None = None
     if protocol.get("s1_guard_baseline_mode") == "s1_guard_baseline_season_archive_transition" and (
         root / "s1_guard_baseline.json"
     ).is_file():
         s1_file = root / "s1_guard_baseline.json"
         s1_baseline_ref = {"path": "s1_guard_baseline.json", "sha256": hashlib.sha256(s1_file.read_bytes()).hexdigest()}
-    elif prefix_end_s1 < max(dev_windows):
+    elif _prefix_end_s1 < max(dev_windows):
         raise ValueError(
             f"S-1 development baseline '{dev_season}' incomplete at GW{first_blocked_s1}: {gap_reasons_s1}"
         )
@@ -880,7 +1673,7 @@ def _replay_command(args: argparse.Namespace) -> int:
     guard_outcome_sources: list[dict[str, Any]] = []
 
     if s1_baseline_ref is None:
-        _, _, _, _s1_trace, s1_entry = _replay_season_prefix(
+        _, _, _, _s1_trace, s1_entry, s1_blobs = _replay_season_prefix(
             root,
             season=dev_season,
             model_name=selection.champion,
@@ -890,19 +1683,28 @@ def _replay_command(args: argparse.Namespace) -> int:
             protocol_hash=protocol_hash,
             policy=policy,
         )
+        adm_s1_ref = _write_staged_checkpoint_admission(
+            root,
+            season=dev_season,
+            end_gw=max(dev_windows),
+            training_blob_refs=s1_blobs,
+            tag="s1",
+        )
+        for iss in s1_entry["issues"]:
+            iss["admission"] = adm_s1_ref
         replays.append(s1_entry)
         for gw in dev_windows:
-            adm_rel = f"admissions/{dev_season}/gw{gw:02d}.json"
             guard_outcome_sources.append(
                 {
                     "season": dev_season,
                     "gameweek": gw,
-                    "admission": {"path": adm_rel, "sha256": hashlib.sha256((root / adm_rel).read_bytes()).hexdigest()},
+                    "admission": adm_s1_ref,
                 }
             )
 
     # Active season shared guard outcome sources & replays
-    _, champ_records, _, _champ_trace, champ_entry = _replay_season_prefix(
+    all_s_training_blobs: dict[str, dict[str, str]] = {}
+    _, champ_records, _, _champ_trace, champ_entry, champ_blobs = _replay_season_prefix(
         root,
         season=season,
         model_name=selection.champion,
@@ -912,6 +1714,7 @@ def _replay_command(args: argparse.Namespace) -> int:
         protocol_hash=protocol_hash,
         policy=policy,
     )
+    all_s_training_blobs.update(champ_blobs)
     cum_net: dict[str, float] = {selection.champion: float(sum(r.net_points for r in champ_records))}
     cand_entries: list[dict[str, Any]] = []
 
@@ -921,7 +1724,10 @@ def _replay_command(args: argparse.Namespace) -> int:
         dev_sel_rel = f"development_selections/{cand}.json"
         dev_selections[cand] = {"path": dev_sel_rel, "sha256": hashlib.sha256((root / dev_sel_rel).read_bytes()).hexdigest()}
 
-        _, cand_records, _, _cand_trace, cand_entry = _replay_season_prefix(
+    for cand in active_candidates:
+        attempt_id = attempt_ids[cand]
+
+        _, cand_records, _, _cand_trace, cand_entry, cand_blobs = _replay_season_prefix(
             root,
             season=season,
             model_name=cand,
@@ -931,43 +1737,45 @@ def _replay_command(args: argparse.Namespace) -> int:
             protocol_hash=protocol_hash,
             policy=policy,
         )
+        all_s_training_blobs.update(cand_blobs)
         cand_entries.append(cand_entry)
         cum_net[cand] = float(sum(r.net_points for r in cand_records))
 
         scores = [pair_replay_score(season, c_rec, ch_rec) for c_rec, ch_rec in zip(cand_records, champ_records, strict=True)]
         trace_hash = compute_score_trace_hash(scores)
-        latest = registry.get_attempt(attempt.attempt_id)
+        latest = registry.get_attempt(attempt_id)
         if latest is None or latest.completed_gameweeks != tuple(range(1, checkpoint_gw + 1)):
             registry.record_checkpoint(
-                attempt.attempt_id,
+                attempt_id,
                 checkpoint_gw=checkpoint_gw,
                 completed_gameweeks=tuple(range(1, checkpoint_gw + 1)),
                 score_trace_hash=trace_hash,
             )
 
-    # Merge all per-GW active-season training blobs into shared checkpoint admission gw<NN>.json
-    adm_s_rel = f"admissions/{season}/gw{checkpoint_gw:02d}.json"
-    adm_s_file = root / adm_s_rel
-    shared_raw = adm_s_file.read_bytes()
-    shared_ctx = json.loads(shared_raw)
-    shared_changed = False
-    for gw in range(1, checkpoint_gw + 1):
-        gw_adm_file = root / f"admissions/{season}/gw{gw:02d}.json"
-        if gw_adm_file.is_file():
-            gw_ctx = json.loads(gw_adm_file.read_bytes())
-            for c_key, c_val in gw_ctx.get("catalog", {}).items():
-                if shared_ctx["catalog"].get(c_key) != c_val:
-                    shared_ctx["catalog"][c_key] = c_val
-                    shared_changed = True
-    if shared_changed:
-        adm_s_file.write_bytes(canonical_bytes(shared_ctx) + b"\n")
-    adm_s_ref = {"path": adm_s_rel, "sha256": hashlib.sha256(adm_s_file.read_bytes()).hexdigest()}
+    adm_s_ref = _write_staged_checkpoint_admission(
+        root,
+        season=season,
+        end_gw=checkpoint_gw,
+        training_blob_refs=all_s_training_blobs,
+    )
     for gw in range(1, checkpoint_gw + 1):
         guard_outcome_sources.append({"season": season, "gameweek": gw, "admission": adm_s_ref})
     for replay_entry in (champ_entry, *cand_entries):
         for iss in replay_entry["issues"]:
             iss["admission"] = adm_s_ref
         replays.append(replay_entry)
+
+    gw38_final_ko: str | None = args.gw38_final_kickoff_utc
+    if gw38_final_ko is None and checkpoint_gw == expected_checkpoints[-1]:
+        req_cp, cat_cp, _ = admitted_s[checkpoint_gw]
+        gw_origin = next(o for o in req_cp["origins"] if o["season"] == season and int(o["gw"]) == checkpoint_gw)
+        kickoff_candidates = [_utc(str(gw_origin["max_kickoff_utc"]))]
+        fx_bytes = cat_cp.get(str(gw_origin["sources"]["fixtures"].get("source_id")))
+        if fx_bytes is not None:
+            for fx_row in parse_fixtures_csv_window(fx_bytes, checkpoint_gw):
+                if int(fx_row["event"]) == checkpoint_gw and fx_row.get("kickoff_time"):
+                    kickoff_candidates.append(_utc(str(fx_row["kickoff_time"])))
+        gw38_final_ko = max(kickoff_candidates).isoformat()
 
     bundle_path = Path(args.output_bundle).resolve() if args.output_bundle else (root / f"bundle_gw{checkpoint_gw:02d}.json")
     if bundle_path.parent != root:
@@ -984,30 +1792,54 @@ def _replay_command(args: argparse.Namespace) -> int:
         "protocol": {"path": "protocol.json", "sha256": hashlib.sha256((root / "protocol.json").read_bytes()).hexdigest()},
         "parameters": {"path": "parameters.json", "sha256": hashlib.sha256((root / "parameters.json").read_bytes()).hexdigest()},
         "podium_order": list(selection.candidates),
+        "excluded_finalists": prior_excluded,
+        "evaluated_at_utc": args.evaluated_at_utc or datetime.now(UTC).isoformat(),
         "confirmation_attempt_ids": attempt_ids,
         "development_selections": dev_selections,
         "replays": replays,
         "guard_outcome_sources": guard_outcome_sources,
     }
+    if gw38_final_ko is not None:
+        payload["gw38_final_kickoff_utc"] = gw38_final_ko
     if s1_baseline_ref is not None:
         payload["s1_guard_baseline"] = s1_baseline_ref
     req_path.write_bytes(canonical_bytes(payload) + b"\n")
 
     bundle = write_checkpoint_recommendation_bundle(req_path, bundle_path)
-    if bundle.get("action") in ("rotate_to_backup", "fallback_to_champion"):
+    coordinator = SharedReservationCoordinator(root)
+    if "newly_excluded_finalists" in bundle:
+        excl_details = dict(bundle.get("exclusion_details", {}))
+        for cand in bundle.get("newly_excluded_finalists", ()):
+            if not exclusions.is_candidate_excluded(str(cand), slate_id=str(slate["slate_id"]), season=season):
+                detail_obj = excl_details.get(str(cand), {})
+                reason_code = str(detail_obj.get("reason_code", "early_harm"))
+                reasons_list = detail_obj.get("reasons") or bundle.get("reasons", [])
+                coordinator.record_exclusion_under_reservation(
+                    holder="validation-collector",
+                    slate_id=str(slate["slate_id"]),
+                    season=season,
+                    candidate_name=str(cand),
+                    checkpoint_gw=checkpoint_gw,
+                    reason_code=reason_code,
+                    details="; ".join(str(r) for r in reasons_list) or reason_code,
+                    evidence_hash=str(bundle.get("bundle_hash")) if bundle.get("bundle_hash") else None,
+                )
+    elif bundle.get("action") in ("rotate_to_backup", "fallback_to_champion"):
         for reason in bundle.get("reasons", []):
             reason_str = str(reason)
             if "Early-Harm" in reason_str:
                 match_cand = re.search(r"Provisional Active '([^']+)'", reason_str)
                 harmed = match_cand.group(1) if match_cand else (selection.provisional_active or active_candidates[0])
-                if not exclusions.is_excluded(harmed, slate_id=str(slate["slate_id"]), season=season):
-                    exclusions.record_exclusion(
+                if not exclusions.is_candidate_excluded(harmed, slate_id=str(slate["slate_id"]), season=season):
+                    coordinator.record_exclusion_under_reservation(
+                        holder="validation-collector",
                         slate_id=str(slate["slate_id"]),
                         season=season,
                         candidate_name=harmed,
                         checkpoint_gw=checkpoint_gw,
                         reason_code="early_harm",
                         details=reason_str,
+                        evidence_hash=str(bundle.get("bundle_hash")) if bundle.get("bundle_hash") else None,
                     )
     snapshot_meta: dict[str, Any] | None = None
     has_passing_snapshot = False
@@ -1020,7 +1852,12 @@ def _replay_command(args: argparse.Namespace) -> int:
         )
         has_passing_snapshot = True
 
-    eligible_scores = {m: v for m, v in cum_net.items() if m == selection.champion or m in active_candidates}
+    active_candidates_post = [
+        c
+        for c in selection.candidates
+        if not exclusions.is_candidate_excluded(c, slate_id=str(slate["slate_id"]), season=season)
+    ]
+    eligible_scores = {m: v for m, v in cum_net.items() if m == selection.champion or m in active_candidates_post}
     weekly_leader = max(eligible_scores, key=lambda m: (eligible_scores[m], m == selection.champion)) if eligible_scores else None
     sc = _build_scorecard(
         root,
@@ -1057,6 +1894,158 @@ def _replay_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _compute_observed_components_for_row(row: Mapping[str, Any], pos_id: int, season: str) -> dict[str, float]:
+    mins = int(row.get("minutes", 0) or 0)
+    pos_map: dict[int, Literal["GK", "D", "M", "F"]] = {1: "GK", 2: "D", 3: "M", 4: "F"}
+    pos_code: Literal["GK", "D", "M", "F"] = pos_map.get(pos_id, "M")
+    min_pts = 2.0 if mins >= 60 else (1.0 if mins > 0 else 0.0)
+    goals = int(row.get("goals_scored", 0) or 0)
+    assists = int(row.get("assists", 0) or 0)
+    cs = int(row.get("clean_sheets", 0) or 0)
+    gc = int(row.get("goals_conceded", 0) or 0)
+    saves = int(row.get("saves", 0) or 0)
+    ps = int(row.get("penalties_saved", 0) or 0)
+    pm = int(row.get("penalties_missed", 0) or 0)
+    og = int(row.get("own_goals", 0) or 0)
+    yc = int(row.get("yellow_cards", 0) or 0)
+    rc = int(row.get("red_cards", 0) or 0)
+    bonus = int(row.get("bonus", 0) or 0)
+    dc = int(row.get("defensive_contribution", 0) or 0)
+    cs_pts = float(cs) * {"GK": 4.0, "D": 4.0, "M": 1.0, "F": 0.0}[pos_code]
+    gc_pts = float(-(gc // 2)) if pos_code in ("GK", "D") else 0.0
+    saves_pts = float(saves // 3) if pos_code == "GK" else 0.0
+    dc_units = 1.0 if ((pos_code == "D" and dc >= 10) or (pos_code in ("M", "F") and dc >= 12)) else 0.0
+    defaults: dict[str, float] = {
+        "actual_points": float(row.get("total_points", 0) or 0),
+        "actual_minutes": float(mins),
+        "actual_minutes_points": min_pts,
+        "actual_goals_points": float(event_points("goals", pos_code, float(goals), rules_version=season)),
+        "actual_assists_points": float(assists * 3.0),
+        "actual_clean_sheet_points": cs_pts,
+        "actual_conceded_points": gc_pts,
+        "actual_saves_points": saves_pts,
+        "actual_penalties_saved_points": float(ps * 5.0),
+        "actual_penalties_missed_points": float(pm * -2.0),
+        "actual_own_goals_points": float(og * -2.0),
+        "actual_yellow_cards_points": float(yc * -1.0),
+        "actual_red_cards_points": float(rc * -3.0),
+        "actual_bonus_points": float(bonus),
+        "actual_defcon_points": (
+            0.0
+            if season in ("2023-24", "2024-25")
+            else float(event_points("defensive_contributions", pos_code, dc_units, rules_version=season))
+        ),
+    }
+    return {
+        acol: float(row[acol]) if acol in row and row[acol] is not None else defaults[acol]
+        for _gname, (_fcol, acol, _loss, _units) in GUARD_SEMANTICS.items()
+    }
+
+
+def _scorecard_command(args: argparse.Namespace) -> int:
+    """Compute verified common-prefix weekly scorecard without touching registry or checkpoint bundles."""
+    root = Path(args.evidence_root).resolve()
+    season = str(args.season)
+    slate = json.loads((root / "slate.json").read_bytes())
+    selection = load_model_selection(root / "selection.json")
+    protocol = json.loads((root / "protocol.json").read_bytes())
+    protocol_hash = content_hash(protocol)
+    source_hash = current_model_source_hash()
+    closure = compute_serving_model_closure((selection.champion, *selection.candidates))
+    if slate.get("serving_model_closure_hash") != closure.serving_model_closure_hash:
+        raise ValueError("Serving model closure differs from sealed slate")
+
+    policy_dict = dict(protocol["quality_policy"])
+    if args.time_limit_seconds is not None:
+        policy_dict["time_limit_seconds"] = float(args.time_limit_seconds)
+    policy = QualityPolicy(**policy_dict)
+    validate_quality_policy_gate(policy, require_certified=True)
+
+    admitted_s, prefix_end_s, first_blocked_s, gap_status_s, gap_reasons_s = _assess_season_admissions(root, season)
+    through_gw = int(args.through_gw) if args.through_gw is not None else int(prefix_end_s)
+    if through_gw < 1:
+        raise ValueError(f"No settled empirical gameweeks available for weekly scorecard in '{season}'")
+    if prefix_end_s < through_gw:
+        sc_gap = _build_scorecard(
+            root,
+            slate_id=str(slate["slate_id"]),
+            season=season,
+            checkpoint_gw=through_gw,
+            settled_through_gw=prefix_end_s,
+            gap_status=gap_status_s if gap_status_s != "complete" else "transient_gap",
+            first_blocked_gw=first_blocked_s or (prefix_end_s + 1),
+            reason_codes=tuple(gap_reasons_s or [f"incomplete_prefix_gw_{prefix_end_s}_of_{through_gw}"]),
+        )
+        write_scorecard(root, sc_gap)
+        raise ValueError(
+            f"Weekly scorecard through GW{through_gw} blocked at GW{sc_gap.first_blocked_gw} ({sc_gap.gap_status})"
+        )
+
+    exclusions = ExclusionLedger(root / "exclusions.jsonl")
+    active_candidates = [
+        c
+        for c in selection.candidates
+        if not exclusions.is_candidate_excluded(c, slate_id=str(slate["slate_id"]), season=season)
+    ]
+    _, champ_records, _, _champ_trace, _champ_entry, _champ_blobs = _replay_season_prefix(
+        root,
+        season=season,
+        model_name=selection.champion,
+        admitted_gws=admitted_s,
+        end_gw=through_gw,
+        source_hash=source_hash,
+        protocol_hash=protocol_hash,
+        policy=policy,
+    )
+    cum_net: dict[str, float] = {selection.champion: float(sum(r.net_points for r in champ_records))}
+    for cand in active_candidates:
+        _, cand_records, _, _cand_trace, _cand_entry, _cand_blobs = _replay_season_prefix(
+            root,
+            season=season,
+            model_name=cand,
+            admitted_gws=admitted_s,
+            end_gw=through_gw,
+            source_hash=source_hash,
+            protocol_hash=protocol_hash,
+            policy=policy,
+        )
+        cum_net[cand] = float(sum(r.net_points for r in cand_records))
+
+    podium_rank = {c: idx for idx, c in enumerate(selection.candidates)}
+    weekly_leader = max(
+        cum_net,
+        key=lambda m: (cum_net[m], m == selection.champion, -podium_rank.get(m, len(selection.candidates))),
+    )
+    sc = _build_scorecard(
+        root,
+        slate_id=str(slate["slate_id"]),
+        season=season,
+        checkpoint_gw=through_gw,
+        settled_through_gw=through_gw,
+        gap_status="complete" if (prefix_end_s == through_gw and first_blocked_s is None) else gap_status_s,
+        first_blocked_gw=None if (prefix_end_s >= through_gw and first_blocked_s is None) else first_blocked_s,
+        reason_codes=(),
+        cumulative_net_points=cum_net,
+        weekly_leader=weekly_leader,
+        checkpoint_action="weekly_scorecard",
+        bundle_hash=None,
+    )
+    write_scorecard(root, sc)
+    print(
+        json.dumps(
+            {
+                "command": "scorecard",
+                "season": season,
+                "through_gw": through_gw,
+                "weekly_leader": weekly_leader,
+                "cumulative_net_points": cum_net,
+            },
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def _bootstrap_s1_baseline_command(args: argparse.Namespace) -> int:
     root = Path(args.evidence_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -1080,6 +2069,15 @@ def _bootstrap_s1_baseline_command(args: argparse.Namespace) -> int:
     perf_df = pd.read_parquet(archive_dir / "player_performances.parquet")
     if perf_df.empty:
         raise ValueError(f"Development archive '{archive_dir}' has no player_performances")
+    players_df = pd.read_parquet(archive_dir / "players.parquet") if (archive_dir / "players.parquet").is_file() else pd.DataFrame()
+    pos_by_player: dict[int, int] = (
+        {
+            int(r["id"]): int(r["position_id"])
+            for r in cast(pd.DataFrame, players_df[["id", "position_id"]]).to_dict(orient="records")
+        }
+        if not players_df.empty and {"id", "position_id"}.issubset(players_df.columns)
+        else {}
+    )
 
     h = hashlib.sha256()
     for fname in sorted(p.name for p in archive_dir.glob("*.parquet")):
@@ -1087,23 +2085,112 @@ def _bootstrap_s1_baseline_command(args: argparse.Namespace) -> int:
         h.update(hashlib.sha256((archive_dir / fname).read_bytes()).digest())
     archive_manifest_sha = h.hexdigest()
 
+    champion_name = str(args.champion)
     rows: list[dict[str, Any]] = []
-    for row in perf_df.to_dict(orient="records"):
-        entry: dict[str, Any] = {
-            "season": dev_season,
-            "gameweek": int(row["gameweek_id"]),
-            "player_id": int(row["player_id"]),
+    gw_ids = sorted(int(g) for g in gw_df["id"].unique())
+    has_full_tables = (
+        (archive_dir / "clubs.parquet").is_file()
+        and (archive_dir / "fixtures.parquet").is_file()
+        and len(gw_ids) >= 2
+        and {"expected_goals", "assists", "goals_scored"}.issubset(perf_df.columns)
+    )
+    if has_full_tables:
+        model = get_model(champion_name)
+        deadlines = (
+            gw_df.set_index("id")["deadline_time"].to_dict()
+            if {"id", "deadline_time"}.issubset(gw_df.columns)
+            else {}
+        )
+        max_gw = max(gw_ids)
+        forecast_cols = [fcol for _gname, (fcol, _acol, _loss, _units) in GUARD_SEMANTICS.items()]
+        comp_rename = {
+            "actual_xp_minutes": "actual_minutes_points",
+            "actual_xp_goals": "actual_goals_points",
+            "actual_xp_assists": "actual_assists_points",
+            "actual_xp_clean_sheet": "actual_clean_sheet_points",
+            "actual_xp_conceded": "actual_conceded_points",
+            "actual_xp_saves": "actual_saves_points",
+            "actual_xp_penalties_saved": "actual_penalties_saved_points",
+            "actual_xp_penalties_missed": "actual_penalties_missed_points",
+            "actual_xp_own_goals": "actual_own_goals_points",
+            "actual_xp_yellow_cards": "actual_yellow_cards_points",
+            "actual_xp_red_cards": "actual_red_cards_points",
+            "actual_xp_bonus": "actual_bonus_points",
+            "actual_xp_defcon": "actual_defcon_points",
         }
-        for _gname, (fcol, acol, _loss, _units) in GUARD_SEMANTICS.items():
-            entry[fcol] = float(row.get(fcol, 0.0) or 0.0)
-            entry[acol] = float(row.get(acol, 0.0) or 0.0)
-        rows.append(entry)
+        for issue_gw in gw_ids:
+            df_feat = build_features(
+                archive_dir,
+                target_gw=issue_gw,
+                horizon=6,
+                as_of_gw=issue_gw,
+                target_deadline=deadlines.get(issue_gw),
+                season=dev_season,
+            )
+            if df_feat.empty:
+                continue
+            fit_fn = getattr(model, "fit", None)
+            if callable(fit_fn):
+                fit_fn(history_before_target(perf_df, issue_gw, deadlines.get(issue_gw), False))
+            df_proj = model.predict(df_feat, horizon=6)
+            avail_fcols = [c for c in forecast_cols if c in df_proj.columns]
+            grouped_proj = cast(
+                pd.DataFrame,
+                df_proj.groupby(["player_id", "gameweek_id"], as_index=False)[avail_fcols].sum(),
+            )
+            for target_gw in range(issue_gw, min(max_gw, issue_gw + 5) + 1):
+                gw_perf_raw = cast(pd.DataFrame, perf_df[perf_df["gameweek_id"] == target_gw])
+                if gw_perf_raw.empty:
+                    continue
+                gw_comp = _build_actual_components(gw_perf_raw.copy(), df_feat).rename(columns=comp_rename)
+                gw_comp["actual_points"] = gw_comp["total_points"]
+                gw_comp["actual_minutes"] = gw_comp["minutes"]
+                obs_by_pid: dict[int, dict[str, float]] = {}
+                for orow in gw_comp.to_dict(orient="records"):
+                    pid_o = int(orow["player_id"])
+                    obs_by_pid.setdefault(
+                        pid_o,
+                        {acol: 0.0 for _gname, (_fcol, acol, _loss, _units) in GUARD_SEMANTICS.items()},
+                    )
+                    for _gname, (_fcol, acol, _loss, _units) in GUARD_SEMANTICS.items():
+                        obs_by_pid[pid_o][acol] += float(orow.get(acol, 0.0) or 0.0)
+                sub_proj = cast(pd.DataFrame, grouped_proj[grouped_proj["gameweek_id"] == target_gw])
+                for prow in sub_proj.to_dict(orient="records"):
+                    pid_p = int(prow["player_id"])
+                    if pid_p not in obs_by_pid:
+                        continue
+                    entry_full: dict[str, Any] = {
+                        "season": dev_season,
+                        "issue_gw": int(issue_gw),
+                        "gameweek_id": int(target_gw),
+                        "player_id": pid_p,
+                    }
+                    for fcol in forecast_cols:
+                        entry_full[fcol] = float(prow.get(fcol, 0.0) or 0.0)
+                    entry_full["_observed"] = obs_by_pid[pid_p]
+                    rows.append(entry_full)
+
+    if not rows:
+        for row in perf_df.to_dict(orient="records"):
+            pid = int(row["player_id"])
+            gw_val = int(row["gameweek_id"])
+            pos_id = int(row.get("position_id") or pos_by_player.get(pid, 3))
+            entry: dict[str, Any] = {
+                "season": dev_season,
+                "issue_gw": gw_val,
+                "gameweek_id": gw_val,
+                "player_id": pid,
+            }
+            for _gname, (fcol, _acol, _loss, _units) in GUARD_SEMANTICS.items():
+                entry[fcol] = float(row.get(fcol, 0.0) or 0.0)
+            entry["_observed"] = _compute_observed_components_for_row(row, pos_id, dev_season)
+            rows.append(entry)
 
     baseline = {
         "schema_version": 1,
         "season": dev_season,
         "target_validation_season": season,
-        "champion_name": str(args.champion),
+        "champion_name": champion_name,
         "archive_manifest_sha256": archive_manifest_sha,
         "disclosure": "s1_guard_baseline_season_archive_transition",
         "rows": rows,
@@ -1126,13 +2213,20 @@ def _bootstrap_s1_baseline_command(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="Produce portable ADR 0069/0070 validation evidence.")
     sub = parser.add_subparsers(dest="subcommand", required=True)
 
     p_collect = sub.add_parser("collect", help="Collect empirical origin blobs into evidence root")
     p_collect.add_argument("--evidence-root", required=True)
-    p_collect.add_argument("--batch-json", required=True)
+    p_collect.add_argument("--batch-json", default=None)
+    p_collect.add_argument("--season", default=None)
     p_collect.add_argument("--slate-id", default="default-slate")
+    p_collect.add_argument("--mode", choices=("auto", "pre_deadline", "post_settlement"), default="auto")
+    p_collect.add_argument("--fpl-api-base", default=DEFAULT_FPL_API_BASE)
+    p_collect.add_argument("--now-utc", default=None)
+    p_collect.add_argument("--max-concurrency", type=int, default=3)
+    p_collect.add_argument("--seed-file", default=None)
 
     p_freeze = sub.add_parser("freeze", help="Seal slate, protocol, runtime bindings, and finalist registrations")
     p_freeze.add_argument("--evidence-root", required=True)
@@ -1145,6 +2239,7 @@ def main(argv: list[str] | None = None) -> int:
     p_freeze.add_argument("--time-limit-seconds", type=float, default=60.0)
     p_freeze.add_argument("--max-family-attempts", type=int, default=1)
     p_freeze.add_argument("--s1-guard-baseline", default=None)
+    p_freeze.add_argument("--protocol-version", choices=("v1.0", "v2.0"), default="v2.0")
 
     p_replay = sub.add_parser("replay", help="Run/resume prefix-reusable replay and evaluate checkpoint")
     p_replay.add_argument("--evidence-root", required=True)
@@ -1153,6 +2248,8 @@ def main(argv: list[str] | None = None) -> int:
     p_replay.add_argument("--output-bundle", default=None)
     p_replay.add_argument("--snapshots-dir", default=None)
     p_replay.add_argument("--time-limit-seconds", type=float, default=None)
+    p_replay.add_argument("--evaluated-at-utc", default=None)
+    p_replay.add_argument("--gw38-final-kickoff-utc", default=None)
 
     p_boot = sub.add_parser("bootstrap-s1-baseline", help="Generate preregistered 2027-28 S-1 Season Archive transition baseline")
     p_boot.add_argument("--evidence-root", required=True)
@@ -1161,6 +2258,12 @@ def main(argv: list[str] | None = None) -> int:
     p_boot.add_argument("--archive-processed-dir", required=True)
     p_boot.add_argument("--champion", required=True)
 
+    p_scorecard = sub.add_parser("scorecard", help="Publish intermediate weekly scorecard without touching registry")
+    p_scorecard.add_argument("--evidence-root", required=True)
+    p_scorecard.add_argument("--season", required=True)
+    p_scorecard.add_argument("--through-gw", type=int, default=None)
+    p_scorecard.add_argument("--time-limit-seconds", type=float, default=None)
+
     args = parser.parse_args(argv)
     if args.subcommand == "collect":
         return _collect_command(args)
@@ -1168,6 +2271,8 @@ def main(argv: list[str] | None = None) -> int:
         return _freeze_command(args)
     if args.subcommand == "replay":
         return _replay_command(args)
+    if args.subcommand == "scorecard":
+        return _scorecard_command(args)
     if args.subcommand == "bootstrap-s1-baseline":
         return _bootstrap_s1_baseline_command(args)
     raise ValueError(f"Unknown subcommand: {args.subcommand}")

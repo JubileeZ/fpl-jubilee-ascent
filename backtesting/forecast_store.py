@@ -60,8 +60,11 @@ def forecast_material(capability: AdmittedInput, request: dict[str, Any], catalo
     """Capture portable forecast material bound to exact serving model closure and inputs."""
     if model_name is None:
         model_name = get_default_model_name()
-    verify_input(capability, request, catalog)
-    source = verify_training_bundle(capability, request, catalog, training_authority)
+    allow_fallback = capability.mode != "empirical"
+    verify_input(capability, request, catalog, allow_disk_path_fallback=allow_fallback)
+    source = verify_training_bundle(
+        capability, request, catalog, training_authority, allow_disk_path_fallback=allow_fallback
+    )
     origin = next(o for o in request["origins"] if o["season"] == capability.season and o["gw"] == capability.gw)
     closure = compute_serving_model_closure((model_name,))
     if capability.mode == "empirical":

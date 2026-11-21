@@ -1096,7 +1096,9 @@ def test_build_branch_nodes_stores_solver_recommendation() -> None:
 def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, model_name: str | None, expected_primary: str
 ) -> None:
+    from backtesting.portable_evidence import VerificationScorecard, write_scorecard
     from commands import export_dashboard
+    from models.planner_selection import RemoteFreshnessResult
     from models.selection import ModelSelection, save_model_selection
 
     processed = tmp_path / "data" / "processed"
@@ -1129,8 +1131,18 @@ def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export
             }
         ]
     ).to_parquet(processed / "clubs.parquet")
-    pd.DataFrame([{"id": 1, "name": "Gameweek 1", "is_next": True, "finished": False}]).to_parquet(processed / "gameweeks.parquet")
-    pd.DataFrame([{"id": 100, "gameweek_id": 1, "home_club_id": 1, "away_club_id": 1, "team_h_difficulty": 3, "team_a_difficulty": 3, "kickoff_time": None, "finished": False}]).to_parquet(processed / "fixtures.parquet")
+    pd.DataFrame(
+        [
+            {"id": 1, "name": "Gameweek 1", "is_next": False, "finished": True, "data_checked": True},
+            {"id": 2, "name": "Gameweek 2", "is_next": True, "finished": False, "data_checked": False},
+        ]
+    ).to_parquet(processed / "gameweeks.parquet")
+    pd.DataFrame(
+        [
+            {"id": 100, "gameweek_id": 1, "home_club_id": 1, "away_club_id": 1, "team_h_difficulty": 3, "team_a_difficulty": 3, "kickoff_time": None, "finished": True},
+            {"id": 101, "gameweek_id": 2, "home_club_id": 1, "away_club_id": 1, "team_h_difficulty": 3, "team_a_difficulty": 3, "kickoff_time": None, "finished": False},
+        ]
+    ).to_parquet(processed / "fixtures.parquet")
     pd.DataFrame(columns=["player_id", "fixture_id", "gameweek_id", "minutes", "total_points"]).to_parquet(processed / "player_performances.parquet")
 
     sel_path = tmp_path / "config" / "model_selection.json"
@@ -1144,9 +1156,47 @@ def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export
         ),
         sel_path,
     )
+    ev_dir = tmp_path / "data" / "reports" / "validation_evidence" / "2026-27"
+    write_scorecard(
+        ev_dir,
+        VerificationScorecard(
+            season="2026-27",
+            checkpoint_gw=1,
+            slate_id="slate-2026-27",
+            slate_sealed=True,
+            confirmed_champion="linear_baseline",
+            podium_order=("component_baseline",),
+            provisional_active="component_baseline",
+            serving_model_closure_hash="a" * 64,
+            model_runtime_bindings={},
+            evaluator_code_hash="b" * 64,
+            producer_git_sha="c" * 40,
+            settled_through_gw=1,
+            gap_status="complete",
+            first_blocked_gw=None,
+            reason_codes=(),
+            cumulative_net_points={"linear_baseline": 70.0, "component_baseline": 85.0},
+            weekly_leader="component_baseline",
+            active_exclusions=(),
+            generated_at="2026-11-20T12:00:00+00:00",
+        ),
+    )
     monkeypatch.setattr("models.selection.DEFAULT_CONFIG_PATH", sel_path)
     monkeypatch.setattr(export_dashboard, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr("models.planner_selection.PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(export_dashboard, "resolve_operational_processed_dir", lambda _root: processed)
+    monkeypatch.setattr(
+        export_dashboard,
+        "check_remote_main_freshness",
+        lambda *_a, **_kw: RemoteFreshnessResult(
+            status="verified_current",
+            local_champion="linear_baseline",
+            local_candidates=("component_baseline",),
+            local_podium_sealed=True,
+            local_podium_frozen_season="2026-27",
+        ),
+    )
+    monkeypatch.setattr("models.planner_selection.sync_validation_evidence_readonly", lambda *_a, **_kw: False)
 
     class _StubModel:
         def __init__(self, pts: float) -> None:
@@ -1179,7 +1229,7 @@ def test_build_dashboard_dataset_surfaces_dual_tier_meta_and_side_by_side_export
         lambda name: _StubModel(9.0 if name == "component_baseline" else 7.0),
     )
 
-    out_json = export_dashboard.run_dashboard_export(model_name=model_name, horizon=1, target_gw=1, config_path=sel_path)
+    out_json = export_dashboard.run_dashboard_export(model_name=model_name, horizon=1, target_gw=2, config_path=sel_path)
     exported = json.loads(out_json.read_text(encoding="utf-8"))
     assert exported["meta"]["models"] == ["linear_baseline", "component_baseline"]
     assert exported["meta"]["default_model"] == expected_primary
