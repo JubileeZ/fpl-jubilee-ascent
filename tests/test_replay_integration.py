@@ -713,12 +713,14 @@ def test_scoring_window_does_not_clip_planning_horizon() -> None:
     assert horizons == [6, 6]
 
 
-def test_certified_time_limit_up_to_180_and_prefix_reusable_replay_across_end_gw(tmp_path: Path) -> None:
+def test_certified_time_limit_up_to_600_and_prefix_reusable_replay_across_end_gw(tmp_path: Path) -> None:
     from backtesting.rolling_replay import replay_evaluation_identity, validate_quality_policy_gate
 
+    validate_quality_policy_gate(QualityPolicy(time_limit_seconds=60.0), require_certified=True)
     validate_quality_policy_gate(QualityPolicy(time_limit_seconds=180.0), require_certified=True)
+    validate_quality_policy_gate(QualityPolicy(time_limit_seconds=600.0), require_certified=True)
     with pytest.raises(UncertifiedSolveError):
-        validate_quality_policy_gate(QualityPolicy(time_limit_seconds=181.0), require_certified=True)
+        validate_quality_policy_gate(QualityPolicy(time_limit_seconds=601.0), require_certified=True)
     with pytest.raises(UncertifiedSolveError):
         validate_quality_policy_gate(QualityPolicy(time_limit_seconds=0.0), require_certified=True)
 

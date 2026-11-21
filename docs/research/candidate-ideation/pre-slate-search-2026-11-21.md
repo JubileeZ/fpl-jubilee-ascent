@@ -86,7 +86,7 @@ PYTHONPATH=. uv run python "$topic/compare_historical_replays.py" \
   --out "$lane/s2"
 ```
 
-Require positive full-season net delta, all applicable projection guards, all three segment floors and exact GW1 parity before presenting EXT-01_1 for slate-freeze approval. Changing the 180-second time budget changes the replay identity. Any longer-budget historical replay needs an explicitly reviewed replacement protocol before it can inform lock-in. Keep the other ideas queued with their existing dispositions.
+Require positive full-season net delta, all applicable projection guards, all three segment floors and exact GW1 parity before presenting finalists for slate-freeze approval. For subsequent lanes (`EXT-02_1+`), [ADR 0071](../../adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) raises the certified solver cap/default to `600s` (rotating `core_closure_hash()` cleanly), calibrates rolling-MILP segment floors to `z = -1.50 SE` (`-8.9 / -4.7 / -4.2` pts/GW) with strict key validation, ranks finalists by `0.3*S1 + 0.7*S2`, and mandates bounded batch evaluation (`EXT-02_1` -> `EXT-03_1` -> `EXT-04_1`; `EXT-05_1` only if `0` qualify) before `M = 1` default slate freeze. Do not change solver budgets inside an active reservation. Keep `EXT-01_1` dead-locked until `2027-11-22`.
 
 ### Best feasible at 180 seconds diagnostic
 
@@ -113,6 +113,6 @@ Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13
 | EXT-02_1 | Deferred, no replay | Player exposure weights incumbent assist branches. Distinct from start/sub attack intensity split. |
 | EXT-03_1 | Deferred, no replay | Club peer contrast on conditional cameo duration. Distinct from fitted start or appearance models. |
 | EXT-04_1 | Deferred, no replay | Dismissal-dependent reliability weight on historical xG. Distinct from predicting red-card rates or opponent-strength adjustment. |
-| EXT-05_1 | Held for lineage ruling | Negative-binomial save threshold may overlap locked DEF-08 arm. |
+| EXT-05_1 | Deferred, back of `#206` queue (distinct from `DEF-08`) | Standalone Negative Binomial on unchanged Champion `μ` (distinct from bundled Club SoT rate pooling); run only if `EXT-02_1`–`EXT-04_1` yield `0` qualifiers. |
 
 EXT-01_1 implemented fixed variants `ext_01_1_a05` and `ext_01_1_a10`. One repair applied 0.05 minimum rate before fixture treatment on both supported and cold-start GK/DEF rows. Spec & Math and Standards & Pipeline independently approved prototype SHA-256 `90d0558febc907bbceb29ea4f337de1351134482c7b6080350a6735b1ae0c25b`. First smoke attempt invalidated when concurrent research code changed its bound source inventory. Both reviewers approved the separate S-2 pin, replay and evidence checks after two repair rounds. No slate freeze. [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)

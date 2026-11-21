@@ -70,6 +70,7 @@ from backtesting.promotion_evidence import (
 )
 from backtesting.replay_state import Outcome, OutcomeBatch
 from backtesting.rolling_replay import (
+    DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS,
     QualityPolicy,
     ReplayDeadlineRecord,
     record_to_dict,
@@ -2212,8 +2213,7 @@ def _bootstrap_s1_baseline_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
-    configure_utf8_stdio()
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Produce portable ADR 0069/0070 validation evidence.")
     sub = parser.add_subparsers(dest="subcommand", required=True)
 
@@ -2236,7 +2236,7 @@ def main(argv: list[str] | None = None) -> int:
     p_freeze.add_argument("--candidates", action="append", required=True)
     p_freeze.add_argument("--slate-id", required=True)
     p_freeze.add_argument("--approval-reference", required=True)
-    p_freeze.add_argument("--time-limit-seconds", type=float, default=60.0)
+    p_freeze.add_argument("--time-limit-seconds", type=float, default=DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS)
     p_freeze.add_argument("--max-family-attempts", type=int, default=1)
     p_freeze.add_argument("--s1-guard-baseline", default=None)
     p_freeze.add_argument("--protocol-version", choices=("v1.0", "v2.0"), default="v2.0")
@@ -2263,6 +2263,12 @@ def main(argv: list[str] | None = None) -> int:
     p_scorecard.add_argument("--season", required=True)
     p_scorecard.add_argument("--through-gw", type=int, default=None)
     p_scorecard.add_argument("--time-limit-seconds", type=float, default=None)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    configure_utf8_stdio()
+    parser = _build_parser()
 
     args = parser.parse_args(argv)
     if args.subcommand == "collect":

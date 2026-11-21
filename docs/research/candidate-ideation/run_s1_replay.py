@@ -16,7 +16,11 @@ import numpy as np
 import pandas as pd
 
 from backtesting.ownership_anchor import UniverseSchema, solve_ownership_anchor
-from backtesting.rolling_replay import QualityPolicy, run_rolling_replay
+from backtesting.rolling_replay import (
+    DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS,
+    QualityPolicy,
+    run_rolling_replay,
+)
 from backtesting.season_rules import Chip
 from backtesting.walkforward import LEDGER_COMPONENTS
 from commands.run_stage_a_and_b import (
@@ -350,7 +354,9 @@ def execute_replay(
         end_gw=through,
         chip_calendar=calendar,
         policy=QualityPolicy(
-            mode="certified", target_gap=0.0, time_limit_seconds=180.0
+            mode="certified",
+            target_gap=0.0,
+            time_limit_seconds=DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS,
         ),
         checkpoint_dir=out,
         model_version_hash=model_digest,

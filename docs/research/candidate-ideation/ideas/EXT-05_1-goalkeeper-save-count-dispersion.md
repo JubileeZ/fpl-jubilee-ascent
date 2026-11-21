@@ -3,7 +3,7 @@ idea_id: EXT-05_1
 name: Goalkeeper save-count dispersion
 tier: P1
 component: "xp_saves"
-status: "needs ruling"
+status: "untested"
 replaces: "In the Candidate's _project_event_components, call super(), reconstruct \u03bc for GK from CalibratedMatchupHybridModel's per90_saves \u00d7 state minutes/90 \u00d7 defence_multiplier, and substitute the new xp_saves. Use the exact inherited difficulty fallback when defence_multiplier is missing. Add the xp_saves difference to projected_points before weighting each state. Leave underlying save expectation with the normal bonus allocator."
 grid: "r=3; r=8"
 inputs: features.position_id; features.per90_saves; features.defence_multiplier; features.difficulty; features.xmins_if_start; features.xmins_if_sub_in
@@ -63,5 +63,5 @@ class GoalkeeperSaveCountDispersionChallengerModel(DefXgShrinkChallengerModel):
 ## Pre-slate Review
 
 - Source: ideation specialist, 2026-11-21.
-- Disposition: `needs ruling`. Potential overlap with locked DEF-08 negative-binomial save arm. Hold pending exact component lineage and operator ruling.
+- Disposition: `untested` (back of `#206` queue). Operator ruled distinct from locked `DEF-08` (2026-11-22): standalone Negative Binomial on unchanged Champion `μ` vs bundled Club SoT rate pooling (`xp_saves` MSE share `0.0055`); low leverage, run only if `EXT-02_1`..`EXT-04_1` yield `0` qualifiers.
 - Evidence: [Replay input audit](../pre-slate-search-2026-11-21.md).

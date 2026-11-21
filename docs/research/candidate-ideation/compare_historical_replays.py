@@ -16,12 +16,13 @@ from backtesting.evidence_statistics import (
     StatisticalProtocolConfig,
     run_stored_score_bootstrap,
 )
-from backtesting.promotion import segment_regression_tolerance
 from backtesting.promotion_evidence import (
     GUARD_SEMANTICS,
+    REQUIRED_MILP_SEGMENTS,
     _guards_from_rows,
     derive_s1_guard_margins,
     group_projection_gameweeks,
+    milp_segment_regression_tolerance,
     pair_replay_score,
 )
 from backtesting.replay_state import state_hash
@@ -372,8 +373,12 @@ def main() -> None:
             }
         )
         means = segments.groupby("segment")["delta"].mean().to_dict()
+        if set(means) != set(REQUIRED_MILP_SEGMENTS):
+            raise ValueError(
+                f"Expected exact segments {REQUIRED_MILP_SEGMENTS}, got {tuple(sorted(means))}"
+            )
         segment_pass = {
-            name: value >= -segment_regression_tolerance(name)
+            name: float(value) >= -milp_segment_regression_tolerance(name)
             for name, value in means.items()
         }
         bootstrap = run_stored_score_bootstrap(paired, StatisticalProtocolConfig())
