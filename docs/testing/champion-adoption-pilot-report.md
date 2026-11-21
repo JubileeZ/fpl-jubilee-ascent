@@ -1,6 +1,6 @@
 # Champion Adoption Pilot & Production Preflight Report
 
-**Tested Canonical Branch:** `feat/champion-adoption-v1` (`origin/feat/champion-adoption-v1`, post-`/code-review` remediation over progress checkpoint `8248c4ce`; `1217` pytest passed, `29/29` `verify.sh` passed, `0` ruff/scoped pyright errors)
+**Tested Canonical Branch:** `feat/champion-adoption-v1` (`origin/feat/champion-adoption-v1`, verified code commit [`06b96f0a`](https://github.com/JubileeZ/fpl-jubilee-ascent/commit/06b96f0a85038ee64ceb8a22af00ab106a7e83e0) over checkpoint `8248c4ce`; `1217` pytest passed, `29/29` `verify.sh` passed, `0` ruff/scoped pyright errors)
 **Base `main` Commit:** `86d16bb057fc848997190118db0963d952e20e66` (untouched)
 **Live Rollout Status:** Disabled (`CHAMPION_ADOPTION_LIVE_ENABLED=false`)
 **Quarantine Status:** `2026-27` active-season outcomes untouched
@@ -50,3 +50,19 @@
 - **Passing (`3/10`):** `certified_protocol`, `live_rollout_disabled`, `shared_reservation_wiring`.
 - **Open / Blocked (`7/10`):** `admissible_historical_passing_fixture`, `branch_protection_main`, `protected_environment`, `github_app_and_no_bypass`, `immutable_evidence_and_releases`, `mail_delivery_and_reconciliation`, `sealed_slate_and_operator_signoff`.
 - **Live Activation Ready:** `false` (remains disabled pending isolated live GitHub pilot, infrastructure provisioning, qualified frozen slate, complete admissible prefix, and explicit operator sign-off).
+
+---
+
+## 5. Next-Step Runbook (Operator Manual vs Agent-Automatable)
+
+| Step | Operator Must Do Yourself | Agent Can Do With Explicit Authorization |
+|---|---|---|
+| **1. Merge `feat/champion-adoption-v1` -> `main`** | Review & approve PR on GitHub; click Merge on protected `main`; keep `CHAMPION_ADOPTION_LIVE_ENABLED` unset/`false`. | Open PR from `feat/champion-adoption-v1` -> `main` with verification summary. |
+| **2. Isolated private GitHub pilot ([#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199))** | Create private pilot repo; register & install dedicated GitHub App (Contents + Pull requests write); add `CHAMPION_ADOPTION_APP_ID`, `CHAMPION_ADOPTION_APP_PRIVATE_KEY`, and mail webhook secrets (or pick `outbox_dir`) in GitHub UI; click Approve/Reject at `champion-adoption-approval`; verify notice delivery. | Push pinned commit `06b96f0a` one-way to pilot repo; initialize orphan `validation-evidence` branch; configure non-secret repo protection & `champion-adoption-approval` environment if token allows; dispatch/monitor workflows; test failure/retry/planner-sync; verify receipt on pilot `main`; update this report & `#199`. |
+| **3. Historical passing fixture ([#198](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/198)/[#199](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/199))** | Supply authentic non-live `>=15`-GW pre-deadline mirror archive if available, or keep gate **OPEN** until prospective `2027-28 GW1–15` capture (without relaxing `empirical_admission.py`). | Run `commands.inventory_pilot_fixture` and `commands.produce_validation_evidence` (`collect`/`freeze`/`replay`) on any authentic archive supplied; update `docs/testing/pilot-fixture-inventory.md`. |
+| **4. Candidate Search & Slate** | Approve & seal any qualifying `M <= 2` Comparison Slate and choose `approval_reference` before freezing. | Run `ideate-candidate` / `explore-candidate` loops on `2025-26` (`S-1`) + `2024-25` (`S-2`), keeping `2026-27` outcomes quarantined. |
+| **5. Production live activation** | Provision App, secrets, mail provider, branch protection, and environment on `JubileeZ/fpl-jubilee-ascent`; explicitly authorize & set `CHAMPION_ADOPTION_LIVE_ENABLED=true` once all 10 gates pass. | Run read-only `commands.manage_champion_adoption production-preflight --repo JubileeZ/fpl-jubilee-ascent` and update `docs/testing/production-preflight-report.json` to confirm `10/10` pass. |
+
+### Fastest Order to Proceed
+1. Authorize agent: open PR `feat/champion-adoption-v1` -> `main` (operator reviews & merges).
+2. Either create private pilot repo + GitHub App + secrets and authorize agent to mirror `06b96f0a` and run `#199`, **or** authorize `ideate-candidate` / `explore-candidate` search first while holding live pilot setup for later.
