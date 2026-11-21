@@ -3,6 +3,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from hashlib import sha256
 import json
 import math
@@ -950,21 +951,39 @@ MILP_SEGMENT_REGRESSION_TOLERANCES: dict[str, float] = {
 }
 
 
+def _validate_finite_float(raw: Any, label: str) -> float:
+    if isinstance(raw, bool):
+        raise ValueError(f"Invalid boolean value for {label}")
+    try:
+        val = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid numeric value for {label}: {raw!r}") from exc
+    if not math.isfinite(val):
+        raise ValueError(f"Non-finite value for {label}: {raw!r}")
+    return val
+
+
 def milp_segment_regression_tolerance(
     segment: str,
     *,
     tolerances: Mapping[str, float] | None = None,
 ) -> float:
     """Return rolling-MILP per-GW segment regression tolerance after strict key validation."""
-    lookup = tolerances if tolerances is not None else MILP_SEGMENT_REGRESSION_TOLERANCES
-    if segment not in lookup:
-        raise ValueError(f"Missing segment regression tolerance for {segment!r}")
-    raw = lookup[segment]
-    if isinstance(raw, bool):
-        raise ValueError(f"Invalid boolean segment tolerance for {segment!r}")
-    val = float(raw)
-    if not math.isfinite(val) or val < 0.0:
-        raise ValueError(f"Invalid segment tolerance for {segment!r}: {raw!r}")
+    required = set(REQUIRED_MILP_SEGMENTS)
+    if segment not in required:
+        raise ValueError(f"Segment must be one of {REQUIRED_MILP_SEGMENTS}, got {segment!r}")
+    if tolerances is not None:
+        extra = set(tolerances) - required
+        if extra:
+            raise ValueError(f"Segment tolerances contain unknown keys {tuple(sorted(extra))}")
+        if segment not in tolerances:
+            raise ValueError(f"Missing segment regression tolerance for {segment!r}")
+        lookup: Mapping[str, float] = tolerances
+    else:
+        lookup = MILP_SEGMENT_REGRESSION_TOLERANCES
+    val = _validate_finite_float(lookup[segment], f"segment tolerance for {segment!r}")
+    if val < 0.0:
+        raise ValueError(f"Invalid negative segment tolerance for {segment!r}: {lookup[segment]!r}")
     return val
 
 
@@ -987,13 +1006,14 @@ class PodiumCandidateRecord:
     s1_segment_tolerances: Mapping[str, float] | None = None
     s2_segment_tolerances: Mapping[str, float] | None = None
 
-    @property
-    def mean_two_season_delta(self) -> float:
-        return 0.5 * (float(self.delta_s1) + float(self.delta_s2))
+    def _podium_ranking_decimal(self) -> Decimal:
+        s1 = _validate_finite_float(self.delta_s1, "delta_s1")
+        s2 = _validate_finite_float(self.delta_s2, "delta_s2")
+        return Decimal(str(PODIUM_S1_WEIGHT)) * Decimal(str(s1)) + Decimal(str(PODIUM_S2_WEIGHT)) * Decimal(str(s2))
 
     @property
     def podium_ranking_score(self) -> float:
-        return PODIUM_S1_WEIGHT * float(self.delta_s1) + PODIUM_S2_WEIGHT * float(self.delta_s2)
+        return float(self._podium_ranking_decimal())
 
 
 @dataclass(frozen=True)
@@ -1047,26 +1067,32 @@ class DualTierCheckpointResult:
     skipped: bool = False
 
 
-def _passes_segment_floors(
+def evaluate_milp_segment_floors(
     segment_deltas: Mapping[str, float],
     tolerances: Mapping[str, float] | None = None,
-) -> bool:
+) -> dict[str, bool]:
+    """Validate segment keys/values and evaluate rolling-MILP per-GW regression floors."""
     required = set(REQUIRED_MILP_SEGMENTS)
     if set(segment_deltas) != required:
         raise ValueError(f"Segment deltas must contain exact keys {REQUIRED_MILP_SEGMENTS}, got {tuple(sorted(segment_deltas))}")
     if tolerances is not None and set(tolerances) != required:
         raise ValueError(f"Segment tolerances must contain exact keys {REQUIRED_MILP_SEGMENTS}, got {tuple(sorted(tolerances))}")
-    for seg in REQUIRED_MILP_SEGMENTS:
-        raw = segment_deltas[seg]
-        if isinstance(raw, bool):
-            raise ValueError(f"Invalid boolean segment delta for {seg!r}")
-        val = float(raw)
-        if not math.isfinite(val):
-            raise ValueError(f"Non-finite segment delta for {seg!r}: {raw!r}")
-        tol = milp_segment_regression_tolerance(seg, tolerances=tolerances)
-        if val < -tol:
-            return False
-    return True
+    validated_deltas = {
+        seg: _validate_finite_float(segment_deltas[seg], f"segment delta for {seg!r}")
+        for seg in REQUIRED_MILP_SEGMENTS
+    }
+    validated_tolerances = {
+        seg: milp_segment_regression_tolerance(seg, tolerances=tolerances)
+        for seg in REQUIRED_MILP_SEGMENTS
+    }
+    return {seg: validated_deltas[seg] >= -validated_tolerances[seg] for seg in REQUIRED_MILP_SEGMENTS}
+
+
+def _passes_segment_floors(
+    segment_deltas: Mapping[str, float],
+    tolerances: Mapping[str, float] | None = None,
+) -> bool:
+    return all(evaluate_milp_segment_floors(segment_deltas, tolerances=tolerances).values())
 
 
 def rank_and_freeze_podium(
@@ -1075,15 +1101,18 @@ def rank_and_freeze_podium(
     current_selection: ModelSelection,
     active_season: str,
     seal_slate: bool = False,
+    max_finalists: int = 1,
     protocol_hash: str | None = None,
     certification_digest: str | None = None,
 ) -> PodiumFreezeResult:
-    """Rank S-1+S-2 qualified finalists by 0.3*delta_S1 + 0.7*delta_S2 (ADR 0071), enforce M<=2 cap & seal."""
+    """Rank S-1+S-2 qualified finalists by 0.3*delta_S1 + 0.7*delta_S2, enforce max_finalists (1 or 2, default 1, ADR 0071), & seal."""
     if current_selection.podium_sealed and current_selection.podium_frozen_season == active_season:
         raise ValueError(
             f"Podium slate is sealed for active validation season {active_season}; "
             "M<=2 cap prohibits mid-season finalist additions or displacement"
         )
+    if isinstance(max_finalists, bool) or not isinstance(max_finalists, int) or max_finalists not in (1, 2):
+        raise ValueError(f"max_finalists must be 1 or 2, got {max_finalists!r}")
 
     qualified: list[PodiumCandidateRecord] = []
     rejected: list[str] = []
@@ -1091,14 +1120,11 @@ def rank_and_freeze_podium(
         if cand.champion_name != current_selection.champion or cand.candidate_name == current_selection.champion:
             rejected.append(cand.candidate_name)
             continue
-        ok = (
-            cand.delta_s1 > 0.0
-            and cand.delta_s2 > 0.0
-            and cand.s1_guards_ok
-            and cand.s2_guards_ok
-            and _passes_segment_floors(cand.s1_segment_deltas, cand.s1_segment_tolerances)
-            and _passes_segment_floors(cand.s2_segment_deltas, cand.s2_segment_tolerances)
-        )
+        delta_s1 = _validate_finite_float(cand.delta_s1, f"{cand.candidate_name}.delta_s1")
+        delta_s2 = _validate_finite_float(cand.delta_s2, f"{cand.candidate_name}.delta_s2")
+        s1_ok = _passes_segment_floors(cand.s1_segment_deltas, cand.s1_segment_tolerances)
+        s2_ok = _passes_segment_floors(cand.s2_segment_deltas, cand.s2_segment_tolerances)
+        ok = delta_s1 > 0.0 and delta_s2 > 0.0 and cand.s1_guards_ok and cand.s2_guards_ok and s1_ok and s2_ok
         if ok:
             qualified.append(cand)
         else:
@@ -1106,10 +1132,10 @@ def rank_and_freeze_podium(
 
     ranked = sorted(
         qualified,
-        key=lambda c: (-c.podium_ranking_score, -float(c.delta_s2), c.candidate_name),
+        key=lambda c: (-c._podium_ranking_decimal(), -Decimal(str(_validate_finite_float(c.delta_s2, "delta_s2"))), c.candidate_name),
     )
-    selected = ranked[:2]
-    displaced = tuple(c.candidate_name for c in ranked[2:])
+    selected = ranked[:max_finalists]
+    displaced = tuple(c.candidate_name for c in ranked[max_finalists:])
     podium = tuple(c.candidate_name for c in selected)
     provisional_active = podium[0] if podium else None
     backup = podium[1] if len(podium) > 1 else None

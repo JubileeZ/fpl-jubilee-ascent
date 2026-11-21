@@ -119,7 +119,13 @@ def test_adr0069_dual_tier_end_to_end_podium_checkpoints_serving_and_rollover(
             True,
         ),
     ]
-    frozen = rank_and_freeze_podium(cand_specs, current_selection=initial_sel, active_season="2026-27", seal_slate=True)
+    frozen = rank_and_freeze_podium(
+        cand_specs,
+        current_selection=initial_sel,
+        active_season="2026-27",
+        seal_slate=True,
+        max_finalists=2,
+    )
     save_model_selection(frozen.updated_selection, sel_path)
     assert frozen.podium == ("cand_3", "cand_2")
     assert get_default_model_name() == "def_xg_shrink_challenger"

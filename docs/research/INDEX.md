@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-11-22 (+00:00)
+**Updated**: 2026-11-21T23:05:00+00:00
 **Status**: Live index. Active research topics tracked below.
 
 ---

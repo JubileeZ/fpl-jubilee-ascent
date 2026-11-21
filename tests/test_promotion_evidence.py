@@ -329,11 +329,26 @@ def test_rank_and_freeze_podium_tie_breaks_displacement_and_sealed_cap(tmp_path:
         s1_guards_ok=True,
         s2_guards_ok=True,
     )
+    # Default max_finalists=1 (ADR 0071): seals #1 only, displaces lower-ranked qualifiers
+    frozen_m1 = rank_and_freeze_podium(
+        [c_a, c_b, c_bad, c_c],
+        current_selection=base_sel,
+        active_season="2026-27",
+        seal_slate=True,
+    )
+    assert frozen_m1.podium == ("cand_c",)
+    assert frozen_m1.provisional_active == "cand_c"
+    assert frozen_m1.backup_finalist is None
+    assert frozen_m1.displaced_candidates == ("cand_b", "cand_a")
+    assert "cand_bad" in frozen_m1.rejected_candidates
+    assert not hasattr(PodiumCandidateRecord, "mean_two_season_delta")
+
     frozen = rank_and_freeze_podium(
         [c_a, c_b, c_bad, c_c],
         current_selection=base_sel,
         active_season="2026-27",
         seal_slate=True,
+        max_finalists=2,
     )
     assert frozen.podium == ("cand_c", "cand_b")
     assert frozen.provisional_active == "cand_c"
@@ -345,14 +360,43 @@ def test_rank_and_freeze_podium_tie_breaks_displacement_and_sealed_cap(tmp_path:
     assert frozen.updated_selection.candidates == ("cand_c", "cand_b")
     assert frozen.updated_selection.podium_sealed is True
 
-    # Exact 30/70 tie-break favors higher delta_s2 despite lower S-1 / unweighted mean
+    # Exact 30/70 tie-breaks (including IEEE-754 non-exact binary fractions) favor higher delta_s2
     segs_ok = {"cold_start": 0.10, "early_mid": 0.10, "late": 0.10}
     t_high_s1 = PodiumCandidateRecord("t_s1", "def_xg_shrink_challenger", 1.40, 0.10, segs_ok, segs_ok, True, True)
     t_high_s2 = PodiumCandidateRecord("t_s2", "def_xg_shrink_challenger", 0.70, 0.40, segs_ok, segs_ok, True, True)
     assert t_high_s1.podium_ranking_score == pytest.approx(0.49)
     assert t_high_s2.podium_ranking_score == pytest.approx(0.49)
-    tied = rank_and_freeze_podium([t_high_s1, t_high_s2], current_selection=base_sel, active_season="2026-27", seal_slate=False)
+    tied = rank_and_freeze_podium(
+        [t_high_s1, t_high_s2],
+        current_selection=base_sel,
+        active_season="2026-27",
+        seal_slate=False,
+        max_finalists=2,
+    )
     assert tied.podium == ("t_s2", "t_s1")
+
+    for s1_lo, s2_lo, s1_hi, s2_hi in [(70.0, 10.0, 14.0, 34.0), (10.0, 20.0, 3.0, 23.0)]:
+        r_lo = PodiumCandidateRecord("r_lo", "def_xg_shrink_challenger", s1_lo, s2_lo, segs_ok, segs_ok, True, True)
+        r_hi = PodiumCandidateRecord("r_hi", "def_xg_shrink_challenger", s1_hi, s2_hi, segs_ok, segs_ok, True, True)
+        tied_exact = rank_and_freeze_podium(
+            [r_lo, r_hi],
+            current_selection=base_sel,
+            active_season="2026-27",
+            seal_slate=False,
+            max_finalists=2,
+        )
+        assert tied_exact.podium == ("r_hi", "r_lo")
+
+    for bad_m in (0, 3, True):
+        with pytest.raises(ValueError, match="max_finalists"):
+            rank_and_freeze_podium([c_c], current_selection=base_sel, active_season="2026-27", max_finalists=bad_m)
+
+    with pytest.raises(ValueError):
+        rank_and_freeze_podium(
+            [PodiumCandidateRecord("c_nan", "def_xg_shrink_challenger", float("nan"), 10.0, segs_ok, segs_ok, True, True)],
+            current_selection=base_sel,
+            active_season="2026-27",
+        )
 
     # Once S slate is sealed, mid-season additions/displacement are rejected
     with pytest.raises(ValueError, match="sealed"):
@@ -1083,7 +1127,7 @@ def test_v2_protocol_requires_completed_segments() -> None:
 def test_milp_segment_floors_boundaries_and_strict_key_validation() -> None:
     from backtesting.promotion_evidence import (
         MILP_SEGMENT_REGRESSION_TOLERANCES,
-        _passes_segment_floors,
+        evaluate_milp_segment_floors,
         milp_segment_regression_tolerance,
     )
 
@@ -1096,21 +1140,37 @@ def test_milp_segment_floors_boundaries_and_strict_key_validation() -> None:
     assert milp_segment_regression_tolerance("early_mid") == 4.7
     assert milp_segment_regression_tolerance("late") == 4.2
 
-    assert _passes_segment_floors({"cold_start": -8.9, "early_mid": -4.7, "late": -4.2}) is True
-    assert _passes_segment_floors({"cold_start": -8.91, "early_mid": 0.0, "late": 0.0}) is False
-    assert _passes_segment_floors({"cold_start": 0.0, "early_mid": -4.71, "late": 0.0}) is False
-    assert _passes_segment_floors({"cold_start": 0.0, "early_mid": 0.0, "late": -4.21}) is False
+    with pytest.raises(ValueError):
+        milp_segment_regression_tolerance("gw1_12", tolerances={"gw1_12": 5.0})
+    with pytest.raises(ValueError):
+        milp_segment_regression_tolerance("cold_start", tolerances={"cold_start": 8.9, "gw1_12": 5.0})
+
+    assert evaluate_milp_segment_floors({"cold_start": -8.9, "early_mid": -4.7, "late": -4.2}) == {
+        "cold_start": True,
+        "early_mid": True,
+        "late": True,
+    }
+    assert all(evaluate_milp_segment_floors({"cold_start": -8.91, "early_mid": 0.0, "late": 0.0}).values()) is False
+    assert all(evaluate_milp_segment_floors({"cold_start": 0.0, "early_mid": -4.71, "late": 0.0}).values()) is False
+    assert all(evaluate_milp_segment_floors({"cold_start": 0.0, "early_mid": 0.0, "late": -4.21}).values()) is False
 
     for bad_segments in (
         {"early_mid": 0.5},
         {"cold_start": 0.0, "early_mid": 0.0, "late": 0.0, "extra": 0.0},
         {"gw1_12": 10.0, "gw13_25": 10.0, "gw26_38": 10.0},
+        {"cold_start": -9.0, "early_mid": float("nan"), "late": True},
+        {"cold_start": -9.0, "early_mid": float("inf"), "late": 0.0},
     ):
-        with pytest.raises(ValueError, match="exact keys"):
-            _passes_segment_floors(bad_segments)
+        with pytest.raises(ValueError):
+            evaluate_milp_segment_floors(bad_segments)
 
-    with pytest.raises(ValueError, match="Segment tolerances"):
-        _passes_segment_floors(
+    with pytest.raises(ValueError):
+        evaluate_milp_segment_floors(
             {"cold_start": 0.0, "early_mid": 0.0, "late": 0.0},
             tolerances={"early_mid": 4.7},
+        )
+    with pytest.raises(ValueError):
+        evaluate_milp_segment_floors(
+            {"cold_start": -9.0, "early_mid": 0.0, "late": 0.0},
+            tolerances={"cold_start": 8.9, "early_mid": -1.0, "late": 4.2},
         )
