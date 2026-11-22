@@ -105,7 +105,7 @@ def _build_v2_protocol_declaration(result: dict[str, Any]) -> dict[str, Any] | N
         "quality_policy": "certified-zero-gap",
         "forecast_guards": "s1-derived-15-guards",
         "statistical_procedure": "kendall-pw-hac-v2",
-        "approval_references": ["ADR-0070-SPARSE-CERT-201"],
+        "approval_references": ["ADR-0070-SPARSE-CERT-211"],
         "look_schedule": [15, 30, 38],
         "calibrated_superiority_alphas": cfg["calibrated_superiority_alphas"],
         "gw1_4_material_loss_limit": cfg["gw1_4_material_loss_limit"],
@@ -135,6 +135,7 @@ def _build_v2_protocol_declaration(result: dict[str, Any]) -> dict[str, Any] | N
 def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, Any]]) -> str:
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     today = now_iso[:10]
+    manifest = result["manifest"]
     tuning = result["tuning"]
     alphas = tuning["calibrated_superiority_alphas"]
     parity = result["parity_check"]
@@ -142,6 +143,10 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
     p_gates = primary["gates"]
     fallback = result["fallback_run"]
     f_gates = fallback["gates"] if fallback is not None else None
+    tuning_seed = int(tuning["tuning_seed"])
+    cert_seed = int(primary["seed"])
+    fallback_seed = int(manifest["fallback_seed"])
+    sigma_gw = float(tuning["fpl_delta_sd_per_gw"])
     active_run_role = "fallback_advisory" if result["certified_mode"] == "advisory" else "primary_enforced"
     active_rows = [r for r in summary_rows if r["run_role"] == active_run_role]
     if not active_rows:
@@ -154,18 +159,18 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
         f"**Data stamp**: Synthetic 38-GW paths (`N={primary['num_simulations']:,}`/scenario; `2026-27` untouched) — {today}  ",
         "**Season**: Synthetic Multi-Slate (`M=1`, `M=2`, 38 GWs)  ",
         f"**Status**: {'Active — Certified' if result['certified'] else 'Active — Certification Blocked'}  ",
-        "**Purpose**: Calibrate and certify ADR 0070 sparse (`GW15`/`GW30`/`GW38`) confirmation thresholds, GW1–4 net-points material-loss floor, and statistical Early-Harm mode across shared-Champion correlated paths without accessing `2026-27` outcomes.  ",
-        "**Scope**: Preregistered synthetic certification (`seed=20101` tuning, `seed=20102` primary held-out, `seed=20103` predeclared advisory fallback); excludes live `2026-27` validation outcomes and MILP replay execution.  ",
-        "**Related**: [ADR 0070](../../adr/0070-weekly-planner-selection-and-champion-adoption.md) · [Implementation Spec](../../product/champion-adoption-implementation.md) · Issue [#201](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201)  ",
-        "**Artifact**: [certification_summary.csv](certification_summary.csv) · [certification_result.json](certification_result.json) · [preregistration_manifest.json](preregistration_manifest.json) · [parity_check.json](parity_check.json)",
+        "**Purpose**: Calibrate and certify ADR 0070 sparse (`GW15`/`GW30`/`GW38`) confirmation thresholds, scale-free advisory GW1–4 diagnostics, and decoupled fixed-FPL-pts/yr empirical power diagnostics across shared-Champion correlated paths without accessing `2026-27` outcomes.  ",
+        f"**Scope**: Preregistered synthetic certification (`seed={tuning_seed}` tuning, `seed={cert_seed}` primary held-out, `seed={fallback_seed}` predeclared advisory fallback); excludes live `2026-27` validation outcomes and MILP replay execution.  ",
+        "**Related**: [ADR 0070](../../adr/0070-weekly-planner-selection-and-champion-adoption.md) · [ADR 0071](../../adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) · [Implementation Spec](../../product/champion-adoption-implementation.md) · Issues [#201](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201) & [#211](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/211)  ",
+        "**Artifact**: [certification_summary.csv](certification_summary.csv) · [empirical_power_diagnostics.csv](empirical_power_diagnostics.csv) · [certification_result.json](certification_result.json) · [preregistration_manifest.json](preregistration_manifest.json) · [parity_check.json](parity_check.json)",
         "",
         "## Sources",
         "",
         "- **Repository code**: `backtesting/sparse_certification.py`, `backtesting/evidence_statistics.py`, `backtesting/promotion_evidence.py`, `backtesting/evaluation_protocol.py`",
-        "- **Specifications**: `docs/adr/0070-weekly-planner-selection-and-champion-adoption.md`, `docs/product/champion-adoption-implementation.md`, issues `#195`, `#196`, `#201`",
-        "- **Scale reference**: `docs/research/backtesting-promotion-foundation/smoke_gate_calibration.csv` (`4.0` pts/GW paired differential SD) & `docs/adr/0069-annual-rolling-validation-and-dual-tier-promotion.md` (`18.56` pts/GW Champion dispersion)",
+        "- **Specifications**: `docs/adr/0070-weekly-planner-selection-and-champion-adoption.md` (amended 2026-11-22), `docs/adr/0071-certified-solver-budget-and-milp-qualification-calibration.md`, `docs/product/champion-adoption-implementation.md`, issues `#195`, `#196`, `#201`, `#211`",
+        f"- **Scale reference**: Empirical non-live `EXT-01_1`..`EXT-05_1` `S-1`/`S-2` rolling-MILP weekly deltas (`{sigma_gw:.1f}` pts/GW pooled non-zero active SD, `11.0` pts/GW upper stress, locked-GW1/GW2 empirical ramp) and `ADR 0071` `cold_start` tolerance (`-8.9` pts/GW × `4` GWs = `35.6` pts)",
         "",
-        "**Source boundary**: Simulation-only certification on independent non-live synthetic seeds (`20101`, `20102`, `20103`). Zero `2026-27` outcomes inspected or used. Live Champion adoption additionally requires empirical admission, frozen slate registration, and explicit human approval.",
+        f"**Source boundary**: Simulation-only certification on independent non-live synthetic seeds (`{tuning_seed}`, `{cert_seed}`, `{fallback_seed}`). Zero `2026-27` outcomes inspected or used. Live Champion adoption additionally requires empirical admission, frozen slate registration, and explicit human approval.",
         "",
         "## Agent Prompt",
         "",
@@ -175,42 +180,48 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
         "1. Re-run: uv run python -m commands.certify_sparse_confirmation",
         "2. Inspect parity_check.json (max_abs_numeric_diff <= 1e-10, binary_agreement_rate == 1.0).",
         "3. Read certification_summary.csv columns: false_null_ever_pass_upper95, correct_confirmation_by_gw38_lower95, terminal_false_exclusion_upper95, statistical_false_exclusion_flag_upper95.",
-        "4. Read certification_result.json fields: certified, certified_mode, certification_digest, statistical_protocol_hash.",
-        "5. Never use 2026-27 outcomes or alter preregistered seeds (20101, 20102, 20103).",
+        "4. Read empirical_power_diagnostics.csv columns: gw15_power, gw30_power, single_season_gw38_power, two_season_76gw_power.",
+        "5. Read certification_result.json fields: certified, certified_mode, certification_digest, statistical_protocol_hash, empirical_power_diagnostics.",
+        f"6. Never use 2026-27 outcomes or alter preregistered seeds ({tuning_seed}, {cert_seed}, {fallback_seed}) without manifest bump.",
         "```",
         "",
         "## Method",
         "",
-        "**Method type**: Preregistered Monte Carlo calibration and held-out certification with vectorized-vs-scalar numerical parity verification.",
+        "**Method type**: Preregistered Monte Carlo calibration and held-out certification with vectorized-vs-scalar numerical parity verification and decoupled fixed-pts/yr power diagnostics.",
         "",
         "**Inputs**:",
-        "- `backtesting/sparse_certification.py` (`build_preregistration_manifest`, `verify_vectorized_vs_scalar_parity`, `tune_sparse_protocol`, `certify_sparse_confirmation`)",
-        f"- Tuning seed `{tuning['tuning_seed']}`, held-out primary seed `{primary['seed']}`, predeclared advisory fallback seed `{result['manifest']['fallback_seed']}`",
+        "- `backtesting/sparse_certification.py` (`build_preregistration_manifest`, `verify_vectorized_vs_scalar_parity`, `tune_sparse_protocol`, `certify_sparse_confirmation`, `compute_empirical_power_diagnostics`)",
+        f"- Tuning seed `{tuning_seed}`, held-out primary seed `{cert_seed}`, predeclared advisory fallback seed `{fallback_seed}`",
         "",
         "**Procedure**:",
         "1. Pin evaluator file hashes, simulator config, scenario grid, seeds, acceptance bounds, and retry budget (`max_retries=0` primary, `1` predeclared advisory fallback) in `preregistration_manifest.json`.",
         f"2. Verify vectorized NumPy Kendall-PW + Bartlett HAC + Early-Harm + GW1–4 evaluator parity against scalar `run_kendall_pw_hac_test` & `evaluate_early_harm_fallback` across `{parity['num_prefixes_checked']}` prefixes (`{parity['edge_cases_checked']}` edge cases).",
-        f"3. Calibrate `M=1`/`M=2` per-look superiority alphas (`GW15`/`GW30`/`GW38`) and `gw1_4_material_loss_limit` (FPL net points on `sigma_delta={tuning['fpl_delta_sd_per_gw']:.1f}` pts/GW scale) strictly on `seed={tuning['tuning_seed']}`.",
-        f"4. Evaluate all {len(primary['scenarios'])} scenarios on held-out `seed={primary['seed']}` (`statistical_early_harm_mode=\"enforced\"`, `N={primary['num_simulations']:,}`).",
-        "5. Execute predeclared `statistical_early_harm_mode=\"advisory\"` fallback on untouched `seed=20103` only if statistical Early-Harm fails its `<= 5%` false terminal exclusion gate while false full pass `<= 5%` and GW38 power `>= 1/3` both hold.",
+        f"3. Calibrate scale-free `M=1`/`M=2` per-look superiority alphas (`GW15`/`GW30`/`GW38`) strictly on `seed={tuning_seed}` without borrowing exclusion from `gw1_4_material_loss_limit`, and align advisory `gw1_4_material_loss_limit` (`{tuning['gw1_4_material_loss_limit']:.1f}` pts) with `ADR 0071` `cold_start` (`-8.9` pts/GW × 4).",
+        f"4. Evaluate all {len(primary['scenarios'])} scenarios on held-out `seed={cert_seed}` (`statistical_early_harm_mode=\"enforced\"`, `N={primary['num_simulations']:,}`).",
+        f"5. Execute predeclared `statistical_early_harm_mode=\"advisory\"` fallback on untouched `seed={fallback_seed}` only if statistical Early-Harm fails its `<= 5%` false terminal exclusion gate while false full pass `<= 5%` and standardized `+0.40 SD` SNR efficiency `>= 1/3` both hold; record fixed-pts/yr (`+40/+60/+80`) empirical power diagnostics across `sigma_gw in {{8.5, 11.0}}`.",
         "",
         "### Metric Definitions & Direction",
         "",
         "| Metric | Symbol | Definition / Formula | Direction | Ideal / Benchmark | Description |",
         "|---|---|---|---|---|---|",
         "| **False Full Pass Upper 95%** | `false_null_ever_pass_upper95` | One-sided 95% Clopper-Pearson upper bound on `k/N` where any true-null finalist clears full pass across registered looks | Lower $\\downarrow$ | `<= 0.05` | Strong family-wise false-promotion error control across `M <= 2` and `(15,30,38)` |",
-        "| **Primary GW38 Confirmation Lower 95%** | `correct_confirmation_by_gw38_lower95` | One-sided 95% Clopper-Pearson lower bound on cumulative `+0.40` SD confirmation by GW38 in primary mixed-null `M=2` scenario | Higher $\\uparrow$ | `>= 0.3333` (`1/3`) | Minimum required detection power for genuine `+0.40` SD improvement |",
-        "| **Terminal False Exclusion Upper 95%** | `terminal_false_exclusion_upper95` | One-sided 95% Clopper-Pearson upper bound on slates where >=1 non-harmful finalist is terminally excluded | Lower $\\downarrow$ | `<= 0.05` | Protects non-harmful finalists from irreversible mid-season exclusion |",
+        "| **Standardized +0.40 SD GW38 Lower 95%** | `correct_confirmation_by_gw38_lower95` | One-sided 95% Clopper-Pearson lower bound on cumulative `+0.40 SD` confirmation by GW38 in `m2_mixed_r1_imp_r2_null_mild_gw15` | Higher $\\uparrow$ | `>= 0.3333` (`1/3`) | Scale-invariant standardized SNR efficiency gate (reported separately from fixed-pts/yr empirical power) |",
+        "| **Terminal False Exclusion Upper 95%** | `terminal_false_exclusion_upper95` | One-sided 95% Clopper-Pearson upper bound on slates where >=1 non-harmful finalist is terminally excluded | Lower $\\downarrow$ | `<= 0.05` | Protects non-harmful finalists (`advisory` mode restricts terminal exclusion to mandatory projection guard `FAIL`) |",
         "| **Statistical Harm Flag Upper 95%** | `statistical_false_exclusion_flag_upper95` | One-sided 95% Clopper-Pearson upper bound on slates where >=1 non-harmful finalist triggers cumulative or completed-segment statistical Early-Harm (`p_harm <= 0.025`) | Lower $\\downarrow$ | `<= 0.05` (enforced gate) / Diagnostic (advisory) | Measures statistical Early-Harm false-flag rate driving enforced vs advisory separation |",
-        "| **Harmful Detection Rate** | `harmful_any_detected_rate` | Share of harmful scenarios flagged by statistical Early-Harm or excluded by GW1–4 floor | Higher $\\uparrow$ | Maximized | Diagnostics on `-0.40`/`-0.60`/`-0.80` SD & severe GW1–4 collapse |",
+        "| **Harmful Detection Rate** | `harmful_any_detected_rate` | Share of harmful scenarios flagged by statistical Early-Harm or GW1–4 advisory/enforced floor | Higher $\\uparrow$ | Maximized | Diagnostics on `-0.40`/`-0.60`/`-0.80` SD, `-40` pt GW1–4 collapse, and empirical `-40`/`-80` pts/yr harm |",
+        "| **GW15 Power (`empirical_power_diagnostics.csv`)** | `gw15_power` | Point estimate `k/N` clearing calibrated superiority threshold `a15` at `GW15` (`phi=0.10`, locked GW1/GW2) | Higher $\\uparrow$ | Diagnostic | Single-arm early confirmation probability at `GW15` |",
+        "| **GW30 Power (`empirical_power_diagnostics.csv`)** | `gw30_power` | Point estimate `k/N` clearing calibrated superiority threshold `a30` at `GW30` (`phi=0.10`, locked GW1/GW2) | Higher $\\uparrow$ | Diagnostic | Single-look `GW30` confirmation probability under empirical variance |",
+        "| **1-Season GW38 Power (`empirical_power_diagnostics.csv`)** | `single_season_gw38_power` | Cumulative sequential confirmation probability `k/N` clearing `a15` at `GW15`, `a30` at `GW30`, or `a38` at `GW38` (`phi=0.10`, locked GW1/GW2) | Higher $\\uparrow$ | Diagnostic | 38-GW empirical power for fixed `+40/+60/+80` pts/yr gains across `sigma_gw in {8.5, 11.0}` |",
+        "| **2-Season 76-GW Carryover Power (`empirical_power_diagnostics.csv`)** | `two_season_76gw_power` | Confirmation probability `k/N` over concatenated 2-season `76`-GW carryover evaluated at `a38` (`phi=0.10`, locked GW1/GW2 per season) | Higher $\\uparrow$ | Diagnostic | Illustrates multi-season confirmation power motivating GW38 summer carryover policy |",
         "",
-        "**Validation boundary**: Synthetic AR(1) + Gaussian/Student-$t(5)$ + scheduled GW15/19/30/34 shock model with shared Champion noise (`rho_champ=0.50`). Real FPL replay transitions may exhibit non-stationary transfer-state coupling beyond AR(1) + shocks.",
+        "**Validation boundary**: Synthetic AR(1) + Gaussian/Student-$t(5)$ + scheduled GW15/19/30/34 shock model with shared Champion noise (`rho_champ=0.50`). Real FPL replay transitions exhibit locked-GW1/GW2 zero deltas and candidate-dependent weekly SD (`0.0–12.2` pts/GW).",
         "",
         "## Project interpretation",
         "",
-        "### Calibrated Parameters (from `seed=20101`)",
+        f"### Calibrated Parameters (from `seed={tuning_seed}`)",
         "",
-        f"- **Calibrated `gw1_4_material_loss_limit`**: `{tuning['gw1_4_material_loss_limit']:.1f}` net FPL points (on `{tuning['fpl_delta_sd_per_gw']:.1f}` pts/GW scale)",
+        f"- **Advisory `gw1_4_material_loss_limit`**: `{tuning['gw1_4_material_loss_limit']:.1f}` net FPL points (advisory-only in `advisory` mode; aligned to ADR 0071 `cold_start` `-8.9` pts/GW × 4; terminal exclusion restricted to mandatory projection guard `FAIL`)",
+        f"- **Nominal empirical `fpl_delta_sd_per_gw`**: `{sigma_gw:.1f}` pts/GW (superiority alphas are 100% scale-free; power evaluated separately in fixed pts/yr below)",
         f"- **`M=1` calibrated superiority alphas** (`scale={tuning['m1_scale_factor']:.4f}`): GW15=`{alphas['1']['15']:.8f}`, GW30=`{alphas['1']['30']:.8f}`, GW38=`{alphas['1']['38']:.8f}`",
         f"- **`M=2` calibrated superiority alphas** (`scale={tuning['m2_scale_factor']:.4f}`): GW15=`{alphas['2']['15']:.8f}`, GW30=`{alphas['2']['30']:.8f}`, GW38=`{alphas['2']['38']:.8f}`",
         "",
@@ -223,7 +234,7 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
         f"### Primary Enforced Run (`seed={primary['seed']}`)",
         "",
         f"- Worst null-containing false full pass upper 95%: `{p_gates['worst_false_full_pass_upper_95']:.6f}` (`ok={p_gates['false_full_pass_ok']}`)",
-        f"- Primary `+0.40` SD GW38 confirmation lower 95%: `{p_gates['primary_gw38_power_lower_95']:.6f}` (`ok={p_gates['primary_gw38_power_ok']}`)",
+        f"- Standardized `+0.40` SD GW38 confirmation lower 95%: `{p_gates['primary_gw38_power_lower_95']:.6f}` (`ok={p_gates['primary_gw38_power_ok']}`)",
         f"- Worst non-harmful statistical Early-Harm false exclusion upper 95%: `{p_gates['worst_statistical_false_exclusion_upper_95']:.6f}` (`ok={p_gates['statistical_false_exclusion_ok']}`)",
     ]
 
@@ -233,12 +244,30 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
                 "",
                 f"### Predeclared Advisory Fallback Run (`seed={fallback['seed']}`)",
                 "",
-                f"- Triggered because enforced statistical Early-Harm exceeded `0.05` false exclusion (`{p_gates['worst_statistical_false_exclusion_upper_95']:.6f}`) while false full pass and GW38 power held.",
+                f"- Triggered because enforced statistical Early-Harm exceeded `0.05` false exclusion (`{p_gates['worst_statistical_false_exclusion_upper_95']:.6f}`) while false full pass and standardized `+0.40 SD` SNR efficiency held.",
                 f"- Worst null-containing false full pass upper 95%: `{f_gates['worst_false_full_pass_upper_95']:.6f}` (`ok={f_gates['false_full_pass_ok']}`)",
-                f"- Primary `+0.40` SD GW38 confirmation lower 95%: `{f_gates['primary_gw38_power_lower_95']:.6f}` (`ok={f_gates['primary_gw38_power_ok']}`)",
-                f"- Worst non-harmful terminal false exclusion (GW1–4 floor only) upper 95%: `{f_gates['worst_terminal_false_exclusion_upper_95']:.6f}` (`ok={f_gates['terminal_false_exclusion_ok']}`)",
+                f"- Standardized `+0.40` SD GW38 confirmation lower 95%: `{f_gates['primary_gw38_power_lower_95']:.6f}` (`ok={f_gates['primary_gw38_power_ok']}`)",
+                f"- Worst non-harmful terminal false exclusion upper 95%: `{f_gates['worst_terminal_false_exclusion_upper_95']:.6f}` (`ok={f_gates['terminal_false_exclusion_ok']}`, `advisory` mode restricts terminal exclusion to guard `FAIL`)",
             ]
         )
+
+    emp_diag = result.get("empirical_power_diagnostics")
+    if isinstance(emp_diag, dict) and emp_diag.get("rows"):
+        lines.extend(
+            [
+                "",
+                "### Decoupled Fixed-FPL-Points Empirical Power Diagnostics (Locked GW1/2, `phi=0.10` — `empirical_power_diagnostics.csv`)",
+                "",
+                "| Slate `M` | `sigma_gw` (pts/GW) | True Gain (`pts/yr`) | GW15 Power | GW30 Power | 1-Season GW38 Power | 2-Season `76`-GW Carryover Power |",
+                "|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for drow in emp_diag["rows"]:
+            lines.append(
+                f"| {drow['slate_size']} | {drow['sigma_gw']:.1f} | +{drow['effect_pts_per_year']:.0f} | "
+                f"{drow['gw15_power']:.4f} | {drow['gw30_power']:.4f} | "
+                f"{drow['single_season_gw38_power']:.4f} | {drow['two_season_76gw_power']:.4f} |"
+            )
 
     lines.extend(
         [
@@ -268,11 +297,11 @@ def _render_research_note(result: dict[str, Any], summary_rows: list[dict[str, A
             "",
             "**Recommended action**:",
             "- Freeze calibrated `v2.0` protocol (`statistical_protocol_hash=" + str(result["statistical_protocol_hash"]) + "`) with `certification_digest` bound prior to any prospective slate access.",
-            "- Retain `GW15`/`GW30`/`GW38` sparse confirmation cadence (weekly expansion remains gated on paired speed and power criteria).",
+            "- Retain `GW15`/`GW30`/`GW38` sparse confirmation cadence (weekly Transfer Planner leader selection captures practical value during the season; GW38 summer-rollover carryover policy tracked pre-`2027-28`).",
             "",
             "## Risks and unknowns",
             "",
-            "- Realized 6-GW rolling MILP transfer trajectories can exhibit non-AR(1) chip-week or price-lock jumps not captured by Gaussian/Student-$t(5)$ innovations.",
+            "- Realized 6-GW rolling MILP transfer trajectories show candidate-dependent weekly dispersion (`0.0–12.2` pts/GW), limiting single-season formal confirmation power for realistic `+40..+80 pts/yr` challengers and leaving multi-season GW38 carryover policy pending pre-`2027-28`.",
             "- Synthetic certification does not authorize live Champion adoption on its own; empirical admission, frozen slate registration, pilot acceptance, and explicit human approval remain mandatory.",
             "",
         ]
@@ -308,8 +337,26 @@ def main(argv: list[str] | None = None) -> None:
         writer.writeheader()
         writer.writerows(summary_rows)
 
+    emp_diag = result.get("empirical_power_diagnostics")
+    if isinstance(emp_diag, dict) and emp_diag.get("rows"):
+        diag_csv_path = out_dir / "empirical_power_diagnostics.csv"
+        diag_fields = [
+            "slate_size",
+            "sigma_gw",
+            "effect_pts_per_year",
+            "gw15_power",
+            "gw30_power",
+            "single_season_gw38_power",
+            "two_season_76gw_power",
+        ]
+        with diag_csv_path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=diag_fields, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(emp_diag["rows"])
+
     result_payload = {
         "manifest_digest": result["manifest_digest"],
+        "parity_passed": result["parity_passed"],
         "certification_digest": result["certification_digest"],
         "statistical_protocol_hash": result["statistical_protocol_hash"],
         "certified": result["certified"],
@@ -322,6 +369,7 @@ def main(argv: list[str] | None = None) -> None:
         "fallback_run": result["fallback_run"],
         "certified_protocol_config": result["certified_protocol_config"],
         "evaluation_protocol_v2_declaration": v2_declaration,
+        "empirical_power_diagnostics": result["empirical_power_diagnostics"],
     }
     res_path = out_dir / "certification_result.json"
     res_path.write_text(json.dumps(result_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

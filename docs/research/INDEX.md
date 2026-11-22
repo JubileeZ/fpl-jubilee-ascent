@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-11-21T23:05:00+00:00
+**Updated**: 2026-11-22T15:53:02+00:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -51,7 +51,7 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 
 ## Active Research Index
 
-- **Sparse Champion confirmation & statistical Early-Harm certification (complete, 2026-11-20):** [Note](sparse-confirmation-certification/sparse-confirmation-certification.md) · [Summary CSV](sparse-confirmation-certification/certification_summary.csv) · [Result JSON](sparse-confirmation-certification/certification_result.json) · [Preregistration](sparse-confirmation-certification/preregistration_manifest.json) · [Parity check](sparse-confirmation-certification/parity_check.json). Preregistered `N=20,000` synthetic certification (`tune=20101`, `primary=20102`, `advisory=20103`): enforced mode blocked (`worst_statistical_false_exclusion_upper_95 = 0.231271 > 0.05` on `seed=20102`); predeclared advisory fallback certified (`seed=20103`, `certified=True`): `worst_false_full_pass_upper_95 = 0.044100 <= 0.05`, `primary_gw38_power_lower_95 = 0.366517 >= 1/3`, `worst_terminal_false_exclusion_upper_95 = 0.021446 <= 0.05`, `gw1_4_material_loss_limit = 25.0` net pts (`parity max_diff = 1.23e-11 <= 1e-10`).
+- **Sparse Champion confirmation & statistical Early-Harm certification (re-certified 2026-11-22, `#211`):** [Note](sparse-confirmation-certification/sparse-confirmation-certification.md) · [Summary CSV](sparse-confirmation-certification/certification_summary.csv) · [Empirical Power CSV](sparse-confirmation-certification/empirical_power_diagnostics.csv) · [Result JSON](sparse-confirmation-certification/certification_result.json) · [Preregistration](sparse-confirmation-certification/preregistration_manifest.json) · [Parity check](sparse-confirmation-certification/parity_check.json). Preregistered `N=20,000` `manifest_version=2` fresh-seed certification (`tune=21101`, `primary=21102`, `advisory=21103`, empirical `sigma_gw=8.5` / `11.0` upper stress, scale-free `advisory` `gw1_4_material_loss_limit=35.6` aligned to ADR 0071 `cold_start`): enforced blocked (`0.225226 > 0.05` on `seed=21102`); predeclared advisory fallback certified (`seed=21103`, `certified=True`, digest `243962e5...`): `worst_false_full_pass_upper_95 = 0.042662 <= 0.05`, standardized `+0.40 SD` `primary_gw38_power_lower_95 = 0.369009 >= 1/3`, `worst_terminal_false_exclusion_upper_95 = 0.000150 <= 0.05` (`0/20,000`; `parity max_diff = 2.728e-11 <= 1e-10`), plus decoupled fixed-pts/yr (`+40/+60/+80`) 1-season & 2-season carryover diagnostics.
 
 - **Development coverage & training lineage inventory (complete, 2026-11-12):** [Report](backtesting-promotion-foundation/development_coverage_report.md) · [Coverage matrix](backtesting-promotion-foundation/development_coverage_inventory.csv) · [Sources](backtesting-promotion-foundation/development_coverage_sources.csv) · [Assessment](backtesting-promotion-foundation/development_coverage_assessment.json). Unsealed 2023-26 inventory, quarantine provenance, and lineage audit; 342 evaluations (8 evidenced_bounded, 37 carried_from_gw1, 1 evidenced_empty, 113 partial, 183 absent).
 

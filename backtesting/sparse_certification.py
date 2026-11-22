@@ -8,7 +8,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 from scipy import stats
@@ -25,16 +25,23 @@ from backtesting.evidence_statistics import (
     evaluate_early_harm_fallback,
     run_kendall_pw_hac_test,
 )
-from backtesting.promotion_evidence import MANDATORY_GUARDS
+from backtesting.promotion_evidence import (
+    MANDATORY_GUARDS,
+    MILP_SEGMENT_REGRESSION_TOLERANCES,
+    statistical_protocol_config_from_dict,
+)
 from backtesting.season_rules import load_season_lifecycle
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-TUNING_SEED = 20101
-CERTIFICATION_SEED = 20102
-FALLBACK_ADVISORY_SEED = 20103
+TUNING_SEED = 21101
+CERTIFICATION_SEED = 21102
+FALLBACK_ADVISORY_SEED = 21103
 DEFAULT_NUM_SIMULATIONS = 20_000
-DEFAULT_FPL_DELTA_SD_PER_GW = 4.0
+DEFAULT_FPL_DELTA_SD_PER_GW = 8.5
+UPPER_STRESS_FPL_DELTA_SD_PER_GW = 11.0
+DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT = round(4.0 * float(MILP_SEGMENT_REGRESSION_TOLERANCES["cold_start"]), 1)
+EMPIRICAL_GW_VARIANCE_PROFILE: tuple[float, ...] = (0.0, 0.0, 0.30, 0.75, *([1.0] * 34))
 DEFAULT_SHOCK_GWS: tuple[int, ...] = (15, 19, 30, 34)
 REGISTERED_CHECKPOINTS: tuple[int, ...] = (15, 30, 38)
 
@@ -49,6 +56,18 @@ DEFAULT_SPARSE_COMPLETED_SEGMENTS: dict[str, tuple[tuple[int, int], ...]] = {
     "30": ((1, 4), (5, 19)),
     "38": ((1, 4), (5, 19), (20, 38)),
 }
+CERTIFICATION_SUMMARY_KEYS: tuple[str, ...] = (
+    "manifest_digest",
+    "parity_passed",
+    "tuning",
+    "primary_run",
+    "fallback_run",
+    "retries_used",
+    "certified",
+    "certified_mode",
+    "certification_seed",
+    "live_adoption_blocked",
+)
 
 ScenarioCategory = Literal["null", "mixed_null", "power", "harmful"]
 DependenceRegime = Literal["mild", "persistent"]
@@ -62,6 +81,20 @@ class _RegimeParams(TypedDict):
     innovation_dist: InnovationDist
     shock_gws: tuple[int, ...]
     shock_multiplier: float
+    gw_variance_profile: NotRequired[tuple[float, ...] | None]
+
+
+class CertificationVerificationResult(TypedDict):
+    passed: bool
+    errors: list[str]
+    drifted_files: list[str]
+    certified: Any
+    certified_mode: Any
+    certification_digest: Any
+    statistical_protocol_hash: Any
+    manifest_digest_match: bool
+    canonical_digest_match: bool
+    evaluator_revisions_match: bool
 
 
 class VectorizedEarlyHarmResult(TypedDict):
@@ -70,6 +103,15 @@ class VectorizedEarlyHarmResult(TypedDict):
     gw1_4_floor_breached: np.ndarray
     cumulative_p_harm: np.ndarray
     segment_p_harms: dict[str, np.ndarray]
+
+
+EVALUATOR_REVISION_PATHS: tuple[str, ...] = (
+    "backtesting/evaluation_protocol.py",
+    "backtesting/evidence_statistics.py",
+    "backtesting/projection_guards.py",
+    "backtesting/promotion_evidence.py",
+    "backtesting/sparse_certification.py",
+)
 
 
 @dataclass(frozen=True)
@@ -88,6 +130,9 @@ class ScenarioSpec:
     shock_multiplier: float = 1.5
     safeguards_pass_from_gw: int = 15
     gw1_4_effects_sd: tuple[float, ...] | None = None
+    finalist_effects_pts_per_year: tuple[float, ...] | None = None
+    gw1_4_effects_pts_total: tuple[float, ...] | None = None
+    gw_variance_profile: tuple[float, ...] | None = None
     is_primary_power: bool = False
     description: str = ""
 
@@ -98,31 +143,65 @@ class ScenarioSpec:
             raise ValueError("finalist_effects_sd length must equal slate_size")
         if self.gw1_4_effects_sd is not None and len(self.gw1_4_effects_sd) != self.slate_size:
             raise ValueError("gw1_4_effects_sd length must equal slate_size")
+        if self.finalist_effects_pts_per_year is not None:
+            if len(self.finalist_effects_pts_per_year) != self.slate_size:
+                raise ValueError("finalist_effects_pts_per_year length must equal slate_size")
+            if any(val != 0.0 for val in self.finalist_effects_sd):
+                raise ValueError("Cannot mix non-zero finalist_effects_sd with finalist_effects_pts_per_year")
+        if self.gw1_4_effects_pts_total is not None:
+            if len(self.gw1_4_effects_pts_total) != self.slate_size:
+                raise ValueError("gw1_4_effects_pts_total length must equal slate_size")
+            if self.gw1_4_effects_sd is not None:
+                raise ValueError("Cannot specify both gw1_4_effects_sd and gw1_4_effects_pts_total")
+        if self.gw_variance_profile is not None:
+            if len(self.gw_variance_profile) != 38 or any(
+                not math.isfinite(float(w)) or float(w) < 0.0 for w in self.gw_variance_profile
+            ):
+                raise ValueError("gw_variance_profile must be 38 finite nonnegative weights")
+            if not any(float(w) > 0.0 for w in self.gw_variance_profile):
+                raise ValueError("gw_variance_profile must include at least one positive weight")
         if not 0.0 <= self.phi_ar < 1.0:
             raise ValueError("phi_ar must lie in [0, 1)")
         if not 0.0 <= self.rho_champ <= 1.0:
             raise ValueError("rho_champ must lie in [0, 1]")
 
+    def _effective_season_effects(self) -> tuple[float, ...]:
+        return (
+            self.finalist_effects_pts_per_year
+            if self.finalist_effects_pts_per_year is not None
+            else self.finalist_effects_sd
+        )
+
+    def _effective_gw1_4_effects(self) -> tuple[float, ...] | None:
+        return (
+            self.gw1_4_effects_pts_total
+            if self.gw1_4_effects_pts_total is not None
+            else self.gw1_4_effects_sd
+        )
+
     @property
     def null_indices(self) -> list[int]:
+        eff = self._effective_season_effects()
+        gw1_4 = self._effective_gw1_4_effects()
         return [
             j
             for j in range(self.slate_size)
-            if self.finalist_effects_sd[j] == 0.0
-            and (self.gw1_4_effects_sd is None or self.gw1_4_effects_sd[j] == 0.0)
+            if eff[j] == 0.0 and (gw1_4 is None or gw1_4[j] == 0.0)
         ]
 
     @property
     def improving_indices(self) -> list[int]:
-        return [j for j in range(self.slate_size) if self.finalist_effects_sd[j] > 0.0]
+        eff = self._effective_season_effects()
+        return [j for j in range(self.slate_size) if eff[j] > 0.0]
 
     @property
     def harmful_indices(self) -> list[int]:
+        eff = self._effective_season_effects()
+        gw1_4 = self._effective_gw1_4_effects()
         return [
             j
             for j in range(self.slate_size)
-            if self.finalist_effects_sd[j] < 0.0
-            or (self.gw1_4_effects_sd is not None and self.gw1_4_effects_sd[j] < 0.0)
+            if eff[j] < 0.0 or (gw1_4 is not None and gw1_4[j] < 0.0)
         ]
 
     @property
@@ -138,7 +217,7 @@ def compute_canonical_digest(payload: Any) -> str:
 
 
 def build_preregistered_scenario_grid() -> tuple[ScenarioSpec, ...]:
-    """Return the preregistered certification scenario grid covering null, mixed-null, power, and harm."""
+    """Return the preregistered certification scenario grid covering null, mixed-null, standardized power, empirical fixed-pt diagnostics, and harm."""
     mild: _RegimeParams = {
         "dependence_regime": "mild",
         "phi_ar": 0.20,
@@ -154,6 +233,15 @@ def build_preregistered_scenario_grid() -> tuple[ScenarioSpec, ...]:
         "innovation_dist": "student_t5",
         "shock_gws": DEFAULT_SHOCK_GWS,
         "shock_multiplier": 2.00,
+    }
+    empirical_mild: _RegimeParams = {
+        "dependence_regime": "mild",
+        "phi_ar": 0.10,
+        "rho_champ": 0.50,
+        "innovation_dist": "gaussian",
+        "shock_gws": DEFAULT_SHOCK_GWS,
+        "shock_multiplier": 1.50,
+        "gw_variance_profile": EMPIRICAL_GW_VARIANCE_PROFILE,
     }
     return (
         # M=1 all-null (mild & persistent, early GW15 vs late GW30 safeguards)
@@ -174,20 +262,20 @@ def build_preregistered_scenario_grid() -> tuple[ScenarioSpec, ...]:
             (0.40, 0.0),
             safeguards_pass_from_gw=15,
             is_primary_power=True,
-            description="Primary GW38 power + mixed-null (rank1=+0.40 SD, rank2=null, mild, guards GW15)",
+            description="Standardized SNR benchmark GW38 power + mixed-null (rank1=+0.40 SD, rank2=null, mild, guards GW15)",
             **mild,
         ),
-        ScenarioSpec("m2_mixed_r1_null_r2_imp_mild_gw15", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD, mild, guards GW15)", **mild),
-        ScenarioSpec("m2_mixed_r1_imp_r2_null_persistent_gw15", "mixed_null", 2, (0.40, 0.0), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=+0.40 SD, rank2=null, persistent, guards GW15)", **persistent),
-        ScenarioSpec("m2_mixed_r1_null_r2_imp_persistent_gw15", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD, persistent, guards GW15)", **persistent),
-        ScenarioSpec("m2_mixed_r1_imp_r2_null_mild_gw30", "mixed_null", 2, (0.40, 0.0), safeguards_pass_from_gw=30, description="M=2 mixed-null (rank1=+0.40 SD, rank2=null, mild, guards GW30)", **mild),
-        ScenarioSpec("m2_mixed_r1_null_r2_imp_mild_gw30", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=30, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD, mild, guards GW30)", **mild),
-        # Additional power scenarios (+0.20, +0.60 marginal SD improvement)
-        ScenarioSpec("m1_power_pos020_mild_gw15", "power", 1, (0.20,), safeguards_pass_from_gw=15, description="M=1 +0.20 SD power, mild, guards GW15", **mild),
-        ScenarioSpec("m2_power_pos020_mixed_mild_gw15", "mixed_null", 2, (0.20, 0.0), safeguards_pass_from_gw=15, description="M=2 +0.20 SD + null, mild, guards GW15", **mild),
-        ScenarioSpec("m1_power_pos060_mild_gw15", "power", 1, (0.60,), safeguards_pass_from_gw=15, description="M=1 +0.60 SD power, mild, guards GW15", **mild),
-        ScenarioSpec("m2_power_pos060_mixed_mild_gw15", "mixed_null", 2, (0.60, 0.0), safeguards_pass_from_gw=15, description="M=2 +0.60 SD + null, mild, guards GW15", **mild),
-        # Genuinely harmful scenarios (-0.40, -0.60, -0.80 SD & severe GW1-4 loss)
+        ScenarioSpec("m2_mixed_r1_null_r2_imp_mild_gw15", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD SNR benchmark, mild, guards GW15)", **mild),
+        ScenarioSpec("m2_mixed_r1_imp_r2_null_persistent_gw15", "mixed_null", 2, (0.40, 0.0), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=+0.40 SD SNR benchmark, rank2=null, persistent, guards GW15)", **persistent),
+        ScenarioSpec("m2_mixed_r1_null_r2_imp_persistent_gw15", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=15, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD SNR benchmark, persistent, guards GW15)", **persistent),
+        ScenarioSpec("m2_mixed_r1_imp_r2_null_mild_gw30", "mixed_null", 2, (0.40, 0.0), safeguards_pass_from_gw=30, description="M=2 mixed-null (rank1=+0.40 SD SNR benchmark, rank2=null, mild, guards GW30)", **mild),
+        ScenarioSpec("m2_mixed_r1_null_r2_imp_mild_gw30", "mixed_null", 2, (0.0, 0.40), safeguards_pass_from_gw=30, description="M=2 mixed-null (rank1=null, rank2=+0.40 SD SNR benchmark, mild, guards GW30)", **mild),
+        # Additional standardized SNR power scenarios (+0.20, +0.60 SD)
+        ScenarioSpec("m1_power_pos020_mild_gw15", "power", 1, (0.20,), safeguards_pass_from_gw=15, description="M=1 +0.20 SD standardized SNR power, mild, guards GW15", **mild),
+        ScenarioSpec("m2_power_pos020_mixed_mild_gw15", "mixed_null", 2, (0.20, 0.0), safeguards_pass_from_gw=15, description="M=2 +0.20 SD standardized SNR + null, mild, guards GW15", **mild),
+        ScenarioSpec("m1_power_pos060_mild_gw15", "power", 1, (0.60,), safeguards_pass_from_gw=15, description="M=1 +0.60 SD standardized SNR power, mild, guards GW15", **mild),
+        ScenarioSpec("m2_power_pos060_mixed_mild_gw15", "mixed_null", 2, (0.60, 0.0), safeguards_pass_from_gw=15, description="M=2 +0.60 SD standardized SNR + null, mild, guards GW15", **mild),
+        # Genuinely harmful scenarios (-0.40, -0.60, -0.80 SD & decoupled -40 pt GW1-4 collapse)
         ScenarioSpec("m1_harm_neg040_mild_gw15", "harmful", 1, (-0.40,), safeguards_pass_from_gw=15, description="M=1 -0.40 SD harmful, mild", **mild),
         ScenarioSpec("m1_harm_neg060_mild_gw15", "harmful", 1, (-0.60,), safeguards_pass_from_gw=15, description="M=1 -0.60 SD harmful, mild", **mild),
         ScenarioSpec("m1_harm_neg080_mild_gw15", "harmful", 1, (-0.80,), safeguards_pass_from_gw=15, description="M=1 -0.80 SD harmful, mild", **mild),
@@ -197,24 +285,25 @@ def build_preregistered_scenario_grid() -> tuple[ScenarioSpec, ...]:
             "harmful",
             1,
             (0.0,),
-            gw1_4_effects_sd=(-2.50,),
+            gw1_4_effects_pts_total=(-40.0,),
             safeguards_pass_from_gw=15,
-            description="M=1 severe GW1-4 collapse (-2.50 SD/GW = -40 pts E[GW1-4]), then neutral",
+            description="M=1 severe GW1-4 collapse (-40 pts total E[GW1-4]), then neutral",
             **mild,
         ),
         ScenarioSpec("m2_harm_r1_neg060_r2_null_mild_gw15", "harmful", 2, (-0.60, 0.0), safeguards_pass_from_gw=15, description="M=2 rank1=-0.60 SD harmful + rank2=null, mild", **mild),
+        # Decoupled fixed-FPL-points/year empirical rolling-MILP scenarios (locked-GW1/GW2 ramp, phi=0.10)
+        ScenarioSpec("m1_empirical_pos40_pts_yr", "power", 1, (0.0,), finalist_effects_pts_per_year=(40.0,), safeguards_pass_from_gw=15, description="M=1 empirical +40 pts/yr (locked GW1/2, phi=0.10)", **empirical_mild),
+        ScenarioSpec("m1_empirical_pos60_pts_yr", "power", 1, (0.0,), finalist_effects_pts_per_year=(60.0,), safeguards_pass_from_gw=15, description="M=1 empirical +60 pts/yr (locked GW1/2, phi=0.10)", **empirical_mild),
+        ScenarioSpec("m1_empirical_pos80_pts_yr", "power", 1, (0.0,), finalist_effects_pts_per_year=(80.0,), safeguards_pass_from_gw=15, description="M=1 empirical +80 pts/yr (locked GW1/2, phi=0.10)", **empirical_mild),
+        ScenarioSpec("m2_empirical_pos60_mixed_pts_yr", "mixed_null", 2, (0.0, 0.0), finalist_effects_pts_per_year=(60.0, 0.0), safeguards_pass_from_gw=15, description="M=2 empirical +60 pts/yr + null (locked GW1/2, phi=0.10)", **empirical_mild),
+        ScenarioSpec("m1_empirical_neg40_pts_yr", "harmful", 1, (0.0,), finalist_effects_pts_per_year=(-40.0,), safeguards_pass_from_gw=15, description="M=1 empirical -40 pts/yr harmful (locked GW1/2, phi=0.10)", **empirical_mild),
+        ScenarioSpec("m1_empirical_neg80_pts_yr", "harmful", 1, (0.0,), finalist_effects_pts_per_year=(-80.0,), safeguards_pass_from_gw=15, description="M=1 empirical -80 pts/yr harmful (locked GW1/2, phi=0.10)", **empirical_mild),
     )
 
 
-def _evaluator_revisions() -> dict[str, str]:
-    rel_paths = (
-        "backtesting/evaluation_protocol.py",
-        "backtesting/evidence_statistics.py",
-        "backtesting/projection_guards.py",
-        "backtesting/promotion_evidence.py",
-        "backtesting/sparse_certification.py",
-    )
-    material = {rel: (PROJECT_ROOT / rel).read_bytes() for rel in rel_paths if (PROJECT_ROOT / rel).is_file()}
+def _evaluator_revisions(project_root: Path | None = None) -> dict[str, str]:
+    root = project_root or PROJECT_ROOT
+    material = {rel: (root / rel).read_bytes() for rel in EVALUATOR_REVISION_PATHS if (root / rel).is_file()}
     file_hashes = {rel: hashlib.sha256(raw).hexdigest() for rel, raw in sorted(material.items())}
     return {
         **file_hashes,
@@ -229,28 +318,37 @@ def build_preregistration_manifest(
     tuning_seed: int = TUNING_SEED,
     certification_seed: int = CERTIFICATION_SEED,
     fallback_seed: int = FALLBACK_ADVISORY_SEED,
+    project_root: Path | None = None,
 ) -> dict[str, Any]:
     """Build immutable preregistration manifest with canonical SHA-256 digest."""
     if num_simulations < 10 or fpl_delta_sd_per_gw <= 0.0:
         raise ValueError("Invalid simulation run size or FPL SD scale")
     grid = build_preregistered_scenario_grid()
     body: dict[str, Any] = {
-        "manifest_version": 1,
+        "manifest_version": 2,
         "protocol_target_version": "v2.0",
         "authority_references": [
             "docs/adr/0070-weekly-planner-selection-and-champion-adoption.md",
+            "docs/adr/0071-certified-solver-budget-and-milp-qualification-calibration.md",
             "docs/product/champion-adoption-implementation.md",
-            "issues #195, #196, #201",
+            "issues #195, #196, #201, #211",
         ],
-        "evaluator_revisions": _evaluator_revisions(),
+        "evaluator_revisions": _evaluator_revisions(project_root=project_root),
         "simulator_config": {
             "num_gameweeks": 38,
             "registered_checkpoints": list(REGISTERED_CHECKPOINTS),
             "fpl_delta_sd_per_gw": float(fpl_delta_sd_per_gw),
+            "upper_stress_fpl_delta_sd_per_gw": float(UPPER_STRESS_FPL_DELTA_SD_PER_GW),
+            "empirical_gw_variance_profile": list(EMPIRICAL_GW_VARIANCE_PROFILE),
+            "advisory_gw1_4_loss_limit": float(DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT),
             "fpl_scale_basis": (
-                "Paired Candidate-Champion weekly net-points marginal SD calibrated at 4.0 pts/GW "
-                "(matching smoke_gate_calibration.csv and test_evidence_statistics.py under ~18.56 pts/GW "
-                "Champion dispersion from ADR 0069)."
+                f"Pooled empirical non-zero 6-GW rolling-MILP weekly net-points SD calibrated at "
+                f"{DEFAULT_FPL_DELTA_SD_PER_GW:.1f} pts/GW (EXT-01_1..EXT-05_1 S-1/S-2 active pool; "
+                f"{UPPER_STRESS_FPL_DELTA_SD_PER_GW:.1f} pts/GW upper stress) with locked-GW1/GW2 empirical "
+                f"variance ramp. Per 2026-11-22 ADR 0070 amendment, gw1_4_material_loss_limit="
+                f"{DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT:.1f} (ADR 0071 cold_start 4*8.9) is advisory-only in "
+                "advisory mode, making calibrated superiority thresholds 100% scale-free; fixed-pts/yr "
+                "empirical power scenarios decouple effect sizes from fpl_delta_sd_per_gw."
             ),
             "shock_gws": list(DEFAULT_SHOCK_GWS),
             "early_harm_min_gw": EARLY_HARM_MIN_GW,
@@ -271,9 +369,9 @@ def build_preregistration_manifest(
             "primary_max_retries": PRIMARY_MAX_RETRIES,
             "fallback_max_retries": FALLBACK_MAX_RETRIES,
             "fallback_trigger_rule": (
-                "Execute 1 predeclared advisory Early-Harm run on untouched fallback_seed=20103 ONLY if "
-                "enforced statistical Early-Harm fails its <=5% false terminal exclusion upper-95 gate "
-                "on seed=20102 while false full pass <=5% and primary GW38 power >=1/3 both hold."
+                f"Execute 1 predeclared advisory Early-Harm run on untouched fallback_seed={fallback_seed} ONLY if "
+                f"enforced statistical Early-Harm fails its <=5% false terminal exclusion upper-95 gate "
+                f"on seed={certification_seed} while false full pass <=5% and primary GW38 power >=1/3 both hold."
             ),
         },
         "acceptance_rules": {
@@ -358,6 +456,13 @@ def generate_synthetic_paths(
     num_gameweeks: int = 38,
 ) -> np.ndarray:
     """Generate deterministic (num_simulations, slate_size, 38) net FPL point differentials."""
+    if spec.gw_variance_profile is not None and num_gameweeks != len(spec.gw_variance_profile):
+        raise ValueError("gw_variance_profile length must match num_gameweeks")
+    profile = (
+        np.asarray(spec.gw_variance_profile, dtype=float)
+        if spec.gw_variance_profile is not None
+        else None
+    )
     rng = np.random.default_rng(seed)
     shared = _draw_unit_ar1_with_shocks(
         rng,
@@ -383,8 +488,28 @@ def generate_synthetic_paths(
             shock_multiplier=spec.shock_multiplier,
         )
         noise = (sqrt_rho * shared + sqrt_idio * idio) * float(fpl_delta_sd_per_gw)
-        drift = np.full(num_gameweeks, float(spec.finalist_effects_sd[j]) * float(fpl_delta_sd_per_gw), dtype=float)
-        if spec.gw1_4_effects_sd is not None:
+        if profile is not None:
+            noise = noise * profile[None, :]
+        if spec.finalist_effects_pts_per_year is not None:
+            total_effect = float(spec.finalist_effects_pts_per_year[j])
+            if profile is not None:
+                active = profile > 0.0
+                active_count = int(np.sum(active))
+                drift = np.where(active, total_effect / float(active_count), 0.0)
+            else:
+                drift = np.full(num_gameweeks, total_effect / float(num_gameweeks), dtype=float)
+        else:
+            drift = np.full(num_gameweeks, float(spec.finalist_effects_sd[j]) * float(fpl_delta_sd_per_gw), dtype=float)
+        if spec.gw1_4_effects_pts_total is not None:
+            if profile is not None:
+                active_1_4 = profile[:4] > 0.0
+                active_1_4_count = int(np.sum(active_1_4))
+                if active_1_4_count == 0:
+                    raise ValueError("Cannot distribute gw1_4_effects_pts_total when GW1..4 profile is all zeros")
+                drift[:4] = np.where(active_1_4, float(spec.gw1_4_effects_pts_total[j]) / float(active_1_4_count), 0.0)
+            else:
+                drift[:4] = float(spec.gw1_4_effects_pts_total[j]) / 4.0
+        elif spec.gw1_4_effects_sd is not None:
             drift[:4] = float(spec.gw1_4_effects_sd[j]) * float(fpl_delta_sd_per_gw)
         paths[:, j, :] = noise + drift[None, :]
     return paths
@@ -525,7 +650,7 @@ def vectorized_early_harm_fallback(
             seg_p_harms[seg_name] = seg_res["p_value_harm"]
             stat_trig |= seg_res["p_value_harm"] <= harm_alpha
 
-    triggered = (stat_trig | gw1_4_breached) if statistical_mode == "enforced" else gw1_4_breached
+    triggered = (stat_trig | gw1_4_breached) if statistical_mode == "enforced" else np.zeros(batch, dtype=bool)
     return {
         "triggered": triggered,
         "statistical_triggered": stat_trig,
@@ -602,7 +727,7 @@ def verify_vectorized_vs_scalar_parity(
         while len(batch_rows) < per_length:
             phi = 0.55 if len(batch_rows) % 2 == 0 else 0.20
             drift = float(rng.choice([-0.8, 0.0, 0.4, 1.2]))
-            innov = rng.standard_t(df=5.0, size=length) * math.sqrt(3.0 / 5.0) * 4.0
+            innov = rng.standard_t(df=5.0, size=length) * math.sqrt(3.0 / 5.0) * DEFAULT_FPL_DELTA_SD_PER_GW
             series = np.empty(length, dtype=float)
             x = float(innov[0])
             for t in range(length):
@@ -613,10 +738,10 @@ def verify_vectorized_vs_scalar_parity(
         mat = np.vstack(batch_rows)
         vec_hac = vectorized_kendall_pw_hac_test(mat, alpha=alpha)
         vec_eh_enf = vectorized_early_harm_fallback(
-            mat, gw1_4_material_loss_limit=36.0, statistical_mode="enforced"
+            mat, gw1_4_material_loss_limit=DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT, statistical_mode="enforced"
         )
         vec_eh_adv = vectorized_early_harm_fallback(
-            mat, gw1_4_material_loss_limit=36.0, statistical_mode="advisory"
+            mat, gw1_4_material_loss_limit=DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT, statistical_mode="advisory"
         )
 
         for idx in range(mat.shape[0]):
@@ -632,10 +757,10 @@ def verify_vectorized_vs_scalar_parity(
 
             paired = _to_paired_scores(row)
             s_eh_enf = evaluate_early_harm_fallback(
-                paired, gw1_4_material_loss_limit=36.0, statistical_mode="enforced"
+                paired, gw1_4_material_loss_limit=DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT, statistical_mode="enforced"
             )
             s_eh_adv = evaluate_early_harm_fallback(
-                paired, gw1_4_material_loss_limit=36.0, statistical_mode="advisory"
+                paired, gw1_4_material_loss_limit=DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT, statistical_mode="advisory"
             )
 
             vec_sup = bool(
@@ -666,6 +791,7 @@ def verify_vectorized_vs_scalar_parity(
                 and bool(vec_eh_enf["statistical_triggered"][idx]) == s_eh_enf.statistical_triggered
                 and bool(vec_eh_enf["gw1_4_floor_breached"][idx]) == s_eh_enf.gw1_4_floor_breached
                 and bool(vec_eh_adv["triggered"][idx]) == s_eh_adv.triggered
+                and bool(vec_eh_adv["gw1_4_floor_breached"][idx]) == s_eh_adv.gw1_4_floor_breached
             )
             if agree:
                 agreements += 1
@@ -767,8 +893,6 @@ def _simulate_from_precomputed(
 
             if statistical_early_harm_mode == "enforced":
                 excluded[:, j] |= breach_gw1_4 | stat_flag_now
-            else:
-                excluded[:, j] |= breach_gw1_4
 
             if guards_pass_now:
                 hac_j = hac_list_g[j]
@@ -825,7 +949,16 @@ def _simulate_from_precomputed(
     harm_stat_k = int(np.sum(np.all(stat_harm_flagged[:, harmful_indices], axis=1))) if harmful_indices else 0
     harm_gw1_4_k = int(np.sum(np.all(gw1_4_flagged[:, harmful_indices], axis=1))) if harmful_indices else 0
     harm_any_k = (
-        int(np.sum(np.all(excluded[:, harmful_indices] | stat_harm_flagged[:, harmful_indices], axis=1)))
+        int(
+            np.sum(
+                np.all(
+                    excluded[:, harmful_indices]
+                    | stat_harm_flagged[:, harmful_indices]
+                    | gw1_4_flagged[:, harmful_indices],
+                    axis=1,
+                )
+            )
+        )
         if harmful_indices
         else 0
     )
@@ -894,6 +1027,31 @@ def _weighted_alphas_for_m(slate_size: int, scale: float, w15: float = 1.0, w30:
     }
 
 
+def tune_enforced_gw1_4_limit(
+    non_harmful_mins: Sequence[np.ndarray],
+    *,
+    num_simulations: int,
+    fpl_delta_sd_per_gw: float,
+) -> float:
+    """Fail-closed grid search for an enforced GW1-4 net-points limit across non-harmful paths."""
+    target_gw1_4_upper = 0.020 if num_simulations >= 2000 else 0.015
+    max_half_pts = max(240, int(math.ceil(24.0 * float(fpl_delta_sd_per_gw))))
+    for limit_half_pts in range(12, max_half_pts + 1):
+        limit = limit_half_pts * 0.5
+        worst_val = 0.0
+        for arr in non_harmful_mins:
+            k = int(np.sum(arr < -limit))
+            bound = clopper_pearson_one_sided_95(k, num_simulations)
+            metric = bound["upper_95"] if num_simulations >= 2000 else bound["rate"]
+            worst_val = max(worst_val, float(metric))
+        if worst_val <= target_gw1_4_upper:
+            return float(limit)
+    raise RuntimeError(
+        f"Failed to find enforced gw1_4_material_loss_limit <= {target_gw1_4_upper:.3f} "
+        f"within [6.0, {max_half_pts * 0.5:.1f}] at fpl_delta_sd_per_gw={fpl_delta_sd_per_gw}"
+    )
+
+
 def tune_sparse_protocol(
     *,
     num_simulations: int = DEFAULT_NUM_SIMULATIONS,
@@ -901,7 +1059,7 @@ def tune_sparse_protocol(
     fpl_delta_sd_per_gw: float = DEFAULT_FPL_DELTA_SD_PER_GW,
     harm_alpha: float = EARLY_HARM_P_THRESHOLD,
 ) -> dict[str, Any]:
-    """Calibrate M=1/M=2 superiority alphas and GW1-4 net-points floor strictly on seed=20101."""
+    """Calibrate scale-free M=1/M=2 superiority alphas strictly on the preregistered tuning seed."""
     grid = build_preregistered_scenario_grid()
     precomputed: list[dict[str, Any]] = []
     for idx, spec in enumerate(grid):
@@ -913,39 +1071,20 @@ def tune_sparse_protocol(
         )
         precomputed.append(_precompute_scenario_stats(spec, paths, harm_alpha=harm_alpha))
 
-    # 1. Calibrate GW1-4 material-loss limit in net FPL points across non-harmful scenarios
-    non_harmful_mins: list[np.ndarray] = []
-    for item in precomputed:
-        good_idx = item["spec"].non_harmful_indices
-        if good_idx:
-            non_harmful_mins.append(np.min(item["gw1_4_sum"][:, good_idx], axis=1))
+    # 1. Align advisory GW1-4 threshold to ADR 0071 cold_start (-8.9 pts/GW * 4 = 35.6 pts)
+    gw1_4_limit = float(DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT)
 
-    target_gw1_4_upper = 0.020 if num_simulations >= 2000 else 0.015
-    gw1_4_limit = 60.0
-    for limit_half_pts in range(12, 241):  # 6.0 to 120.0 in 0.5 pt steps
-        limit = limit_half_pts * 0.5
-        worst_val = 0.0
-        for arr in non_harmful_mins:
-            k = int(np.sum(arr < -limit))
-            bound = clopper_pearson_one_sided_95(k, num_simulations)
-            metric = bound["upper_95"] if num_simulations >= 2000 else bound["rate"]
-            worst_val = max(worst_val, float(metric))
-        if worst_val <= target_gw1_4_upper:
-            gw1_4_limit = limit
-            break
-
-    # 2. Calibrate OBF per-look superiority thresholds for M=1 and M=2 on seed=20101 ONLY,
-    #    protecting worst-case FWER under advisory (which strictly upper-bounds enforced) while maximizing GW38 power.
+    # 2. Calibrate OBF per-look superiority thresholds for M=1 and M=2 on tuning_seed ONLY,
+    #    purely scale-free without borrowing exclusion rate from gw1_4_limit.
     target_fwer_upper = 0.043 if num_simulations >= 2000 else 0.035
     calibrated_alphas: dict[str, dict[str, float]] = {}
     scale_factors: dict[int, float] = {}
     selected_weights: dict[int, tuple[float, float]] = {}
 
-    # Precompute fast boolean/float arrays for instant bisection across (w15, w30)
     def _prep_fast_null(item: Mapping[str, Any]) -> dict[str, Any]:
         spec_i: ScenarioSpec = item["spec"]
         null_idx = spec_i.null_indices
-        excl = item["gw1_4_sum"][:, null_idx] < -float(gw1_4_limit)
+        excl = np.zeros((num_simulations, len(null_idx)), dtype=bool)
         p_sups: dict[int, np.ndarray] = {}
         for gw in REGISTERED_CHECKPOINTS:
             if gw < spec_i.safeguards_pass_from_gw:
@@ -966,12 +1105,14 @@ def tune_sparse_protocol(
             for item in precomputed
             if item["spec"].slate_size == m_size
             and item["spec"].category in ("null", "mixed_null")
+            and item["spec"].null_indices
         ]
         fast_nulls = [_prep_fast_null(item) for item in null_items]
         power_items = [
             item
             for item in precomputed
             if item["spec"].slate_size == m_size
+            and item["spec"].finalist_effects_pts_per_year is None
             and (item["spec"].is_primary_power if m_size == 2 else item["spec"].category == "power")
         ]
         best_tuple: tuple[float, float, float, float, dict[str, float]] | None = None
@@ -1031,6 +1172,7 @@ def tune_sparse_protocol(
         "num_simulations": num_simulations,
         "fpl_delta_sd_per_gw": float(fpl_delta_sd_per_gw),
         "gw1_4_material_loss_limit": float(gw1_4_limit),
+        "gw1_4_limit_basis": "advisory_adr0071_cold_start_4x8.9",
         "calibrated_superiority_alphas": calibrated_alphas,
         "m1_scale_factor": scale_factors[1],
         "m2_scale_factor": scale_factors[2],
@@ -1111,6 +1253,123 @@ def run_certification_suite(
     }
 
 
+def _simulate_locked_ar1_paths(
+    rng: np.random.Generator,
+    num_simulations: int,
+    *,
+    num_gameweeks: int,
+    sigma_gw: float,
+    effect_pts_total: float,
+    profile: np.ndarray,
+    shock_gws: tuple[int, ...],
+) -> np.ndarray:
+    shared = _draw_unit_ar1_with_shocks(
+        rng,
+        num_simulations,
+        num_gameweeks=num_gameweeks,
+        phi_ar=0.10,
+        innovation_dist="gaussian",
+        shock_gws=shock_gws,
+        shock_multiplier=1.50,
+    )
+    ind = _draw_unit_ar1_with_shocks(
+        rng,
+        num_simulations,
+        num_gameweeks=num_gameweeks,
+        phi_ar=0.10,
+        innovation_dist="gaussian",
+        shock_gws=shock_gws,
+        shock_multiplier=1.50,
+    )
+    noise = math.sqrt(0.5) * (shared + ind) * float(sigma_gw) * profile[None, :]
+    active = profile > 0.0
+    drift = np.where(active, float(effect_pts_total) / float(np.sum(active)), 0.0)
+    return noise + drift[None, :]
+
+
+def _superiority_pass_mask(paths: np.ndarray, alpha: float) -> np.ndarray:
+    hac = vectorized_kendall_pw_hac_test(paths, alpha=alpha)
+    return (
+        (hac["point_estimate"] > 0.0)
+        & (hac["one_sided_lower"] > 0.0)
+        & (hac["p_value_superiority"] <= alpha)
+    )
+
+
+def compute_empirical_power_diagnostics(
+    *,
+    calibrated_superiority_alphas: Mapping[str, Mapping[str, float]],
+    seed: int,
+    num_simulations: int = DEFAULT_NUM_SIMULATIONS,
+) -> dict[str, Any]:
+    """Evaluate 1-season (38 GW) and 2-season carryover (76 GW) confirmation power at fixed FPL pts/yr."""
+    profile_38 = np.asarray(EMPIRICAL_GW_VARIANCE_PROFILE, dtype=float)
+    profile_76 = np.concatenate([profile_38, profile_38])
+    shocks_38 = DEFAULT_SHOCK_GWS
+    shocks_76 = (*DEFAULT_SHOCK_GWS, *(gw + 38 for gw in DEFAULT_SHOCK_GWS))
+
+    rows: list[dict[str, Any]] = []
+    diag_idx = 0
+    for slate_size in (1, 2):
+        alphas_m = calibrated_superiority_alphas[str(slate_size)]
+        a15 = float(alphas_m["15"])
+        a30 = float(alphas_m["30"])
+        a38 = float(alphas_m["38"])
+        for sigma_gw in (DEFAULT_FPL_DELTA_SD_PER_GW, UPPER_STRESS_FPL_DELTA_SD_PER_GW):
+            for eff_pts in (40.0, 60.0, 80.0):
+                diag_idx += 1
+                sub_seed = int(np.random.SeedSequence([seed, 9001, diag_idx]).generate_state(1)[0])
+                rng = np.random.default_rng(sub_seed)
+
+                # 1-season 38-GW empirical trajectory (locked GW1/GW2, phi=0.10, Gaussian)
+                p_1 = _simulate_locked_ar1_paths(
+                    rng,
+                    num_simulations,
+                    num_gameweeks=38,
+                    sigma_gw=float(sigma_gw),
+                    effect_pts_total=float(eff_pts),
+                    profile=profile_38,
+                    shock_gws=shocks_38,
+                )
+                hits_by_gw = {
+                    gw: _superiority_pass_mask(p_1[:, :gw], alpha_g)
+                    for gw, alpha_g in ((15, a15), (30, a30), (38, a38))
+                }
+                cum_seq_38 = hits_by_gw[15] | hits_by_gw[30] | hits_by_gw[38]
+
+                # 2-season 76-GW carryover diagnostic evaluated at final a38 budget
+                p_2 = _simulate_locked_ar1_paths(
+                    rng,
+                    num_simulations,
+                    num_gameweeks=76,
+                    sigma_gw=float(sigma_gw),
+                    effect_pts_total=2.0 * float(eff_pts),
+                    profile=profile_76,
+                    shock_gws=shocks_76,
+                )
+                hit_76 = _superiority_pass_mask(p_2, a38)
+
+                rows.append(
+                    {
+                        "slate_size": slate_size,
+                        "sigma_gw": float(sigma_gw),
+                        "effect_pts_per_year": float(eff_pts),
+                        "gw15_power": float(np.mean(hits_by_gw[15])),
+                        "gw30_power": float(np.mean(hits_by_gw[30])),
+                        "single_season_gw38_power": float(np.mean(cum_seq_38)),
+                        "two_season_76gw_power": float(np.mean(hit_76)),
+                    }
+                )
+
+    return {
+        "dgp": "empirical_locked_gw1_2_phi010_gaussian",
+        "seed": int(seed),
+        "num_simulations": int(num_simulations),
+        "gw_variance_profile": list(EMPIRICAL_GW_VARIANCE_PROFILE),
+        "rows": rows,
+    }
+
+
 def certify_sparse_confirmation(
     *,
     num_simulations: int = DEFAULT_NUM_SIMULATIONS,
@@ -1188,7 +1447,7 @@ def certify_sparse_confirmation(
     statistical_protocol_hash: str | None = None
     certification_digest: str | None = None
 
-    summary_body = {
+    summary_raw = {
         "manifest_digest": manifest["manifest_digest"],
         "parity_passed": parity["passed"],
         "tuning": tuning,
@@ -1200,6 +1459,7 @@ def certify_sparse_confirmation(
         "certification_seed": active_seed,
         "live_adoption_blocked": not certified,
     }
+    summary_body = {k: summary_raw[k] for k in CERTIFICATION_SUMMARY_KEYS}
     certification_digest = compute_canonical_digest(summary_body)
 
     if certified and certified_mode is not None:
@@ -1212,6 +1472,16 @@ def certify_sparse_confirmation(
         certified_protocol_dict = cfg.to_dict()
         statistical_protocol_hash = cfg.compute_hash()
 
+    empirical_power_diagnostics = (
+        compute_empirical_power_diagnostics(
+            calibrated_superiority_alphas=alphas,
+            seed=active_seed,
+            num_simulations=num_simulations,
+        )
+        if certified and active_seed is not None
+        else None
+    )
+
     return {
         **summary_body,
         "certification_digest": certification_digest,
@@ -1219,6 +1489,7 @@ def certify_sparse_confirmation(
         "certified_protocol_config": certified_protocol_dict,
         "manifest": manifest,
         "parity_check": parity,
+        "empirical_power_diagnostics": empirical_power_diagnostics,
     }
 
 
@@ -1251,4 +1522,142 @@ def build_certified_protocol_config(
         certification_digest=certification_digest,
         completed_segments=DEFAULT_SPARSE_COMPLETED_SEGMENTS,
     )
+
+
+def verify_certification_artifacts(
+    cert_dir: Path,
+    *,
+    expected_digest: str | None = None,
+    project_root: Path | None = None,
+    check_evaluator_revisions: bool = True,
+) -> CertificationVerificationResult:
+    """Fail-closed verifier for sparse confirmation artifacts, canonical digests, and evaluator drift."""
+    cert_path = cert_dir / "certification_result.json"
+    manifest_path = cert_dir / "preregistration_manifest.json"
+    errors: list[str] = []
+    drifted_files: list[str] = []
+
+    if not cert_path.is_file():
+        errors.append(f"Missing certification artifact: {cert_path}")
+        return {
+            "passed": False,
+            "errors": errors,
+            "drifted_files": drifted_files,
+            "certified": None,
+            "certified_mode": None,
+            "certification_digest": None,
+            "statistical_protocol_hash": None,
+            "manifest_digest_match": False,
+            "canonical_digest_match": False,
+            "evaluator_revisions_match": False,
+        }
+
+    cert_data = json.loads(cert_path.read_bytes())
+    manifest_digest_match = False
+    canonical_digest_match = False
+    evaluator_revisions_match = not check_evaluator_revisions
+
+    if not manifest_path.is_file():
+        errors.append(f"Missing preregistration manifest: {manifest_path}")
+        manifest: dict[str, Any] | None = None
+    else:
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest_body = {k: v for k, v in manifest.items() if k != "manifest_digest"}
+        computed_manifest_digest = compute_canonical_digest(manifest_body)
+        manifest_digest_match = (
+            manifest.get("manifest_digest") == computed_manifest_digest
+            and cert_data.get("manifest_digest") == computed_manifest_digest
+        )
+        if not manifest_digest_match:
+            errors.append("Preregistration manifest_digest mismatch")
+
+    if all(k in cert_data for k in CERTIFICATION_SUMMARY_KEYS):
+        summary_body = {k: cert_data[k] for k in CERTIFICATION_SUMMARY_KEYS}
+        computed_cert_digest = compute_canonical_digest(summary_body)
+        canonical_digest_match = cert_data.get("certification_digest") == computed_cert_digest
+        if not canonical_digest_match:
+            errors.append("Canonical certification_digest mismatch")
+    else:
+        missing_keys = [k for k in CERTIFICATION_SUMMARY_KEYS if k not in cert_data]
+        errors.append(f"Certification artifact missing canonical summary keys: {missing_keys}")
+
+    if cert_data.get("certified") is not True:
+        errors.append("Certification artifact is not certified=True")
+    if cert_data.get("certified_mode") not in ("enforced", "advisory"):
+        errors.append(f"Unsupported certified_mode: {cert_data.get('certified_mode')!r}")
+    if cert_data.get("parity_passed") is not True:
+        errors.append("Certification parity_passed is not True")
+    if cert_data.get("live_adoption_blocked") is not False:
+        errors.append("Certification live_adoption_blocked is not False")
+
+    c_cfg = cert_data.get("certified_protocol_config")
+    if not isinstance(c_cfg, dict) or c_cfg.get("certification_digest") != cert_data.get("certification_digest"):
+        errors.append("certified_protocol_config missing or certification_digest mismatch")
+    else:
+        try:
+            rebuilt = statistical_protocol_config_from_dict(c_cfg)
+            if rebuilt.compute_hash() != cert_data.get("statistical_protocol_hash"):
+                errors.append("statistical_protocol_hash mismatch against certified_protocol_config")
+            tuning_block = cert_data.get("tuning")
+            cert_mode = cert_data.get("certified_mode")
+            cert_digest = cert_data.get("certification_digest")
+            if (
+                cert_data.get("certified") is True
+                and cert_mode in ("enforced", "advisory")
+                and isinstance(tuning_block, dict)
+                and isinstance(cert_digest, str)
+            ):
+                expected_cfg = build_certified_protocol_config(
+                    calibrated_superiority_alphas=tuning_block["calibrated_superiority_alphas"],
+                    gw1_4_material_loss_limit=float(tuning_block["gw1_4_material_loss_limit"]),
+                    statistical_early_harm_mode=cert_mode,
+                    certification_digest=cert_digest,
+                )
+                if (
+                    rebuilt != expected_cfg
+                    or compute_canonical_digest(c_cfg) != compute_canonical_digest(expected_cfg.to_dict())
+                ):
+                    errors.append("certified_protocol_config mismatch against certified tuning/mode parameters")
+        except Exception as exc:
+            errors.append(f"Invalid certified_protocol_config: {exc}")
+
+    if expected_digest is not None and cert_data.get("certification_digest") != expected_digest:
+        errors.append(
+            f"certification_digest {cert_data.get('certification_digest')!r} != expected {expected_digest!r}"
+        )
+
+    if check_evaluator_revisions and manifest is not None:
+        eval_root = project_root or PROJECT_ROOT
+        recorded = manifest.get("evaluator_revisions")
+        missing_eval = [rel for rel in EVALUATOR_REVISION_PATHS if not (eval_root / rel).is_file()]
+        if missing_eval:
+            evaluator_revisions_match = False
+            drifted_files.extend(missing_eval)
+            errors.append(f"Missing evaluator source files under {eval_root}: {missing_eval}")
+        elif not isinstance(recorded, dict):
+            evaluator_revisions_match = False
+            errors.append("Manifest missing evaluator_revisions mapping")
+        else:
+            live_revs = _evaluator_revisions(project_root=eval_root)
+            for key, expected_hash in live_revs.items():
+                if recorded.get(key) != expected_hash:
+                    drifted_files.append(key)
+            extra_keys = [k for k in recorded if k not in live_revs]
+            drifted_files.extend(extra_keys)
+            evaluator_revisions_match = len(drifted_files) == 0
+            if not evaluator_revisions_match:
+                errors.append(f"Evaluator revisions drifted since preregistration: {drifted_files}")
+
+    return {
+        "passed": len(errors) == 0,
+        "errors": errors,
+        "drifted_files": drifted_files,
+        "certified": cert_data.get("certified"),
+        "certified_mode": cert_data.get("certified_mode"),
+        "certification_digest": cert_data.get("certification_digest"),
+        "statistical_protocol_hash": cert_data.get("statistical_protocol_hash"),
+        "manifest_digest_match": manifest_digest_match,
+        "canonical_digest_match": canonical_digest_match,
+        "evaluator_revisions_match": evaluator_revisions_match,
+    }
 

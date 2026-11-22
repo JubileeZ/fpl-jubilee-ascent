@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -29,13 +30,15 @@ from backtesting.adoption_transaction import (
     UncertainDeliveryAckError,
 )
 from backtesting.portable_evidence import ExclusionLedger
+from backtesting.season_rules import load_season_lifecycle
+from backtesting.sparse_certification import verify_certification_artifacts
 from clients.env_loader import configure_utf8_stdio
 from commands.evaluate_model_promotion import adopt_champion
 from commands.inventory_pilot_fixture import build_pilot_fixture_inventory
 from models.selection import DEFAULT_CONFIG_PATH, load_model_selection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CERTIFICATION_DIGEST_EXPECTED = "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56"
+CERTIFICATION_DIGEST_EXPECTED = "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a"
 
 
 def _github_api_headers(token: str | None) -> dict[str, str]:
@@ -1144,28 +1147,39 @@ def run_production_preflight(
     }
 
     # 8. certified_protocol
-    cert_path = root / "docs" / "research" / "sparse-confirmation-certification" / "certification_result.json"
-    cert_passed = False
-    cert_details: dict[str, Any] = {"path": cert_path.relative_to(root).as_posix(), "exists": cert_path.is_file()}
-    if cert_path.is_file():
-        cert_data = json.loads(cert_path.read_bytes())
-        cert_passed = bool(
-            cert_data.get("certified") is True
-            and cert_data.get("certified_mode") == "advisory"
-            and cert_data.get("certification_digest") == CERTIFICATION_DIGEST_EXPECTED
-        )
-        cert_details.update(
-            {
-                "certified": cert_data.get("certified"),
-                "certified_mode": cert_data.get("certified_mode"),
-                "certification_digest": cert_data.get("certification_digest"),
-            }
-        )
+    cert_dir = root / "docs" / "research" / "sparse-confirmation-certification"
+    cert_path = cert_dir / "certification_result.json"
+    cert_ver = verify_certification_artifacts(
+        cert_dir,
+        expected_digest=CERTIFICATION_DIGEST_EXPECTED,
+        project_root=root,
+        check_evaluator_revisions=True,
+    )
+    cert_passed = bool(cert_ver["passed"])
+    cert_details: dict[str, Any] = {
+        "path": cert_path.relative_to(root).as_posix(),
+        "exists": cert_path.is_file(),
+        "certified": cert_ver.get("certified"),
+        "certified_mode": cert_ver.get("certified_mode"),
+        "certification_digest": cert_ver.get("certification_digest"),
+        "expected_certification_digest": CERTIFICATION_DIGEST_EXPECTED,
+        "statistical_protocol_hash": cert_ver.get("statistical_protocol_hash"),
+        "manifest_digest_match": cert_ver.get("manifest_digest_match"),
+        "canonical_digest_match": cert_ver.get("canonical_digest_match"),
+        "evaluator_revisions_match": cert_ver.get("evaluator_revisions_match"),
+        "drifted_files": cert_ver.get("drifted_files", []),
+        "errors": cert_ver.get("errors", []),
+    }
     gates["certified_protocol"] = {
         "passed": cert_passed,
         "status": "pass" if cert_passed else "blocked",
-        "blocker": None if cert_passed else "Sparse confirmation protocol certification missing or digest mismatch",
-        "recovery_action": "Run #201 sparse confirmation certification runner and commit verified certification_result.json.",
+        "blocker": None
+        if cert_passed
+        else "; ".join(cert_ver.get("errors") or ["Sparse confirmation protocol certification failed"]),
+        "recovery_action": (
+            "Run `uv run python -m commands.certify_sparse_confirmation`, update CERTIFICATION_DIGEST_EXPECTED, "
+            "and commit verified certification artifacts."
+        ),
         "details": cert_details,
     }
 
@@ -1187,23 +1201,54 @@ def run_production_preflight(
 
     # 10. sealed_slate_and_operator_signoff
     sel = load_model_selection(root / "config" / "model_selection.json")
-    slate_passed = bool(sel.podium_sealed and sel.candidates and sel.podium_frozen_season)
+    lifecycle_file = root / "config" / "season_lifecycle.json"
+    active_season = (
+        load_season_lifecycle(lifecycle_file) if lifecycle_file.is_file() else load_season_lifecycle()
+    ).season_for_role("active_validation")
+    proto_hash_ok = isinstance(sel.frozen_protocol_hash, str) and bool(
+        re.fullmatch(r"[0-9a-f]{64}", sel.frozen_protocol_hash)
+    )
+    cert_digest_matches = sel.frozen_certification_digest == CERTIFICATION_DIGEST_EXPECTED
+    slate_shape_ok = (
+        1 <= len(sel.candidates) <= 2
+        and sel.champion not in sel.candidates
+        and len(set(sel.candidates)) == len(sel.candidates)
+    )
+    season_matches = sel.podium_frozen_season == active_season
+    slate_passed = bool(
+        sel.podium_sealed
+        and slate_shape_ok
+        and season_matches
+        and proto_hash_ok
+        and cert_digest_matches
+    )
     gates["sealed_slate_and_operator_signoff"] = {
         "passed": slate_passed,
         "status": "pass" if slate_passed else "blocked",
         "blocker": None
         if slate_passed
         else (
-            f"Comparison Slate not sealed for active validation (champion='{sel.champion}', "
-            f"provisional_active={sel.provisional_active!r}, podium_sealed={sel.podium_sealed}) and operator sign-off pending"
+            f"Comparison Slate not sealed and bound for active validation {active_season!r} "
+            f"(champion={sel.champion!r}, candidates={list(sel.candidates)!r}, "
+            f"provisional_active={sel.provisional_active!r}, podium_sealed={sel.podium_sealed}, "
+            f"podium_frozen_season={sel.podium_frozen_season!r}, "
+            f"certification_digest_matches={cert_digest_matches}, protocol_hash_ok={proto_hash_ok}) "
+            "and operator sign-off pending"
         ),
-        "recovery_action": "Seal Comparison Slate with >=1 qualified finalist and record named operator sign-off for season and checkpoint.",
+        "recovery_action": (
+            "Seal Comparison Slate (1..2 candidates distinct from Champion) for active_validation season, "
+            "bind frozen_protocol_hash and CERTIFICATION_DIGEST_EXPECTED, and record named operator sign-off."
+        ),
         "details": {
             "champion": sel.champion,
             "candidates": list(sel.candidates),
             "provisional_active": sel.provisional_active,
             "podium_frozen_season": sel.podium_frozen_season,
+            "active_validation_season": active_season,
             "podium_sealed": sel.podium_sealed,
+            "frozen_protocol_hash": sel.frozen_protocol_hash,
+            "frozen_certification_digest": sel.frozen_certification_digest,
+            "certification_digest_matches": cert_digest_matches,
         },
     }
 

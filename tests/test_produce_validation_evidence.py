@@ -1050,3 +1050,85 @@ def test_freeze_parser_defaults_certified_time_limit_to_600() -> None:
         ]
     )
     assert parsed.time_limit_seconds == 600.0
+
+
+def test_freeze_rejects_stale_existing_protocol_certification_digest(tmp_path: Path) -> None:
+    from commands.produce_validation_evidence import main as produce_main
+
+    ev_root = tmp_path / "ev_stale_proto"
+    req_s1, cat_s1, _ = _build_empirical_bundle(gws=(1, 2), with_manager=False)
+    batch_s1 = _write_origin_manifest_inputs(tmp_path / "s1", req_s1, cat_s1)
+    assert produce_main(["collect", "--evidence-root", str(ev_root), "--batch-json", str(batch_s1), "--slate-id", "sl-stale"]) == 0
+
+    (ev_root / "protocol.json").write_text(
+        json.dumps(
+            {
+                "statistics": {
+                    "protocol_version": "v2.0",
+                    "certification_digest": "0" * 64,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="certification_digest does not match CERTIFICATION_DIGEST_EXPECTED"):
+        produce_main(
+            [
+                "freeze",
+                "--evidence-root",
+                str(ev_root),
+                "--season",
+                "2026-27",
+                "--development-season",
+                "2025-26",
+                "--champion",
+                "calibrated_matchup_hybrid",
+                "--candidates",
+                "metrics_component_hybrid",
+                "--slate-id",
+                "sl-stale",
+                "--approval-reference",
+                "app-stale",
+            ]
+        )
+
+
+def test_load_certified_sparse_v2_params_fails_closed(tmp_path: Path) -> None:
+    from backtesting.promotion_evidence import statistical_protocol_config_from_dict
+    from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED, PROJECT_ROOT
+    from commands.produce_validation_evidence import _load_certified_sparse_v2_params
+
+    default_data = _load_certified_sparse_v2_params()
+    assert default_data["certification_digest"] == CERTIFICATION_DIGEST_EXPECTED
+
+    cert_src = PROJECT_ROOT / "docs" / "research" / "sparse-confirmation-certification"
+    cert_copy = tmp_path / "cert_copy"
+    cert_copy.mkdir()
+    for fname in ("certification_result.json", "preregistration_manifest.json"):
+        (cert_copy / fname).write_bytes((cert_src / fname).read_bytes())
+
+    # Fails closed if manifest is absent
+    (cert_copy / "preregistration_manifest.json").unlink()
+    with pytest.raises(ValueError, match="Missing preregistration manifest"):
+        _load_certified_sparse_v2_params(cert_copy / "certification_result.json")
+
+    # Fails closed on explicit cert_path with mismatched digest even without expected_digest
+    (cert_copy / "preregistration_manifest.json").write_bytes((cert_src / "preregistration_manifest.json").read_bytes())
+    tampered = json.loads((cert_copy / "certification_result.json").read_text(encoding="utf-8"))
+    tampered["certification_digest"] = "f" * 64
+    (cert_copy / "certification_result.json").write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(ValueError, match="certification_digest"):
+        _load_certified_sparse_v2_params(cert_copy / "certification_result.json")
+
+    # Fails closed if certified_protocol_config is tampered even when statistical_protocol_hash is recomputed
+    tampered_cfg = json.loads((cert_src / "certification_result.json").read_text(encoding="utf-8"))
+    tampered_cfg["certified_protocol_config"]["gw1_4_material_loss_limit"] = 99.0
+    tampered_cfg["statistical_protocol_hash"] = statistical_protocol_config_from_dict(
+        tampered_cfg["certified_protocol_config"]
+    ).compute_hash()
+    (cert_copy / "certification_result.json").write_text(json.dumps(tampered_cfg), encoding="utf-8")
+    with pytest.raises(ValueError, match="certified_protocol_config mismatch against certified tuning/mode parameters"):
+        _load_certified_sparse_v2_params(
+            cert_copy / "certification_result.json",
+            expected_digest=CERTIFICATION_DIGEST_EXPECTED,
+        )

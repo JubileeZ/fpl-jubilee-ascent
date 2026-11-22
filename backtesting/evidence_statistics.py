@@ -710,7 +710,11 @@ def evaluate_early_harm_fallback(
     statistical_mode: Literal["enforced", "advisory"] = "enforced",
     completed_segments: Sequence[tuple[int, int]] | None = None,
 ) -> EarlyHarmAssessment:
-    """Evaluate Early-Harm Fallback (GW1-4 net floor, min_gw=6 statistical harm, and mandatory guard FAIL)."""
+    """Evaluate Early-Harm Fallback (GW1-4 net floor, min_gw=6 statistical harm, and mandatory guard FAIL).
+
+    In ``advisory`` mode, both statistical harm and GW1-4 net-points floor breaches are recorded in
+    ``advisory_reasons`` while terminal exclusion is restricted to demonstrated mandatory guard FAIL.
+    """
     if min_gw < 6:
         raise ValueError("Early-Harm Fallback requires min_gw >= 6 (df >= 4)")
     if not 0.0 < harm_alpha < 1.0:
@@ -742,26 +746,34 @@ def evaluate_early_harm_fallback(
         and gw1_4_net_delta is not None
         and gw1_4_net_delta < -float(gw1_4_material_loss_limit)
     )
-    terminal_reasons: list[str] = []
+    gw1_4_reasons: tuple[str, ...] = ()
     if gw1_4_floor_breached and gw1_4_net_delta is not None and gw1_4_material_loss_limit is not None:
-        terminal_reasons.append(
+        gw1_4_reasons = (
             f"Completed cold_start (GW1..4) breached net-points floor "
-            f"({gw1_4_net_delta:+.2f} < -{float(gw1_4_material_loss_limit):.2f})"
+            f"({gw1_4_net_delta:+.2f} < -{float(gw1_4_material_loss_limit):.2f})",
         )
 
     if len(ordered) < min_gw:
+        if statistical_mode == "enforced":
+            pre_triggered = gw1_4_floor_breached
+            pre_reasons = gw1_4_reasons
+            pre_advisory: tuple[str, ...] = ()
+        else:
+            pre_triggered = False
+            pre_reasons = ()
+            pre_advisory = gw1_4_reasons
         return EarlyHarmAssessment(
-            triggered=gw1_4_floor_breached,
+            triggered=pre_triggered,
             min_gw_met=False,
             cumulative_p_harm=None,
             segment_p_harms={},
             failed_guards=(),
             ignored_inconclusive_guards=ignored_inc,
-            reasons=tuple(terminal_reasons),
+            reasons=pre_reasons,
             statistical_triggered=False,
             guard_triggered=False,
             gw1_4_floor_breached=gw1_4_floor_breached,
-            advisory_reasons=(),
+            advisory_reasons=pre_advisory,
             gw1_4_net_delta=gw1_4_net_delta,
         )
 
@@ -794,19 +806,18 @@ def evaluate_early_harm_fallback(
                 )
 
     failed_guards = tuple(g.metric_name for g in guards if g.status == "FAIL")
-    for name in failed_guards:
-        terminal_reasons.append(f"Mandatory projection guard '{name}' hit demonstrated FAIL")
+    guard_reasons = tuple(f"Mandatory projection guard '{name}' hit demonstrated FAIL" for name in failed_guards)
 
     statistical_triggered = bool(stat_reasons)
     guard_triggered = bool(failed_guards)
     if statistical_mode == "enforced":
-        reasons = tuple([*stat_reasons, *terminal_reasons])
-        advisory_reasons: tuple[str, ...] = ()
+        reasons = tuple([*stat_reasons, *gw1_4_reasons, *guard_reasons])
+        advisory_reasons = ()
         triggered = bool(statistical_triggered or guard_triggered or gw1_4_floor_breached)
     else:
-        reasons = tuple(terminal_reasons)
-        advisory_reasons = tuple(stat_reasons)
-        triggered = bool(guard_triggered or gw1_4_floor_breached)
+        reasons = guard_reasons
+        advisory_reasons = tuple([*stat_reasons, *gw1_4_reasons])
+        triggered = bool(guard_triggered)
 
     return EarlyHarmAssessment(
         triggered=triggered,

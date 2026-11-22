@@ -859,7 +859,7 @@ def test_evaluate_v2_checkpoint_independence_skips_expiry_guards_and_segments() 
     )
     assert "cand_1" in res_enf_stat.newly_excluded_finalists
 
-    # GW1-4 collapse excludes even in advisory mode
+    # GW1-4 collapse is advisory-only in advisory mode, terminal in enforced mode
     gw14_collapse = [-10.0] * 4 + [0.1] * 11
     res_gw14 = evaluate_dual_tier_checkpoint(
         checkpoint_gw=15,
@@ -870,7 +870,20 @@ def test_evaluate_v2_checkpoint_independence_skips_expiry_guards_and_segments() 
         protocol_config=cfg_adv,
     )
     assert res_gw14.outcomes["cand_1"].early_harm.gw1_4_floor_breached is True
-    assert "cand_1" in res_gw14.newly_excluded_finalists
+    assert res_gw14.outcomes["cand_1"].early_harm.triggered is False
+    assert len(res_gw14.outcomes["cand_1"].early_harm.advisory_reasons) >= 1
+    assert "cand_1" not in res_gw14.newly_excluded_finalists
+
+    res_gw14_enf = evaluate_dual_tier_checkpoint(
+        checkpoint_gw=15,
+        finalist_traces={"cand_1": _scores(gw14_collapse), "cand_2": _scores(mild_15)},
+        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        selection=sel_none,
+        podium_order=("cand_1", "cand_2"),
+        protocol_config=cfg_enf,
+    )
+    assert res_gw14_enf.outcomes["cand_1"].early_harm.gw1_4_floor_breached is True
+    assert "cand_1" in res_gw14_enf.newly_excluded_finalists
 
     # Mandatory guard FAIL excludes even in advisory mode
     res_guard_fail = evaluate_dual_tier_checkpoint(
@@ -991,7 +1004,10 @@ def test_evaluate_v2_checkpoint_independence_skips_expiry_guards_and_segments() 
     res_exp_excl = evaluate_dual_tier_checkpoint(
         checkpoint_gw=15,
         finalist_traces={"cand_1": _scores(gw14_collapse), "cand_2": _scores(mild_15)},
-        finalist_guards={"cand_1": _guards("PASS"), "cand_2": _guards("PASS")},
+        finalist_guards={
+            "cand_1": _guards("PASS", bad_metric="minutes_mae", bad_status="FAIL"),
+            "cand_2": _guards("PASS"),
+        },
         selection=sel_prov1,
         podium_order=("cand_1", "cand_2"),
         protocol_config=cfg_adv,
