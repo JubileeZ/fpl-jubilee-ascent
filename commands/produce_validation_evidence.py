@@ -1007,24 +1007,19 @@ def _load_certified_sparse_v2_params(
     path = cert_path or DEFAULT_CERTIFICATION_RESULT_PATH
     if not path.is_file():
         raise FileNotFoundError(f"Certified sparse v2 artifact not found: {path}")
-    exp = (
-        expected_digest
-        if expected_digest is not None
-        else (CERTIFICATION_DIGEST_EXPECTED if cert_path is None else None)
+    exp = expected_digest if expected_digest is not None else CERTIFICATION_DIGEST_EXPECTED
+    ver = verify_certification_artifacts(
+        path.parent,
+        expected_digest=exp,
+        project_root=PROJECT_ROOT,
+        check_evaluator_revisions=True,
     )
-    if (path.parent / "preregistration_manifest.json").is_file():
-        ver = verify_certification_artifacts(
-            path.parent,
-            expected_digest=exp,
-            project_root=PROJECT_ROOT,
-            check_evaluator_revisions=(cert_path is None),
-        )
-        if not ver["passed"]:
-            raise ValueError(f"Sparse confirmation verification failed for {path}: {'; '.join(ver['errors'])}")
+    if not ver["passed"]:
+        raise ValueError(f"Sparse confirmation verification failed for {path}: {'; '.join(ver['errors'])}")
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("certified") is not True:
         raise ValueError(f"Sparse confirmation artifact is not certified: {path}")
-    if exp is not None and data.get("certification_digest") != exp:
+    if data.get("certification_digest") != exp:
         raise ValueError(f"Sparse confirmation certification_digest mismatch for {path}")
     return data
 

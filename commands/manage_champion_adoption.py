@@ -38,7 +38,7 @@ from commands.inventory_pilot_fixture import build_pilot_fixture_inventory
 from models.selection import DEFAULT_CONFIG_PATH, load_model_selection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CERTIFICATION_DIGEST_EXPECTED = "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571"
+CERTIFICATION_DIGEST_EXPECTED = "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a"
 
 
 def _github_api_headers(token: str | None) -> dict[str, str]:

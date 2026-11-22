@@ -1,5 +1,5 @@
 {
-  "certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+  "certification_digest": "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a",
   "certification_seed": 21103,
   "certified": true,
   "certified_mode": "advisory",
@@ -21,7 +21,7 @@
         "38": 0.00948395
       }
     },
-    "certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+    "certification_digest": "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a",
     "completed_segments": {
       "15": [
         [
@@ -266,7 +266,7 @@
         "38": 0.00948395
       }
     },
-    "certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+    "certification_digest": "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a",
     "chip_calendar": "shared-causal-calendar",
     "completed_segments": {
       "15": [
@@ -318,7 +318,7 @@
     "season_end_clipping": true,
     "statistical_early_harm_mode": "advisory",
     "statistical_procedure": "kendall-pw-hac-v2",
-    "statistical_protocol_hash": "c2c276fe36f17c1567ff3e7c057dd6e1a4f7ca78eb432faf321d8da215cff2ce",
+    "statistical_protocol_hash": "1e818b27815aee47302d73e5872ca1f82eb9919bbe6ad9ada98f65bb5dbd74c1",
     "strategic_settings": "adr0065-strategic",
     "unused_alpha_policy": "discard",
     "version": 2,
@@ -3479,7 +3479,7 @@
     "statistical_early_harm_mode": "advisory"
   },
   "live_adoption_blocked": false,
-  "manifest_digest": "1ec0d92625a054d69f6253588a6150f4ad453ded0d159af1cbe0b184657d1195",
+  "manifest_digest": "2140c13bc9f2b15508c883367ab161e173a6ea8a230394b70a3df55dfdc21254",
   "parity_passed": true,
   "primary_run": {
     "gates": {
@@ -6590,7 +6590,7 @@
     "statistical_early_harm_mode": "enforced"
   },
   "retries_used": 1,
-  "statistical_protocol_hash": "c2c276fe36f17c1567ff3e7c057dd6e1a4f7ca78eb432faf321d8da215cff2ce",
+  "statistical_protocol_hash": "1e818b27815aee47302d73e5872ca1f82eb9919bbe6ad9ada98f65bb5dbd74c1",
   "tuning": {
     "calibrated_superiority_alphas": {
       "1": {

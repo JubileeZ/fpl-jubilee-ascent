@@ -1164,7 +1164,12 @@ def test_production_preflight_mail_gate_with_github_review_issue(tmp_path: Path)
 
 def test_preflight_gate8_and_gate10_integrity_checks(tmp_path: Path) -> None:
     """Gate 8 verifies canonical digests + evaluator_revisions; Gate 10 binds season, protocol_hash, and certification_digest."""
-    from backtesting.sparse_certification import EVALUATOR_REVISION_PATHS, compute_canonical_digest
+    from backtesting.promotion_evidence import statistical_protocol_config_from_dict
+    from backtesting.sparse_certification import (
+        CERTIFICATION_SUMMARY_KEYS,
+        EVALUATOR_REVISION_PATHS,
+        compute_canonical_digest,
+    )
     from commands.manage_champion_adoption import (
         CERTIFICATION_DIGEST_EXPECTED,
         PROJECT_ROOT,
@@ -1267,39 +1272,14 @@ def test_preflight_gate8_and_gate10_integrity_checks(tmp_path: Path) -> None:
     target_eval.write_bytes((PROJECT_ROOT / "backtesting" / "sparse_certification.py").read_bytes())
     cert_res = json.loads((cert_dst / "certification_result.json").read_text(encoding="utf-8"))
     cert_res["certified_mode"] = "enforced"
-    summary_body = {
-        k: cert_res[k]
-        for k in (
-            "manifest_digest",
-            "parity_passed",
-            "tuning",
-            "primary_run",
-            "fallback_run",
-            "retries_used",
-            "certified",
-            "certified_mode",
-            "certification_seed",
-            "live_adoption_blocked",
-        )
-    }
+    summary_body = {k: cert_res[k] for k in CERTIFICATION_SUMMARY_KEYS}
     new_digest = compute_canonical_digest(summary_body)
     cert_res["certification_digest"] = new_digest
     cert_res["certified_protocol_config"]["statistical_early_harm_mode"] = "enforced"
     cert_res["certified_protocol_config"]["certification_digest"] = new_digest
-    from backtesting.evidence_statistics import StatisticalProtocolConfig
-
-    cfg_obj = StatisticalProtocolConfig(
-        **{
-            **cert_res["certified_protocol_config"],
-            "required_projection_guards": tuple(cert_res["certified_protocol_config"]["required_projection_guards"]),
-            "confirmation_checkpoints": tuple(cert_res["certified_protocol_config"]["confirmation_checkpoints"]),
-            "completed_segments": {
-                str(cp): tuple((int(lo), int(hi)) for lo, hi in pairs)
-                for cp, pairs in cert_res["certified_protocol_config"]["completed_segments"].items()
-            },
-        }
-    )
-    cert_res["statistical_protocol_hash"] = cfg_obj.compute_hash()
+    cert_res["statistical_protocol_hash"] = statistical_protocol_config_from_dict(
+        cert_res["certified_protocol_config"]
+    ).compute_hash()
     (cert_dst / "certification_result.json").write_text(json.dumps(cert_res), encoding="utf-8")
 
     import commands.manage_champion_adoption as mca

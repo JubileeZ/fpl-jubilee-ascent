@@ -36,17 +36,17 @@
       "blocker": null,
       "details": {
         "canonical_digest_match": true,
-        "certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+        "certification_digest": "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a",
         "certified": true,
         "certified_mode": "advisory",
         "drifted_files": [],
         "errors": [],
         "evaluator_revisions_match": true,
         "exists": true,
-        "expected_certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+        "expected_certification_digest": "243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a",
         "manifest_digest_match": true,
         "path": "docs/research/sparse-confirmation-certification/certification_result.json",
-        "statistical_protocol_hash": "c2c276fe36f17c1567ff3e7c057dd6e1a4f7ca78eb432faf321d8da215cff2ce"
+        "statistical_protocol_hash": "1e818b27815aee47302d73e5872ca1f82eb9919bbe6ad9ada98f65bb5dbd74c1"
       },
       "passed": true,
       "recovery_action": "Run `uv run python -m commands.certify_sparse_confirmation`, update CERTIFICATION_DIGEST_EXPECTED, and commit verified certification artifacts.",
@@ -177,7 +177,7 @@
       "status": "pass"
     }
   },
-  "generated_at_utc": "2026-11-22T15:12:40.347021+00:00",
+  "generated_at_utc": "2026-11-22T15:53:02.363022+00:00",
   "live_activation_ready": false,
   "read_only": true,
   "repo": "JubileeZ/fpl-jubilee-ascent"

@@ -279,6 +279,9 @@ def _config_from_statistics_dict(settings_raw: Mapping[str, Any]) -> Statistical
     return config
 
 
+statistical_protocol_config_from_dict = _config_from_statistics_dict
+
+
 def protocol_from_payload(payload: dict[str, Any]) -> StatisticalProtocolConfig:
     config = _config_from_statistics_dict(payload["statistics"])
     declaration = {key: value for key, value in payload.items() if key != "statistics"}
@@ -2226,10 +2229,7 @@ def write_checkpoint_recommendation_bundle(
     request = Path(request_path).resolve()
     if path.parent != request.parent:
         raise ValueError("Recommendation bundle must accompany its retained request")
-    bundle_kwargs: dict[str, Any] = {}
-    if expected_certification_digest is not None:
-        bundle_kwargs["expected_certification_digest"] = expected_certification_digest
-    bundle = evaluate_checkpoint_bundle_evidence(request, **bundle_kwargs)
+    bundle = evaluate_checkpoint_bundle_evidence(request, expected_certification_digest=expected_certification_digest)
     raw = canonical_bytes(bundle) + b"\n"
     if path.exists() and path.read_bytes() != raw:
         raise ValueError("Refusing to replace frozen recommendation bundle")
@@ -2290,10 +2290,14 @@ def verify_checkpoint_recommendation_bundle(
     if sha256(request_path.read_bytes()).hexdigest() != bundle["request_sha256"]:
         raise ValueError("Frozen evidence request changed")
     finalized_path = path if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_V2 else None
-    eval_kwargs: dict[str, Any] = {"finalized_bundle_path": finalized_path}
-    if expected_certification_digest is not None:
-        eval_kwargs["expected_certification_digest"] = expected_certification_digest
-    if evaluate_checkpoint_bundle_evidence(request_path, **eval_kwargs) != bundle:
+    if (
+        evaluate_checkpoint_bundle_evidence(
+            request_path,
+            finalized_bundle_path=finalized_path,
+            expected_certification_digest=expected_certification_digest,
+        )
+        != bundle
+    ):
         raise ValueError("Recommendation differs from reconstructed evidence")
     if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_VERSION:
         request = json.loads(request_path.read_bytes())

@@ -307,6 +307,8 @@ def test_certify_sparse_confirmation_cli_writes_companion_artifacts(tmp_path: Pa
     payload = json.loads((out_dir / "certification_result.json").read_text(encoding="utf-8"))
     assert "parity_passed" in payload
     if payload["certified"]:
+        diag_csv = out_dir / "empirical_power_diagnostics.csv"
+        assert diag_csv.is_file() and diag_csv.stat().st_size > 0
         cfg = payload["certified_protocol_config"]
         assert cfg["development_season"] == "2025-26"
         assert cfg["confirmation_season"] == "2026-27"
@@ -320,12 +322,20 @@ def test_certify_sparse_confirmation_cli_writes_companion_artifacts(tmp_path: Pa
         assert ver["evaluator_revisions_match"] is True
 
     note = (out_dir / "sparse-confirmation-certification.md").read_text(encoding="utf-8")
-    assert "`statistical_false_exclusion_flag_upper95`" in note.split("## Project interpretation")[0]
+    metrics_section = note.split("## Project interpretation")[0]
+    assert "`statistical_false_exclusion_flag_upper95`" in metrics_section
+    for metric_col in ("gw15_power", "gw30_power", "single_season_gw38_power", "two_season_76gw_power"):
+        assert metric_col in metrics_section
 
 
 def test_verify_certification_artifacts_passes_repo_and_detects_drift_and_tamper(tmp_path: Path) -> None:
+    from backtesting.promotion_evidence import statistical_protocol_config_from_dict
     from backtesting.sparse_certification import verify_certification_artifacts
     from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
+    missing_ver = verify_certification_artifacts(tmp_path / "missing_cert_dir")
+    assert missing_ver["passed"] is False
+    assert missing_ver["statistical_protocol_hash"] is None
 
     repo_cert_dir = Path("docs/research/sparse-confirmation-certification")
     repo_ver = verify_certification_artifacts(repo_cert_dir, expected_digest=CERTIFICATION_DIGEST_EXPECTED)
@@ -357,4 +367,15 @@ def test_verify_certification_artifacts_passes_repo_and_detects_drift_and_tamper
     tamper_ver = verify_certification_artifacts(copy_dir)
     assert tamper_ver["passed"] is False
     assert tamper_ver["canonical_digest_match"] is False
+
+    # Tampered certified_protocol_config fails even when statistical_protocol_hash is recomputed
+    cert_res = json.loads((repo_cert_dir / "certification_result.json").read_text(encoding="utf-8"))
+    cert_res["certified_protocol_config"]["gw1_4_material_loss_limit"] = 99.0
+    cert_res["statistical_protocol_hash"] = statistical_protocol_config_from_dict(
+        cert_res["certified_protocol_config"]
+    ).compute_hash()
+    (copy_dir / "certification_result.json").write_text(json.dumps(cert_res), encoding="utf-8")
+    cfg_tamper_ver = verify_certification_artifacts(copy_dir, expected_digest=CERTIFICATION_DIGEST_EXPECTED)
+    assert cfg_tamper_ver["passed"] is False
+    assert any("certified_protocol_config mismatch" in err for err in cfg_tamper_ver["errors"])
 

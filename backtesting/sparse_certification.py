@@ -8,7 +8,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 from scipy import stats
@@ -25,7 +25,11 @@ from backtesting.evidence_statistics import (
     evaluate_early_harm_fallback,
     run_kendall_pw_hac_test,
 )
-from backtesting.promotion_evidence import MANDATORY_GUARDS, MILP_SEGMENT_REGRESSION_TOLERANCES
+from backtesting.promotion_evidence import (
+    MANDATORY_GUARDS,
+    MILP_SEGMENT_REGRESSION_TOLERANCES,
+    statistical_protocol_config_from_dict,
+)
 from backtesting.season_rules import load_season_lifecycle
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +56,18 @@ DEFAULT_SPARSE_COMPLETED_SEGMENTS: dict[str, tuple[tuple[int, int], ...]] = {
     "30": ((1, 4), (5, 19)),
     "38": ((1, 4), (5, 19), (20, 38)),
 }
+CERTIFICATION_SUMMARY_KEYS: tuple[str, ...] = (
+    "manifest_digest",
+    "parity_passed",
+    "tuning",
+    "primary_run",
+    "fallback_run",
+    "retries_used",
+    "certified",
+    "certified_mode",
+    "certification_seed",
+    "live_adoption_blocked",
+)
 
 ScenarioCategory = Literal["null", "mixed_null", "power", "harmful"]
 DependenceRegime = Literal["mild", "persistent"]
@@ -65,6 +81,20 @@ class _RegimeParams(TypedDict):
     innovation_dist: InnovationDist
     shock_gws: tuple[int, ...]
     shock_multiplier: float
+    gw_variance_profile: NotRequired[tuple[float, ...] | None]
+
+
+class CertificationVerificationResult(TypedDict):
+    passed: bool
+    errors: list[str]
+    drifted_files: list[str]
+    certified: Any
+    certified_mode: Any
+    certification_digest: Any
+    statistical_protocol_hash: Any
+    manifest_digest_match: bool
+    canonical_digest_match: bool
+    evaluator_revisions_match: bool
 
 
 class VectorizedEarlyHarmResult(TypedDict):
@@ -204,7 +234,7 @@ def build_preregistered_scenario_grid() -> tuple[ScenarioSpec, ...]:
         "shock_gws": DEFAULT_SHOCK_GWS,
         "shock_multiplier": 2.00,
     }
-    empirical_mild: dict[str, Any] = {
+    empirical_mild: _RegimeParams = {
         "dependence_regime": "mild",
         "phi_ar": 0.10,
         "rho_champ": 0.50,
@@ -1223,6 +1253,49 @@ def run_certification_suite(
     }
 
 
+def _simulate_locked_ar1_paths(
+    rng: np.random.Generator,
+    num_simulations: int,
+    *,
+    num_gameweeks: int,
+    sigma_gw: float,
+    effect_pts_total: float,
+    profile: np.ndarray,
+    shock_gws: tuple[int, ...],
+) -> np.ndarray:
+    shared = _draw_unit_ar1_with_shocks(
+        rng,
+        num_simulations,
+        num_gameweeks=num_gameweeks,
+        phi_ar=0.10,
+        innovation_dist="gaussian",
+        shock_gws=shock_gws,
+        shock_multiplier=1.50,
+    )
+    ind = _draw_unit_ar1_with_shocks(
+        rng,
+        num_simulations,
+        num_gameweeks=num_gameweeks,
+        phi_ar=0.10,
+        innovation_dist="gaussian",
+        shock_gws=shock_gws,
+        shock_multiplier=1.50,
+    )
+    noise = math.sqrt(0.5) * (shared + ind) * float(sigma_gw) * profile[None, :]
+    active = profile > 0.0
+    drift = np.where(active, float(effect_pts_total) / float(np.sum(active)), 0.0)
+    return noise + drift[None, :]
+
+
+def _superiority_pass_mask(paths: np.ndarray, alpha: float) -> np.ndarray:
+    hac = vectorized_kendall_pw_hac_test(paths, alpha=alpha)
+    return (
+        (hac["point_estimate"] > 0.0)
+        & (hac["one_sided_lower"] > 0.0)
+        & (hac["p_value_superiority"] <= alpha)
+    )
+
+
 def compute_empirical_power_diagnostics(
     *,
     calibrated_superiority_alphas: Mapping[str, Mapping[str, float]],
@@ -1232,10 +1305,6 @@ def compute_empirical_power_diagnostics(
     """Evaluate 1-season (38 GW) and 2-season carryover (76 GW) confirmation power at fixed FPL pts/yr."""
     profile_38 = np.asarray(EMPIRICAL_GW_VARIANCE_PROFILE, dtype=float)
     profile_76 = np.concatenate([profile_38, profile_38])
-    active_38 = profile_38 > 0.0
-    active_76 = profile_76 > 0.0
-    active_38_count = float(np.sum(active_38))
-    active_76_count = float(np.sum(active_76))
     shocks_38 = DEFAULT_SHOCK_GWS
     shocks_76 = (*DEFAULT_SHOCK_GWS, *(gw + 38 for gw in DEFAULT_SHOCK_GWS))
 
@@ -1253,66 +1322,32 @@ def compute_empirical_power_diagnostics(
                 rng = np.random.default_rng(sub_seed)
 
                 # 1-season 38-GW empirical trajectory (locked GW1/GW2, phi=0.10, Gaussian)
-                s_1 = _draw_unit_ar1_with_shocks(
+                p_1 = _simulate_locked_ar1_paths(
                     rng,
                     num_simulations,
                     num_gameweeks=38,
-                    phi_ar=0.10,
-                    innovation_dist="gaussian",
+                    sigma_gw=float(sigma_gw),
+                    effect_pts_total=float(eff_pts),
+                    profile=profile_38,
                     shock_gws=shocks_38,
-                    shock_multiplier=1.50,
                 )
-                i_1 = _draw_unit_ar1_with_shocks(
-                    rng,
-                    num_simulations,
-                    num_gameweeks=38,
-                    phi_ar=0.10,
-                    innovation_dist="gaussian",
-                    shock_gws=shocks_38,
-                    shock_multiplier=1.50,
-                )
-                noise_1 = math.sqrt(0.5) * (s_1 + i_1) * float(sigma_gw) * profile_38[None, :]
-                drift_1 = np.where(active_38, float(eff_pts) / active_38_count, 0.0)
-                p_1 = noise_1 + drift_1[None, :]
-
-                hits_by_gw: dict[int, np.ndarray] = {}
-                for gw, alpha_g in ((15, a15), (30, a30), (38, a38)):
-                    hac = vectorized_kendall_pw_hac_test(p_1[:, :gw], alpha=alpha_g)
-                    hits_by_gw[gw] = (
-                        (hac["point_estimate"] > 0.0)
-                        & (hac["one_sided_lower"] > 0.0)
-                        & (hac["p_value_superiority"] <= alpha_g)
-                    )
+                hits_by_gw = {
+                    gw: _superiority_pass_mask(p_1[:, :gw], alpha_g)
+                    for gw, alpha_g in ((15, a15), (30, a30), (38, a38))
+                }
                 cum_seq_38 = hits_by_gw[15] | hits_by_gw[30] | hits_by_gw[38]
 
                 # 2-season 76-GW carryover diagnostic evaluated at final a38 budget
-                s_2 = _draw_unit_ar1_with_shocks(
+                p_2 = _simulate_locked_ar1_paths(
                     rng,
                     num_simulations,
                     num_gameweeks=76,
-                    phi_ar=0.10,
-                    innovation_dist="gaussian",
+                    sigma_gw=float(sigma_gw),
+                    effect_pts_total=2.0 * float(eff_pts),
+                    profile=profile_76,
                     shock_gws=shocks_76,
-                    shock_multiplier=1.50,
                 )
-                i_2 = _draw_unit_ar1_with_shocks(
-                    rng,
-                    num_simulations,
-                    num_gameweeks=76,
-                    phi_ar=0.10,
-                    innovation_dist="gaussian",
-                    shock_gws=shocks_76,
-                    shock_multiplier=1.50,
-                )
-                noise_2 = math.sqrt(0.5) * (s_2 + i_2) * float(sigma_gw) * profile_76[None, :]
-                drift_2 = np.where(active_76, (2.0 * float(eff_pts)) / active_76_count, 0.0)
-                p_2 = noise_2 + drift_2[None, :]
-                hac_76 = vectorized_kendall_pw_hac_test(p_2, alpha=a38)
-                hit_76 = (
-                    (hac_76["point_estimate"] > 0.0)
-                    & (hac_76["one_sided_lower"] > 0.0)
-                    & (hac_76["p_value_superiority"] <= a38)
-                )
+                hit_76 = _superiority_pass_mask(p_2, a38)
 
                 rows.append(
                     {
@@ -1412,7 +1447,7 @@ def certify_sparse_confirmation(
     statistical_protocol_hash: str | None = None
     certification_digest: str | None = None
 
-    summary_body = {
+    summary_raw = {
         "manifest_digest": manifest["manifest_digest"],
         "parity_passed": parity["passed"],
         "tuning": tuning,
@@ -1424,6 +1459,7 @@ def certify_sparse_confirmation(
         "certification_seed": active_seed,
         "live_adoption_blocked": not certified,
     }
+    summary_body = {k: summary_raw[k] for k in CERTIFICATION_SUMMARY_KEYS}
     certification_digest = compute_canonical_digest(summary_body)
 
     if certified and certified_mode is not None:
@@ -1494,7 +1530,7 @@ def verify_certification_artifacts(
     expected_digest: str | None = None,
     project_root: Path | None = None,
     check_evaluator_revisions: bool = True,
-) -> dict[str, Any]:
+) -> CertificationVerificationResult:
     """Fail-closed verifier for sparse confirmation artifacts, canonical digests, and evaluator drift."""
     cert_path = cert_dir / "certification_result.json"
     manifest_path = cert_dir / "preregistration_manifest.json"
@@ -1510,6 +1546,7 @@ def verify_certification_artifacts(
             "certified": None,
             "certified_mode": None,
             "certification_digest": None,
+            "statistical_protocol_hash": None,
             "manifest_digest_match": False,
             "canonical_digest_match": False,
             "evaluator_revisions_match": False,
@@ -1534,26 +1571,14 @@ def verify_certification_artifacts(
         if not manifest_digest_match:
             errors.append("Preregistration manifest_digest mismatch")
 
-    summary_keys = (
-        "manifest_digest",
-        "parity_passed",
-        "tuning",
-        "primary_run",
-        "fallback_run",
-        "retries_used",
-        "certified",
-        "certified_mode",
-        "certification_seed",
-        "live_adoption_blocked",
-    )
-    if all(k in cert_data for k in summary_keys):
-        summary_body = {k: cert_data[k] for k in summary_keys}
+    if all(k in cert_data for k in CERTIFICATION_SUMMARY_KEYS):
+        summary_body = {k: cert_data[k] for k in CERTIFICATION_SUMMARY_KEYS}
         computed_cert_digest = compute_canonical_digest(summary_body)
         canonical_digest_match = cert_data.get("certification_digest") == computed_cert_digest
         if not canonical_digest_match:
             errors.append("Canonical certification_digest mismatch")
     else:
-        missing_keys = [k for k in summary_keys if k not in cert_data]
+        missing_keys = [k for k in CERTIFICATION_SUMMARY_KEYS if k not in cert_data]
         errors.append(f"Certification artifact missing canonical summary keys: {missing_keys}")
 
     if cert_data.get("certified") is not True:
@@ -1570,23 +1595,29 @@ def verify_certification_artifacts(
         errors.append("certified_protocol_config missing or certification_digest mismatch")
     else:
         try:
-            rebuilt = StatisticalProtocolConfig(
-                **{
-                    **c_cfg,
-                    "required_projection_guards": tuple(c_cfg.get("required_projection_guards", ())),
-                    "confirmation_checkpoints": tuple(c_cfg.get("confirmation_checkpoints", ())),
-                    "completed_segments": (
-                        {
-                            str(cp): tuple((int(lo), int(hi)) for lo, hi in pairs)
-                            for cp, pairs in c_cfg["completed_segments"].items()
-                        }
-                        if isinstance(c_cfg.get("completed_segments"), dict)
-                        else None
-                    ),
-                }
-            )
+            rebuilt = statistical_protocol_config_from_dict(c_cfg)
             if rebuilt.compute_hash() != cert_data.get("statistical_protocol_hash"):
                 errors.append("statistical_protocol_hash mismatch against certified_protocol_config")
+            tuning_block = cert_data.get("tuning")
+            cert_mode = cert_data.get("certified_mode")
+            cert_digest = cert_data.get("certification_digest")
+            if (
+                cert_data.get("certified") is True
+                and cert_mode in ("enforced", "advisory")
+                and isinstance(tuning_block, dict)
+                and isinstance(cert_digest, str)
+            ):
+                expected_cfg = build_certified_protocol_config(
+                    calibrated_superiority_alphas=tuning_block["calibrated_superiority_alphas"],
+                    gw1_4_material_loss_limit=float(tuning_block["gw1_4_material_loss_limit"]),
+                    statistical_early_harm_mode=cert_mode,
+                    certification_digest=cert_digest,
+                )
+                if (
+                    rebuilt != expected_cfg
+                    or compute_canonical_digest(c_cfg) != compute_canonical_digest(expected_cfg.to_dict())
+                ):
+                    errors.append("certified_protocol_config mismatch against certified tuning/mode parameters")
         except Exception as exc:
             errors.append(f"Invalid certified_protocol_config: {exc}")
 

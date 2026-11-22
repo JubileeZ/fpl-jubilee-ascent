@@ -16,12 +16,12 @@
     "backtesting/evaluation_protocol.py": "a31123f4d1e44bc39d55120305aabc9de042479ba519dff8e6e31ea2585745de",
     "backtesting/evidence_statistics.py": "efe4106a5eed972b7df686b7fd0751b778641591c23d8eecfac61d7632728478",
     "backtesting/projection_guards.py": "5509c0c91a53e6be4fd2b43491b86c12d70ce6b96240935c90cadcb18d3bf6ab",
-    "backtesting/promotion_evidence.py": "c72428c0e98aa2a7d857f97580da08a4b7c345d6b3bf80d61cd65c48f2bde67e",
-    "backtesting/sparse_certification.py": "9b97dce25fd31a16325c89622a991a60d027a7de4db7d052fb25c3a784fee2f9",
-    "closure_digest": "aa1b30bce07b98ed1065fbb645e96c1224fbc34c424a384c7b7f368fe93d7f7a"
+    "backtesting/promotion_evidence.py": "2b34c2262cacfaf13f033223c0ffb17ffeb8f1332061f46866c14d8e6f7ae2c8",
+    "backtesting/sparse_certification.py": "eae0f4b8a4afa0490e058a89f9e6f8fee0deb8e28478015efc9fe8dbfb3657c2",
+    "closure_digest": "6aad84b1d03cf55e334dc137c3db052862fad4fbaab91dd6edd6cfcc14ee80cc"
   },
   "fallback_seed": 21103,
-  "manifest_digest": "1ec0d92625a054d69f6253588a6150f4ad453ded0d159af1cbe0b184657d1195",
+  "manifest_digest": "2140c13bc9f2b15508c883367ab161e173a6ea8a230394b70a3df55dfdc21254",
   "manifest_version": 2,
   "num_simulations": 20000,
   "protocol_target_version": "v2.0",

@@ -348,7 +348,7 @@ def build_pilot_fixture_inventory(
         for s in seasons
         if s["lifecycle_role"] != "prior_seed_only" and int(s["contiguous_admitted_prefix_end_gw"]) < 15
     ]
-    if incomplete_non_seed:
+    if not qualifying_prefix_seasons and incomplete_non_seed:
         missing_prerequisites.append(
             f"Retroactive pre-deadline official fixture receipts unrecoverable for {', '.join(incomplete_non_seed)} "
             "missing GWs without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py)."
@@ -357,7 +357,7 @@ def build_pilot_fixture_inventory(
         missing_prerequisites.append(
             "Local mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json absent from disk."
         )
-    if not (selection.podium_sealed and selection.candidates):
+    if not (selection.podium_sealed and selection.candidates and selection.champion not in selection.candidates):
         missing_prerequisites.append(
             f"No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion {selection.champion} "
             f"(provisional_active={selection.provisional_active}, podium_sealed={selection.podium_sealed})."
@@ -366,7 +366,7 @@ def build_pilot_fixture_inventory(
         missing_prerequisites.append(
             "Certified v2 statistical protocol verification failed: " + "; ".join(cert_status["errors"])
         )
-    if not retained_fixture.get("authorizes_real_historical_pass"):
+    if not qualifying_prefix_seasons:
         missing_prerequisites.append(
             f"SeasonLifecycle reserves validation_fplcache strictly for active_validation season {act_s} "
             "(quarantined outcomes excluded from fixture construction)."
@@ -376,8 +376,8 @@ def build_pilot_fixture_inventory(
         hydrated_prefix_seasons
         and selection.podium_sealed
         and selection.candidates
+        and selection.champion not in selection.candidates
         and cert_status["passed"]
-        and retained_fixture.get("authorizes_real_historical_pass")
     )
 
     return {

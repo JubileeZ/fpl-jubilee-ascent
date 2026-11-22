@@ -1,13 +1,13 @@
 # Sparse Champion Confirmation & Statistical Early-Harm Certification
 
-**Updated**: 2026-11-22T15:05:54+00:00  
+**Updated**: 2026-11-22T15:52:40+00:00  
 **Data stamp**: Synthetic 38-GW paths (`N=20,000`/scenario; `2026-27` untouched) — 2026-11-22  
 **Season**: Synthetic Multi-Slate (`M=1`, `M=2`, 38 GWs)  
 **Status**: Active — Certified  
 **Purpose**: Calibrate and certify ADR 0070 sparse (`GW15`/`GW30`/`GW38`) confirmation thresholds, scale-free advisory GW1–4 diagnostics, and decoupled fixed-FPL-pts/yr empirical power diagnostics across shared-Champion correlated paths without accessing `2026-27` outcomes.  
 **Scope**: Preregistered synthetic certification (`seed=21101` tuning, `seed=21102` primary held-out, `seed=21103` predeclared advisory fallback); excludes live `2026-27` validation outcomes and MILP replay execution.  
 **Related**: [ADR 0070](../../adr/0070-weekly-planner-selection-and-champion-adoption.md) · [ADR 0071](../../adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) · [Implementation Spec](../../product/champion-adoption-implementation.md) · Issues [#201](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/201) & [#211](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/211)  
-**Artifact**: [certification_summary.csv](certification_summary.csv) · [certification_result.json](certification_result.json) · [preregistration_manifest.json](preregistration_manifest.json) · [parity_check.json](parity_check.json)
+**Artifact**: [certification_summary.csv](certification_summary.csv) · [empirical_power_diagnostics.csv](empirical_power_diagnostics.csv) · [certification_result.json](certification_result.json) · [preregistration_manifest.json](preregistration_manifest.json) · [parity_check.json](parity_check.json)
 
 ## Sources
 
@@ -25,8 +25,9 @@ Full redo docs/research/sparse-confirmation-certification/sparse-confirmation-ce
 1. Re-run: uv run python -m commands.certify_sparse_confirmation
 2. Inspect parity_check.json (max_abs_numeric_diff <= 1e-10, binary_agreement_rate == 1.0).
 3. Read certification_summary.csv columns: false_null_ever_pass_upper95, correct_confirmation_by_gw38_lower95, terminal_false_exclusion_upper95, statistical_false_exclusion_flag_upper95.
-4. Read certification_result.json fields: certified, certified_mode, certification_digest, statistical_protocol_hash, empirical_power_diagnostics.
-5. Never use 2026-27 outcomes or alter preregistered seeds (21101, 21102, 21103) without manifest bump.
+4. Read empirical_power_diagnostics.csv columns: gw15_power, gw30_power, single_season_gw38_power, two_season_76gw_power.
+5. Read certification_result.json fields: certified, certified_mode, certification_digest, statistical_protocol_hash, empirical_power_diagnostics.
+6. Never use 2026-27 outcomes or alter preregistered seeds (21101, 21102, 21103) without manifest bump.
 ```
 
 ## Method
@@ -53,6 +54,10 @@ Full redo docs/research/sparse-confirmation-certification/sparse-confirmation-ce
 | **Terminal False Exclusion Upper 95%** | `terminal_false_exclusion_upper95` | One-sided 95% Clopper-Pearson upper bound on slates where >=1 non-harmful finalist is terminally excluded | Lower $\downarrow$ | `<= 0.05` | Protects non-harmful finalists (`advisory` mode restricts terminal exclusion to mandatory projection guard `FAIL`) |
 | **Statistical Harm Flag Upper 95%** | `statistical_false_exclusion_flag_upper95` | One-sided 95% Clopper-Pearson upper bound on slates where >=1 non-harmful finalist triggers cumulative or completed-segment statistical Early-Harm (`p_harm <= 0.025`) | Lower $\downarrow$ | `<= 0.05` (enforced gate) / Diagnostic (advisory) | Measures statistical Early-Harm false-flag rate driving enforced vs advisory separation |
 | **Harmful Detection Rate** | `harmful_any_detected_rate` | Share of harmful scenarios flagged by statistical Early-Harm or GW1–4 advisory/enforced floor | Higher $\uparrow$ | Maximized | Diagnostics on `-0.40`/`-0.60`/`-0.80` SD, `-40` pt GW1–4 collapse, and empirical `-40`/`-80` pts/yr harm |
+| **GW15 Power (`empirical_power_diagnostics.csv`)** | `gw15_power` | Point estimate `k/N` clearing calibrated superiority threshold `a15` at `GW15` (`phi=0.10`, locked GW1/GW2) | Higher $\uparrow$ | Diagnostic | Single-arm early confirmation probability at `GW15` |
+| **GW30 Power (`empirical_power_diagnostics.csv`)** | `gw30_power` | Point estimate `k/N` clearing calibrated superiority threshold `a30` at `GW30` (`phi=0.10`, locked GW1/GW2) | Higher $\uparrow$ | Diagnostic | Single-look `GW30` confirmation probability under empirical variance |
+| **1-Season GW38 Power (`empirical_power_diagnostics.csv`)** | `single_season_gw38_power` | Cumulative sequential confirmation probability `k/N` clearing `a15` at `GW15`, `a30` at `GW30`, or `a38` at `GW38` (`phi=0.10`, locked GW1/GW2) | Higher $\uparrow$ | Diagnostic | 38-GW empirical power for fixed `+40/+60/+80` pts/yr gains across `sigma_gw in {8.5, 11.0}` |
+| **2-Season 76-GW Carryover Power (`empirical_power_diagnostics.csv`)** | `two_season_76gw_power` | Confirmation probability `k/N` over concatenated 2-season `76`-GW carryover evaluated at `a38` (`phi=0.10`, locked GW1/GW2 per season) | Higher $\uparrow$ | Diagnostic | Illustrates multi-season confirmation power motivating GW38 summer carryover policy |
 
 **Validation boundary**: Synthetic AR(1) + Gaussian/Student-$t(5)$ + scheduled GW15/19/30/34 shock model with shared Champion noise (`rho_champ=0.50`). Real FPL replay transitions exhibit locked-GW1/GW2 zero deltas and candidate-dependent weekly SD (`0.0–12.2` pts/GW).
 
@@ -84,7 +89,7 @@ Full redo docs/research/sparse-confirmation-certification/sparse-confirmation-ce
 - Standardized `+0.40` SD GW38 confirmation lower 95%: `0.369009` (`ok=True`)
 - Worst non-harmful terminal false exclusion upper 95%: `0.000150` (`ok=True`, `advisory` mode restricts terminal exclusion to guard `FAIL`)
 
-### Decoupled Fixed-FPL-Points Empirical Power Diagnostics (Locked GW1/2, `phi=0.10`)
+### Decoupled Fixed-FPL-Points Empirical Power Diagnostics (Locked GW1/2, `phi=0.10` — `empirical_power_diagnostics.csv`)
 
 | Slate `M` | `sigma_gw` (pts/GW) | True Gain (`pts/yr`) | GW15 Power | GW30 Power | 1-Season GW38 Power | 2-Season `76`-GW Carryover Power |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -138,10 +143,10 @@ Full redo docs/research/sparse-confirmation-certification/sparse-confirmation-ce
 
 ## Decision
 
-**Verdict**: `certified=True`, `certified_mode=advisory`, `certification_seed=21103`, `live_adoption_blocked=False` (`certification_digest=efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571`).
+**Verdict**: `certified=True`, `certified_mode=advisory`, `certification_seed=21103`, `live_adoption_blocked=False` (`certification_digest=243962e549d2516b2008d96f874a569e0b208cea28b2c72912d5e4889b8cfb6a`).
 
 **Recommended action**:
-- Freeze calibrated `v2.0` protocol (`statistical_protocol_hash=c2c276fe36f17c1567ff3e7c057dd6e1a4f7ca78eb432faf321d8da215cff2ce`) with `certification_digest` bound prior to any prospective slate access.
+- Freeze calibrated `v2.0` protocol (`statistical_protocol_hash=1e818b27815aee47302d73e5872ca1f82eb9919bbe6ad9ada98f65bb5dbd74c1`) with `certification_digest` bound prior to any prospective slate access.
 - Retain `GW15`/`GW30`/`GW38` sparse confirmation cadence (weekly Transfer Planner leader selection captures practical value during the season; GW38 summer-rollover carryover policy tracked pre-`2027-28`).
 
 ## Risks and unknowns
