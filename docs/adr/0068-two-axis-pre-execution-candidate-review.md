@@ -67,19 +67,21 @@ flowchart TD
    - The review-repair loop between Implementer and Reviewers is capped at **3 repair iterations**.
    - If both reviewers do not sign off `VERDICT: PASS` within 3 cycles, the lane is flagged `blocked (review convergence)` in `idea_queue.csv`, logged to `## Human Queue`, and the orchestrator advances to the next candidate.
 
-3. **Stale Diagnostic Purge**:
-   - Prior to launching `smoke.py` for a verified prototype, the orchestrator automatically purges any existing rows for that lane from `smoke_results.csv`, ensuring only verified, legitimate evaluations exist in the diagnostic ledger.
+3. **Stale Diagnostic Purge & ADR 0069/0071 Replay Route**:
+   - Prior to launching diagnostic `smoke.py` for a verified prototype, purge any existing rows for that lane from `smoke_results.csv`, keeping diagnostic evaluations clean.
+   - Under [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) / [ADR 0071](0071-certified-solver-budget-and-milp-qualification-calibration.md) pre-slate qualification (`#205`/`#206`), use `smoke.py --audit_only` for static leakage/manifest verification only, then execute sequential certified `600s` `target_gap=0.0` rolling replays (`run_s1_replay.py` -> `audit_historical_prefix.py` -> `compare_historical_replays.py` with `z = -1.50 SE` MILP segment floors -> `run_s2_filter.py`).
 
 4. **Autonomous Local Git Checkpoints**:
    - The skill is authorized to commit atomic local Git checkpoints (`chore(candidate): complete <lane> prototype fix, two-axis review, and dev retest`) after each candidate finishes, provided `bash tests/verify.sh` passes.
    - Outward actions (`git push` and production Champion adoption) remain strictly gated on user instruction.
 
-5. **Dual-Season Pass Halting Protocol**:
-   - If a candidate achieves verified PASS on both Dev Season (2025–26) and Confirmation Season (2024–25):
-     1. Freeze the winning prototype into `models/custom/<name>.py`.
+5. **Batch-Before-Freeze & Dual-Season Pass Halting Protocol (ADR 0071)**:
+   - Keep batch prototypes in `docs/research/<topic>/prototypes/<lane>/prototypes.py` (outside `models/`) throughout a bounded queue batch so `core_closure_hash()` stays invariant across the shared S-1 Champion baseline and already-pinned `development_selection.json` files.
+   - Complete the bounded ideation batch (`#206`) before proposing slate freeze, then rank all dual-season (`S-1 > 0` & `S-2 > 0`, guards & MILP floors passed) qualifiers by `0.3*S1 + 0.7*S2` (`M = 1` default slate discipline; `M = 2` only for two genuinely strong finalists):
+     1. Freeze selected qualifier(s) into `models/<name>.py` after operator batch review.
      2. Draft Champion-change ADR Proposed (`docs/adr/XXXX-champion-<name>.md`).
-     3. Populate adoption in `## Human Queue`.
-     4. Immediately halt the queue loop to await human operator authorization before modifying production configuration.
+     3. Populate adoption / slate-freeze proposal in `## Human Queue`.
+     4. Halt the queue loop to await human operator authorization before sealing slates or modifying production configuration.
 
 ---
 

@@ -6,7 +6,12 @@ disable-model-invocation: true
 
 # Explore Candidate
 
-Goal: replace Model Champion (`config/model_selection.json` `champion`) with Candidate that achieves scientific verdict PASS on Historical Promotion Gate (ADR 0066).
+Goal: qualify Candidate finalist(s) beating Model Champion (`config/model_selection.json` `champion`) under [ADR 0069](../../../docs/adr/0069-annual-rolling-validation-and-dual-tier-promotion.md), [ADR 0070](../../../docs/adr/0070-weekly-planner-selection-and-champion-adoption.md), and [ADR 0071](../../../docs/adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) (`S-1` Dev + `S-2` untuned Historical Filter -> `M = 1` default sealed slate -> `GW15`/`GW30`/`GW38` `<= 5%` FWER confirmation on quarantined `S`).
+
+**ADR 0069 / ADR 0071 Pre-Slate Certified Replay Contract (`#205`/`#206`):**
+- Use `smoke.py --audit_only` for static zero-leakage / `FEATURES` manifest audits only. Legacy `smoke.py` (`EVAL_TARGET = "blended_points"`, `-0.25/-0.15/-0.13` regret floors) is historical diagnostic only.
+- Execute pre-slate qualification **sequentially** (one HiGHS arm at a time) via certified `600s` `target_gap=0.0` rolling replays: `run_s1_replay.py` -> `audit_historical_prefix.py` -> `compare_historical_replays.py` (`z = -1.50 SE` MILP segment floors `-8.9 / -4.7 / -4.2` pts/GW, `15/15` guards, Win-Both `S-1 > 0` & `S-2 > 0`) -> `run_s2_filter.py` (run **both** `--arm champion` and `--arm candidate` per `S-1`-passing lane + `audit_historical_prefix.py --season 2024-25` on same host).
+- Obey **batch-before-freeze** (`EXT-02_1` -> `EXT-03_1` -> `EXT-04_1`, conditional `EXT-05_1`): fixed dossier grids (no `±10%` sweeps or stacking); keep all prototypes in `docs/research/<topic slug>/prototypes/<lane>/prototypes.py` (never touch `models/` mid-batch — rotates `core_closure_hash()`); rank all Win-Both qualifiers via `rank_and_freeze_podium` (`Decimal` `0.3*S1 + 0.7*S2`, tie-break `-delta_s2, name`, `max_finalists=1` default).
 
 **Authority boundary:** Legacy smoke `pass`/`FAIL`, oracle gates and blended-XI comparisons = development diagnostics. They cannot establish scientific Pass, final confirmation, adoption readiness or a new Dead Lever lock. Final verdict uses verified rolling replay evidence, declared projection guards, approved statistical protocol and immutable confirmation registration through the shared evaluator. Follow [operator workflow](../../../docs/testing/operator-workflow.md). Synthetic evidence cannot authorize production adoption; missing empirical admission → wait. Existing Dead Lever locks remain unchanged.
 
@@ -32,7 +37,7 @@ LLM references in prompts, reports, filenames, and documentation: specialist rol
 - **Human Gates & Checkpoints** (AFK never executes without explicit user prompt): `config/model_selection.json` edit · `commands.evaluate_model_promotion --adopt` · Dead-row override · `git push` · Champion-change ADR acceptance (draft allowed, status Proposed). Note: Local atomic Git commit checkpoints per candidate lane (`chore(candidate): ...`) are explicitly authorized after `bash tests/verify.sh` passes (ADR 0068).
 - **Progress guard.** Lane closes after 2 consecutive rounds with no new best `combined_delta`. Mechanism already in lane CSVs or ledger never re-smoked. All lanes closed → Exit.
 - **Exit.**
-  - (a) Candidate frozen + dev PASS + confirm PASS → draft Champion-change ADR Proposed, queue adoption in Human Queue → halt loop immediately for operator adoption (ADR 0068).
+  - (a) Bounded batch complete + dual-season Win-Both qualifier(s) verified (`S-1 > 0` & `S-2 > 0`, `z = -1.50 SE` MILP floors, guards, admitted prefix parity) -> rank via `0.3*S1 + 0.7*S2` (`M = 1` default), queue slate-freeze approval in Human Queue → halt loop for operator slate freeze / adoption authorization.
   - (b) Scope exhausted, every attempt in ledger → goal complete (verdict: no win).
   - (c) Only Human Queue items remain (e.g. every scoped mechanism Dead) → BLOCKED; goal stays active.
   - At Exit: write report (template below) into packet + topic note; write packet id to `.agents/handoff-pointer`; run goal completion audit, `UpdateGoal complete` for (a)/(b); final turn presents Human Queue via `AskQuestion`.
@@ -58,17 +63,17 @@ Queue CSV = work list + state (alongside packet). Columns used: `order`, `idea_i
 - **Batch:** next ≤5 eligible rows by `order`, pairwise compatible: `conflicts_with` lists ids that never share a batch or stack; `after:<id>` = run only once `<id>` has verdict. Base for `after:` row = current Champion; `<id>` `confirm-pass` unpromoted → row waits. Grid entry naming another row (`+ <id>`) = implicit `after:<id>`; grid token `best` = second smoke round same lane, counts toward ≤6. Deferred rows wait for next batch.
 - **Lane id** = `idea_id` lowercased, non-alphanumeric → `_` (e.g. `DEF-05+06` → `def_05_06`); prototype names prefix `<lane id>_`.
 - **Batch start:** set batch rows `status` = `in-progress-b<N>`; packet lists batch N rows + recorded Champion.
-- **Per batch (ADR 0068):** Lanes execute **serially** (one candidate at a time) using the **3-subagent team** (`Implementer` + `Reviewer A Spec/Math` + `Reviewer B Standards/Arch`). Steps 1–5 with lane = row; brief grid = row `grid` verbatim (fixed); mechanism/hook = `mechanism` + `replaces`; subagent brief includes relative dossier file path (`docs/research/<topic slug>/<spec_path>`). Review-repair loop is capped at max 3 iterations. Preserve legacy rows; `smoke.py` retains versioned stages and resumes only verified matching identities. Post-retest: atomic local Git commit checkpoint (`chore(candidate): ...`) upon `bash tests/verify.sh` pass. If a candidate achieves PASS on dev and confirm, freeze prototype, draft ADR Proposed, queue adoption in Human Queue, and halt loop immediately.
+- **Per batch (ADR 0068 + ADR 0071):** Lanes execute **serially** (one candidate at a time) using the **3-subagent team** (`Implementer` + `Reviewer A Spec/Math` + `Reviewer B Standards/Arch`). Keep prototypes in `docs/research/<topic slug>/prototypes/<lane>/prototypes.py` (never edit `models/` mid-batch). For ADR 0069/0071 pre-slate queues, test fixed `grid` verbatim via `smoke.py --audit_only` + sequential `run_s1_replay.py` (`600s` cap) / `audit_historical_prefix.py` / `compare_historical_replays.py` / `run_s2_filter.py` (both `--arm champion` and `--arm candidate`); complete the entire bounded batch before proposing slate freeze (`0.3*S1 + 0.7*S2`, `M = 1` default). Review-repair loop is capped at max 3 iterations. Preserve legacy rows; resume only verified matching identities. Post-retest: atomic local Git commit checkpoint (`chore(candidate): ...`) upon `bash tests/verify.sh` pass.
 - **Row verdict = one atomic edit:** Record diagnostic metrics with diagnostic scope; final `pass`/`fail` requires shared scientific evidence. `inconclusive`/`invalid` never creates a new Dead Lever lock. Persist evidence → ledger record → queue status; never mark `confirm-pass` from legacy smoke or unregistered historical inspection.
-- **Loop:** batch with no dev winner → next batch same run. Confirm PASS → Exit (a) (promotion = Human Gate).
+- **Loop:** batch with no dev winner → next batch same run. Complete bounded batch before presenting Win-Both qualifiers (`M = 1` default) at Human Gate (Exit (a)).
 - **Step 0 Queue guard:** packet Human Queue holds unresolved adoption and Champion unchanged → Exit (c) "promote or reject Candidate first" (no screening on stale Champion). Champion changed → shipped ids = `confirm-pass` rows whose Candidate is now Champion; rows whose `conflicts_with` names a shipped id → `blocked (conflict shipped)`. Queue has no eligible rows → Exit (b)/(c).
 
 ## Seasons (never hard-code)
 
-Roles resolve from `data/archive/YYYY-YY` each run: `uv run python .agents/skills/explore-candidate/smoke.py --show_seasons`. Complete = every fixture finished; seed = prior archive season if present.
-- **dev** = latest complete season. Selection + tuning here only.
-- **confirm** = second-latest complete season (ADR 0047). One run per frozen Candidate, never tuned on.
-- **holdout** = incomplete live season. Sealed (ADR 0046 GW6+): no smoke, tuning, ablation; post-promotion check only.
+Primary authority: `config/season_lifecycle.json` (`SeasonLifecycle`, ADR 0069). Legacy fallback inventory check: `uv run python .agents/skills/explore-candidate/smoke.py --show_seasons`. Complete = every fixture finished; seed = prior archive season if present.
+- **`S-1` / dev (`development`):** Latest complete season (`2025-26`, seed `2024-25` excluding `position_id==5`). Selection + tuning here only.
+- **`S-2` / confirm (`historical_filter`):** Second-latest complete season (`2024-25`, seed `2023-24`, `position_id==5` excluded). Single frozen look per `S-1`-passing candidate, never tuned on.
+- **`S` / holdout (`active_validation`):** Active/incomplete season (`2026-27`). Strictly quarantined (`Randdalf/fplcache` `<= 24h` validation only; no ideation, tuning, smoke, or ablation).
 
 Record resolved names in packet at step 0. Season completion alone cannot assign fresh confirmation or unseal holdout; use approved protocol windows and registered inspection history. Commands, prototypes, and briefs name roles and exact frozen season identities.
 
@@ -178,26 +183,24 @@ If either reviewer returns `VERDICT: FAIL`, the orchestrator instructs the Imple
 
 Once both Reviewers sign off with `VERDICT: PASS`:
 1. **Preserve History**: Keep legacy CSVs and prior stage artifacts. Changed source, data, seed, parameters or protocol creates a new run identity; resume only complete evidence with verified artifact hashes. Missing/tampered evidence stops reuse; never erase rows to force a rerun. Confirmation single-look limits remain independent of identity.
-2. **Execute Smoke Retest**: Run `uv run python .agents/skills/explore-candidate/smoke.py docs/research/<topic slug>/prototypes/<lane>/prototypes.py --lane <lane> --out docs/research/<topic slug>/smoke_results.v2.csv` on Dev Season (`2025-26`). Retain `.evidence/` sidecars: paired evaluation frames, weekly regret deltas, common playable-pool summaries and identity manifests. Oracle success and integrated outcome remain separate rows; oracle segment wins unassessed. `execution_status=complete` describes diagnostic execution; `promotion_execution_status=not_run` and scientific Inconclusive retain zero adoption/Dead authority. Interpret `integrated_grid_positives` only as descriptive integrated deltas, never winner count.
-3. **Record Results**: Update `docs/research/<topic slug>/idea_queue.csv` and `docs/research/candidate-ledger/candidate_ledger.csv`.
-4. **Atomic Git Checkpoint**: Run `bash tests/verify.sh` and commit local checkpoint:
-   ```bash
-   git add docs/research/<topic slug>/prototypes/<lane>/prototypes.py docs/research/<topic slug>/idea_queue.csv docs/research/<topic slug>/smoke_results.v2.csv docs/research/<topic slug>/smoke_results.v2.evidence
-   git commit -m "chore(candidate): complete <lane> prototype fix, two-axis review, and dev retest"
-   ```
-5. **Confirmation & Dual-Season Halting Protocol**:
-   - If a candidate passes both Dev Season and Confirmation Season (Tier 2 & Tier 3 PASS):
-     1. Freeze prototype into `models/custom/<name>.py`.
+2. **Execute Static Audit & Certified S-1/S-2 Replays**:
+   - **Pre-slate certified route (ADR 0069/0071, `#205`/`#206`):** Run static zero-leakage/manifest check via `uv run python .agents/skills/explore-candidate/smoke.py docs/research/<topic slug>/prototypes/<lane>/prototypes.py --audit_only`. Then execute **sequentially (one HiGHS arm at a time)** `run_s1_replay.py` (`600s` certified `target_gap=0.0`), `audit_historical_prefix.py` (admitted `GW1–7` parity), and `compare_historical_replays.py` (`15/15` guards, `evaluate_milp_segment_floors()` `z = -1.50 SE`: `-8.9 / -4.7 / -4.2` pts/GW). Pin best `S-1` passer (`development_selection.json`) before taking single frozen `S-2` look via `run_s2_filter.py` (**both** `--arm champion` and `--arm candidate` per `S-1`-passing lane) + `audit_historical_prefix.py --season 2024-25` + `compare_historical_replays.py --season 2024-25`.
+   - **Legacy diagnostic `smoke.py` route (historical reference only):** `uv run python .agents/skills/explore-candidate/smoke.py ... --lane <lane> --out ...` retains `.evidence/` sidecars as development diagnostics with zero promotion/Dead-lock authority.
+3. **Record Results**: Update `docs/research/<topic slug>/idea_queue.csv`, `docs/research/candidate-ledger/candidate_ledger.csv` + `candidate-ledger.md`, and topic summary (`uv run pytest tests/test_candidate_ledger.py`).
+4. **Atomic Git Checkpoint**: Run `bash tests/verify.sh` and commit local checkpoint (`chore(candidate): ...`). Keep prototypes outside `models/` throughout bounded batch so `core_closure_hash()` stays invariant.
+5. **Batch Completion & Slate-Freeze Halting Protocol (ADR 0071)**:
+   - Do **not** stop early on the first Win-Both qualifier in a bounded batch (`#206`). Complete all scheduled bounded-batch lanes first (`EXT-02_1 -> EXT-03_1 -> EXT-04_1`; `EXT-05_1` last only if `0` qualify), then rank all Win-Both qualifiers (`rank_and_freeze_podium(..., max_finalists=1)`, exact `Decimal` `0.3*S1 + 0.7*S2`, tie-break `-delta_s2, candidate_name`):
+     1. Freeze selected finalist(s) into `models/<name>.py` only after operator batch review / slate-freeze sign-off (`M = 1` default, `M = 2` max).
      2. Draft Champion-change ADR Proposed (`docs/adr/XXXX-champion-<name>.md`).
-     3. Populate adoption in `## Human Queue`.
-     4. **Halt loop immediately** to await human operator authorization before modifying production Champion configuration.
+     3. Populate slate-freeze / adoption proposal in `## Human Queue`.
+     4. Halt loop to await human operator authorization before freezing slates or modifying production configuration.
 
 ---
 
-### 5. Iterate to Development Screen win
+### 5. Iterate to Development Screen win *(skip in fixed-grid ADR 0071 pre-slate queues)*
 
-Development Screen win = verified smoke row `pass=True` (development diagnostic; no final gate authority).
-- **Isolated winner check (`grid_positives == 1` on a multi-variant tunable grid):** `smoke.py` never blocks `pass=True` on coarse grid neighbours and reports `grid_positives=<pos>/<total>`. When a single variant passes Tier 3 (`pass=True`) and `grid_positives == 1` on a tunable parameter, run a 2-variant local perturbation check (`±10%` around the winner, strictly respecting dossier parameter types: `int` stays `int`, non-negative, probability bounds, ordering invariants) before Step 6. If both local perturbations collapse ($\Delta < 0$), treat as a brittle spike rather than freezing Step 6.
+Development Screen win = verified smoke row `pass=True` (development diagnostic; no final gate authority). For ADR 0069/0071 fixed-grid queues (`#206`), keep dossier `grid` verbatim without `±10%` perturbations or stacking.
+- **Isolated winner check (`grid_positives == 1` on a multi-variant tunable grid):** `smoke.py` never blocks `pass=True` on coarse grid neighbours and reports `grid_positives=<pos>/<total>`. When running open-ended Dual-lane search on a tunable parameter (`grid_positives == 1`), run a 2-variant local perturbation check (`±10%` around the winner, strictly respecting dossier parameter types: `int` stays `int`, non-negative, probability bounds, ordering invariants) before Step 6. If both local perturbations collapse ($\Delta < 0$), treat as a brittle spike rather than freezing Step 6.
 - No win: read `reasons` + segment deltas; next round = new mechanism inside scope (Scoped) or inside lane (Dual-lane), fresh pre-declared grid. Record diagnostic failure without inventing demonstrated scientific harm or a new Dead Lever lock. Apply progress guard.
 - All lanes closed → step 8, Exit (b).
 

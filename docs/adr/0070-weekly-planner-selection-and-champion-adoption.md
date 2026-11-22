@@ -1,8 +1,8 @@
 # Weekly Transfer Planner Selection and Champion Adoption (ADR 0070)
 
-**Status**: Accepted (2026-11-18; amended 2026-11-20, 2026-11-21). Core implementation & sparse certification landed on `main` (PR `#202`, `d07d642d`; `8/10` production preflight); live activation disabled pending qualified slate and `>=15`-GW empirical fixture.
+**Status**: Accepted (2026-11-18; amended 2026-11-20, 2026-11-21; [ADR 0071](0071-certified-solver-budget-and-milp-qualification-calibration.md) 2026-11-22). Core implementation & sparse certification landed on `main` (PR `#202`, `d07d642d`; `8/10` production preflight); live activation disabled pending [`#211`](https://github.com/JubileeZ/fpl-jubilee-ascent/issues/211) `gw1_4_material_loss_limit` empirical-variance recalibration, qualified `#205`/`#206` slate (`M = 1` default), and `#198`/`#199` `>=15`-GW empirical fixture.
 
-**Scope**: Amend [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) sections 4–5 as changes ship. Preserve annual firewall, sealed slate of up to two frozen finalists, independent Strategic replay, empirical admission, and explicit human adoption authority.
+**Scope**: Amend [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) sections 4–5 as changes ship, alongside [ADR 0071](0071-certified-solver-budget-and-milp-qualification-calibration.md) (`600s` certified `freeze` cap/default, `M = 1` default slate discipline). Preserve annual firewall, sealed slate (`M = 1` default, `M <= 2` max) of frozen finalists, independent Strategic replay, empirical admission, and explicit human adoption authority.
 
 ## Weekly Transfer Planner selection
 

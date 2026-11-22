@@ -30,7 +30,7 @@ Override MultiFeatureAssistChallengerModel._fit_assist_rates. Start with the par
 `K=180; K=450`
 ## 6. Small-Sample & Cold-Start Strategy
 
-At zero current minutes the stock one-season seeded assist path receives all weight. If the builder used a position-price fallback, that is the available F. The GLM's existing training requirements still apply. The handover depends continuously on player exposure once G exists and introduces no second fit or population N_eff ramp.
+At zero current minutes the stock one-season seeded assist path receives all weight. Note (`features/builder.py`): from GW2 onward (`this_season_evidence` global switch), `build_features` uses this-season `position_price_prior` plus Matchup Share rather than individual GW1 prior-season seed; do **not** read prior-season archive files. Using Section 4's `F` remains non-inert because GLM `G` shrinks toward position-only mean × GLM covariates whereas `F` preserves position-price prior + Matchup Share. The GLM's existing training requirements still apply. The handover depends continuously on player exposure once G exists and introduces no second fit or population N_eff ramp.
 ## 7. Full Squad & Budget-Constrained Optimizer Interaction
 
 An established £5.0m creator returning to the starting XI can retain some of last season's evidence. A low-creation player has the same protection against an upward jump to a pooled rate. A gradual handover can prevent an early transfer reversal. Its value is measured through the six-GW replay and churn guard.
@@ -42,21 +42,27 @@ An established £5.0m creator returning to the starting XI can retain some of la
 ```python
 from __future__ import annotations
 
+import pandas as pd
+
 from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 
 
 class PlayerExposureForTheAssistModelHandoverChallengerModel(DefXgShrinkChallengerModel):
-    """Auto-scaffolded skeleton for Player exposure for the assist model handover."""
+    """Contract notes for Player exposure for the assist model handover."""
+
+    # Required prototype module exports: PROTOTYPES, FEATURES, COMPONENTS, zero-arg variant classes.
+    # Required class property: @property def name(self) -> str returning unique variant name (do not inherit Champion .name).
 
     def __init__(self, k: float = 180.0, **kwargs: object) -> None:
         super().__init__(**kwargs)
         self.k = float(k)
 
-    def _fit_assist_rates(self, *args: object, **kwargs: object) -> object:
-        # Hook target: Override MultiFeatureAssistChallengerModel._fit_assist_rates. Start with the parent's dictionary, then edit only its returned player-fixture keys. Obtain F as CalibratedMatchupHybridModel._project_event_components(self, row, position, 90.0, clean_sheet_minutes=90.0, p_sixty_mins=1.0)["xp_assists"]/3. Reuse the inherited state scorer with R, which updates projected points and xBPS together.
-        parent_method = getattr(super(), '_fit_assist_rates', None)
-        if callable(parent_method):
-            return parent_method(*args, **kwargs)
+    def _fit_assist_rates(self, features_df: pd.DataFrame) -> dict[tuple[int, int], float]:
+        # Contract:
+        # 1. Start with super()._fit_assist_rates(features_df); edit only its returned (player_id, fixture_id) keys.
+        # 2. Deduplicate self._history by (player_id, fixture_id) and filter gameweek_id < target_gw when computing m.
+        # 3. Map integer position_id -> string code ("D", "M", "F"; exclude GK/AM) BEFORE calling
+        #    CalibratedMatchupHybridModel._project_event_components(self, row, position_code, 90.0, clean_sheet_minutes=90.0, p_sixty_mins=1.0).
         raise NotImplementedError('_fit_assist_rates mechanism not yet implemented')
 ```
 

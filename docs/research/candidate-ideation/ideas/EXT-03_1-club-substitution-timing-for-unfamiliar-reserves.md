@@ -37,27 +37,36 @@ Two same-price reserves can have similar appearance probabilities but different 
 ## 8. Point-in-Time Feature Requirements
 
 `features.player_id; features.club_id; features.position_id; features.xmins_if_sub_in; features.p_60_if_sub_in; history.player_id; history.fixture_id; history.gameweek_id; history.opponent_club_id; history.starts; history.minutes`
-## 9. Python Code Skeleton (Auto-Scaffolded)
+## 9. Python Code Skeleton
 
 ```python
 from __future__ import annotations
+
+import pandas as pd
 
 from models.def_xg_shrink_challenger import DefXgShrinkChallengerModel
 
 
 class ClubSubstitutionTimingForUnfamiliarReservesChallengerModel(DefXgShrinkChallengerModel):
-    """Auto-scaffolded skeleton for Club substitution timing for unfamiliar reserves."""
+    """Contract skeleton for Club substitution timing for unfamiliar reserves (fits self._history and overrides predict)."""
+
+    # Required prototype module exports: PROTOTYPES, FEATURES, COMPONENTS, zero-arg variant classes.
+    # Required class property: @property def name(self) -> str returning unique variant name (do not inherit Champion .name).
 
     def __init__(self, a: float = 0.5, **kwargs: object) -> None:
         super().__init__(**kwargs)
         self.a = float(a)
 
-    def _if_sub_in(self, *args: object, **kwargs: object) -> object:
-        # Hook target: Adjust xmins_if_sub_in on a feature copy at Candidate.predict before delegating to DefXgShrinkChallengerModel.predict. Count a cameo as starts=0 and 0<minutes≤90 in unique completed player-fixture rows. Use both observed sides to recover the club at the time. Use current position for current-season player IDs with known position. Hard DNPs, blank fixtures, and explicit external-minute handling follow ParticipationStateHybridModel.predict.
-        parent_method = getattr(super(), '_if_sub_in', None)
-        if callable(parent_method):
-            return parent_method(*args, **kwargs)
-        raise NotImplementedError('_if_sub_in mechanism not yet implemented')
+    def fit(self, history_df: pd.DataFrame) -> ClubSubstitutionTimingForUnfamiliarReservesChallengerModel:
+        # Recover own_club from both fixture sides across ALL completed rows BEFORE filtering cameos (starts == 0 and 0 < minutes <= 90).
+        # Map position_id from features_df inside predict(); exclude target player's cameos from BOTH L and (T, n) (leave-player-out).
+        super().fit(history_df)
+        return self
+
+    def predict(self, features_df: pd.DataFrame, horizon: int = 1) -> pd.DataFrame:
+        # Copy features_df, update xmins_if_sub_in for eligible outfielders (position_id in (2, 3, 4), finite u in [1+59q, 59+31q], d != 0),
+        # then return super().predict(adjusted_features, horizon). Note: _if_sub_in method does not exist on parent models.
+        raise NotImplementedError('fit/predict cameo duration mechanism not yet implemented')
 ```
 
 ## Pre-slate Review
