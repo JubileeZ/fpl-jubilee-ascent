@@ -12,9 +12,9 @@
 
 **Dead lever MUST NOT be rebuilt, re-swept, re-smoked, re-gated, or stacked into a Candidate before its `revisit_after` date (evidence date + 1 year). No exceptions** — not for new Champion, new season data, new harness, or "small tweak". Only user's explicit words override. `never` = structural (leakage); no revisit.
 
-## Sealed holdout + confirmation season (ADR 0046, 0047, 0048)
+## Rolling validation & historical qualification (ADR 0069, ADR 0070, ADR 0071)
 
-2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning; ADR 0049: bootstrap bar 0.60 on both seasons, no minimum effect); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
+`S` (`2026-27`) = quarantined validation season (no tuning, smoke, or ablation). Pre-slate qualification evaluates full `GW1–38` certified `600s` `target_gap=0.0` rolling-MILP replays on `S-1` (`2025-26` Dev, seed `2024-25`, admitted `GW1–7` parity) and untuned `S-2` (`2024-25` Filter, seed `2023-24`, admitted `GW1` parity) vs `def_xg_shrink_challenger`: requires Win-Both (`S-1 > 0` & `S-2 > 0`), all applicable projection guards, and `z = -1.50 SE` MILP segment floors (`-8.9 / -4.7 / -4.2` pts/GW). Rank Win-Both qualifiers by exact `Decimal` `0.3*S1 + 0.7*S2` after completing bounded ideation batch; default sealed slate `M = 1` (`M <= 2` max). *(Historical pre-2026-11-13 ledger rows below record legacy ADR 0046–0049 rules applicable at capture time.)*
 
 ## Rules
 
@@ -145,10 +145,14 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Starter-role conditioning and set-piece creative-share xG shrinkage for budget enablers (MID/FWD K_ATK 450-720 toward creative-share prior; DEF K=2400 preserved) | smoke `ext_18_*` (6) | DXS | dev 2025-26 FAIL: best `ext_18_k540_g015` delta -0.2407, 0/3 segments (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation; boot P invalid (smoke.py bug); verdict rests on delta <= 0 | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_18` |
 | Opponent speculative shot-volume and goalkeeper save-floor elasticity (GKP EB save shrink K_GK 540-1080 modulated by opponent shrunk threat volume) | smoke `ext_19_*` (6) | DXS | dev 2025-26 FAIL: best `ext_19_k900_xi035` delta -0.1279, 0/3 segments (all 6 variants tier2_oracle_fail) vs def_xg_shrink_challenger; no confirmation; boot P invalid (smoke.py bug); verdict rests on delta <= 0 | 2026-11-05 | 2027-11-05 | [candidate-ideation](../candidate-ideation/smoke_results.csv) `lane=ext_19` |
 | Within-player xGC-minus-GC concession-rate adjustment | `EXT-01_1` (`ext_01_1_a05`, `ext_01_1_a10`) | DXS | S-1 PASS `+82`, S-2 FAIL `-67` (`2,232` vs `2,299`, `1/3` segments, `14/14` guards) | 2026-11-22 | 2027-11-22 | [pre-slate-search-2026-11-21](../candidate-ideation/pre-slate-search-2026-11-21.md) · `prototypes/ext_01_1/s2/summary.json` |
+| Player exposure handover between assist GLM and stock face-value rate | `EXT-02_1` (`ext_02_1_k180`, `ext_02_1_k450`) | DXS | S-1 FAIL `-64` both variants (`2,103` vs `2,167`, `0 / -21 / -43`, `15/15` guards, `21/21` GW1–7 parity; no S-2 look) | 2026-11-22 | 2027-11-22 | `prototypes/ext_02_1/s1/summary.json` |
+| Club substitution timing for unfamiliar reserves | `EXT-03_1` (`ext_03_1_a05`, `ext_03_1_a10`) | DXS | S-1 PASS `+2` (`2,169` vs `2,167`, `15/15` guards, `21/21` GW1–7 parity); pinned `ext_03_1_a05` S-2 FAIL `delta 0` (`2,299` vs `2,299`, `14/14` guards, `3/3` segments, GW1 parity exact) | 2026-11-22 | 2027-11-22 | `prototypes/ext_03_1/s2/summary.json` |
+| Reduced weight for attacking evidence in dismissal fixtures | `EXT-04_1` (`ext_04_1_a050`, `ext_04_1_a080`) | DXS | S-1 PASS `ext_04_1_a080` `+5` (`2,172` vs `2,167`; `a050` `2,149` `-18`; `15/15` guards; `21/21` GW1–7 parity); pinned `ext_04_1_a080` S-2 FAIL `-21` (`2,278` vs `2,299`, `+1 / -1 / -21`, `14/14` guards, `3/3` segments, GW1 parity exact) | 2026-11-22 | 2027-11-22 | `prototypes/ext_04_1/s2/summary.json` |
+| Goalkeeper save-count dispersion | `EXT-05_1` (`ext_05_1_r3`, `ext_05_1_r8`) | DXS | S-1 FAIL `delta 0` both variants (`2,167` vs `2,167`, `0 / 0 / 0`, `15/15` guards, `21/21` GW1–7 parity; no S-2 look) | 2026-11-22 | 2027-11-22 | `prototypes/ext_05_1/s1/summary.json` |
 
 ## Open (next-lever pool; not proven dead)
 
-2026-11-22 `EXT-01_1` completed certified S-2 filter (`-67` net points FAIL, `1/3` segments) and moved to Dead (`revisit_after 2027-11-22`). `EXT-02_1` next in queue (`#206`). [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
+2026-11-22 `#206` batch completed under ADR 0071: `EXT-01_1` (`S-2 -67`), `EXT-02_1` (`S-1 -64`), `EXT-03_1` (`S-1 +2`, `S-2 0` tie), `EXT-04_1` (`S-1 +5`, `S-2 -21`), and conditional `EXT-05_1` (`S-1 0` tie) yielded `0` Win-Both qualifiers; all five moved to Dead (`revisit_after 2027-11-22`); Champion `def_xg_shrink_challenger` unchanged. [Evidence and proposal dispositions](../candidate-ideation/pre-slate-search-2026-11-21.md).
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|

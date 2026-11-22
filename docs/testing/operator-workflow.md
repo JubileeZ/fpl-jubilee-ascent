@@ -1,7 +1,7 @@
 # Backtesting & Promotion Foundation Operator Workflow
 
-**Status**: Authoritative Operator Guide (ADR 0066 Sections 1–7 + ADR 0069)  
-**Governing Standard**: [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [Foundation Rationale](../research/backtesting-promotion-foundation/backtesting-promotion-foundation.md)
+**Status**: Authoritative Operator Guide (ADR 0066 Sections 1–7 + ADR 0069 + ADR 0070 + ADR 0071)  
+**Governing Standard**: [ADR 0071](../adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) · [ADR 0070](../adr/0070-weekly-planner-selection-and-champion-adoption.md) · [ADR 0069](../adr/0069-annual-rolling-validation-and-dual-tier-promotion.md) · [ADR 0066](../adr/0066-backtesting-and-promotion-foundation.md) · [Foundation Rationale](../research/backtesting-promotion-foundation/backtesting-promotion-foundation.md)
 
 **Operational boundary (2026-10-30):** Legacy archive walkforward and smoke results = diagnostics only. Final recommendation re-verifies retained replay evidence through `backtesting.promotion_evidence`; synthetic admission cannot authorize production adoption. Empirical admission and approved numerical calibration remain prerequisites, not outcomes of infrastructure tests. Bonferroni supported with frozen family budget; chronological/sequential Holm configuration rejected.
 
@@ -123,6 +123,11 @@ uv run python -m commands.evaluate_model_promotion \
 - Binds approval to exact bundle hash and candidate; re-verifies retained source/parameters/protocol, complete confirmation registry and live-readiness declaration. Synthetic evidence rejected; candidate override cannot select another comparison row.
 - Atomically updates `config/model_selection.json` and preserves previous Champion in candidate comparison slate.
 
+#### Production GitHub Adoption Pipeline (ADR 0070 / ADR 0071)
+- Evidence producer & CI collector: `commands.produce_validation_evidence` (`collect`, `freeze`, `replay`, `scorecard`, `bootstrap-s1-baseline`; ADR 0071 certified `target_gap=0.0` solver cap/default `600.0s`) and `.github/workflows/validation-collector.yml` writing portable bundles to `validation-evidence`.
+- Protected review & merge: `commands.manage_champion_adoption` + `.github/workflows/champion-adoption-{request,pr-checks,merge}.yml` open one deduplicated `Adoption Review Issue` (`GitHubIssueMailProvider`, zero approval authority) alongside protected GitHub Environment `champion-adoption-approval` review and App `5858656` reserved merge onto protected `main`.
+- Pre-live rollout gates: resolve `#211` (`gw1_4_material_loss_limit` empirical rolling-MILP variance recalibration), complete `#198`/`#199` positive `>=15`-GW fixture verification, seal `M = 1` default (`M <= 2` max) slate (`#205`/`#206`), verify `10/10` read-only `production-preflight`, and keep `CHAMPION_ADOPTION_LIVE_ENABLED=false` until explicit operator authorization.
+
 ### Stage 8: Prospective Review & Rollback
 For deployed champions, prospective shadow replay runs each gameweek:
 - Tracks provisionally adopted champion and former champion independently.
@@ -152,7 +157,7 @@ if review.should_rollback:
 - **Interrupted Replay**: Provide explicit frozen model/protocol hashes and the same evaluation identity. Resume re-verifies full checkpoint contents, parent lineage, forecasts, outcomes, native transition and score; deserialization alone does not establish validity. Changed horizon/calendar/policy/model/forecast requires distinct problem identity.
 - **Corrupt Cache**: Content-addressed SHA-256 digests detect altered bytes immediately. Delete the corrupt deadline checkpoint and re-solve.
 - **Incomplete Confirmation Schedule**: Stopping rules block admission of partial schedules (`IncompleteScheduleError`). Complete the remaining registered gameweeks before verdict finalization.
-- **Profiling**: `uv run python -m commands.profile_transfer_replay --problem-manifest data/reports/native-problems.json --output data/reports/native-profile.json` executes actual HiGHS calls on retained synthetic native problems. Manifest: `version=1`, `mode=synthetic_diagnostic`, `problems` containing unique `problem_id`, predefined `archetype`, complete native `state`, `horizon`, `forecasts.rows` and shared `chip_calendar`. Input assumptions and content hashes retained; measured solve time remains distinct from empirical full-season runtime evidence. Hard cap: 20 calls, 30 seconds/call, one thread, serial, 20 minutes total. `--dry-run` reports explicit simulation; no policy recommendation from simulated timings. Empirical profiling inputs require separate causal admission authority; unavailable cache/resume measurements remain missing.
+- **Profiling**: `uv run python -m commands.profile_transfer_replay --problem-manifest data/reports/native-problems.json --output data/reports/native-profile.json` executes actual HiGHS calls on retained synthetic native problems. Manifest: `version=1`, `mode=synthetic_diagnostic`, `problems` containing unique `problem_id`, predefined `archetype`, complete native `state`, `horizon`, `forecasts.rows` and shared `chip_calendar`. Input assumptions and content hashes retained; measured solve time remains distinct from empirical full-season runtime evidence. CLI profiler defaults to `60s`/call (synthetic hard bounds 20 calls, 1 thread, serial), distinct from ADR 0071's `600s` certified `target_gap=0.0` replay budget. `--dry-run` reports explicit simulation; no policy recommendation from simulated timings. Empirical profiling inputs require separate causal admission authority; unavailable cache/resume measurements remain missing.
 
 ---
 
