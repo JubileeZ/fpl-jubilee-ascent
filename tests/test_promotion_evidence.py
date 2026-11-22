@@ -11,19 +11,23 @@ from backtesting import promotion_evidence
 from backtesting.promotion_evidence import evaluate_replay_evidence, verify_recommendation_bundle, write_recommendation_bundle
 from commands.evaluate_model_promotion import adopt_champion
 from models.selection import ModelSelection, load_model_selection, save_model_selection
-from promotion_evidence_fixture import CANDIDATE, CHAMPION, build_evidence_fixture, save_material
+from promotion_evidence_fixture import CANDIDATE, CHAMPION, save_material
 
 
 @pytest.fixture(scope="module")
-def retained_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return build_evidence_fixture(tmp_path_factory.mktemp("retained-promotion"))
+def finalized_bundle_template(retained_template: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    directory = tmp_path_factory.mktemp("finalized-promotion") / "evidence"
+    shutil.copytree(retained_template.parent, directory)
+    bundle = directory / "bundle.json"
+    write_recommendation_bundle(directory / retained_template.name, bundle)
+    return bundle
 
 
 @pytest.fixture
-def retained_request(retained_template: Path, tmp_path: Path) -> Path:
-    destination = tmp_path / "evidence"
-    shutil.copytree(retained_template.parent, destination)
-    return destination / "request.json"
+def finalized_bundle(finalized_bundle_template: Path, tmp_path: Path) -> Path:
+    directory = tmp_path / "evidence"
+    shutil.copytree(finalized_bundle_template.parent, directory)
+    return directory / finalized_bundle_template.name
 
 
 def _selection(root: Path) -> Path:
@@ -48,9 +52,9 @@ def test_native_replay_outputs_reconstruct_and_synthetic_evidence_cannot_adopt(r
 
 
 @pytest.mark.parametrize("mutation", ["trace", "request", "bundle", "forecast", "guard_inventory", "live_readiness"])
-def test_changed_retained_material_is_rejected(retained_request: Path, mutation: str) -> None:
-    bundle_path = retained_request.with_name("bundle.json")
-    write_recommendation_bundle(retained_request, bundle_path)
+def test_changed_retained_material_is_rejected(finalized_bundle: Path, mutation: str) -> None:
+    bundle_path = finalized_bundle
+    retained_request = bundle_path.with_name("request.json")
     request = json.loads(retained_request.read_bytes())
     if mutation == "bundle":
         bundle = json.loads(bundle_path.read_bytes())
