@@ -12,9 +12,9 @@
 
 **Dead lever MUST NOT be rebuilt, re-swept, re-smoked, re-gated, or stacked into a Candidate before its `revisit_after` date (evidence date + 1 year). No exceptions** — not for new Champion, new season data, new harness, or "small tweak". Only user's explicit words override. `never` = structural (leakage); no revisit.
 
-## Sealed holdout + confirmation season (ADR 0046, 0047, 0048)
+## Rolling validation & historical qualification (ADR 0069, ADR 0070, ADR 0071)
 
-2026-27 GW6+ = sealed holdout. Tuning, smoke, or ablation on it = protocol breach. ADR 0047: frozen Candidate promotes on gate PASS 2025-26 + 2024-25 (confirmation season, one run, no tuning; ADR 0049: bootstrap bar 0.60 on both seasons, no minimum effect); 2026-27 GW6+ = one post-promotion check per Champion. Log run date + verdict in Candidate's row.
+`S` (`2026-27`) = quarantined validation season (no tuning, smoke, or ablation). Pre-slate qualification evaluates full `GW1–38` certified `600s` `target_gap=0.0` rolling-MILP replays on `S-1` (`2025-26` Dev, seed `2024-25`, admitted `GW1–7` parity) and untuned `S-2` (`2024-25` Filter, seed `2023-24`, admitted `GW1` parity) vs `def_xg_shrink_challenger`: requires Win-Both (`S-1 > 0` & `S-2 > 0`), all applicable projection guards, and `z = -1.50 SE` MILP segment floors (`-8.9 / -4.7 / -4.2` pts/GW). Rank Win-Both qualifiers by exact `Decimal` `0.3*S1 + 0.7*S2` after completing bounded ideation batch; default sealed slate `M = 1` (`M <= 2` max). *(Historical pre-2026-11-13 ledger rows below record legacy ADR 0046–0049 rules applicable at capture time.)*
 
 ## Rules
 
