@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backtesting.season_rules import load_season_lifecycle
+from backtesting.sparse_certification import verify_certification_artifacts
 from clients.env_loader import configure_utf8_stdio
 from models.selection import load_model_selection
 
@@ -301,6 +302,7 @@ def build_pilot_fixture_inventory(
             "test_path": test_file.relative_to(root).as_posix(),
             "test_sha256": _sha256_file(test_file) if test_file.is_file() else None,
             "pytest_passed": None,
+            "verification_skipped": True,
             "reconstructed_bundle": {
                 "checkpoint_gw": 15,
                 "scientific_verdict": "inconclusive",
@@ -314,19 +316,69 @@ def build_pilot_fixture_inventory(
         }
     )
 
+    from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
     lifecycle = load_season_lifecycle(lifecycle_path) if lifecycle_path.is_file() else load_season_lifecycle()
-    dev_s = lifecycle.season_for_role("development")
-    flt_s = lifecycle.season_for_role("historical_filter")
-    seed_s = lifecycle.season_for_role("prior_seed_only")
     act_s = lifecycle.active_season
-    missing_prerequisites = [
-        f"No non-live season reaches >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): {dev_s} stops at GW1..7 (blocked GW8: vaastav fixtures out_of_window + delayed GW7 merged_gw settlement); {flt_s} stops at GW1..1 (blocked GW2: delayed GW1 settlement); {seed_s} has 0 admitted mirror origins (prior_seed_only).",
-        f"Retroactive pre-deadline official fixture receipts unrecoverable for {dev_s} GW8+ or {flt_s} GW2+ without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py).",
-        "Local mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json absent from disk.",
-        "No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion def_xg_shrink_challenger (provisional_active=null, podium_sealed=false; 0 S-1+S-2 qualifiers).",
-        "Preregistered human-approved statistical protocol (approved_by_human=True) with calibrated thresholds (#201) and S-1 guard baseline for >=15-GW empirical pair missing.",
-        f"SeasonLifecycle reserves validation_fplcache strictly for active_validation season {act_s} (quarantined outcomes excluded from fixture construction).",
+    qualifying_prefix_seasons = [s for s in seasons if int(s["contiguous_admitted_prefix_end_gw"]) >= 15]
+    hydrated_prefix_seasons = [s for s in qualifying_prefix_seasons if s["local_blobs_hydrated"]]
+    cert_status = verify_certification_artifacts(
+        root / "docs" / "research" / "sparse-confirmation-certification",
+        expected_digest=CERTIFICATION_DIGEST_EXPECTED,
+        project_root=root,
+        check_evaluator_revisions=True,
+    )
+
+    missing_prerequisites: list[str] = []
+    if not qualifying_prefix_seasons:
+        prefix_desc = "; ".join(
+            f"{s['season']} ({s['lifecycle_role']}) stops at {s['contiguous_admitted_prefix']}"
+            + (
+                f" (blocked GW{s['first_blocked_gw']}: {', '.join(s['first_blocked_reasons'])})"
+                if s["first_blocked_gw"] is not None and s["first_blocked_reasons"]
+                else ""
+            )
+            for s in seasons
+        )
+        missing_prerequisites.append(
+            f"No non-live season reaches >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): {prefix_desc}."
+        )
+    incomplete_non_seed = [
+        s["season"]
+        for s in seasons
+        if s["lifecycle_role"] != "prior_seed_only" and int(s["contiguous_admitted_prefix_end_gw"]) < 15
     ]
+    if incomplete_non_seed:
+        missing_prerequisites.append(
+            f"Retroactive pre-deadline official fixture receipts unrecoverable for {', '.join(incomplete_non_seed)} "
+            "missing GWs without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py)."
+        )
+    if not hydrated_prefix_seasons and any(not s["local_blobs_hydrated"] for s in seasons if s["manifest_path"]):
+        missing_prerequisites.append(
+            "Local mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json absent from disk."
+        )
+    if not (selection.podium_sealed and selection.candidates):
+        missing_prerequisites.append(
+            f"No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion {selection.champion} "
+            f"(provisional_active={selection.provisional_active}, podium_sealed={selection.podium_sealed})."
+        )
+    if not cert_status["passed"]:
+        missing_prerequisites.append(
+            "Certified v2 statistical protocol verification failed: " + "; ".join(cert_status["errors"])
+        )
+    if not retained_fixture.get("authorizes_real_historical_pass"):
+        missing_prerequisites.append(
+            f"SeasonLifecycle reserves validation_fplcache strictly for active_validation season {act_s} "
+            "(quarantined outcomes excluded from fixture construction)."
+        )
+
+    has_admissible_historical_gw15_passing_fixture = bool(
+        hydrated_prefix_seasons
+        and selection.podium_sealed
+        and selection.candidates
+        and cert_status["passed"]
+        and retained_fixture.get("authorizes_real_historical_pass")
+    )
 
     return {
         "ticket": 198,
@@ -349,13 +401,15 @@ def build_pilot_fixture_inventory(
         "seed_manifests": seed_manifests,
         "data_reports": reports_info,
         "retained_gw15_fixture": retained_fixture,
-        "has_admissible_historical_gw15_passing_fixture": False,
+        "certification_artifacts_verified": bool(cert_status["passed"]),
+        "has_admissible_historical_gw15_passing_fixture": has_admissible_historical_gw15_passing_fixture,
         "missing_prerequisites": missing_prerequisites,
     }
 
 
 def render_inventory_markdown(report: dict[str, Any]) -> str:
     """Render concise durable Markdown inventory report."""
+    has_real = bool(report["has_admissible_historical_gw15_passing_fixture"])
     lines: list[str] = [
         "# Pilot Fixture Inventory (Non-Live Evidence Audit)",
         "",
@@ -364,7 +418,8 @@ def render_inventory_markdown(report: dict[str, Any]) -> str:
         "",
         "## Verdict Summary",
         "",
-        f"- **Real historical `>=15`-GW empirically admitted passing fixture:** `{report['has_admissible_historical_gw15_passing_fixture']}` (none exists).",
+        f"- **Real historical `>=15`-GW empirically admitted passing fixture:** `{has_real}`"
+        + (" (none exists)." if not has_real else "."),
         f"- **Current Confirmed Champion (`config/model_selection.json`):** `{report['model_selection']['champion']}` (`sha256={report['model_selection']['sha256']}`), `provisional_active={report['model_selection']['provisional_active']}`, `podium_sealed={report['model_selection']['podium_sealed']}`.",
         f"- **Retained GW15 test fixture (`{report['retained_gw15_fixture']['test_path']}`):** reconstructs deterministically with `scientific_verdict={report['retained_gw15_fixture']['reconstructed_bundle']['scientific_verdict']}`, `action={report['retained_gw15_fixture']['reconstructed_bundle'].get('action')}`, `empirical_admission={report['retained_gw15_fixture']['reconstructed_bundle'].get('empirical_admission')}` (synthetic 17-player empirical-format fixture; not real historical passing data).",
         "",

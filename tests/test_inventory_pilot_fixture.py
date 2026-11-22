@@ -39,6 +39,8 @@ def test_inventory_records_non_live_prefixes_digests_and_missing_prerequisites(t
     assert report["seed_manifests"]["2023-24"]["exists"] is False
 
     assert report["has_admissible_historical_gw15_passing_fixture"] is False
+    assert report["certification_artifacts_verified"] is True
+    assert report["retained_gw15_fixture"]["verification_skipped"] is True
     prereqs = " ".join(report["missing_prerequisites"]).lower()
     assert "gw15" in prereqs
     assert "finalist" in prereqs or "podium" in prereqs
@@ -59,6 +61,40 @@ def test_inventory_records_non_live_prefixes_digests_and_missing_prerequisites(t
     assert out_json.is_file()
     parsed = json.loads(out_json.read_text(encoding="utf-8"))
     assert parsed["seasons"] == report["seasons"]
+
+
+def test_inventory_computes_prerequisites_and_passing_gate_dynamically(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from commands import inventory_pilot_fixture as mod
+
+    monkeypatch.setattr(
+        mod,
+        "_inspect_mirror_manifest",
+        lambda root, season: {
+            "manifest_path": f"config/dev_mirror_{season.replace('-', '_')}_manifest.json",
+            "manifest_sha256": "a" * 64,
+            "track": "dev_mirror",
+            "bootstrap_admitted_count": 15 if season == "2025-26" else 1,
+            "fixture_admitted_count": 15 if season == "2025-26" else 1,
+            "settled_outcomes_zero_diff": True,
+            "verified_outcome_rows": 150,
+            "ledger_mismatch_rows": 0,
+            "contiguous_admitted_prefix_end_gw": 15 if season == "2025-26" else 1,
+            "contiguous_admitted_prefix": "GW1..15" if season == "2025-26" else "GW1..1",
+            "admitted_gws": list(range(1, 16)) if season == "2025-26" else [1],
+            "first_blocked_gw": 16 if season == "2025-26" else 2,
+            "first_blocked_reasons": ["stop"],
+            "full_season_admitted": False,
+            "local_blobs_hydrated": season == "2025-26",
+            "attributions": [],
+        },
+    )
+    report = build_pilot_fixture_inventory(verify_fixture=False)
+    assert report["has_admissible_historical_gw15_passing_fixture"] is False
+    prereq_text = " ".join(report["missing_prerequisites"]).lower()
+    assert "no non-live season reaches >=15" not in prereq_text
+    assert "podium" in prereq_text or "finalist" in prereq_text
 
 
 def test_inventory_refuses_2026_27_inspection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

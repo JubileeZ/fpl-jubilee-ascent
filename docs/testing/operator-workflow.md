@@ -126,7 +126,7 @@ uv run python -m commands.evaluate_model_promotion \
 #### Production GitHub Adoption Pipeline (ADR 0070 / ADR 0071)
 - Evidence producer & CI collector: `commands.produce_validation_evidence` (`collect`, `freeze`, `replay`, `scorecard`, `bootstrap-s1-baseline`; ADR 0071 certified `target_gap=0.0` solver cap/default `600.0s`) and `.github/workflows/validation-collector.yml` writing portable bundles to `validation-evidence`.
 - Protected review & merge: `commands.manage_champion_adoption` + `.github/workflows/champion-adoption-{request,pr-checks,merge}.yml` open one deduplicated `Adoption Review Issue` (`GitHubIssueMailProvider`, zero approval authority) alongside protected GitHub Environment `champion-adoption-approval` review and App `5858656` reserved merge onto protected `main`.
-- Pre-live rollout gates: resolve `#211` (`gw1_4_material_loss_limit` empirical rolling-MILP variance recalibration), complete `#198`/`#199` positive `>=15`-GW fixture verification, seal `M = 1` default (`M <= 2` max) slate (`#205`/`#206`), verify `10/10` read-only `production-preflight`, and keep `CHAMPION_ADOPTION_LIVE_ENABLED=false` until explicit operator authorization.
+- Pre-live rollout gates: `#211` scale-free Early-Harm + fresh-seed cert (`efc3a294...`) + Gate 8/9/10 hardening delivered; complete `#198`/`#199` positive `>=15`-GW fixture verification, seal `M = 1` default (`M <= 2` max) slate (`#205`), verify `10/10` read-only `production-preflight`, and keep `CHAMPION_ADOPTION_LIVE_ENABLED=false` until explicit operator authorization.
 
 ### Stage 8: Prospective Review & Rollback
 For deployed champions, prospective shadow replay runs each gameweek:

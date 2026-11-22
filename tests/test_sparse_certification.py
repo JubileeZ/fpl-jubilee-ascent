@@ -12,8 +12,11 @@ from scipy import stats
 
 
 def test_preregistration_manifest_pins_seeds_budgets_and_canonical_digest() -> None:
+    from backtesting.promotion_evidence import MILP_SEGMENT_REGRESSION_TOLERANCES
     from backtesting.sparse_certification import (
         CERTIFICATION_SEED,
+        DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT,
+        DEFAULT_FPL_DELTA_SD_PER_GW,
         DEFAULT_NUM_SIMULATIONS,
         FALLBACK_ADVISORY_SEED,
         TUNING_SEED,
@@ -22,16 +25,21 @@ def test_preregistration_manifest_pins_seeds_budgets_and_canonical_digest() -> N
     )
 
     manifest = build_preregistration_manifest()
-    assert manifest["tuning_seed"] == TUNING_SEED == 20101
-    assert manifest["certification_seed"] == CERTIFICATION_SEED == 20102
-    assert manifest["fallback_seed"] == FALLBACK_ADVISORY_SEED == 20103
+    assert manifest["manifest_version"] == 2
+    assert manifest["protocol_target_version"] == "v2.0"
+    assert manifest["tuning_seed"] == TUNING_SEED == 21101
+    assert manifest["certification_seed"] == CERTIFICATION_SEED == 21102
+    assert manifest["fallback_seed"] == FALLBACK_ADVISORY_SEED == 21103
     assert manifest["num_simulations"] == DEFAULT_NUM_SIMULATIONS == 20_000
+    assert DEFAULT_FPL_DELTA_SD_PER_GW == pytest.approx(8.5)
+    assert DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT == pytest.approx(4.0 * MILP_SEGMENT_REGRESSION_TOLERANCES["cold_start"])
+    assert DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT == pytest.approx(35.6)
     assert manifest["retry_budget"]["primary_max_retries"] == 0
     assert manifest["retry_budget"]["fallback_max_retries"] == 1
     assert manifest["acceptance_rules"]["max_false_full_pass_upper_95"] == pytest.approx(0.05)
     assert manifest["acceptance_rules"]["min_primary_gw38_power_lower_95"] == pytest.approx(1.0 / 3.0)
     assert manifest["acceptance_rules"]["max_statistical_false_exclusion_upper_95"] == pytest.approx(0.05)
-    assert len(manifest["scenario_grid"]) >= 16
+    assert len(manifest["scenario_grid"]) >= 24
 
     body = {k: v for k, v in manifest.items() if k != "manifest_digest"}
     assert manifest["manifest_digest"] == compute_canonical_digest(body)
@@ -42,7 +50,12 @@ def test_preregistration_manifest_pins_seeds_budgets_and_canonical_digest() -> N
 
 
 def test_synthetic_path_generator_dependence_shocks_tails_and_ranks() -> None:
-    from backtesting.sparse_certification import ScenarioSpec, generate_synthetic_paths
+    from backtesting.sparse_certification import (
+        DEFAULT_FPL_DELTA_SD_PER_GW,
+        EMPIRICAL_GW_VARIANCE_PROFILE,
+        ScenarioSpec,
+        generate_synthetic_paths,
+    )
 
     mild_m2 = ScenarioSpec(
         scenario_id="test_m2_mixed",
@@ -64,9 +77,45 @@ def test_synthetic_path_generator_dependence_shocks_tails_and_ranks() -> None:
     assert np.array_equal(a, b)
     assert not np.array_equal(a, c)
 
-    # Check rank means (+0.40 SD * 4.0 = +1.60 pts/GW vs 0.0 pts/GW)
-    assert float(a[:, 0, :].mean()) == pytest.approx(1.60, abs=0.12)
-    assert float(a[:, 1, :].mean()) == pytest.approx(0.0, abs=0.12)
+    # Check rank means (+0.40 SD * DEFAULT_FPL_DELTA_SD_PER_GW vs 0.0 pts/GW)
+    assert float(a[:, 0, :].mean()) == pytest.approx(0.40 * DEFAULT_FPL_DELTA_SD_PER_GW, abs=0.25)
+    assert float(a[:, 1, :].mean()) == pytest.approx(0.0, abs=0.25)
+
+    # Fixed pts/yr + locked-GW1/GW2 empirical profile remain decoupled from fpl_delta_sd_per_gw
+    emp_fixed = ScenarioSpec(
+        scenario_id="test_emp_fixed",
+        category="power",
+        slate_size=1,
+        finalist_effects_sd=(0.0,),
+        finalist_effects_pts_per_year=(60.0,),
+        gw_variance_profile=EMPIRICAL_GW_VARIANCE_PROFILE,
+        dependence_regime="mild",
+        phi_ar=0.10,
+        rho_champ=0.50,
+        innovation_dist="gaussian",
+    )
+    p_low_sd = generate_synthetic_paths(emp_fixed, num_simulations=4000, seed=2468, fpl_delta_sd_per_gw=4.0)
+    p_hi_sd = generate_synthetic_paths(emp_fixed, num_simulations=4000, seed=2468, fpl_delta_sd_per_gw=11.0)
+    assert np.all(p_low_sd[:, 0, :2] == 0.0)
+    assert np.all(p_hi_sd[:, 0, :2] == 0.0)
+    assert float(p_low_sd[:, 0, :].sum(axis=1).mean()) == pytest.approx(60.0, abs=1.5)
+    assert float(p_hi_sd[:, 0, :].sum(axis=1).mean()) == pytest.approx(60.0, abs=3.0)
+
+    gw14_fixed = ScenarioSpec(
+        scenario_id="test_gw14_fixed",
+        category="harmful",
+        slate_size=1,
+        finalist_effects_sd=(0.0,),
+        gw1_4_effects_pts_total=(-40.0,),
+        dependence_regime="mild",
+        phi_ar=0.10,
+        rho_champ=0.50,
+        innovation_dist="gaussian",
+    )
+    g4_a = generate_synthetic_paths(gw14_fixed, num_simulations=4000, seed=1357, fpl_delta_sd_per_gw=4.0)
+    g4_b = generate_synthetic_paths(gw14_fixed, num_simulations=4000, seed=1357, fpl_delta_sd_per_gw=11.0)
+    assert float(g4_a[:, 0, :4].sum(axis=1).mean()) == pytest.approx(-40.0, abs=0.5)
+    assert float(g4_b[:, 0, :4].sum(axis=1).mean()) == pytest.approx(-40.0, abs=1.5)
 
     # Check shared-Champion cross-finalist correlation on non-shock weeks (~rho_champ=0.50)
     corr = float(np.corrcoef(a[:, 0, 5], a[:, 1, 5])[0, 1])
@@ -99,6 +148,14 @@ def test_synthetic_path_generator_dependence_shocks_tails_and_ranks() -> None:
     assert kurt > gauss_kurt + 0.3
 
 
+def test_tune_enforced_gw1_4_limit_fails_closed_when_unsatisfied() -> None:
+    from backtesting.sparse_certification import tune_enforced_gw1_4_limit
+
+    extreme_losses = [np.full(200, -500.0, dtype=float)]
+    with pytest.raises(RuntimeError, match="Failed to find enforced gw1_4_material_loss_limit"):
+        tune_enforced_gw1_4_limit(extreme_losses, num_simulations=200, fpl_delta_sd_per_gw=8.5)
+
+
 def test_vectorized_vs_scalar_parity_exceeds_500_prefixes_within_1e_10() -> None:
     from backtesting.sparse_certification import verify_vectorized_vs_scalar_parity
 
@@ -127,7 +184,7 @@ def test_clopper_pearson_one_sided_95_bounds_exact() -> None:
     assert math.isclose(b_mid["upper_95"], float(stats.beta.ppf(0.95, 7000 + 1, 20_000 - 7000)), abs_tol=1e-12)
 
 
-def test_tuning_on_20101_and_heldout_certification_fallback_state_machine() -> None:
+def test_tuning_and_heldout_certification_fallback_state_machine() -> None:
     from backtesting.sparse_certification import (
         CERTIFICATION_SEED,
         FALLBACK_ADVISORY_SEED,
@@ -144,12 +201,12 @@ def test_tuning_on_20101_and_heldout_certification_fallback_state_machine() -> N
         assert all(0.0 < v < 0.05 for v in tuned["calibrated_superiority_alphas"][m_key].values())
     assert tuned["gw1_4_material_loss_limit"] > 0.0
 
-    # Full certification state machine with small N for fast test: runs 20101 -> 20102, and 20103 only if needed
+    # Full certification state machine with small N for fast test: runs TUNING -> CERTIFICATION, and FALLBACK only if needed
     result = certify_sparse_confirmation(num_simulations=400)
     assert result["tuning"]["tuning_seed"] == TUNING_SEED
     assert result["primary_run"]["seed"] == CERTIFICATION_SEED
     assert result["primary_run"]["statistical_early_harm_mode"] == "enforced"
-    assert len(result["primary_run"]["scenarios"]) >= 16
+    assert len(result["primary_run"]["scenarios"]) >= 24
 
     gates = result["primary_run"]["gates"]
     if gates["false_full_pass_ok"] and gates["primary_gw38_power_ok"] and not gates["statistical_false_exclusion_ok"]:
@@ -175,10 +232,10 @@ def test_fallback_blocked_when_primary_power_or_fwer_fails(monkeypatch: pytest.M
 
     def fake_tune(**kwargs: object) -> dict[str, object]:
         return {
-            "tuning_seed": 20101,
+            "tuning_seed": sc.TUNING_SEED,
             "num_simulations": 100,
-            "fpl_delta_sd_per_gw": 4.0,
-            "gw1_4_material_loss_limit": 36.0,
+            "fpl_delta_sd_per_gw": sc.DEFAULT_FPL_DELTA_SD_PER_GW,
+            "gw1_4_material_loss_limit": sc.DEFAULT_ADVISORY_GW1_4_LOSS_LIMIT,
             "calibrated_superiority_alphas": {
                 "1": {"15": 0.0004, "30": 0.008, "38": 0.032},
                 "2": {"15": 0.0002, "30": 0.004, "38": 0.016},
@@ -207,7 +264,7 @@ def test_fallback_blocked_when_primary_power_or_fwer_fails(monkeypatch: pytest.M
     monkeypatch.setattr(sc, "run_certification_suite", fake_suite)
 
     res = sc.certify_sparse_confirmation(num_simulations=100)
-    assert called_seeds == [20102]  # Never touched 20103 when FWER failed!
+    assert called_seeds == [sc.CERTIFICATION_SEED]  # Never touched fallback seed when FWER failed!
     assert res["fallback_run"] is None
     assert res["certified"] is False
     assert res["live_adoption_blocked"] is True
@@ -233,11 +290,11 @@ def test_certify_sparse_confirmation_cli_writes_companion_artifacts(tmp_path: Pa
         assert path.stat().st_size > 0
 
     from backtesting.promotion_evidence import MANDATORY_GUARDS
-    from backtesting.sparse_certification import build_certified_protocol_config
+    from backtesting.sparse_certification import build_certified_protocol_config, verify_certification_artifacts
 
     direct_cfg = build_certified_protocol_config(
         calibrated_superiority_alphas={"1": {"15": 0.0001, "30": 0.002, "38": 0.025}, "2": {"15": 0.00005, "30": 0.001, "38": 0.01}},
-        gw1_4_material_loss_limit=25.0,
+        gw1_4_material_loss_limit=35.6,
         statistical_early_harm_mode="advisory",
         certification_digest="c" * 64,
     )
@@ -248,6 +305,7 @@ def test_certify_sparse_confirmation_cli_writes_companion_artifacts(tmp_path: Pa
     assert set(direct_cfg.completed_segments) == {"15", "30", "38"}
 
     payload = json.loads((out_dir / "certification_result.json").read_text(encoding="utf-8"))
+    assert "parity_passed" in payload
     if payload["certified"]:
         cfg = payload["certified_protocol_config"]
         assert cfg["development_season"] == "2025-26"
@@ -256,7 +314,47 @@ def test_certify_sparse_confirmation_cli_writes_companion_artifacts(tmp_path: Pa
         assert set(cfg["completed_segments"]) == {"15", "30", "38"}
         decl = payload["evaluation_protocol_v2_declaration"]
         assert decl["windows"][0]["season"] == "2026-27"
+        assert payload["empirical_power_diagnostics"] is not None
+        ver = verify_certification_artifacts(out_dir, expected_digest=payload["certification_digest"])
+        assert ver["passed"] is True
+        assert ver["evaluator_revisions_match"] is True
 
     note = (out_dir / "sparse-confirmation-certification.md").read_text(encoding="utf-8")
     assert "`statistical_false_exclusion_flag_upper95`" in note.split("## Project interpretation")[0]
+
+
+def test_verify_certification_artifacts_passes_repo_and_detects_drift_and_tamper(tmp_path: Path) -> None:
+    from backtesting.sparse_certification import verify_certification_artifacts
+    from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
+    repo_cert_dir = Path("docs/research/sparse-confirmation-certification")
+    repo_ver = verify_certification_artifacts(repo_cert_dir, expected_digest=CERTIFICATION_DIGEST_EXPECTED)
+    assert repo_ver["passed"] is True
+    assert repo_ver["manifest_digest_match"] is True
+    assert repo_ver["canonical_digest_match"] is True
+    assert repo_ver["evaluator_revisions_match"] is True
+
+    # Copy to tmp_path and inject evaluator_revisions drift
+    copy_dir = tmp_path / "cert"
+    copy_dir.mkdir()
+    for fname in ("certification_result.json", "preregistration_manifest.json"):
+        (copy_dir / fname).write_bytes((repo_cert_dir / fname).read_bytes())
+
+    manifest = json.loads((copy_dir / "preregistration_manifest.json").read_text(encoding="utf-8"))
+    manifest["evaluator_revisions"]["backtesting/sparse_certification.py"] = "0" * 64
+    (copy_dir / "preregistration_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    drift_ver = verify_certification_artifacts(copy_dir, expected_digest=CERTIFICATION_DIGEST_EXPECTED)
+    assert drift_ver["passed"] is False
+    assert drift_ver["manifest_digest_match"] is False
+    assert drift_ver["evaluator_revisions_match"] is False
+    assert "backtesting/sparse_certification.py" in drift_ver["drifted_files"]
+
+    # Tampered certification_digest fails canonical check
+    (copy_dir / "preregistration_manifest.json").write_bytes((repo_cert_dir / "preregistration_manifest.json").read_bytes())
+    cert_res = json.loads((copy_dir / "certification_result.json").read_text(encoding="utf-8"))
+    cert_res["certification_digest"] = "f" * 64
+    (copy_dir / "certification_result.json").write_text(json.dumps(cert_res), encoding="utf-8")
+    tamper_ver = verify_certification_artifacts(copy_dir)
+    assert tamper_ver["passed"] is False
+    assert tamper_ver["canonical_digest_match"] is False
 

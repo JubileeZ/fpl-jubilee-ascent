@@ -5,11 +5,9 @@
       "details": {
         "has_admissible_historical_gw15_passing_fixture": false,
         "missing_prerequisites": [
-          "No non-live season reaches >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): 2025-26 stops at GW1..7 (blocked GW8: vaastav fixtures out_of_window + delayed GW7 merged_gw settlement); 2024-25 stops at GW1..1 (blocked GW2: delayed GW1 settlement); 2023-24 has 0 admitted mirror origins (prior_seed_only).",
-          "Retroactive pre-deadline official fixture receipts unrecoverable for 2025-26 GW8+ or 2024-25 GW2+ without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py).",
-          "Local mirror blob directory data/reports/empirical_mirrors/ referenced by dev_mirror_*_manifest.json absent from disk.",
-          "No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion def_xg_shrink_challenger (provisional_active=null, podium_sealed=false; 0 S-1+S-2 qualifiers).",
-          "Preregistered human-approved statistical protocol (approved_by_human=True) with calibrated thresholds (#201) and S-1 guard baseline for >=15-GW empirical pair missing.",
+          "No non-live season reaches >=15 contiguous empirically admitted Gameweeks (GW15 checkpoint): 2023-24 (prior_seed_only) stops at 0; 2024-25 (historical_filter) stops at GW1..1 (blocked GW2: historical_performance_delayed:prior_gws=[1]); 2025-26 (development) stops at GW1..7 (blocked GW8: fixtures:out_of_window:no_commit_between_prev_and_origin_deadline, historical_performance_delayed:prior_gws=[7]).",
+          "Retroactive pre-deadline official fixture receipts unrecoverable for 2024-25, 2025-26 missing GWs without fabricating historical provenance (prohibited under ADR 0069 / empirical_admission.py).",
+          "No non-live candidate qualifies as frozen passing finalist pair vs Confirmed Champion def_xg_shrink_challenger (provisional_active=None, podium_sealed=False).",
           "SeasonLifecycle reserves validation_fplcache strictly for active_validation season 2026-27 (quarantined outcomes excluded from fixture construction)."
         ]
       },
@@ -37,14 +35,21 @@
     "certified_protocol": {
       "blocker": null,
       "details": {
-        "certification_digest": "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56",
+        "canonical_digest_match": true,
+        "certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
         "certified": true,
         "certified_mode": "advisory",
+        "drifted_files": [],
+        "errors": [],
+        "evaluator_revisions_match": true,
         "exists": true,
-        "path": "docs/research/sparse-confirmation-certification/certification_result.json"
+        "expected_certification_digest": "efc3a294af7225811807558bd2ddf78163f0bb9ac8858378621bf32b8f3d5571",
+        "manifest_digest_match": true,
+        "path": "docs/research/sparse-confirmation-certification/certification_result.json",
+        "statistical_protocol_hash": "c2c276fe36f17c1567ff3e7c057dd6e1a4f7ca78eb432faf321d8da215cff2ce"
       },
       "passed": true,
-      "recovery_action": "Run #201 sparse confirmation certification runner and commit verified certification_result.json.",
+      "recovery_action": "Run `uv run python -m commands.certify_sparse_confirmation`, update CERTIFICATION_DIGEST_EXPECTED, and commit verified certification artifacts.",
       "status": "pass"
     },
     "github_app_and_no_bypass": {
@@ -139,19 +144,23 @@
       "status": "pass"
     },
     "sealed_slate_and_operator_signoff": {
-      "blocker": "Comparison Slate not sealed for active validation (champion='def_xg_shrink_challenger', provisional_active=None, podium_sealed=False) and operator sign-off pending",
+      "blocker": "Comparison Slate not sealed and bound for active validation '2026-27' (champion='def_xg_shrink_challenger', candidates=['adaptive_causal_challenger', 'club_def_prior_challenger'], provisional_active=None, podium_sealed=False, podium_frozen_season=None, certification_digest_matches=False, protocol_hash_ok=False) and operator sign-off pending",
       "details": {
+        "active_validation_season": "2026-27",
         "candidates": [
           "adaptive_causal_challenger",
           "club_def_prior_challenger"
         ],
+        "certification_digest_matches": false,
         "champion": "def_xg_shrink_challenger",
+        "frozen_certification_digest": null,
+        "frozen_protocol_hash": null,
         "podium_frozen_season": null,
         "podium_sealed": false,
         "provisional_active": null
       },
       "passed": false,
-      "recovery_action": "Seal Comparison Slate with >=1 qualified finalist and record named operator sign-off for season and checkpoint.",
+      "recovery_action": "Seal Comparison Slate (1..2 candidates distinct from Champion) for active_validation season, bind frozen_protocol_hash and CERTIFICATION_DIGEST_EXPECTED, and record named operator sign-off.",
       "status": "blocked"
     },
     "shared_reservation_wiring": {
@@ -168,7 +177,7 @@
       "status": "pass"
     }
   },
-  "generated_at_utc": "2026-11-21T07:22:14.431920+00:00",
+  "generated_at_utc": "2026-11-22T15:12:40.347021+00:00",
   "live_activation_ready": false,
   "read_only": true,
   "repo": "JubileeZ/fpl-jubilee-ascent"

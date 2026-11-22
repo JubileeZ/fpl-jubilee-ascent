@@ -1898,10 +1898,10 @@ def evaluate_verified_checkpoint_payload(
         )
         if config.certification_digest is None:
             raise ValueError("Verified v2 checkpoint requires certified protocol certification_digest")
-        if selection.frozen_protocol_hash is not None and selection.frozen_protocol_hash != protocol_hash:
-            raise ValueError("Frozen slate protocol_hash mismatch")
-        if selection.frozen_certification_digest is not None and selection.frozen_certification_digest != config.certification_digest:
-            raise ValueError("Frozen slate certification_digest mismatch")
+        if selection.frozen_protocol_hash != protocol_hash:
+            raise ValueError("Frozen slate protocol_hash missing or mismatch")
+        if selection.frozen_certification_digest != config.certification_digest:
+            raise ValueError("Frozen slate certification_digest missing or mismatch")
     if protocol["solver_identity"] != native_solver_identity():
         raise ValueError("Checkpoint evidence requires the native Strategic transfer solver")
 
@@ -2125,7 +2125,10 @@ def evaluate_verified_checkpoint_payload(
 
 
 def evaluate_checkpoint_bundle_evidence(
-    request_path: Path | str, *, finalized_bundle_path: Path | None = None
+    request_path: Path | str,
+    *,
+    finalized_bundle_path: Path | None = None,
+    expected_certification_digest: str | None = None,
 ) -> dict[str, Any]:
     """Reconstruct an ADR 0069/0070 checkpoint recommendation from retained evidence."""
     path = Path(request_path).resolve()
@@ -2133,7 +2136,10 @@ def evaluate_checkpoint_bundle_evidence(
     raw_request = path.read_bytes()
     payload = json.loads(raw_request)
     if payload.get("version") == CHECKPOINT_EVIDENCE_V2:
-        result, identity = evaluate_verified_checkpoint_payload(root, payload, finalized_bundle_path=finalized_bundle_path)
+        kwargs: dict[str, Any] = {"finalized_bundle_path": finalized_bundle_path}
+        if expected_certification_digest is not None:
+            kwargs["expected_certification_digest"] = expected_certification_digest
+        result, identity = evaluate_verified_checkpoint_payload(root, payload, **kwargs)
     elif payload.get("version") == CHECKPOINT_EVIDENCE_VERSION:
         result, identity = _diagnostic_checkpoint_evidence(root, payload)
     else:
@@ -2210,12 +2216,20 @@ def _diagnostic_checkpoint_evidence(
     }
 
 
-def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path: Path | str) -> dict[str, Any]:
+def write_checkpoint_recommendation_bundle(
+    request_path: Path | str,
+    output_path: Path | str,
+    *,
+    expected_certification_digest: str | None = None,
+) -> dict[str, Any]:
     path = Path(output_path).resolve()
     request = Path(request_path).resolve()
     if path.parent != request.parent:
         raise ValueError("Recommendation bundle must accompany its retained request")
-    bundle = evaluate_checkpoint_bundle_evidence(request)
+    bundle_kwargs: dict[str, Any] = {}
+    if expected_certification_digest is not None:
+        bundle_kwargs["expected_certification_digest"] = expected_certification_digest
+    bundle = evaluate_checkpoint_bundle_evidence(request, **bundle_kwargs)
     raw = canonical_bytes(bundle) + b"\n"
     if path.exists() and path.read_bytes() != raw:
         raise ValueError("Refusing to replace frozen recommendation bundle")
@@ -2259,7 +2273,12 @@ def write_checkpoint_recommendation_bundle(request_path: Path | str, output_path
     return bundle
 
 
-def verify_checkpoint_recommendation_bundle(bundle_path: Path | str, *, require_finalized: bool = False) -> dict[str, Any]:
+def verify_checkpoint_recommendation_bundle(
+    bundle_path: Path | str,
+    *,
+    require_finalized: bool = False,
+    expected_certification_digest: str | None = None,
+) -> dict[str, Any]:
     path = Path(bundle_path).resolve()
     bundle = json.loads(path.read_bytes())
     if not isinstance(bundle, dict) or bundle.get("version") not in (CHECKPOINT_EVIDENCE_VERSION, CHECKPOINT_EVIDENCE_V2):
@@ -2271,7 +2290,10 @@ def verify_checkpoint_recommendation_bundle(bundle_path: Path | str, *, require_
     if sha256(request_path.read_bytes()).hexdigest() != bundle["request_sha256"]:
         raise ValueError("Frozen evidence request changed")
     finalized_path = path if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_V2 else None
-    if evaluate_checkpoint_bundle_evidence(request_path, finalized_bundle_path=finalized_path) != bundle:
+    eval_kwargs: dict[str, Any] = {"finalized_bundle_path": finalized_path}
+    if expected_certification_digest is not None:
+        eval_kwargs["expected_certification_digest"] = expected_certification_digest
+    if evaluate_checkpoint_bundle_evidence(request_path, **eval_kwargs) != bundle:
         raise ValueError("Recommendation differs from reconstructed evidence")
     if require_finalized and bundle["version"] == CHECKPOINT_EVIDENCE_VERSION:
         request = json.loads(request_path.read_bytes())

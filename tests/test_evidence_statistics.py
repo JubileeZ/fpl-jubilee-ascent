@@ -899,7 +899,7 @@ def test_protocol_config_v1_hash_preserved_and_v2_fields_bound() -> None:
 
 
 def test_early_harm_fallback_v2_advisory_mode_and_gw1_4_floor() -> None:
-    # 1. GW1-4 net-points floor breaches immediately at GW4 (does not require min_gw=6)
+    # 1. GW1-4 net-points floor breaches at GW4: advisory-only in advisory mode, terminal in enforced mode
     gw4_collapse = [
         PairedGameweekScore("2026-27", gw, 50.0, 60.0, 50.0, 60.0, 0, 0, segment=assign_gameweek_segment(gw))
         for gw in range(1, 5)
@@ -907,16 +907,29 @@ def test_early_harm_fallback_v2_advisory_mode_and_gw1_4_floor() -> None:
     floor_hit = evaluate_early_harm_fallback(
         gw4_collapse,
         [_passing_guard()],
-        gw1_4_material_loss_limit=36.0,
+        gw1_4_material_loss_limit=35.6,
         statistical_mode="advisory",
     )
     assert floor_hit.min_gw_met is False
     assert floor_hit.gw1_4_floor_breached is True
     assert floor_hit.gw1_4_net_delta == pytest.approx(-40.0)
-    assert floor_hit.triggered is True
+    assert floor_hit.triggered is False
     assert floor_hit.statistical_triggered is False
     assert floor_hit.guard_triggered is False
-    assert floor_hit.advisory_reasons == ()
+    assert floor_hit.reasons == ()
+    assert len(floor_hit.advisory_reasons) == 1
+
+    floor_enforced = evaluate_early_harm_fallback(
+        gw4_collapse,
+        [_passing_guard()],
+        gw1_4_material_loss_limit=35.6,
+        statistical_mode="enforced",
+    )
+    assert floor_enforced.min_gw_met is False
+    assert floor_enforced.gw1_4_floor_breached is True
+    assert floor_enforced.triggered is True
+    assert len(floor_enforced.reasons) == 1
+    assert floor_enforced.advisory_reasons == ()
 
     # Boundary: exact -limit does NOT breach (< -limit breaches)
     gw4_boundary = [
@@ -927,7 +940,7 @@ def test_early_harm_fallback_v2_advisory_mode_and_gw1_4_floor() -> None:
         gw4_boundary,
         [_passing_guard()],
         gw1_4_material_loss_limit=36.0,
-        statistical_mode="advisory",
+        statistical_mode="enforced",
     )
     assert boundary_ok.gw1_4_floor_breached is False
     assert boundary_ok.triggered is False

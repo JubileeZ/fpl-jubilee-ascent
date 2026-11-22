@@ -78,7 +78,7 @@ from backtesting.rolling_replay import (
     validate_quality_policy_gate,
 )
 from backtesting.season_rules import Chip, load_season_lifecycle
-from backtesting.sparse_certification import build_certified_protocol_config
+from backtesting.sparse_certification import build_certified_protocol_config, verify_certification_artifacts
 from backtesting.walkforward import _build_actual_components, history_before_target
 from clients.env_loader import configure_utf8_stdio
 from features.builder import build_features
@@ -997,13 +997,35 @@ def _collect_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def _load_certified_sparse_v2_params(cert_path: Path | None = None) -> dict[str, Any]:
+def _load_certified_sparse_v2_params(
+    cert_path: Path | None = None,
+    *,
+    expected_digest: str | None = None,
+) -> dict[str, Any]:
+    from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
     path = cert_path or DEFAULT_CERTIFICATION_RESULT_PATH
     if not path.is_file():
         raise FileNotFoundError(f"Certified sparse v2 artifact not found: {path}")
+    exp = (
+        expected_digest
+        if expected_digest is not None
+        else (CERTIFICATION_DIGEST_EXPECTED if cert_path is None else None)
+    )
+    if (path.parent / "preregistration_manifest.json").is_file():
+        ver = verify_certification_artifacts(
+            path.parent,
+            expected_digest=exp,
+            project_root=PROJECT_ROOT,
+            check_evaluator_revisions=(cert_path is None),
+        )
+        if not ver["passed"]:
+            raise ValueError(f"Sparse confirmation verification failed for {path}: {'; '.join(ver['errors'])}")
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("certified") is not True:
         raise ValueError(f"Sparse confirmation artifact is not certified: {path}")
+    if exp is not None and data.get("certification_digest") != exp:
+        raise ValueError(f"Sparse confirmation certification_digest mismatch for {path}")
     return data
 
 
@@ -1483,6 +1505,16 @@ def _freeze_command(args: argparse.Namespace) -> int:
     dev_windows = list(range(1, dev_prefix_end + 1)) if dev_prefix_end >= 2 else [1, 2]
     if (root / "protocol.json").is_file():
         protocol = json.loads((root / "protocol.json").read_bytes())
+        if str(args.protocol_version) == "v2.0":
+            from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
+            proto_stats = protocol.get("statistics", {}) if isinstance(protocol, dict) else {}
+            if proto_stats.get("protocol_version") != "v2.0":
+                raise ValueError("Existing protocol.json is not protocol_version='v2.0'")
+            if proto_stats.get("certification_digest") != CERTIFICATION_DIGEST_EXPECTED:
+                raise ValueError(
+                    "Existing protocol.json certification_digest does not match CERTIFICATION_DIGEST_EXPECTED"
+                )
         protocol_hash = content_hash(protocol)
     else:
         protocol = _build_default_protocol(
@@ -1806,7 +1838,16 @@ def _replay_command(args: argparse.Namespace) -> int:
         payload["s1_guard_baseline"] = s1_baseline_ref
     req_path.write_bytes(canonical_bytes(payload) + b"\n")
 
-    bundle = write_checkpoint_recommendation_bundle(req_path, bundle_path)
+    expected_cert: str | None = None
+    if protocol.get("statistics", {}).get("protocol_version") == "v2.0":
+        from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
+        expected_cert = CERTIFICATION_DIGEST_EXPECTED
+    bundle = write_checkpoint_recommendation_bundle(
+        req_path,
+        bundle_path,
+        expected_certification_digest=expected_cert,
+    )
     coordinator = SharedReservationCoordinator(root)
     if "newly_excluded_finalists" in bundle:
         excl_details = dict(bundle.get("exclusion_details", {}))

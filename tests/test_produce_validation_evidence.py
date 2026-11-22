@@ -1050,3 +1050,44 @@ def test_freeze_parser_defaults_certified_time_limit_to_600() -> None:
         ]
     )
     assert parsed.time_limit_seconds == 600.0
+
+
+def test_freeze_rejects_stale_existing_protocol_certification_digest(tmp_path: Path) -> None:
+    from commands.produce_validation_evidence import main as produce_main
+
+    ev_root = tmp_path / "ev_stale_proto"
+    req_s1, cat_s1, _ = _build_empirical_bundle(gws=(1, 2), with_manager=False)
+    batch_s1 = _write_origin_manifest_inputs(tmp_path / "s1", req_s1, cat_s1)
+    assert produce_main(["collect", "--evidence-root", str(ev_root), "--batch-json", str(batch_s1), "--slate-id", "sl-stale"]) == 0
+
+    (ev_root / "protocol.json").write_text(
+        json.dumps(
+            {
+                "statistics": {
+                    "protocol_version": "v2.0",
+                    "certification_digest": "0" * 64,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="certification_digest does not match CERTIFICATION_DIGEST_EXPECTED"):
+        produce_main(
+            [
+                "freeze",
+                "--evidence-root",
+                str(ev_root),
+                "--season",
+                "2026-27",
+                "--development-season",
+                "2025-26",
+                "--champion",
+                "calibrated_matchup_hybrid",
+                "--candidates",
+                "metrics_component_hybrid",
+                "--slate-id",
+                "sl-stale",
+                "--approval-reference",
+                "app-stale",
+            ]
+        )

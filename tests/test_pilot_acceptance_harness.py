@@ -405,10 +405,11 @@ def test_production_preflight_read_only_attestation(
     assert report["gates"]["shared_reservation_wiring"]["passed"] is True
     assert report["gates"]["live_rollout_disabled"]["passed"] is True
     assert report["gates"]["certified_protocol"]["passed"] is True
-    assert (
-        report["gates"]["certified_protocol"]["details"]["certification_digest"]
-        == "9e7234b17fc73543eb8330817f3d5ec519735de4f3264485f2592c7f46d53c56"
-    )
+    from commands.manage_champion_adoption import CERTIFICATION_DIGEST_EXPECTED
+
+    assert report["gates"]["certified_protocol"]["details"]["certification_digest"] == CERTIFICATION_DIGEST_EXPECTED
+    assert report["gates"]["certified_protocol"]["details"]["evaluator_revisions_match"] is True
+    assert report["gates"]["certified_protocol"]["details"]["canonical_digest_match"] is True
     # Historical GW15 passing fixture and sealed active slate are accurately reported as blocked
     assert report["gates"]["admissible_historical_passing_fixture"]["passed"] is False
     assert report["gates"]["admissible_historical_passing_fixture"]["blocker"]
@@ -1159,6 +1160,157 @@ def test_production_preflight_mail_gate_with_github_review_issue(tmp_path: Path)
     rep_off = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_off, project_root=repo_root)
     assert rep_off["gates"]["mail_delivery_and_reconciliation"]["passed"] is False
     assert rep_off["gates"]["mail_delivery_and_reconciliation"]["details"]["mode"] == "unconfigured"
+
+
+def test_preflight_gate8_and_gate10_integrity_checks(tmp_path: Path) -> None:
+    """Gate 8 verifies canonical digests + evaluator_revisions; Gate 10 binds season, protocol_hash, and certification_digest."""
+    from backtesting.sparse_certification import EVALUATOR_REVISION_PATHS, compute_canonical_digest
+    from commands.manage_champion_adoption import (
+        CERTIFICATION_DIGEST_EXPECTED,
+        PROJECT_ROOT,
+        run_production_preflight,
+    )
+    from models.selection import ModelSelection
+
+    repo_root = tmp_path / "gate_repo"
+    wf_dir = repo_root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True)
+    for wf in (
+        "validation-collector.yml",
+        "champion-adoption-request.yml",
+        "champion-adoption-merge.yml",
+        "champion-adoption-pr-checks.yml",
+    ):
+        (wf_dir / wf).write_bytes((PROJECT_ROOT / ".github" / "workflows" / wf).read_bytes())
+    (repo_root / "commands").mkdir()
+    (repo_root / "commands" / "produce_validation_evidence.py").write_text(
+        "record_exclusion_under_reservation\n", encoding="utf-8"
+    )
+    for rel in EVALUATOR_REVISION_PATHS:
+        dst = repo_root / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((PROJECT_ROOT / rel).read_bytes())
+
+    cert_dst = repo_root / "docs" / "research" / "sparse-confirmation-certification"
+    cert_dst.mkdir(parents=True)
+    for fname in ("certification_result.json", "preregistration_manifest.json"):
+        (cert_dst / fname).write_bytes(
+            (PROJECT_ROOT / "docs" / "research" / "sparse-confirmation-certification" / fname).read_bytes()
+        )
+    (repo_root / "config").mkdir(parents=True, exist_ok=True)
+    (repo_root / "config" / "season_lifecycle.json").write_bytes(
+        (PROJECT_ROOT / "config" / "season_lifecycle.json").read_bytes()
+    )
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("cand_a",),
+            provisional_active="cand_a",
+            podium_frozen_season="2026-27",
+            podium_sealed=True,
+            frozen_protocol_hash="a" * 64,
+            frozen_certification_digest=CERTIFICATION_DIGEST_EXPECTED,
+        ),
+        repo_root / "config" / "model_selection.json",
+    )
+
+    snap_path = tmp_path / "snap.json"
+    snap_path.write_text(
+        json.dumps(
+            {
+                "api_reachable": True,
+                "branch_protection": {
+                    "enabled": True,
+                    "enforce_admins": True,
+                    "required_status_checks": {"strict": True, "contexts": ["verify-adoption-pr"]},
+                },
+                "protected_environment": {"exists": True, "required_reviewers": [{"type": "User"}]},
+                "repo_settings": {"allow_auto_merge": False, "github_app_configured": True},
+                "validation_evidence_branch": {"exists": True, "releases_accessible": True},
+                "mail_provider": {"configured": False, "github_issues_enabled": True},
+                "variables": {"CHAMPION_ADOPTION_LIVE_ENABLED": "false"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rep_ok = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_path, project_root=repo_root)
+    assert rep_ok["gates"]["certified_protocol"]["passed"] is True
+    assert rep_ok["gates"]["certified_protocol"]["details"]["evaluator_revisions_match"] is True
+    assert rep_ok["gates"]["sealed_slate_and_operator_signoff"]["passed"] is True
+
+    # Gate 10 rejects mismatched certification_digest or wrong season
+    save_model_selection(
+        ModelSelection(
+            champion="def_xg_shrink_challenger",
+            candidates=("cand_a",),
+            provisional_active="cand_a",
+            podium_frozen_season="2025-26",
+            podium_sealed=True,
+            frozen_protocol_hash="a" * 64,
+            frozen_certification_digest="0" * 64,
+        ),
+        repo_root / "config" / "model_selection.json",
+    )
+    rep_bad_g10 = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_path, project_root=repo_root)
+    assert rep_bad_g10["gates"]["sealed_slate_and_operator_signoff"]["passed"] is False
+
+    # Gate 8 rejects evaluator_revisions drift even when certification_digest is unchanged
+    target_eval = repo_root / "backtesting" / "sparse_certification.py"
+    target_eval.write_bytes(target_eval.read_bytes() + b"\n# drift\n")
+    rep_drift = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_path, project_root=repo_root)
+    assert rep_drift["gates"]["certified_protocol"]["passed"] is False
+    assert rep_drift["gates"]["certified_protocol"]["details"]["evaluator_revisions_match"] is False
+    assert "backtesting/sparse_certification.py" in rep_drift["gates"]["certified_protocol"]["details"]["drifted_files"]
+
+    # Gate 8 also accepts certified_mode="enforced" when canonical digest and revisions match
+    target_eval.write_bytes((PROJECT_ROOT / "backtesting" / "sparse_certification.py").read_bytes())
+    cert_res = json.loads((cert_dst / "certification_result.json").read_text(encoding="utf-8"))
+    cert_res["certified_mode"] = "enforced"
+    summary_body = {
+        k: cert_res[k]
+        for k in (
+            "manifest_digest",
+            "parity_passed",
+            "tuning",
+            "primary_run",
+            "fallback_run",
+            "retries_used",
+            "certified",
+            "certified_mode",
+            "certification_seed",
+            "live_adoption_blocked",
+        )
+    }
+    new_digest = compute_canonical_digest(summary_body)
+    cert_res["certification_digest"] = new_digest
+    cert_res["certified_protocol_config"]["statistical_early_harm_mode"] = "enforced"
+    cert_res["certified_protocol_config"]["certification_digest"] = new_digest
+    from backtesting.evidence_statistics import StatisticalProtocolConfig
+
+    cfg_obj = StatisticalProtocolConfig(
+        **{
+            **cert_res["certified_protocol_config"],
+            "required_projection_guards": tuple(cert_res["certified_protocol_config"]["required_projection_guards"]),
+            "confirmation_checkpoints": tuple(cert_res["certified_protocol_config"]["confirmation_checkpoints"]),
+            "completed_segments": {
+                str(cp): tuple((int(lo), int(hi)) for lo, hi in pairs)
+                for cp, pairs in cert_res["certified_protocol_config"]["completed_segments"].items()
+            },
+        }
+    )
+    cert_res["statistical_protocol_hash"] = cfg_obj.compute_hash()
+    (cert_dst / "certification_result.json").write_text(json.dumps(cert_res), encoding="utf-8")
+
+    import commands.manage_champion_adoption as mca
+    orig_expected = mca.CERTIFICATION_DIGEST_EXPECTED
+    try:
+        mca.CERTIFICATION_DIGEST_EXPECTED = new_digest
+        rep_enf = run_production_preflight(repo="JubileeZ/fpl-jubilee-ascent", offline_snapshot_path=snap_path, project_root=repo_root)
+        assert rep_enf["gates"]["certified_protocol"]["passed"] is True
+        assert rep_enf["gates"]["certified_protocol"]["details"]["certified_mode"] == "enforced"
+    finally:
+        mca.CERTIFICATION_DIGEST_EXPECTED = orig_expected
 
 
 

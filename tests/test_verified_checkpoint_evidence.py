@@ -505,8 +505,31 @@ def test_verified_v2_checkpoint_enforces_bindings_expiry_and_allows_skip_and_pos
         ),
         bad_sel_path,
     )
-    with pytest.raises(ValueError, match="Frozen slate protocol_hash mismatch"):
+    with pytest.raises(ValueError, match="Frozen slate protocol_hash missing or mismatch"):
         evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "bad_selection.json"})
+
+    # Missing frozen_protocol_hash or frozen_certification_digest on v2 selection fails closed
+    none_proto_sel = tmp_path / "none_proto_selection.json"
+    save_model_selection(
+        ModelSelection(
+            CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season=validation,
+            podium_sealed=True, frozen_protocol_hash=None, frozen_certification_digest=cert_digest,
+        ),
+        none_proto_sel,
+    )
+    with pytest.raises(ValueError, match="Frozen slate protocol_hash missing or mismatch"):
+        evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "none_proto_selection.json"})
+
+    none_cert_sel = tmp_path / "none_cert_selection.json"
+    save_model_selection(
+        ModelSelection(
+            CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season=validation,
+            podium_sealed=True, frozen_protocol_hash=protocol_hash, frozen_certification_digest=None,
+        ),
+        none_cert_sel,
+    )
+    with pytest.raises(ValueError, match="Frozen slate certification_digest missing or mismatch"):
+        evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "none_cert_selection.json"})
 
 
 def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
