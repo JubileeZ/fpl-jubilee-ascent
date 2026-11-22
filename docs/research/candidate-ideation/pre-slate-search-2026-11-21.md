@@ -1,6 +1,6 @@
 # Pre-slate Candidate Search — 2026-11-21
 
-**Disposition:** `ext_01_1_a10` passed S-1 (`+82`, reproduced identically on Apple M2 `arm64`) and **failed** the certified S-2 Historical Filter (`2,232` vs `2,299`, `-67` net points, `1/3` segments, `14/14` applicable projection guards). Dead-locked until `2027-11-22`. No finalist yet; next queue candidate `EXT-02_1` (`#206`).
+**Disposition:** Under `#206` (Map `#205`, ADR 0071), `EXT-01_1` through `EXT-05_1` all completed evaluation with **`0` Win-Both qualifiers**: `EXT-01_1` (`S-1 +82`, `S-2 -67`), `EXT-02_1` (`S-1 -64` both variants), `EXT-03_1` (`S-1 +2`, `S-2 0` tie `2,299` vs `2,299`), `EXT-04_1` (`S-1 a080 +5`, `S-2 -21` `2,278` vs `2,299`), and conditional `EXT-05_1` (`S-1 0` tie `2,167` vs `2,167` both variants). All five lanes are dead-locked until `2027-11-22`; `Confirmed Champion` `def_xg_shrink_challenger` remains uncontested (`provisional_active=null`, `podium_sealed=false`).
 
 ## Evaluation contract
 
@@ -105,14 +105,31 @@ The paired `diagnostic_report.json` under `.tmp/agent/explore-candidate/pre-slat
 
 ## Bounded queue
 
-Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13 already closed. One ideation batch used freshly generated brief with lock mechanisms and Dev context. Excluded historical-filter results and active-season outcomes. User narrowed evaluation to EXT-01_1 only. EXT-02_1 implementation stopped before review or replay. [Queue and dossiers](idea_queue.csv)
+Initial eligible set empty (`untested` or `in-progress-b<N>`). EXT-10 and EXT-13 already closed. Bounded `#206` batch completed `EXT-02_1` -> `EXT-03_1` -> `EXT-04_1` and conditional last-place `EXT-05_1` under [ADR 0071](../../adr/0071-certified-solver-budget-and-milp-qualification-calibration.md) (`600s` certified `target_gap=0.0`, `core_closure_hash()` `f5773369817b2d99dfa4f7e8d75be1be3a24f2e6654606d5da200a88d74941b1`, Win-Both gating). Excluded active-season outcomes. All five `#206`/`#208` lanes dead-locked until `2027-11-22`. [Queue and dossiers](idea_queue.csv)
 
 | Idea | Disposition | Mechanism |
 |---|---|---|
 | EXT-01_1 | S-1 passed (`+82`). S-2 failed (`-67`, dead until `2027-11-22`). | Within-player xGC-minus-GC rate adjustment. Distinct from fitted multifeature concessions GLM. |
-| EXT-02_1 | Deferred, no replay | Player exposure weights incumbent assist branches. Distinct from start/sub attack intensity split. |
-| EXT-03_1 | Deferred, no replay | Club peer contrast on conditional cameo duration. Distinct from fitted start or appearance models. |
-| EXT-04_1 | Deferred, no replay | Dismissal-dependent reliability weight on historical xG. Distinct from predicting red-card rates or opponent-strength adjustment. |
-| EXT-05_1 | Deferred, back of `#206` queue (distinct from `DEF-08`) | Standalone Negative Binomial on unchanged Champion `μ` (distinct from bundled Club SoT rate pooling); run only if `EXT-02_1`–`EXT-04_1` yield `0` qualifiers. |
+| EXT-02_1 | S-1 failed (`-64` both variants, no S-2, dead until `2027-11-22`). | Player exposure weights incumbent assist branches. Distinct from start/sub attack intensity split. |
+| EXT-03_1 | S-1 passed (`+2`). Pinned `a05` S-2 failed (`0.0` tie `2,299 vs 2,299`, dead until `2027-11-22`). | Club peer contrast on conditional cameo duration. Distinct from fitted start or appearance models. |
+| EXT-04_1 | S-1 passed (`a080 +5`, `a050 -18`). Pinned `a080` S-2 failed (`-21`, `2,278 vs 2,299`, dead until `2027-11-22`). | Dismissal-dependent reliability weight on historical xG. Distinct from predicting red-card rates or opponent-strength adjustment. |
+| EXT-05_1 | Conditional last (`#206`); S-1 failed (`0.0` tie `2,167 vs 2,167` both variants, no S-2, dead until `2027-11-22`). | Standalone Negative Binomial on unchanged Champion `μ` (distinct from bundled Club SoT rate pooling). |
 
 EXT-01_1 implemented fixed variants `ext_01_1_a05` and `ext_01_1_a10`. One repair applied 0.05 minimum rate before fixture treatment on both supported and cold-start GK/DEF rows. Spec & Math and Standards & Pipeline independently approved prototype SHA-256 `90d0558febc907bbceb29ea4f337de1351134482c7b6080350a6735b1ae0c25b`. First smoke attempt invalidated when concurrent research code changed its bound source inventory. Both reviewers approved the separate S-2 pin, replay and evidence checks after two repair rounds. No slate freeze. [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)
+
+## #206 Bounded Batch Evaluation (ADR 0071, 2026-11-22)
+
+Under `core_closure_hash()` `f5773369817b2d99dfa4f7e8d75be1be3a24f2e6654606d5da200a88d74941b1` (`600s` `target_gap=0.0`, shared S-1 `def_xg_shrink_challenger` baseline `2,167` net pts at `opening-anchor-809d4afb3e40c205`, protocol `c7463c2d88ee11989f882da486f51e591b4375c88fd9b6bf16184b6da3c69f2e`; S-2 baseline `2,299` net pts at `opening-anchor-e253552e72848433`):
+
+| Lane & Variant | Reviewed Prototype SHA-256 | S-1 Net / Delta | S-1 Segments (`cold` / `early_mid` / `late`) | S-1 Guards & `GW1–7` Parity | S-2 Net / Delta (`2024-25`) | S-2 Segments, Guards & `GW1` Parity | Paired `L=5` MBB 95% CI (pts/GW) & Verdict |
+|---|---|---|---|---|---|---|---|
+| `EXT-02_1` `ext_02_1_k180` | `53c2879e` ([source](prototypes/ext_02_1/prototypes.py)) | `2,103` (`-64`) | `0 / -21 / -43` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | Not run (`S-1` fail) | — | `-1.68` `[-4.16, +0.34]`; **Dead (`2027-11-22`)** ([S-1](prototypes/ext_02_1/s1/summary.json)) |
+| `EXT-02_1` `ext_02_1_k450` | `53c2879e` ([source](prototypes/ext_02_1/prototypes.py)) | `2,103` (`-64`) | `0 / -21 / -43` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | Not run (`S-1` fail) | — | `-1.68` `[-4.16, +0.34]`; **Dead (`2027-11-22`)** ([S-1](prototypes/ext_02_1/s1/summary.json)) |
+| `EXT-03_1` `ext_03_1_a05` (pinned) | `d56bdec0` ([source](prototypes/ext_03_1/prototypes.py)) | `2,169` (`+2`) | `0 / 0 / +2` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | `2,299` (`0.0`) | `0 / 0 / 0` (`3/3`); `14/14 PASS`; `GW1` `0.0` | `S-1 +0.05` `[-1.34, +0.66]`; `S-2 0.0` `[0.0, 0.0]`; **Dead (`2027-11-22`)** ([S-2](prototypes/ext_03_1/s2/summary.json)) |
+| `EXT-03_1` `ext_03_1_a10` | `d56bdec0` ([source](prototypes/ext_03_1/prototypes.py)) | `2,169` (`+2`) | `0 / 0 / +2` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | Tie-break unselected | — | Superseded by `ext_03_1_a05` pin ([pin](prototypes/ext_03_1/development_selection.json)) |
+| `EXT-04_1` `ext_04_1_a050` | `f206b28f` ([source](prototypes/ext_04_1/prototypes.py)) | `2,149` (`-18`) | Fails `delta > 0` | `15/15 PASS`; `21/21` `0.0` | Not pinned | — | Sub-grid fail ([S-1](prototypes/ext_04_1/s1/summary.json)) |
+| `EXT-04_1` `ext_04_1_a080` (pinned) | `f206b28f` ([source](prototypes/ext_04_1/prototypes.py)) | `2,172` (`+5`) | `0 / +11 / -6` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | `2,278` (`-21`) | `+1 / -1 / -21` (`3/3`); `14/14 PASS`; `GW1` `0.0` | `S-1 +0.13` `[-1.32, +1.21]`; `S-2 -0.55` `[-3.34, +2.11]`; **Dead (`2027-11-22`)** ([S-2](prototypes/ext_04_1/s2/summary.json)) |
+| `EXT-05_1` `ext_05_1_r3` | `b7f9238e` ([source](prototypes/ext_05_1/prototypes.py)) | `2,167` (`0.0`) | `0 / 0 / 0` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | Not run (`S-1` tie) | — | `0.0` `[0.0, 0.0]`; **Dead (`2027-11-22`)** ([S-1](prototypes/ext_05_1/s1/summary.json)) |
+| `EXT-05_1` `ext_05_1_r8` | `b7f9238e` ([source](prototypes/ext_05_1/prototypes.py)) | `2,167` (`0.0`) | `0 / 0 / 0` (`3/3` floors) | `15/15 PASS`; `21/21` `0.0` | Not run (`S-1` tie) | — | `0.0` `[0.0, 0.0]`; **Dead (`2027-11-22`)** ([S-1](prototypes/ext_05_1/s1/summary.json)) |
+
+**Outcome:** `0` Win-Both qualifiers (`delta_s1 > 0` & `delta_s2 > 0`); no slate frozen; `Confirmed Champion` `def_xg_shrink_challenger` remains uncontested. [Candidate Ledger](../candidate-ledger/candidate_ledger.csv)

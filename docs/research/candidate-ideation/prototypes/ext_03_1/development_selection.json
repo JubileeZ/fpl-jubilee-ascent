@@ -1,0 +1,28 @@
+{
+  "champion": "def_xg_shrink_challenger",
+  "champion_evaluation_identity": "1342de321f28083e278fe7c6a2f3d6af7893ba30f18a4a6be85bb3ae5ec400f8",
+  "champion_model_version_hash": "af71e7f9aa5ea1a3bdbfc53230962624e025058f5b276edcec02d1cea94c2853",
+  "development_guard_margins": {
+    "path": "s1/guard_margins.json",
+    "sha256": "029184f0829f782e060b5fc60fc10546895e72f64f27308ec4073efdbcb8cb2d"
+  },
+  "development_prefix_parity": {
+    "path": "s1_prefix_parity.csv",
+    "sha256": "8cf168f6c463f4369a8cd1f5f62c68e5493f8e45feb2da4245803dd69c638438"
+  },
+  "development_summary": {
+    "path": "s1/summary.json",
+    "sha256": "5da8eff2dad740639c3783e5df0c9f088a9f3051169a2b3f68295320fd3ac598"
+  },
+  "evaluation_identity": "6f3ee273bcfd3523dd2764be86c8550d5833063398aa7ed149b1b14126019007",
+  "model": "ext_03_1_a05",
+  "model_version_hash": "4a7120b58abf3820eeed3aa027bb4d3e753442106e913bc525405d2d87ff1b9b",
+  "parameters": {
+    "a": 0.5
+  },
+  "protocol_hash": "c7463c2d88ee11989f882da486f51e591b4375c88fd9b6bf16184b6da3c69f2e",
+  "prototype_path": "docs/research/candidate-ideation/prototypes/ext_03_1/prototypes.py",
+  "schema_version": 1,
+  "selected_at_utc": "2026-11-22T08:45:05+00:00",
+  "source_sha256": "d56bdec07d126d03fb9dd012a5b5273509f7117b156afe8d6a1eabe95e92c91f"
+}
