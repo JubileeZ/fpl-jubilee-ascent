@@ -19,7 +19,7 @@ For a shorter local run, use `uv run pytest -m 'not slow'`. Use `uv run pytest` 
 
 - **Commit** — `bash tests/verify.sh`. Run focused pytest tests for changed behavior.
 - **Push** — GitHub runs the GW1–38 diagnostic on matching model changes.
-- **Merge to `main`** — Full pytest suite on the latest PR revision via `full-pytest`. Champion adoption still requires `verify-adoption-pr`.
+- **Merge to `main`** — `full-pytest` requires all three parallel test groups to pass on latest PR revision. Champion adoption still requires `verify-adoption-pr`.
 
 ## Testing Layers
 
