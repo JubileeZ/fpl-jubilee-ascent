@@ -200,16 +200,19 @@ def retained_verified_checkpoint(tmp_path_factory: pytest.TempPathFactory) -> Pa
     return root / save_material(root, "request.json", payload)["path"]
 
 
-@pytest.mark.slow
-def test_checkpoint_reconstructs_real_empirical_replay(retained_verified_checkpoint: Path) -> None:
-    from backtesting.promotion_evidence import (
-        verify_checkpoint_recommendation_bundle,
-        write_checkpoint_recommendation_bundle,
-    )
+@pytest.fixture(scope="module")
+def retained_checkpoint_bundle(retained_verified_checkpoint: Path) -> tuple[Path, dict[str, Any]]:
+    from backtesting.promotion_evidence import write_checkpoint_recommendation_bundle
 
-    request_path = retained_verified_checkpoint
-    bundle_path = request_path.with_name("bundle.json")
-    bundle = write_checkpoint_recommendation_bundle(request_path, bundle_path)
+    bundle_path = retained_verified_checkpoint.with_name("bundle.json")
+    return bundle_path, write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+
+
+@pytest.mark.slow
+def test_checkpoint_reconstructs_real_empirical_replay(retained_checkpoint_bundle: tuple[Path, dict[str, Any]]) -> None:
+    from backtesting.promotion_evidence import verify_checkpoint_recommendation_bundle
+
+    bundle_path, bundle = retained_checkpoint_bundle
     assert bundle["empirical_admission"] is True
     assert bundle["checkpoint_gw"] == 15
     assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
@@ -282,6 +285,9 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
     monkeypatch.setattr(promotion_evidence, "evaluate_verified_checkpoint_payload", retained_scientific_pass)
     bundle_path = tmp_path / "bundle.json"
     bundle = promotion_evidence.write_checkpoint_recommendation_bundle(request_path, bundle_path)
+    original_bytes = bundle_path.read_bytes()
+    assert promotion_evidence.write_checkpoint_recommendation_bundle(request_path, bundle_path) == bundle
+    assert bundle_path.read_bytes() == original_bytes
     final_attempt = registry.get_attempt(attempt.attempt_id)
     assert final_attempt is not None and final_attempt.status == "completed"
     assert final_attempt.bundle_path == "bundle.json" and final_attempt.human_approval_ref is None
@@ -299,17 +305,14 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
 
 @pytest.mark.slow
 def test_real_checkpoint_bundle_writes_relative_bundle_path_and_packs_snapshot(
-    retained_verified_checkpoint: Path,
+    retained_checkpoint_bundle: tuple[Path, dict[str, Any]],
     tmp_path: Path,
 ) -> None:
     from backtesting.portable_evidence import pack_checkpoint_snapshot
-    from backtesting.promotion_evidence import verify_checkpoint_recommendation_bundle, write_checkpoint_recommendation_bundle
 
-    bundle_path = retained_verified_checkpoint.with_name("bundle.json")
-    bundle = write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+    bundle_path, bundle = retained_checkpoint_bundle
     assert "serving_model_closure_hash" in bundle
     assert "model_runtime_bindings" in bundle
-    assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
 
     # Inconclusive pilot fixture cannot pack an immutable release pass snapshot
     with pytest.raises(ValueError, match="finalized empirical scientific pass"):

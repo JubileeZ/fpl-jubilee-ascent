@@ -1,0 +1,13 @@
+name: Set up pytest
+description: Install locked dependencies and restore pinned Official test inputs
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.14"
+    - shell: bash
+      run: uv sync --locked
+    - name: Restore the pinned Official test inputs
+      shell: bash
+      run: uv run --no-sync python -c 'from pathlib import Path; from features.season_archive import heal_operational_official_from_pin; heal_operational_official_from_pin(Path.cwd())'
