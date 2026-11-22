@@ -29,7 +29,6 @@ from commands.profile_transfer_replay import (
     native_manifest_adapter,
 )
 from models.scoring_matrix import Position
-from promotion_evidence_fixture import build_evidence_fixture
 
 POSITIONS: tuple[Position, ...] = (
     "GK", "GK", "D", "D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F"
@@ -219,17 +218,16 @@ def test_profiler_envelope_60s_zero_censoring_rss_and_live_cache(tmp_path: Path)
     assert cert_dm.termination_status == "OPTIMAL"
 
 
-def test_promotion_evidence_rejects_time_capped_and_diagnostic_solvers(tmp_path: Path) -> None:
+def test_promotion_evidence_rejects_time_capped_and_diagnostic_solvers(retained_request: Path) -> None:
     assert len(MANDATORY_GUARDS) == 15
 
     # Baseline fixture succeeds as inconclusive synthetic
-    req_ok = build_evidence_fixture(tmp_path / "ok")
-    baseline = evaluate_replay_evidence(req_ok)
+    baseline = evaluate_replay_evidence(retained_request)
     assert baseline["empirical_admission"] is False
     assert baseline["scientific_verdict"] == "inconclusive"
 
     # Reject time_capped quality_policy directly inside _verify_replay (#179 Q5)
-    req_tc = build_evidence_fixture(tmp_path / "tc")
+    req_tc = retained_request
     payload = json.loads(req_tc.read_text())
     proto_path = req_tc.parent / payload["protocol"]["path"]
     proto = json.loads(proto_path.read_text())

@@ -8,10 +8,18 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 |-------|---------|-------|
 | **Lint & Style** | `uv run ruff check .` | Static analysis and code style linting across the entire repository. |
 | **Test Suite** | `uv run pytest` | Full automated test suite (unit tests, integration tests, contract compliance). |
-| **Delivery Gate** | `bash tests/verify.sh` | Mandatory pre-commit gate: runs linting, structural checks, and core test suites. |
+| **Delivery Gate** | `bash tests/verify.sh` | Harness checks, Ruff, projection parity. |
 | **Backtest Smoke** | `uv run python .agents/skills/explore-candidate/smoke.py --show_seasons` | Inspects available historical seasons and smoke harness configuration. |
 
+For a shorter local run, use `uv run pytest -m 'not slow'`. Use `uv run pytest` for full coverage, including the GW15 replay and snapshot integration tests. To diagnose a slow run, add `--durations=20`.
+
 ---
+
+## Commit, Push, and Merge
+
+- **Commit** — `bash tests/verify.sh`. Run focused pytest tests for changed behavior.
+- **Push** — GitHub runs the GW1–38 diagnostic on matching model changes.
+- **Merge to `main`** — Full pytest suite on the latest PR revision via `full-pytest`. Champion adoption still requires `verify-adoption-pr`.
 
 ## Testing Layers
 
@@ -24,8 +32,7 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 - Executed prior to proposing commits or concluding work sessions.
 - Checks:
   - Required operational agent docs exist (`current-state.md`, `progress.md`, `issue-tracker.md`, `triage-labels.md`, `domain.md`).
-  - Ruff linter exits cleanly with zero errors.
-  - Complete test suite passes.
+  - `tests/project-tests.sh` runs Ruff and near-term projection parity. Full-season parity runs in PR CI.
 
 ### 3. Historical Backtesting & Archive Testing
 - **Specification**: [`archive-testing.md`](archive-testing.md)

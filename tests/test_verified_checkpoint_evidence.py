@@ -200,6 +200,7 @@ def retained_verified_checkpoint(tmp_path_factory: pytest.TempPathFactory) -> Pa
     return root / save_material(root, "request.json", payload)["path"]
 
 
+@pytest.mark.slow
 def test_checkpoint_reconstructs_real_empirical_replay(retained_verified_checkpoint: Path) -> None:
     from backtesting.promotion_evidence import (
         verify_checkpoint_recommendation_bundle,
@@ -214,6 +215,7 @@ def test_checkpoint_reconstructs_real_empirical_replay(retained_verified_checkpo
     assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
 
 
+@pytest.mark.slow
 def test_checkpoint_rejects_replay_with_unbound_admission(retained_verified_checkpoint: Path) -> None:
     from backtesting.promotion_evidence import evaluate_checkpoint_bundle_evidence
 
@@ -295,6 +297,7 @@ def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
     assert load_model_selection(active_config) == adopted
 
 
+@pytest.mark.slow
 def test_real_checkpoint_bundle_writes_relative_bundle_path_and_packs_snapshot(
     retained_verified_checkpoint: Path,
     tmp_path: Path,
@@ -532,6 +535,7 @@ def test_verified_v2_checkpoint_enforces_bindings_expiry_and_allows_skip_and_pos
         evaluate_verified_checkpoint_payload(tmp_path, {**base_payload, "selection_path": "none_cert_selection.json"})
 
 
+@pytest.mark.slow
 def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
     retained_verified_checkpoint: Path,
     tmp_path: Path,

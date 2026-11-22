@@ -1,0 +1,26 @@
+name: Python tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pytest-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  full-pytest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+      - run: uv sync --locked
+      - run: uv run --no-sync ruff check .
+      - name: Restore the pinned Official test inputs
+        run: uv run --no-sync python -c 'from pathlib import Path; from features.season_archive import heal_operational_official_from_pin; heal_operational_official_from_pin(Path.cwd())'
+      - run: uv run --no-sync pytest --durations=20

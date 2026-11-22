@@ -1,28 +1,36 @@
 import json
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
-from commands.export_dashboard import (
-    PROJECT_ROOT,
-    resolve_operational_processed_dir,
-    run_dashboard_export,
-)
-from models import get_default_model_name
+from commands import export_dashboard
+from features.season_archive import LIVE_SEASON, archive_processed_dir
+from models.planner_selection import RemoteFreshnessResult
+from models.selection import load_model_selection
 
 
-def test_dashboard_csv_parity() -> None:
+@pytest.mark.parametrize("near_term", [True, False], ids=["near-term", "season"])
+def test_dashboard_csv_parity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, near_term: bool) -> None:
     """Verify exact parity between data/{model}.csv and data/dashboard_data.json for all unfinished GWs."""
-    processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
-    if not (processed_dir / "players.parquet").exists():
-        pytest.skip("No operational processed data available")
-
-    json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
-    champion_name = get_default_model_name()
-    csv_path = PROJECT_ROOT / "data" / f"{champion_name}.csv"
-
-    # If artifacts missing on clean run, generate them via canonical pipeline
-    if not csv_path.exists() or not json_path.exists():
-        run_dashboard_export(model_name=champion_name, horizon=6)
+    processed_dir = archive_processed_dir(LIVE_SEASON)
+    monkeypatch.setattr(export_dashboard, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(export_dashboard, "resolve_operational_processed_dir", lambda _root: processed_dir)
+    selection = load_model_selection()
+    freshness = RemoteFreshnessResult(
+        status="verified_current",
+        local_champion=selection.champion,
+        local_candidates=selection.candidates,
+        local_podium_sealed=selection.podium_sealed,
+        local_podium_frozen_season=selection.podium_frozen_season,
+    )
+    monkeypatch.setattr(export_dashboard, "check_remote_main_freshness", lambda *_args, **_kwargs: freshness)
+    monkeypatch.setattr("models.planner_selection.sync_validation_evidence_readonly", lambda *_args, **_kwargs: False)
+    if near_term:
+        last_gw = min(export_dashboard.resolve_default_target_gw(processed_dir) + 1, export_dashboard.SEASON_END_GW)
+        monkeypatch.setattr(export_dashboard, "SEASON_END_GW", last_gw)
+    export_dashboard.run_dashboard_export(model_name=selection.champion, horizon=6)
+    json_path = tmp_path / "data" / "dashboard_data.json"
 
     assert json_path.exists(), f"Failed to locate {json_path}"
     with open(json_path, encoding="utf-8") as f:
@@ -33,12 +41,11 @@ def test_dashboard_csv_parity() -> None:
     assert unfinished_gws, "No unfinished gameweeks found in dashboard_data.json metadata"
 
     json_players = {int(p["id"]): p for p in dashboard_data.get("players", [])}
-    models_to_test = meta.get("models") or [champion_name]
+    models_to_test = meta.get("models") or [selection.champion]
 
     for model_name in models_to_test:
-        model_csv_path = PROJECT_ROOT / "data" / f"{model_name}.csv"
-        if not model_csv_path.exists():
-            continue
+        model_csv_path = tmp_path / "data" / f"{model_name}.csv"
+        assert model_csv_path.exists()
 
         df_csv = pd.read_csv(model_csv_path)
         csv_player_ids = set(df_csv["ID"].astype(int))

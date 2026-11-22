@@ -41,7 +41,7 @@ docs/          # Durable project documentation and decision records
 | `uv run ruff check .` | Lint codebase |
 | `uv run python -m commands.streamlit_planner` | Alternate launcher for complete Streamlit dashboard @ `http://127.0.0.1:8501`; same app as `commands.dashboard`. Deployment preparation: `docs/product/streamlit-planner-deployment.md`; single manager/process; no deployment performed |
 | `uv run pytest` | Run test suite |
-| `bash tests/verify.sh` | Run delivery gate check |
+| `bash tests/verify.sh` | Run commit checks |
 | `uv run python -m commands.refresh_data` | Ingest live FPL; pin Official-only Live Season Pin; print hash changed/unchanged; never git commit |
 | `uv run python -m commands.dashboard` | Streamlit dashboard @ `http://127.0.0.1:8000`: Explorer (Watchlist & Dream Team), Research, Model Methodology. Public deployment ready without credentials. Shared heavy-job queue. Apple utility design (ADR 0060). |
 | `uv run python -m commands.solve` | CLI Transfer Plan MILP → `data/solution.json`. Default single-arm no-hit (weekly_hit_limit=0) gap 0.0 with deterministic digest caching; `--scenarios` for 3 arms; `--allow-hits` to permit hits; `--force` to re-solve |
@@ -54,7 +54,7 @@ docs/          # Durable project documentation and decision records
 | `uv run python -m commands.produce_validation_evidence` | Collect live/batch `validation-evidence`, freeze v2 slate, replay checkpoints, bootstrap S-1 transition baseline |
 | `uv run python -m commands.manage_champion_adoption` | Enqueue adoption passes, deduplicate notices, verify/merge adoption PRs under shared reservation, run read-only production preflight |
 
-**Commit readiness:** run `uv run ruff check .`, `uv run pytest`, and `bash tests/verify.sh` before proposing commits.
+**Commit readiness:** run `bash tests/verify.sh` before proposing commits. Run focused pytest tests for changed behavior. GitHub runs the full suite on PRs to `main`. [Testing policy](docs/testing/README.md)
 
 ---
 

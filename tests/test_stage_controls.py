@@ -55,7 +55,6 @@ from backtesting.rolling_replay import (
 )
 from backtesting.season_rules import get_rules, next_free_transfers
 from models.scoring_matrix import Position
-from promotion_evidence_fixture import build_evidence_fixture
 
 POSITIONS: tuple[Position, ...] = (
     "GK", "GK", "D", "D", "D", "D", "D", "M", "M", "M", "M", "M", "F", "F", "F"
@@ -138,7 +137,7 @@ def test_identical_model_null_control_and_15_mandatory_guards() -> None:
     assert app_24.component_statuses["defensive_contributions"] == "inapplicable_season"
 
 
-def test_horizon_6_vs_1_divergence_and_heuristic_refusal(tmp_path: Path) -> None:
+def test_horizon_6_vs_1_divergence_and_heuristic_refusal(retained_request: Path) -> None:
     """Horizon=6 vs 1 chooses different transfers; heuristic_zero_transfer_solve is refused at evidence gate."""
     base = initial_state("2025-26", _squad())
     state = replace(base, deadline=2, free_transfers=1, bank=10, parent_hash=state_hash(base))
@@ -168,7 +167,7 @@ def test_horizon_6_vs_1_divergence_and_heuristic_refusal(tmp_path: Path) -> None
     # heuristic_zero_transfer_solve emits internal_lineup_v1 -> refused by promotion_evidence._verify_replay
     dec_h, cert_h = heuristic_zero_transfer_solve(state, 1, wide, get_strategic_replay_options(1, rules_version="2025-26"))
     assert "lineup" in cert_h.solver_version
-    req = build_evidence_fixture(tmp_path / "heur")
+    req = retained_request
     payload = json.loads(req.read_text())
     proto = json.loads((req.parent / payload["protocol"]["path"]).read_text())
     config = protocol_from_payload(proto)
@@ -369,7 +368,7 @@ def test_native_solver_gw1_gw2_hit_afcon_5buy_and_unpruned_exact_parity() -> Non
     assert abs(cert_pruned.objective - full_m.getObjectiveValue()) < 1e-6
 
 
-def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(tmp_path: Path) -> None:
+def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(tmp_path: Path, retained_request: Path) -> None:
     """Verify atomic corrupt-tail checkpoint quarantine resume and all 8 #179 negative control classes."""
     from backtesting.confirmation_registry import ConfirmationRegistry, IncompleteScheduleError, SealedDataViolationError
     from backtesting.promotion_evidence import content_hash, evaluate_replay_evidence
@@ -424,7 +423,7 @@ def test_corrupt_tail_checkpoint_quarantine_and_eight_stage_b_negative_classes(t
     assert list(cp_dir.glob("checkpoint_gw_2_*.corrupt_tail.*.bak"))
 
     # --- 8 Mandatory #179 Negative Control Classes ---
-    req = build_evidence_fixture(tmp_path / "neg8")
+    req = retained_request
     payload = json.loads(req.read_text())
     proto_path = req.parent / payload["protocol"]["path"]
     proto = json.loads(proto_path.read_text())

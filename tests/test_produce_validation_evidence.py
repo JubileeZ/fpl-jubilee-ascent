@@ -336,6 +336,7 @@ def test_produce_validation_evidence_replay_gaps_exclusions_and_s1_guard_bootstr
     assert excl.is_excluded("metrics_component_hybrid", season="2027-28") is True
 
 
+@pytest.mark.slow
 def test_produce_validation_evidence_replay_reuses_prefix_and_packs_passing_snapshot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -498,6 +499,7 @@ def test_validation_collector_workflow_contract() -> None:
     assert "has_passing_snapshot == 'true'" in text
 
 
+@pytest.mark.slow
 def test_produce_validation_evidence_immutable_admissions_v2_freeze_exclusions_and_s1_margins(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
