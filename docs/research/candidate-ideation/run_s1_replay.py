@@ -102,16 +102,23 @@ def s1_protocol_hash(seed: Path) -> str:
 
 
 def s1_protocol_matches(recorded: str, seed: Path) -> bool:
-    """Verify current S-1 traces and retained traces from the original runner."""
+    """Verify current S-1 traces and retained traces from previous runners."""
     dependencies = _s1_dependency_digests(seed)
     current = sha256(Path(__file__).read_bytes()).digest()
     if recorded == sha256(current + dependencies).hexdigest():
         return True
-    original = subprocess.check_output(
-        ["git", "show", "fa52dc50:docs/research/candidate-ideation/run_s1_replay.py"],
-        cwd=REPO,
-    )
-    return recorded == sha256(sha256(original).digest() + dependencies).hexdigest()
+    for revision in ("e820b61b", "fa52dc50"):
+        retained = subprocess.check_output(
+            [
+                "git",
+                "show",
+                f"{revision}:docs/research/candidate-ideation/run_s1_replay.py",
+            ],
+            cwd=REPO,
+        )
+        if recorded == sha256(sha256(retained).digest() + dependencies).hexdigest():
+            return True
+    return False
 
 
 def replay_directory(
@@ -141,6 +148,30 @@ def _expected_fixture_keys(
     ).sort_values()
 
 
+def issue_forecast(
+    model: BaseModel,
+    features: pd.DataFrame,
+    history: pd.DataFrame,
+    horizon: int,
+    prior_forecasts: list[tuple[int, pd.DataFrame]],
+) -> pd.DataFrame:
+    """Supply earlier issued forecasts to research models that train a score layer."""
+    model.fit(history)
+    predict_with_history = getattr(model, "predict_with_prior_forecasts", None)
+    if predict_with_history is None:
+        return model.predict(features, horizon)
+    gw = int(features.attrs["issue_gameweek"])
+    if [origin for origin, _ in prior_forecasts] != list(range(1, gw)):
+        raise ValueError(f"Missing or out-of-order forecast training origins at GW{gw}")
+    projections, observation = predict_with_history(
+        features, horizon, history, prior_forecasts
+    )
+    if not observation["gameweek_id"].eq(gw).all():
+        raise ValueError(f"Training forecast must target its issue Gameweek GW{gw}")
+    prior_forecasts.append((gw, observation))
+    return projections
+
+
 def forecast(
     work: Path,
     out: Path,
@@ -150,6 +181,7 @@ def forecast(
     deadline: str,
     *,
     season: str = SEASON,
+    prior_forecasts: list[tuple[int, pd.DataFrame]] | None = None,
 ) -> pd.DataFrame:
     path = work / "verified_inputs" / f"gw{gw:02d}"
     horizon = min(6, 39 - gw)
@@ -176,8 +208,13 @@ def forecast(
     features.attrs["issue_gameweek"] = gw
     features["native_rules_version"] = season
     model = factory()
-    model.fit(history)
-    projections = model.predict(features, horizon)
+    projections = issue_forecast(
+        model,
+        features,
+        history,
+        horizon,
+        prior_forecasts if prior_forecasts is not None else [],
+    )
     wide = pd.read_parquet(
         path / "market.parquet",
         columns=[
@@ -202,7 +239,10 @@ def forecast(
         raise ValueError(
             f"Incomplete, duplicate or unexpected forecast fixtures at GW{gw}"
         )
-    scoring = projections[["projected_points", "projected_minutes", *LEDGER_COMPONENTS]]
+    components = list(LEDGER_COMPONENTS)
+    if "score_head_adjustment" in projections:
+        components.append("score_head_adjustment")
+    scoring = projections[["projected_points", "projected_minutes", *components]]
     blank = projections["fixture_id"].eq(-1)
     if (
         not np.isfinite(scoring.to_numpy()).all()
@@ -212,7 +252,7 @@ def forecast(
         .all()
         .all()
         or not np.allclose(
-            scoring[list(LEDGER_COMPONENTS)].sum(axis=1),
+            scoring[components].sum(axis=1),
             scoring["projected_points"],
             atol=1e-4,
             rtol=0,
@@ -342,12 +382,20 @@ def execute_replay(
         schema=UniverseSchema(eligibility_col="purchase_eligible"),
     )
     out = replay_directory(work, name, through, model_digest, protocol)
+    prior_forecasts: list[tuple[int, pd.DataFrame]] = []
     trajectory = run_rolling_replay(
         name,
         season,
         anchor,
         lambda gw, _state: forecast(
-            work, out, factory, seed, gw, deadlines[gw], season=season
+            work,
+            out,
+            factory,
+            seed,
+            gw,
+            deadlines[gw],
+            season=season,
+            prior_forecasts=prior_forecasts,
         ),
         partial(_outcomes_for_gw, season),
         horizon=6,

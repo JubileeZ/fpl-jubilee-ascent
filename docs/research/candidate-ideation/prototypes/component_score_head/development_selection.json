@@ -1,0 +1,29 @@
+{
+  "champion": "def_xg_shrink_challenger",
+  "champion_evaluation_identity": "f1b2a63b1d45efdb0fb0944ede0b3210bdce0a54edc7cd5648098bf8c5be7dc2",
+  "champion_model_version_hash": "cc526b7ea97f200bb15b5c322b5bbd8504525a6658834c8afe18f2dc9ed61b73",
+  "development_guard_margins": {
+    "path": "s1/guard_margins.json",
+    "sha256": "df7c0df013896c772e955658238277723c3d49b0d233ed224eda201f7ebfcd31"
+  },
+  "development_prefix_parity": {
+    "path": "s1_prefix_parity.csv",
+    "sha256": "8183c20b85f90eaa82d4d8c5d506e27d8874019d692288251366a4d571aa9aa0"
+  },
+  "development_summary": {
+    "path": "s1/summary.json",
+    "sha256": "7e46937ba9fd38289d1272dbc698a2e38d2ec93b163cf6b0672c513df62463d9"
+  },
+  "evaluation_identity": "132654347413bd8a9d41d05c8088dfca2bd3eab2b8a57173554f6d9c80a62ea5",
+  "model": "component_score_head",
+  "model_version_hash": "13246d12e8d2286d460cb65f6b3651ee37ab58ab71294ab7292fc42b08f41c3c",
+  "parameters": {
+    "minimum_labeled_gameweeks": 4,
+    "ridge_alpha": 0.01
+  },
+  "protocol_hash": "c497edc27c5ee7e99b2e7e5e1a7649304cd2ddb7f04407f2a75cc4140a387d10",
+  "prototype_path": "docs/research/candidate-ideation/prototypes/component_score_head/prototypes.py",
+  "schema_version": 1,
+  "selected_at_utc": "2026-11-22T19:38:03.879302+00:00",
+  "source_sha256": "baf8d1bb5d4a1e1e66044320959715218c1eda23529af41c288583d0efd233c5"
+}

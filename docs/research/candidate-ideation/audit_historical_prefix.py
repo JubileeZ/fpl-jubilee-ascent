@@ -31,7 +31,7 @@ from features.builder import (
     history_before_target,
 )
 from models.base import BaseModel
-from run_s1_replay import _factory
+from run_s1_replay import _factory, issue_forecast
 
 _HISTORY_COLUMNS = {
     "element": "player_id",
@@ -124,6 +124,9 @@ def audit_prefix(
     seed_name = "2024-25" if season == "2025-26" else "2023-24"
     seed = _prepare_filtered_seed(seed_name, work)
     reports: list[dict[str, Any]] = []
+    prior_forecasts: dict[str, list[tuple[int, pd.DataFrame]]] = {
+        name: [] for name, _, _ in inputs
+    }
     for origin in manifest["origins"][:prefix_end]:
         gw = int(origin["gw"])
         proc, snapshots, players = _stage_causal_gw_inputs(
@@ -154,12 +157,18 @@ def audit_prefix(
         features.attrs["issue_gameweek"] = gw
         features["native_rules_version"] = season
         for name, factory, run in inputs:
-            model = factory()
-            model.fit(history)
-            reference = model.predict(features.copy(), 6)
+            reference = issue_forecast(
+                factory(), features.copy(), history, 6, prior_forecasts[name]
+            )
             observed = pd.read_parquet(run / "projections" / f"gw{gw:02d}.parquet")
+            columns = _PROJECTIONS.copy()
+            if (
+                "score_head_adjustment" in reference
+                or "score_head_adjustment" in observed
+            ):
+                columns.append("score_head_adjustment")
             left, right = (
-                table.set_index(_KEYS)[_PROJECTIONS].sort_index()
+                table.set_index(_KEYS)[columns].sort_index()
                 for table in (reference, observed)
             )
             pd.testing.assert_frame_equal(
