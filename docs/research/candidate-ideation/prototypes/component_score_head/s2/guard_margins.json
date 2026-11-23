@@ -1,0 +1,17 @@
+{
+  "assists_points_mse": 0.014760597260319941,
+  "bonus_points_mse": 0.009153449349084181,
+  "clean_sheet_points_mse": 0.024255512554450232,
+  "conceded_points_mse": 0.002559511785652807,
+  "defcon_points_mse": 0.007842971337125183,
+  "goals_points_mse": 0.04303116600893255,
+  "minutes_mae": 0.7952908227234214,
+  "minutes_points_mse": 0.01871849428828529,
+  "own_goals_points_mse": 0.0009796263105639918,
+  "penalties_missed_points_mse": 0.0005113946380556429,
+  "penalties_saved_points_mse": 0.002725607608804332,
+  "points_mse": 0.20670964263426353,
+  "red_cards_points_mse": 0.001910599798929834,
+  "saves_points_mse": 0.0006177563662642031,
+  "yellow_cards_points_mse": 0.002192878257325775
+}

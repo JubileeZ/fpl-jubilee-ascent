@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-22 (+00:00)
+**Updated**: 2026-11-23 (+07:00)
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -149,6 +149,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Club substitution timing for unfamiliar reserves | `EXT-03_1` (`ext_03_1_a05`, `ext_03_1_a10`) | DXS | S-1 PASS `+2` (`2,169` vs `2,167`, `15/15` guards, `21/21` GW1–7 parity); pinned `ext_03_1_a05` S-2 FAIL `delta 0` (`2,299` vs `2,299`, `14/14` guards, `3/3` segments, GW1 parity exact) | 2026-11-22 | 2027-11-22 | `prototypes/ext_03_1/s2/summary.json` |
 | Reduced weight for attacking evidence in dismissal fixtures | `EXT-04_1` (`ext_04_1_a050`, `ext_04_1_a080`) | DXS | S-1 PASS `ext_04_1_a080` `+5` (`2,172` vs `2,167`; `a050` `2,149` `-18`; `15/15` guards; `21/21` GW1–7 parity); pinned `ext_04_1_a080` S-2 FAIL `-21` (`2,278` vs `2,299`, `+1 / -1 / -21`, `14/14` guards, `3/3` segments, GW1 parity exact) | 2026-11-22 | 2027-11-22 | `prototypes/ext_04_1/s2/summary.json` |
 | Goalkeeper save-count dispersion | `EXT-05_1` (`ext_05_1_r3`, `ext_05_1_r8`) | DXS | S-1 FAIL `delta 0` both variants (`2,167` vs `2,167`, `0 / 0 / 0`, `15/15` guards, `21/21` GW1–7 parity; no S-2 look) | 2026-11-22 | 2027-11-22 | `prototypes/ext_05_1/s1/summary.json` |
+| Direct fixture-score ridge on issue-time Champion components, projected BPS/ICT, minutes, and position | `component_score_head` | DXS | Certified S-1 PASS `+70`, frozen S-2 FAIL `−139`. All projection guards and independent prefix checks passed. S-2 GW5–19 missed floor (`−5.60` pts/GW) | 2026-11-23 | 2027-11-23 | [#205 assessment](../candidate-ideation/component-score-head.md) |
 
 ## Open (next-lever pool; not proven dead)
 
