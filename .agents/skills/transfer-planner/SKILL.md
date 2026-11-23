@@ -267,25 +267,31 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
 
 ### Step 7: Presentation & Ledger
 
-Present weekly results cleanly:
+Render all six sections by default on every run:
 
-1. **Audit & Correction Card** (when corrections were applied by subagent):
-   - Highlight the subagent's findings, cited manager quotes, adjusted curves, and how the transfer sequence adapted.
-2. **Transfer Ledger Table**:
-   - Per Gameweek: action taken (Player Bought, Player Sold, or Roll FT), Buy Price, Sell Price, remaining Bank (£m ITB).
-   - **Injured Player Hold vs Sell Callout**: Clearly state whether injured squad members are held (benched with coverage) or sold immediately.
-3. **Weekly Lineup Card**:
-   - Starting XI formation shape (e.g. 3-5-2 or 3-4-3)
-   - Designated Captain (**C**) and Vice-Captain (**V**)
-   - Bench order (Slots 1–4)
-   - Lineup projected points (xPts)
-4. **Strategic Variance Audit**:
-   - Paid Hit Hurdle checks
-   - Starter xMins floor violations / slacks
-   - 1st Outfield Bench xMins coverage
-   - Defensive Club Stacking (DEF+GK)
-   - Goalkeeper Transfer Friction
-5. **Minutes Audit**:
-   - Transparently tag each starting and transfer asset with their minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]`.
-6. **Artifact Link**:
-   - Link to saved plan: [`data/solution.json`](file:///home/jubileez/fpl-jubilee-ascent/data/solution.json).
+1. **Audit & Correction Card**:
+   - Subagent verification verdict (`PASS` or `CORRECTION_NEEDED`), cited findings, adjusted curves (if any), and resulting transfer delta.
+2. **Transfer Ledger Summary Table**:
+   - Columns: `GW`, `Chip`, `FT Before`, `Used`, `FT Left`, `Hits`, `Move (Sell £m → Buy £m, or Roll FT)`, `Bank After (£m)`.
+   - **Injured / Dropped Player Callout**: State whether injured or dropped squad members are held on bench or sold.
+3. **Every-Gameweek Transfer & Lineup Cards (`GW{start}`–`GW{end}`)**:
+   - Render one card per Gameweek across the full horizon:
+     - Header: `### GW{gw} — {lineup_xpts} xPts ({formation})` (+ chip badge if active)
+     - **Transfer:** `Sell {Player} (£{sell}m) → Buy {Player} (£{buy}m)` or `Roll FT`
+     - **FT & Bank:** `{ft_before} before → {used} used → {ft_left} FT left · Hits: {hits} · Bank: £{bank_before}m → £{bank_after}m`
+     - **Captaincy:** `Captain: {Name} (C) ({xpts}) · Vice-Captain: {Name} (V) ({xpts})`
+     - **Starting XI by position (`GK`, `DEF`, `MID`, `FWD`)** with each player's `xPts` and `(C)` / `(V)` tags
+     - **Ordered Bench (`GK`, `1`, `2`, `3`)** with each player's `xPts`
+4. **Top 10 Final Projections by Position (`GKP`, `DEF`, `MID`, `FWD`)**:
+   - Aggregate the final post-cascade `ProjectionContract` (`model.predict(df_feat, horizon)` with `xmins_override=data/planner/xmins_override.csv`) across `GW{start}..GW{end}`; sort each position by `Total xPts` descending; top 10 per position.
+   - Use unified `/GW` naming so component rates sum directly to `xPts/GW`. Order columns left-to-right from headline decision metrics to positive position drivers, with deductions (`GC/GW`, `Other/GW`) last:
+     - **Base columns (all positions):** `Rank`, `Player`, `Club`, `Price`, `GW{target_gw} xPts`, `Total xPts`, `xPts/GW`, `xPts/£m`, `xMins/GW`
+     - **GKP component columns:** `App/GW`, `CS/GW`, `Save/GW`, `Bonus/GW`, `GC/GW`, `Other/GW`
+     - **DEF component columns:** `App/GW`, `CS/GW`, `DefCon/GW`, `Goal/GW`, `Ast/GW`, `Bonus/GW`, `GC/GW`, `Other/GW`
+     - **MID component columns:** `App/GW`, `Goal/GW`, `Ast/GW`, `CS/GW`, `DefCon/GW`, `Bonus/GW`, `Other/GW`
+     - **FWD component columns:** `App/GW`, `Goal/GW`, `Ast/GW`, `Bonus/GW`, `DefCon/GW`, `Other/GW`
+5. **Strategic Variance Audit**:
+   - Paid Hit Hurdle checks, Starter xMins floor violations/slacks, 1st Outfield Bench xMins coverage, Defensive Club Stacking (DEF+GK), Goalkeeper Transfer Friction.
+6. **Minutes Audit & Artifact Links**:
+   - Tag starting and transfer assets with minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]`.
+   - Link to [`data/solution.json`](file:///Users/jubilee/fpl-jubilee-ascent/data/solution.json) and [`data/planner/xmins_override.csv`](file:///Users/jubilee/fpl-jubilee-ascent/data/planner/xmins_override.csv).
