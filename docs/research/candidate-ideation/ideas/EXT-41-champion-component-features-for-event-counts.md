@@ -3,7 +3,7 @@ idea_id: EXT-41
 name: Champion component features for event counts
 tier: P1
 component: all
-status: untested
+status: closed
 conflicts_with: after:EXT-40
 spec_path: ideas/EXT-41-champion-component-features-for-event-counts.md
 ---
@@ -52,4 +52,4 @@ Apply the EXT-40 GW1–4 gate independently to each attack component. Require lo
 
 [Candidate Ledger](../../candidate-ledger/candidate-ledger.md) · [Direct score-head experiment](../component-score-head.md)
 
-[Cross-device exploration handoff](../ext40-ext41-exploration-handoff.md)
+[GW1–4 results and reproduction](../ext41-gw1-4-attack-screen.md) · [Cross-device exploration handoff](../ext40-ext41-exploration-handoff.md)

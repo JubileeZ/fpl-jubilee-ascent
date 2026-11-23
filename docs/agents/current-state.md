@@ -10,7 +10,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
-- **EXT-40 / EXT-41 attack-component ML (2026-11-23):** EXT-40 dynamic goals and assists closed after matched-static GW1–4 losses despite Champion MSE improvements. Static heads serve as EXT-41 controls. EXT-41 queued for isolated Champion-feature ablations. [Cross-device handoff](../research/candidate-ideation/ext40-ext41-exploration-handoff.md).
+- **EXT-40 / EXT-41 attack-component ML (2026-11-23):** EXT-40 recent-form heads and EXT-41 issue-time Champion-feature heads closed after matched-static GW1–4 MSE losses. Static controls reproduced. Separate certified GW1–4 runs: goals `225`, assists `223`, Champion `220` net points. No full-season qualification test. [Forecast and replay results](../research/candidate-ideation/ext41-gw1-4-attack-screen.md).
 
 - **EXT-38 / EXT-39 deadline-receipt diagnostics (2026-11-23):** EXT-38 closed after both variants missed matched single-mean xG screen; weekly legal XI `+4 / −4` vs Champion; certified rolling comparison unfinished. EXT-39 blocked after neither lagged BPS nor ICT contrast met advancement criteria. Target-and-later mutation passed all 38 issue cutoffs; receipt coverage sparse. [EXT-38 backtest](../research/candidate-ideation/ext38-deadline-backtest.md) · [EXT-39 diagnostic](../research/candidate-ideation/ideas/EXT-39-lagged-bps-and-ict-signal-check.md#10-development-results).
 

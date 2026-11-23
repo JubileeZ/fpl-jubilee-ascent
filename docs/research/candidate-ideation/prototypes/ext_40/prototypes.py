@@ -83,7 +83,9 @@ def poisson_categories(mu: FloatArray) -> tuple[FloatArray, FloatArray]:
     return q, means
 
 
-def _design(rows: pd.DataFrame, dynamic: bool) -> FloatArray:
+def _design(
+    rows: pd.DataFrame, dynamic: bool, extra_features: tuple[str, ...]
+) -> FloatArray:
     rate = rows["rate"].to_numpy(dtype=float)
     position = rows["position_id"].to_numpy(dtype=float)
     form = rows["form"].to_numpy(dtype=float)
@@ -99,6 +101,10 @@ def _design(rows: pd.DataFrame, dynamic: bool) -> FloatArray:
     )
     if dynamic:
         matrix = np.column_stack((matrix, form, np.square(form)))
+    if extra_features:
+        matrix = np.column_stack(
+            (matrix, rows[list(extra_features)].to_numpy(dtype=float))
+        )
     if (
         not np.isfinite(matrix).all()
         or (rate < 0).any()
@@ -124,9 +130,10 @@ def fit_count_head(
     penalty: float,
     dynamic: bool,
     prior: FloatArray | None = None,
+    extra_features: tuple[str, ...] = (),
 ) -> FloatArray:
     """Fit source coefficients or the current-season penalized update."""
-    matrix = _design(rows, dynamic)
+    matrix = _design(rows, dynamic, extra_features)
     shape = (matrix.shape[1], 3)
     if not np.isfinite(penalty) or penalty <= 0:
         raise ValueError("The count likelihood requires a positive penalty")
@@ -192,6 +199,7 @@ def state_distribution(
     *,
     dynamic: bool,
     champion_rate: FloatArray | None = None,
+    extra_features: tuple[str, ...] = (),
 ) -> tuple[FloatArray, FloatArray]:
     """Mix DNP, start and cameo laws using issued duration conditional means."""
     states = issued[STATE_COLUMNS].to_numpy(dtype=float)
@@ -212,7 +220,7 @@ def state_distribution(
         rate = champion_rate
         adjustment = None
     else:
-        adjustment = _design(issued, dynamic) @ coefficients
+        adjustment = _design(issued, dynamic, extra_features) @ coefficients
         rate = np.maximum(0.01, issued["rate"].to_numpy(dtype=float))
     probabilities = np.zeros((len(issued), 4))
     probabilities[:, 0] = states[:, 2]
@@ -244,6 +252,7 @@ def score_fixture_component(
     *,
     dynamic: bool,
     source_positions: frozenset[int] = frozenset(OUTFIELD),
+    extra_features: tuple[str, ...] = (),
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Preserve issued keys and all other components; also return count diagnostics."""
     if component is None:
@@ -296,7 +305,10 @@ def score_fixture_component(
         forecast = champion
     else:
         probabilities[supported], expected_count[supported] = state_distribution(
-            rows.loc[supported], coefficients, dynamic=dynamic
+            rows.loc[supported],
+            coefficients,
+            dynamic=dynamic,
+            extra_features=extra_features,
         )
         forecast = champion.copy()
         forecast[column] = np.where(
