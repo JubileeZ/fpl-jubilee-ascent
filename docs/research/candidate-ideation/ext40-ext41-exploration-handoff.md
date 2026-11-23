@@ -5,7 +5,7 @@ Pull `origin/main`, read [Work Packet](../../../.agents/work-packets/explore-can
 ## Disposition
 
 - **EXT-40 dynamic goals and assists — close.** Both forecast from GW1 with zero destination-season fit labels. Every fixed arm improves Champion fixture-component MSE and loses to matched static. No candidate rolling replay or combined arm earned under original gate. Preserve closed queue row and open research ledger without new Dead Lever lock. Use static count heads as EXT-41 Arm A. Post-result static performance supplies control evidence. [EXT-40 screen](ext40-gw1-4-attack-screen.md)
-- **EXT-41 Champion features — run next.** Fixed experiment ready for implementation. Recover staged baseline inputs and verify prior-season Champion feature coverage before fitting. Run goals and assists independently at λ=0.03. A uses static process and fixture features, B adds same-component Champion xP, C adds all 13 original Champion components. Champion remains unchanged as paired reference. [EXT-41 dossier](ideas/EXT-41-champion-component-features-for-event-counts.md)
+- **EXT-41 Champion features — run next.** Source feature preflight verified 33 deadline-bound forecast origins and 9,294 matched training rows per component with zero missing expected rows. Run goals and assists independently at λ=0.03. A uses static process and fixture features, B adds same-component Champion xP, C adds all 13 original Champion components. Champion remains unchanged as paired reference. [EXT-41 dossier](ideas/EXT-41-champion-component-features-for-event-counts.md) · [Source coverage](ext41-source-coverage.csv)
 
 ## Recover on another device
 
@@ -23,6 +23,8 @@ uv run --locked python -m prototypes.ext_41_preflight .tmp/agent/explore-candida
 ```
 
 Preparation recovers hash-pinned public 2024–25 and 2025–26 receipts. The checked-in 2023–24 processed archive provides Champion's source-year priors. Preflight builds source issue forecasts using dated bootstrap and fixture inputs, earlier published settlement only and native 2024–25 rules. Source output under `ext41_source/` contains each issue's original Champion parquet and `coverage.csv`. Use lead-0, nonblank rows for source regressors and attach labels only after issuance. Preserve EXT-40's five excluded source weeks (GW1–2 without usable process history, GW23/33/35 without supported fixtures) across all A/B/C arms. A missing expected key, duplicate key, post-deadline receipt or unusable component blocks the comparison. Commit no regenerated scratch or forecasts.
+
+Coverage columns `*_examples` count expected training rows per component and origin. `*_matched` counts one-to-one fixture-key matches with a valid Champion component vector. Ideal coverage equals expected for every origin. Forecast digests identify exact parquet bytes for the observed run. Use row-level parity for reproducibility across platform serialization differences.
 
 To reproduce the closed EXT-40 forecast result, run `uv run --locked python -m prototypes.ext_40.run .tmp/agent/explore-candidate/ext_40`. Use a new run identity if platform serialization, Champion, sources, or code changes. Retain the original reports.
 
