@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Weekly Transfer Planner
 
-- 2026-27 GW11 pre-deadline official refresh pinned. Local Strategic GW11–20 solve verified at 0% gap, GW14 Free Hit, availability audit passed. Manager-specific plan and minutes overrides stored locally at `data/solution.json` and `data/planner/xmins_override.csv`.
+- 2026-27 GW12 pre-deadline official refresh pinned (`c4ea18f1...`). Local Strategic GW12–21 solve verified at 0% gap (`647.79 xPts`, GW14 Free Hit, Saka & Egan Layer 3 curves, availability audit passed). `transfer-planner` skill Step 7 defaults every-GW lineup cards and Top 10 by-position `/GW` component tables. Manager-specific plan and minutes overrides stored locally at `data/solution.json` and `data/planner/xmins_override.csv`.
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)
 
