@@ -1,0 +1,74 @@
+{
+  "arms": {
+    "candidate": {
+      "model": "static_goals_a",
+      "model_version_hash": "5ef6d48553105e5ad389eef8a9180c06369c937144117f0657624d73f0d59fff",
+      "source_sha256": "a0f6afa6396f27c2f24e24e5d0b0f986c6324857e9490c46c45c8d9dc8f86ef8"
+    },
+    "champion": {
+      "model": "def_xg_shrink_challenger",
+      "model_version_hash": "cc526b7ea97f200bb15b5c322b5bbd8504525a6658834c8afe18f2dc9ed61b73",
+      "source_sha256": "9d56247b67d8fce507a3a945cd71d15e0539ff03bce92cc60bf4c7bc4986264d"
+    }
+  },
+  "core_closure_hash": "faab6c35aff17cfe0d5322a4e55a3c2027a95cd250ee4b6517c54c33ee66b578",
+  "initial_manifest_digests": {
+    "dev_mirror_2024_25_manifest.json": "543a62e29d73448fc14d52410f0aa040c18cb298676fab286518fb5a94b32ed7",
+    "s2_historical_fixture_amendments.csv": "0eccb662933570bd248be92ed0580bc29e7e7650aaff246c0f719a641b13b548"
+  },
+  "lane": "static_goals_a",
+  "pin_sha256": "b64e0ec1f8813aca6ea592c76d46d61c8904c0c0b8b7426ad091bdfb34050389",
+  "protocol_source_digests": {
+    "audit_historical_prefix.py": "c1abd085aaa6306c4860e8a91d5a2fc5550128901b4eaa6683e543d89a997baf",
+    "compare_historical_replays.py": "9043acaa102ea2bd993a0638062711d62ea2c83713014562eae5022309769118",
+    "historical_replay_inputs.py": "4124a904fbf173536242d77ac09d4b12525d10f50796edb59f90752b6a3ef92c",
+    "run_s1_replay.py": "3c76d1d9272338147fb3e3adeecf00da0d201a4be69df3fa62835dffee2c0f71",
+    "run_s2_filter.py": "cca33909c77b1fd1f9efca429793f63563ca31be312d196525ea0d36180bd35a",
+    "run_stage_a_and_b.py": "ec1623cd2749253bf40604890573f7061399d4aa906772f5c0965ef091918ec0",
+    "s2_historical_replay_inputs.py": "c8ed17db483a1747d7564317a80148a24bb4850f8c56115ac3b9ca8c73d4c1f2",
+    "season_lifecycle.json": "3906eaafaaac412536447b4957c02a4a71dba180cc57c4aae5e861920bb309f5",
+    "uv.lock": "30cfe080ed7bb065999970e8ee6d269e8e20ec08cef58a21a9c2d105f7b1fe79"
+  },
+  "required_deadlines": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38
+  ],
+  "schema_version": 1,
+  "season": "2024-25"
+}
