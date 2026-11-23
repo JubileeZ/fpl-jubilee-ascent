@@ -1,0 +1,3 @@
+component,paired,ext40_component_mse,ext41_arm_a_component_mse,component_mse_delta,xi_and_opening_coverage_match
+goals,2501,0.8792324806098557,0.8792324806098556,-1.1102230246251565e-16,True
+assists,2501,0.3506379529245396,0.3506379529245396,0.0,True

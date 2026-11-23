@@ -1,11 +1,11 @@
 # EXT-40 and EXT-41 exploration handoff
 
-Pull `origin/main`, read [Work Packet](../../../.agents/work-packets/explore-candidate-ext41.md), then invoke `/explore-candidate EXT-41` in scoped mode and bind `explore-candidate-ext41`.
+Scoped EXT-41 forecast screen complete. See [results and replay reproduction](ext41-gw1-4-attack-screen.md). Retained handoff below records fixed test and historical source preparation.
 
 ## Disposition
 
 - **EXT-40 dynamic goals and assists — close.** Both forecast from GW1 with zero destination-season fit labels. Every fixed arm improves Champion fixture-component MSE and loses to matched static. No candidate rolling replay or combined arm earned under original gate. Preserve closed queue row and open research ledger without new Dead Lever lock. Use static count heads as EXT-41 Arm A. Post-result static performance supplies control evidence. [EXT-40 screen](ext40-gw1-4-attack-screen.md)
-- **EXT-41 Champion features — run next.** Source feature preflight verified 33 deadline-bound forecast origins and 9,294 matched training rows per component with zero missing expected rows. Run goals and assists independently at λ=0.03. A uses static process and fixture features, B adds same-component Champion xP, C adds all 13 original Champion components. Champion remains unchanged as paired reference. [EXT-41 dossier](ideas/EXT-41-champion-component-features-for-event-counts.md) · [Source coverage](ext41-source-coverage.csv)
+- **EXT-41 Champion features — screen closed.** Source feature preflight verified 33 deadline-bound forecast origins and 9,294 matched training rows per component with zero missing expected rows. Goals and assists run independently at λ=0.03. A uses static process and fixture features, B adds same-component Champion xP, C adds all 13 original Champion components. Champion remains unchanged as paired reference. [EXT-41 dossier](ideas/EXT-41-champion-component-features-for-event-counts.md) · [Source coverage](ext41-source-coverage.csv)
 
 ## Recover on another device
 

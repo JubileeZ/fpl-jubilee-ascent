@@ -1,0 +1,5 @@
+gameweek,deadline,source_panel_digest,settled_receipt_digest,history_rows,target_and_later_label_mutation_invariant,goals_current_label_rows,goals_current_label_gws,assists_current_label_rows,assists_current_label_gws
+1,2025-08-15T17:30:00+00:00,e5f8ea7821b3d3de9e68bea34ac6ced9ac4743e71dc32cda93d01f7626648a21,opening_empty,0,True,0,0,0,0
+2,2025-08-22T17:30:00+00:00,e5f8ea7821b3d3de9e68bea34ac6ced9ac4743e71dc32cda93d01f7626648a21,d55fc4c2c222e7190432196a916f1454f727bff6cda0f30d79c06c310b93ecf6,690,True,279,1,279,1
+3,2025-08-30T10:00:00+00:00,e5f8ea7821b3d3de9e68bea34ac6ced9ac4743e71dc32cda93d01f7626648a21,90396e2357ae78fdcc1a66577dadb91008c3246c68e1218fa50a00ff00c7d5b1,1395,True,570,2,570,2
+4,2025-09-13T10:00:00+00:00,e5f8ea7821b3d3de9e68bea34ac6ced9ac4743e71dc32cda93d01f7626648a21,c89a5d7bc67a079b5d6392597369228756766b875949d5a5db6a7ac101797339,2107,True,851,3,851,3

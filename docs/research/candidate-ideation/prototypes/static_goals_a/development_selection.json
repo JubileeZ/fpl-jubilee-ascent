@@ -1,0 +1,30 @@
+{
+  "champion": "def_xg_shrink_challenger",
+  "champion_evaluation_identity": "f1b2a63b1d45efdb0fb0944ede0b3210bdce0a54edc7cd5648098bf8c5be7dc2",
+  "champion_model_version_hash": "cc526b7ea97f200bb15b5c322b5bbd8504525a6658834c8afe18f2dc9ed61b73",
+  "development_guard_margins": {
+    "path": "s1/guard_margins.json",
+    "sha256": "029184f0829f782e060b5fc60fc10546895e72f64f27308ec4073efdbcb8cb2d"
+  },
+  "development_prefix_parity": {
+    "path": "s1_prefix_parity.csv",
+    "sha256": "13eae36e149ba857feb35af189637139cde12d076f91c545ce6449a0193944d5"
+  },
+  "development_summary": {
+    "path": "s1/summary.json",
+    "sha256": "000618fbff3906e32644bddab98008b76b38670e9f24f64c46b0179d60044b02"
+  },
+  "evaluation_identity": "456bed7568b3746f442109ef191a7b3502e1c4eda0daf174a1dc6693cc8e1897",
+  "filter_training_source_sha256": "ff5c60da865d22ec357bf32bbc458371aec2d95bbb6a63a4cb8745534084d97b",
+  "model": "static_goals_a",
+  "model_version_hash": "5ef6d48553105e5ad389eef8a9180c06369c937144117f0657624d73f0d59fff",
+  "parameters": {
+    "component": "goals",
+    "penalty": 0.03
+  },
+  "protocol_hash": "c497edc27c5ee7e99b2e7e5e1a7649304cd2ddb7f04407f2a75cc4140a387d10",
+  "prototype_path": "docs/research/candidate-ideation/prototypes/static_goals_a/prototypes.py",
+  "schema_version": 1,
+  "selected_at_utc": "2026-11-23T18:16:20.112427+00:00",
+  "source_sha256": "a0f6afa6396f27c2f24e24e5d0b0f986c6324857e9490c46c45c8d9dc8f86ef8"
+}

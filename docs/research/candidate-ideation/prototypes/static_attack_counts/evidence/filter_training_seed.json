@@ -1,0 +1,76 @@
+{
+  "code_mapping_rule": "opta_code_primary_normalized_identity_secondary_absent_newcomer",
+  "defensive_contribution_status": "inapplicable_native",
+  "excluded_position_5_count": 0,
+  "excluded_position_5_perf_rows": 0,
+  "players_total": 865,
+  "processed_digests": {
+    "clubs.parquet": {
+      "bytes": 7698,
+      "sha256": "c3a7bf435578b82a956b802b3ef363c37008545334304bd4fa03e9b134df4aa1"
+    },
+    "fixtures.parquet": {
+      "bytes": 12255,
+      "sha256": "2d64f8b864852ecba3bce1cb135fac7c4cdf8e9e4ac91d7e1350a4d2639b3c92"
+    },
+    "gameweeks.parquet": {
+      "bytes": 3467,
+      "sha256": "00b82d0fbb11a1d545558ac494b2dd2a8b7d7963c91643baab4befa47ab36880"
+    },
+    "player_performances.parquet": {
+      "bytes": 875411,
+      "sha256": "5af4eedd7d914895383c5ac92829f2079f70af6fb512d1dd5a05e14dd4393fbe"
+    },
+    "players.parquet": {
+      "bytes": 111489,
+      "sha256": "4f767f37274e22e711d52245f10293eeb4a3e5730ebbbdeccefd89a9e96c5368"
+    }
+  },
+  "retained_perf_rows": 29725,
+  "retained_player_count": 865,
+  "role": "prior_season_seed",
+  "schema_version": 2,
+  "season": "2023-24",
+  "upstream_digests": {
+    "fixtures.csv": {
+      "bytes": 712532,
+      "commit_sha": "204c134d8e90e2b6e69ec252aa3ef6f10f21e73c",
+      "local_relpath": "2023-24/seed/204c134d8e/fixtures.csv",
+      "sha256": "d8521bdbb80edb5141bc17df71bf6026275f2e56fd6a6dc6041b3ae23a39ce6a",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/204c134d8e90e2b6e69ec252aa3ef6f10f21e73c/data/2023-24/fixtures.csv"
+    },
+    "gws/merged_gw.csv": {
+      "bytes": 4997188,
+      "commit_sha": "204c134d8e90e2b6e69ec252aa3ef6f10f21e73c",
+      "local_relpath": "2023-24/seed/204c134d8e/gws_merged_gw.csv",
+      "sha256": "e9c09c8856f1c86b4f920f46ddd5033af83409439dfda53be925df2a3e7c8a9e",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/204c134d8e90e2b6e69ec252aa3ef6f10f21e73c/data/2023-24/gws/merged_gw.csv"
+    },
+    "players_raw.csv": {
+      "bytes": 310197,
+      "commit_sha": "204c134d8e90e2b6e69ec252aa3ef6f10f21e73c",
+      "local_relpath": "2023-24/seed/204c134d8e/players_raw.csv",
+      "sha256": "43d8cf5efb3d901f2499558c40b392b7f0ee22afe28030f36266ad29024c63d9",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/204c134d8e90e2b6e69ec252aa3ef6f10f21e73c/data/2023-24/players_raw.csv"
+    },
+    "teams.csv": {
+      "bytes": 1715,
+      "commit_sha": "204c134d8e90e2b6e69ec252aa3ef6f10f21e73c",
+      "local_relpath": "2023-24/seed/204c134d8e/teams.csv",
+      "sha256": "7795f091ccea17fda0752cb07b935e1515b09a9d3f924147997cbf28139edd49",
+      "url": "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/204c134d8e90e2b6e69ec252aa3ef6f10f21e73c/data/2023-24/teams.csv"
+    }
+  },
+  "vaastav_commits": [
+    {
+      "committed_at_utc": "2024-05-27T18:05:02+00:00",
+      "message": "Add GW38 data",
+      "sha": "204c134d8e90e2b6e69ec252aa3ef6f10f21e73c"
+    },
+    {
+      "committed_at_utc": "2024-05-19T02:36:03+00:00",
+      "message": "Add DGW37 data",
+      "sha": "5218c9f360c0415d7272775239f88ab0eb15e91d"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-23 (+07:00)
+**Updated**: 2026-11-24 (+07:00)
+
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
 **Status**: Live — read before proposing any Candidate / Champion lever  
@@ -150,6 +151,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Reduced weight for attacking evidence in dismissal fixtures | `EXT-04_1` (`ext_04_1_a050`, `ext_04_1_a080`) | DXS | S-1 PASS `ext_04_1_a080` `+5` (`2,172` vs `2,167`; `a050` `2,149` `-18`; `15/15` guards; `21/21` GW1–7 parity); pinned `ext_04_1_a080` S-2 FAIL `-21` (`2,278` vs `2,299`, `+1 / -1 / -21`, `14/14` guards, `3/3` segments, GW1 parity exact) | 2026-11-22 | 2027-11-22 | `prototypes/ext_04_1/s2/summary.json` |
 | Goalkeeper save-count dispersion | `EXT-05_1` (`ext_05_1_r3`, `ext_05_1_r8`) | DXS | S-1 FAIL `delta 0` both variants (`2,167` vs `2,167`, `0 / 0 / 0`, `15/15` guards, `21/21` GW1–7 parity; no S-2 look) | 2026-11-22 | 2027-11-22 | `prototypes/ext_05_1/s1/summary.json` |
 | Direct fixture-score ridge on issue-time Champion components, projected BPS/ICT, minutes, and position | `component_score_head` | DXS | Certified S-1 PASS `+70`, frozen S-2 FAIL `−139`. All projection guards and independent prefix checks passed. S-2 GW5–19 missed floor (`−5.60` pts/GW) | 2026-11-23 | 2027-11-23 | [#205 assessment](../candidate-ideation/component-score-head.md) |
+| Static prior-trained categorical goal counts at λ=0.03 | `static_goals_a` | DXS | Certified S-1 PASS `+5`. Frozen S-2 FAIL `−138`. GW5–19 floor missed (`−5.27` pts/GW). Paired interval excludes zero | 2026-11-24 | 2027-11-24 | [Qualification](../candidate-ideation/static-attack-qualification.md#goals) |
 
 ## Open (next-lever pool; not proven dead)
 
@@ -157,7 +159,9 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 
 | Lever | State | Best evidence | Blocker / next step |
 |---|---|---|---|
-| Prior-trained categorical fixture goals and assists with recent process form (EXT-40) | GW1–4 screen closed (2026-11-23) | Zero destination training labels at GW1. All four dynamic variants reduced Champion component MSE, then trailed matched static. [Evidence](../candidate-ideation/ext40-gw1-4-attack-screen.md) | No candidate replay or stack. [EXT-41](../candidate-ideation/ideas/EXT-41-champion-component-features-for-event-counts.md) queued |
+| Prior-trained categorical fixture goals and assists with recent process form (EXT-40) | GW1–4 screen closed (2026-11-23) | Zero destination training labels at GW1. All four dynamic variants reduced Champion component MSE, then trailed matched static. [Evidence](../candidate-ideation/ext40-gw1-4-attack-screen.md) | Static count heads reproduced under EXT-41 |
+| Issue-time Champion component features for categorical goal and assist counts (EXT-41) | GW1–4 screen closed (2026-11-23) | Both Champion feature blocks trailed matched static MSE for goals and assists. [Evidence](../candidate-ideation/ext41-gw1-4-attack-screen.md) | No Arm C replay or stack. Diagnostic only |
+| Static prior-trained categorical assist counts at λ=0.03 | Certified S-1 gate missed (2026-11-24) | `−10` rolling net vs Champion. All projection and segment guards passed. Paired interval spans zero. [Qualification](../candidate-ideation/static-attack-qualification.md#assists) | Full-season result inconclusive |
 | Two-part fixture xG for outfield players (EXT-38) | Development screen closed (2026-11-23) | Both variants slightly improve Champion xG MSE but trail matched single-mean controls. Legal XI delta +4 and −4 over GW1–38. [Receipt-based backtest](../candidate-ideation/ext38-deadline-backtest.md) | Forecast screen missed. Rolling qualification unfinished. Diagnostic evidence only |
 | Fixed-K leave-player-and-club-out creative-role kernel prior (EXT-35) | Operator retired 2026-11-11; not eligible | One Tier 2 oracle selection tie (delta 0, P 0); three inert screen-admission refusals; [complete terminal companion](../candidate-ideation/prototypes/ext_35/execution_results.csv) | Queue closed for negligible effect; no revival without new authorization. Scientific inconclusive; no new Dead lock |
 | Endogenous attacking-role stratification and threat-adaptive shrinkage for out-of-position defenders (EXT-20) | Reopened (2026-11-06); dev re-eval (2026-11-09) | dev 2025-26 re-eval FAIL: best `ext_20_t15_k800` delta +0.0563, 1/3 segs, boot P 0.671 < 0.75 (4/6 passed Tier 2, all 6 failed Tier 3 under £100m 15-player metric) vs def_xg_shrink_challenger | Diagnostic inconclusive; no new dead lock; queue exhausted |
