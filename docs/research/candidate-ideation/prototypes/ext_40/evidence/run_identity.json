@@ -1,0 +1,31 @@
+{
+  "bound_reports": {
+    "by_issue.csv": "26d4fa67e18cb31c8aa4d824ee4436e0b2e01fd9c95f64daeb7d8884b453dfe5",
+    "issue_provenance.csv": "b0bd3c4511cbde088086b6548cd61c533b1da8bfc377b8f230a70abe8f2e1b35",
+    "source_category_support.csv": "cce25e1b634796f1c46dafa738d56fa4e69aa903b6ee5762df9f7e94743d3b57",
+    "source_origins.csv": "98471e94c2e301ceccdab032cb52bd6adf404e833ec66922e2abf5047466ebd5",
+    "summary.csv": "45851e224ee1f1e3357cfc7174db67796c2212127652aa02a0df955e5fd2bef5"
+  },
+  "core": "0e91f11fda44948b03a83ab0d9033e7caef973f5d6a655147d8552b0b0dbd634",
+  "issues": {
+    "gw01": {
+      "champion_forecast": "2b7239289277b978fd6da2f436dcbb0085953a170233675feb40a0339788148d",
+      "staged_inputs": "28b855596e1df40fe1f54472f5a8bdb2c43971a704eaa1ba2a508481d3a1318a"
+    },
+    "gw02": {
+      "champion_forecast": "f5efd8af682ee890a960f044853254e75ae4b209f56e07a0248c10a7716c401e",
+      "staged_inputs": "2abbfed718f197a0fbdde433ca471a083dbf553a2bea37207aecc67284ff293c"
+    },
+    "gw03": {
+      "champion_forecast": "6655185bcf54afb986808b2ed8e56f1d3aabb3c944b77fb9b99c7ee4cb546496",
+      "staged_inputs": "4f7e9da431fb76ffd2f6598884f15b1a578ff930502d6369aee0a10c619c9cb2"
+    },
+    "gw04": {
+      "champion_forecast": "6670171d2f2bc66cb3c57d245c15d5be3e479b1c0836d0a2af6b41e9eea70086",
+      "staged_inputs": "efbca3e6d22c2822096cacfb377942d0a74b44508a3b2192c767359f068b62d1"
+    }
+  },
+  "recipe": "b74a8b7394a5ee231ef23c1f8b713bac4e80c8b5772eae8e7600a816c528d67f",
+  "s1": "a4797910dd5f7a1709847d2e0ba5666f28a65466d01d8793b8d3f16f46383bda",
+  "source_panel": "b8b4cece7f9c34ae79950933b83c3fc41321d81b6dc3b5be688fd20d670746b8"
+}
