@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import logging
-import re
 from datetime import date
+import logging
 from pathlib import Path
-from typing import Any, Mapping
+import re
+from typing import Any, Iterable, Mapping
 
 import pandas as pd
 
@@ -107,22 +107,22 @@ def compute_healthy_baseline_xmins(
     return baseline
 
 
-def build_broad_pool_shield(
+def _build_broad_pool_shield_layers(
     processed_dir: Path,
     target_gw: int,
     horizon: int,
     reference_date: date | None = None,
-) -> dict[tuple[int, int], float]:
+) -> tuple[dict[tuple[int, int], float], dict[tuple[int, int], float]]:
     """
-    Construct Tier A Broad Pool Shield.
-    
-    Parses all flagged players in the pool and enforces 0.0 xMins for gameweeks prior
-    to their club fixture return date, populating a non-linear recovery ramp upon return.
+    Construct Broad Pool Shield split into:
+    - hard_guard: pre-return 0.0 zeros and injury 20m -> 65m return ramps (beats Layer 2)
+    - post_return_fallback: healthy baseline fallback once recovered or ban expires
+      (yields to positive Layer 2 steady-state projections, beats Layer 1/zeroed Layer 2).
     """
     players_path = processed_dir / "players.parquet"
     fixtures_path = processed_dir / "fixtures.parquet"
     if not players_path.exists() or not fixtures_path.exists():
-        return {}
+        return {}, {}
 
     df_players = pd.read_parquet(players_path)
     df_fixtures = pd.read_parquet(fixtures_path)
@@ -149,21 +149,18 @@ def build_broad_pool_shield(
                 club_gw_dates[key] = k_date
 
     ref = reference_date or resolve_gw_reference_date(processed_dir, target_gw)
-    shield: dict[tuple[int, int], float] = {}
+    hard_guard: dict[tuple[int, int], float] = {}
+    post_return_fallback: dict[tuple[int, int], float] = {}
 
     for _, player in flagged.iterrows():
         pid = int(player["id"])
         cid = int(player["club_id"])
         status = str(player.get("status", "")).lower()
-        chance = float(player.get("chance_of_playing_next_round") or 100.0)
+        raw_chance = player.get("chance_of_playing_next_round")
+        chance = 100.0 if raw_chance is None or pd.isna(raw_chance) else float(raw_chance)
         news = str(player.get("news") or "")
         ret_date = parse_fpl_return_date(news, ref)
 
-        # Immediate target GW Hard DNP (ADR 0056)
-        if status in {"i", "s", "u", "n"} or chance <= 0.0:
-            shield[(pid, target_gw)] = 0.0
-
-        # Find return gameweek if known
         return_gw: int | None = None
         if ret_date is not None:
             for gw in planning_gws:
@@ -172,25 +169,160 @@ def build_broad_pool_shield(
                     return_gw = gw
                     break
 
-        for gw in planning_gws:
-            if gw == target_gw:
-                continue
-
-            if return_gw is not None:
+        if return_gw is not None:
+            for gw in planning_gws:
                 if gw < return_gw:
-                    shield[(pid, gw)] = 0.0
+                    hard_guard[(pid, gw)] = 0.0
+                elif status == "s":
+                    # Suspensions restore match-fit immediately on return_gw (no cameo ramp)
+                    post_return_fallback[(pid, gw)] = healthy_baselines.get(pid, 80.0)
                 elif gw == return_gw:
-                    shield[(pid, gw)] = 20.0  # Cameo appearance
+                    # Immediate target GW Hard DNP (ADR 0056) if chance <= 0 on return_gw
+                    if gw == target_gw and chance <= 0.0:
+                        hard_guard[(pid, gw)] = 0.0
+                    else:
+                        hard_guard[(pid, gw)] = 20.0
                 elif gw == return_gw + 1:
-                    shield[(pid, gw)] = 65.0  # Managed start
+                    hard_guard[(pid, gw)] = 65.0
                 else:
-                    # Full recovery: use healthy baseline (overcoming DNP depression)
-                    shield[(pid, gw)] = healthy_baselines.get(pid, 80.0)
-            elif status in {"i", "s", "u", "n"}:
-                # Red-flagged with unknown or unparsed return date -> zeroed out
-                shield[(pid, gw)] = 0.0
+                    post_return_fallback[(pid, gw)] = healthy_baselines.get(pid, 80.0)
+        elif status in {"i", "s", "u", "n"}:
+            for gw in planning_gws:
+                hard_guard[(pid, gw)] = 0.0
+        elif chance <= 0.0:
+            hard_guard[(pid, target_gw)] = 0.0
 
-    return shield
+    return hard_guard, post_return_fallback
+
+
+def build_broad_pool_shield(
+    processed_dir: Path,
+    target_gw: int,
+    horizon: int,
+    reference_date: date | None = None,
+) -> dict[tuple[int, int], float]:
+    """
+    Construct Broad Pool Shield across all flagged players.
+
+    Suspensions (`status == 's'`) enforce 0.0 xMins prior to `return_gw` and restore full
+    fitness immediately upon return; injuries (`status == 'i'`) apply a 20m -> 65m ramp.
+    """
+    hard_guard, post_return_fallback = _build_broad_pool_shield_layers(
+        processed_dir, target_gw, horizon, reference_date=reference_date
+    )
+    return {**post_return_fallback, **hard_guard}
+
+
+def audit_squad_minutes(
+    processed_dir: Path,
+    player_ids: Iterable[int],
+    target_gw: int,
+    horizon: int,
+    *,
+    base_csv_path: Path | str | None = None,
+    override_csv_path: Path | str | None = None,
+    recent_mins_threshold: float = 60.0,
+    layer2_gap_threshold: float = 25.0,
+    layer2_cliff_threshold: float = 25.0,
+) -> list[dict[str, Any]]:
+    """
+    Audit unflagged squad Players for rotation/drop risk using three triggers:
+    1. recent_non_start_or_sub60: last played GW < 60m or non-start
+    2. recent_vs_external_gap: Layer 2 target-GW xMins exceeds recent mins by > 25m
+    3. external_xmins_cliff: Layer 2 horizon xMins drops >= 25m below 65m
+    """
+    pids = [int(pid) for pid in player_ids]
+    players_path = processed_dir / "players.parquet"
+    if not pids or not players_path.exists():
+        return []
+
+    df_players = pd.read_parquet(players_path)
+    df_players = df_players[df_players["id"].isin(pids)].copy()
+    if df_players.empty:
+        return []
+
+    chance_series = pd.to_numeric(df_players.get("chance_of_playing_next_round"), errors="coerce")
+    unflagged_mask = (df_players["status"].astype(str) == "a") & (chance_series.isna() | (chance_series >= 100.0))
+    df_unflagged = df_players[unflagged_mask].copy()
+    if df_unflagged.empty:
+        return []
+
+    perf_stats: dict[int, dict[str, Any]] = {}
+    perfs_path = processed_dir / "player_performances.parquet"
+    if perfs_path.exists():
+        df_perfs = pd.read_parquet(perfs_path)
+        df_perfs = df_perfs[(df_perfs["player_id"].isin(df_unflagged["id"])) & (df_perfs["gameweek_id"] < int(target_gw))]
+        for pid, grp in df_perfs.groupby("player_id"):
+            grp_sorted = grp.sort_values("gameweek_id")
+            last_row = grp_sorted.iloc[-1]
+            last_3 = grp_sorted.tail(3)
+            last_mins = float(last_row.get("minutes", 0.0) or 0.0)
+            last_starts = int(last_row["starts"]) if "starts" in grp_sorted.columns and pd.notna(last_row.get("starts")) else None
+            avg_3 = float(pd.to_numeric(last_3["minutes"], errors="coerce").fillna(0.0).mean())
+            perf_stats[int(pid)] = {
+                "last_gw": int(last_row["gameweek_id"]),
+                "last_gw_minutes": round(last_mins, 1),
+                "last_gw_starts": last_starts,
+                "last_3gw_avg_minutes": round(avg_3, 1),
+            }
+
+    planning_gws = list(range(int(target_gw), int(target_gw) + max(1, int(horizon))))
+    ext_map: dict[tuple[int, int], float] = {}
+    csv_source = override_csv_path if override_csv_path and Path(override_csv_path).exists() else base_csv_path
+    if csv_source is not None and Path(csv_source).exists():
+        from features.builder import load_xmins_override
+        ext_map = load_xmins_override(csv_source, planning_gws)
+
+    risks: list[dict[str, Any]] = []
+    for _, row in df_unflagged.iterrows():
+        pid = int(row["id"])
+        pstat = perf_stats.get(pid, {})
+        last_gw = pstat.get("last_gw")
+        last_mins = pstat.get("last_gw_minutes")
+        last_starts = pstat.get("last_gw_starts")
+        avg_3 = pstat.get("last_3gw_avg_minutes")
+
+        ext_series = [ext_map[(pid, gw)] for gw in planning_gws if (pid, gw) in ext_map]
+        ext_target = ext_map.get((pid, int(target_gw)))
+        min_ext = min(ext_series) if ext_series else None
+        max_ext = max(ext_series) if ext_series else None
+
+        triggers: list[str] = []
+        details: list[str] = []
+
+        if last_mins is not None and (last_mins < recent_mins_threshold or last_starts == 0):
+            triggers.append("recent_non_start_or_sub60")
+            details.append(f"GW{last_gw}: {last_mins:.0f}m" + (" (non-start)" if last_starts == 0 else ""))
+
+        if ext_target is not None and last_mins is not None:
+            gap_last = ext_target - last_mins
+            gap_3 = (ext_target - avg_3) if avg_3 is not None else 0.0
+            if gap_last > layer2_gap_threshold or gap_3 > layer2_gap_threshold:
+                triggers.append("recent_vs_external_gap")
+                details.append(f"GW{target_gw} ext {ext_target:.1f}m vs last {last_mins:.0f}m / 3gw {avg_3:.1f}m")
+
+        if min_ext is not None and max_ext is not None and (max_ext - min_ext) >= layer2_cliff_threshold and min_ext < 65.0:
+            triggers.append("external_xmins_cliff")
+            details.append(f"ext cliff {max_ext:.1f}m -> {min_ext:.1f}m")
+
+        if triggers:
+            risks.append({
+                "id": pid,
+                "web_name": str(row.get("web_name", "")),
+                "club_id": int(row.get("club_id", 0)),
+                "position_id": int(row.get("position_id", 3)),
+                "price": float(row.get("now_cost", 0)) / 10.0,
+                "status": str(row.get("status", "a")),
+                "last_gw": last_gw,
+                "last_gw_minutes": last_mins,
+                "last_3gw_avg_minutes": avg_3,
+                "target_gw_external_xmins": round(ext_target, 1) if ext_target is not None else None,
+                "min_horizon_external_xmins": round(min_ext, 1) if min_ext is not None else None,
+                "triggers": triggers,
+                "trigger_details": "; ".join(details),
+            })
+
+    return risks
 
 
 def select_scouting_targets(
@@ -198,14 +330,17 @@ def select_scouting_targets(
     user_squad_ids: set[int] | None = None,
     top_per_tier: int = 2,
     reference_date: date | None = None,
+    target_gw: int | None = None,
+    horizon: int = 10,
+    base_csv_path: Path | str | None = None,
 ) -> dict[str, Any]:
     """
-    Selects flagged User Squad members and top non-squad transfer candidates segmented
-    by Position x Price Bracket for agentic deep-dive web intel.
+    Selects flagged User Squad Players, unflagged User Squad rotation/minutes risks,
+    and top non-squad transfer candidates segmented by Position x Price Bracket.
     """
     players_path = processed_dir / "players.parquet"
     if not players_path.exists():
-        return {"squad_flagged": [], "market_flagged_by_tier": {}}
+        return {"squad_flagged": [], "squad_rotation_risk": [], "market_flagged_by_tier": {}}
 
     df_players = pd.read_parquet(players_path)
     flagged = get_flagged_players(df_players).copy()
@@ -217,6 +352,7 @@ def select_scouting_targets(
     ref = reference_date or date.today()
 
     def format_player(r: pd.Series) -> dict[str, Any]:
+        raw_ch = r.get("chance_of_playing_next_round")
         return {
             "id": int(r["id"]),
             "web_name": str(r["web_name"]),
@@ -225,7 +361,7 @@ def select_scouting_targets(
             "price": float(r["price"]),
             "selected_by_percent": float(r["selected_by_percent"]),
             "status": str(r.get("status", "")),
-            "chance": float(r.get("chance_of_playing_next_round") or 100.0),
+            "chance": 100.0 if raw_ch is None or pd.isna(raw_ch) else float(raw_ch),
             "news": str(r.get("news") or ""),
             "parsed_return_date": parse_fpl_return_date(str(r.get("news") or ""), ref),
         }
@@ -233,6 +369,21 @@ def select_scouting_targets(
     squad_flagged = [
         format_player(r) for _, r in flagged[flagged["id"].isin(squad_ids)].iterrows()
     ]
+
+    resolved_gw = target_gw
+    if resolved_gw is None and (processed_dir / "gameweeks.parquet").exists():
+        from solver.planning import resolve_default_target_gw
+        resolved_gw = resolve_default_target_gw(processed_dir)
+
+    squad_rotation_risk: list[dict[str, Any]] = []
+    if squad_ids and resolved_gw is not None:
+        squad_rotation_risk = audit_squad_minutes(
+            processed_dir,
+            squad_ids,
+            resolved_gw,
+            horizon,
+            base_csv_path=base_csv_path,
+        )
 
     market_flagged = flagged[~flagged["id"].isin(squad_ids)].copy()
 
@@ -263,6 +414,7 @@ def select_scouting_targets(
 
     return {
         "squad_flagged": squad_flagged,
+        "squad_rotation_risk": squad_rotation_risk,
         "market_flagged_by_tier": market_tiers,
     }
 
@@ -279,12 +431,13 @@ def synthesize_xmins_override(
 ) -> Path:
     """
     Synthesize consolidated 3-tier xMins override CSV.
-    
-    Precedence:
-    Layer 3 (Top Guard): Targeted Overrides (user curves / web research)
-    Layer 3 (Top Guard): Broad Pool Shield (automated FPL return date zeros & ramps)
-    Layer 2 (Middle): Base External CSV (if provided)
-    Layer 1 (Base Foundation): Blank cells fall back to Native In-House Champion.
+
+    Precedence per (player_id, gw):
+    1. Layer 3a (Top Guard): Targeted Overrides (--set curves / web intel)
+    2. Layer 3b (Top Guard): Broad Pool Shield hard guards (0.0m pre-return + injury 20m/65m ramp)
+    3. Layer 2 (Middle): Base External CSV (wins post-return steady-state when > 0.0m)
+    4. Layer 3b (Fallback): Healthy baseline fallback when Layer 2 absent or zeroed post-return
+    5. Layer 1 (Base Foundation): Blank cells fall back to Native In-House Champion.
     """
     players_path = processed_dir / "players.parquet"
     if not players_path.exists():
@@ -304,10 +457,13 @@ def synthesize_xmins_override(
         from features.builder import load_xmins_override
         base_map = load_xmins_override(base_csv_path, planning_gws)
 
-    shield_map: dict[tuple[int, int], float] = {}
+    hard_guard: dict[tuple[int, int], float] = {}
+    post_return_fallback: dict[tuple[int, int], float] = {}
     if include_broad_pool_shield:
         ref = reference_date or resolve_gw_reference_date(processed_dir, target_gw)
-        shield_map = build_broad_pool_shield(processed_dir, target_gw, horizon, reference_date=ref)
+        hard_guard, post_return_fallback = _build_broad_pool_shield_layers(
+            processed_dir, target_gw, horizon, reference_date=ref
+        )
 
     target_map = dict(targeted_overrides or {})
 
@@ -318,10 +474,12 @@ def synthesize_xmins_override(
             key = (int(pid), int(gw))
             if key in target_map:
                 vals.append(float(target_map[key]))
-            elif key in shield_map:
-                vals.append(float(shield_map[key]))
-            elif key in base_map:
+            elif key in hard_guard:
+                vals.append(float(hard_guard[key]))
+            elif key in base_map and (key not in post_return_fallback or float(base_map[key]) > 0.0):
                 vals.append(float(base_map[key]))
+            elif key in post_return_fallback:
+                vals.append(float(post_return_fallback[key]))
             else:
                 vals.append("")
         out_df[col_name] = vals
@@ -377,7 +535,7 @@ def audit_solution_players(
     solution_path: Path | str,
     override_csv_path: Path | str | None = None,
 ) -> dict[str, Any]:
-    """Extract and summarize all solution-involved players (buys, sells, held flagged) for post-solve audit."""
+    """Extract solution-involved Players (buys, sells, FH picks, flagged holds, and held rotation risks)."""
     import json
     sol_file = Path(solution_path)
     if not sol_file.exists():
@@ -398,9 +556,22 @@ def audit_solution_players(
     buys_dict: dict[int, dict[str, Any]] = {}
     sells_dict: dict[int, dict[str, Any]] = {}
     held_flagged_dict: dict[int, dict[str, Any]] = {}
+    fh_picks_dict: dict[int, dict[str, Any]] = {}
+    held_perm_gws: dict[int, list[int]] = {}
 
-    for w in sol_data.get("weeks", []):
+    weeks = sol_data.get("weeks", [])
+    permanent_squad_ids: set[int] = set()
+    picks_path = processed_dir / "user_picks.parquet"
+    if picks_path.exists():
+        try:
+            df_picks = pd.read_parquet(picks_path)
+            permanent_squad_ids = {int(pid) for pid in df_picks["player_id"]}
+        except Exception:
+            permanent_squad_ids = set()
+
+    for w in weeks:
         gw = int(w.get("gw", 0))
+        chip = str(w.get("chip") or "").upper()
         for b in w.get("buy", []):
             pid = int(b.get("id"))
             if pid not in buys_dict:
@@ -413,18 +584,58 @@ def audit_solution_players(
                 sells_dict[pid] = _player_audit_info(pid, df_players, override_df, "sell")
             sells_dict[pid]["gameweeks"].append(gw)
 
-        for pid_raw in w.get("squad_ids", []):
-            pid = int(pid_raw)
+        squad_ids = [int(pid_raw) for pid_raw in w.get("squad_ids", [])]
+        if chip == "FH":
+            lineup_set = {int(pid_raw) for pid_raw in w.get("lineup_ids", [])}
+            for pid in squad_ids:
+                if pid not in permanent_squad_ids:
+                    if pid not in fh_picks_dict:
+                        info = _player_audit_info(pid, df_players, override_df, "free_hit")
+                        info["fh_role"] = "starter" if pid in lineup_set else "bench"
+                        fh_picks_dict[pid] = info
+                    if gw not in fh_picks_dict[pid]["gameweeks"]:
+                        fh_picks_dict[pid]["gameweeks"].append(gw)
+        else:
+            permanent_squad_ids = set(squad_ids)
+            for pid in squad_ids:
+                held_perm_gws.setdefault(pid, [])
+                if gw not in held_perm_gws[pid]:
+                    held_perm_gws[pid].append(gw)
+
+        for pid in squad_ids:
             if pid in df_players.index:
                 p_row = df_players.loc[pid]
-                if str(p_row.get("status", "a")) != "a" or float(p_row.get("chance_of_playing_next_round", 100) or 100) < 100:
+                chance_val = p_row.get("chance_of_playing_next_round", 100)
+                if str(p_row.get("status", "a")) != "a" or (pd.notna(chance_val) and float(chance_val) < 100):
                     if pid not in held_flagged_dict:
                         held_flagged_dict[pid] = _player_audit_info(pid, df_players, override_df, "held_flagged")
                     if gw not in held_flagged_dict[pid]["gameweeks"]:
                         held_flagged_dict[pid]["gameweeks"].append(gw)
 
+    held_rotation_risk: list[dict[str, Any]] = []
+    if held_perm_gws and weeks:
+        meta = sol_data.get("meta") or {}
+        audit_target_gw = int(meta.get("next_gw") or min(int(w.get("gw", 1)) for w in weeks))
+        audit_horizon = int(meta.get("horizon") or len(weeks))
+        candidate_pids = [pid for pid in held_perm_gws if pid not in held_flagged_dict]
+        risk_entries = audit_squad_minutes(
+            processed_dir,
+            candidate_pids,
+            audit_target_gw,
+            audit_horizon,
+            override_csv_path=override_csv_path,
+        )
+        for entry in risk_entries:
+            pid = int(entry["id"])
+            info = _player_audit_info(pid, df_players, override_df, "held_rotation_risk")
+            info.update(entry)
+            info["gameweeks"] = held_perm_gws.get(pid, [])
+            held_rotation_risk.append(info)
+
     return {
         "transfers_in": list(buys_dict.values()),
         "transfers_out": list(sells_dict.values()),
+        "free_hit_picks": list(fh_picks_dict.values()),
         "held_flagged": list(held_flagged_dict.values()),
+        "held_rotation_risk": held_rotation_risk,
     }

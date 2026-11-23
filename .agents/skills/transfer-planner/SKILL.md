@@ -118,37 +118,44 @@ Check the user's prompt for an external minutes CSV path (e.g. `/path/to/project
 
 ---
 
-### Step 3: Injury Guard & Triage Overwrite (Layer 3 on Top)
+### Step 3: Minutes Guard & Squad Triage Overwrite (Layer 3 on Top)
 
 Before solving, apply the protective guard layer on top of all baselines:
 
-1. **Run Automated Triage Scan**:
-   Execute the triage helper to build the Broad Pool Shield and extract flagged assets:
+1. **Run Automated Triage & Squad Minutes Audit Scan**:
+   Execute the triage helper to build the Broad Pool Shield, audit all 15 **User Squad** Players (flagged and unflagged), and extract flagged market candidates:
    ```bash
    uv run python -m commands.injury_triage --target_gw <target_gw> --horizon <horizon> [--base-csv <path>] --json
    ```
-   - **Broad Pool Shield (Layer 3 Top)**: Automatically parses official FPL API return dates and enforces `0.0` xMins prior to club fixture return dates across all 600+ players in the league, preventing the solver from buying any unavailable asset at any price tier—even if an external CSV gave them minutes.
-   - **Flagged Assets**: Extracts flagged players in the User Squad and key market targets segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
+   - **Broad Pool Shield (Layer 3 Top)**: Automatically parses official FPL API return dates across all 600+ Players:
+     - **Suspensions (`status == 's'`)**: Enforces `0.0` xMins strictly prior to `return_gw`, then restores match-fit minutes immediately upon `return_gw` (no cameo ramp).
+     - **Injuries (`status == 'i'`)**: Enforces `0.0` xMins prior to `return_gw`, applies a `20m -> 65m` **Injury Return Curve** on `return_gw` / `return_gw + 1`, and defers post-recovery steady-state weeks (`return_gw + 2+`) to positive Layer 2 External CSV projections before falling back to healthy historical baselines.
+     - **Unknown-return flags (`i`, `s`, `u`, `n`)**: Zeroed across the horizon unless overridden via `--set`.
+   - **Squad Minutes Audit (`squad_rotation_risk`)**: Inspects all 15 **User Squad** Players—even unflagged `status == 'a'` Players—for: (a) recent `< 60m` or non-start appearances, (b) material gaps (`> 25m`) between recent minutes and Layer 2 External CSV `xMins`, or (c) multi-week Layer 2 cliffs (`>= 25m` drop below `65m`).
+   - **Flagged Market Players (`market_flagged_by_tier`)**: Extracts flagged market candidates segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
 
 2. **Targeted Agentic Web Intel**:
-   For flagged **User Squad** players and relevant market targets, run `search_web` to inspect recent press conferences, team news, injury severity, and expected return gameweek.
+   For all **flagged User Squad Players**, **unflagged `squad_rotation_risk` Players**, and relevant **flagged market Players**, run `search_web` to inspect recent press conferences, team news, injury severity, suspension dates, tactical benchings, and expected return Gameweek.
 
-3. **Formulate Non-Linear Injury Return Curves**:
-   Synthesize a realistic recovery progression for each flagged player:
+3. **Formulate Non-Linear Curves & Squad Adjustments**:
+   Synthesize a realistic minutes trajectory for each surfaced Player:
    - **Pre-Return GWs**: `0.0 xMins` ($100\% P(\text{DNP})$).
-   - **Return GW (Cameo / Sub-in)**: `15–30 xMins` (for multi-week absences) or `40–55 xMins` (for minor knocks / 50-50 tests).
-   - **Return GW + 1 (Managed Start)**: `60–70 xMins` (managed 60–70 minutes).
-   - **Return GW + 2+ (Full Recovery)**: Healthy starter baseline (`80–85 xMins`, overcoming multi-week DNP baseline depression).
+   - **Suspensions**: `0.0 xMins` before `return_gw`, then immediate full baseline on `return_gw+`.
+   - **Injury Return GW (Cameo / Sub-in)**: `15–30 xMins` (multi-week absences) or `40–55 xMins` (minor knocks / 50-50 tests).
+   - **Injury Return GW + 1 (Managed Start)**: `60–70 xMins`.
+   - **Injury Return GW + 2+ (Full Recovery)**: Positive Layer 2 steady-state or healthy starter baseline (`75–85 xMins`).
+   - **Unflagged Dropped / Rotated Squad Players**: Adjust down from stale Layer 2 projections (e.g., `15–25 xMins` for a benched sub, or custom rotation expectation) when web/recent evidence confirms lost starter status.
 
-4. **Present Compact Injury Triage Table**:
-   Display a compact Markdown summary table in the chat:
+4. **Present Compact Injury & Squad Minutes Triage Table**:
+   Display a compact Markdown summary table in the chat (tagging `[Squad]` Players separately or clearly):
    ```markdown
-   🏥 **Injury & Availability Triage (Layer 3 Guard on Top)**:
-   | Player | Pos | Price | Status / FPL News | Web Intel / Manager Update | Proposed xMins Curve (GW{start}–GW{end}) |
+   🏥 **Injury & Squad Minutes Triage (Layer 3 Guard on Top)**:
+   | Player | Pos | Price | Status / News / Audit Trigger | Web Intel / Manager Update | Proposed xMins Curve (GW{start}–GW{end}) |
    |:---|:---:|:---:|:---|:---|:---|
-   | Saka | MID | £9.6m | 50% thigh injury | Arteta: fluid in quad; out several weeks | GW9: 0m · GW10: 0m · GW11: 30m · GW12+: 75m |
+   | Egan `[Squad]` | DEF | £4.1m | Unflagged (`recent_non_start_or_sub60`, `recent_vs_external_gap`) | Unused sub in GW11 win | GW12: 15m · GW13+: 20m |
+   | Saka | MID | £9.4m | `0%` Thigh injury - Expected back 20 Dec | Arteta: ~4 weeks left; no surgery | GW12–15: 0m · GW16: 20m · GW17: 65m · GW18+: 79.1m |
 
-   🛡️ **Broad Pool Shield**: 175 other flagged pool players automatically shielded (assigned 0.0 xMins before return date).
+   🛡️ **Broad Pool Shield**: 179 flagged pool Players automatically shielded (0.0m pre-return; direct post-ban restoration for suspensions; 20m→65m ramp for injuries).
    ```
 
 ---
@@ -156,18 +163,18 @@ Before solving, apply the protective guard layer on top of all baselines:
 ### Step 4: Parameter Preflight Confirmation
 
 Resolve default parameters:
-- **Target Gameweek**: First open deadline GW (`deadline_time > now_utc`, e.g. GW9).
+- **Target Gameweek**: First open deadline GW (`deadline_time > now_utc`, e.g. GW12).
 - **Default Planning Horizon**: 10 Gameweeks (recommended: ≤ 12 Gameweeks; hard cap: 19 Gameweeks).
   - *Long-horizon warning*: If `horizon > 12`, advise user that solving beyond 12 GWs up to the 19-GW half-season hard cap should use `--gap 0.002` (0.2%) to prevent prolonged branch-and-bound runtimes on large formulations.
 - **Solver Mode**: Strategic (`--arm strategic`, default).
-  - *Strategic Variance Controls*:
-    - Paid hit hurdle: +1.8 net pts required over free transfer.
-    - Starter xMins floor: 65.0 mins (infeasibility-guarded −10.0 pt/starter penalty).
-    - 1st bench cover: 65.0 xMins floor (min 12 players with >= 65 xMins, −1.5 pt penalty).
-    - Defensive stack cap: Max 2 starting DEF + GK from same club (−1.2 pt penalty).
-    - GK transfer friction: 1.5 pt penalty (waived on WC and FH).
+  - *Strategic Variance Controls* (display **effective horizon-scaled** values for the selected `horizon` and `decay_base=0.85` per ADR 0065, where `scale = sum(0.85^k, k=0..H-1) / sum(0.85^k, k=0..4)`, e.g. `1.4437x` at `H=10`):
+    - Effective paid hit hurdle: `4.0 + 1.8 * scale` net xP over free transfer (`6.60 xP` at `H=10`; base `1.8 pt` at `H=5`).
+    - Starter xMins floor: `65.0` mins (infeasibility-guarded `−10.0 pt`/starter penalty).
+    - 1st bench cover: `65.0` xMins floor (`min 12` Players with `>= 65` xMins, `−1.5 pt` penalty).
+    - Defensive stack cap: Max `2` starting DEF + GK from same Club (`−1.2 pt` penalty).
+    - Effective GK transfer friction: `1.5 * scale` pt penalty (`2.17 pt` at `H=10`; waived on WC and FH).
 - **Default Solver Gap**: 0.0 (exact mathematical optimum).
-- **Booked Chips**: Note any specified chips (e.g. Free Hit on GW16).
+- **Booked Chips**: Note any specified chips (e.g. Free Hit on GW14).
 
 Present consolidated preflight card to user:
 
@@ -176,18 +183,19 @@ Present consolidated preflight card to user:
 • Target Gameweek: GW{target_gw} (First Open Deadline: {deadline})
 • Horizon: {horizon} Gameweeks (GW{target_gw}–GW{target_gw + horizon - 1})
 • Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
-• Strategic Controls: 1.8 pt hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per club · 1.5 pt GK friction
-• Minutes Stack: Layer 1 (Weekly Preflight: {effective_model} · {selection_reason} · {freshness_status}) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield & Confirmed Curves)
+• Effective Strategic Controls (H={horizon}, scale {scale:.2f}x): {effective_hit_hurdle:.1f} xP hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per Club · {effective_gk_friction:.2f} pt GK friction
+• Minutes Stack: Layer 1 (Weekly Preflight: {effective_model} · {selection_reason} · {freshness_status}) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield, Squad Minutes Audit & Confirmed Curves)
 • Settled Prefix: Local GW{latest_settled_gw} · Verified Scorecard GW1..GW{verified_prefix_end_gw} · Scores: {comparable_scores}
 • Overrides: One-plan override available via `--champion` or `--model <eligible_model>` (manual edit never mutates `config/model_selection.json`).
-• Booked Chips: {None | e.g. Free Hit on GW16}
+• Booked Chips: {None | e.g. Free Hit on GW14}
 • Solver Gap: {0.0}
 • User Squad: Live squad loaded from `data/processed/user_picks.parquet`
 
 👉 Reply "proceed" to run these defaults, or provide any overrides.
 ```
 
-Wait for user confirmation or adjustments before invoking solver.
+Wait for user confirmation or adjustments before invoking solver:
+- **Override Fast-Path**: If the user replies with clear adjustments (e.g., adjusting a Player's minutes, changing horizon/chip/arm), apply the overrides and proceed straight to Step 5–7 without a second confirmation pause; pause again *only* if an override is ambiguous or conflicts with constraints (such as an unavailable chip or GW outside horizon).
 
 ---
 
@@ -227,24 +235,26 @@ Wait for user confirmation or adjustments before invoking solver.
 
 ### Step 6: Post-Solve LLM Subagent Verification & Re-run Loop
 
-Once `data/solution.json` is generated, execute a focused audit specifically on the players involved in the solver's decisions:
+Once `data/solution.json` is generated, execute a focused audit specifically on the Players involved in the solver's decisions:
 
 1. **Extract Solution Players Manifest**:
    ```bash
    uv run python -m commands.injury_triage --audit-solution data/solution.json --output data/planner/xmins_override.csv --json
    ```
    Extracts:
-   - **Transfers In**: Every player bought across the horizon.
-   - **Transfers Out**: Every player sold across the horizon.
-   - **Flagged Assets Held**: Every flagged player retained in the squad.
+   - **Transfers In**: Every Player bought across the horizon.
+   - **Transfers Out**: Every Player sold across the horizon.
+   - **Free Hit Picks (`free_hit_picks`)**: Non-owned Players selected on any `FH` Gameweek (`starter` vs `bench`).
+   - **Flagged Players Held (`held_flagged`)**: Every flagged Player retained in the squad.
+   - **Unflagged Held Rotation Risks (`held_rotation_risk`)**: Any unflagged permanent squad Player matching **Squad Minutes Audit** triggers.
 
 2. **Dispatch Verification Subagent**:
    Invoke a `self` subagent (Role: `Solution Curve Verifier`) with the audit manifest and prompt:
-   - Search recent press conferences (`search_web`) for any player bought or held who has a status flag or doubtful news.
+   - Search recent press conferences (`search_web`) for all Players in `transfers_in`, `free_hit_picks`, `held_flagged`, `held_rotation_risk`, and any notable `transfers_out`.
    - Verify:
-     a) Is any player being bought while actively injured or doubtful?
-     b) Are injured players held given realistic non-linear return curves?
-     c) Were any players prematurely sold right before a confirmed return?
+     a) Is any bought or Free Hit Player actively injured, doubtful, suspended, or recently benched?
+     b) Are held flagged/rotated Players given realistic non-linear curves?
+     c) Were any Players prematurely sold right before a confirmed return?
    - Return structured verdict:
      ```json
      {
@@ -261,7 +271,7 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
    - **If `CORRECTION_NEEDED`**:
      a) Re-synthesize `data/planner/xmins_override.csv` applying the subagent's corrected curves (`--set "<pid>:<new_curve>"`).
      b) Execute **one final re-solve** with updated overrides (`max_iterations = 1`), passing `--rerun` (or `--pin-reviewed-model <reviewed_base_model>`) so the reviewed base model from `data/solution.json` (`meta.reviewed_base_model`) is preserved unless invalidated by terminal exclusion, expired deadline, or remote protected Champion change.
-     c) Proceed to Step 7 (Presentation) and include the **Audit & Correction Card** showing the verified delta.
+     c) Proceed to Step 7 (Presentation) and include the **Audit & Correction Card** showing the verified delta, explicitly calling out any newly swapped-in Player introduced by the rerun if it was not yet web-verified.
 
 ---
 
@@ -270,18 +280,18 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
 Render all six sections by default on every run:
 
 1. **Audit & Correction Card**:
-   - Subagent verification verdict (`PASS` or `CORRECTION_NEEDED`), cited findings, adjusted curves (if any), and resulting transfer delta.
+   - Subagent verification verdict (`PASS` or `CORRECTION_NEEDED`), cited findings, adjusted curves (including Squad Minutes Audit overrides), resulting transfer delta, and any unverified new buy from a Step 6 rerun.
 2. **Transfer Ledger Summary Table**:
    - Columns: `GW`, `Chip`, `FT Before`, `Used`, `FT Left`, `Hits`, `Move (Sell £m → Buy £m, or Roll FT)`, `Bank After (£m)`.
    - **Injured / Dropped Player Callout**: State whether injured or dropped squad members are held on bench or sold.
 3. **Every-Gameweek Transfer & Lineup Cards (`GW{start}`–`GW{end}`)**:
    - Render one card per Gameweek across the full horizon:
-     - Header: `### GW{gw} — {lineup_xpts} xPts ({formation})` (+ chip badge if active)
+     - Header: `### GW{gw} — {lineup_xpts} xPts ({Starting Shape})` (+ chip badge if active)
      - **Transfer:** `Sell {Player} (£{sell}m) → Buy {Player} (£{buy}m)` or `Roll FT`
      - **FT & Bank:** `{ft_before} before → {used} used → {ft_left} FT left · Hits: {hits} · Bank: £{bank_before}m → £{bank_after}m`
      - **Captaincy:** `Captain: {Name} (C) ({xpts}) · Vice-Captain: {Name} (V) ({xpts})`
-     - **Starting XI by position (`GK`, `DEF`, `MID`, `FWD`)** with each player's `xPts` and `(C)` / `(V)` tags
-     - **Ordered Bench (`GK`, `1`, `2`, `3`)** with each player's `xPts`
+     - **Starting XI by position (`GK`, `DEF`, `MID`, `FWD`)** with each Player's `xPts` and `(C)` / `(V)` tags
+     - **Ordered Bench (`GK`, `1`, `2`, `3`)** with each Player's `xPts`
 4. **Top 10 Final Projections by Position (`GKP`, `DEF`, `MID`, `FWD`)**:
    - Aggregate the final post-cascade `ProjectionContract` (`model.predict(df_feat, horizon)` with `xmins_override=data/planner/xmins_override.csv`) across `GW{start}..GW{end}`; sort each position by `Total xPts` descending; top 10 per position.
    - Use unified `/GW` naming so component rates sum directly to `xPts/GW`. Order columns left-to-right from headline decision metrics to positive position drivers, with deductions (`GC/GW`, `Other/GW`) last:
@@ -293,5 +303,5 @@ Render all six sections by default on every run:
 5. **Strategic Variance Audit**:
    - Paid Hit Hurdle checks, Starter xMins floor violations/slacks, 1st Outfield Bench xMins coverage, Defensive Club Stacking (DEF+GK), Goalkeeper Transfer Friction.
 6. **Minutes Audit & Artifact Links**:
-   - Tag starting and transfer assets with minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]`.
+   - Tag starting, Free Hit, and transfer Players with minutes source: `[Native Champion]`, `[External CSV]`, `[Shield: 0m]`, or `[Custom Curve: Xm]` (noting Squad Minutes Audit overrides).
    - Link to [`data/solution.json`](file:///Users/jubilee/fpl-jubilee-ascent/data/solution.json) and [`data/planner/xmins_override.csv`](file:///Users/jubilee/fpl-jubilee-ascent/data/planner/xmins_override.csv).
