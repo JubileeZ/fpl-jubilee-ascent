@@ -221,13 +221,30 @@ def _weeks_from_picks(picks: pd.DataFrame, statistics: dict[Any, Any]) -> list[d
             xp = lineup["xp_cont"].sum() if "xp_cont" in lineup else 0
         cap_ids = captains["id"].tolist()
         vice_ids = vices["id"].tolist()
+        def _week_val(key: str, default: float) -> Any:
+            if key in stats:
+                return stats[key]
+            if key in group.columns and len(group):
+                return group[key].iloc[0]
+            return default
+
+        ft_before = _json_value(stats.get("ft", group["ft"].iloc[0] if len(group) else 0))
+        transfer_count = _json_value(stats.get("nt", group["transfer_count"].iloc[0] if len(group) else 0))
+        is_free_chip = chip in ("WC", "FH")
+        ft_used_val = _week_val("ft_used", 0.0 if is_free_chip else float(transfer_count or 0.0))
+        ft_before_int = int(round(float(ft_before or 0.0)))
+        ft_used_int = int(round(float(ft_used_val or 0.0)))
+        fallback_after = float(ft_before_int) if is_free_chip else float(min(5, max(1, ft_before_int - ft_used_int + 1)))
+        ft_after_val = _week_val("ft_after", fallback_after)
         weeks.append(
             {
                 "gw": gw_int,
                 "chip": chip,
-                "ft": _json_value(stats.get("ft", group["ft"].iloc[0] if len(group) else 0)),
+                "ft": ft_before,
+                "ft_used": _json_value(ft_used_val),
+                "ft_after": _json_value(ft_after_val),
                 "hits": _json_value(stats.get("pt", 0)),
-                "transfer_count": _json_value(stats.get("nt", group["transfer_count"].iloc[0] if len(group) else 0)),
+                "transfer_count": transfer_count,
                 "itb": _json_value(stats.get("itb")),
                 "xp": _json_value(xp),
                 "objective": _json_value(stats.get("obj")),

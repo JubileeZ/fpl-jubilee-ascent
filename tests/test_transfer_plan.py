@@ -98,6 +98,8 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert "solver_objective_note" not in loaded["meta"]
     assert loaded["weeks"][0]["gw"] == 1
     assert loaded["weeks"][0]["chip"] == "BB"
+    assert loaded["weeks"][0]["ft_used"] == 0.0
+    assert loaded["weeks"][0]["ft_after"] == 2.0
     assert loaded["weeks"][0]["xp"] == 8.0
     assert loaded["weeks"][0]["objective"] == 8.0
     assert loaded["weeks"][0]["squad_ids"] == [10, 20]
@@ -110,7 +112,49 @@ def test_serialize_transfer_plan_is_json_safe_and_lists_weekly_moves() -> None:
     assert loaded["weeks"][1]["buy"] == [{"id": 30, "name": "Watkins"}]
     assert loaded["weeks"][1]["sell"] == [{"id": 10, "name": "Haaland"}]
     assert loaded["weeks"][1]["chip"] is None
+    assert loaded["weeks"][1]["ft_used"] == 1.0
+    assert loaded["weeks"][1]["ft_after"] == 1.0
     assert "model" not in dumped
+
+
+def test_serialize_transfer_plan_prefers_explicit_ft_used_and_preserves_wc_fh_banks() -> None:
+    df = pd.DataFrame([
+        {
+            "id": 10, "week": 1, "name": "Haaland", "pos": "FWD", "type": 4, "team": "MCI",
+            "squad": 1, "lineup": 1, "bench": -1, "captain": 1, "vicecaptain": 0,
+            "transfer_in": 0, "transfer_out": 0, "chip": "FH", "ft": 2, "transfer_count": 0,
+            "xp_cont": 8.0, "xP": 8.0,
+        },
+        {
+            "id": 10, "week": 2, "name": "Haaland", "pos": "FWD", "type": 4, "team": "MCI",
+            "squad": 1, "lineup": 1, "bench": -1, "captain": 1, "vicecaptain": 0,
+            "transfer_in": 1, "transfer_out": 0, "chip": "WC", "ft": 2, "transfer_count": 7,
+            "xp_cont": 8.0, "xP": 8.0,
+        },
+    ])
+    plan = serialize_transfer_plan(
+        {
+            "picks": df,
+            "total_xp": 16.0,
+            "score": 16.0,
+            "statistics": {
+                1: {"itb": 0.5, "ft": 2, "pt": 0, "nt": 0, "xP": 8.0, "obj": 8.0, "chip": "FH"},
+                2: {"itb": 0.5, "ft": 2, "ft_used": 0, "ft_after": 2, "pt": 0, "nt": 7, "xP": 8.0, "obj": 8.0, "chip": "WC"},
+            },
+            "summary": "Chip weeks",
+        },
+        champion="def_xg_shrink_challenger",
+        horizon=2,
+        next_gw=1,
+        decay_base=0.85,
+    )
+    assert plan["weeks"][0]["ft"] == 2.0
+    assert plan["weeks"][0]["ft_used"] == 0.0
+    assert plan["weeks"][0]["ft_after"] == 2.0
+    assert plan["weeks"][1]["ft"] == 2.0
+    assert plan["weeks"][1]["ft_used"] == 0.0
+    assert plan["weeks"][1]["ft_after"] == 2.0
+    assert plan["weeks"][1]["transfer_count"] == 7.0
 
 
 def test_serialize_transfer_plan_records_an_unproven_solver_objective() -> None:

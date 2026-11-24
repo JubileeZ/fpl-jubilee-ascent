@@ -283,12 +283,17 @@ Render all six sections by default on every run:
    - Subagent verification verdict (`PASS` or `CORRECTION_NEEDED`), cited findings, adjusted curves (including Squad Minutes Audit overrides), resulting transfer delta, and any unverified new buy from a Step 6 rerun.
 2. **Transfer Ledger Summary Table**:
    - Columns: `GW`, `Chip`, `FT Before`, `Used`, `FT Left`, `Hits`, `Move (Sell £m → Buy £m, or Roll FT)`, `Bank After (£m)`.
+   - Read `ft` (`FT Before`), `ft_used` (`Used`), `ft_after` (`FT Left`, i.e., FTs available entering `GW + 1`), and `transfer_count` directly from `data/solution.json` (`weeks[]`) — never reconstruct them with mental math.
+   - **Chip FT Rules**:
+     - `FH`: `Used = 0`, `FT Left = FT Before` (preserved unchanged — never add `+1 FT` and never label `FH` as `Roll FT`).
+     - `WC`: `Used = 0` (render `{transfer_count} WC swaps` or individual buys/sells in `Move`), `FT Left = FT Before` (preserved unchanged — never deduct FTs and never add `+1 FT`).
+     - `BB` / `TC`: Normal FT arithmetic (`ft_used = transfer_count`, `ft_after = min(5, max(1, ft - ft_used + 1))`).
    - **Injured / Dropped Player Callout**: State whether injured or dropped squad members are held on bench or sold.
 3. **Every-Gameweek Transfer & Lineup Cards (`GW{start}`–`GW{end}`)**:
    - Render one card per Gameweek across the full horizon:
      - Header: `### GW{gw} — {lineup_xpts} xPts ({Starting Shape})` (+ chip badge if active)
-     - **Transfer:** `Sell {Player} (£{sell}m) → Buy {Player} (£{buy}m)` or `Roll FT`
-     - **FT & Bank:** `{ft_before} before → {used} used → {ft_left} FT left · Hits: {hits} · Bank: £{bank_before}m → £{bank_after}m`
+     - **Transfer:** `Sell {Player} (£{sell}m) → Buy {Player} (£{buy}m)`, `Free Hit Squad ({15} temporary picks)` on `FH`, `Wildcard Rebuild ({transfer_count} swaps)` on `WC`, or `Roll FT` (only on non-`FH`/non-`WC` 0-transfer weeks)
+     - **FT & Bank:** `{ft} before → {ft_used} used → {ft_after} FT left · Hits: {hits} · Bank: £{bank_before}m → £{bank_after}m` (using `ft`, `ft_used`, and `ft_after` directly from `data/solution.json`)
      - **Captaincy:** `Captain: {Name} (C) ({xpts}) · Vice-Captain: {Name} (V) ({xpts})`
      - **Starting XI by position (`GK`, `DEF`, `MID`, `FWD`)** with each Player's `xPts` and `(C)` / `(V)` tags
      - **Ordered Bench (`GK`, `1`, `2`, `3`)** with each Player's `xPts`

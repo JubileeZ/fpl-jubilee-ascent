@@ -16,6 +16,7 @@ Transfer Plan Scenarios refine the **Strategic** arm (ADR 0061) by scaling one-o
      $$\text{ft\_value\_list} = \{ \text{"2"}: 2.0 \times \text{scale}(H), \; \text{"3"}: 1.2 \times \text{scale}(H), \; \text{"4"}: 0.6 \times \text{scale}(H), \; \text{"5"}: 0.2 \times \text{scale}(H) \}$$
    - Evaluated on post-transfer carried bank (`fts[w + 1]` clamped to $[1, 5]$ across `ft_gws = [*gws, last_gw + 1]`) vs pre-transfer bank (`fts[w]`), eliminating final-week ($w = H$) hoard-and-dump double-counting and $H=1$ roll blind spots.
    - Intermediate weeks ($w < \text{last\_gw}$) credit unscaled weekly spare-FT holding buffer ($0.325 \times$ unscaled spare FT value above 1 FT, $+0.65\text{ pts/GW}$ at 2 FT) alongside `ft_use_penalty = 0.5` (`DEFAULT_STRATEGIC_FT_USE_PENALTY`), preventing $85\%$ telescoping cancellation from burning 1st FT on $<1.0\text{ xP}$ single-week noise.
+   - Live MILP (`solver/solver.py`) linearly waives `gw_ft_hold` (`0.0`) on Wildcard and Free Hit weeks (FT bank frozen), restores pre-transfer `ft_base` on `next_gw` for both `WC` and `FH`, and serializes explicit `ft`, `ft_used`, and `ft_after` per week (`transfer_count` keeps raw `WC` squad swaps). Frozen replay solver (`backtesting/native_transfer_solver.py`) stays unchanged pending calibration (#227).
    - Bank states 4 and 5 diminish sharply to prevent passive rollover near 5-FT cap.
    - `unconstrained` and `no_hit` arms retain `ft_use_penalty = 0.2` and cleared `ft_value_list`.
 

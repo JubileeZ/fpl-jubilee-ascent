@@ -251,17 +251,27 @@ def load_transfer_plan(
     return [], None, None
 
 
-def load_user_state(processed_dir: Path) -> tuple[float, int]:
-    """Return ITB in £m and Free Transfer Bank size."""
+def load_user_transfer_state(processed_dir: Path) -> tuple[float, int, int, int]:
+    """Return ITB in £m, Free Transfer Bank, pre-transfer FT limit, and open-GW transfers made."""
     path = processed_dir / "user_state.parquet"
     if not path.exists():
-        return 0.0, 0
+        return 0.0, 0, 0, 0
     df = pd.read_parquet(path)
     if df.empty:
-        return 0.0, 0
+        return 0.0, 0, 0, 0
     row = df.iloc[0]
     itb = round(_safe_float(row.get("bank")) / 10.0, 1)
     free_transfers = int(_safe_float(row.get("free_transfers")))
+    raw_limit = row.get("free_transfers_limit")
+    ft_limit = int(_safe_float(raw_limit)) if raw_limit is not None and not bool(pd.isna(raw_limit)) else free_transfers
+    raw_made = row.get("transfers_made")
+    transfers_made = int(_safe_float(raw_made)) if raw_made is not None and not bool(pd.isna(raw_made)) else 0
+    return itb, free_transfers, ft_limit, transfers_made
+
+
+def load_user_state(processed_dir: Path) -> tuple[float, int]:
+    """Return ITB in £m and Free Transfer Bank size."""
+    itb, free_transfers, _, _ = load_user_transfer_state(processed_dir)
     return itb, free_transfers
 
 
@@ -418,10 +428,10 @@ def build_dashboard_dataset(
         owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = load_owned_picks(
             processed_dir
         )
-        itb, free_transfers = load_user_state(processed_dir)
+        itb, free_transfers, free_transfers_limit, transfers_made = load_user_transfer_state(processed_dir)
     else:
         owned_squad_ids, owned_captain_id, owned_vice_captain_id, owned_pick_meta = [], None, None, {}
-        itb, free_transfers = 0.0, 1
+        itb, free_transfers, free_transfers_limit, transfers_made = 0.0, 1, 1, 0
 
     unfinished_gws = unfinished_gameweeks(processed_dir)
     horizon_start = int(target_gw)
@@ -778,6 +788,8 @@ def build_dashboard_dataset(
             "owned_vice_captain_id": owned_vice_captain_id,
             "itb": itb,
             "free_transfers": free_transfers,
+            "free_transfers_limit": free_transfers_limit,
+            "transfers_made": transfers_made,
             "transfer_plan_start": plan_start,
             "transfer_plan_deadline": str(deadline.iloc[0]) if len(deadline) and pd.notna(deadline.iloc[0]) else None,
             "projection_generated_at": datetime.now(timezone.utc).isoformat(),

@@ -29,7 +29,7 @@ from clients.fpl_api import (
     fetch_entry_transfers,
 )
 from clients.fpl_auth import get_jwt_token
-from features.processor import process_directory
+from features.processor import process_directory, reconstruct_free_transfers
 from commands.capture_availability_snapshot import capture_payload
 from commands.price_report import append_price_snapshot
 from features.season_archive import pin_season_archive, prune_stale_element_summaries
@@ -139,23 +139,6 @@ def _reconstruct_chips_inventory(
     return chips_list, chip_events
 
 
-def _reconstruct_free_transfers(
-    current_events: list[dict[str, Any]],
-    chip_events: dict[int, str],
-) -> int:
-    ft_acc = 1
-    for ev in current_events:
-        ev_id = int(ev.get("event") or 0)
-        if chip_events.get(ev_id) in ("wildcard", "freehit"):
-            ft_acc = max(1, min(5, ft_acc))
-            continue
-        tr_made = int(ev.get("event_transfers", 0))
-        tr_cost = int(ev.get("event_transfers_cost", 0))
-        free_used = max(0, tr_made - tr_cost // 4)
-        ft_acc = min(5, max(0, ft_acc - free_used) + 1)
-    return ft_acc
-
-
 def reconstruct_public_team_payload(
     picks_data: dict[str, Any],
     history: dict[str, Any],
@@ -167,7 +150,7 @@ def reconstruct_public_team_payload(
         picks_data.get("picks", []), transfers_history, elements
     )
     chips_list, chip_events = _reconstruct_chips_inventory(history.get("chips", []))
-    ft_acc = _reconstruct_free_transfers(history.get("current", []), chip_events)
+    ft_acc = reconstruct_free_transfers(history.get("current", []), chip_events)
 
     entry_history_row = picks_data.get("entry_history", {})
     bank = int(entry_history_row.get("bank", 0))
@@ -332,7 +315,12 @@ async def main(argv: list[str] | None = None) -> None:
             entry_id = user_details.get("player", {}).get("entry")
             if entry_id:
                 logger.info(f"Manager Entry ID: {entry_id}. Fetching current squad picks...")
-                await fetch_user_team(client, entry_id, token, write_cache=True)
+                my_team = await fetch_user_team(client, entry_id, token, write_cache=True)
+                if isinstance(my_team, dict) and (my_team.get("transfers") or {}).get("limit") is None:
+                    try:
+                        await fetch_entry_history(client, entry_id, write_cache=True)
+                    except Exception as exc:
+                        logger.warning(f"Failed to fetch entry history for active-chip FT reconstruction: {exc}")
                 authenticated = True
             else:
                 logger.warning("No entry ID found in profile. Skipping squad picks download.")

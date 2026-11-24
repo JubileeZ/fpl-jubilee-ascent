@@ -1291,3 +1291,22 @@ def test_should_project_on_open_and_refresh_require_both_dual_tier_models(
     assert tp_status == 202
     assert tp_captured["datasource"] == "def_xg_shrink_challenger"
 
+
+def test_build_branch_nodes_from_plan_prefers_ft_after_for_free_transfers_next() -> None:
+    from commands.dashboard import _build_branch_nodes_from_plan
+
+    payload = _build_branch_nodes_from_plan(
+        {
+            "weeks": [
+                {"gw": 6, "ft": 2, "ft_after": 3, "itb": 0.5, "xp": 50.0, "hits": 0, "lineup_ids": [1]},
+                {"gw": 7, "ft": 3, "itb": 0.5, "xp": 52.0, "hits": 0, "lineup_ids": [1]},
+            ]
+        },
+        parent_node_id="root",
+        arm_label="Strategic",
+        target_gw=6,
+    )
+    nodes = list(payload["nodes"].values())
+    assert nodes[0]["evaluation"]["freeTransfersNext"] == 3
+    assert nodes[1]["evaluation"]["freeTransfersNext"] == 3
+
