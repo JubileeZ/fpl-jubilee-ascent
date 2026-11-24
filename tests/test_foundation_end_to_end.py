@@ -10,6 +10,7 @@ from promotion_evidence_fixture import CANDIDATE, CHAMPION
 import pytest
 
 
+@pytest.mark.slow
 def test_complete_foundation_lifecycle_end_to_end(retained_request: Path) -> None:
     request = retained_request
     bundle_path = request.with_name("recommendation_bundle.json")

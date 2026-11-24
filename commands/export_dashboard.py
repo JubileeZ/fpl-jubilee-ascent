@@ -405,6 +405,8 @@ def build_dashboard_dataset(
     default_model_name: Optional[str] = None,
     with_squad: bool = False,
     selection_path: Optional[Path] = None,
+    *,
+    preflight_override: PlannerSelectionPreflight | None = None,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
     horizon = clamp_planning_horizon(horizon)
@@ -442,13 +444,17 @@ def build_dashboard_dataset(
     planning_gw_set = set(planning_gw_ids)
     finished_gws = _finished_gameweeks(processed_dir)
 
-    grouped_models: Dict[str, pd.DataFrame] = {}
+    grouped_models: Dict[str, dict[tuple[int, int], dict[str, Any]]] = {}
     all_gw_ids: set[int] = set(planning_gw_ids)
 
     for m_name, df_pred in model_preds_map.items():
         gw_grp = _groupby_predictions(df_pred)
-        grouped_models[m_name] = gw_grp
-        all_gw_ids.update(int(g) for g in gw_grp["gameweek_id"].unique().tolist())
+        indexed: dict[tuple[int, int], dict[str, Any]] = {}
+        for rec in gw_grp.to_dict(orient="records"):
+            gw_val = int(rec["gameweek_id"])
+            all_gw_ids.add(gw_val)
+            indexed[(int(rec["player_id"]), gw_val)] = rec
+        grouped_models[m_name] = indexed
 
     gw_ids = sorted(all_gw_ids) if all_gw_ids else planning_gw_ids
     club_fixtures = load_club_gw_fixtures(processed_dir, club_map)
@@ -554,17 +560,15 @@ def build_dashboard_dataset(
 
         player_models_dict: Dict[str, Any] = {}
 
-        for m_name, gw_grouped in grouped_models.items():
-            p_preds = gw_grouped[gw_grouped["player_id"] == pid]
+        for m_name, indexed_preds in grouped_models.items():
             projections: Dict[str, Dict[str, float]] = {}
             total_xp_horizon = 0.0
             total_xmins_horizon = 0.0
             projection_by_gw: dict[int, GameweekScore] = {}
 
             for gw in gw_ids:
-                gw_row = p_preds[p_preds["gameweek_id"] == gw]
-                if not gw_row.empty:
-                    r = gw_row.iloc[0]
+                r = indexed_preds.get((pid, gw))
+                if r is not None:
                     xp_pts = round(_safe_float(r["projected_points"]), 2)
                     xmins = round(_safe_float(r["projected_minutes"]), 1)
                     xp_g = _safe_float(r.get("xp_goals"))
@@ -575,7 +579,8 @@ def build_dashboard_dataset(
                     xp_min = _safe_float(r.get("xp_minutes"))
                     xp_conc = _safe_float(r.get("xp_conceded"))
                     xp_saves = _safe_float(r.get("xp_saves"))
-                    p_dnp = r["p_dnp"] if "p_dnp" in r.index and not pd.isna(r.get("p_dnp")) else None
+                    raw_dnp = r.get("p_dnp")
+                    p_dnp = raw_dnp if raw_dnp is not None and not pd.isna(raw_dnp) else None
                     xg_pts = round(xp_g * g_pts_factor, 2)
                     xa_pts = round(xp_a * _ASSIST_POINTS, 2)
                     xcs_pts = round(xp_cs * cs_pts_factor, 2)
@@ -757,7 +762,7 @@ def build_dashboard_dataset(
             }
 
     trust = load_champion_trust(selection_path=selection_path)
-    preflight = _resolve_export_preflight(selection_path, processed_dir)
+    preflight = preflight_override if preflight_override is not None else _resolve_export_preflight(selection_path, processed_dir)
     active_tp_model = (
         preflight.effective_model
         if preflight.effective_model in model_names
@@ -911,24 +916,30 @@ def run_dashboard_export(
         default_model_name=default_model,
         with_squad=with_squad,
         selection_path=config_path,
+        preflight_override=preflight,
     )
     dataset["meta"]["primary_model_explicit"] = explicit_primary or bool(model_names)
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")
     write_solver_projection_csvs(model_preds, df_players, df_clubs, PROJECT_ROOT / "data")
 
+    payload_text = json.dumps(_clean_json_obj(dataset), indent=2)
+
+    def _write_json_text(dest: Path) -> None:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(payload_text, encoding="utf-8")
+        logger.info(f"Dashboard data exported successfully to {dest}")
+
     dashboard_dir = PROJECT_ROOT / "dashboard"
-    dashboard_dir.mkdir(parents=True, exist_ok=True)
     json_path = dashboard_dir / "dashboard_data.json"
-    export_dashboard_data(dataset, json_path)
+    _write_json_text(json_path)
     data_json_path = PROJECT_ROOT / "data" / "dashboard_data.json"
-    data_json_path.parent.mkdir(parents=True, exist_ok=True)
-    export_dashboard_data(dataset, data_json_path)
+    _write_json_text(data_json_path)
 
     if output_path is not None and output_path not in (json_path, data_json_path):
         if not output_path.is_absolute():
             output_path = PROJECT_ROOT / output_path
-        export_dashboard_data(dataset, output_path)
+        _write_json_text(output_path)
 
     return json_path
 

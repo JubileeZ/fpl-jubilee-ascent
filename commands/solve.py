@@ -21,6 +21,7 @@ from models.planner_selection import (
     resolve_weekly_planner_model,
 )
 from projections.exporter import pad_solver_csv_horizon
+from solver.parallelism import recommended_live_solver_threads
 from solver.paths import DATA_DIR
 from solver.planning import (
     MAX_PLANNING_HORIZON,
@@ -260,6 +261,10 @@ def execute_transfer_plan(
     options["horizon"] = horizon
     if "gap" not in options:
         options["gap"] = LIVE_SOLVER_REL_GAP
+    if "threads" not in options and options.get("parallel") != "off":
+        t = recommended_live_solver_threads(concurrent_arms=1)
+        options["threads"] = t
+        options["parallel"] = "on" if t > 1 else "off"
     validate_booked_chips(options, target_gw, horizon)
     options["override_next_gw"] = target_gw
 

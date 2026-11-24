@@ -11,7 +11,7 @@ Standards, commands, and verification protocols for FPL-Jubilee-Ascent.
 | **Delivery Gate** | `bash tests/verify.sh` | Harness checks, Ruff, projection parity. |
 | **Backtest Smoke** | `uv run python .agents/skills/explore-candidate/smoke.py --show_seasons` | Inspects available historical seasons and smoke harness configuration. |
 
-For a shorter local run, use `uv run pytest -m 'not slow'`. Use `uv run pytest` for full coverage, including the GW15 replay and snapshot integration tests. To diagnose a slow run, add `--durations=20`.
+`uv run pytest` defaults to machine-adaptive `pytest-xdist` (`-n auto --dist worksteal`; pass `-n 0` for serial debugging). For a shorter local run, use `uv run pytest -m 'not slow'`. Use `uv run pytest` for full coverage, including the GW15 replay and snapshot integration tests. To diagnose a slow run, add `--durations=20`.
 
 ---
 

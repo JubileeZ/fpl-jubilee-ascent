@@ -506,6 +506,60 @@ def _inject_mip_start(seed_model: highspy.Highs, seed_vars: dict[str, Any], targ
     return target_model.setSolution(len(col_vals), list(range(len(col_vals))), col_vals) == highspy.HighsStatus.kOk
 
 
+def extract_native_solution(
+    model: highspy.Highs,
+    hvars: dict[str, Any],
+    state: ReplayState,
+    weeks: list[int],
+    ids: list[int],
+    players: dict[int, Player],
+    chip_by_gw: dict[int, Chip],
+    rules: Any,
+) -> tuple[Decision, list[dict[str, Any]]]:
+    """Extract per-GW transfer plans and GW1 Decision via a single bulk col_value read."""
+    col_vals = list(model.getSolution().col_value)
+
+    def _val(var: Any) -> float:
+        return col_vals[var.index]
+
+    def _selected(values: Any, gw: int) -> tuple[int, ...]:
+        return tuple(p for p in ids if _val(values[p, gw]) > 0.5)
+
+    gks = [p for p in ids if players[p].position == "GK"]
+    outfield = [p for p in ids if players[p].position != "GK"]
+    owned_ids = {p.player_id for p in state.squad}
+    ft_states = list(range(rules.free_transfer_cap + 1))
+    plans: list[dict[str, Any]] = []
+    for gw in weeks:
+        outgoing = tuple(
+            p for p in ids
+            if _val(hvars["sell_new"][p, gw]) + (_val(hvars["sell_old"][p, gw]) if p in owned_ids else 0.0) > 0.5
+        )
+        incoming = _selected(hvars["buy"], gw)
+        plans.append(
+            {
+                "gw": gw,
+                "transfers_out": outgoing,
+                "transfers_in": incoming,
+                "bank": round(_val(hvars["bank"][gw])),
+                "free_transfers": next(f for f in ft_states if _val(hvars["ft"][gw, f]) > 0.5),
+                "post_free_transfers": next(f for f in ft_states if _val(hvars["ft"][gw + 1, f]) > 0.5),
+                "chip": chip_by_gw.get(gw),
+            }
+        )
+    first = weeks[0]
+    starters = _selected(hvars["start"], first)
+    bench0_gk = next(p for p in gks if _val(hvars["bench0"][p, first]) > 0.5)
+    bench_slots = tuple(next(p for p in outfield if _val(hvars["bench_out"][p, first, slot]) > 0.5) for slot in (1, 2, 3))
+    bench_order = (bench0_gk, *bench_slots)
+    lineup = Lineup(starters, bench_order, _selected(hvars["captain"], first)[0], _selected(hvars["vice"], first)[0])
+    decision = Decision(
+        tuple(zip(plans[0]["transfers_out"], (players[p] for p in plans[0]["transfers_in"]), strict=True)),
+        lineup, state_hash(state), state.deadline, chip_by_gw.get(first),
+    )
+    return decision, plans
+
+
 def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.DataFrame, options: dict[str, Any]) -> tuple[Decision, "SolverCertificate"]:
     """Optimize all horizon weeks; return the immediate native decision and real HiGHS certificate."""
     import time
@@ -581,41 +635,7 @@ def native_strategic_solve(state: ReplayState, horizon: int, forecast_df: pd.Dat
     if not model.getSolution().value_valid or info.primal_solution_status != highspy.SolutionStatus.kSolutionStatusFeasible:
         raise UncertifiedSolveError(f"Native multi-period solve has no feasible incumbent: {model.modelStatusToString(status)}")
 
-    def selected(values: Any, gw: int) -> tuple[int, ...]:
-        return tuple(p for p in ids if model.val(values[p, gw]) > 0.5)
-
-    gks = [p for p in ids if players[p].position == "GK"]
-    outfield = [p for p in ids if players[p].position != "GK"]
-    owned_ids = {p.player_id for p in state.squad}
-    ft_states = list(range(rules.free_transfer_cap + 1))
-    plans: list[dict[str, Any]] = []
-    for gw in weeks:
-        outgoing = tuple(
-            p for p in ids
-            if model.val(hvars["sell_new"][p, gw]) + (model.val(hvars["sell_old"][p, gw]) if p in owned_ids else 0.0) > 0.5
-        )
-        incoming = selected(hvars["buy"], gw)
-        plans.append(
-            {
-                "gw": gw,
-                "transfers_out": outgoing,
-                "transfers_in": incoming,
-                "bank": round(model.val(hvars["bank"][gw])),
-                "free_transfers": next(f for f in ft_states if model.val(hvars["ft"][gw, f]) > 0.5),
-                "post_free_transfers": next(f for f in ft_states if model.val(hvars["ft"][gw + 1, f]) > 0.5),
-                "chip": chip_by_gw.get(gw),
-            }
-        )
-    first = weeks[0]
-    starters = selected(hvars["start"], first)
-    bench0_gk = next(p for p in gks if model.val(hvars["bench0"][p, first]) > 0.5)
-    bench_slots = tuple(next(p for p in outfield if model.val(hvars["bench_out"][p, first, slot]) > 0.5) for slot in (1, 2, 3))
-    bench_order = (bench0_gk, *bench_slots)
-    lineup = Lineup(starters, bench_order, selected(hvars["captain"], first)[0], selected(hvars["vice"], first)[0])
-    decision = Decision(
-        tuple(zip(plans[0]["transfers_out"], (players[p] for p in plans[0]["transfers_in"]), strict=True)),
-        lineup, state_hash(state), state.deadline, chip_by_gw.get(first),
-    )
+    decision, plans = extract_native_solution(model, hvars, state, weeks, ids, players, chip_by_gw, rules)
     objective_value, bound = model.getObjectiveValue(), float(info.mip_dual_bound)
     status_str = (
         "OPTIMAL"

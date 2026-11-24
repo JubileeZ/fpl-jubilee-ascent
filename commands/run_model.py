@@ -33,6 +33,7 @@ def generate_model_projections(
     *,
     xmins_override: Path | str | None = None,
     output_name: str | None = None,
+    output_dir: Path | None = None,
     processed_dir: Path | None = None,
     **feature_kwargs,
 ) -> Path:
@@ -69,7 +70,8 @@ def generate_model_projections(
     df_proj = assert_projection_contract(model.predict(df_feat, horizon))
 
     output_stem = output_name or resolved_model
-    output_csv = root / "data" / f"{output_stem}.csv"
+    target_dir = Path(output_dir) if output_dir is not None else root / "data"
+    output_csv = target_dir / f"{output_stem}.csv"
     logger.info(f"Exporting projections to {output_csv}...")
     df_players = pd.read_parquet(processed_dir / "players.parquet")
     df_clubs = pd.read_parquet(processed_dir / "clubs.parquet")

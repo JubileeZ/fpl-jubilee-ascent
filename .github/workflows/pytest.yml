@@ -19,7 +19,7 @@ jobs:
       - uses: ./.github/actions/pytest-setup
       - run: uv run --no-sync ruff check .
       - run: >-
-          uv run --no-sync pytest --durations=20
+          uv run --no-sync pytest -n 4 --dist worksteal --durations=20
           --ignore=tests/test_produce_validation_evidence.py
           --ignore=tests/test_verified_checkpoint_evidence.py
 
@@ -28,14 +28,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/pytest-setup
-      - run: uv run --no-sync pytest --durations=20 tests/test_produce_validation_evidence.py
+      - run: uv run --no-sync pytest -n 4 --dist worksteal --durations=20 tests/test_produce_validation_evidence.py
 
   pytest-checkpoint-verification:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/pytest-setup
-      - run: uv run --no-sync pytest --durations=20 tests/test_verified_checkpoint_evidence.py
+      - run: uv run --no-sync pytest -n 4 --dist worksteal --durations=20 tests/test_verified_checkpoint_evidence.py
 
   full-pytest:
     needs: [pytest-standard, pytest-validation-replay, pytest-checkpoint-verification]

@@ -12,7 +12,7 @@ import threading
 import time
 from collections import Counter
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import highspy
 import numpy as np
@@ -22,6 +22,141 @@ from solver.data_parser import read_data
 from solver.scenarios import DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT
 from solver.utils import cached_request, get_random_id, load_solver_static
 from solver.vendor import UPSTREAM_COMMIT
+
+_HIGHS_THREAD_LOCK = threading.Lock()
+_LAST_HIGHS_THREADS: int | None = None
+
+
+def _is_strategic_solver_options(options: dict[str, Any]) -> bool:
+    strategic_opts = dict(options.get("strategic_options") or {})
+    return bool(
+        options.get("strategic_mode", False)
+        or strategic_opts
+        or any(
+            k in options
+            for k in (
+                "hit_friction",
+                "starter_xmins_floor",
+                "bench_cover_min",
+                "def_stack_cap",
+                "gk_transfer_friction",
+            )
+        )
+    )
+
+
+def _exact_k_domination_prune(
+    data: dict[str, Any],
+    options: dict[str, Any],
+    gws: list[int],
+) -> dict[str, Any]:
+    """Prune strictly k-dominated unowned candidates per (position, team) with 0% optimality loss."""
+    if (
+        options.get("no_opposing_play") in (True, "penalty")
+        or options.get("double_defense_pick") is True
+        or options.get("no_transfer_by_position")
+        or options.get("num_transfers") is not None
+        or float(options.get("itb_value", 0.08) or 0.0) < 0.0
+        or int(options.get("num_iterations", 1) or 1) > 1
+    ):
+        return data
+
+    merged_data: pd.DataFrame = data["merged_data"]
+    buy_price = data["buy_price"]
+    must_keep: set[int] = {int(p) for p in data["initial_squad"]}
+    must_keep.update(int(p) for p in data["price_modified_players"])
+    for key in ("banned", "banned_next_gw", "locked", "locked_next_gw", "keep"):
+        for item in options.get(key) or []:
+            pid = item[0] if isinstance(item, (list, tuple)) else item
+            must_keep.add(int(pid))
+    for key in ("force_keep_gws", "force_ban_gws", "force_bench_gws", "force_captain_gws", "force_vice_gws"):
+        for pid, _gw in options.get(key) or []:
+            must_keep.add(int(pid))
+    for bt in options.get("booked_transfers") or []:
+        if bt.get("transfer_in") is not None:
+            must_keep.add(int(bt["transfer_in"]))
+        if bt.get("transfer_out") is not None:
+            must_keep.add(int(bt["transfer_out"]))
+    for pos, vals in (options.get("pick_prices") or {}).items():
+        if vals:
+            price_vals = [float(i) for i in str(vals).split(",") if i.strip()]
+            for key_p in price_vals:
+                pp = merged_data[
+                    (merged_data["Pos"] == pos)
+                    & (merged_data["now_cost"].div(10) >= key_p - 0.2)
+                    & (merged_data["now_cost"].div(10) <= key_p + 0.2)
+                ]["ID"].to_list()
+                must_keep.update(int(p) for p in pp)
+
+    strategic = _is_strategic_solver_options(options)
+    sopts = dict(options.get("strategic_options") or {})
+    starter_floor = float(options.get("starter_xmins_floor", sopts.get("starter_xmins_floor", 65.0 if strategic else 0.0)) or 0.0)
+    starter_pen = float(options.get("starter_xmins_penalty", sopts.get("starter_xmins_penalty", 10.0 if strategic else 0.0)) or 0.0)
+    bench_xmins = float(options.get("bench_cover_xmins", sopts.get("bench_cover_xmins", 65.0 if strategic else 0.0)) or 0.0)
+    bench_pen = float(options.get("bench_cover_penalty", sopts.get("bench_cover_penalty", 1.5 if strategic else 0.0)) or 0.0)
+    check_floor = strategic and starter_pen > 0
+    check_bcover = strategic and bench_pen > 0 and int(options.get("bench_cover_min", sopts.get("bench_cover_min", 12)) or 0) > 0
+
+    players = merged_data.index.to_list()
+    player_type = merged_data["element_type"].to_dict()
+    team_map = merged_data["name"].to_dict()
+    pts = {p: tuple(float(merged_data.at[p, f"{w}_Pts"]) for w in gws) for p in players}
+    mins = {p: tuple(float(merged_data.at[p, f"{w}_xMins"]) for w in gws) for p in players}
+    floor_vec = {p: tuple(1 if m >= starter_floor else 0 for m in mins[p]) for p in players} if check_floor else {}
+    bcover_vec = {p: tuple(1 if m >= bench_xmins else 0 for m in mins[p]) for p in players} if check_bcover else {}
+
+    k_by_type = {1: 2, 2: 3, 3: 3, 4: 3}
+    by_pc: dict[tuple[int, str], list[int]] = {}
+    for p in players:
+        by_pc.setdefault((int(player_type[p]), str(team_map[p])), []).append(p)
+
+    def _dominates(a: int, b: int) -> bool:
+        if buy_price[a] > buy_price[b]:
+            return False
+        pa, pb = pts[a], pts[b]
+        if any(xa < xb for xa, xb in zip(pa, pb)):
+            return False
+        if check_floor:
+            fa, fb = floor_vec[a], floor_vec[b]
+            if any(x < y for x, y in zip(fa, fb)):
+                return False
+        if check_bcover:
+            ba, bb = bcover_vec[a], bcover_vec[b]
+            if any(x < y for x, y in zip(ba, bb)):
+                return False
+        identical = (
+            buy_price[a] == buy_price[b]
+            and pa == pb
+            and (not check_floor or floor_vec[a] == floor_vec[b])
+            and (not check_bcover or bcover_vec[a] == bcover_vec[b])
+        )
+        return (not identical) or (a < b)
+
+    kept_set: set[int] = set()
+    for (ptype, _team), grp in by_pc.items():
+        k = k_by_type.get(ptype)
+        if k is None:
+            kept_set.update(grp)
+            continue
+        elig = sorted(p for p in grp if p not in must_keep)
+        for p in grp:
+            if p in must_keep:
+                kept_set.add(p)
+                continue
+            dom_cnt = 0
+            for a in elig:
+                if a != p and _dominates(a, p):
+                    dom_cnt += 1
+                    if dom_cnt >= k:
+                        break
+            if dom_cnt < k:
+                kept_set.add(p)
+
+    if len(kept_set) == len(players):
+        return data
+    out = dict(data)
+    out["merged_data"] = merged_data.loc[[p for p in players if p in kept_set]].copy()
+    return out
 
 BINARY_THRESHOLD = 0.5  # threshold value for evaluating binary variables
 BASE_URL = "https://fantasy.premierleague.com/api"
@@ -315,13 +450,7 @@ def solve_multi_period_fpl(data, options):
         "info@fploptimized.com."
     )
 
-    try:
-        commit_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
-        commit_count = subprocess.check_output(["git", "rev-list", "--count", "HEAD"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
-        version = f"{commit_count} - {commit_hash}"
-        print(f"Version: {version} (open-fpl-solver {UPSTREAM_COMMIT[:7]})")
-    except Exception:
-        pass
+    print(f"Version: open-fpl-solver {UPSTREAM_COMMIT[:7]}")
 
     problem_id = get_random_id(5)
     horizon = options.get("horizon", 3)
@@ -335,21 +464,28 @@ def solve_multi_period_fpl(data, options):
     itb_value = options.get("itb_value", 0.08)
     initial_ft = max(0, data.get("ft", 1))
     ft_base = data.get("ft_base", 1)
-    chip_limits = options.get("chip_limits", {})
+    chip_limits = dict(options.get("chip_limits", {}) or {})
     allowed_chip_gws = options.get("allowed_chip_gws", {})
     forced_chip_gws = options.get("forced_chip_gws", {})
     booked_transfers = options.get("booked_transfers", [])
-    preseason = options.get("preseason", False)
+    preseason = bool(options.get("preseason", False))
     itb_loss_per_transfer = options.get("itb_loss_per_transfer", None)
     if itb_loss_per_transfer is None:
         itb_loss_per_transfer = 0
     weekly_hit_limit = options.get("weekly_hit_limit", None)
 
     problem_name = f"mp_h{horizon}_regular" if objective == "regular" else f"mp_h{horizon}_o{objective[0]}_d{decay_base}"
+    next_gw = data["next_gw"]
+    last_gw = next_gw + horizon - 1
+    if last_gw > MAX_GAMEWEEK:
+        last_gw = MAX_GAMEWEEK
+        horizon = MAX_GAMEWEEK + 1 - next_gw
+    gws = list(range(next_gw, last_gw + 1))
+
+    data = _exact_k_domination_prune(data, options, gws)
     merged_data = data["merged_data"]
     team_data = data["team_data"]
     type_data = data["type_data"]
-    next_gw = data["next_gw"]
     initial_squad = data["initial_squad"]
     itb = data["itb"]
     fixtures = data["fixtures"]
@@ -361,16 +497,32 @@ def solve_multi_period_fpl(data, options):
     players = merged_data.index.to_list()
     el_types = type_data.index.to_list()
     teams = team_data["name"].to_list()
-    last_gw = next_gw + horizon - 1
-    if last_gw > MAX_GAMEWEEK:
-        last_gw = MAX_GAMEWEEK
-        horizon = MAX_GAMEWEEK + 1 - next_gw
-    gws = list(range(next_gw, last_gw + 1))
     all_gw = [next_gw - 1, *gws]
     ft_gws = [*gws, last_gw + 1]
     order = [0, 1, 2, 3]
     price_modified_players = data["price_modified_players"]
     ft_states = [0, 1, 2, 3, 4, 5]
+
+    eff_chip_limits = dict(chip_limits)
+    for chip in ("wc", "bb", "fh", "tc"):
+        if options.get(f"use_{chip}", []):
+            eff_chip_limits[chip] = len(options[f"use_{chip}"])
+        if allowed_chip_gws.get(chip):
+            eff_chip_limits[chip] = 1
+        if forced_chip_gws.get(chip):
+            eff_chip_limits[chip] = 1
+    for window in options.get("enabled_chip_windows") or []:
+        c = str(window.get("chip") or "")
+        if c in eff_chip_limits or c in ("wc", "bb", "fh", "tc"):
+            eff_chip_limits[c] = eff_chip_limits.get(c, 0) + 1
+    if options.get("iteration_criteria") == "chip_gws":
+        wc_active = bb_active = fh_active = True
+        tc_active = int(eff_chip_limits.get("tc", 0) or 0) > 0
+    else:
+        wc_active = int(eff_chip_limits.get("wc", 0) or 0) > 0
+        bb_active = int(eff_chip_limits.get("bb", 0) or 0) > 0
+        fh_active = int(eff_chip_limits.get("fh", 0) or 0) > 0
+        tc_active = int(eff_chip_limits.get("tc", 0) or 0) > 0
 
     # Model
     m = highspy.Highs()
@@ -393,39 +545,52 @@ def solve_multi_period_fpl(data, options):
             kwargs["ub"] = ub
         return m.addVariables(*sets, **kwargs)
 
+    # Dictionaries needed prior to variable construction
+    player_type = merged_data["element_type"].to_dict()
+    player_pos = merged_data["Pos"].to_dict()
+    gk_players = [p for p in players if player_type[p] == 1]
+
     # Variables
     squad = bin_vars(players, all_gw, name="squad")
-    squad_fh = bin_vars(players, gws, name="squad_fh")
+    squad_fh = bin_vars(players, gws, name="squad_fh") if fh_active else {}
     lineup = bin_vars(players, gws, name="lineup")
     captain = bin_vars(players, gws, name="captain")
     vicecap = bin_vars(players, gws, name="vicecap")
-    bench = bin_vars(players, gws, order, name="bench")
+    bench0 = bin_vars(gk_players, gws, name="bench0")
+    bench_out = bin_vars(players, gws, [1, 2, 3], name="bench_out")
+    bench: dict[tuple[int, int, int], Any] = {}
+    for p in players:
+        for w in gws:
+            if player_type[p] == 1:
+                bench[p, w, 0] = bench0[p, w]
+            for o in (1, 2, 3):
+                bench[p, w, o] = bench_out[p, w, o]
+
+    def bench_sum_p(p: int, w: int) -> Any:
+        if player_type[p] == 1:
+            return bench[p, w, 0] + sum_(bench[p, w, o] for o in (1, 2, 3))
+        return sum_(bench[p, w, o] for o in (1, 2, 3))
+
     transfer_in = bin_vars(players, gws, name="transfer_in")
     transfer_out_first = bin_vars(price_modified_players, gws, name="tr_out_first")
     transfer_out_regular = bin_vars(players, gws, name="tr_out_reg")
+    pm_set = set(price_modified_players)
     transfer_out = {
-        (p, w): transfer_out_regular[p, w] + (transfer_out_first[p, w] if p in price_modified_players else 0) for p in players for w in gws
+        (p, w): transfer_out_regular[p, w] + (transfer_out_first[p, w] if p in pm_set else 0) for p in players for w in gws
     }
     in_the_bank = cont_vars(all_gw, name="itb", lb=0)
-    fts = int_vars([*all_gw, last_gw + 1], name="ft", lb=0, ub=5)
-    ft_above_ub = bin_vars(gws, name="ft_above")
-    ft_below_lb = bin_vars(gws, name="ft_below")
-    fts_state = bin_vars(ft_gws, ft_states, name="ft_state")
     penalized_transfers = int_vars(gws, name="pt", lb=0)
-    aux = bin_vars(gws, name="aux")
     transfer_count = int_vars(gws, name="trc", lb=0, ub=SQUAD_SIZE)
 
-    use_wc = bin_vars(gws, name="use_wc")
-    use_bb = bin_vars(gws, name="use_bb")
-    use_fh = bin_vars(gws, name="use_fh")
-    use_tc = bin_vars(players, gws, name="use_tc")
+    use_wc = bin_vars(gws, name="use_wc") if wc_active else dict.fromkeys(gws, 0)
+    use_bb = bin_vars(gws, name="use_bb") if bb_active else dict.fromkeys(gws, 0)
+    use_fh = bin_vars(gws, name="use_fh") if fh_active else dict.fromkeys(gws, 0)
+    use_tc = bin_vars(players, gws, name="use_tc") if tc_active else {}
+    use_tc_gw = {w: sum_(use_tc[p, w] for p in players) for w in gws} if tc_active else dict.fromkeys(gws, 0)
 
     # Dictionaries
-    player_type = merged_data["element_type"].to_dict()
-    player_pos = merged_data["Pos"].to_dict()
     lineup_type_count = {(t, w): sum_(lineup[p, w] for p in players if player_type[p] == t) for t in el_types for w in gws}
     squad_type_count = {(t, w): sum_(squad[p, w] for p in players if player_type[p] == t) for t in el_types for w in gws}
-    squad_fh_type_count = {(t, w): sum_(squad_fh[p, w] for p in players if player_type[p] == t) for t in el_types for w in gws}
     sell_price = data["sell_price"]
     buy_price = data["buy_price"]
     sold_amount = {
@@ -435,7 +600,6 @@ def solve_multi_period_fpl(data, options):
         )
         for w in gws
     }
-    fh_sell_price = {p: sell_price[p] if p in price_modified_players else buy_price[p] for p in players}
     bought_amount = {w: sum_(buy_price[p] * transfer_in[p, w] for p in players) for w in gws}
     pts_by_week = {w: merged_data[f"{w}_Pts"].to_dict() for w in gws}
     xmins_by_week = {w: merged_data[f"{w}_xMins"].to_dict() for w in gws}
@@ -443,41 +607,43 @@ def solve_multi_period_fpl(data, options):
     minutes_player_week = {(p, w): xmins_by_week[w][p] for p in players for w in gws}
     player_team = merged_data["name"].to_dict()
     squad_count = {w: sum_(squad[p, w] for p in players) for w in gws}
-    squad_fh_count = {w: sum_(squad_fh[p, w] for p in players) for w in gws}
     num_transfers = {w: sum_(transfer_out[p, w] for p in players) for w in gws}
-    transfer_diff = {w: num_transfers[w] - fts[w] - SQUAD_SIZE * use_wc[w] for w in gws}
-    use_tc_gw = {w: sum_(use_tc[p, w] for p in players) for w in gws}
 
     # Initial conditions
+    initial_set = set(initial_squad)
     m.addConstrs([squad[p, next_gw - 1] == 1 for p in initial_squad])
-    m.addConstrs([squad[p, next_gw - 1] == 0 for p in players if p not in initial_squad])
+    m.addConstrs([squad[p, next_gw - 1] == 0 for p in players if p not in initial_set])
     m.addConstr(in_the_bank[next_gw - 1] == itb)
-    m.addConstr(fts[next_gw] == initial_ft * (1 - use_wc[next_gw] - use_fh[next_gw]) + ft_base * (use_wc[next_gw] + use_fh[next_gw]))
-    m.addConstrs([fts[w] >= 1 for w in gws if w > next_gw])
 
     # Constraints
     m.addConstrs([squad_count[w] == SQUAD_SIZE for w in gws])
-    m.addConstrs([squad_fh_count[w] == SQUAD_SIZE * use_fh[w] for w in gws])
     m.addConstrs([sum_(lineup[p, w] for p in players) == LINEUP_SIZE + (SQUAD_SIZE - LINEUP_SIZE) * use_bb[w] for w in gws])
-    m.addConstrs([sum_(bench[p, w, 0] for p in players if player_type[p] == 1) == 1 - use_bb[w] for w in gws])
+    m.addConstrs([sum_(bench[p, w, 0] for p in gk_players) == 1 - use_bb[w] for w in gws])
     m.addConstrs([sum_(bench[p, w, o] for p in players) == 1 - use_bb[w] for w in gws for o in [1, 2, 3]])
     m.addConstrs([sum_(captain[p, w] for p in players) == 1 for w in gws])
     m.addConstrs([sum_(vicecap[p, w] for p in players) == 1 for w in gws])
-    m.addConstrs([lineup[p, w] <= squad[p, w] + use_fh[w] for p in players for w in gws])
-    m.addConstrs([bench[p, w, o] <= squad[p, w] + use_fh[w] for p in players for w in gws for o in order])
-    m.addConstrs([lineup[p, w] <= squad_fh[p, w] + 1 - use_fh[w] for p in players for w in gws])
-    m.addConstrs([bench[p, w, o] <= squad_fh[p, w] + 1 - use_fh[w] for p in players for w in gws for o in order])
-    m.addConstrs([captain[p, w] <= lineup[p, w] for p in players for w in gws])
-    m.addConstrs([vicecap[p, w] <= lineup[p, w] for p in players for w in gws])
-    m.addConstrs([captain[p, w] + vicecap[p, w] <= 1 for p in players for w in gws])
-    m.addConstrs([lineup[p, w] + sum_(bench[p, w, o] for o in order) <= 1 for p in players for w in gws])
+    if fh_active:
+        squad_fh_type_count = {(t, w): sum_(squad_fh[p, w] for p in players if player_type[p] == t) for t in el_types for w in gws}
+        fh_sell_price = {p: sell_price[p] if p in pm_set else buy_price[p] for p in players}
+        squad_fh_count = {w: sum_(squad_fh[p, w] for p in players) for w in gws}
+        m.addConstrs([squad_fh_count[w] == SQUAD_SIZE * use_fh[w] for w in gws])
+        m.addConstrs([lineup[p, w] <= squad[p, w] + use_fh[w] for p in players for w in gws])
+        m.addConstrs([bench[p, w, o] <= squad[p, w] + use_fh[w] for p in players for w in gws for o in order if (p, w, o) in bench])
+        m.addConstrs([lineup[p, w] <= squad_fh[p, w] + 1 - use_fh[w] for p in players for w in gws])
+        m.addConstrs([bench[p, w, o] <= squad_fh[p, w] + 1 - use_fh[w] for p in players for w in gws for o in order if (p, w, o) in bench])
+        m.addConstrs([lineup[p, w] + bench_sum_p(p, w) <= 1 for p in players for w in gws])
+    else:
+        m.addConstrs([lineup[p, w] + bench_sum_p(p, w) == squad[p, w] for p in players for w in gws])
+    m.addConstrs([captain[p, w] + vicecap[p, w] <= lineup[p, w] for p in players for w in gws])
+    m.addConstrs([transfer_in[p, w] + squad[p, w - 1] <= 1 for p in players for w in gws])
     squad_min_play = type_data["squad_min_play"].astype(int).to_dict()
     squad_max_play = type_data["squad_max_play"].astype(int).to_dict()
     squad_select = type_data["squad_select"].astype(int).to_dict()
     m.addConstrs([lineup_type_count[t, w] >= squad_min_play[t] for t in el_types for w in gws])
     m.addConstrs([lineup_type_count[t, w] <= squad_max_play[t] + use_bb[w] for t in el_types for w in gws])
     m.addConstrs([squad_type_count[t, w] == squad_select[t] for t in el_types for w in gws])
-    m.addConstrs([squad_fh_type_count[t, w] == squad_select[t] * use_fh[w] for t in el_types for w in gws])
+    if fh_active:
+        m.addConstrs([squad_fh_type_count[t, w] == squad_select[t] * use_fh[w] for t in el_types for w in gws])
 
     if data["max_players_from_team"] > MAX_PLAYERS_PER_TEAM:
         no_transfer = bin_vars(gws, name="no_transfer")
@@ -487,7 +653,8 @@ def solve_multi_period_fpl(data, options):
     else:
         m.addConstrs([sum_(squad[p, w] for p in players if player_team[p] == t) <= MAX_PLAYERS_PER_TEAM for t in teams for w in all_gw])
 
-    m.addConstrs([sum_(squad_fh[p, w] for p in players if player_team[p] == t) <= MAX_PLAYERS_PER_TEAM * use_fh[w] for t in teams for w in gws])
+    if fh_active:
+        m.addConstrs([sum_(squad_fh[p, w] for p in players if player_team[p] == t) <= MAX_PLAYERS_PER_TEAM * use_fh[w] for t in teams for w in gws])
 
     ## Transfer constraints
     m.addConstrs([squad[p, w] == squad[p, w - 1] + transfer_in[p, w] - transfer_out[p, w] for p in players for w in gws])
@@ -498,58 +665,166 @@ def solve_multi_period_fpl(data, options):
             for w in gws
         ]
     )
-    m.addConstrs(
-        [
-            sum_(fh_sell_price[p] * squad[p, w - 1] for p in players) + in_the_bank[w - 1] >= sum_(fh_sell_price[p] * squad_fh[p, w] for p in players)
-            for w in gws
-        ]
+    if fh_active:
+        m.addConstrs(
+            [
+                sum_(fh_sell_price[p] * squad[p, w - 1] for p in players) + in_the_bank[w - 1] >= sum_(fh_sell_price[p] * squad_fh[p, w] for p in players)
+                for w in gws
+            ]
+        )
+        m.addConstrs([transfer_in[p, w] <= 1 - use_fh[w] for p in players for w in gws])
+        m.addConstrs([transfer_out[p, w] <= 1 - use_fh[w] for p in players for w in gws])
+
+    ## Tr Count Constraints
+    ft_penalty = dict.fromkeys(gws, 0)
+    if wc_active:
+        m.addConstrs([transfer_count[w] >= num_transfers[w] - SQUAD_SIZE * use_wc[w] for w in gws])
+        m.addConstrs([transfer_count[w] <= num_transfers[w] for w in gws])
+        m.addConstrs([transfer_count[w] <= SQUAD_SIZE * (1 - use_wc[w]) for w in gws])
+    else:
+        m.addConstrs([transfer_count[w] == num_transfers[w] for w in gws])
+    if ft_use_penalty is not None:
+        ft_penalty = {w: ft_use_penalty * transfer_count[w] for w in gws}
+
+    ## Free transfer constraints + FT Value weights
+    ft_state_value = {}
+    for s in ft_states:
+        ft_state_value[s] = ft_state_value.get(s - 1, 0) + ft_value_list.get(str(s), ft_value)
+    print(f"Using FT values of {ft_value_list}")
+    raw_hold_w = options.get("spare_ft_hold_weight")
+    if raw_hold_w is None:
+        raw_hold_w = (options.get("strategic_options") or {}).get("spare_ft_hold_weight")
+    spare_ft_hold_weight = (
+        DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT if raw_hold_w is None else float(raw_hold_w)
     )
-    m.addConstrs([transfer_in[p, w] <= 1 - use_fh[w] for p in players for w in gws])
-    m.addConstrs([transfer_out[p, w] <= 1 - use_fh[w] for p in players for w in gws])
+    ft_hold_weights = {
+        s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1])
+        for s in ft_states
+    }
+    max_ft_hold = max(ft_hold_weights.values(), default=0.0)
 
-    ## Free transfer constraints
-    # Next week's FTs before clamping: what's left after this week's transfers, plus the 1 earned.
-    # A wildcard or free hit cancels that gain out, so the FT count carries over unchanged.
-    raw_gw_ft = {w: fts[w] - transfer_count[w] + 1 - use_wc[w] - use_fh[w] for w in gws}
-    # Big-M only has to dominate the FT range, which is 0-5 plus transfers already made in current gw.
-    big_m = 20
+    if not fh_active:
+        wh_lim = int(weekly_hit_limit) if weekly_hit_limit is not None else SQUAD_SIZE
+        fts_state = bin_vars(ft_gws, ft_states, name="ft_state")
+        fts: dict[int, Any] = {next_gw - 1: float(initial_ft)}
+        for w in ft_gws:
+            fts[w] = sum_(s * fts_state[w, s] for s in ft_states)
+        for s in ft_states:
+            if wc_active and next_gw in gws:
+                rhs = (1 if s == initial_ft else 0) * (1 - use_wc[next_gw]) + (1 if s == ft_base else 0) * use_wc[next_gw]
+                m.addConstr(fts_state[next_gw, s] == rhs)
+            else:
+                m.addConstr(fts_state[next_gw, s] == (1 if s == initial_ft else 0))
+        m.addConstrs([sum_(fts_state[w, s] for s in ft_states) == 1 for w in ft_gws])
+        for w in gws:
+            if w > next_gw:
+                m.addConstr(fts_state[w, 0] == 0)
 
-    # ft_above_ub[w] == 1  <=>  raw_gw_ft[w] > 5
-    m.addConstrs([raw_gw_ft[w] >= 6 - big_m * (1 - ft_above_ub[w]) for w in gws])
-    m.addConstrs([raw_gw_ft[w] <= 5 + big_m * ft_above_ub[w] for w in gws])
+        def _next_ft_state(f_val: int, n_val: int, ch_val: int) -> int:
+            if ch_val == 1:
+                return 1 if f_val == 0 else min(5, max(1, f_val))
+            return min(5, max(1, f_val - n_val + 1))
 
-    # ft_below_lb[w] == 1  <=>  raw_gw_ft[w] < 1
-    m.addConstrs([raw_gw_ft[w] <= 0 + big_m * (1 - ft_below_lb[w]) for w in gws])
-    m.addConstrs([raw_gw_ft[w] >= 1 - big_m * ft_below_lb[w] for w in gws])
+        joints_w: dict[int, Any] = {}
+        max_ft_reach = initial_ft
+        block_cap = initial_ft
+        cum_nonfree_exprs: list[Any] = []
+        for w in gws:
+            if w == next_gw:
+                valid_f = list(dict.fromkeys([initial_ft, ft_base])) if wc_active else [initial_ft]
+            else:
+                valid_f = [1, 2, 3, 4, 5]
+            keys = [(f, n, 0) for f in valid_f for n in range(16) if max(n - f, 0) <= wh_lim]
+            if wc_active:
+                keys.extend((f, 0, 1) for f in valid_f)
+            jw = bin_vars(keys, name=f"j_{w}_")
+            joints_w[w] = jw
+            m.addConstr(sum_(jw.values()) == 1)
+            m.addConstr(sum_(n * v for (_, n, _), v in jw.items()) == transfer_count[w])
+            if wc_active:
+                m.addConstr(sum_(v for (_, _, ch), v in jw.items() if ch == 1) == use_wc[w])
+            for f in valid_f:
+                m.addConstr(sum_(v for (fp, _, _), v in jw.items() if fp == f) == fts_state[w, f])
+            for sf in ft_states:
+                matching = [v for (fp, np_, ch), v in jw.items() if _next_ft_state(fp, np_, ch) == sf]
+                m.addConstr(fts_state[w + 1, sf] == (sum_(matching) if matching else 0))
+            m.addConstr(penalized_transfers[w] >= sum_(max(n - f, 0) * v for (f, n, ch), v in jw.items() if ch == 0))
+            if not wc_active:
+                if wh_lim == 0:
+                    cum_nonfree_exprs.append(num_transfers[w])
+                    m.addConstr(sum_(cum_nonfree_exprs) <= block_cap)
+                m.addConstr(num_transfers[w] <= min(15, 5 + wh_lim, max_ft_reach + wh_lim))
+                max_ft_reach = min(5, max_ft_reach + 1)
+                block_cap += 1
 
-    # Clamp the raw count into [1, 5] to get the FTs actually available next week.
-
-    # ft_above_ub[w] == 1  =>  fts[w + 1] == 5
-    m.addConstrs([fts[w + 1] <= 5 + big_m * (1 - ft_above_ub[w]) for w in gws])
-    m.addConstrs([fts[w + 1] >= 5 - big_m * (1 - ft_above_ub[w]) for w in gws])
-
-    # ft_below_lb[w] == 1  =>  fts[w + 1] == 1
-    m.addConstrs([fts[w + 1] <= 1 + big_m * (1 - ft_below_lb[w]) for w in gws])
-    m.addConstrs([fts[w + 1] >= 1 - big_m * (1 - ft_below_lb[w]) for w in gws])
-
-    # Neither indicator set  =>  fts[w + 1] == raw_gw_ft[w], i.e. the raw count was already in range
-    m.addConstrs([fts[w + 1] - raw_gw_ft[w] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
-    m.addConstrs([raw_gw_ft[w] - fts[w + 1] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
-
-    m.addConstrs([fts[w] == sum_(fts_state[w, s] * s for s in ft_states) for w in ft_gws])
-    m.addConstrs([sum_(fts_state[w, s] for s in ft_states) == 1 for w in ft_gws])
-
-    m.addConstrs([penalized_transfers[w] >= transfer_diff[w] for w in gws])
+        gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in ft_gws}
+        if ft_value_list and max_ft_hold > 0.0:
+            gw_ft_hold = {}
+            for w in gws:
+                if w < last_gw:
+                    jw = joints_w[w]
+                    hold_terms = [
+                        ft_hold_weights[nf] * v
+                        for (fp, np_, ch), v in jw.items()
+                        if ch == 0
+                        and (fp - np_ + 1) <= 5
+                        and (nf := min(5, max(1, fp - np_ + 1))) >= 2
+                    ]
+                    gw_ft_hold[w] = sum_(hold_terms) if hold_terms else 0
+                else:
+                    gw_ft_hold[w] = 0
+        else:
+            gw_ft_hold = dict.fromkeys(gws, 0)
+        gw_ft_gain = {w: gw_ft_value[w + 1] - gw_ft_value[w] + gw_ft_hold[w] for w in gws}
+    else:
+        fts = int_vars([*all_gw, last_gw + 1], name="ft", lb=0, ub=5)
+        ft_above_ub = bin_vars(gws, name="ft_above")
+        ft_below_lb = bin_vars(gws, name="ft_below")
+        fts_state = bin_vars(ft_gws, ft_states, name="ft_state")
+        m.addConstr(fts[next_gw] == initial_ft * (1 - use_wc[next_gw] - use_fh[next_gw]) + ft_base * (use_wc[next_gw] + use_fh[next_gw]))
+        m.addConstrs([fts[w] >= 1 for w in gws if w > next_gw])
+        raw_gw_ft = {w: fts[w] - transfer_count[w] + 1 - use_wc[w] - use_fh[w] for w in gws}
+        big_m = 20
+        m.addConstrs([raw_gw_ft[w] >= 6 - big_m * (1 - ft_above_ub[w]) for w in gws])
+        m.addConstrs([raw_gw_ft[w] <= 5 + big_m * ft_above_ub[w] for w in gws])
+        m.addConstrs([raw_gw_ft[w] <= 0 + big_m * (1 - ft_below_lb[w]) for w in gws])
+        m.addConstrs([raw_gw_ft[w] >= 1 - big_m * ft_below_lb[w] for w in gws])
+        m.addConstrs([fts[w + 1] <= 5 + big_m * (1 - ft_above_ub[w]) for w in gws])
+        m.addConstrs([fts[w + 1] >= 5 - big_m * (1 - ft_above_ub[w]) for w in gws])
+        m.addConstrs([fts[w + 1] <= 1 + big_m * (1 - ft_below_lb[w]) for w in gws])
+        m.addConstrs([fts[w + 1] >= 1 - big_m * (1 - ft_below_lb[w]) for w in gws])
+        m.addConstrs([fts[w + 1] - raw_gw_ft[w] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
+        m.addConstrs([raw_gw_ft[w] - fts[w + 1] <= big_m * (ft_above_ub[w] + ft_below_lb[w]) for w in gws])
+        m.addConstrs([fts[w] == sum_(fts_state[w, s] * s for s in ft_states) for w in ft_gws])
+        m.addConstrs([sum_(fts_state[w, s] for s in ft_states) == 1 for w in ft_gws])
+        transfer_diff = {w: num_transfers[w] - fts[w] - SQUAD_SIZE * use_wc[w] for w in gws}
+        m.addConstrs([penalized_transfers[w] >= transfer_diff[w] for w in gws])
+        gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in ft_gws}
+        if ft_value_list and max_ft_hold > 0.0:
+            hold_gws = [w for w in gws if w < last_gw]
+            ft_hold_credit = cont_vars(hold_gws, name="ft_hold", lb=0, ub=max_ft_hold)
+            m.addConstrs(
+                [ft_hold_credit[w] <= sum_(ft_hold_weights[s] * fts_state[w + 1, s] for s in ft_states if s >= 2) for w in hold_gws]
+            )
+            m.addConstrs([ft_hold_credit[w] <= max_ft_hold * (1 - use_wc[w] - use_fh[w]) for w in hold_gws])
+            m.addConstrs([ft_hold_credit[w] <= max_ft_hold * (1 - ft_above_ub[w]) for w in hold_gws])
+            gw_ft_hold = {w: (ft_hold_credit[w] if w < last_gw else 0) for w in gws}
+        else:
+            gw_ft_hold = dict.fromkeys(gws, 0)
+        gw_ft_gain = {w: gw_ft_value[w + 1] - gw_ft_value[w] + gw_ft_hold[w] for w in gws}
 
     ## Chip constraints
-    m.addConstrs([use_wc[w] + use_fh[w] + use_bb[w] + use_tc_gw[w] <= 1 for w in gws])
-    m.addConstrs([aux[w] <= 1 - use_wc[w - 1] for w in gws if w > next_gw])
-    m.addConstrs([aux[w] <= 1 - use_fh[w - 1] for w in gws if w > next_gw])
-    m.addConstrs([use_tc[p, w] <= captain[p, w] for p in players for w in gws])
+    if any((wc_active, bb_active, fh_active, tc_active)):
+        m.addConstrs([use_wc[w] + use_fh[w] + use_bb[w] + use_tc_gw[w] <= 1 for w in gws])
+    if tc_active:
+        m.addConstrs([use_tc[p, w] <= captain[p, w] for p in players for w in gws])
 
     chip_vars = {"wc": use_wc, "bb": use_bb, "fh": use_fh, "tc": use_tc_gw}
+    active_flags = {"wc": wc_active, "bb": bb_active, "fh": fh_active, "tc": tc_active}
 
     for chip, var in chip_vars.items():
+        if not active_flags[chip]:
+            continue
         forced_use = options.get(f"use_{chip}", [])
         if forced_use:
             m.addConstrs([var[w] == 1 for w in forced_use])
@@ -568,16 +843,20 @@ def solve_multi_period_fpl(data, options):
         chip = str(window.get("chip") or "")
         var = use_by_chip.get(chip)
         weeks = [w for w in window.get("gws", []) if w in gws]
-        if var is None or not weeks:
+        if var is None or not weeks or not active_flags.get(chip, False):
             raise ValueError(f"Enabled Chip {chip} has no placeable gameweek")
         m.addConstr(sum_(var[w] for w in weeks) == 1)
         chip_limits[chip] = chip_limits.get(chip, 0) + 1
 
-    m.addConstr(sum_(use_wc[w] for w in gws) <= chip_limits.get("wc", 0))
-    m.addConstr(sum_(use_bb[w] for w in gws) <= chip_limits.get("bb", 0))
-    m.addConstr(sum_(use_fh[w] for w in gws) <= chip_limits.get("fh", 0))
-    m.addConstr(sum_(use_tc_gw[w] for w in gws) <= chip_limits.get("tc", 0))
-    m.addConstrs([squad_fh[p, w] <= use_fh[w] for p in players for w in gws])
+    if wc_active:
+        m.addConstr(sum_(use_wc[w] for w in gws) <= chip_limits.get("wc", 0))
+    if bb_active:
+        m.addConstr(sum_(use_bb[w] for w in gws) <= chip_limits.get("bb", 0))
+    if fh_active:
+        m.addConstr(sum_(use_fh[w] for w in gws) <= chip_limits.get("fh", 0))
+        m.addConstrs([squad_fh[p, w] <= use_fh[w] for p in players for w in gws])
+    if tc_active:
+        m.addConstr(sum_(use_tc_gw[w] for w in gws) <= chip_limits.get("tc", 0))
 
     ## Multiple-sell fix
     m.addConstrs([transfer_out_first[p, w] + transfer_out_regular[p, w] <= 1 for p in price_modified_players for w in gws])
@@ -593,52 +872,50 @@ def solve_multi_period_fpl(data, options):
     ## Transfer in/out fix
     m.addConstrs([transfer_in[p, w] + transfer_out[p, w] <= 1 for p in players for w in gws])
 
-    ## Tr Count Constraints
-    ft_penalty = dict.fromkeys(gws, 0)
-    m.addConstrs([transfer_count[w] >= num_transfers[w] - SQUAD_SIZE * use_wc[w] for w in gws])
-    m.addConstrs([transfer_count[w] <= num_transfers[w] for w in gws])
-    m.addConstrs([transfer_count[w] <= SQUAD_SIZE * (1 - use_wc[w]) for w in gws])
-    if ft_use_penalty is not None:
-        ft_penalty = {w: ft_use_penalty * transfer_count[w] for w in gws}
-
     ## Optional constraints
     if options.get("banned", None):
         print("OC - Banned")
         banned_players = options["banned"]
         m.addConstrs([sum_(squad[p, w] for w in gws) == 0 for p in banned_players if p in players])
-        m.addConstrs([sum_(squad_fh[p, w] for w in gws) == 0 for p in banned_players if p in players])
+        if fh_active:
+            m.addConstrs([sum_(squad_fh[p, w] for p in gws) == 0 for p in banned_players if p in players])
 
     if options.get("banned_next_gw", None):
         print("OC - Banned Next GW")
         banned_in_gw = [(x, gws[0]) if isinstance(x, int) else tuple(x) for x in options["banned_next_gw"]]
         m.addConstrs([squad[p0, p1] == 0 for (p0, p1) in banned_in_gw if p0 in players])
-        m.addConstrs([squad_fh[p0, p1] == 0 for (p0, p1) in banned_in_gw if p0 in players])
+        if fh_active:
+            m.addConstrs([squad_fh[p0, p1] == 0 for (p0, p1) in banned_in_gw if p0 in players])
 
     if options.get("locked", None):
         print("OC - Locked")
         locked_players = options["locked"]
         # On a free hit week the locked player must be in the free hit squad; otherwise in the real squad.
         m.addConstrs([squad[p, w] >= 1 - use_fh[w] for p in locked_players for w in gws])
-        m.addConstrs([squad_fh[p, w] >= use_fh[w] for p in locked_players for w in gws])
+        if fh_active:
+            m.addConstrs([squad_fh[p, w] >= use_fh[w] for p in locked_players for w in gws])
 
     if options.get("locked_next_gw", None):
         print("OC - Locked Next GW")
         locked_in_gw = [(x, gws[0]) if isinstance(x, int) else tuple(x) for x in options["locked_next_gw"]]
         # On a free hit week the locked player must be in the free hit squad; otherwise in the real squad.
         m.addConstrs([squad[p0, p1] >= 1 - use_fh[p1] for (p0, p1) in locked_in_gw])
-        m.addConstrs([squad_fh[p0, p1] >= use_fh[p1] for (p0, p1) in locked_in_gw])
+        if fh_active:
+            m.addConstrs([squad_fh[p0, p1] >= use_fh[p1] for (p0, p1) in locked_in_gw])
 
     for player_id, gw in options.get("force_keep_gws") or []:
         if player_id not in players or gw not in gws:
             raise ValueError(f"Force Keep player {player_id} GW{gw} is not in the solver pool")
         m.addConstr(squad[player_id, gw] >= 1 - use_fh[gw])
-        m.addConstr(squad_fh[player_id, gw] >= use_fh[gw])
+        if fh_active:
+            m.addConstr(squad_fh[player_id, gw] >= use_fh[gw])
 
     for player_id, gw in options.get("force_ban_gws") or []:
         if player_id not in players or gw not in gws:
             raise ValueError(f"Force Ban player {player_id} GW{gw} is not in the solver pool")
         m.addConstr(squad[player_id, gw] <= use_fh[gw])
-        m.addConstr(squad_fh[player_id, gw] <= 1 - use_fh[gw])
+        if fh_active:
+            m.addConstr(squad_fh[player_id, gw] <= 1 - use_fh[gw])
 
     for option, variable, value in (
         ("force_bench_gws", lineup, 0),
@@ -704,13 +981,14 @@ def solve_multi_period_fpl(data, options):
                 for w in gws
             ]
         )
-        m.addConstrs(
-            [
-                sum_(squad_fh[p, w] for p in players if player_team[p] == t and player_pos[p] in {"G", "D"}) <= max_defs_per_team * use_fh[w]
-                for t in teams
-                for w in gws
-            ]
-        )
+        if fh_active:
+            m.addConstrs(
+                [
+                    sum_(squad_fh[p, w] for p in players if player_team[p] == t and player_pos[p] in {"G", "D"}) <= max_defs_per_team * use_fh[w]
+                    for t in teams
+                    for w in gws
+                ]
+            )
 
     for booked_transfer in booked_transfers:
         print("OC - Booked TRs")
@@ -809,13 +1087,13 @@ def solve_multi_period_fpl(data, options):
     if options.get("no_gk_rotation_after", None):
         print("OC - No GK rotation")
         target_gw = int(options["no_gk_rotation_after"])
-        players_gk = [p for p in players if player_type[p] == 1]
-        m.addConstrs([lineup[p, w] >= lineup[p, target_gw] - use_fh[w] for p in players_gk for w in gws if w > target_gw])
+        m.addConstrs([lineup[p, w] >= lineup[p, target_gw] - use_fh[w] for p in gk_players for w in gws if w > target_gw])
 
     if len(options.get("no_chip_gws", [])) > 0:
         print("OC - No Chip GWs")
         no_chip_gws = options["no_chip_gws"]
-        m.addConstr(sum_(use_bb[w] + use_wc[w] + use_fh[w] + use_tc_gw[w] for w in no_chip_gws) == 0)
+        if any((wc_active, bb_active, fh_active, tc_active)):
+            m.addConstr(sum_(use_bb[w] + use_wc[w] + use_fh[w] + use_tc_gw[w] for w in no_chip_gws) == 0)
 
     if options.get("only_booked_transfers") is True:
         print("OC - Only Booked Transfers")
@@ -850,67 +1128,9 @@ def solve_multi_period_fpl(data, options):
         print("OC - No TRS except WC")
         m.addConstrs([num_transfers[w] <= SQUAD_SIZE * use_wc[w] for w in gws])
 
-    # FT gain (evaluated on post-transfer carried bank fts[w + 1] vs pre-transfer fts[w])
-    ft_state_value = {}
-    for s in ft_states:
-        ft_state_value[s] = ft_state_value.get(s - 1, 0) + ft_value_list.get(str(s), ft_value)
-    # print(f"Using FT state values of {ft_state_value}")
-    print(f"Using FT values of {ft_value_list}")
-    gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in ft_gws}
-    raw_hold_w = options.get("spare_ft_hold_weight")
-    if raw_hold_w is None:
-        raw_hold_w = (options.get("strategic_options") or {}).get("spare_ft_hold_weight")
-    spare_ft_hold_weight = (
-        DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT if raw_hold_w is None else float(raw_hold_w)
-    )
-    ft_hold_weights = {
-        s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1])
-        for s in ft_states
-    }
-    max_ft_hold = max(ft_hold_weights.values(), default=0.0)
-    if ft_value_list and max_ft_hold > 0.0:
-        hold_gws = [w for w in gws if w < last_gw]
-        ft_hold_credit = cont_vars(hold_gws, name="ft_hold", lb=0, ub=max_ft_hold)
-        m.addConstrs(
-            [
-                ft_hold_credit[w] <= sum_(ft_hold_weights[s] * fts_state[w + 1, s] for s in ft_states if s >= 2)
-                for w in hold_gws
-            ]
-        )
-        m.addConstrs(
-            [
-                ft_hold_credit[w] <= max_ft_hold * (1 - use_wc[w] - use_fh[w])
-                for w in hold_gws
-            ]
-        )
-        # Waive spare-FT hold credit on weeks whose accrued FTs overflow the 5-FT cap.
-        m.addConstrs(
-            [
-                ft_hold_credit[w] <= max_ft_hold * (1 - ft_above_ub[w])
-                for w in hold_gws
-            ]
-        )
-        gw_ft_hold = {w: (ft_hold_credit[w] if w < last_gw else 0) for w in gws}
-    else:
-        gw_ft_hold = dict.fromkeys(gws, 0)
-    gw_ft_gain = {w: gw_ft_value[w + 1] - gw_ft_value[w] + gw_ft_hold[w] for w in gws}
-
     # Strategic Variance Constraints (ADR 0061, docs/research/milp-variance-constraints)
     strategic_opts = dict(options.get("strategic_options") or {})
-    strategic_enabled = bool(
-        options.get("strategic_mode", False)
-        or strategic_opts
-        or any(
-            k in options
-            for k in (
-                "hit_friction",
-                "starter_xmins_floor",
-                "bench_cover_min",
-                "def_stack_cap",
-                "gk_transfer_friction",
-            )
-        )
-    )
+    strategic_enabled = _is_strategic_solver_options(options)
 
     hit_friction = float(options.get("hit_friction", strategic_opts.get("hit_friction", 1.8 if strategic_enabled else 0.0)) or 0.0)
     starter_xmins_floor = float(options.get("starter_xmins_floor", strategic_opts.get("starter_xmins_floor", 65.0 if strategic_enabled else 0.0)) or 0.0)
@@ -922,29 +1142,36 @@ def solve_multi_period_fpl(data, options):
     def_stack_penalty = float(options.get("def_stack_penalty", strategic_opts.get("def_stack_penalty", 1.2 if strategic_enabled else 0.0)) or 0.0)
     gk_transfer_friction = float(options.get("gk_transfer_friction", strategic_opts.get("gk_transfer_friction", 1.5 if strategic_enabled else 0.0)) or 0.0)
 
-    # 1. Starter xMins Floor (infeasibility-guarded slack for outfield starters)
-    sub_floor_pairs = [
+    # 1. Starter xMins Floor (direct linear penalty on sub-floor starters)
+    sub_floor_pairs = {
         (p, w)
         for p in players
         for w in gws
         if player_type[p] in (2, 3, 4) and minutes_player_week[p, w] < starter_xmins_floor
-    ]
-    starter_xmins_slack = cont_vars(sub_floor_pairs, name="sxm_s", lb=0) if (sub_floor_pairs and starter_xmins_penalty > 0) else {}
-    if starter_xmins_slack:
-        m.addConstrs([lineup[p, w] <= starter_xmins_slack[p, w] for (p, w) in sub_floor_pairs])
+    }
+    sub_floor_by_w = {w: [p for p in players if (p, w) in sub_floor_pairs] for w in gws}
+    starter_pen_expr = {
+        w: (
+            starter_xmins_penalty * sum_(lineup[p, w] for p in sub_floor_by_w[w])
+            if (sub_floor_by_w[w] and starter_xmins_penalty > 0)
+            else 0
+        )
+        for w in gws
+    }
 
     # 2. First-Bench Cover Protection (slack on active squad players with xMins >= bench_cover_xmins)
     nailed_by_week = {w: [p for p in players if minutes_player_week[p, w] >= bench_cover_xmins] for w in gws}
     bench_cover_slack = cont_vars(gws, name="bc_s", lb=0) if (bench_cover_min > 0 and bench_cover_penalty > 0) else {}
     if bench_cover_slack:
-        m.addConstrs(
-            [
-                sum_(lineup[p, w] + sum_(bench[p, w, o] for o in order) for p in nailed_by_week[w])
-                + bench_cover_slack[w]
-                >= bench_cover_min
-                for w in gws
-            ]
-        )
+        if not fh_active:
+            m.addConstrs([sum_(squad[p, w] for p in nailed_by_week[w]) + bench_cover_slack[w] >= bench_cover_min for w in gws])
+        else:
+            m.addConstrs(
+                [
+                    sum_(lineup[p, w] + bench_sum_p(p, w) for p in nailed_by_week[w]) + bench_cover_slack[w] >= bench_cover_min
+                    for w in gws
+                ]
+            )
 
     # 3. Defensive Stack Limiter (slack on DEF/GKP starters per Club)
     team_def_gk = {t: [p for p in players if player_team[p] == t and player_type[p] in (1, 2)] for t in teams}
@@ -958,25 +1185,29 @@ def solve_multi_period_fpl(data, options):
             ]
         )
 
-    # 4. Goalkeeper Transfer Friction (slack penalized on GKP transfers-in, waived on WC/FH)
-    gk_players = [p for p in players if player_type[p] == 1]
-    gk_tr_slack = cont_vars(gk_players, gws, name="gk_s", lb=0) if (gk_players and gk_transfer_friction > 0) else {}
-    if gk_tr_slack:
-        m.addConstrs(
-            [
-                gk_tr_slack[p, w] >= transfer_in[p, w] - use_wc[w] - use_fh[w]
-                for p in gk_players
-                for w in gws
-            ]
-        )
+    # 4. Goalkeeper Transfer Friction (direct penalty when WC/FH inactive; slack otherwise)
+    if not wc_active and not fh_active:
+        gk_tr_slack: dict[tuple[int, int], Any] = {}
+        gk_pen_expr = {
+            w: (gk_transfer_friction * sum_(transfer_in[p, w] for p in gk_players) if (gk_players and gk_transfer_friction > 0) else 0)
+            for w in gws
+        }
+    else:
+        gk_tr_slack = cont_vars(gk_players, gws, name="gk_s", lb=0) if (gk_players and gk_transfer_friction > 0) else {}
+        if gk_tr_slack:
+            m.addConstrs([gk_tr_slack[p, w] >= transfer_in[p, w] - use_wc[w] - use_fh[w] for p in gk_players for w in gws])
+        gk_pen_expr = {
+            w: (gk_transfer_friction * sum_(gk_tr_slack[p, w] for p in gk_players) if gk_tr_slack else 0)
+            for w in gws
+        }
 
     strategic_penalty = {
         w: (
             (hit_friction * penalized_transfers[w] if hit_friction > 0 else 0)
-            + (starter_xmins_penalty * sum_(starter_xmins_slack[p, w] for p in players if (p, w) in sub_floor_pairs) if starter_xmins_slack else 0)
+            + starter_pen_expr[w]
             + (bench_cover_penalty * bench_cover_slack[w] if bench_cover_slack else 0)
             + (def_stack_penalty * sum_(def_stack_slack[t, w] for t in teams) if def_stack_slack else 0)
-            + (gk_transfer_friction * sum_(gk_tr_slack[p, w] for p in gk_players) if gk_tr_slack else 0)
+            + gk_pen_expr[w]
         )
         for w in gws
     }
@@ -987,7 +1218,13 @@ def solve_multi_period_fpl(data, options):
     gw_xp = {
         w: sum_(
             points_player_week[p, w]
-            * (lineup[p, w] + captain[p, w] + vcap_weight * vicecap[p, w] + use_tc[p, w] + sum_(bench_weights[o] * bench[p, w, o] for o in order))
+            * (
+                lineup[p, w]
+                + captain[p, w]
+                + vcap_weight * vicecap[p, w]
+                + (use_tc[p, w] if tc_active else 0)
+                + sum_(bench_weights[o] * bench[p, w, o] for o in order if (p, w, o) in bench)
+            )
             for p in players
         )
         for w in gws
@@ -1033,7 +1270,16 @@ def solve_multi_period_fpl(data, options):
 
     m.setOptionValue("parallel", parallel)
     if threads is not None:
-        m.setOptionValue("threads", int(threads))
+        t_int = int(threads)
+        global _LAST_HIGHS_THREADS
+        with _HIGHS_THREAD_LOCK:
+            if _LAST_HIGHS_THREADS is not None and t_int != _LAST_HIGHS_THREADS:
+                try:
+                    highspy.Highs.resetGlobalScheduler(True)
+                except AttributeError:
+                    pass
+            _LAST_HIGHS_THREADS = t_int
+        m.setOptionValue("threads", t_int)
     m.setOptionValue("random_seed", random_seed)
     m.setOptionValue("presolve", presolve)
     m.setOptionValue("time_limit", secs)
@@ -1110,24 +1356,23 @@ def solve_multi_period_fpl(data, options):
         # DataFrame generation
         picks = []
         for w in gws:
+            fh_w = val(use_fh[w]) > BINARY_THRESHOLD if fh_active else False
+            wc_w = val(use_wc[w]) > BINARY_THRESHOLD if wc_active else False
+            bb_w = val(use_bb[w]) > BINARY_THRESHOLD if bb_active else False
             for p in players:
-                if val(squad[p, w]) + val(squad_fh[p, w]) + val(transfer_out[p, w]) > BINARY_THRESHOLD:
+                sfh_val = val(squad_fh[p, w]) if fh_active else 0.0
+                if val(squad[p, w]) + sfh_val + val(transfer_out[p, w]) > BINARY_THRESHOLD:
                     lp = merged_data.loc[p]
                     is_captain = 1 if val(captain[p, w]) > BINARY_THRESHOLD else 0
-                    is_squad = (
-                        1
-                        if (val(use_fh[w]) < BINARY_THRESHOLD and val(squad[p, w]) > BINARY_THRESHOLD)
-                        or (val(use_fh[w]) > BINARY_THRESHOLD and val(squad_fh[p, w]) > BINARY_THRESHOLD)
-                        else 0
-                    )
+                    is_squad = 1 if (not fh_w and val(squad[p, w]) > BINARY_THRESHOLD) or (fh_w and sfh_val > BINARY_THRESHOLD) else 0
                     is_lineup = 1 if val(lineup[p, w]) > BINARY_THRESHOLD else 0
                     is_vice = 1 if val(vicecap[p, w]) > BINARY_THRESHOLD else 0
-                    is_tc = 1 if val(use_tc[p, w]) > BINARY_THRESHOLD else 0
+                    is_tc = 1 if (tc_active and val(use_tc[p, w]) > BINARY_THRESHOLD) else 0
                     is_transfer_in = 1 if val(transfer_in[p, w]) > BINARY_THRESHOLD else 0
                     is_transfer_out = 1 if val(transfer_out[p, w]) > BINARY_THRESHOLD else 0
                     bench_value = -1
                     for o in order:
-                        if val(bench[p, w, o]) > BINARY_THRESHOLD:
+                        if (p, w, o) in bench and val(bench[p, w, o]) > BINARY_THRESHOLD:
                             bench_value = o
                     position = type_data.loc[lp["element_type"], "singular_name_short"]
                     player_buy_price = 0 if not is_transfer_in else buy_price[p]
@@ -1139,13 +1384,13 @@ def solve_multi_period_fpl(data, options):
                     multiplier = 1 * (is_lineup == 1) + 1 * (is_captain == 1) + 1 * (is_tc == 1)
                     xp_cont = points_player_week[p, w] * multiplier
 
-                    if val(use_wc[w]) > BINARY_THRESHOLD:
+                    if wc_w:
                         chip_text = "WC"
-                    elif val(use_fh[w]) > BINARY_THRESHOLD:
+                    elif fh_w:
                         chip_text = "FH"
-                    elif val(use_bb[w]) > BINARY_THRESHOLD:
+                    elif bb_w:
                         chip_text = "BB"
-                    elif val(use_tc[p, w]) > BINARY_THRESHOLD:
+                    elif is_tc:
                         chip_text = "TC"
                     else:
                         chip_text = ""
@@ -1276,14 +1521,14 @@ def solve_multi_period_fpl(data, options):
 
             for w in gws:
                 w_sub = []
-                if starter_xmins_slack:
-                    for p in players:
-                        if (p, w) in sub_floor_pairs and val(starter_xmins_slack[p, w]) > 0.01:
+                if starter_xmins_penalty > 0 and sub_floor_by_w[w]:
+                    for p in sub_floor_by_w[w]:
+                        if val(lineup[p, w]) > 0.01:
                             w_sub.append({
                                 "player_id": int(p),
                                 "name": str(merged_data.loc[p, "web_name"]),
                                 "xmins": float(minutes_player_week[p, w]),
-                                "penalty": round(starter_xmins_penalty * val(starter_xmins_slack[p, w]), 2),
+                                "penalty": round(starter_xmins_penalty * val(lineup[p, w]), 2),
                             })
                 sub_floor_events.extend([{"gw": int(w), **e} for e in w_sub])
 
@@ -1291,7 +1536,7 @@ def solve_multi_period_fpl(data, options):
                 nailed_cnt = sum(
                     1 for p in players
                     if minutes_player_week[p, w] >= bench_cover_xmins and (
-                        val(lineup[p, w]) > BINARY_THRESHOLD or any(val(bench[p, w, o]) > BINARY_THRESHOLD for o in order)
+                        val(lineup[p, w]) > BINARY_THRESHOLD or any((p, w, o) in bench and val(bench[p, w, o]) > BINARY_THRESHOLD for o in order)
                     )
                 )
                 if bc_slack > 0.01:
@@ -1318,14 +1563,15 @@ def solve_multi_period_fpl(data, options):
                 def_stack_events.extend(w_def)
 
                 w_gk = []
-                if gk_tr_slack:
+                if gk_transfer_friction > 0:
                     for p in gk_players:
-                        if val(gk_tr_slack[p, w]) > 0.01:
+                        gk_pen_val = val(gk_tr_slack[p, w]) if gk_tr_slack else val(transfer_in[p, w])
+                        if gk_pen_val > 0.01:
                             w_gk.append({
                                 "gw": int(w),
                                 "player_id": int(p),
                                 "name": str(merged_data.loc[p, "web_name"]),
-                                "penalty": round(gk_transfer_friction * val(gk_tr_slack[p, w]), 2),
+                                "penalty": round(gk_transfer_friction * gk_pen_val, 2),
                             })
                 gk_tr_events.extend(w_gk)
 

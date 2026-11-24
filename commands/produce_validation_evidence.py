@@ -2303,21 +2303,24 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from backtesting.verification_cache import verification_call_scope
+
     configure_utf8_stdio()
     parser = _build_parser()
 
     args = parser.parse_args(argv)
-    if args.subcommand == "collect":
-        return _collect_command(args)
-    if args.subcommand == "freeze":
-        return _freeze_command(args)
-    if args.subcommand == "replay":
-        return _replay_command(args)
-    if args.subcommand == "scorecard":
-        return _scorecard_command(args)
-    if args.subcommand == "bootstrap-s1-baseline":
-        return _bootstrap_s1_baseline_command(args)
-    raise ValueError(f"Unknown subcommand: {args.subcommand}")
+    with verification_call_scope():
+        if args.subcommand == "collect":
+            return _collect_command(args)
+        if args.subcommand == "freeze":
+            return _freeze_command(args)
+        if args.subcommand == "replay":
+            return _replay_command(args)
+        if args.subcommand == "scorecard":
+            return _scorecard_command(args)
+        if args.subcommand == "bootstrap-s1-baseline":
+            return _bootstrap_s1_baseline_command(args)
+        raise ValueError(f"Unknown subcommand: {args.subcommand}")
 
 
 if __name__ == "__main__":

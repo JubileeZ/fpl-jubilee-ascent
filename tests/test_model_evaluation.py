@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from models.selection import ModelSelection
 from backtesting.model_evaluation import promote_candidate, replace_candidate
 
@@ -116,6 +118,7 @@ def test_compare_to_reference_wires_active_window_metrics() -> None:
     assert verdict.active_guardrails_passed is not None
 
 
+@pytest.mark.slow
 def test_compare_two_season_gate_and_evidence_record_active_guardrails(tmp_path: Path) -> None:
     import pandas as pd
     from backtesting.model_evaluation import (

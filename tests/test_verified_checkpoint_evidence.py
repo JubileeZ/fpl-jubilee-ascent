@@ -3,6 +3,7 @@
 from dataclasses import asdict
 import json
 from pathlib import Path
+import shutil
 from typing import Any
 
 import pandas as pd
@@ -104,131 +105,175 @@ def _retain_checkpoint_replay(
 
 
 @pytest.fixture(scope="module")
-def retained_verified_checkpoint(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    from backtesting.promotion_evidence import CHECKPOINT_EVIDENCE_V2
+def retained_verified_checkpoint(tmp_path_factory: pytest.TempPathFactory, worker_id: str) -> Path:
+    from filelock import FileLock
 
-    root = tmp_path_factory.mktemp("verified-checkpoint")
-    development, validation = "2025-26", "2026-27"
-    windows = {development: [1, 2], validation: list(range(1, 39))}
-    guards = {
-        name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3],
-               "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
-        for name, spec in GUARD_SEMANTICS.items()
-    }
-    protocol = {
-        "horizon": 6,
-        "windows": windows,
-        "guard_specs": guards,
-        "quality_policy": asdict(QualityPolicy()),
-        "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
-        "solver_identity": native_solver_identity(),
-        "projection_evaluation": {
-            "leads": list(range(6)), "weights": [1.0] * 6, "population": "all_admitted_players",
-            "missingness": "fail_closed", "aggregation": "weighted_paired_player_gameweek",
-            "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
-        },
-        "live_review": {
-            "mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
-            "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025,
-        },
-    }
-    protocol["statistics"] = StatisticalProtocolConfig(
-        development_season=development, confirmation_season=validation, approved_by_human=True,
-        approval_reference="test-checkpoint-protocol", max_family_attempts=1,
-        required_projection_guards=tuple(guards), evidence_protocol_hash=content_hash(protocol),
-    ).to_dict()
-    protocol_hash = content_hash(protocol)
-    source_hash = current_model_source_hash()
-    payload: dict[str, Any] = {
-        "version": CHECKPOINT_EVIDENCE_V2, "checkpoint_gw": 15, "selection_path": "selection.json",
-        "registry_path": "registry.jsonl", "model_source_hash": source_hash,
-        "protocol": save_material(root, "protocol.json", protocol),
-        "parameters": save_material(root, "parameters.json", {}),
-        "podium_order": [CANDIDATE], "replays": [], "guard_outcome_sources": [],
-    }
-    save_model_selection(
-        ModelSelection(CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season=validation,
-                       podium_sealed=True),
-        root / payload["selection_path"],
-    )
-    registry = ConfirmationRegistry(root / payload["registry_path"])
-    for season in windows:
-        active_validation = season == validation
-        request, catalog, training = (
-            _build_empirical_bundle(
-                gws=tuple(range(1, 16)), track="validation_fplcache", season=validation,
-                seed_season=development, checkpoint_gw=15, partial_prefix=False, fixtures_age_hours=1.5,
-                with_manager=False,
+    from backtesting.promotion_evidence import CHECKPOINT_EVIDENCE_V2
+    from backtesting.verification_cache import verification_call_scope
+
+    def _build(root: Path) -> Path:
+        root.mkdir(parents=True, exist_ok=True)
+        development, validation = "2025-26", "2026-27"
+        windows = {development: [1, 2], validation: list(range(1, 39))}
+        guards = {
+            name: {"forecast_field": spec[0], "outcome_field": spec[1], "loss": spec[2], "units": spec[3],
+                   "margin": 0.0, "alpha": 0.05, "direction": "lower_is_better"}
+            for name, spec in GUARD_SEMANTICS.items()
+        }
+        protocol = {
+            "horizon": 6,
+            "windows": windows,
+            "guard_specs": guards,
+            "quality_policy": asdict(QualityPolicy()),
+            "chip_calendar": [[3, "triple_captain"], [25, "wildcard"]],
+            "solver_identity": native_solver_identity(),
+            "projection_evaluation": {
+                "leads": list(range(6)), "weights": [1.0] * 6, "population": "all_admitted_players",
+                "missingness": "fail_closed", "aggregation": "weighted_paired_player_gameweek",
+                "applicability": {season: dict.fromkeys(guards, "required") for season in windows},
+            },
+            "live_review": {
+                "mode": "fplcache", "review_gameweeks": [15, 30, 38], "settlement_delay_hours": 24,
+                "early_harm_min_gw": 6, "early_harm_p_threshold": 0.025,
+            },
+        }
+        protocol["statistics"] = StatisticalProtocolConfig(
+            development_season=development, confirmation_season=validation, approved_by_human=True,
+            approval_reference="test-checkpoint-protocol", max_family_attempts=1,
+            required_projection_guards=tuple(guards), evidence_protocol_hash=content_hash(protocol),
+        ).to_dict()
+        protocol_hash = content_hash(protocol)
+        source_hash = current_model_source_hash()
+        payload: dict[str, Any] = {
+            "version": CHECKPOINT_EVIDENCE_V2, "checkpoint_gw": 15, "selection_path": "selection.json",
+            "registry_path": "registry.jsonl", "model_source_hash": source_hash,
+            "protocol": save_material(root, "protocol.json", protocol),
+            "parameters": save_material(root, "parameters.json", {}),
+            "podium_order": [CANDIDATE], "replays": [], "guard_outcome_sources": [],
+        }
+        save_model_selection(
+            ModelSelection(CHAMPION, (CANDIDATE,), provisional_active=CANDIDATE, podium_frozen_season=validation,
+                           podium_sealed=True),
+            root / payload["selection_path"],
+        )
+        registry = ConfirmationRegistry(root / payload["registry_path"])
+        for season in windows:
+            active_validation = season == validation
+            request, catalog, training = (
+                _build_empirical_bundle(
+                    gws=tuple(range(1, 16)), track="validation_fplcache", season=validation,
+                    seed_season=development, checkpoint_gw=15, partial_prefix=False, fixtures_age_hours=1.5,
+                    with_manager=False,
+                )
+                if active_validation else _build_empirical_bundle(gws=(1, 2), with_manager=False)
             )
-            if active_validation else _build_empirical_bundle(gws=(1, 2), with_manager=False)
-        )
-        context = save_material(
-            root, f"admission-{season}.json",
-            {"request": request, "catalog": {digest: raw.hex() for digest, raw in catalog.items()}},
-        )
-        admissions = [{"season": season, "gameweek": origin["gw"], "admission": context}
-                      for origin in request["origins"]]
-        payload["guard_outcome_sources"].extend(admissions)
-        champion, champion_records = _retain_checkpoint_replay(
-            root, request, catalog, training, admissions, CHAMPION, source_hash, protocol_hash
-        )
-        payload["replays"].append(champion)
-        if not active_validation:
-            development_selection = save_material(
-                root, "development-selection.json",
-                {"version": 1, "candidate_name": CANDIDATE, "former_champion": CHAMPION,
-                 "model_source_hash": source_hash, "protocol_hash": protocol_hash,
-                 "traces": {CHAMPION: champion["trace"]}},
+            context = save_material(
+                root, f"admission-{season}.json",
+                {"request": request, "catalog": {digest: raw.hex() for digest, raw in catalog.items()}},
             )
-            payload["development_selections"] = {CANDIDATE: development_selection}
-            registration = registry.register_finalist(
-                CANDIDATE, CHAMPION, "fixture-checkpoint", source_hash, content_hash({}),
-                development_selection["sha256"], protocol_hash, requested_seasons=(validation,), max_family_attempts=1,
+            admissions = [{"season": season, "gameweek": origin["gw"], "admission": context}
+                          for origin in request["origins"]]
+            payload["guard_outcome_sources"].extend(admissions)
+            champion, champion_records = _retain_checkpoint_replay(
+                root, request, catalog, training, admissions, CHAMPION, source_hash, protocol_hash
             )
-            payload["confirmation_attempt_ids"] = {CANDIDATE: registration.attempt_id}
-            continue
-        candidate, candidate_records = _retain_checkpoint_replay(
-            root, request, catalog, training, admissions, CANDIDATE, source_hash, protocol_hash
-        )
-        payload["replays"].append(candidate)
-        scores = [pair_replay_score(validation, candidate_gw, champion_gw)
-                  for candidate_gw, champion_gw in zip(candidate_records, champion_records, strict=True)]
-        registry.record_checkpoint(
-            registration.attempt_id, checkpoint_gw=15, completed_gameweeks=tuple(range(1, 16)),
-            score_trace_hash=compute_score_trace_hash(scores),
-        )
-    return root / save_material(root, "request.json", payload)["path"]
+            payload["replays"].append(champion)
+            if not active_validation:
+                development_selection = save_material(
+                    root, "development-selection.json",
+                    {"version": 1, "candidate_name": CANDIDATE, "former_champion": CHAMPION,
+                     "model_source_hash": source_hash, "protocol_hash": protocol_hash,
+                     "traces": {CHAMPION: champion["trace"]}},
+                )
+                payload["development_selections"] = {CANDIDATE: development_selection}
+                registration = registry.register_finalist(
+                    CANDIDATE, CHAMPION, "fixture-checkpoint", source_hash, content_hash({}),
+                    development_selection["sha256"], protocol_hash, requested_seasons=(validation,), max_family_attempts=1,
+                )
+                payload["confirmation_attempt_ids"] = {CANDIDATE: registration.attempt_id}
+                continue
+            candidate, candidate_records = _retain_checkpoint_replay(
+                root, request, catalog, training, admissions, CANDIDATE, source_hash, protocol_hash
+            )
+            payload["replays"].append(candidate)
+            scores = [pair_replay_score(validation, candidate_gw, champion_gw)
+                      for candidate_gw, champion_gw in zip(candidate_records, champion_records, strict=True)]
+            registry.record_checkpoint(
+                registration.attempt_id, checkpoint_gw=15, completed_gameweeks=tuple(range(1, 16)),
+                score_trace_hash=compute_score_trace_hash(scores),
+            )
+        return root / save_material(root, "request.json", payload)["path"]
+
+    if worker_id == "master":
+        with verification_call_scope():
+            return _build(tmp_path_factory.mktemp("verified-checkpoint"))
+
+    shared_root = tmp_path_factory.getbasetemp().parent / "verified-checkpoint-shared"
+    shared_root.mkdir(parents=True, exist_ok=True)
+    ready_file = shared_root / ".ready"
+    with FileLock(str(shared_root.with_suffix(".lock"))):
+        if ready_file.is_file():
+            return shared_root / ready_file.read_text(encoding="utf-8").strip()
+        with verification_call_scope():
+            req_path = _build(shared_root)
+        ready_file.write_text(req_path.name, encoding="utf-8")
+        return req_path
 
 
 @pytest.fixture(scope="module")
-def retained_checkpoint_bundle(retained_verified_checkpoint: Path) -> tuple[Path, dict[str, Any]]:
+def retained_checkpoint_bundle(
+    retained_verified_checkpoint: Path,
+    worker_id: str,
+) -> tuple[Path, dict[str, Any]]:
     from backtesting.promotion_evidence import write_checkpoint_recommendation_bundle
+    from backtesting.verification_cache import verification_call_scope
+    from filelock import FileLock
 
     bundle_path = retained_verified_checkpoint.with_name("bundle.json")
-    return bundle_path, write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+    if worker_id == "master":
+        with verification_call_scope():
+            return bundle_path, write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+
+    ready_file = retained_verified_checkpoint.parent / ".bundle.ready"
+    with FileLock(str(retained_verified_checkpoint.parent / "bundle.lock")):
+        if ready_file.is_file() and bundle_path.is_file():
+            return bundle_path, json.loads(bundle_path.read_text(encoding="utf-8"))
+        with verification_call_scope():
+            bundle = write_checkpoint_recommendation_bundle(retained_verified_checkpoint, bundle_path)
+        ready_file.write_text("ok", encoding="utf-8")
+        return bundle_path, bundle
 
 
 @pytest.mark.slow
 def test_checkpoint_reconstructs_real_empirical_replay(retained_checkpoint_bundle: tuple[Path, dict[str, Any]]) -> None:
     from backtesting.promotion_evidence import verify_checkpoint_recommendation_bundle
+    from backtesting.verification_cache import verification_call_scope
 
     bundle_path, bundle = retained_checkpoint_bundle
     assert bundle["empirical_admission"] is True
     assert bundle["checkpoint_gw"] == 15
-    assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
+    with verification_call_scope():
+        assert verify_checkpoint_recommendation_bundle(bundle_path) == bundle
 
 
 @pytest.mark.slow
-def test_checkpoint_rejects_replay_with_unbound_admission(retained_verified_checkpoint: Path) -> None:
+def test_checkpoint_rejects_replay_with_unbound_admission(
+    retained_verified_checkpoint: Path,
+    tmp_path: Path,
+) -> None:
     from backtesting.promotion_evidence import evaluate_checkpoint_bundle_evidence
+    from backtesting.verification_cache import verification_call_scope
 
-    request_path = retained_verified_checkpoint
+    case_dir = tmp_path / "case"
+    shutil.copytree(retained_verified_checkpoint.parent, case_dir)
+    request_path = case_dir / retained_verified_checkpoint.name
     payload = json.loads(request_path.read_bytes())
     replay = next(entry for entry in payload["replays"] if entry["season"] == "2026-27")
     replay["issues"][0]["admission"] = payload["guard_outcome_sources"][0]["admission"]
     bad_request = request_path.with_name(save_material(request_path.parent, "wrong-active-admission.json", payload)["path"])
-    with pytest.raises(ValueError, match="Replay and guard outcomes must use the same admitted sources"):
-        evaluate_checkpoint_bundle_evidence(bad_request)
+    with verification_call_scope():
+        with pytest.raises(ValueError, match="Replay and guard outcomes must use the same admitted sources"):
+            evaluate_checkpoint_bundle_evidence(bad_request)
 
 
 def test_verified_checkpoint_pass_finalizes_then_requires_manual_adoption(
@@ -553,8 +598,11 @@ def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
         native_solver_identity,
     )
 
+    from backtesting.verification_cache import verification_call_scope
+
     # v1 bundle preserves canonical v1 output keys without v2-only exclusion fields
-    v1_bundle = evaluate_checkpoint_bundle_evidence(retained_verified_checkpoint)
+    with verification_call_scope():
+        v1_bundle = evaluate_checkpoint_bundle_evidence(retained_verified_checkpoint)
     assert "newly_excluded_finalists" not in v1_bundle
     assert "exclusion_details" not in v1_bundle
 
@@ -667,8 +715,9 @@ def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
         "evaluated_at_utc": "2027-05-10T12:00:00Z",
         "gw38_final_kickoff_utc": "2026-09-20T12:00:00Z",
     }
-    with pytest.raises(ValueError, match="precedes final admitted GW38"):
-        evaluate_verified_checkpoint_payload(tmp_path, payload)
+    with verification_call_scope():
+        with pytest.raises(ValueError, match="precedes final admitted GW38"):
+            evaluate_verified_checkpoint_payload(tmp_path, payload)
 
     # v2 post-exclusion bundle emits structured exclusion metadata
     excl_req = tmp_path / "req_excl.json"
@@ -683,7 +732,8 @@ def test_v2_bundle_final_kickoff_check_and_exclusion_fields_preserving_v1(
         ),
         encoding="utf-8",
     )
-    excl_bundle = evaluate_checkpoint_bundle_evidence(excl_req)
+    with verification_call_scope():
+        excl_bundle = evaluate_checkpoint_bundle_evidence(excl_req)
     assert excl_bundle["excluded_finalists"] == [CANDIDATE]
     assert excl_bundle["newly_excluded_finalists"] == []
     assert excl_bundle["exclusion_details"] == {}

@@ -40,10 +40,12 @@ from backtesting.native_transfer_solver import (  # noqa: E402
     _lp_kernel_candidate_ids,
     _seed_candidate_ids,
     _set_highs_heuristics,
+    extract_native_solution,
     native_strategic_solve,
 )
+from solver.parallelism import recommended_backtest_workers  # noqa: E402
 from backtesting.ownership_anchor import OwnershipAnchor, UniverseSchema, solve_ownership_anchor  # noqa: E402
-from backtesting.replay_state import Decision, Lineup, OutcomeBatch, Player, ReplayState, state_hash, transition  # noqa: E402
+from backtesting.replay_state import Decision, OutcomeBatch, Player, ReplayState, transition  # noqa: E402
 from backtesting.rolling_replay import (  # noqa: E402
     DEFAULT_CERTIFIED_TIME_LIMIT_SECONDS,
     DEFAULT_HORIZON,
@@ -362,56 +364,7 @@ def experimental_native_solve(
             f"{model.modelStatusToString(status)} gap={float(info.mip_gap)}"
         )
 
-    def selected(values: Any, gw: int) -> tuple[int, ...]:
-        return tuple(p for p in ids if model.val(values[p, gw]) > 0.5)
-
-    gks = [p for p in ids if players[p].position == "GK"]
-    outfield = [p for p in ids if players[p].position != "GK"]
-    owned_ids = {p.player_id for p in state.squad}
-    ft_states = list(range(rules.free_transfer_cap + 1))
-    plans: list[dict[str, Any]] = []
-    for gw in weeks:
-        outgoing = tuple(
-            p
-            for p in ids
-            if model.val(hvars["sell_new"][p, gw])
-            + (model.val(hvars["sell_old"][p, gw]) if p in owned_ids else 0.0)
-            > 0.5
-        )
-        incoming = selected(hvars["buy"], gw)
-        plans.append(
-            {
-                "gw": gw,
-                "transfers_out": outgoing,
-                "transfers_in": incoming,
-                "bank": round(model.val(hvars["bank"][gw])),
-                "free_transfers": next(f for f in ft_states if model.val(hvars["ft"][gw, f]) > 0.5),
-                "post_free_transfers": next(
-                    f for f in ft_states if model.val(hvars["ft"][gw + 1, f]) > 0.5
-                ),
-                "chip": chip_by_gw.get(gw),
-            }
-        )
-    first = weeks[0]
-    starters = selected(hvars["start"], first)
-    bench0_gk = next(p for p in gks if model.val(hvars["bench0"][p, first]) > 0.5)
-    bench_slots = tuple(
-        next(p for p in outfield if model.val(hvars["bench_out"][p, first, slot]) > 0.5)
-        for slot in (1, 2, 3)
-    )
-    lineup = Lineup(
-        starters=starters,
-        bench=(bench0_gk, *bench_slots),
-        captain=selected(hvars["captain"], first)[0],
-        vice=selected(hvars["vice"], first)[0],
-    )
-    decision = Decision(
-        tuple(zip(plans[0]["transfers_out"], (players[p] for p in plans[0]["transfers_in"]), strict=True)),
-        lineup,
-        state_hash(state),
-        state.deadline,
-        chip_by_gw.get(first),
-    )
+    decision, plans = extract_native_solution(model, hvars, state, weeks, ids, players, chip_by_gw, rules)
     objective_value, bound = model.getObjectiveValue(), float(info.mip_dual_bound)
     status_str = (
         "OPTIMAL"
@@ -812,10 +765,11 @@ def _append_partial_jsonl(path: Path, payload: dict[str, Any]) -> None:
 def run_calibration(
     *,
     stage: str = "all",
-    workers: int = 6,
+    workers: int | None = None,
     cache_root: Path = DEFAULT_CACHE_ROOT,
 ) -> None:
     """Execute Stage 1 fast S-1 sweep and/or Stage 2 certified S-1 + S-2 confirmation."""
+    resolved_workers = max(1, int(workers)) if workers is not None else recommended_backtest_workers(heavy=True)
     t0 = time.perf_counter()
     print("Preparing cached inputs for 2025-26 and 2024-25...", flush=True)
     prepare_season_cache("2025-26", cache_root=cache_root)
@@ -833,12 +787,12 @@ def run_calibration(
         pending_s1 = [c for c in all_configs if c.config_id not in prior_s1]
         print(
             f"Stage 1: {len(pending_s1)} pending / {len(all_configs)} total on 2025-26 "
-            f"(gap=0.005, limit=90s, workers={workers})...",
+            f"(gap=0.005, limit=90s, workers={resolved_workers})...",
             flush=True,
         )
         tasks = [(c, "2025-26", cache_root, 0.005, 90.0, False) for c in pending_s1]
         if tasks:
-            with ProcessPoolExecutor(max_workers=workers) as pool:
+            with ProcessPoolExecutor(max_workers=resolved_workers) as pool:
                 futs = {pool.submit(_run_worker, t): t[0].config_id for t in tasks}
                 for fut in as_completed(futs):
                     summary, _ = fut.result()
@@ -880,7 +834,7 @@ def run_calibration(
             flush=True,
         )
         if pending_s2:
-            with ProcessPoolExecutor(max_workers=workers) as pool:
+            with ProcessPoolExecutor(max_workers=resolved_workers) as pool:
                 futs = {pool.submit(_run_worker, t): (t[1], t[0].config_id) for t in pending_s2}
                 for fut in as_completed(futs):
                     summary, gws = fut.result()
@@ -935,7 +889,7 @@ def run_calibration(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("stage1", "stage2", "all"), default="all")
-    parser.add_argument("--workers", type=int, default=6)
+    parser.add_argument("--workers", type=int, default=None)
     parser.add_argument("--cache-root", type=Path, default=DEFAULT_CACHE_ROOT)
     args = parser.parse_args()
     run_calibration(stage=args.stage, workers=args.workers, cache_root=args.cache_root)

@@ -151,22 +151,32 @@ def _load_forecast_content(store: Path, forecast_id: str, material: dict[str, An
 
 def load_forecast_verified(store: Path, forecast_id: str, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Revalidate original admission, component coverage and retained source material on every load."""
-    forecast_dir = store / "forecasts" / forecast_id
-    if model_name is None and (forecast_dir / "material.json").exists():
-        try:
-            model_name = json.loads((forecast_dir / "material.json").read_bytes()).get("model")
-        except (OSError, ValueError, AttributeError):
-            model_name = None
-    material = forecast_material(capability, request, catalog, training_authority, model_name)
-    frame = _load_forecast_content(store, forecast_id, material)
-    strict_solver_table(frame, capability, request, catalog)
-    rules = get_rules(capability.season)
-    validate_components(frame, rules.version)
-    return frame, material
+    from backtesting.verification_cache import verification_call_scope
+
+    with verification_call_scope():
+        forecast_dir = store / "forecasts" / forecast_id
+        if model_name is None and (forecast_dir / "material.json").exists():
+            try:
+                model_name = json.loads((forecast_dir / "material.json").read_bytes()).get("model")
+            except (OSError, ValueError, AttributeError):
+                model_name = None
+        material = forecast_material(capability, request, catalog, training_authority, model_name)
+        frame = _load_forecast_content(store, forecast_id, material)
+        strict_solver_table(frame, capability, request, catalog)
+        rules = get_rules(capability.season)
+        validate_components(frame, rules.version)
+        return frame, material
 
 
 def generate_forecast(store: Path, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> tuple[str, pd.DataFrame, bool]:
     """Append an attempt, verify a matching cache or publish a complete diagnostic table."""
+    from backtesting.verification_cache import verification_call_scope
+
+    with verification_call_scope():
+        return _generate_forecast_impl(store, capability, request, catalog, training_authority, model_name)
+
+
+def _generate_forecast_impl(store: Path, capability: AdmittedInput, request: dict[str, Any], catalog: dict[str, bytes], training_authority: str, model_name: str | None = None) -> tuple[str, pd.DataFrame, bool]:
     if model_name is None:
         model_name = get_default_model_name()
     resolved = validate_storage_path(store)
