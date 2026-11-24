@@ -75,6 +75,21 @@ def test_build_my_data_includes_active_user_chips(tmp_path: Path) -> None:
     assert my_data["chips"][0]["status_for_entry"] == "active"
 
 
+def test_build_my_data_forwards_limit_and_made_for_chip_refunds(tmp_path: Path) -> None:
+    pd.DataFrame([{
+        "player_id": 101, "purchase_price": 95, "selling_price": 98,
+        "lineup_index": 1, "multiplier": 1, "is_captain": False, "is_vice_captain": False,
+    }]).to_parquet(tmp_path / "user_picks.parquet")
+    pd.DataFrame([{
+        "entry_id": 12345, "bank": 15, "free_transfers": 1,
+        "free_transfers_limit": 2, "transfers_made": 1, "value": 1000, "active_chip": None,
+    }]).to_parquet(tmp_path / "user_state.parquet")
+    pd.DataFrame([{"id": 101, "position_id": 3}]).to_parquet(tmp_path / "players.parquet")
+    my_data = build_my_data_from_parquet(tmp_path)
+    assert my_data["transfers"]["limit"] == 2
+    assert my_data["transfers"]["made"] == 1
+
+
 def test_validate_booked_chips_accepts_one_chip_per_gameweek():
     validate_booked_chips(
         {"use_wc": [3], "use_bb": [4], "use_fh": [], "use_tc": []},
@@ -564,5 +579,29 @@ def test_solve_cli_xmins_override_rerun_pins_prior_reviewed_base_model(
     sol_rerun = json.loads((tmp_path / "data" / "solution.json").read_text(encoding="utf-8"))
     assert sol_rerun["meta"]["reviewed_base_model"] == "adaptive_causal_challenger"
     assert sol_rerun["meta"]["pinned_for_rerun"] is True
+
+
+def test_build_my_data_from_parent_state_forwards_limit_and_made(tmp_path: Path) -> None:
+    from commands.solve import build_my_data_from_parent_state
+
+    pd.DataFrame([{"id": pid, "position_id": 3, "now_cost": 50} for pid in range(1, 16)]).to_parquet(
+        tmp_path / "players.parquet"
+    )
+    parent = {
+        "lineup": {"slots": {str(i): i for i in range(1, 16)}},
+        "evaluation": {"bankRemaining": 1.2, "freeTransfersNext": 1, "freeTransfersLimit": 2, "transfersMade": 1},
+    }
+    my_data = build_my_data_from_parent_state(parent, tmp_path)
+    assert my_data["transfers"]["limit"] == 2
+    assert my_data["transfers"]["made"] == 1
+
+    # Backward-compatible fallback when limit/made omitted
+    legacy_parent = {
+        "lineup": {"slots": {str(i): i for i in range(1, 16)}},
+        "evaluation": {"bankRemaining": 1.2, "freeTransfersNext": 3},
+    }
+    legacy_data = build_my_data_from_parent_state(legacy_parent, tmp_path)
+    assert legacy_data["transfers"]["limit"] == 3
+    assert legacy_data["transfers"]["made"] == 0
 
 

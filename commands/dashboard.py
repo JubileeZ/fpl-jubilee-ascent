@@ -744,7 +744,7 @@ def _build_branch_nodes_from_plan(
         cum_xp += xp
         net_xp = cum_xp - (hits * hit_cost)
         itb = round(float(w.get("itb", 0.0) or 0.0), 1)
-        ft = int(w.get("ft", 1) or 1)
+        ft = int(w.get("ft_after", w.get("ft", 1)) or 1)
         chip = w.get("chip")
 
         buys = w.get("buy") or w.get("buys") or []

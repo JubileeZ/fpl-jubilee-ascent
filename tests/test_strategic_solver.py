@@ -543,3 +543,161 @@ def test_strategic_post_transfer_ft_valuation_and_roll_hurdle(tmp_path: Path) ->
     assert plan_boundary["weeks"][0]["transfer_count"] == 0.0
     assert plan_boundary["weeks"][1]["transfer_count"] == 1.0
 
+
+def test_strategic_chip_weeks_preserve_ft_zero_hold_credit_and_refund_fh(tmp_path: Path) -> None:
+    data = dataset()
+    data["players"].append(
+        {
+            "id": 16,
+            "name": "Player 16",
+            "pos_id": 4,
+            "pos": "F",
+            "team_id": 0,
+            "price": 5.0,
+            "selling_price": 5.0,
+            "projections": {
+                "gw6": {"total_xp": 10.0, "xmins": 90.0, "p_appear": 1.0},
+                "gw7": {"total_xp": 10.0, "xmins": 90.0, "p_appear": 1.0},
+            },
+        }
+    )
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    players = [{"id": row["id"], "position_id": row["pos_id"], "now_cost": 50} for row in data["players"]]
+    pd.DataFrame(players).to_parquet(processed / "players.parquet")
+
+    bootstrap: dict[str, Any] = {
+        "elements": [
+            {
+                "id": row["id"],
+                "web_name": row["name"],
+                "team": row["team_id"],
+                "element_type": row["pos_id"],
+                "now_cost": 50,
+            }
+            for row in data["players"]
+        ],
+        "teams": [{"id": club, "name": f"Club{club}", "short_name": f"C{club}"} for club in range(5)],
+        "events": [
+            {"id": 6, "is_next": True, "finished": False},
+            {"id": 7, "is_next": False, "finished": False},
+        ],
+        "element_types": [
+            {"id": pos, "singular_name_short": label, "squad_min_play": low, "squad_max_play": high, "squad_select": count}
+            for pos, label, low, high, count in [(1, "GKP", 1, 1, 2), (2, "DEF", 3, 5, 5), (3, "MID", 2, 5, 5), (4, "FWD", 1, 3, 3)]
+        ],
+    }
+
+    proj_rows = []
+    for row in data["players"]:
+        pid = int(row["id"])
+        pts = 10.0 if pid == 16 else (9.0 if pid in (13, 14) else 6.0)
+        proj_rows.append(
+            {
+                "ID": pid,
+                "Name": row["name"],
+                "Pos": row["pos"],
+                "Price": row["price"],
+                "Team": f"Club{row['team_id']}",
+                "6_Pts": pts,
+                "6_xMins": 90.0,
+                "7_Pts": pts,
+                "7_xMins": 90.0,
+            }
+        )
+    proj_path = tmp_path / "proj_chips.csv"
+    pd.DataFrame(proj_rows).to_csv(proj_path, index=False)
+
+    def _run_chip_solve(chip_opt: str, extra_opts: dict[str, Any] | None = None, *, limit: int = 2, made: int = 1) -> dict[str, Any]:
+        planner = Planner(data)
+        planner.change_horizon(6, 7)
+        paths = PlannerPaths(tmp_path / "dataset.json", processed, tmp_path / "storage")
+        opts = solver_options(planner, paths)
+        opts.update(
+            fpl_bootstrap=bootstrap,
+            fpl_fixtures=[],
+            projections_path=str(proj_path),
+            override_next_gw=6,
+            horizon=2,
+            xmin_lb=0,
+            keep_top_ev_percent=100,
+            secs=5,
+            verbose=False,
+            itb_value=0.0,
+        )
+        if extra_opts:
+            opts.update(extra_opts)
+        opts = apply_scenario_arm(opts, ARM_STRATEGIC, horizon=2)
+        my_data = build_my_data_from_parent_state(opts["parent_state"], processed)
+        my_data["transfers"]["limit"] = limit
+        my_data["transfers"]["made"] = made
+        if chip_opt == "fh_gw6":
+            opts["use_fh"] = [6]
+            opts.setdefault("chip_limits", {})["fh"] = 1
+        elif chip_opt == "wc_gw6":
+            opts["use_wc"] = [6]
+            opts.setdefault("chip_limits", {})["wc"] = 1
+        elif chip_opt == "active_fh":
+            my_data["chips"] = [{"name": "freehit", "status_for_entry": "active"}]
+        sol = solve_multi_period_fpl(prep_data(my_data, opts), opts)[0]
+        plan = serialize_transfer_plan(sol, champion="test_model", horizon=2, next_gw=6, decay_base=0.85, booked_chips={"use_fh": opts.get("use_fh", [])})
+        plan["_opts"] = opts
+        return plan
+
+    # 1. FH on GW6 refunds made=1 (limit=2 -> ft=2), preserves ft_after=2, ft_used=0, and adds NO hold credit on GW6
+    fh_plan = _run_chip_solve(
+        "fh_gw6",
+        extra_opts={"vcap_weight": 0.0, "bench_weights": {"0": 0.0, "1": 0.0, "2": 0.0, "3": 0.0}},
+    )
+    gw6_fh = fh_plan["weeks"][0]
+    assert gw6_fh["chip"] == "FH"
+    assert gw6_fh["ft"] == 2.0
+    assert gw6_fh["ft_used"] == 0.0
+    assert gw6_fh["ft_after"] == 2.0
+    assert gw6_fh["objective"] == pytest.approx(gw6_fh["xp"], abs=0.01)
+
+    # 2. Active freehit in my_data['chips'] auto-sets use_fh=[6] and preserves ft=2
+    active_fh_plan = _run_chip_solve("active_fh", limit=2, made=2)
+    assert active_fh_plan["_opts"]["use_fh"] == [6]
+    assert active_fh_plan["_opts"]["chip_limits"]["fh"] == 1
+    assert active_fh_plan["weeks"][0]["chip"] == "FH"
+    assert active_fh_plan["weeks"][0]["ft"] == 2.0
+    assert active_fh_plan["weeks"][0]["ft_used"] == 0.0
+    assert active_fh_plan["weeks"][0]["ft_after"] == 2.0
+
+    # Verify prep_data merges active FH into existing future bookings rather than overwriting them
+    merge_opts = {
+        "fpl_bootstrap": bootstrap,
+        "fpl_fixtures": [],
+        "projections_path": str(proj_path),
+        "override_next_gw": 6,
+        "horizon": 2,
+        "xmin_lb": 0,
+        "keep_top_ev_percent": 100,
+        "use_fh": [25],
+    }
+    merge_my_data = {
+        "picks": [{"element": pid, "purchase_price": 50, "selling_price": 50, "element_type": 1} for pid in range(1, 16)],
+        "transfers": {"bank": 0, "limit": 2, "made": 0},
+        "chips": [{"name": "freehit", "status_for_entry": "active"}],
+    }
+    prep_data(merge_my_data, merge_opts)
+    assert merge_opts["use_fh"] == [6, 25]
+    assert merge_opts["chip_limits"]["fh"] == 2
+
+    # 3. WC on GW6 refunds made=1, allows squad swaps with transfer_count > 0, ft_used=0, hits=0, ft_after=2, zero hold credit
+    wc_plan = _run_chip_solve(
+        "wc_gw6",
+        extra_opts={"vcap_weight": 0.0, "bench_weights": {"0": 0.0, "1": 0.0, "2": 0.0, "3": 0.0}},
+        limit=2,
+        made=1,
+    )
+    gw6_wc = wc_plan["weeks"][0]
+    assert gw6_wc["chip"] == "WC"
+    assert gw6_wc["ft"] == 2.0
+    assert gw6_wc["transfer_count"] >= 1.0
+    assert gw6_wc["ft_used"] == 0.0
+    assert gw6_wc["hits"] == 0.0
+    assert gw6_wc["ft_after"] == 2.0
+    assert gw6_wc["objective"] == pytest.approx(gw6_wc["xp"], abs=0.01)
+

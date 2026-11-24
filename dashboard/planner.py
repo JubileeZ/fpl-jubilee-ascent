@@ -82,6 +82,8 @@ class Planner:
             "version": 1, "start": start, "end": default_end,
             "scenario": "strategic", "base_ids": meta.get("owned_squad_ids", []),
             "base_bank": float(meta.get("itb", 0)), "base_ft": int(meta.get("free_transfers", 1)),
+            "base_ft_limit": int(meta.get("free_transfers_limit", meta.get("free_transfers", 1))),
+            "base_transfers_made": int(meta.get("transfers_made", 0)),
             "data_digest": self.data_digest, "edits": {}, "overrides": {}, "chips": {},
             "recommendations": {}, "revision": 0, "job_id": None,
             "strategic_options": default_strat,
@@ -415,7 +417,9 @@ class Planner:
                 conflicts.append("Maximum three Players per Club.")
             if bank < -0.01:
                 conflicts.append("Insufficient bank for proposed transfers.")
-            hits = 0 if chip in ("wc", "fh") else max(0, len(purchases) - free_transfers)
+            is_chip_freeze = chip in ("wc", "fh")
+            effective_ft = int(self.state.get("base_ft_limit", free_transfers)) if (gw == self.state["start"] and is_chip_freeze) else free_transfers
+            hits = 0 if is_chip_freeze else max(0, len(purchases) - effective_ft)
             limit = 0 if self.state["scenario"] == "no_hit" else 1
             if hits > limit:
                 conflicts.append(f"Proposed Hits exceed {ARM_NAMES[self.state['scenario']]} policy.")
@@ -426,10 +430,10 @@ class Planner:
             projected += captain_xp * (2 if chip == "tc" else 1)
             if chip == "bb":
                 projected += sum(self.xp(pid, gw) for pid in lineup["bench_ids"])
-            next_ft = free_transfers if chip in ("wc", "fh") else min(5, max(1, free_transfers - len(purchases) + 1))
+            next_ft = effective_ft if is_chip_freeze else min(5, max(1, effective_ft - len(purchases) + 1))
             stale_rec = bool(self.state["recommendations"].get(self.state["scenario"])) and not self.recommendation_valid()
             result.append({"gw": gw, "squad_ids": list(squad), "bank": round(bank, 1),
-                           "bank_before": round(bank_before, 1), "ft": free_transfers, "next_ft": next_ft,
+                           "bank_before": round(bank_before, 1), "ft": effective_ft, "next_ft": next_ft,
                            "hits": hits, "vacancies": vacancies, "complete": not conflicts,
                            "conflicts": conflicts, "transfers": moves, "chip": chip,
                            "projected_points": round(projected - hits * 4, 2),

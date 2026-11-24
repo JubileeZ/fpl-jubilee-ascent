@@ -19,6 +19,37 @@ def load_json(path: Path) -> Optional[dict]:
         logger.warning(f"Error loading {path}: {e}")
         return None
 
+def reconstruct_free_transfers(
+    current_events: list[dict],
+    chip_events: dict[int, str],
+) -> int:
+    """Replay settled gameweek transfers and WC/FH chips to compute pre-deadline FT bank."""
+    ft_acc = 1
+    for ev in current_events:
+        ev_id = int(ev.get("event") or 0)
+        if chip_events.get(ev_id) in ("wildcard", "freehit"):
+            ft_acc = max(1, min(5, ft_acc))
+            continue
+        tr_made = int(ev.get("event_transfers", 0) or 0)
+        tr_cost = int(ev.get("event_transfers_cost", 0) or 0)
+        free_used = max(0, tr_made - tr_cost // 4)
+        ft_acc = min(5, max(0, ft_acc - free_used) + 1)
+    return ft_acc
+
+
+def _reconstruct_carried_ft_from_history(history: dict | None) -> int | None:
+    """Recover pre-deadline FT bank from raw entry_history JSON when active chip hides limit."""
+    if not isinstance(history, dict):
+        return None
+    chip_events: dict[int, str] = {}
+    for raw_chip in history.get("chips", []):
+        name = str(raw_chip.get("name") or "")
+        ev = raw_chip.get("event")
+        if ev is not None and name in ("wildcard", "freehit"):
+            chip_events[int(ev)] = name
+    return reconstruct_free_transfers(history.get("current", []), chip_events)
+
+
 def process_directory(input_dir: Path, output_dir: Path):
     """Processes raw FPL JSON cache in input_dir and saves Parquet tables to output_dir."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -172,6 +203,12 @@ def process_directory(input_dir: Path, output_dir: Path):
 
     if selected_team_file:
         team_data = load_json(selected_team_file)
+        if not isinstance(team_data, dict):
+            team_data = None
+    else:
+        team_data = None
+
+    if selected_team_file and team_data is not None:
         entry_id = int(selected_team_file.stem.split("_")[-1])
         
         # User Picks
@@ -204,18 +241,29 @@ def process_directory(input_dir: Path, output_dir: Path):
         # Find active chip if any
         active_chip = None
         for c in chips:
-            if c.get("status") == "active":
+            if c.get("status") == "active" or c.get("status_for_entry") == "active":
                 active_chip = c.get("name")
                 break
                 
         raw_limit = transfers.get("limit")
-        raw_made = transfers.get("made", 0)
-        remaining_ft = max(0, int(raw_limit) - int(raw_made)) if raw_limit is not None else 1
+        raw_made = int(transfers.get("made", 0) or 0)
+        if raw_limit is not None:
+            ft_limit = max(0, int(raw_limit))
+            transfers_made = raw_made
+            remaining_ft = max(0, ft_limit - transfers_made)
+        else:
+            history = load_json(input_dir / f"entry_history_{entry_id}.json")
+            reconstructed = _reconstruct_carried_ft_from_history(history)
+            ft_limit = reconstructed if reconstructed is not None else 1
+            transfers_made = 0
+            remaining_ft = ft_limit
         user_state_data = {
             "entry_id": entry_id,
             "bank": transfers.get("bank", 0),
             "value": transfers.get("value", 0),
             "free_transfers": remaining_ft,
+            "free_transfers_limit": ft_limit,
+            "transfers_made": transfers_made,
             "active_chip": active_chip
         }
         df_state = pd.DataFrame([user_state_data])

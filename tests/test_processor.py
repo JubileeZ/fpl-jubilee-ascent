@@ -164,3 +164,51 @@ def test_process_directory_keeps_player_code(tmp_path: Path) -> None:
     process_directory(input_dir, output_dir)
     players = pd.read_parquet(output_dir / "players.parquet")
     assert int(players.loc[0, "code"]) == 424242
+
+
+def test_process_directory_reconstructs_active_chip_ft_and_stores_limit_made(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    output_dir = tmp_path / "processed"
+    input_dir.mkdir()
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 1, "name": "Gameweek 1", "deadline_time": "2026-08-11T17:30:00Z", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 99, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+    }), encoding="utf-8")
+    (input_dir / "fixtures_all.json").write_text(json.dumps([{
+        "id": 1, "event": 1, "kickoff_time": "2026-08-11T19:00:00Z", "team_h": 1, "team_a": 2,
+        "finished": True, "started": True, "team_h_score": 2, "team_a_score": 1,
+        "team_h_difficulty": 3, "team_a_difficulty": 4,
+    }]), encoding="utf-8")
+    (input_dir / "me.json").write_text(json.dumps({"player": {"entry": 123}}), encoding="utf-8")
+    (input_dir / "entry_history_123.json").write_text(json.dumps({
+        "chips": [],
+        "current": [
+            {"event": 1, "event_transfers": 0, "event_transfers_cost": 0},
+            {"event": 2, "event_transfers": 0, "event_transfers_cost": 0},
+        ],
+    }), encoding="utf-8")
+    (input_dir / "my_team_123.json").write_text(json.dumps({
+        "picks": [{"element": 1, "position": 1, "multiplier": 1, "is_vice_captain": False, "purchase_price": 50, "selling_price": 50}],
+        "transfers": {"bank": 10, "value": 1000, "limit": None, "made": 3},
+        "chips": [{"name": "freehit", "status_for_entry": "active", "start_event": 1, "stop_event": 19, "number": 1}],
+    }), encoding="utf-8")
+
+    process_directory(input_dir, output_dir)
+    state = pd.read_parquet(output_dir / "user_state.parquet").iloc[0]
+    assert int(state["free_transfers"]) == 3
+    assert int(state["free_transfers_limit"]) == 3
+    assert int(state["transfers_made"]) == 0
+    assert state["active_chip"] == "freehit"
+
+    # Normal week with limit=2, made=1 preserves limit and made separately
+    (input_dir / "my_team_123.json").write_text(json.dumps({
+        "picks": [{"element": 1, "position": 1, "multiplier": 1, "is_vice_captain": False, "purchase_price": 50, "selling_price": 50}],
+        "transfers": {"bank": 10, "value": 1000, "limit": 2, "made": 1},
+        "chips": [],
+    }), encoding="utf-8")
+    process_directory(input_dir, output_dir)
+    state_normal = pd.read_parquet(output_dir / "user_state.parquet").iloc[0]
+    assert int(state_normal["free_transfers"]) == 1
+    assert int(state_normal["free_transfers_limit"]) == 2
+    assert int(state_normal["transfers_made"]) == 1

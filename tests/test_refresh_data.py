@@ -196,3 +196,30 @@ def test_reconstruct_public_team_payload_prices_chips_and_ft_bank() -> None:
     assert wc_set2["status"] == "available"
 
 
+@pytest.mark.asyncio
+async def test_refresh_data_authenticated_active_chip_fetches_entry_history(tmp_path: Path) -> None:
+    mock_bootstrap = {"events": [{"id": 1, "is_current": True}], "elements": []}
+    pin = LiveSeasonPin(processed_dir=MagicMock(), content_hash="abc", changed=False)
+    mock_my_team = {
+        "picks": [],
+        "chips": [{"name": "freehit", "status_for_entry": "active"}],
+        "transfers": {"bank": 10, "value": 1000, "limit": None, "made": 2},
+    }
+    mock_hist = AsyncMock(return_value={"chips": [], "current": [{"event": 1, "event_transfers": 0, "event_transfers_cost": 0}]})
+    with patch("commands.refresh_data.fetch_bootstrap_static", AsyncMock(return_value=mock_bootstrap)), \
+         patch("commands.refresh_data.fetch_gameweek_fixtures", AsyncMock(return_value=[])), \
+         patch("commands.refresh_data.get_jwt_token", AsyncMock(return_value="tok")), \
+         patch("commands.refresh_data.fetch_user_details", AsyncMock(return_value={"player": {"entry": 42}})), \
+         patch("commands.refresh_data.fetch_user_team", AsyncMock(return_value=mock_my_team)), \
+         patch("commands.refresh_data.fetch_entry_history", mock_hist), \
+         patch("commands.refresh_data.process_directory"), \
+         patch("commands.refresh_data.append_price_snapshot"), \
+         patch("commands.refresh_data.prune_stale_element_summaries", return_value=0), \
+         patch("commands.refresh_data.pin_season_archive", return_value=pin), \
+         patch("commands.refresh_data.PROJECT_ROOT", tmp_path):
+        from commands.refresh_data import main
+        await main([])
+    mock_hist.assert_called_once()
+    assert mock_hist.call_args.args[1] == 42
+
+

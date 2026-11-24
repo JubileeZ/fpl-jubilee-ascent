@@ -258,14 +258,19 @@ def prep_data(my_data, options):
 
     ft = max(ft, 0)
 
-    # If wildcard is active, then you have: "status_for_entry": "active" under my_data['chips']
-    # can only pass the check when using "team_data": "json" or "json_string"
+    # If wildcard or freehit is active, then you have status/status_for_entry == "active" under my_data['chips']
+    chip_limits = options.setdefault("chip_limits", {})
+    active_chip_specs = (("wildcard", "use_wc", "wc"), ("freehit", "use_fh", "fh"))
     for c in my_data["chips"]:
-        if c["name"] == "wildcard" and c.get("status_for_entry", "") == "active":
-            options["use_wc"] = [gw]
-            if options["chip_limits"]["wc"] == 0:
-                options["chip_limits"]["wc"] = 1
-            break
+        if c.get("status_for_entry", "") != "active" and c.get("status", "") != "active":
+            continue
+        for chip_name, opt_key, limit_key in active_chip_specs:
+            if c.get("name") == chip_name:
+                existing = [int(g) for g in (options.get(opt_key) or [])]
+                if gw not in existing:
+                    existing.append(gw)
+                options[opt_key] = sorted(existing)
+                chip_limits[limit_key] = max(int(chip_limits.get(limit_key, 0) or 0), len(options[opt_key]))
 
     team_code_dict = team_data.set_index("id")["name"].to_dict()
     fixtures = [{"gw": f["event"], "home": team_code_dict[f["team_h"]], "away": team_code_dict[f["team_a"]]} for f in fixture_data]
@@ -446,7 +451,7 @@ def solve_multi_period_fpl(data, options):
     m.addConstrs([squad[p, next_gw - 1] == 1 for p in initial_squad])
     m.addConstrs([squad[p, next_gw - 1] == 0 for p in players if p not in initial_squad])
     m.addConstr(in_the_bank[next_gw - 1] == itb)
-    m.addConstr(fts[next_gw] == initial_ft * (1 - use_wc[next_gw]) + ft_base * use_wc[next_gw])
+    m.addConstr(fts[next_gw] == initial_ft * (1 - use_wc[next_gw] - use_fh[next_gw]) + ft_base * (use_wc[next_gw] + use_fh[next_gw]))
     m.addConstrs([fts[w] >= 1 for w in gws if w > next_gw])
 
     # Constraints
@@ -857,14 +862,25 @@ def solve_multi_period_fpl(data, options):
         s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1]) / ft_scale
         for s in ft_states
     }
-    gw_ft_hold = {
-        w: (
-            sum_(ft_hold_weights[s] * fts_state[w + 1, s] for s in ft_states if s >= 2)
-            if ft_value_list and w < last_gw
-            else 0
+    max_ft_hold = max(ft_hold_weights.values(), default=0.0)
+    if ft_value_list and max_ft_hold > 0.0:
+        hold_gws = [w for w in gws if w < last_gw]
+        ft_hold_credit = cont_vars(hold_gws, name="ft_hold", lb=0, ub=max_ft_hold)
+        m.addConstrs(
+            [
+                ft_hold_credit[w] <= sum_(ft_hold_weights[s] * fts_state[w + 1, s] for s in ft_states if s >= 2)
+                for w in hold_gws
+            ]
         )
-        for w in gws
-    }
+        m.addConstrs(
+            [
+                ft_hold_credit[w] <= max_ft_hold * (1 - use_wc[w] - use_fh[w])
+                for w in hold_gws
+            ]
+        )
+        gw_ft_hold = {w: (ft_hold_credit[w] if w < last_gw else 0) for w in gws}
+    else:
+        gw_ft_hold = dict.fromkeys(gws, 0)
     gw_ft_gain = {w: gw_ft_value[w + 1] - gw_ft_value[w] + gw_ft_hold[w] for w in gws}
 
     # Strategic Variance Constraints (ADR 0061, docs/research/milp-variance-constraints)
@@ -1146,6 +1162,8 @@ def solve_multi_period_fpl(data, options):
                             "chip": chip_text,
                             "iter": iteration,
                             "ft": val(fts[w]),
+                            "ft_after": val(fts[w + 1]),
+                            "ft_used": val(transfer_count[w]),
                             "transfer_count": val(num_transfers[w]),
                         }
                     )
@@ -1182,7 +1200,7 @@ def solve_multi_period_fpl(data, options):
                 move_summary["chip"].append(chip_decision + str(w))
             summary_of_actions += (
                 f"ITB={round(val(in_the_bank[w - 1]), 1)}->{round(val(in_the_bank[w]), 1)}, "
-                f"FT={round(val(fts[w]))}, "
+                f"FT={round(val(fts[w]))}->{round(val(fts[w + 1]))}, "
                 f"PT={round(val(penalized_transfers[w]))}, "
                 f"NT={round(val(num_transfers[w]))}\n"
             )
@@ -1218,6 +1236,8 @@ def solve_multi_period_fpl(data, options):
             statistics[int(w)] = {
                 "itb": val(in_the_bank[w]),
                 "ft": val(fts[w]),
+                "ft_after": val(fts[w + 1]),
+                "ft_used": val(transfer_count[w]),
                 "pt": val(penalized_transfers[w]),
                 "nt": val(num_transfers[w]),
                 "xP": lineup_players["xp_cont"].sum(),

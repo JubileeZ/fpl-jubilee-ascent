@@ -6,7 +6,7 @@ Read if no prior context. `ROADMAP.md` = target. This file = what exists today. 
 
 ## Weekly Transfer Planner
 
-- 2026-27 GW12 pre-deadline official refresh pinned (`9ce3bad2...`). Local Strategic GW12–21 solve verified at 0% gap (`647.30 xPts`, GW14 Free Hit, Saka & Egan Layer 3 curves, availability audit passed). Manager-specific plan and minutes overrides stored locally at `data/solution.json` and `data/planner/xmins_override.csv`.
+- 2026-27 GW12 pre-deadline official refresh pinned (`9ce3bad2...`). Local Strategic GW12–21 solve verified at 0% gap (`647.30 xPts`, GW14 Free Hit, Saka & Egan Layer 3 curves, availability audit passed). Manager-specific plan and minutes overrides stored locally at `data/solution.json` and `data/planner/xmins_override.csv`. Fixed chip-week FT preservation (`#226`): active WC/FH `limit=null` reconstructs `free_transfers`/`free_transfers_limit` (`transfers_made=0`), `next_gw` FH/WC restores `ft_base`, live `gw_ft_hold` waived on WC/FH, `data/solution.json` emits `ft_used`/`ft_after`, and `/transfer-planner` Step 7 enforces explicit chip-ledger rules.
 - Hardened `/transfer-planner` triage & audit (`features/injury_triage.py`, `commands/injury_triage.py`, `tests/test_injury_triage.py`, `.agents/skills/transfer-planner/SKILL.md`, `CONTEXT.md`): added all-15 **Squad Minutes Audit** (`squad_rotation_risk`), direct post-ban restoration for `status='s'` suspensions vs injury `20m->65m` ramps, post-return Layer 2 steady-state precedence, `free_hit_picks` & `held_rotation_risk` in `--audit-solution`, effective horizon-scaled Step 4 controls + Override Fast-Path, and ADR 0057/0070 glossary sync.
 
 ## Active Frontier & Completed Map #184 (`ADR 0069`)

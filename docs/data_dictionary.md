@@ -119,14 +119,16 @@ This document maps fields fetched from the raw FPL API endpoints to the clean fl
 ---
 
 ## 9. User State (`user_state.parquet`)
-*   **Source:** `/my-team/{entry_id}/`
+*   **Source:** `/my-team/{entry_id}/` (with `/entry/{entry_id}/history/` fallback when active chip sets `limit` to `null`)
 *   **Fields Retained:**
     *   `entry_id` (`int`).
     *   `bank` (`int`): Budget in bank.
     *   `value` (`int`): Total team value.
-    *   `free_transfers` (`int`): Available free transfers.
-    *   `active_chip` (`str`, nullable).
-*   **Discarded:** `cost`, `status`, `limit`, `made`.
+    *   `free_transfers` (`int`): Available free transfers for normal play (`max(0, limit - made)`); equals reconstructed pre-deadline carried bank (`1–5`) when active Wildcard or Free Hit sets `limit` to `null`.
+    *   `free_transfers_limit` (`int`): Pre-transfer FT bank entering open Gameweek (`limit`, reconstructed from `entry_history_{entry_id}.json` when active WC/FH sets `limit` to `null`).
+    *   `transfers_made` (`int`): Non-chip transfers already made in open Gameweek (`0` when active WC/FH sets `limit` to `null`).
+    *   `active_chip` (`str`, nullable): Active chip name (`status` or `status_for_entry` == `"active"`).
+*   **Discarded:** `cost`, `status`.
 
 ---
 

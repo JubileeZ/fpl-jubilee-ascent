@@ -539,12 +539,12 @@ Diagnostic (directional, no fixed bar): walk-forward 60+ MID/FWD xp-attack SD ÷
 _Avoid_: optimization target, fixed halfway bar, pooled all-position swing
 
 **Free Transfer Bank**:
-Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Official rules preserve the bank through Wildcard and Free Hit.
-_Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB
+Unused Free Transfers held, cap 5. One new Free Transfer accrues each Gameweek. Spending the bank is not a Hit. Wildcard and Free Hit preserve carried bank unchanged (`ft_used = 0`, `ft_after = ft`; no `+1` accrual; pre-chip open-GW transfers refunded on activation; raw `WC` swaps stay in `transfer_count`).
+_Avoid_: Hit, unlimited transfers, requiring the weekly Free Transfer to be spent, ITB, deducting FTs or adding `+1` on WC/FH, wiping active WC/FH bank when `limit=null`
 
 **Free Transfer Value**:
-Solver Objective credit per Free Transfer held in post-transfer carried Free Transfer Bank (`fts[w + 1]`). Marginal value differs by bank size in Strategic arm (first spare Free Transfer kept as precautionary injury cover worth more than fifth, plus weekly holding buffer credit and `ft_use_penalty = 0.5`; ADR 0065). Not part of Expected GW Score.
-_Avoid_: FT bank, rollover bonus, pre-transfer terminal double-count, treating Free Transfer Value as xP
+Solver Objective credit per Free Transfer held in post-transfer carried Free Transfer Bank (`fts[w + 1]`). Marginal value differs by bank size in Strategic arm (first spare Free Transfer kept as precautionary injury cover worth more than fifth, plus weekly holding buffer credit waived on live Wildcard/Free Hit weeks and `ft_use_penalty = 0.5`; ADR 0065). Serialized `solution.json` exposes `ft`, `ft_used`, and `ft_after`. Not part of Expected GW Score.
+_Avoid_: FT bank, rollover bonus, pre-transfer terminal double-count, treating Free Transfer Value as xP, crediting spare-FT hold bonus on live WC/FH weeks
 
 **ITB**:
 Unused cash of the User Squad in £m (official "in the bank"). Squad What-If ITB = current ITB + Selling Prices of Players out − Prices of Players in. Distinct from Free Transfer Bank.

@@ -383,9 +383,16 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
         
     state_row = df_state.to_dict(orient="records")[0]
     
-    # Transfers limit/free transfers
+    # Transfers limit/free transfers (preserve pre-transfer limit + made when stored)
     raw_ft = state_row.get("free_transfers")
-    limit = None if raw_ft is None or bool(pd.isna(raw_ft)) else int(raw_ft)
+    raw_limit = state_row.get("free_transfers_limit")
+    raw_made = state_row.get("transfers_made")
+    if raw_limit is not None and not bool(pd.isna(raw_limit)):
+        limit: int | None = int(raw_limit)
+        made = 0 if raw_made is None or bool(pd.isna(raw_made)) else int(raw_made)
+    else:
+        limit = None if raw_ft is None or bool(pd.isna(raw_ft)) else int(raw_ft)
+        made = 0
     
     return {
         "chips": chips,
@@ -394,7 +401,7 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
         "transfers": {
             "bank": int(state_row["bank"]),
             "limit": limit,
-            "made": 0
+            "made": made,
         }
     }
 
@@ -468,6 +475,10 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
     bank_tenths = max(0, int(round(bank_millions * 10)))
     free_transfers = int(eval_data.get("freeTransfersNext", parent_state.get("freeTransfersNext", parent_state.get("ft", 1))))
     free_transfers = max(0, min(5, free_transfers))
+    raw_limit = eval_data.get("freeTransfersLimit", parent_state.get("freeTransfersLimit"))
+    raw_made = eval_data.get("transfersMade", parent_state.get("transfersMade", 0))
+    ft_limit = max(0, min(5, int(raw_limit))) if raw_limit is not None else free_transfers
+    ft_made = max(0, int(raw_made or 0)) if raw_limit is not None else 0
 
     chips: list[dict[str, object]] = []
     if chips_path.exists():
@@ -486,8 +497,8 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
         "team_id": 1,
         "transfers": {
             "bank": bank_tenths,
-            "limit": free_transfers,
-            "made": 0,
+            "limit": ft_limit,
+            "made": ft_made,
         },
     }
 

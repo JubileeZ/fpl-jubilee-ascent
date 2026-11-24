@@ -291,3 +291,36 @@ def test_planner_service_allows_second_sealed_finalist_and_blocks_stale_remote_c
     with pytest.raises(StaleCheckoutError, match="manual 'git pull'"):
         make_solve_request(Planner(stale_data), paths)
 
+
+def test_planner_and_solver_options_refund_ft_limit_when_chip_activated_on_start_gw(tmp_path: Path) -> None:
+    import pandas as pd
+    from dashboard.planner_service import PlannerPaths, solver_options
+
+    data = dataset()
+    data["meta"].update(
+        {
+            "free_transfers": 1,
+            "free_transfers_limit": 2,
+            "transfers_made": 1,
+            "transfer_plan_available_chips": [{"chip": "wc", "chip_set": 1, "label": "Wildcard (Set 1)", "gws": [6, 7]}],
+        }
+    )
+    planner = Planner(data)
+    assert planner.state["base_ft"] == 1
+    assert planner.state["base_ft_limit"] == 2
+    assert planner.state["base_transfers_made"] == 1
+
+    planner.set_chip(6, "wc")
+    week6 = planner.week(6)
+    assert week6["ft"] == 2
+    assert week6["next_ft"] == 2
+
+    processed = tmp_path / "processed"
+    processed.mkdir()
+    pd.DataFrame([{"id": row["id"], "position_id": row["pos_id"], "now_cost": 50} for row in data["players"]]).to_parquet(
+        processed / "players.parquet"
+    )
+    opts = solver_options(planner, PlannerPaths(tmp_path / "dataset.json", processed, tmp_path / "storage"))
+    assert opts["parent_state"]["evaluation"]["freeTransfersLimit"] == 2
+    assert opts["parent_state"]["evaluation"]["transfersMade"] == 1
+

@@ -138,7 +138,9 @@ def solver_options(planner: Planner, paths: PlannerPaths) -> dict[str, Any]:
     options.update(gap=0.0, secs=1200, parallel="off", threads=1,
                    parent_state={"lineup": {"slots": {str(index): pid for index, pid in enumerate(planner.state["base_ids"], 1)}},
                                  "evaluation": {"bankRemaining": planner.state["base_bank"],
-                                                "freeTransfersNext": planner.state["base_ft"]}},
+                                                "freeTransfersNext": planner.state["base_ft"],
+                                                "freeTransfersLimit": int(planner.state.get("base_ft_limit", planner.state["base_ft"])),
+                                                "transfersMade": int(planner.state.get("base_transfers_made", 0))}},
                    strategic_options=dict(planner.state.get("strategic_options") or {}))
     booked_transfers = []
     force_keep = []
