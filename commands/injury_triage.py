@@ -77,10 +77,20 @@ def main() -> None:
                 flag_str = f" [FLAGGED: {p['status']} - {p['news']}]" if p["is_flagged"] else " [CLEAN]"
                 gws_str = ", ".join(f"GW{g}" for g in p["gameweeks"])
                 print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m) out {gws_str}{flag_str}")
+            print("\n[FREE HIT PICKS]")
+            for p in audit_res["free_hit_picks"]:
+                flag_str = f" [FLAGGED: {p['status']} - {p['news']}]" if p["is_flagged"] else " [CLEAN]"
+                gws_str = ", ".join(f"GW{g}" for g in p["gameweeks"])
+                print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m, {p['fh_role']}) in {gws_str}{flag_str}")
             print("\n[FLAGGED SQUAD MEMBERS HELD]")
             for p in audit_res["held_flagged"]:
                 traj_str = ", ".join(f"GW{k}: {v}m" for k, v in p["override_xmins"].items()) if p["override_xmins"] else "Native Champion"
                 print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m, status: {p['status']}) - {p['news']}")
+                print(f"    Assigned Curve: {traj_str}")
+            print("\n[UNFLAGGED HELD PLAYERS - ROTATION / MINUTES RISK]")
+            for p in audit_res["held_rotation_risk"]:
+                traj_str = ", ".join(f"GW{k}: {v}m" for k, v in p["override_xmins"].items()) if p["override_xmins"] else "Native Champion"
+                print(f"  • {p['web_name']:14s} ({p['position']}, £{p['price']:.1f}m) - {p['trigger_details']}")
                 print(f"    Assigned Curve: {traj_str}")
             print("=" * 65 + "\n")
         return
@@ -121,7 +131,14 @@ def main() -> None:
         df_picks = pd.read_parquet(picks_path)
         user_squad_ids = set(df_picks["player_id"].astype(int))
 
-    targets = select_scouting_targets(proc, user_squad_ids=user_squad_ids, top_per_tier=2)
+    targets = select_scouting_targets(
+        proc,
+        user_squad_ids=user_squad_ids,
+        top_per_tier=2,
+        target_gw=target_gw,
+        horizon=horizon,
+        base_csv_path=args.base_csv,
+    )
 
     # 3. Synthesize override CSV
     out_path = Path(args.output)
@@ -142,6 +159,7 @@ def main() -> None:
             "planning_gws": planning_gws,
             "shielded_players_count": len(unique_shield_pids),
             "squad_flagged": targets["squad_flagged"],
+            "squad_rotation_risk": targets["squad_rotation_risk"],
             "market_flagged_by_tier": targets["market_flagged_by_tier"],
             "targeted_overrides_applied": len(targeted_map),
             "output_csv": str(saved_path),
@@ -154,7 +172,7 @@ def main() -> None:
     print(f"INJURY & AVAILABILITY TRIAGE (GW{target_gw}–GW{target_gw + horizon - 1})")
     print("=" * 65)
 
-    print("\n[YOUR SQUAD - FLAGGED ASSETS]")
+    print("\n[YOUR SQUAD - FLAGGED PLAYERS]")
     if targets["squad_flagged"]:
         for p in targets["squad_flagged"]:
             ret_str = f"Expected back: {p['parsed_return_date']}" if p['parsed_return_date'] else "Unknown return"
@@ -162,6 +180,18 @@ def main() -> None:
             print(f"    -> Triage: {ret_str}")
     else:
         print("  None. All squad players are currently unflagged.")
+
+    print("\n[YOUR SQUAD - UNFLAGGED ROTATION / MINUTES RISK]")
+    if targets["squad_rotation_risk"]:
+        for p in targets["squad_rotation_risk"]:
+            trig_str = ", ".join(p["triggers"])
+            print(
+                f"  • {p['web_name']:14s} (ID: {p['id']:3d}, £{p['price']:.1f}m) "
+                f"- triggers: [{trig_str}] | last_gw={p['last_gw_minutes']}m, "
+                f"ext_gw{target_gw}={p['target_gw_external_xmins']}"
+            )
+    else:
+        print("  None. All unflagged squad players look nailed.")
 
     print("\n[KEY MARKET TARGETS - FLAGGED BY PRICE TIER]")
     for tier, p_list in targets["market_flagged_by_tier"].items():

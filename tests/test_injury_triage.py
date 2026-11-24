@@ -96,15 +96,16 @@ def test_build_broad_pool_shield(tmp_path: Path):
     assert shield.get((63, 10)) == 65.0
     assert shield.get((63, 11)) is not None and shield[(63, 11)] >= 60.0
 
-    # Bentancur (ID 516) is suspended until 7 Nov (Spurs GW10 match is 7 Nov)
+    # Bentancur (ID 516) is suspended until 7 Nov (GW10 match is 7 Nov)
+    # Suspensions restore match-fit directly on return_gw without injury cameo ramp:
     # GW8: 0.0
     # GW9: 0.0
-    # GW10: 20.0 (cameo on return GW)
-    # GW11: 65.0 (managed start)
+    # GW10: healthy baseline >= 60.0
+    # GW11: healthy baseline >= 60.0
     assert shield.get((516, 8)) == 0.0
     assert shield.get((516, 9)) == 0.0
-    assert shield.get((516, 10)) == 20.0
-    assert shield.get((516, 11)) == 65.0
+    assert shield.get((516, 10)) is not None and shield[(516, 10)] >= 60.0
+    assert shield.get((516, 11)) is not None and shield[(516, 11)] >= 60.0
 
     # Unknown return date + status 'i' (Saka ID 12)
     # Zeroed out across the entire planning horizon
@@ -222,3 +223,143 @@ def test_audit_solution_players(tmp_path: Path):
     assert res["transfers_out"][0]["web_name"] == "Foden"
     # Calafiori (8) and Joao Pedro (165) are flagged in operational players.parquet
     assert len(res["held_flagged"]) >= 1
+    assert "free_hit_picks" in res
+    assert "held_rotation_risk" in res
+
+
+def test_synthesize_post_return_layer2_precedence_and_suspension_target_gw(tmp_path: Path):
+    ref = date(2026, 10, 20)
+    df_players = pd.DataFrame([
+        {
+            "id": 10,
+            "web_name": "InjuredStar",
+            "club_id": 1,
+            "position_id": 3,
+            "now_cost": 90,
+            "status": "i",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Thigh injury - Expected back 24 Oct",
+        },
+        {
+            "id": 20,
+            "web_name": "ZeroedExtStar",
+            "club_id": 1,
+            "position_id": 3,
+            "now_cost": 90,
+            "status": "i",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Thigh injury - Expected back 24 Oct",
+        },
+        {
+            "id": 30,
+            "web_name": "ReturningBan",
+            "club_id": 2,
+            "position_id": 4,
+            "now_cost": 80,
+            "status": "s",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Suspended until 24 Oct",
+        },
+    ])
+    df_players.to_parquet(tmp_path / "players.parquet")
+
+    df_fixtures = pd.DataFrame([
+        {"id": 1, "gameweek_id": 8, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-10-24T14:00:00Z"},
+        {"id": 2, "gameweek_id": 9, "home_club_id": 2, "away_club_id": 1, "kickoff_time": "2026-10-31T14:00:00Z"},
+        {"id": 3, "gameweek_id": 10, "home_club_id": 1, "away_club_id": 3, "kickoff_time": "2026-11-07T14:00:00Z"},
+    ])
+    df_fixtures.to_parquet(tmp_path / "fixtures.parquet")
+
+    base_csv = tmp_path / "ext.csv"
+    base_csv.write_text(
+        "ID,Name,8_xMins,9_xMins,10_xMins\n"
+        "10,InjuredStar,85.0,85.0,79.1\n"
+        "20,ZeroedExtStar,0.0,0.0,0.0\n"
+        "30,ReturningBan,87.3,87.3,87.3\n",
+        encoding="utf-8",
+    )
+
+    out_csv = tmp_path / "out.csv"
+    synthesize_xmins_override(
+        processed_dir=tmp_path,
+        target_gw=8,
+        horizon=3,
+        base_csv_path=base_csv,
+        output_path=out_csv,
+        reference_date=ref,
+    )
+    df = pd.read_csv(out_csv).set_index("ID")
+
+    # Injury on target_gw with chance=0 still hard-DNP in GW8, ramp 65.0 in GW9, then Layer 2 (79.1) wins in GW10
+    assert df.loc[10, "8_xMins"] == 0.0
+    assert df.loc[10, "9_xMins"] == 65.0
+    assert df.loc[10, "10_xMins"] == 79.1
+
+    # When Layer 2 is 0.0 post-return (GW10), Shield healthy baseline rescues it
+    assert df.loc[20, "10_xMins"] >= 60.0
+
+    # Suspension expiring on target_gw (24 Oct) is NOT zeroed in GW8 and uses Layer 2 (87.3) directly
+    assert df.loc[30, "8_xMins"] == 87.3
+    assert df.loc[30, "9_xMins"] == 87.3
+
+
+def test_audit_squad_minutes_and_solution_audit_fh_and_rotation(tmp_path: Path):
+    import json
+    from features.injury_triage import audit_solution_players, audit_squad_minutes
+
+    df_players = pd.DataFrame([
+        {"id": 1, "web_name": "Nailed", "club_id": 1, "position_id": 2, "now_cost": 50, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 2, "web_name": "Dropped", "club_id": 2, "position_id": 2, "now_cost": 41, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 3, "web_name": "Cliff", "club_id": 1, "position_id": 2, "now_cost": 49, "status": "a", "chance_of_playing_next_round": None, "news": ""},
+        {"id": 4, "web_name": "FHStar", "club_id": 3, "position_id": 3, "now_cost": 80, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 5, "web_name": "FHBench", "club_id": 4, "position_id": 2, "now_cost": 45, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+    ])
+    df_players.to_parquet(tmp_path / "players.parquet")
+
+    df_perfs = pd.DataFrame([
+        {"player_id": 1, "gameweek_id": 10, "minutes": 90, "starts": 1},
+        {"player_id": 1, "gameweek_id": 11, "minutes": 90, "starts": 1},
+        {"player_id": 2, "gameweek_id": 10, "minutes": 90, "starts": 1},
+        {"player_id": 2, "gameweek_id": 11, "minutes": 0, "starts": 0},
+        {"player_id": 3, "gameweek_id": 10, "minutes": 90, "starts": 1},
+        {"player_id": 3, "gameweek_id": 11, "minutes": 90, "starts": 1},
+    ])
+    df_perfs.to_parquet(tmp_path / "player_performances.parquet")
+
+    df_picks = pd.DataFrame([{"player_id": 1}, {"player_id": 2}, {"player_id": 3}])
+    df_picks.to_parquet(tmp_path / "user_picks.parquet")
+
+    base_csv = tmp_path / "base.csv"
+    base_csv.write_text(
+        "ID,Name,12_xMins,13_xMins\n"
+        "1,Nailed,85.0,85.0\n"
+        "2,Dropped,86.9,86.9\n"
+        "3,Cliff,73.8,25.5\n",
+        encoding="utf-8",
+    )
+
+    risks = audit_squad_minutes(tmp_path, {1, 2, 3}, target_gw=12, horizon=2, base_csv_path=base_csv)
+    by_id = {r["id"]: r for r in risks}
+    assert 1 not in by_id
+    assert "recent_non_start_or_sub60" in by_id[2]["triggers"]
+    assert "recent_vs_external_gap" in by_id[2]["triggers"]
+    assert "external_xmins_cliff" in by_id[3]["triggers"]
+
+    sol_json = tmp_path / "solution.json"
+    sol_json.write_text(
+        json.dumps({
+            "meta": {"next_gw": 12, "horizon": 2},
+            "weeks": [
+                {"gw": 12, "chip": None, "buy": [], "sell": [], "squad_ids": [1, 2, 3], "lineup_ids": [1, 3], "bench_ids": [2]},
+                {"gw": 13, "chip": "FH", "buy": [], "sell": [], "squad_ids": [1, 4, 5], "lineup_ids": [1, 4], "bench_ids": [5]},
+            ],
+        }),
+        encoding="utf-8",
+    )
+    audit_res = audit_solution_players(tmp_path, sol_json, override_csv_path=base_csv)
+    fh_by_id = {p["id"]: p for p in audit_res["free_hit_picks"]}
+    assert fh_by_id[4]["fh_role"] == "starter"
+    assert fh_by_id[5]["fh_role"] == "bench"
+    assert 1 not in fh_by_id
+    rot_ids = {p["id"] for p in audit_res["held_rotation_risk"]}
+    assert {2, 3}.issubset(rot_ids)
