@@ -1,5 +1,6 @@
 """Retained training closure for synthetic or empirical causal forecast staging."""
 
+import copy
 import hashlib
 import json
 import math
@@ -210,7 +211,7 @@ def verify_training_bundle(
         cache_key = (capability, request_catalog_fingerprint(request, catalog), authority_digest, bool(allow_disk_path_fallback))
         cached = cache["training"].get(cache_key)
         if cached is not None:
-            return cached
+            return copy.deepcopy(cached)
 
     result = _verify_training_bundle_uncached(
         capability,
@@ -220,7 +221,7 @@ def verify_training_bundle(
         allow_disk_path_fallback=allow_disk_path_fallback,
     )
     if cache is not None and cache_key is not None:
-        cache["training"][cache_key] = result
+        cache["training"][cache_key] = copy.deepcopy(result)
     return result
 
 

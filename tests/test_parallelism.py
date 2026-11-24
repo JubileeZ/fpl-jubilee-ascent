@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import patch
 
 import solver.parallelism as par
@@ -38,7 +37,7 @@ def test_detect_macos_intel_physical_cores() -> None:
         assert par.recommended_live_solver_threads(concurrent_arms=3) == 2
 
 
-def test_detect_linux_physical_and_cgroup_clamp(tmp_path: Path) -> None:
+def test_detect_linux_physical_and_cgroup_clamp() -> None:
     cpuinfo_blocks = []
     for core in range(12):
         for _smt in range(2):

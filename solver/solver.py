@@ -55,6 +55,8 @@ def _exact_k_domination_prune(
         options.get("no_opposing_play") in (True, "penalty")
         or options.get("double_defense_pick") is True
         or options.get("no_transfer_by_position")
+        or options.get("num_transfers") is not None
+        or float(options.get("itb_value", 0.08) or 0.0) < 0.0
         or int(options.get("num_iterations", 1) or 1) > 1
     ):
         return data
@@ -559,12 +561,12 @@ def solve_multi_period_fpl(data, options):
     bench: dict[tuple[int, int, int], Any] = {}
     for p in players:
         for w in gws:
-            if p in gk_players:
+            if player_type[p] == 1:
                 bench[p, w, 0] = bench0[p, w]
             for o in (1, 2, 3):
                 bench[p, w, o] = bench_out[p, w, o]
 
-    def bench_sum_p(p: int, w: int):
+    def bench_sum_p(p: int, w: int) -> Any:
         if player_type[p] == 1:
             return bench[p, w, 0] + sum_(bench[p, w, o] for o in (1, 2, 3))
         return sum_(bench[p, w, o] for o in (1, 2, 3))

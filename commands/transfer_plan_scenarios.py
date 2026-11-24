@@ -57,15 +57,15 @@ def adaptive_arm_options(options: dict[str, Any], *, num_arms: int) -> dict[str,
     return out
 
 
-def _solve_arm_worker(
-    arm: str,
+def _run_arm_plan(
+    execute_plan: ExecutePlan,
     options: dict[str, Any],
     processed_dir: Path,
     target_gw: int,
     arm_path: Path,
-) -> tuple[str, dict[str, Any]]:
+) -> dict[str, Any]:
     try:
-        plan = execute_transfer_plan(
+        return execute_plan(
             options,
             processed_dir=processed_dir,
             target_gw=target_gw,
@@ -74,6 +74,16 @@ def _solve_arm_worker(
     finally:
         if arm_path.exists():
             arm_path.unlink()
+
+
+def _solve_arm_worker(
+    arm: str,
+    options: dict[str, Any],
+    processed_dir: Path,
+    target_gw: int,
+    arm_path: Path,
+) -> tuple[str, dict[str, Any]]:
+    plan = _run_arm_plan(execute_transfer_plan, options, processed_dir, target_gw, arm_path)
     return arm, plan
 
 
@@ -329,24 +339,26 @@ def execute_transfer_plan_scenarios(
             opts["gap"] = gap
         return opts
 
-    def solve_one(arm: str) -> dict[str, Any]:
-        options = _build_arm_opts(arm)
-        arm_path = scenarios_path.parent / f".arm_{arm}.json"
-        try:
-            plan = execute_plan(
-                options,
-                processed_dir=processed_dir,
-                target_gw=target_gw,
-                solution_path=arm_path,
-            )
-        finally:
-            if arm_path.exists():
-                arm_path.unlink()
-        return _annotate_row(arm, plan)
+    def _record_arm_plan(arm: str, plan: dict[str, Any]) -> None:
+        row = _annotate_row(arm, plan)
+        with publish_lock:
+            completed[str(row["id"])] = row
+        publish("running")
+
+    def solve_one(arm: str) -> tuple[str, dict[str, Any]]:
+        plan = _run_arm_plan(
+            execute_plan,
+            _build_arm_opts(arm),
+            processed_dir,
+            target_gw,
+            scenarios_path.parent / f".arm_{arm}.json",
+        )
+        return arm, plan
 
     publish("running")
-    if use_processes:
-        with ProcessPoolExecutor(max_workers=max(1, len(arms))) as pool:
+    pool_cls = ProcessPoolExecutor if use_processes else ThreadPoolExecutor
+    with pool_cls(max_workers=max(1, len(arms))) as pool:
+        if use_processes:
             futures = {
                 pool.submit(
                     _solve_arm_worker,
@@ -358,18 +370,9 @@ def execute_transfer_plan_scenarios(
                 ): arm
                 for arm in arms
             }
-            for fut in as_completed(futures):
-                arm, plan = fut.result()
-                row = _annotate_row(arm, plan)
-                with publish_lock:
-                    completed[str(row["id"])] = row
-                publish("running")
-    else:
-        with ThreadPoolExecutor(max_workers=max(1, len(arms))) as pool:
+        else:
             futures = {pool.submit(solve_one, arm): arm for arm in arms}
-            for fut in as_completed(futures):
-                row = fut.result()
-                with publish_lock:
-                    completed[str(row["id"])] = row
-                publish("running")
+        for fut in as_completed(futures):
+            arm, plan = fut.result()
+            _record_arm_plan(arm, plan)
     return publish("ok")

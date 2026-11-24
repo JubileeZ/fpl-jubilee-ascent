@@ -1,6 +1,8 @@
+from pathlib import Path
+from typing import Any
+
 import pandas as pd
 import pytest
-from pathlib import Path
 
 from features.builder import (
     build_features,
@@ -76,7 +78,7 @@ def test_load_xmins_override_omits_blank_cells(tmp_path: Path):
 
 
 @pytest.fixture(scope="module")
-def baseline_champion_gw7():
+def baseline_champion_gw7() -> tuple[Path, pd.DataFrame, Any, pd.DataFrame]:
     from commands.run_model import load_fit_history
     from models import get_model, resolve_model_or_champion
 
@@ -93,8 +95,8 @@ def baseline_champion_gw7():
 
 def test_sparse_override_preserves_champion_for_unlisted_players(
     tmp_path: Path,
-    baseline_champion_gw7,
-):
+    baseline_champion_gw7: tuple[Path, pd.DataFrame, Any, pd.DataFrame],
+) -> None:
     processed, _df_feat_base, model, base_preds = baseline_champion_gw7
 
     # Champion with sparse override on only 1 player (Haaland, 411)

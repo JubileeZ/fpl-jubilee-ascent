@@ -1,7 +1,7 @@
 """Development Screen: retained prototype diagnostics against Champion.
 
     uv run python .agents/skills/explore-candidate/smoke.py --show_seasons
-    uv run python .agents/skills/explore-candidate/smoke.py <prototypes.py> [--gw_range 1-N] [--workers 4]
+    uv run python .agents/skills/explore-candidate/smoke.py <prototypes.py> [--gw_range 1-N] [--workers N]
     uv run python .agents/skills/explore-candidate/smoke.py --model <registered_name>
     uv run python .agents/skills/explore-candidate/smoke.py <prototypes.py> --audit_only
     uv run python .agents/skills/explore-candidate/smoke.py --model <frozen_name> --season confirm --out docs/research/<slug>/candidate_gate.csv
@@ -39,6 +39,7 @@ sys.path.insert(0, str(ROOT))
 from backtesting import walkforward  # noqa: E402
 from backtesting.model_evaluation import compare_to_reference  # noqa: E402
 from backtesting import promotion  # noqa: E402
+from solver.parallelism import recommended_backtest_workers  # noqa: E402
 from backtesting.promotion import (  # noqa: E402
     BOOTSTRAP_MIN_P,
     CONFIRMATION_BOOTSTRAP_MIN_P,
@@ -338,7 +339,7 @@ def main() -> int:
     parser.add_argument("prototypes", nargs="?", type=Path)
     parser.add_argument("--model", action="append", default=[], help="Registered model name (repeatable)")
     parser.add_argument("--gw_range", default=None, help="Default: full season")
-    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=recommended_backtest_workers(heavy=False))
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--lane", default="")
     parser.add_argument("--tier", choices=("1", "2", "3", "auto"), default="auto", help="Evaluation tier: 1, 2, 3, or auto")

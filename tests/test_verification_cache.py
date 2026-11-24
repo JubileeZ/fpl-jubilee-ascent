@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from backtesting.data_admission import assess_origins
+from backtesting.portable_evidence import BlobStore
 from backtesting.verification_cache import (
     catalog_fingerprint,
     get_verification_cache,
@@ -44,3 +48,40 @@ def test_fingerprints_detect_single_byte_tampering() -> None:
     assert catalog_fingerprint(cat_a) != catalog_fingerprint(cat_b)
     assert json_fingerprint(req_a) != json_fingerprint(req_b)
     assert request_catalog_fingerprint(req_a, cat_a) != request_catalog_fingerprint(req_a, cat_b)
+
+
+def test_verification_cache_isolates_caller_mutations() -> None:
+    from test_data_admission import catalog, request
+
+    req = request()
+    cat = catalog(req)
+
+    with verification_call_scope():
+        first = assess_origins(req, cat, allow_disk_path_fallback=False)
+        orig_status = first[0]["status"]
+        orig_season = first[0]["season"]
+        first[0]["status"] = "tampered"
+        first[0]["season"] = "1999-00"
+        first[0]["reasons"].append("injected")
+        second = assess_origins(req, cat, allow_disk_path_fallback=False)
+        assert second[0]["status"] == orig_status
+        assert second[0]["season"] == orig_season
+        assert "injected" not in second[0]["reasons"]
+
+
+def test_blob_store_cache_detects_on_disk_tamper_and_delete_within_scope(tmp_path: Path) -> None:
+    store = BlobStore(tmp_path)
+    digest = store.write_bytes(b"canonical-payload")
+    blob_path = tmp_path / "blobs" / digest
+
+    with verification_call_scope():
+        assert store.read_bytes(digest) == b"canonical-payload"
+        assert store.read_bytes(digest) == b"canonical-payload"
+
+        blob_path.write_bytes(b"tampered-payload-extra")
+        with pytest.raises(ValueError, match="checksum mismatch"):
+            store.read_bytes(digest)
+
+        blob_path.unlink()
+        with pytest.raises(ValueError, match="Missing blob file"):
+            store.read_bytes(digest)

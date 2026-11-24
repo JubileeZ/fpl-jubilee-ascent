@@ -1,5 +1,6 @@
 """Causal admission checks for future replay; legacy runners remain unchanged."""
 
+import copy
 import hashlib
 import json
 import re
@@ -296,7 +297,7 @@ def assess_origins(
         cache_key = (request_catalog_fingerprint(request, catalog), bool(allow_disk_path_fallback))
         cached = cache["assess_origins"].get(cache_key)
         if cached is not None:
-            return list(cached)
+            return copy.deepcopy(cached)
 
     def _compute() -> list[dict[str, Any]]:
         if (
@@ -315,7 +316,7 @@ def assess_origins(
 
     result = _compute()
     if cache is not None and cache_key is not None:
-        cache["assess_origins"][cache_key] = list(result)
+        cache["assess_origins"][cache_key] = copy.deepcopy(result)
     return result
 
 

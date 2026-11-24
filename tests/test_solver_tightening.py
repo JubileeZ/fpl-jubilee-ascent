@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -21,11 +20,19 @@ from solver.utils import load_settings
 from test_streamlit_planner import dataset
 
 
-def _load_baseline_solver_module() -> dict[str, Any]:
-    src = subprocess.check_output(["git", "show", "HEAD:solver/solver.py"], text=True)
-    ns: dict[str, Any] = {}
-    exec(compile(src, "HEAD:solver/solver.py", "exec"), ns)
-    return ns
+# Pre-V3+ exact golden outputs verified against main (95d22e09): (score, total_xp, iter2_score).
+_PRE_V3_GOLDEN: dict[str, tuple[float, float, float | None]] = {
+    "normal": (355.369799, 404.100000, None),
+    "strategic": (353.869799, 404.100000, None),
+    "no_hit": (353.869799, 404.100000, None),
+    "use_wc": (352.557416, 400.300000, None),
+    "use_wc_gw6": (357.867816, 404.100000, None),
+    "use_bb": (367.077694, 421.700000, None),
+    "use_tc": (367.597298, 404.100000, None),
+    "use_fh": (352.283699, 404.100000, None),
+    "force_keep_booked": (337.450309, 397.100000, None),
+    "num_iterations_2": (355.369799, 404.100000, 355.2668985),
+}
 
 
 def _build_synthetic_solver_inputs(
@@ -153,12 +160,11 @@ def _build_synthetic_solver_inputs(
         ("num_iterations_2", {"num_iterations": 2}),
     ],
 )
-def test_v3_plus_tightening_exact_parity_against_head(
+def test_v3_plus_tightening_exact_parity_and_golden_oracle(
     tmp_path: Path,
     case_name: str,
     extra_opts: dict[str, Any],
 ) -> None:
-    baseline_ns = _load_baseline_solver_module()
     my_data, base_opts, _ = _build_synthetic_solver_inputs(tmp_path, horizon=3, ft=2, ft_base=2, extra_players=25)
 
     if case_name == "force_keep_booked":
@@ -168,18 +174,25 @@ def test_v3_plus_tightening_exact_parity_against_head(
         }
 
     opts_new = {**base_opts, **extra_opts}
-    opts_old = {**base_opts, **extra_opts}
+    opts_unpruned = {**base_opts, **extra_opts}
 
     prepared_new = prep_data(my_data, opts_new)
-    prepared_old = baseline_ns["prep_data"](my_data, opts_old)
+    prepared_unpruned = prep_data(my_data, opts_unpruned)
 
     sols_new = solve_multi_period_fpl(prepared_new, opts_new)
-    sols_old = baseline_ns["solve_multi_period_fpl"](prepared_old, opts_old)
+    with patch("solver.solver._exact_k_domination_prune", side_effect=lambda data, *_a, **_k: data):
+        sols_unpruned = solve_multi_period_fpl(prepared_unpruned, opts_unpruned)
 
-    assert len(sols_new) == len(sols_old)
-    assert sols_new[0]["score"] == pytest.approx(sols_old[0]["score"], abs=1e-6)
-    assert sols_new[0]["total_xp"] == pytest.approx(sols_old[0]["total_xp"], abs=1e-6)
-    for gw_key, stat_old in sols_old[0]["statistics"].items():
+    exp_score, exp_xp, exp_iter2_score = _PRE_V3_GOLDEN[case_name]
+    assert sols_new[0]["score"] == pytest.approx(exp_score, abs=1e-5)
+    assert sols_new[0]["total_xp"] == pytest.approx(exp_xp, abs=1e-5)
+    if exp_iter2_score is not None:
+        assert sols_new[1]["score"] == pytest.approx(exp_iter2_score, abs=1e-5)
+
+    assert len(sols_new) == len(sols_unpruned)
+    assert sols_new[0]["score"] == pytest.approx(sols_unpruned[0]["score"], abs=1e-6)
+    assert sols_new[0]["total_xp"] == pytest.approx(sols_unpruned[0]["total_xp"], abs=1e-6)
+    for gw_key, stat_old in sols_unpruned[0]["statistics"].items():
         stat_new = sols_new[0]["statistics"][gw_key]
         if int(gw_key) < int(opts_new["override_next_gw"]):
             assert stat_new.get("itb") == pytest.approx(stat_old.get("itb"), abs=1e-2)
@@ -192,12 +205,12 @@ def test_v3_plus_tightening_exact_parity_against_head(
 
     if opts_new.get("strategic_mode"):
         assert sols_new[0]["strategic_audit"]["total_slack_penalty"] == pytest.approx(
-            sols_old[0]["strategic_audit"]["total_slack_penalty"], abs=1e-2
+            sols_unpruned[0]["strategic_audit"]["total_slack_penalty"], abs=1e-2
         )
-        assert sols_new[0]["strategic_audit"]["total_hits"] == sols_old[0]["strategic_audit"]["total_hits"]
+        assert sols_new[0]["strategic_audit"]["total_hits"] == sols_unpruned[0]["strategic_audit"]["total_hits"]
 
     if case_name == "num_iterations_2":
-        assert sols_new[1]["score"] == pytest.approx(sols_old[1]["score"], abs=1e-6)
+        assert sols_new[1]["score"] == pytest.approx(sols_unpruned[1]["score"], abs=1e-6)
 
 
 def test_exact_k_domination_prune_reduces_pool_and_respects_must_keep(tmp_path: Path) -> None:
@@ -209,8 +222,10 @@ def test_exact_k_domination_prune_reduces_pool_and_respects_must_keep(tmp_path: 
     # All initial squad players are strictly preserved
     assert set(prepared["initial_squad"]).issubset(set(pruned["merged_data"].index))
 
-    # Bypass when num_iterations > 1
+    # Bypass when num_iterations > 1, num_transfers is set, or itb_value < 0
     assert len(_exact_k_domination_prune(prepared, {**opts, "num_iterations": 2}, [6, 7, 8])["merged_data"]) == raw_len
+    assert len(_exact_k_domination_prune(prepared, {**opts, "num_transfers": 1}, [6, 7, 8])["merged_data"]) == raw_len
+    assert len(_exact_k_domination_prune(prepared, {**opts, "itb_value": -0.1}, [6, 7, 8])["merged_data"]) == raw_len
 
 
 def test_execute_transfer_plan_sets_adaptive_threads(tmp_path: Path) -> None:

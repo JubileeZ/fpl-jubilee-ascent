@@ -154,15 +154,16 @@ class BlobStore:
         digest, target = self._resolve_blob_ref(digest_or_relpath)
         if expected_sha256 is not None and _validate_sha256_hex(expected_sha256, "expected_sha256") != digest:
             raise ValueError(f"Blob digest mismatch: expected {expected_sha256}, ref points to {digest}")
+        if not target.is_file():
+            raise ValueError(f"Missing blob file: blobs/{digest}")
+        st = target.stat()
         cache = get_verification_cache()
-        cache_key: tuple[str, str] | None = None
+        cache_key: tuple[str, str, int, int] | None = None
         if cache is not None:
-            cache_key = (str(self.root.resolve()), digest)
+            cache_key = (str(self.root.resolve()), digest, st.st_mtime_ns, st.st_size)
             cached = cache["blobs"].get(cache_key)
             if cached is not None:
                 return cached
-        if not target.is_file():
-            raise ValueError(f"Missing blob file: blobs/{digest}")
         raw = target.read_bytes()
         actual = _sha256_bytes(raw)
         if actual != digest:
