@@ -1,6 +1,6 @@
 # Backtesting and Promotion Foundation (ADR 0066)
 
-**Status**: Accepted (2026-10-29); Amended (2026-11-12 `#180`; 2026-11-13 **Sections 1–7 retained, Section 8 and static `2026-27 GW6+` / provisional-ban clauses superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md)**)
+**Status**: Accepted (2026-10-29); Amended (2026-11-12 `#180`; 2026-11-13 **Sections 1–7 retained, Section 8 and static `2026-27 GW6+` / provisional-ban clauses superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md)**; 2026-11-24 `#231` Section 7 Strategic FT calibration amendment)
 
 **Amends / Supersedes**:
 - Supersedes [ADR 0044](0044-blended-eval-target-promotion-primary.md) (Blended Eval Target as promotion primary; now a supporting diagnostic).
@@ -80,12 +80,13 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
   - Requires expected current champion match.
   - Fails closed on any discrepancy, partial data, or inconclusive verdict.
 
-### 7. Strategic Optimization Constants Freeze
-- Effective Strategic arm optimization settings (ADR 0061, ADR 0065) are frozen as the authoritative research baseline:
-  - Horizon scaling for one-off friction penalties: $\text{scale}(H) = \sum_{k=0}^{H-1} \delta^k / \sum_{k=0}^4 \delta^k$ ($\delta = 0.85$).
+### 7. Strategic Optimization Constants Freeze (Amended `#231`, 2026-11-24)
+- Effective Strategic arm optimization settings (ADR 0061, ADR 0065 `#231` amendment) are frozen across both live planning and 6-GW promotion replay:
+  - Horizon scaling strictly for one-off friction penalties: $\text{scale}(H) = \sum_{k=0}^{H-1} \delta^k / \sum_{k=0}^4 \delta^k$ ($\delta = 0.85$).
   - Effective hit hurdle: $4.0 + 1.8 \times \text{scale}(H)$.
   - Goalkeeper transfer friction: $1.5 \times \text{scale}(H)$.
-  - Diminishing emergency FT value schedule: `{"2": 2.0, "3": 1.2, "4": 0.6, "5": 0.2} * scale(H)`.
+  - Unscaled diminishing emergency FT value schedule (`1 <= H <= 10`): `{"2": 2.4, "3": 1.44, "4": 0.72, "5": 0.24}`, `spare_ft_hold_weight = 0.15` (waived on Wildcard/Free Hit and 5-FT cap-overflow transitions), and `ft_use_penalty = 0.6`.
+  - Certified `def_xg_shrink_challenger` Strategic replay reference scores under this protocol: `2025-26` (`S-1`) = `2,138`, `2024-25` (`S-2`) = `2,336` (re-baselined from `2,167` / `2,299`; all `101` `candidate_ledger.csv` `dead` locks preserved; `2026-27` sealed/untouched).
   - Weekly variance constraints (Starter xMins floor, First-Bench cover, DEF stack cap) remain active.
 
 ### 8. Amendment (`#180`, 2026-11-12) — *Superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) (2026-11-13)*

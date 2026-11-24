@@ -47,7 +47,12 @@ from backtesting.season_rules import (
     get_rules,
 )
 from models.scoring_matrix import Position
-from solver.scenarios import effective_horizon_scale
+from solver.scenarios import (
+    DEFAULT_STRATEGIC_FT_SCHEDULE,
+    DEFAULT_STRATEGIC_FT_USE_PENALTY,
+    DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT,
+    effective_horizon_scale,
+)
 
 DEFAULT_HORIZON: int = 6
 
@@ -534,19 +539,14 @@ def get_strategic_replay_options(
     decay_base: float = 0.85,
     rules_version: str = "2024-25",
 ) -> dict[str, Any]:
-    """Compute frozen 6-GW Strategic scenario settings for replay solves under native season rules."""
+    """Compute calibrated Strategic scenario settings for replay solves under native season rules (ADR 0065 #231)."""
     rules = get_rules(rules_version)
     scale = effective_horizon_scale(horizon, decay_base=decay_base)
-
-    ft_values: dict[str, float] = {}
-    if rules.free_transfer_cap >= 2:
-        ft_values["2"] = round(2.0 * scale, 4)
-    if rules.free_transfer_cap >= 3:
-        ft_values["3"] = round(1.2 * scale, 4)
-    if rules.free_transfer_cap >= 4:
-        ft_values["4"] = round(0.6 * scale, 4)
-    if rules.free_transfer_cap >= 5:
-        ft_values["5"] = round(0.2 * scale, 4)
+    ft_values = {
+        k: round(float(v), 4)
+        for k, v in DEFAULT_STRATEGIC_FT_SCHEDULE.items()
+        if int(k) <= rules.free_transfer_cap
+    }
 
     return {
         "arm": "strategic",
@@ -557,8 +557,8 @@ def get_strategic_replay_options(
         "hit_hurdle": round(4.0 + 1.8 * scale, 4),
         "paid_hit_penalty": round(1.8 * scale, 4),
         "gk_transfer_friction": round(1.5 * scale, 4),
-        "ft_use_penalty": 0.5,
-        "spare_ft_hold_weight": 0.325,
+        "ft_use_penalty": DEFAULT_STRATEGIC_FT_USE_PENALTY,
+        "spare_ft_hold_weight": DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT,
         "starter_xmins_floor": 65.0,
         "starter_xmins_penalty": 10.0,
         "bench_cover_min": 12,

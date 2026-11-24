@@ -1,0 +1,6 @@
+config_id,baseline_mode,v2,spare_ft_hold_weight,ft_use_penalty,perm_hurdle_h10,delay1_h10,gate_hurdle_lt4,solver_objective,total_xp,horizon_egs,gw12_transfers,gw12_hits,gw12_moves,total_transfers_10gw,total_hits_10gw,avg_ft_bank,min_ft_bank,max_ft_bank,wasted_fts,solver_model_status,relative_gap,solve_seconds
+baseline_adr0065,True,2.0,0.325,0.5,6.7171,1.1581,False,351.1848,649.8266,657.9969,2,0,"+Tarkowski, Dewsbury-Hall / -Egan, Palmer",7,0,2.8,1,4,0,Time limit reached,0.017468,191.28
+v2_2p0_h_0p15_u_0p4,False,2.0,0.15,0.4,3.9368,0.66,True,350.7949,652.6107,660.7271,2,0,"+Vuskovic, Ødegaard / -F.Kadıoğlu, Palmer",7,0,3.0,1,5,2,Time limit reached,0.008808,190.78
+v2_3p2_h_0p00_u_0p5,False,3.2,0.0,0.5,3.7,0.555,True,350.3535,659.5398,667.5914,2,0,"+Van Hecke, Gomez / -F.Kadıoğlu, Palmer",7,0,1.8,1,4,0,Time limit reached,0.003376,190.2
+v2_2p4_h_0p08_u_0p6,False,2.4,0.08,0.6,3.9835,0.642,True,347.5831,647.994,655.3126,2,0,"+Vuskovic, Ahoka / -F.Kadıoğlu, Palmer",6,0,3.0,1,5,1,Time limit reached,0.012996,189.89
+v2_2p4_h_0p15_u_0p6,False,2.4,0.15,0.6,4.8441,0.81,False,350.7825,650.1833,658.58,2,0,"+Van Hecke, Gomez / -F.Kadıoğlu, Palmer",5,0,3.1,1,5,2,Time limit reached,0.006954,190.44

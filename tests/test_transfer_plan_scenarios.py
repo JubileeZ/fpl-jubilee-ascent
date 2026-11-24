@@ -52,17 +52,18 @@ def test_strategic_applies_variance_defaults_and_hit_hurdle() -> None:
     assert "no_transfer_gws" not in overrides
     assert overrides["weekly_hit_limit"] == 1
     assert overrides["hit_cost"] == 4.0
-    assert overrides["ft_use_penalty"] == 0.5
+    assert overrides["ft_use_penalty"] == 0.6
+    assert overrides["spare_ft_hold_weight"] == 0.15
     assert overrides["strategic_options"] == DEFAULT_STRATEGIC_OPTIONS
     assert overrides["ft_value_list"] == DEFAULT_STRATEGIC_FT_SCHEDULE
 
-    # Test scaling at H=10
+    # Test scaling at H=10: friction scales by scale(10), while FT schedule & hold weight stay unscaled (ADR 0065 #231)
     overrides_h10 = scenario_arm_overrides(ARM_STRATEGIC, start_gw=5, free_transfer_bank=2, horizon=10)
     scale_10 = effective_horizon_scale(10, decay_base=0.85, base_horizon=5)
     assert overrides_h10["hit_friction"] == pytest.approx(1.8 * scale_10, rel=1e-3)
     assert overrides_h10["gk_transfer_friction"] == pytest.approx(1.5 * scale_10, rel=1e-3)
-    assert overrides_h10["ft_value_list"]["2"] == pytest.approx(2.0 * scale_10, rel=1e-3)
-    assert overrides_h10["ft_value_list"]["5"] == pytest.approx(0.2 * scale_10, rel=1e-3)
+    assert overrides_h10["ft_value_list"] == DEFAULT_STRATEGIC_FT_SCHEDULE
+    assert overrides_h10["spare_ft_hold_weight"] == 0.15
 
     # Weekly penalties should remain unscaled
     assert overrides_h10["starter_xmins_floor"] == 65.0
@@ -113,13 +114,15 @@ def test_apply_scenario_arm_idempotent_scaling_and_isolation() -> None:
     second_pass = apply_scenario_arm(first_pass, ARM_STRATEGIC)
     assert second_pass["strategic_options"]["hit_friction"] == pytest.approx(first_hit, rel=1e-5)
 
-    # Re-applying unconstrained or no_hit onto strategic options must clear ft_value_list and restore default ft_use_penalty
+    # Re-applying unconstrained or no_hit onto strategic options must clear ft_value_list / spare_ft_hold_weight and restore default ft_use_penalty
     unconstrained = apply_scenario_arm(second_pass, ARM_UNCONSTRAINED)
     assert "ft_value_list" not in unconstrained or unconstrained["ft_value_list"] is None
+    assert "spare_ft_hold_weight" not in unconstrained or unconstrained["spare_ft_hold_weight"] is None
     assert unconstrained["ft_use_penalty"] == 0.2
 
     no_hit = apply_scenario_arm(second_pass, ARM_NO_HIT)
     assert "ft_value_list" not in no_hit or no_hit["ft_value_list"] is None
+    assert "spare_ft_hold_weight" not in no_hit or no_hit["spare_ft_hold_weight"] is None
     assert no_hit["ft_use_penalty"] == 0.2
 
 
@@ -237,6 +240,21 @@ def test_compute_scenarios_digest_sensitivity(tmp_path: Path) -> None:
         gap=0.01,
     )
     assert d3 != d4
+
+    # Change spare_ft_hold_weight -> changed digest and normalize_strategic_options respects 0.0
+    from solver.scenarios import normalize_strategic_options
+
+    assert normalize_strategic_options({"spare_ft_hold_weight": 0.0})["spare_ft_hold_weight"] == 0.0
+    d5 = compute_scenarios_digest(
+        processed_dir=p_dir,
+        target_gw=5,
+        horizon=6,
+        champion="linear_baseline",
+        booked_chips={"use_wc": [6]},
+        gap=0.01,
+        strategic_options={"spare_ft_hold_weight": 0.0},
+    )
+    assert d4 != d5
 
 
 def test_execute_transfer_plan_scenarios_reuses_cache(tmp_path: Path) -> None:

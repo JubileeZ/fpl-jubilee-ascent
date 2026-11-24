@@ -117,6 +117,7 @@ SUPPORTED_DYNAMIC_OVERRIDES = frozenset({
     "report_decay_base",
     "secs",
     "solver",
+    "spare_ft_hold_weight",
     "starter_xmins_floor",
     "starter_xmins_penalty",
     "strategic_bench_cover_min",
@@ -627,6 +628,14 @@ def main() -> None:
         type=float,
         default=None,
         help="Strategic variance control: penalty (pts) per non-chip GK transfer (default: 1.5)",
+    )
+    parser.add_argument(
+        "--spare-ft-hold-weight",
+        "--spare_ft_hold_weight",
+        dest="spare_ft_hold_weight",
+        type=float,
+        default=None,
+        help="Strategic FT control: weekly unscaled spare-FT hold weight (default: 0.15)",
     )
     parser.add_argument("--decay_base", type=float, help="Decay multiplier for later gameweeks")
     parser.add_argument("--hit_cost", type=float, help="Points cost applied to each paid transfer")

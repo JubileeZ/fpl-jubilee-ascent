@@ -218,6 +218,24 @@ def test_solve_cli_arm_flags(capsys: pytest.CaptureFixture[str]) -> None:
         assert opts["strategic_mode"] is False
         assert opts["weekly_hit_limit"] == 0
 
+    # 4. --scenarios --spare-ft-hold-weight 0.0 forwards spare_ft_hold_weight inside strategic_options
+    scenarios_payload = {
+        "scenarios": [
+            {
+                "name": "Strategic",
+                "rank": 1,
+                "horizon_egs": 100.0,
+                "plan": {"meta": {"solver_objective": 10.0}, "weeks": [], "summary": "S"},
+            }
+        ]
+    }
+    with patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 10}), \
+         patch("commands.transfer_plan_scenarios.execute_transfer_plan_scenarios", return_value=scenarios_payload) as mock_scen, \
+         patch("sys.argv", ["commands.solve", "--scenarios", "--spare-ft-hold-weight", "0.0", "--target_gw", "6"]):
+        main()
+        scen_strat = mock_scen.call_args.kwargs["strategic_options"]
+        assert scen_strat["spare_ft_hold_weight"] == 0.0
+
 
 def test_milp_rules_1_to_5_and_waivers(tmp_path: Path) -> None:
     data = dataset()
@@ -525,11 +543,11 @@ def test_strategic_post_transfer_ft_valuation_and_roll_hurdle(tmp_path: Path) ->
         sol = solve_multi_period_fpl(prep_data(my_data, opts), opts)[0]
         return serialize_transfer_plan(sol, champion="test_model", horizon=horizon, next_gw=6, decay_base=0.85)
 
-    # (a) H=1 with 1 FT: marginal +0.8 xP upgrade (6.8 vs 6.0) is rolled to build 2-FT buffer; +2.5 xP upgrade (8.5 vs 6.0) is bought
+    # (a) H=1 with 1 FT: marginal +0.8 xP upgrade (6.8 vs 6.0) rolls; +3.5 xP upgrade (9.5 vs 6.0 > 2.4+0.6=3.0) is bought
     plan_h1_marginal = _solve_scenario(gw6_16=6.8, gw7_16=6.0, horizon=1, ft=1)
     assert plan_h1_marginal["weeks"][0]["transfer_count"] == 0.0
 
-    plan_h1_strong = _solve_scenario(gw6_16=8.5, gw7_16=6.0, horizon=1, ft=1)
+    plan_h1_strong = _solve_scenario(gw6_16=9.5, gw7_16=6.0, horizon=1, ft=1)
     assert plan_h1_strong["weeks"][0]["transfer_count"] == 1.0
 
     # (b) H=2 with 1 FT: Player 16 has +0.8 xP in GW6 and +4.0 xP in GW7 -> roll in GW6 (0 transfers), buy in GW7 (1 transfer)
@@ -700,4 +718,24 @@ def test_strategic_chip_weeks_preserve_ft_zero_hold_credit_and_refund_fh(tmp_pat
     assert gw6_wc["hits"] == 0.0
     assert gw6_wc["ft_after"] == 2.0
     assert gw6_wc["objective"] == pytest.approx(gw6_wc["xp"], abs=0.01)
+
+    # 4. 5-FT cap-overflow hold waiver: ft=5->5 (0 transfers) gets zero hold credit, whereas ft=4->5 gets unscaled 0.15 * 4.80 = 0.72
+    no_tr_extra = {
+        "vcap_weight": 0.0,
+        "bench_weights": {"0": 0.0, "1": 0.0, "2": 0.0, "3": 0.0},
+        "banned": [16],
+    }
+    plan_ft4_hold = _run_chip_solve("none", extra_opts=no_tr_extra, limit=4, made=0)
+    plan_ft4_zero = _run_chip_solve("none", extra_opts={**no_tr_extra, "spare_ft_hold_weight": 0.0}, limit=4, made=0)
+    assert plan_ft4_hold["meta"]["solver_objective"] - plan_ft4_zero["meta"]["solver_objective"] == pytest.approx(
+        0.15 * (2.4 + 1.44 + 0.72 + 0.24),
+        abs=1e-3,
+    )
+
+    plan_ft5_hold = _run_chip_solve("none", extra_opts=no_tr_extra, limit=5, made=0)
+    plan_ft5_zero = _run_chip_solve("none", extra_opts={**no_tr_extra, "spare_ft_hold_weight": 0.0}, limit=5, made=0)
+    assert plan_ft5_hold["meta"]["solver_objective"] == pytest.approx(
+        plan_ft5_zero["meta"]["solver_objective"],
+        abs=1e-4,
+    )
 

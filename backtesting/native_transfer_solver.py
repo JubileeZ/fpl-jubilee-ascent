@@ -14,6 +14,7 @@ import pandas as pd
 from backtesting.replay_state import Decision, Lineup, Player, ReplayState, state_hash, validate_squad
 from backtesting.season_rules import Chip, chip_window, get_rules, next_free_transfers, selling_price, validate_chip_calendar
 from models.scoring_matrix import Position
+from solver.scenarios import DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT
 
 if TYPE_CHECKING:
     from backtesting.rolling_replay import SolverCertificate
@@ -224,10 +225,12 @@ def _build_native_milp(
     slack_vars: dict[tuple[int, int], Any] = {}
     week_objectives: list[Any] = []
     ft_value = {f: sum(float(options["ft_value_list"].get(str(n), 1.5)) for n in range(f + 1)) for f in ft_states}
-    ft_scale = float(options.get("horizon_scale") or 1.0) or 1.0
-    spare_ft_hold_weight = float(options.get("spare_ft_hold_weight", 0.325))
+    raw_hold_w = options.get("spare_ft_hold_weight")
+    spare_ft_hold_weight = (
+        DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT if raw_hold_w is None else float(raw_hold_w)
+    )
     ft_hold_weights = {
-        f: spare_ft_hold_weight * max(0.0, ft_value[f] - ft_value[1]) / ft_scale
+        f: spare_ft_hold_weight * max(0.0, ft_value[f] - ft_value[1])
         for f in ft_states
     }
     clubs = sorted({p.club for p in players.values()})
@@ -388,8 +391,17 @@ def _build_native_milp(
                 for p in ids
             )
         ft_gain = total(ft_value[f] * ft[gw + 1, f] for f in ft_states) - total(ft_value[f] * ft[gw, f] for f in ft_states)
-        if options.get("ft_value_list") and gw < weeks[-1]:
-            ft_gain += total(ft_hold_weights[f] * ft[gw + 1, f] for f in ft_states if f >= 2)
+        if options.get("ft_value_list") and gw < weeks[-1] and not free:
+            ft_gain += total(
+                ft_hold_weights[next_f] * v
+                for (previous, n), v in jvars.items()
+                if (next_f := next_free_transfers(rules, previous, n, chip, gw)) >= 2
+                and not (
+                    gw > 1
+                    and not (rules.afcon_gw15_topup and gw == 15)
+                    and max(previous - n, 0) + 1 > rules.free_transfer_cap
+                )
+            )
         objective = score - float(options["hit_hurdle"]) * paid - float(options["ft_use_penalty"]) * ft_use
         objective += ft_gain + 0.008 * bank[gw] - floor_penalty - abs(float(options["bench_cover_penalty"])) * cover
         objective -= abs(float(options["def_stack_penalty"])) * total(stack) + gk_cost

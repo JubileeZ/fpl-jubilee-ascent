@@ -51,8 +51,9 @@ def _base_squad() -> tuple[Player, ...]:
 
 def test_adr_0065_strategic_options_and_post_transfer_ft_parity() -> None:
     opts = get_strategic_replay_options(6, rules_version="2025-26")
-    assert opts["ft_use_penalty"] == 0.5
-    assert opts["spare_ft_hold_weight"] == 0.325
+    assert opts["ft_use_penalty"] == 0.6
+    assert opts["spare_ft_hold_weight"] == 0.15
+    assert opts["ft_value_list"] == {"2": 2.4, "3": 1.44, "4": 0.72, "5": 0.24}
     id1 = replay_evaluation_identity(
         model_name="m",
         model_version_hash="v1",
@@ -104,15 +105,39 @@ def test_adr_0065_strategic_options_and_post_transfer_ft_parity() -> None:
     decision, cert = native_strategic_solve(state, 2, forecasts, h2_opts)
     assert cert.termination_status == "OPTIMAL"
 
-    # Verification against analytical formula in solver/solver.py:848-869
-    scale = float(h2_opts["horizon_scale"])
+    # Verification against analytical formula in solver/solver.py (unscaled hold weight + WC/FH & 5-FT overflow waivers)
     ft_val_2 = float(h2_opts["ft_value_list"]["2"])
     plans = cert.strategic_audit["plans"]
     assert plans[0]["free_transfers"] == 1
     assert "post_free_transfers" in plans[0]
     if not decision.transfers:
-        hold_w1 = 0.325 * ft_val_2 / scale
+        hold_w1 = 0.15 * ft_val_2
         assert cert.objective > 40.0 + hold_w1
+
+    # Zero-hold parity on Wildcard, Free Hit, and 5-FT cap-overflow transitions (matched against solver/solver.py)
+    no_upgrade_forecasts = forecasts[forecasts["player_id"] != 16].copy()
+    st_2ft = replace(opening, deadline=2, free_transfers=2, bank=10, parent_hash=state_hash(opening))
+    _, cert_wc_2ft = native_strategic_solve(
+        st_2ft, 2, no_upgrade_forecasts, {**h2_opts, "chip_calendar": ((2, "wildcard"),)}
+    )
+    _, cert_wc_2ft_zero = native_strategic_solve(
+        st_2ft, 2, no_upgrade_forecasts, {**h2_opts, "chip_calendar": ((2, "wildcard"),), "spare_ft_hold_weight": 0.0}
+    )
+    _, cert_fh_2ft = native_strategic_solve(
+        st_2ft, 2, no_upgrade_forecasts, {**h2_opts, "chip_calendar": ((2, "free_hit"),)}
+    )
+    _, cert_fh_2ft_zero = native_strategic_solve(
+        st_2ft, 2, no_upgrade_forecasts, {**h2_opts, "chip_calendar": ((2, "free_hit"),), "spare_ft_hold_weight": 0.0}
+    )
+    assert cert_wc_2ft.objective == pytest.approx(cert_wc_2ft_zero.objective, abs=1e-6)
+    assert cert_fh_2ft.objective == pytest.approx(cert_fh_2ft_zero.objective, abs=1e-6)
+
+    st_5ft = replace(opening, deadline=2, free_transfers=5, bank=10, parent_hash=state_hash(opening))
+    _, cert_5ft_waived = native_strategic_solve(st_5ft, 2, no_upgrade_forecasts, h2_opts)
+    _, cert_5ft_zero_w = native_strategic_solve(
+        st_5ft, 2, no_upgrade_forecasts, {**h2_opts, "spare_ft_hold_weight": 0.0}
+    )
+    assert cert_5ft_waived.objective == pytest.approx(cert_5ft_zero_w.objective, abs=1e-6)
 
 
 def test_profiler_envelope_60s_zero_censoring_rss_and_live_cache(tmp_path: Path) -> None:

@@ -1,0 +1,2 @@
+config_id,baseline_mode,v2,spare_ft_hold_weight,ft_use_penalty,perm_hurdle_h10,delay1_h10,gate_hurdle_lt4,solver_objective,total_xp,horizon_egs,gw12_transfers,gw12_hits,gw12_moves,total_transfers_10gw,total_hits_10gw,avg_ft_bank,min_ft_bank,max_ft_bank,wasted_fts,solver_model_status,relative_gap,solve_seconds
+v2_2p4_h_0p15_u_0p6_cap_guard,False,2.4,0.15,0.6,4.8441,0.81,False,350.0789,651.4527,659.8201,2,0,"+Muharemović, Ødegaard / -F.Kadıoğlu, Palmer",6,0,2.7,1,5,1,Time limit reached,0.010078,190.31

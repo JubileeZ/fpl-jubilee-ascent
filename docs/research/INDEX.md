@@ -1,6 +1,6 @@
 # Research Index & Guidelines
 
-**Updated**: 2026-11-22T15:53:02+00:00
+**Updated**: 2026-11-24T16:15:00+07:00
 **Status**: Live index. Active research topics tracked below.
 
 ---
@@ -50,6 +50,8 @@ Agents starting any model / Candidate / Champion work **read this block first**.
 ---
 
 ## Active Research Index
+
+- **Strategic Free Transfer valuation calibration (#227–#231 Adopted, 2026-11-24):** [Note](strategic-ft-calibration/strategic-ft-calibration.md) · [Stage 1 Grid](strategic-ft-calibration/stage1_s1_grid.csv) · [Stage 2 Certified Finalists](strategic-ft-calibration/stage2_certified_finalists.csv) · [Stage 2 GW Trajectories](strategic-ft-calibration/stage2_gw_trajectories.csv) · [Proto #230 Comparison](strategic-ft-calibration/proto230_static_vs_twophase.csv) · [Proto #230 Trajectories](strategic-ft-calibration/proto230_gw_trajectories.csv) · [Live GW12–21 Sensitivity](strategic-ft-calibration/live_gw12_21_sensitivity.csv) · [Live GW12–21 B2 Cap Guard](strategic-ft-calibration/live_gw12_21_b2_cap_guard.csv) · [Runner](strategic-ft-calibration/runner.py) · [Proto #230 Runner](strategic-ft-calibration/prototype_230.py). Certified two-season (`2025-26` `S-1` + untuned `2024-25` `S-2`, `gap=0.0`, `600s` cap; `2026-27` sealed) + live `H=10` evaluation rejected `GW1–8` two-phase regimes under Q9 (`q9_twophase_parsimony_pass = False`) and adopted **Option B2 + 5-FT cap-overflow hold waiver** (`ft_value_list = {"2": 2.4, "3": 1.44, "4": 0.72, "5": 0.24}` unscaled across `1 <= H <= 10`, `spare_ft_hold_weight = 0.15`, `ft_use_penalty = 0.6`, unified WC/FH + 5-FT overflow `gw_ft_hold` waivers): certified `def_xg_shrink_challenger` `S-1 = 2,138` / `S-2 = 2,336` (`4,474`, `+8` vs prior `2,167`/`2,299`; `0` wasted FTs; live `H=10` `659.82` EGS, `+1.82` vs baseline).
 
 - **Learned score from component forecasts (#205):** [Design and evaluation](candidate-ideation/component-score-head.md).
 

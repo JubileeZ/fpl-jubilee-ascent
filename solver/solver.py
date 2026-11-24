@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from solver.data_parser import read_data
+from solver.scenarios import DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT
 from solver.utils import cached_request, get_random_id, load_solver_static
 from solver.vendor import UPSTREAM_COMMIT
 
@@ -856,10 +857,14 @@ def solve_multi_period_fpl(data, options):
     # print(f"Using FT state values of {ft_state_value}")
     print(f"Using FT values of {ft_value_list}")
     gw_ft_value = {w: sum_(ft_state_value[s] * fts_state[w, s] for s in ft_states) for w in ft_gws}
-    ft_scale = float(options.get("horizon_scale") or 1.0) or 1.0
-    spare_ft_hold_weight = 0.325
+    raw_hold_w = options.get("spare_ft_hold_weight")
+    if raw_hold_w is None:
+        raw_hold_w = (options.get("strategic_options") or {}).get("spare_ft_hold_weight")
+    spare_ft_hold_weight = (
+        DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT if raw_hold_w is None else float(raw_hold_w)
+    )
     ft_hold_weights = {
-        s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1]) / ft_scale
+        s: spare_ft_hold_weight * max(0.0, ft_state_value[s] - ft_state_value[1])
         for s in ft_states
     }
     max_ft_hold = max(ft_hold_weights.values(), default=0.0)
@@ -875,6 +880,13 @@ def solve_multi_period_fpl(data, options):
         m.addConstrs(
             [
                 ft_hold_credit[w] <= max_ft_hold * (1 - use_wc[w] - use_fh[w])
+                for w in hold_gws
+            ]
+        )
+        # Waive spare-FT hold credit on weeks whose accrued FTs overflow the 5-FT cap.
+        m.addConstrs(
+            [
+                ft_hold_credit[w] <= max_ft_hold * (1 - ft_above_ub[w])
                 for w in hold_gws
             ]
         )
@@ -1344,6 +1356,7 @@ def solve_multi_period_fpl(data, options):
                     "def_stack_penalty": def_stack_penalty,
                     "gk_transfer_friction": gk_transfer_friction,
                     "horizon_scale": round(float(options.get("horizon_scale") or strategic_opts.get("horizon_scale") or 1.0), 4),
+                    "spare_ft_hold_weight": round(spare_ft_hold_weight, 4),
                     "ft_schedule": ft_value_list,
                 },
                 "total_slack_penalty": round(total_slack, 2),
