@@ -75,12 +75,12 @@ def test_load_xmins_override_omits_blank_cells(tmp_path: Path):
     assert result[(12, 8)] == 60.0
 
 
-def test_sparse_override_preserves_champion_for_unlisted_players(tmp_path: Path):
-    from models import get_model, resolve_model_or_champion
+@pytest.fixture(scope="module")
+def baseline_champion_gw7():
     from commands.run_model import load_fit_history
+    from models import get_model, resolve_model_or_champion
 
     processed = resolve_operational_processed_dir(Path("."))
-    # 1. Baseline Champion without override
     df_feat_base = build_features(processed, 7, horizon=1)
     champ_name = resolve_model_or_champion("champion")
     model = get_model(champ_name)
@@ -88,8 +88,16 @@ def test_sparse_override_preserves_champion_for_unlisted_players(tmp_path: Path)
     if fit_hist is not None:
         model.fit(fit_hist)
     base_preds = model.predict(df_feat_base, horizon=1)
+    return processed, df_feat_base, model, base_preds
 
-    # 2. Champion with sparse override on only 1 player (Haaland, 411)
+
+def test_sparse_override_preserves_champion_for_unlisted_players(
+    tmp_path: Path,
+    baseline_champion_gw7,
+):
+    processed, _df_feat_base, model, base_preds = baseline_champion_gw7
+
+    # Champion with sparse override on only 1 player (Haaland, 411)
     csv_file = tmp_path / "sparse_xmins.csv"
     csv_file.write_text(
         "ID,Name,7_xMins\n"
@@ -168,15 +176,15 @@ def test_generate_model_projections_with_xmins_override(tmp_path: Path):
         horizon=1,
         xmins_override=csv_file,
         output_name=out_stem,
+        output_dir=tmp_path,
     )
     assert out_csv.exists()
+    assert out_csv.parent == tmp_path
     assert out_csv.name == f"{out_stem}.csv"
     df = pd.read_csv(out_csv)
     haaland = df[df["ID"] == 411]
     assert not haaland.empty
     assert pytest.approx(haaland.iloc[0]["7_xMins"], abs=0.1) == 87.0
-    # Clean up test output file in data/
-    out_csv.unlink(missing_ok=True)
 
 
 def test_dgw_and_bgw_xmins_override_grain(tmp_path: Path):

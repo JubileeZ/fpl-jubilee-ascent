@@ -256,6 +256,21 @@ def apply_matchup_share_overlay(
     saves_vals: list[float] = []
     defcon_vals: list[float] = []
     attack_mults: list[float] = []
+    club_rates_cache: dict[tuple[int, bool], tuple[float, float]] = {}
+
+    def _cached_club_rates(cid: int, home_flag: bool) -> tuple[float, float]:
+        ck = (cid, home_flag)
+        cached = club_rates_cache.get(ck)
+        if cached is None:
+            cached = _club_rates(
+                by_club,
+                cid,
+                home_flag,
+                league_xg=league_xg,
+                league_xgc=league_xgc,
+            )
+            club_rates_cache[ck] = cached
+        return cached
 
     for row in out.itertuples(index=False):
         opp_id = int(getattr(row, "opponent_id", 0) or 0)
@@ -269,13 +284,7 @@ def apply_matchup_share_overlay(
             attack_mults.append(1.0)
             continue
 
-        opp_xg, opp_xgc = _club_rates(
-            by_club,
-            opp_id,
-            not is_home,
-            league_xg=league_xg,
-            league_xgc=league_xgc,
-        )
+        opp_xg, opp_xgc = _cached_club_rates(opp_id, not is_home)
         delta_att = opp_xgc - league_xgc
         delta_def = opp_xg - league_xg
 

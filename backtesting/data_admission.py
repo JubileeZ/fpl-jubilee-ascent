@@ -288,18 +288,43 @@ def assess_origins(
     *,
     allow_disk_path_fallback: bool = True,
 ) -> list[dict[str, Any]]:
-    if (
-        isinstance(request, dict)
-        and request.get("version") == 2
-        and request.get("mode") == "empirical"
-    ):
-        from backtesting.empirical_admission import assess_empirical_origins
+    from backtesting.verification_cache import get_verification_cache, request_catalog_fingerprint
 
-        return assess_empirical_origins(
-            request,
-            catalog,
-            allow_disk_path_fallback=allow_disk_path_fallback,
-        )
+    cache = get_verification_cache()
+    cache_key: Any = None
+    if cache is not None:
+        cache_key = (request_catalog_fingerprint(request, catalog), bool(allow_disk_path_fallback))
+        cached = cache["assess_origins"].get(cache_key)
+        if cached is not None:
+            return list(cached)
+
+    def _compute() -> list[dict[str, Any]]:
+        if (
+            isinstance(request, dict)
+            and request.get("version") == 2
+            and request.get("mode") == "empirical"
+        ):
+            from backtesting.empirical_admission import assess_empirical_origins
+
+            return assess_empirical_origins(
+                request,
+                catalog,
+                allow_disk_path_fallback=allow_disk_path_fallback,
+            )
+        return _assess_v1_origins(request, catalog, allow_disk_path_fallback=allow_disk_path_fallback)
+
+    result = _compute()
+    if cache is not None and cache_key is not None:
+        cache["assess_origins"][cache_key] = list(result)
+    return result
+
+
+def _assess_v1_origins(
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    *,
+    allow_disk_path_fallback: bool = True,
+) -> list[dict[str, Any]]:
     if (
         not isinstance(request, dict)
         or set(request)

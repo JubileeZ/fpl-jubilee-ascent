@@ -202,6 +202,36 @@ def verify_training_bundle(
     allow_disk_path_fallback: bool = True,
 ) -> dict[str, Any]:
     """Resolve source-authorized rows for synthetic diagnostics or verified empirical bundles."""
+    from backtesting.verification_cache import get_verification_cache, request_catalog_fingerprint
+
+    cache = get_verification_cache()
+    cache_key: Any = None
+    if cache is not None:
+        cache_key = (capability, request_catalog_fingerprint(request, catalog), authority_digest, bool(allow_disk_path_fallback))
+        cached = cache["training"].get(cache_key)
+        if cached is not None:
+            return cached
+
+    result = _verify_training_bundle_uncached(
+        capability,
+        request,
+        catalog,
+        authority_digest,
+        allow_disk_path_fallback=allow_disk_path_fallback,
+    )
+    if cache is not None and cache_key is not None:
+        cache["training"][cache_key] = result
+    return result
+
+
+def _verify_training_bundle_uncached(
+    capability: AdmittedInput,
+    request: dict[str, Any],
+    catalog: dict[str, bytes],
+    authority_digest: str,
+    *,
+    allow_disk_path_fallback: bool = True,
+) -> dict[str, Any]:
     verify_input(capability, request, catalog, allow_disk_path_fallback=allow_disk_path_fallback)
     if capability.season in load_season_lifecycle().sealed_seasons():
         raise ValueError("Protected season")

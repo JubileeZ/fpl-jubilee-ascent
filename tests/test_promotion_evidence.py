@@ -36,6 +36,7 @@ def _selection(root: Path) -> Path:
     return path
 
 
+@pytest.mark.slow
 def test_native_replay_outputs_reconstruct_and_synthetic_evidence_cannot_adopt(retained_request: Path) -> None:
     result = evaluate_replay_evidence(retained_request)
     assert result["scientific_verdict"] == "inconclusive"

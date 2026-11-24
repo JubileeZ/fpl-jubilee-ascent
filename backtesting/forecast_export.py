@@ -35,6 +35,16 @@ def _expected_empirical_coverage(
     targets: list[int],
     catalog: dict[str, bytes],
 ) -> tuple[set[tuple[int, int, int]], pd.DataFrame]:
+    from backtesting.verification_cache import catalog_fingerprint, get_verification_cache, json_fingerprint
+
+    cache = get_verification_cache()
+    cache_key: Any = None
+    if cache is not None:
+        cache_key = (json_fingerprint(origin), capability, tuple(targets), catalog_fingerprint(catalog))
+        cached = cache["emp_cov"].get(cache_key)
+        if cached is not None:
+            return set(cached[0]), cached[1].copy()
+
     import json
 
     from backtesting.empirical_admission import resolve_and_verify_source_bytes
@@ -72,7 +82,10 @@ def _expected_empirical_coverage(
             else:
                 for fid in fids:
                     expected.add((pid, w, fid))
-    return expected, pd.DataFrame(meta_rows)
+    meta_df = pd.DataFrame(meta_rows)
+    if cache is not None and cache_key is not None:
+        cache["emp_cov"][cache_key] = (set(expected), meta_df.copy())
+    return expected, meta_df
 
 
 def strict_solver_table(

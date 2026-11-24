@@ -149,15 +149,26 @@ class BlobStore:
         return {"path": self.relpath(digest), "sha256": digest}
 
     def read_bytes(self, digest_or_relpath: str, *, expected_sha256: str | None = None) -> bytes:
+        from backtesting.verification_cache import get_verification_cache
+
         digest, target = self._resolve_blob_ref(digest_or_relpath)
         if expected_sha256 is not None and _validate_sha256_hex(expected_sha256, "expected_sha256") != digest:
             raise ValueError(f"Blob digest mismatch: expected {expected_sha256}, ref points to {digest}")
+        cache = get_verification_cache()
+        cache_key: tuple[str, str] | None = None
+        if cache is not None:
+            cache_key = (str(self.root.resolve()), digest)
+            cached = cache["blobs"].get(cache_key)
+            if cached is not None:
+                return cached
         if not target.is_file():
             raise ValueError(f"Missing blob file: blobs/{digest}")
         raw = target.read_bytes()
         actual = _sha256_bytes(raw)
         if actual != digest:
             raise ValueError(f"Blob checksum mismatch for blobs/{digest}: got {actual}")
+        if cache is not None and cache_key is not None:
+            cache["blobs"][cache_key] = raw
         return raw
 
     def verify(self, digest_or_relpath: str, *, expected_sha256: str | None = None) -> str:
@@ -349,8 +360,17 @@ def compute_serving_model_closure(
     project_root: Path | None = None,
 ) -> ServingModelClosure:
     """Compute transitive AST closure for ``model_names`` plus core runtime & modeling uv.lock pins."""
+    from backtesting.verification_cache import get_verification_cache
+
     root = (project_root or PROJECT_ROOT).resolve()
     ordered_models = tuple(dict.fromkeys(model_names))
+    cache = get_verification_cache()
+    cache_key: tuple[tuple[str, ...], str] | None = None
+    if cache is not None:
+        cache_key = (ordered_models, str(root))
+        cached = cache["closure"].get(cache_key)
+        if cached is not None:
+            return cached
     bindings: dict[str, dict[str, str]] = {}
     seed_py: list[str] = []
 
@@ -421,7 +441,7 @@ def compute_serving_model_closure(
         "packages": package_pins,
     }
     closure_hash = _sha256_bytes(_canonical_json_bytes(closure_payload))
-    return ServingModelClosure(
+    closure = ServingModelClosure(
         serving_model_closure_hash=closure_hash,
         model_runtime_bindings=bindings,
         closure_files=sorted_files,
@@ -429,6 +449,9 @@ def compute_serving_model_closure(
         evaluator_code_hash=compute_evaluator_code_hash(root),
         producer_git_sha=get_producer_git_sha(root),
     )
+    if cache is not None and cache_key is not None:
+        cache["closure"][cache_key] = closure
+    return closure
 
 
 def _compute_chain_record_hash(payload_without_hash: Mapping[str, Any]) -> str:
@@ -913,6 +936,7 @@ def _collect_snapshot_files(
 ) -> dict[str, bytes]:
     """Collect frozen relative-POSIX byte copies for an immutable checkpoint snapshot."""
     collected: dict[str, bytes] = {}
+    seen_ctx: set[str] = set()
 
     def _add_file(rel_raw: Any, *, required: bool = True) -> None:
         if rel_raw is None:
@@ -920,6 +944,8 @@ def _collect_snapshot_files(
                 raise ValueError("Missing required snapshot file reference")
             return
         rel = validate_relative_posix_path(str(rel_raw))
+        if rel in collected:
+            return
         target = _ensure_no_symlink_components(root, rel)
         if not target.is_file():
             if required:
@@ -929,6 +955,9 @@ def _collect_snapshot_files(
 
     def _add_admission_context(ref: Mapping[str, Any]) -> None:
         ref_rel = validate_relative_posix_path(str(ref["path"]))
+        if ref_rel in seen_ctx:
+            return
+        seen_ctx.add(ref_rel)
         _add_file(ref_rel)
         ctx = json.loads(collected[ref_rel].decode("utf-8"))
         for val in ctx.get("catalog", {}).values():
@@ -1004,6 +1033,24 @@ def pack_checkpoint_snapshot(
     project_root: Path | str | None = None,
 ) -> dict[str, Any]:
     """Package frozen byte-copies of a finalized passing checkpoint into a deterministic tar.gz snapshot."""
+    from backtesting.verification_cache import verification_call_scope
+
+    with verification_call_scope():
+        return _pack_checkpoint_snapshot_impl(
+            bundle_path,
+            output_dir=output_dir,
+            exclusions_path=exclusions_path,
+            project_root=project_root,
+        )
+
+
+def _pack_checkpoint_snapshot_impl(
+    bundle_path: Path | str,
+    *,
+    output_dir: Path | str | None = None,
+    exclusions_path: Path | str | None = None,
+    project_root: Path | str | None = None,
+) -> dict[str, Any]:
     bpath = Path(bundle_path).resolve()
     root = bpath.parent
     bundle_rel = validate_relative_posix_path(bpath.name)
@@ -1118,6 +1165,30 @@ def verify_checkpoint_snapshot_archive(
     project_root: Path | str | None = None,
 ) -> dict[str, Any]:
     """Verify snapshot digest, safely extract to an isolated directory, and offline-verify bundle & chains."""
+    from backtesting.verification_cache import verification_call_scope
+
+    with verification_call_scope():
+        return _verify_checkpoint_snapshot_archive_impl(
+            archive_path,
+            expected_archive_sha256=expected_archive_sha256,
+            manifest_path=manifest_path,
+            expected_champion=expected_champion,
+            canonical_registry_path=canonical_registry_path,
+            canonical_exclusions_path=canonical_exclusions_path,
+            project_root=project_root,
+        )
+
+
+def _verify_checkpoint_snapshot_archive_impl(
+    archive_path: Path | str,
+    *,
+    expected_archive_sha256: str | None = None,
+    manifest_path: Path | str | None = None,
+    expected_champion: str | None = None,
+    canonical_registry_path: Path | str | None = None,
+    canonical_exclusions_path: Path | str | None = None,
+    project_root: Path | str | None = None,
+) -> dict[str, Any]:
     apath = Path(archive_path).resolve()
     if not apath.is_file():
         raise ValueError(f"Snapshot archive not found: {apath}")
