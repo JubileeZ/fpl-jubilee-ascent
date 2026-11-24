@@ -14,9 +14,11 @@ concurrency:
 jobs:
   pytest-standard:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/pytest-setup
+        timeout-minutes: 5
       - run: uv run --no-sync ruff check .
       - run: >-
           uv run --no-sync pytest -n 4 --dist worksteal --durations=20
@@ -25,22 +27,27 @@ jobs:
 
   pytest-validation-replay:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/pytest-setup
+        timeout-minutes: 5
       - run: uv run --no-sync pytest -n 4 --dist worksteal --durations=20 tests/test_produce_validation_evidence.py
 
   pytest-checkpoint-verification:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/pytest-setup
+        timeout-minutes: 5
       - run: uv run --no-sync pytest -n 4 --dist worksteal --durations=20 tests/test_verified_checkpoint_evidence.py
 
   full-pytest:
     needs: [pytest-standard, pytest-validation-replay, pytest-checkpoint-verification]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - name: Require every pytest group to pass
         env:
