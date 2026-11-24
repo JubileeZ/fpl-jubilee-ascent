@@ -256,14 +256,53 @@ def test_material_digest_binds_names_bytes_and_order() -> None:
         material_digest({})
 
 
+_PROMOTION_WORKFLOW_PATH = Path(".github/workflows/evaluate_model_promotion.yml")
+
+
+def _yaml_section_entries(workflow: str, section: str) -> dict[str, str]:
+    lines = workflow.splitlines()
+    section_index = lines.index(f"{section}:")
+    entries: list[tuple[int, str]] = []
+    for line in lines[section_index + 1 :]:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if not line[0].isspace():
+            break
+        raw = line.split(" #", 1)[0].rstrip()
+        indent = len(line) - len(line.lstrip(" "))
+        entries.append((indent, raw.strip()))
+
+    if not entries:
+        return {}
+    min_indent = min(indent for indent, _ in entries)
+    result: dict[str, str] = {}
+    for indent, text in entries:
+        if indent != min_indent:
+            continue
+        key, sep, val = text.partition(":")
+        if sep == ":":
+            result[key.strip()] = val.strip()
+    return result
+
+
 def test_workflow_has_no_automatic_selection_write() -> None:
-    workflow = Path(".github/workflows/evaluate_model_promotion.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = _PROMOTION_WORKFLOW_PATH.read_text(encoding="utf-8")
     assert "contents: read" in workflow
     assert "--apply" not in workflow
     assert "git push" not in workflow
     assert "git commit" not in workflow
+
+
+def test_workflow_is_manual_dispatch_only_with_concurrency() -> None:
+    workflow = _PROMOTION_WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert set(_yaml_section_entries(workflow, "on")) == {"workflow_dispatch"}
+    concurrency = _yaml_section_entries(workflow, "concurrency")
+    assert (
+        concurrency["group"]
+        == "evaluate-model-promotion-${{ github.ref }}-${{ github.event.inputs.evidence_request || github.event.inputs.data_dir || 'default' }}"
+    )
+    assert concurrency["cancel-in-progress"] == "true"
 
 
 @pytest.mark.parametrize("field", ["execution_status", "scientific_verdict"])
