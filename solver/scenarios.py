@@ -37,7 +37,8 @@ LIVE_WEEKLY_HIT_LIMIT = 1
 LIVE_HIT_COST = 4.0
 NO_HIT_WEEKLY_HIT_LIMIT = 0
 DEFAULT_FT_USE_PENALTY = 0.2
-DEFAULT_STRATEGIC_FT_USE_PENALTY = 0.5
+DEFAULT_STRATEGIC_FT_USE_PENALTY = 0.6
+DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT = 0.15
 
 DEFAULT_STRATEGIC_OPTIONS: dict[str, Any] = {
     "hit_friction": 1.8,
@@ -49,13 +50,14 @@ DEFAULT_STRATEGIC_OPTIONS: dict[str, Any] = {
     "def_stack_cap": 2,
     "def_stack_penalty": 1.2,
     "gk_transfer_friction": 1.5,
+    "spare_ft_hold_weight": DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT,
 }
 
 DEFAULT_STRATEGIC_FT_SCHEDULE: dict[str, float] = {
-    "2": 2.0,
-    "3": 1.2,
-    "4": 0.6,
-    "5": 0.2,
+    "2": 2.4,
+    "3": 1.44,
+    "4": 0.72,
+    "5": 0.24,
 }
 
 BASE_STRATEGIC_HORIZON = 5
@@ -122,6 +124,7 @@ def scenario_arm_overrides(
     decay_base: float = 0.85,
     strategic_options: Mapping[str, Any] | None = None,
     strategic_ft_schedule: Mapping[str, Any] | None = None,
+    spare_ft_hold_weight: float | None = None,
 ) -> dict[str, Any]:
     norm_arm = normalize_arm_key(arm)
     if norm_arm not in ARM_NAMES:
@@ -136,6 +139,7 @@ def scenario_arm_overrides(
             "strategic_mode": False,
             "strategic_options": None,
             "ft_value_list": None,
+            "spare_ft_hold_weight": None,
         }
     if norm_arm == ARM_UNCONSTRAINED:
         return {
@@ -145,6 +149,7 @@ def scenario_arm_overrides(
             "strategic_mode": False,
             "strategic_options": None,
             "ft_value_list": None,
+            "spare_ft_hold_weight": None,
         }
     strat = normalize_strategic_options(strategic_options)
     scale = effective_horizon_scale(horizon, decay_base=decay_base)
@@ -152,23 +157,28 @@ def scenario_arm_overrides(
     scaled_hit_friction = round(float(strat.get("hit_friction", 1.8)) * scale, 4)
     scaled_gk_friction = round(float(strat.get("gk_transfer_friction", 1.5)) * scale, 4)
 
+    # ADR 0065 #231 amendment: keep emergency FT schedule & spare hold weight unscaled across horizons.
     raw_ft = strategic_ft_schedule or DEFAULT_STRATEGIC_FT_SCHEDULE
-    scaled_ft_schedule = {
-        str(k): round(float(v) * scale, 4)
-        for k, v in raw_ft.items()
-    }
+    ft_schedule = {str(k): round(float(v), 4) for k, v in raw_ft.items()}
+    raw_hold_w = strat.get("spare_ft_hold_weight") if spare_ft_hold_weight is None else spare_ft_hold_weight
+    resolved_hold_weight = round(
+        float(DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT if raw_hold_w is None else raw_hold_w),
+        4,
+    )
 
     strat_scaled = dict(strat)
     strat_scaled["hit_friction"] = scaled_hit_friction
     strat_scaled["gk_transfer_friction"] = scaled_gk_friction
+    strat_scaled["spare_ft_hold_weight"] = resolved_hold_weight
 
     return {
         "weekly_hit_limit": LIVE_WEEKLY_HIT_LIMIT,
         "hit_cost": LIVE_HIT_COST,
         "ft_use_penalty": DEFAULT_STRATEGIC_FT_USE_PENALTY,
+        "spare_ft_hold_weight": resolved_hold_weight,
         "strategic_mode": True,
         "strategic_options": strat_scaled,
-        "ft_value_list": scaled_ft_schedule,
+        "ft_value_list": ft_schedule,
         "horizon_scale": round(scale, 4),
         **strat_scaled,
     }
@@ -184,6 +194,7 @@ def apply_scenario_arm(
     decay_base: float | None = None,
     strategic_options: Mapping[str, Any] | None = None,
     strategic_ft_schedule: Mapping[str, Any] | None = None,
+    spare_ft_hold_weight: float | None = None,
 ) -> dict[str, Any]:
     norm_arm = normalize_arm_key(arm)
     options = dict(base_options)
@@ -192,6 +203,7 @@ def apply_scenario_arm(
     if norm_arm != ARM_STRATEGIC:
         options.pop("ft_value_list", None)
         options.pop("horizon_scale", None)
+        options.pop("spare_ft_hold_weight", None)
     active_strategic = dict(base_options.get("strategic_options") or {})
     old_scale = float(base_options.get("horizon_scale") or 1.0)
     if old_scale > 0 and abs(old_scale - 1.0) > 1e-4 and not strategic_options:
@@ -201,6 +213,8 @@ def apply_scenario_arm(
             active_strategic["gk_transfer_friction"] = float(active_strategic["gk_transfer_friction"]) / old_scale
     if strategic_options:
         active_strategic.update(dict(strategic_options))
+    if spare_ft_hold_weight is None and base_options.get("spare_ft_hold_weight") is not None:
+        spare_ft_hold_weight = float(base_options["spare_ft_hold_weight"])
     h = int(options.get("horizon", DEFAULT_PLANNING_HORIZON)) if horizon is None else int(horizon)
     d = float(options.get("decay_base", 0.85)) if decay_base is None else float(decay_base)
     overrides = scenario_arm_overrides(
@@ -211,6 +225,7 @@ def apply_scenario_arm(
         decay_base=d,
         strategic_options=active_strategic,
         strategic_ft_schedule=strategic_ft_schedule,
+        spare_ft_hold_weight=spare_ft_hold_weight,
     )
     options.update(overrides)
     return options
@@ -316,6 +331,8 @@ def compute_scenarios_digest(
             key=lambda d: (int(d.get("player_id") or 0), int(d.get("gw") or 0)),
         ),
         "gap": float(gap),
+        "ft_schedule": DEFAULT_STRATEGIC_FT_SCHEDULE,
+        "ft_use_penalty": DEFAULT_STRATEGIC_FT_USE_PENALTY,
         "strategic_options": normalize_strategic_options(strategic_options),
     }
     hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))

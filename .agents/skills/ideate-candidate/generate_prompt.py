@@ -54,6 +54,7 @@ from solver.scenarios import (  # noqa: E402
     DEFAULT_STRATEGIC_FT_SCHEDULE,
     DEFAULT_STRATEGIC_FT_USE_PENALTY,
     DEFAULT_STRATEGIC_OPTIONS,
+    DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT,
     LIVE_HIT_COST,
 )
 
@@ -336,7 +337,7 @@ def build_prompt_markdown(focus: str) -> str:
     data_catalog_block = format_data_catalog_markdown()
     hit_friction: float = float(DEFAULT_STRATEGIC_OPTIONS["hit_friction"])
     gk_friction: float = float(DEFAULT_STRATEGIC_OPTIONS["gk_transfer_friction"])
-    ft_schedule: str = ", ".join(f'"{bank}": {value:.1f}' for bank, value in DEFAULT_STRATEGIC_FT_SCHEDULE.items())
+    ft_schedule: str = ", ".join(f'"{bank}": {value:g}' for bank, value in DEFAULT_STRATEGIC_FT_SCHEDULE.items())
 
     if champ_name == "def_xg_shrink_challenger":
         champ_desc = (
@@ -578,8 +579,8 @@ $$s(H) = \\frac{{\\sum_{{k=0}}^{{H-1}} \\delta^k}}{{\\sum_{{k=0}}^{{{BASE_STRATE
 5. **Goalkeeper Transfer Friction**:
    $$-{gk_friction:.1f} \\cdot s(H)\\text{{ pt objective penalty on non-Wildcard/non-Free-Hit GKP transfer-in}}.$$
 
-#### Emergency Free Transfer Value (ADR 0065)
-Strategic marginal FT values for post-transfer carried bank states 2-5 (`fts[w + 1]`): `ft_value_list = {{{ft_schedule}}} * s(H)`. First spare FT receives highest emergency value plus weekly holding buffer credit; marginal credits diminish toward the 5-FT cap. Weekly starter/bench/defensive slack penalties and `ft_use_penalty = {DEFAULT_STRATEGIC_FT_USE_PENALTY:.1f}` remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
+#### Emergency Free Transfer Value (ADR 0065, amended #231)
+Strategic marginal FT values for post-transfer carried bank states 2-5 (`fts[w + 1]`): unscaled `ft_value_list = {{{ft_schedule}}}` across $1 \\le H \\le 10$ with `spare_ft_hold_weight = {DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT:g}` (waived on Wildcard/Free Hit weeks and 5-FT cap-overflow transitions) and `ft_use_penalty = {DEFAULT_STRATEGIC_FT_USE_PENALTY:g}`. Weekly starter/bench/defensive slack penalties remain unscaled. `unconstrained` and `no_hit` arms clear this schedule.
 
 ---
 

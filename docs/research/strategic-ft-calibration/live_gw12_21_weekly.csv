@@ -1,0 +1,51 @@
+config_id,gw,pre_ft,transfers,hits,post_ft,gw_xp,gw_egs,buys,sells,captain
+baseline_adr0065,12,2,2,0,1,56.7581,57.6218,Tarkowski; Dewsbury-Hall,Egan; Palmer,Haaland
+baseline_adr0065,13,1,0,0,2,62.0182,62.9579,,,Haaland
+baseline_adr0065,14,2,0,0,3,64.0291,64.8795,,,Haaland
+baseline_adr0065,15,3,0,0,4,61.3547,62.205,,,Haaland
+baseline_adr0065,16,4,1,0,4,65.5389,66.4302,Muharemović,F.Kadıoğlu,Haaland
+baseline_adr0065,17,4,2,0,3,67.3792,68.1604,Raya; Yalcouyé,Verbruggen; Barnes,Haaland
+baseline_adr0065,18,3,2,0,2,67.8233,68.4663,Evanilson; Mendy,Konsa; Calvert-Lewin,Haaland
+baseline_adr0065,19,2,0,0,3,67.3685,68.1151,,,Haaland
+baseline_adr0065,20,3,0,0,4,66.0543,66.829,,,Haaland
+baseline_adr0065,21,4,0,0,5,71.5024,72.3317,,,Isak
+v2_2p0_h_0p15_u_0p4,12,2,2,0,1,57.5785,58.4449,Vuskovic; Ødegaard,F.Kadıoğlu; Palmer,Haaland
+v2_2p0_h_0p15_u_0p4,13,1,1,0,1,62.2066,63.1527,Van Hecke,Konsa,Haaland
+v2_2p0_h_0p15_u_0p4,14,1,0,0,2,64.5113,65.3405,,,Haaland
+v2_2p0_h_0p15_u_0p4,15,2,1,0,2,64.4713,65.2874,Raya,Verbruggen,Haaland
+v2_2p0_h_0p15_u_0p4,16,2,0,0,3,67.2624,68.0009,,,Haaland
+v2_2p0_h_0p15_u_0p4,17,3,0,0,4,66.8438,67.5939,,,Haaland
+v2_2p0_h_0p15_u_0p4,18,4,0,0,5,66.4033,67.1992,,,Haaland
+v2_2p0_h_0p15_u_0p4,19,5,0,0,5,66.5312,67.3291,,,Haaland
+v2_2p0_h_0p15_u_0p4,20,5,0,0,5,65.1444,65.9561,,,Haaland
+v2_2p0_h_0p15_u_0p4,21,5,3,0,3,71.6578,72.4224,Tarkowski; Evanilson; Yalcouyé,Vuskovic; Barnes; Calvert-Lewin,Isak
+v2_3p2_h_0p00_u_0p5,12,2,2,0,1,57.2199,58.0862,Van Hecke; Gomez,F.Kadıoğlu; Palmer,Haaland
+v2_3p2_h_0p00_u_0p5,13,1,0,0,2,62.009,62.8784,,,Haaland
+v2_3p2_h_0p00_u_0p5,14,2,2,0,1,66.1051,66.8826,Raya; Muharemović,Verbruggen; Konsa,Haaland
+v2_3p2_h_0p00_u_0p5,15,1,1,0,1,64.2699,65.0673,Evanilson,Calvert-Lewin,Haaland
+v2_3p2_h_0p00_u_0p5,16,1,1,0,1,68.0686,68.8419,Ødegaard,Barnes,Haaland
+v2_3p2_h_0p00_u_0p5,17,1,1,0,1,67.6776,68.4459,Araujo,Van Hecke,Haaland
+v2_3p2_h_0p00_u_0p5,18,1,0,0,2,68.3068,69.0705,,,Haaland
+v2_3p2_h_0p00_u_0p5,19,2,0,0,3,68.4436,69.2508,,,Haaland
+v2_3p2_h_0p00_u_0p5,20,3,0,0,4,66.1275,66.8961,,,Haaland
+v2_3p2_h_0p00_u_0p5,21,4,0,0,5,71.312,72.1717,,,Isak
+v2_2p4_h_0p08_u_0p6,12,2,2,0,1,57.2195,58.0477,Vuskovic; Ahoka,F.Kadıoğlu; Palmer,Haaland
+v2_2p4_h_0p08_u_0p6,13,1,1,0,1,62.1295,62.8958,Van Hecke,Konsa,Haaland
+v2_2p4_h_0p08_u_0p6,14,1,0,0,2,64.5113,65.1449,,,Haaland
+v2_2p4_h_0p08_u_0p6,15,2,0,0,3,63.1376,63.8932,,,Haaland
+v2_2p4_h_0p08_u_0p6,16,3,1,0,3,66.3404,66.8936,Raya,Verbruggen,Haaland
+v2_2p4_h_0p08_u_0p6,17,3,0,0,4,65.7913,66.4433,,,Haaland
+v2_2p4_h_0p08_u_0p6,18,4,0,0,5,66.1099,66.785,,,Haaland
+v2_2p4_h_0p08_u_0p6,19,5,0,0,5,65.6755,66.3453,,,Haaland
+v2_2p4_h_0p08_u_0p6,20,5,2,0,4,66.117,66.9589,Araujo; Evanilson,Thomas; Calvert-Lewin,Haaland
+v2_2p4_h_0p08_u_0p6,21,4,0,0,5,70.962,71.9049,,,Isak
+v2_2p4_h_0p15_u_0p6,12,2,2,0,1,57.2199,58.0862,Van Hecke; Gomez,F.Kadıoğlu; Palmer,Haaland
+v2_2p4_h_0p15_u_0p6,13,1,0,0,2,62.009,62.8784,,,Haaland
+v2_2p4_h_0p15_u_0p6,14,2,1,0,2,64.7046,65.5024,Muharemović,Konsa,Haaland
+v2_2p4_h_0p15_u_0p6,15,2,0,0,3,62.6716,63.5362,,,Haaland
+v2_2p4_h_0p15_u_0p6,16,3,1,0,3,66.4444,67.3386,Raya,Verbruggen,Haaland
+v2_2p4_h_0p15_u_0p6,17,3,0,0,4,66.0267,66.9318,,,Haaland
+v2_2p4_h_0p15_u_0p6,18,4,1,0,4,67.8916,68.6553,Evanilson,Calvert-Lewin,Haaland
+v2_2p4_h_0p15_u_0p6,19,4,0,0,5,66.4766,67.2838,,,Haaland
+v2_2p4_h_0p15_u_0p6,20,5,0,0,5,65.9812,66.7498,,,Haaland
+v2_2p4_h_0p15_u_0p6,21,5,0,0,5,70.7578,71.6175,,,Isak
