@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -15,6 +15,7 @@ from models import get_active_transfer_plan_model_name, get_default_model_name
 from models.planner_selection import strip_external_xmins_suffix
 from models.participation_state_hybrid import target_to_states
 from projections.expected_gw_score import _POS_ID, PlayerGw, player_gw_from_dashboard
+from solver.parallelism import recommended_live_solver_threads
 from solver.paths import DATA_DIR
 from solver.planning import available_chips, clamp_planning_horizon, planning_gameweeks
 from solver.scenarios import (
@@ -45,6 +46,35 @@ def serial_arm_options(options: dict[str, Any]) -> dict[str, Any]:
     out["parallel"] = "off"
     out["threads"] = 1
     return out
+
+
+def adaptive_arm_options(options: dict[str, Any], *, num_arms: int) -> dict[str, Any]:
+    """Size per-arm HiGHS threads for isolated-process concurrent scenario solves."""
+    out = dict(options)
+    threads = recommended_live_solver_threads(concurrent_arms=num_arms)
+    out["threads"] = threads
+    out["parallel"] = "on" if threads > 1 else "off"
+    return out
+
+
+def _solve_arm_worker(
+    arm: str,
+    options: dict[str, Any],
+    processed_dir: Path,
+    target_gw: int,
+    arm_path: Path,
+) -> tuple[str, dict[str, Any]]:
+    try:
+        plan = execute_transfer_plan(
+            options,
+            processed_dir=processed_dir,
+            target_gw=target_gw,
+            solution_path=arm_path,
+        )
+    finally:
+        if arm_path.exists():
+            arm_path.unlink()
+    return arm, plan
 
 
 def write_scenarios_payload(path: Path, payload: dict[str, Any]) -> None:
@@ -273,18 +303,34 @@ def execute_transfer_plan_scenarios(
                 on_progress(payload)
             return payload
 
-    def solve_one(arm: str) -> dict[str, Any]:
-        options = serial_arm_options(
-            apply_scenario_arm(
-                base,
-                arm,
-                start_gw=target_gw,
-                free_transfer_bank=free_transfers,
-                strategic_options=strategic_options,
-            )
+    def _annotate_row(arm: str, plan: dict[str, Any]) -> dict[str, Any]:
+        annotated = annotate_plan_with_egs(plan, lookup)
+        return {
+            "id": arm,
+            "name": ARM_NAMES[arm],
+            "horizon_egs": annotated["horizon_egs"],
+            "solver_objective": (annotated.get("meta") or {}).get("solver_objective"),
+            "plan": annotated,
+        }
+
+    per_arm_threads = recommended_live_solver_threads(concurrent_arms=len(arms))
+    use_processes = execute_plan is execute_transfer_plan and per_arm_threads > 1
+
+    def _build_arm_opts(arm: str) -> dict[str, Any]:
+        armed = apply_scenario_arm(
+            base,
+            arm,
+            start_gw=target_gw,
+            free_transfer_bank=free_transfers,
+            strategic_options=strategic_options,
         )
-        if "gap" not in options:
-            options["gap"] = gap
+        opts = adaptive_arm_options(armed, num_arms=len(arms)) if use_processes else serial_arm_options(armed)
+        if "gap" not in opts:
+            opts["gap"] = gap
+        return opts
+
+    def solve_one(arm: str) -> dict[str, Any]:
+        options = _build_arm_opts(arm)
         arm_path = scenarios_path.parent / f".arm_{arm}.json"
         try:
             plan = execute_plan(
@@ -296,21 +342,34 @@ def execute_transfer_plan_scenarios(
         finally:
             if arm_path.exists():
                 arm_path.unlink()
-        annotated = annotate_plan_with_egs(plan, lookup)
-        return {
-            "id": arm,
-            "name": ARM_NAMES[arm],
-            "horizon_egs": annotated["horizon_egs"],
-            "solver_objective": (annotated.get("meta") or {}).get("solver_objective"),
-            "plan": annotated,
-        }
+        return _annotate_row(arm, plan)
 
     publish("running")
-    with ThreadPoolExecutor(max_workers=max(1, len(arms))) as pool:
-        futures = {pool.submit(solve_one, arm): arm for arm in arms}
-        for fut in as_completed(futures):
-            row = fut.result()
-            with publish_lock:
-                completed[str(row["id"])] = row
-            publish("running")
+    if use_processes:
+        with ProcessPoolExecutor(max_workers=max(1, len(arms))) as pool:
+            futures = {
+                pool.submit(
+                    _solve_arm_worker,
+                    arm,
+                    _build_arm_opts(arm),
+                    processed_dir,
+                    target_gw,
+                    scenarios_path.parent / f".arm_{arm}.json",
+                ): arm
+                for arm in arms
+            }
+            for fut in as_completed(futures):
+                arm, plan = fut.result()
+                row = _annotate_row(arm, plan)
+                with publish_lock:
+                    completed[str(row["id"])] = row
+                publish("running")
+    else:
+        with ThreadPoolExecutor(max_workers=max(1, len(arms))) as pool:
+            futures = {pool.submit(solve_one, arm): arm for arm in arms}
+            for fut in as_completed(futures):
+                row = fut.result()
+                with publish_lock:
+                    completed[str(row["id"])] = row
+                publish("running")
     return publish("ok")
