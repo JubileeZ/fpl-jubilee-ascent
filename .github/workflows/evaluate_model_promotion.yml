@@ -1,14 +1,6 @@
 name: Evaluate model promotion
 
 on:
-  push:
-    paths:
-      - "models/**"
-      - "features/**"
-      - "backtesting/**"
-      - "config/model_selection.json"
-      - "commands/compare_models.py"
-      - "commands/evaluate_model_promotion.py"
   workflow_dispatch:
     inputs:
       data_dir:
@@ -26,6 +18,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: evaluate-model-promotion-${{ github.ref }}-${{ github.event.inputs.evidence_request || github.event.inputs.data_dir || 'default' }}
+  cancel-in-progress: true
 
 jobs:
   evaluate:
