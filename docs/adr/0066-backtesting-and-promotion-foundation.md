@@ -86,7 +86,7 @@ Foundation discussions (Q1–Q28, `docs/research/backtesting-promotion-foundatio
   - Effective hit hurdle: $4.0 + 1.8 \times \text{scale}(H)$.
   - Goalkeeper transfer friction: $1.5 \times \text{scale}(H)$.
   - Unscaled diminishing emergency FT value schedule (`1 <= H <= 10`): `{"2": 2.4, "3": 1.44, "4": 0.72, "5": 0.24}`, `spare_ft_hold_weight = 0.15` (waived on Wildcard/Free Hit and 5-FT cap-overflow transitions), and `ft_use_penalty = 0.6`.
-  - Certified `def_xg_shrink_challenger` Strategic replay reference scores under this protocol: `2025-26` (`S-1`) = `2,138`, `2024-25` (`S-2`) = `2,336` (re-baselined from `2,167` / `2,299`; all `101` `candidate_ledger.csv` `dead` locks preserved; `2026-27` sealed/untouched).
+  - Certified `def_xg_shrink_challenger` Strategic replay reference scores under this protocol: `2025-26` (`S-1`) = `2,120` (PR `#234` 5-FT overflow waiver post-`GW15` AFCON parity; pre-waiver `proto230` snapshot `2,138`), `2024-25` (`S-2`) = `2,336` (re-baselined from `2,167` / `2,299`; all `101` `candidate_ledger.csv` `dead` locks preserved; `2026-27` sealed/untouched).
   - Weekly variance constraints (Starter xMins floor, First-Bench cover, DEF stack cap) remain active.
 
 ### 8. Amendment (`#180`, 2026-11-12) — *Superseded by [ADR 0069](0069-annual-rolling-validation-and-dual-tier-promotion.md) (2026-11-13)*

@@ -46,3 +46,10 @@
 - Eliminates CI/historical `TIME_LIMIT` aborts without sacrificing cross-host `OPTIMAL` determinism.
 - Restores rolling-MILP two-season Win-Both power (`8.3% -> 51.9%` at `+50` pts/yr, `G=1`) while blocking `S-1` winner's-curse overfits from wasting scarce `M <= 2` season slots.
 - Modifies `backtesting/rolling_replay.py` and `backtesting/promotion_evidence.py`, cleanly rotating `core_closure_hash()` before `#206` (`EXT-02_1`) begins; archived `EXT-01_1` artifacts remain untouched.
+
+---
+
+## Empirical Verification Note (2026-11-24, Map #235 / #237 / #240)
+
+- **Single-read `col_value` extraction (`backtesting/native_transfer_solver.py`):** Cuts per-GW solution extraction `~1,300×–1,800×` (`~129s → 0.09s`), reducing 38-GW certified `threads=1`, `gap=0.0` replay wall time (`2025-26`: `10.52m → 8.33m`, `2024-25`: `15.09m → 13.14m`, `38/38 OPTIMAL`, `0` diffs, exact `2,120` / `2,336` parity). Editing `native_transfer_solver.py` cleanly rotates `replay_solver_identity` while `podium_sealed=false` (`provisional_active=null`).
+- **Certified `threads=1`, `gap=0.0`, `seed=42`, static seed + `disable_submip=True` preserved:** `#237` benchmarks on 21 hardest GWs rejected HiGHS primal heuristics-on (`+15%–36%` slower), `LP-kernel-all`, `no-seed`, `tight_bounds` (`170.2s` GW07 regression), and non-zero certified gaps (`0.10%` flipped GW05 `-35` pts on `2024-25`). Multi-trajectory / parallel prep scripts use machine-adaptive physical/P-core sizing (`solver/parallelism.py`).
