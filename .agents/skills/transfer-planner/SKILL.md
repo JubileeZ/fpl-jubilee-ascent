@@ -134,20 +134,28 @@ Before solving, apply the protective guard layer on top of all baselines:
    - **Squad Minutes Audit (`squad_rotation_risk`)**: Inspects all 15 **User Squad** Players—even unflagged `status == 'a'` Players—for: (a) recent `< 60m` or non-start appearances, (b) material gaps (`> 25m`) between recent minutes and Layer 2 External CSV `xMins`, or (c) multi-week Layer 2 cliffs (`>= 25m` drop below `65m`).
    - **Flagged Market Players (`market_flagged_by_tier`)**: Extracts flagged market candidates segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
 
-2. **Targeted Agentic Web Intel**:
-   For all **flagged User Squad Players**, **unflagged `squad_rotation_risk` Players**, and relevant **flagged market Players**, run `search_web` to inspect recent press conferences, team news, injury severity, suspension dates, tactical benchings, and expected return Gameweek.
+2. **Market review queue**:
+   - Scan deadline-dated club news and confirmed lineups across competitions for signings, direct replacements, returns, and rotations. Check both players when a role transfers between teammates. Prioritize explicit vacancies and players likely to affect affordable moves, lineup, or chip.
+   - Save sourced leads as JSON list. Fields: `player_id`, `kind` (`new_signing`, `replacement`, `return`, `rotation`), `source` (HTTPS URL), `published_at` (timezone-aware ISO timestamp), `first_gw`, `last_gw`, `detail` (name direct competitor and outstanding uncertainty). Omit file when no sourced leads.
+   - Run `uv run python -m commands.transfer_scouting --target-gw <gw> --horizon <h> [--model <effective_model>] [--base-csv <path>] [--role-evidence <json>]`. Use known Step 2 model choice. Default Confirmed Champion while live preference unresolved. Record model in preflight.
+   - Review up to 30 additional market Players once per deadline: 4 GKP, 10 DEF, 10 MID, 6 FWD. User Squad and existing flagged market triage sit outside quota. Helper reserves up to half of each position for sourced leads and minutes sensitivity. Fill vacant seats by short- and longer-window projected points across price bands.
+   - Check each shortlisted Player's recent starts, substitution pattern, direct competitor, and dated club news. Record verdict `adjust`, `keep`, or `unresolved` with reason and source. Single start or speculative upside opens review. Require role evidence and bounded affected GWs for adjustment. Preserve baseline for mixed or missing evidence.
+   - Shadow comparison: append `--shadow` for shared 18-player baseline plus 30-player queue on same inputs. Review union once. Attribute evidence-backed curves to eligible queues. Use scratch outputs for triage, curves and paired plans. Log queue changes, forecast changes, first-action delta, and elapsed review time. Carry only separately confirmed curves into live plan.
+
+   Also review **flagged User Squad Players**, **unflagged `squad_rotation_risk` Players**, and relevant **flagged market Players** for injury severity, suspension dates, tactical benchings, and expected return Gameweek.
 
 3. **Formulate Non-Linear Curves & Squad Adjustments**:
-   Synthesize a realistic minutes trajectory for each surfaced Player:
+   Synthesize realistic minutes trajectory for each supported change:
    - **Pre-Return GWs**: `0.0 xMins` ($100\% P(\text{DNP})$).
    - **Suspensions**: `0.0 xMins` before `return_gw`, then immediate full baseline on `return_gw+`.
    - **Injury Return GW (Cameo / Sub-in)**: `15–30 xMins` (multi-week absences) or `40–55 xMins` (minor knocks / 50-50 tests).
    - **Injury Return GW + 1 (Managed Start)**: `60–70 xMins`.
    - **Injury Return GW + 2+ (Full Recovery)**: Positive Layer 2 steady-state or healthy starter baseline (`75–85 xMins`).
    - **Unflagged Dropped / Rotated Squad Players**: Adjust down from stale Layer 2 projections (e.g., `15–25 xMins` for a benched sub, or custom rotation expectation) when web/recent evidence confirms lost starter status.
+   - **Reviewed Market Players**: Limit override to supported GWs. Recheck when role, fitness, or competitor changes. Use `--set-gw <pid>:<gw>:<minutes>` for individual cells.
 
 4. **Present Compact Injury & Squad Minutes Triage Table**:
-   Display a compact Markdown summary table in the chat (tagging `[Squad]` Players separately or clearly):
+   Show per-position reviewed counts and proposed changes. Tag `[Squad]` and market Players. Include proposed minutes, affected GWs, and sources. Summarize unresolved decisions that matter to plausible moves.
    ```markdown
    🏥 **Injury & Squad Minutes Triage (Layer 3 Guard on Top)**:
    | Player | Pos | Price | Status / News / Audit Trigger | Web Intel / Manager Update | Proposed xMins Curve (GW{start}–GW{end}) |
@@ -185,6 +193,7 @@ Present consolidated preflight card to user:
 • Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
 • Effective Strategic Controls (H={horizon}, scale {scale:.2f}x): {effective_hit_hurdle:.1f} xP hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per Club · {effective_gk_friction:.2f} pt GK friction
 • Minutes Stack: Layer 1 (Weekly Preflight: {effective_model} · {selection_reason} · {freshness_status}) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield, Squad Minutes Audit & Confirmed Curves)
+• Market review: {GKP/DEF/MID/FWD counts} · {proposed changes and affected GWs} · {material unresolved roles}
 • Settled Prefix: Local GW{latest_settled_gw} · Verified Scorecard GW1..GW{verified_prefix_end_gw} · Scores: {comparable_scores}
 • Overrides: One-plan override available via `--champion` or `--model <eligible_model>` (manual edit never mutates `config/model_selection.json`).
 • Booked Chips: {None | e.g. Free Hit on GW14}
@@ -208,7 +217,8 @@ Wait for user confirmation or adjustments before invoking solver:
      --target_gw <target_gw> \
      --horizon <horizon> \
      [--base-csv <path>] \
-     --set "<pid>:<v1>,<v2>,<v3>..." \
+     [--set "<pid>:<v1>,<v2>,<v3>..."] \
+     [--set-gw "<pid>:<gw>:<minutes>"] \
      --output data/planner/xmins_override.csv
    ```
    *Note: `data/planner/xmins_override.csv` is the synthesized consolidated override file and is distinct from any user-provided external CSV.*
