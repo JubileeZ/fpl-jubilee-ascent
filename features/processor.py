@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from features.contracts import assert_operational_processed_dir
-from solver.planning import chip_set_from_row, normalize_chip_key
+from solver.planning import CHIP_SET_1_END, chip_set_from_row, chip_status_from_row, normalize_chip_key
 
 logger = logging.getLogger(__name__)
 
@@ -271,20 +271,47 @@ def process_directory(input_dir: Path, output_dir: Path):
         logger.info("Processed user state -> user_state.parquet")
 
         chip_rows: list[dict] = []
+        seen_chip_sets: set[tuple[str, int]] = set()
         for raw_chip in chips:
             key = normalize_chip_key(str(raw_chip.get("name") or raw_chip.get("chip") or ""))
             if key is None:
                 continue
+            status = chip_status_from_row(raw_chip)
             row = {
                 "chip": key,
                 "name": str(raw_chip.get("name") or key),
-                "status": str(raw_chip.get("status") or "available"),
+                "status": status,
                 "start_event": raw_chip.get("start_event"),
                 "stop_event": raw_chip.get("stop_event"),
                 "number": raw_chip.get("number"),
             }
             row["chip_set"] = chip_set_from_row(row)
+            seen_chip_sets.add((key, int(row["chip_set"])))
             chip_rows.append(row)
+        has_finished_set_2 = any(
+            int(ev.get("id") or 0) > CHIP_SET_1_END and bool(ev.get("finished"))
+            for ev in events
+        )
+        in_chip_set_1 = (
+            int(current_gw) <= CHIP_SET_1_END
+            if current_gw is not None
+            else not has_finished_set_2
+        )
+        if in_chip_set_1:
+            for bs_chip in bootstrap.get("chips", []):
+                key = normalize_chip_key(str(bs_chip.get("name") or bs_chip.get("chip") or ""))
+                if key is None or chip_set_from_row(bs_chip) != 2 or (key, 2) in seen_chip_sets:
+                    continue
+                seen_chip_sets.add((key, 2))
+                chip_rows.append({
+                    "chip": key,
+                    "name": str(bs_chip.get("name") or key),
+                    "status": "available",
+                    "start_event": bs_chip.get("start_event"),
+                    "stop_event": bs_chip.get("stop_event"),
+                    "number": bs_chip.get("number"),
+                    "chip_set": 2,
+                })
         chip_cols = ["chip", "name", "status", "start_event", "stop_event", "number", "chip_set"]
         pd.DataFrame(chip_rows, columns=chip_cols).to_parquet(output_dir / "user_chips.parquet", index=False)
         logger.info(f"Processed {len(chip_rows)} user chips -> user_chips.parquet")

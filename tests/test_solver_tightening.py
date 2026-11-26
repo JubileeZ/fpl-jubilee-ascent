@@ -21,6 +21,7 @@ from test_streamlit_planner import dataset
 
 
 # Pre-V3+ exact golden outputs verified against main (95d22e09): (score, total_xp, iter2_score).
+# Note: use_tc total_xp updated from 404.10 to 420.25 after total_xp included the TC captain bonus.
 _PRE_V3_GOLDEN: dict[str, tuple[float, float, float | None]] = {
     "normal": (355.369799, 404.100000, None),
     "strategic": (353.869799, 404.100000, None),
@@ -28,7 +29,7 @@ _PRE_V3_GOLDEN: dict[str, tuple[float, float, float | None]] = {
     "use_wc": (352.557416, 400.300000, None),
     "use_wc_gw6": (357.867816, 404.100000, None),
     "use_bb": (367.077694, 421.700000, None),
-    "use_tc": (367.597298, 404.100000, None),
+    "use_tc": (367.597298, 420.250000, None),  # includes +16.15 TC captain xP bonus
     "use_fh": (352.283699, 404.100000, None),
     "force_keep_booked": (337.450309, 397.100000, None),
     "num_iterations_2": (355.369799, 404.100000, 355.2668985),

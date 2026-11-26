@@ -739,3 +739,165 @@ def test_strategic_chip_weeks_preserve_ft_zero_hold_credit_and_refund_fh(tmp_pat
         abs=1e-4,
     )
 
+
+def test_multi_set_free_hit_across_gw19_and_gw20(tmp_path: Path) -> None:
+    from solver.solver import _resolve_chip_limits
+
+    data = dataset()
+    data["players"].append(
+        {
+            "id": 16,
+            "name": "Player 16",
+            "pos_id": 4,
+            "pos": "F",
+            "team_id": 0,
+            "price": 5.0,
+            "selling_price": 5.0,
+            "projections": {
+                f"gw{gw}": {"total_xp": 15.0 if gw in (19, 20) else 2.0, "xmins": 90.0, "p_appear": 1.0}
+                for gw in (18, 19, 20, 21)
+            },
+        }
+    )
+
+    bootstrap: dict[str, Any] = {
+        "elements": [
+            {
+                "id": row["id"],
+                "web_name": row["name"],
+                "team": row["team_id"],
+                "element_type": row["pos_id"],
+                "now_cost": 50,
+            }
+            for row in data["players"]
+        ],
+        "teams": [{"id": club, "name": f"Club{club}", "short_name": f"C{club}"} for club in range(5)],
+        "events": [{"id": gw, "is_next": gw == 18, "finished": False} for gw in (18, 19, 20, 21)],
+        "element_types": [
+            {"id": pos, "singular_name_short": label, "squad_min_play": low, "squad_max_play": high, "squad_select": count}
+            for pos, label, low, high, count in [(1, "GKP", 1, 1, 2), (2, "DEF", 3, 5, 5), (3, "MID", 2, 5, 5), (4, "FWD", 1, 3, 3)]
+        ],
+    }
+
+    proj_rows = []
+    for row in data["players"]:
+        pid = int(row["id"])
+        rec: dict[str, Any] = {
+            "ID": pid,
+            "Name": row["name"],
+            "Pos": row["pos"],
+            "Price": row["price"],
+            "Team": f"Club{row['team_id']}",
+        }
+        for gw in (18, 19, 20, 21):
+            rec[f"{gw}_Pts"] = (15.0 if gw in (19, 20) else 2.0) if pid == 16 else 6.0
+            rec[f"{gw}_xMins"] = 90.0
+        proj_rows.append(rec)
+    proj_path = tmp_path / "proj_multi_fh.csv"
+    pd.DataFrame(proj_rows).to_csv(proj_path, index=False)
+
+    opts: dict[str, Any] = {
+        "fpl_bootstrap": bootstrap,
+        "fpl_fixtures": [],
+        "projections_path": str(proj_path),
+        "override_next_gw": 18,
+        "horizon": 4,
+        "xmin_lb": 0,
+        "keep_top_ev_percent": 100,
+        "secs": 10,
+        "verbose": False,
+        "itb_value": 0.0,
+        "use_fh": [19, 20],
+        "chip_limits": {"fh": 2},
+    }
+    opts = apply_scenario_arm(opts, ARM_STRATEGIC, horizon=4)
+    my_data = {
+        "picks": [
+            {"element": row["id"], "purchase_price": 50, "selling_price": 50, "element_type": row["pos_id"]}
+            for row in data["players"]
+            if row["id"] <= 15
+        ],
+        "transfers": {"bank": 50, "limit": 1, "made": 0},
+        "chips": [
+            {"chip": "fh", "name": "freehit", "status": "available", "chip_set": 1, "start_event": 2, "stop_event": 19},
+            {"chip": "fh", "name": "freehit", "status": "available", "chip_set": 2, "start_event": 20, "stop_event": 38},
+        ],
+    }
+    sol = solve_multi_period_fpl(prep_data(my_data, opts), opts)[0]
+    plan = serialize_transfer_plan(
+        sol,
+        champion="test_model",
+        horizon=4,
+        next_gw=18,
+        decay_base=0.85,
+        booked_chips={"use_fh": [19, 20]},
+    )
+
+    weeks = {int(w["gw"]): w for w in plan["weeks"]}
+    assert weeks[18]["chip"] is None
+    assert weeks[19]["chip"] == "FH"
+    assert weeks[20]["chip"] == "FH"
+    assert weeks[21]["chip"] is None
+    assert weeks[19]["ft_used"] == 0.0
+    assert weeks[20]["ft_used"] == 0.0
+    assert weeks[19]["ft_after"] == weeks[19]["ft"]
+    assert weeks[20]["ft_after"] == weeks[20]["ft"]
+    assert 16 in weeks[19]["squad_ids"]
+    assert 16 in weeks[20]["squad_ids"]
+    assert 16 not in weeks[21]["squad_ids"]
+
+    # Combine 4 chips across Set 1 + Set 2 in one solve: FH [19, 20] + TC [18, 21]
+    opts_multi = dict(opts)
+    opts_multi["use_tc"] = [18, 21]
+    opts_multi["chip_limits"] = {"fh": 2, "tc": 2}
+    my_data_multi = dict(my_data)
+    my_data_multi["chips"] = [
+        *my_data["chips"],
+        {"chip": "tc", "name": "3xc", "status": "available", "chip_set": 1, "start_event": 1, "stop_event": 19},
+        {"chip": "tc", "name": "3xc", "status": "available", "chip_set": 2, "start_event": 20, "stop_event": 38},
+    ]
+    sol_multi = solve_multi_period_fpl(prep_data(my_data_multi, opts_multi), opts_multi)[0]
+    plan_multi = serialize_transfer_plan(
+        sol_multi,
+        champion="test_model",
+        horizon=4,
+        next_gw=18,
+        decay_base=0.85,
+        booked_chips={"use_fh": [19, 20], "use_tc": [18, 21]},
+    )
+    weeks_multi = {int(w["gw"]): w for w in plan_multi["weeks"]}
+    assert weeks_multi[18]["chip"] == "TC"
+    assert weeks_multi[19]["chip"] == "FH"
+    assert weeks_multi[20]["chip"] == "FH"
+    assert weeks_multi[21]["chip"] == "TC"
+    tc_picks = sol_multi["picks"][sol_multi["picks"]["week"].isin([18, 21])]
+    assert (tc_picks["chip"] == "TC").all()
+    assert plan_multi["meta"]["total_xp"] == pytest.approx(sum(w["xp"] for w in plan_multi["weeks"]), abs=0.05)
+
+    # prep_data rejects active chip conflicting with booked chip in same GW or same Chip Set
+    conflict_opts_gw = dict(opts, use_bb=[18], use_fh=[])
+    conflict_my_data = {
+        "picks": my_data["picks"],
+        "transfers": {"bank": 50, "limit": 1, "made": 0},
+        "chips": [{"name": "freehit", "status_for_entry": "active"}],
+    }
+    with pytest.raises(ValueError, match="conflicts with booked use_bb"):
+        prep_data(conflict_my_data, conflict_opts_gw)
+
+    conflict_opts_set = dict(opts, use_fh=[19])
+    with pytest.raises(ValueError, match="Chip Set 1"):
+        prep_data(conflict_my_data, conflict_opts_set)
+
+    # _resolve_chip_limits does not inflate pre-existing chip_limits or clobber 2-set use_fh
+    resolved = _resolve_chip_limits(
+        {
+            "use_fh": [14, 20],
+            "enabled_chip_windows": [{"chip": "bb", "chip_set": 1, "gws": [12, 13]}],
+        },
+        {"bb": 1, "fh": 1},
+        {"fh": [14, 20]},
+        {},
+    )
+    assert resolved["bb"] == 1
+    assert resolved["fh"] == 2
+

@@ -26,6 +26,7 @@ RECOMMENDED_MAX_HORIZON: int = 12
 MAX_PLANNING_HORIZON: int = 19
 CHIP_SET_1_END: int = 19
 SEASON_END_GW: int = 38
+PLAYABLE_CHIP_STATUSES: frozenset[str] = frozenset({"available", "active"})
 
 
 def clamp_planning_horizon(horizon: int) -> int:
@@ -84,19 +85,18 @@ def chip_set_for_gw(gameweek: int) -> int:
 
 
 def chip_set_from_row(row: dict[str, Any]) -> int:
-    if row.get("chip_set") in (1, 2):
-        return int(row["chip_set"])
+    chip_set = row.get("chip_set")
+    if chip_set is not None and not pd.isna(chip_set) and int(chip_set) in (1, 2):
+        return int(chip_set)
     start = row.get("start_event")
+    if start is not None and not pd.isna(start):
+        return 2 if int(start) > CHIP_SET_1_END else 1
     stop = row.get("stop_event")
+    if stop is not None and not pd.isna(stop):
+        return 1 if int(stop) <= CHIP_SET_1_END else 2
     number = row.get("number")
-    if number in (1, 2):
+    if number is not None and not pd.isna(number) and int(number) in (1, 2):
         return int(number)
-    if start is not None and int(start) >= 20:
-        return 2
-    if stop is not None and int(stop) <= CHIP_SET_1_END:
-        return 1
-    if start is not None and int(start) <= CHIP_SET_1_END:
-        return 1
     return 1
 
 
@@ -105,6 +105,20 @@ def normalize_chip_key(name: str) -> str | None:
     if raw in CHIP_KEYS:
         return raw
     return FPL_CHIP_TO_KEY.get(raw)
+
+
+def chip_status_from_row(row: dict[str, Any]) -> str:
+    return str(row.get("status") or row.get("status_for_entry") or "available").lower()
+
+
+def chip_status_map(user_chips: list[dict[str, Any]]) -> dict[tuple[str, int], str]:
+    by_key: dict[tuple[str, int], str] = {}
+    for row in user_chips:
+        chip = normalize_chip_key(str(row.get("chip") or row.get("name") or ""))
+        if chip is None:
+            continue
+        by_key[(chip, chip_set_from_row(row))] = chip_status_from_row(row)
+    return by_key
 
 
 def _empty_booked() -> dict[str, list[int]]:
@@ -130,14 +144,7 @@ def available_chips(
             for chip in CHIP_KEYS
         ]
 
-    by_key: dict[tuple[str, int], str] = {}
-    for row in user_chips:
-        chip = normalize_chip_key(str(row.get("chip") or row.get("name") or ""))
-        if chip is None:
-            continue
-        chip_set = chip_set_from_row(row)
-        status = str(row.get("status") or "available").lower()
-        by_key[(chip, chip_set)] = status
+    by_key = chip_status_map(user_chips)
 
     out: list[dict[str, Any]] = []
     for chip_set, weeks in weeks_by_set.items():
@@ -145,7 +152,7 @@ def available_chips(
             continue
         for chip in CHIP_KEYS:
             status = by_key.get((chip, chip_set))
-            if status != "available":
+            if status not in PLAYABLE_CHIP_STATUSES:
                 continue
             out.append({"chip": chip, "chip_set": chip_set, "gws": list(weeks)})
     return out

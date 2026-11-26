@@ -19,12 +19,37 @@ import numpy as np
 import pandas as pd
 
 from solver.data_parser import read_data
+from solver.planning import chip_set_for_gw
 from solver.scenarios import DEFAULT_STRATEGIC_SPARE_FT_HOLD_WEIGHT
 from solver.utils import cached_request, get_random_id, load_solver_static
 from solver.vendor import UPSTREAM_COMMIT
 
 _HIGHS_THREAD_LOCK = threading.Lock()
 _LAST_HIGHS_THREADS: int | None = None
+
+
+def _resolve_chip_limits(
+    options: dict[str, Any],
+    base_limits: dict[str, Any],
+    allowed_chip_gws: dict[str, Any],
+    forced_chip_gws: dict[str, Any],
+) -> dict[str, int]:
+    """Compute effective per-chip limits from booked GWs, windows, and base limits."""
+    window_counts: Counter[str] = Counter(
+        str(w.get("chip") or "")
+        for w in (options.get("enabled_chip_windows") or [])
+        if str(w.get("chip") or "") in ("wc", "bb", "fh", "tc")
+    )
+    resolved: dict[str, int] = {
+        str(k): int(v or 0) for k, v in base_limits.items()
+    }
+    for chip in ("wc", "bb", "fh", "tc"):
+        forced_n = len(options.get(f"use_{chip}", []) or [])
+        win_n = window_counts.get(chip, 0)
+        has_gw_rule = bool(allowed_chip_gws.get(chip) or forced_chip_gws.get(chip))
+        if forced_n > 0 or win_n > 0 or has_gw_rule:
+            resolved[chip] = max(forced_n + win_n, 1 if has_gw_rule else 0)
+    return resolved
 
 
 def _is_strategic_solver_options(options: dict[str, Any]) -> bool:
@@ -397,12 +422,27 @@ def prep_data(my_data, options):
     # If wildcard or freehit is active, then you have status/status_for_entry == "active" under my_data['chips']
     chip_limits = options.setdefault("chip_limits", {})
     active_chip_specs = (("wildcard", "use_wc", "wc"), ("freehit", "use_fh", "fh"))
+    all_chip_opts = ("use_wc", "use_bb", "use_fh", "use_tc")
     for c in my_data["chips"]:
         if c.get("status_for_entry", "") != "active" and c.get("status", "") != "active":
             continue
         for chip_name, opt_key, limit_key in active_chip_specs:
             if c.get("name") == chip_name:
+                for other_key in all_chip_opts:
+                    if other_key == opt_key:
+                        continue
+                    if gw in [int(g) for g in (options.get(other_key) or [])]:
+                        raise ValueError(
+                            f"Active {chip_name} in GW{gw} conflicts with booked {other_key} in GW{gw}"
+                        )
                 existing = [int(g) for g in (options.get(opt_key) or [])]
+                active_set = chip_set_for_gw(gw)
+                for g in existing:
+                    if g != gw and chip_set_for_gw(g) == active_set:
+                        raise ValueError(
+                            f"Active {chip_name} in GW{gw} conflicts with booked {opt_key} "
+                            f"in Chip Set {active_set} (GW{g})"
+                        )
                 if gw not in existing:
                     existing.append(gw)
                 options[opt_key] = sorted(existing)
@@ -503,18 +543,8 @@ def solve_multi_period_fpl(data, options):
     price_modified_players = data["price_modified_players"]
     ft_states = [0, 1, 2, 3, 4, 5]
 
-    eff_chip_limits = dict(chip_limits)
-    for chip in ("wc", "bb", "fh", "tc"):
-        if options.get(f"use_{chip}", []):
-            eff_chip_limits[chip] = len(options[f"use_{chip}"])
-        if allowed_chip_gws.get(chip):
-            eff_chip_limits[chip] = 1
-        if forced_chip_gws.get(chip):
-            eff_chip_limits[chip] = 1
-    for window in options.get("enabled_chip_windows") or []:
-        c = str(window.get("chip") or "")
-        if c in eff_chip_limits or c in ("wc", "bb", "fh", "tc"):
-            eff_chip_limits[c] = eff_chip_limits.get(c, 0) + 1
+    eff_chip_limits = _resolve_chip_limits(options, chip_limits, allowed_chip_gws, forced_chip_gws)
+    chip_limits = dict(eff_chip_limits)
     if options.get("iteration_criteria") == "chip_gws":
         wc_active = bb_active = fh_active = True
         tc_active = int(eff_chip_limits.get("tc", 0) or 0) > 0
@@ -828,15 +858,12 @@ def solve_multi_period_fpl(data, options):
         forced_use = options.get(f"use_{chip}", [])
         if forced_use:
             m.addConstrs([var[w] == 1 for w in forced_use])
-            chip_limits[chip] = len(forced_use)
 
         if allowed_chip_gws.get(chip):
             m.addConstrs([var[w] == 0 for w in gws if w not in allowed_chip_gws[chip]])
-            chip_limits[chip] = 1
 
         if forced_chip_gws.get(chip):
             m.addConstr(sum_(var[w] for w in forced_chip_gws[chip]) == 1)
-            chip_limits[chip] = 1
 
     use_by_chip = {"wc": use_wc, "bb": use_bb, "fh": use_fh, "tc": use_tc_gw}
     for window in options.get("enabled_chip_windows") or []:
@@ -846,7 +873,6 @@ def solve_multi_period_fpl(data, options):
         if var is None or not weeks or not active_flags.get(chip, False):
             raise ValueError(f"Enabled Chip {chip} has no placeable gameweek")
         m.addConstr(sum_(var[w] for w in weeks) == 1)
-        chip_limits[chip] = chip_limits.get(chip, 0) + 1
 
     if wc_active:
         m.addConstr(sum_(use_wc[w] for w in gws) <= chip_limits.get("wc", 0))
@@ -1359,6 +1385,7 @@ def solve_multi_period_fpl(data, options):
             fh_w = val(use_fh[w]) > BINARY_THRESHOLD if fh_active else False
             wc_w = val(use_wc[w]) > BINARY_THRESHOLD if wc_active else False
             bb_w = val(use_bb[w]) > BINARY_THRESHOLD if bb_active else False
+            tc_w = val(use_tc_gw[w]) > BINARY_THRESHOLD if tc_active else False
             for p in players:
                 sfh_val = val(squad_fh[p, w]) if fh_active else 0.0
                 if val(squad[p, w]) + sfh_val + val(transfer_out[p, w]) > BINARY_THRESHOLD:
@@ -1390,7 +1417,7 @@ def solve_multi_period_fpl(data, options):
                         chip_text = "FH"
                     elif bb_w:
                         chip_text = "BB"
-                    elif is_tc:
+                    elif tc_w:
                         chip_text = "TC"
                     else:
                         chip_text = ""
@@ -1433,7 +1460,13 @@ def solve_multi_period_fpl(data, options):
             )
 
         picks_df = pd.DataFrame(picks).sort_values(by=["week", "lineup", "type", "xP"], ascending=[True, False, True, True])
-        total_xp = val(sum_((lineup[p, w] + captain[p, w]) * points_player_week[p, w] for p in players for w in gws))
+        total_xp = val(
+            sum_(
+                (lineup[p, w] + captain[p, w] + (use_tc[p, w] if tc_active else 0)) * points_player_week[p, w]
+                for p in players
+                for w in gws
+            )
+        )
 
         picks_df.sort_values(by=["week", "squad", "lineup", "bench", "type"], ascending=[True, False, False, True, True], inplace=True)
 

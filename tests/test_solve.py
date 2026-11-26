@@ -605,3 +605,108 @@ def test_build_my_data_from_parent_state_forwards_limit_and_made(tmp_path: Path)
     assert legacy_data["transfers"]["made"] == 0
 
 
+def test_apply_dynamic_overrides_parses_multi_value_chip_flags() -> None:
+    from commands.solve import _apply_dynamic_overrides
+
+    opts1: dict[str, object] = {"use_fh": [99]}
+    _apply_dynamic_overrides(opts1, ["--use-fh", "14", "--use-fh", "20"])
+    assert opts1["use_fh"] == [14, 20]
+
+    opts2: dict[str, object] = {}
+    _apply_dynamic_overrides(opts2, ["--use-fh", "14,20"])
+    assert opts2["use_fh"] == [14, 20]
+
+    opts3: dict[str, object] = {}
+    _apply_dynamic_overrides(opts3, ["--use-fh", "14", "20"])
+    assert opts3["use_fh"] == [14, 20]
+
+    opts4: dict[str, object] = {}
+    _apply_dynamic_overrides(opts4, ["--use-fh=14", "--use-fh=20"])
+    assert opts4["use_fh"] == [14, 20]
+
+
+def test_validate_booked_chips_enforces_chip_set_uniqueness_and_status() -> None:
+    # Two FH bookings across Set 1 (GW14) and Set 2 (GW20) succeed
+    validate_booked_chips(
+        {"use_wc": [], "use_bb": [], "use_fh": [14, 20], "use_tc": []},
+        next_gw=12,
+        horizon=10,
+        user_chips=[
+            {"chip": "fh", "chip_set": 1, "status": "available"},
+            {"chip": "fh", "chip_set": 2, "status": "available"},
+        ],
+    )
+    # Active chip is also allowed
+    validate_booked_chips(
+        {"use_wc": [], "use_bb": [], "use_fh": [14], "use_tc": []},
+        next_gw=12,
+        horizon=10,
+        user_chips=[{"chip": "fh", "chip_set": 1, "status": "active"}],
+    )
+    # Two bookings in Set 1 rejected
+    with pytest.raises(ValueError, match="Chip Set 1"):
+        validate_booked_chips(
+            {"use_wc": [], "use_bb": [], "use_fh": [14, 16], "use_tc": []},
+            next_gw=12,
+            horizon=10,
+        )
+    # Two bookings in Set 2 rejected
+    with pytest.raises(ValueError, match="Chip Set 2"):
+        validate_booked_chips(
+            {"use_wc": [], "use_bb": [], "use_fh": [20, 21], "use_tc": []},
+            next_gw=12,
+            horizon=10,
+        )
+    # Played chip in Set 1 rejected
+    with pytest.raises(ValueError, match="not available"):
+        validate_booked_chips(
+            {"use_wc": [14], "use_bb": [], "use_fh": [], "use_tc": []},
+            next_gw=12,
+            horizon=10,
+            user_chips=[{"chip": "wc", "chip_set": 1, "status": "played"}],
+        )
+    # Missing chip from non-empty inventory rejected
+    with pytest.raises(ValueError, match="missing from chip inventory"):
+        validate_booked_chips(
+            {"use_wc": [], "use_bb": [], "use_fh": [20], "use_tc": []},
+            next_gw=12,
+            horizon=10,
+            user_chips=[{"chip": "fh", "chip_set": 1, "status": "available"}],
+        )
+
+
+def test_solve_cli_scenarios_rejects_invalid_chip_token(capsys: pytest.CaptureFixture[str]) -> None:
+    with (
+        patch("commands.solve.load_settings", return_value={"datasource": "linear_baseline", "horizon": 5}),
+        patch("commands.transfer_plan_scenarios.execute_transfer_plan_scenarios") as mock_scen,
+        patch("sys.argv", ["commands.solve", "--scenarios", "--target_gw", "6", "--use-fh", "bad"]),
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        main()
+    assert exc_info.value.code == 1
+    mock_scen.assert_not_called()
+    _ = capsys.readouterr()
+
+
+def test_build_my_data_from_parquet_preserves_chip_set_metadata(tmp_path: Path) -> None:
+    pd.DataFrame([{
+        "player_id": 101, "purchase_price": 95, "selling_price": 98,
+        "lineup_index": 1, "multiplier": 1, "is_captain": False, "is_vice_captain": False,
+    }]).to_parquet(tmp_path / "user_picks.parquet")
+    pd.DataFrame([{
+        "entry_id": 12345, "bank": 15, "free_transfers": 1, "value": 1000, "active_chip": None,
+    }]).to_parquet(tmp_path / "user_state.parquet")
+    pd.DataFrame([{"id": 101, "position_id": 3}]).to_parquet(tmp_path / "players.parquet")
+    pd.DataFrame([{
+        "chip": "fh", "name": "freehit", "status": "available",
+        "start_event": 20, "stop_event": 38, "number": 1, "chip_set": 2,
+    }]).to_parquet(tmp_path / "user_chips.parquet")
+
+    my_data = build_my_data_from_parquet(tmp_path)
+    assert len(my_data["chips"]) == 1
+    assert my_data["chips"][0]["chip"] == "fh"
+    assert int(my_data["chips"][0]["chip_set"]) == 2
+    assert int(my_data["chips"][0]["start_event"]) == 20
+    assert int(my_data["chips"][0]["stop_event"]) == 38
+
+
