@@ -38,6 +38,10 @@ def main() -> None:
         help="Player curve in format 'pid:gw_val,gw_val...' e.g. '12:0,30,65,85'",
     )
     parser.add_argument(
+        "--set-gw", action="append", default=[], metavar="PID:GW:MINUTES",
+        help="Override one player Gameweek without changing the other weeks",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default="data/planner/xmins_override.csv",
@@ -119,6 +123,16 @@ def main() -> None:
                     targeted_map[(pid, gw)] = val
             except ValueError as e:
                 logger.warning("Failed to parse override '%s': %s", item, e)
+
+    for item in args.set_gw:
+        try:
+            pid_text, gw_text, minutes_text = item.split(":")
+            pid, gw, minutes = int(pid_text), int(gw_text), float(minutes_text)
+        except ValueError:
+            parser.error(f"Invalid --set-gw value: {item!r}")
+        if pid <= 0 or gw not in planning_gws or not 0 <= minutes <= 270:
+            parser.error(f"--set-gw requires a positive player ID, a planning Gameweek and 0–270 minutes: {item!r}")
+        targeted_map[(pid, gw)] = minutes
 
     # 1. Broad Pool Shield
     shield = build_broad_pool_shield(proc, target_gw=target_gw, horizon=horizon)
