@@ -26,9 +26,13 @@ from solver.paths import DATA_DIR
 from solver.planning import (
     MAX_PLANNING_HORIZON,
     MIN_PLANNING_HORIZON,
+    PLAYABLE_CHIP_STATUSES,
     RECOMMENDED_MAX_HORIZON,
     available_chips,
+    chip_set_for_gw,
+    chip_status_map,
     clamp_planning_horizon,
+    normalize_chip_key,
     planning_gameweeks,
     resolve_default_target_gw,
     solver_options_from_plan,
@@ -160,7 +164,7 @@ BOOLEAN_DYNAMIC_OVERRIDES = frozenset({
 })
 
 
-def _chip_values(value: object, chip_key: str) -> list[object]:
+def _option_list_values(value: object, option_key: str) -> list[object]:
     if value is None:
         return []
     if isinstance(value, (str, int, float)):
@@ -168,21 +172,31 @@ def _chip_values(value: object, chip_key: str) -> list[object]:
     try:
         return list(value)  # type: ignore[arg-type]
     except TypeError as exc:
-        raise ValueError(f"{chip_key} must be a gameweek list") from exc
+        raise ValueError(f"{option_key} must be a list") from exc
 
 
-def validate_booked_chips(options: dict[str, object], next_gw: int, horizon: int) -> None:
+def validate_booked_chips(
+    options: dict[str, object],
+    next_gw: int,
+    horizon: int,
+    *,
+    user_chips: list[dict[str, Any]] | None = None,
+) -> None:
     """Validate booked chips before any solver/API work is started."""
     if next_gw < 1 or next_gw > 38:
         raise ValueError(f"next gameweek must be between 1 and 38, got {next_gw}")
     if horizon < 1:
         raise ValueError(f"horizon must be at least 1, got {horizon}")
 
+    chip_status = chip_status_map(user_chips) if user_chips else {}
+
     planning_gameweeks = set(range(next_gw, min(39, next_gw + horizon)))
     used_gameweeks: dict[int, str] = {}
     for chip_key in CHIP_KEYS:
         seen_for_chip: set[int] = set()
-        for raw_gameweek in _chip_values(options.get(chip_key), chip_key):
+        seen_sets_for_chip: dict[int, int] = {}
+        short = normalize_chip_key(chip_key.removeprefix("use_"))
+        for raw_gameweek in _option_list_values(options.get(chip_key), chip_key):
             if isinstance(raw_gameweek, bool):
                 raise ValueError(f"{chip_key} contains invalid gameweek {raw_gameweek!r}")
             try:
@@ -197,12 +211,26 @@ def validate_booked_chips(options: dict[str, object], next_gw: int, horizon: int
                 )
             if gameweek in seen_for_chip:
                 raise ValueError(f"{chip_key} is booked more than once for GW{gameweek}")
+            cset = chip_set_for_gw(gameweek)
+            if cset in seen_sets_for_chip:
+                raise ValueError(
+                    f"{chip_key} is booked more than once in Chip Set {cset} "
+                    f"(GW{seen_sets_for_chip[cset]} and GW{gameweek})"
+                )
+            if chip_status and short is not None:
+                status = chip_status.get((short, cset))
+                if status not in PLAYABLE_CHIP_STATUSES:
+                    detail = f"status: {status}" if status is not None else "missing from chip inventory"
+                    raise ValueError(
+                        f"{chip_key} Set {cset} (GW{gameweek}) is not available ({detail})"
+                    )
             if gameweek in used_gameweeks:
                 raise ValueError(
                     f"{chip_key} conflicts with {used_gameweeks[gameweek]}: "
                     f"at most one chip may be booked in GW{gameweek}"
                 )
             seen_for_chip.add(gameweek)
+            seen_sets_for_chip[cset] = gameweek
             used_gameweeks[gameweek] = chip_key
 
 
@@ -210,7 +238,7 @@ def booked_chips_from_options(options: dict[str, object]) -> dict[str, list[int]
     chips: dict[str, list[int]] = {}
     for chip_key in CHIP_KEYS:
         chips[chip_key] = []
-        for raw in _chip_values(options.get(chip_key), chip_key):
+        for raw in _option_list_values(options.get(chip_key), chip_key):
             try:
                 chips[chip_key].append(int(cast(Any, raw)))
             except (TypeError, ValueError):
@@ -278,6 +306,8 @@ def execute_transfer_plan(
     else:
         logger.info("Loading current squad picks and state from processed Parquet...")
         my_data = build_my_data_from_parquet(processed_dir)
+    if not options.get("preseason", False) and my_data.get("chips"):
+        validate_booked_chips(options, target_gw, horizon, user_chips=my_data["chips"])
 
     logger.info(f"Preparing solver data using projections from '{options['datasource']}.csv'...")
     pad_solver_csv_horizon(DATA_DIR / f"{options['datasource']}.csv", target_gw, horizon)
@@ -311,8 +341,22 @@ def execute_transfer_plan(
     return plan
 
 
+LIST_DYNAMIC_OVERRIDES = frozenset(CHIP_KEYS) | {"locked", "banned", "keep"}
+
+
+def _parse_list_tokens(raw_tokens: list[str]) -> list[int | str]:
+    items: list[int | str] = []
+    for token in raw_tokens:
+        for part in str(token).split(","):
+            stripped = part.strip()
+            if stripped:
+                items.append(int(stripped) if stripped.isdigit() else stripped)
+    return items
+
+
 def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> None:
     """Apply supported solver overrides and reject typos before solving."""
+    seen_list_keys: set[str] = set()
     i = 0
     while i < len(unknown):
         arg = unknown[i]
@@ -325,6 +369,28 @@ def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> 
         key = key.replace("-", "_")
         if key not in SUPPORTED_DYNAMIC_OVERRIDES:
             raise ValueError(f"Unsupported solver option '--{key}'")
+        if key in LIST_DYNAMIC_OVERRIDES:
+            raw_tokens: list[str] = []
+            if value is not None:
+                raw_tokens.append(value)
+            else:
+                while i + 1 < len(unknown) and not unknown[i + 1].startswith("--"):
+                    raw_tokens.append(unknown[i + 1])
+                    i += 1
+            if not raw_tokens:
+                raise ValueError(f"Solver option '--{key}' requires a value")
+            parsed_items = _parse_list_tokens(raw_tokens)
+            if key not in seen_list_keys:
+                options[key] = parsed_items
+                seen_list_keys.add(key)
+            else:
+                existing = options.get(key)
+                if isinstance(existing, list):
+                    existing.extend(parsed_items)
+                else:
+                    options[key] = _option_list_values(existing, key) + parsed_items
+            i += 1
+            continue
         if value is None and i + 1 < len(unknown) and not unknown[i + 1].startswith("--"):
             value = unknown[i + 1]
             i += 1
@@ -335,8 +401,6 @@ def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> 
                 raise ValueError(f"Solver option '--{key}' requires a value")
         elif value.lower() in {"true", "false"}:
             options[key] = value.lower() == "true"
-        elif key in CHIP_KEYS or key in {"locked", "banned", "keep"}:
-            options[key] = [int(v.strip()) if v.strip().isdigit() else v.strip() for v in str(value).split(",") if v.strip()]
         elif value.isdigit():
             options[key] = int(value)
         else:
@@ -348,6 +412,31 @@ def _apply_dynamic_overrides(options: dict[str, object], unknown: list[str]) -> 
     if options.get("no_hit"):
         options["weekly_hit_limit"] = 0
 
+
+
+def _load_user_chips(processed_dir: Path) -> list[dict[str, object]]:
+    chips_path = processed_dir / "user_chips.parquet"
+    chips: list[dict[str, object]] = []
+    if not chips_path.exists():
+        return chips
+    try:
+        df_chips = pd.read_parquet(chips_path)
+    except Exception:
+        return chips
+    for _, chip_row in df_chips.iterrows():
+        name = str(chip_row.get("name") or chip_row.get("chip") or "")
+        status = str(chip_row.get("status") or "")
+        chips.append({
+            "chip": chip_row.get("chip"),
+            "name": name,
+            "status": status,
+            "status_for_entry": status,
+            "chip_set": chip_row.get("chip_set"),
+            "start_event": chip_row.get("start_event"),
+            "stop_event": chip_row.get("stop_event"),
+            "number": chip_row.get("number"),
+        })
+    return chips
 
 
 def build_my_data_from_parquet(processed_dir: Path) -> dict:
@@ -365,14 +454,7 @@ def build_my_data_from_parquet(processed_dir: Path) -> dict:
     df_picks = pd.read_parquet(picks_path)
     df_state = pd.read_parquet(state_path)
     df_players = pd.read_parquet(players_path)
-    chips_path = processed_dir / "user_chips.parquet"
-    chips: list[dict[str, object]] = []
-    if chips_path.exists():
-        df_chips = pd.read_parquet(chips_path)
-        for _, chip_row in df_chips.iterrows():
-            name = str(chip_row.get("name") or chip_row.get("chip") or "")
-            status = str(chip_row.get("status") or "")
-            chips.append({"name": name, "status": status, "status_for_entry": status})
+    chips = _load_user_chips(processed_dir)
     
     # Map player_id to position_id
     player_pos_map = df_players.set_index("id")["position_id"].to_dict()
@@ -416,7 +498,6 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
     """Builds my_data dictionary using a parent decision node's accumulated squad and bank state."""
     players_path = processed_dir / "players.parquet"
     picks_path = processed_dir / "user_picks.parquet"
-    chips_path = processed_dir / "user_chips.parquet"
 
     if not players_path.exists():
         raise FileNotFoundError(f"Players Parquet not found in {processed_dir}")
@@ -486,16 +567,7 @@ def build_my_data_from_parent_state(parent_state: dict[str, Any], processed_dir:
     ft_limit = max(0, min(5, int(raw_limit))) if raw_limit is not None else free_transfers
     ft_made = max(0, int(raw_made or 0)) if raw_limit is not None else 0
 
-    chips: list[dict[str, object]] = []
-    if chips_path.exists():
-        try:
-            df_chips = pd.read_parquet(chips_path)
-            for _, chip_row in df_chips.iterrows():
-                name = str(chip_row.get("name") or chip_row.get("chip") or "")
-                status = str(chip_row.get("status") or "")
-                chips.append({"name": name, "status": status, "status_for_entry": status})
-        except Exception:
-            pass
+    chips = _load_user_chips(processed_dir)
 
     return {
         "chips": chips,
@@ -886,18 +958,26 @@ def main() -> None:
                 )
 
         try:
-            payload = execute_transfer_plan_scenarios(
-                processed_dir=processed_dir,
-                target_gw=target_gw,
-                horizon=options["horizon"],
-                force=args.force,
-                gap=options["gap"],
-                on_progress=on_progress,
-                datasource=str(options["datasource"]),
-                xmins_override=args.xmins_override,
-                strategic_options=options.get("strategic_options"),
-                preflight=preflight,
-            )
+            validate_booked_chips(options, target_gw, options["horizon"])
+            booked = booked_chips_from_options(options)
+            scenario_kwargs: dict[str, Any] = {
+                "processed_dir": processed_dir,
+                "target_gw": target_gw,
+                "horizon": options["horizon"],
+                "force": args.force,
+                "gap": options["gap"],
+                "on_progress": on_progress,
+                "datasource": str(options["datasource"]),
+                "xmins_override": args.xmins_override,
+                "strategic_options": options.get("strategic_options"),
+                "preflight": preflight,
+            }
+            if any(booked.values()):
+                scenario_kwargs["booked_chips"] = booked
+            payload = execute_transfer_plan_scenarios(**scenario_kwargs)
+        except ValueError as exc:
+            logger.error(f"Invalid chip configuration: {exc}")
+            sys.exit(1)
         except UserSquadRequired as exc:
             logger.warning(f"{exc}")
             print(f"\n{exc}\nRun with --preseason for a blank squad, or refresh with FPL credentials.\n")

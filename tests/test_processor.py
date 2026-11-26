@@ -212,3 +212,79 @@ def test_process_directory_reconstructs_active_chip_ft_and_stores_limit_made(tmp
     assert int(state_normal["free_transfers"]) == 1
     assert int(state_normal["free_transfers_limit"]) == 2
     assert int(state_normal["transfers_made"]) == 1
+
+
+def test_process_directory_parses_status_for_entry_and_backfills_set_2(tmp_path: Path) -> None:
+    input_dir = tmp_path / "raw"
+    output_dir = tmp_path / "processed"
+    input_dir.mkdir()
+    bs_chips = [
+        {"name": "wildcard", "number": 1, "start_event": 2, "stop_event": 19},
+        {"name": "freehit", "number": 1, "start_event": 2, "stop_event": 19},
+        {"name": "wildcard", "number": 1, "start_event": 20, "stop_event": 38},
+        {"name": "freehit", "number": 1, "start_event": 20, "stop_event": 38},
+    ]
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 11, "name": "Gameweek 11", "deadline_time": "2026-11-21T11:00:00Z", "finished": True, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 99, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+        "chips": bs_chips,
+    }), encoding="utf-8")
+    (input_dir / "fixtures_all.json").write_text(json.dumps([{
+        "id": 1, "event": 11, "kickoff_time": "2026-11-21T15:00:00Z", "team_h": 1, "team_a": 2,
+        "finished": True, "started": True, "team_h_score": 1, "team_a_score": 0,
+        "team_h_difficulty": 3, "team_a_difficulty": 4,
+    }]), encoding="utf-8")
+    (input_dir / "my_team_123.json").write_text(json.dumps({
+        "picks": [{"element": 1, "position": 1, "multiplier": 1, "is_vice_captain": False, "purchase_price": 50, "selling_price": 50}],
+        "transfers": {"bank": 10, "value": 1000, "limit": 1},
+        "chips": [
+            {"name": "wildcard", "status_for_entry": "played", "start_event": 2, "stop_event": 19, "number": 1},
+            {"name": "freehit", "status_for_entry": "available", "start_event": 2, "stop_event": 19, "number": 1},
+        ],
+    }), encoding="utf-8")
+
+    process_directory(input_dir, output_dir)
+    chips = pd.read_parquet(output_dir / "user_chips.parquet")
+    by_key = {(row["chip"], int(row["chip_set"])): row["status"] for _, row in chips.iterrows()}
+    assert by_key[("wc", 1)] == "played"
+    assert by_key[("fh", 1)] == "available"
+    assert by_key[("wc", 2)] == "available"
+    assert by_key[("fh", 2)] == "available"
+
+    # In GW20+ (Set 2), do NOT backfill Set 2 chips from bootstrap if my_team omits them
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [{"id": 20, "name": "Gameweek 20", "deadline_time": "2027-01-01T11:00:00Z", "finished": False, "is_current": True, "is_next": False}],
+        "elements": [{"id": 1, "code": 99, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+        "chips": bs_chips,
+    }), encoding="utf-8")
+    (input_dir / "my_team_123.json").write_text(json.dumps({
+        "picks": [{"element": 1, "position": 1, "multiplier": 1, "is_vice_captain": False, "purchase_price": 50, "selling_price": 50}],
+        "transfers": {"bank": 10, "value": 1000, "limit": 1},
+        "chips": [
+            {"name": "freehit", "status_for_entry": "played", "start_event": 20, "stop_event": 38, "number": 1},
+        ],
+    }), encoding="utf-8")
+    process_directory(input_dir, output_dir)
+    chips_gw20 = pd.read_parquet(output_dir / "user_chips.parquet")
+    assert len(chips_gw20) == 1
+    assert chips_gw20.iloc[0]["chip"] == "fh"
+    assert int(chips_gw20.iloc[0]["chip_set"]) == 2
+    assert chips_gw20.iloc[0]["status"] == "played"
+
+    # Post-season (is_current absent, GW20+ finished=True) must NOT backfill Set 2 chips
+    (input_dir / "bootstrap_static.json").write_text(json.dumps({
+        "teams": [{"id": 1, "name": "Arsenal", "short_name": "ARS", "strength": 4}],
+        "events": [
+            {"id": 20, "name": "Gameweek 20", "deadline_time": "2027-01-01T11:00:00Z", "finished": True, "is_current": False, "is_next": False},
+            {"id": 38, "name": "Gameweek 38", "deadline_time": "2027-05-25T15:00:00Z", "finished": True, "is_current": False, "is_next": False},
+        ],
+        "elements": [{"id": 1, "code": 99, "first_name": "A", "second_name": "B", "web_name": "AB", "team": 1, "element_type": 3, "now_cost": 50, "status": "a"}],
+        "chips": bs_chips,
+    }), encoding="utf-8")
+    process_directory(input_dir, output_dir)
+    chips_post = pd.read_parquet(output_dir / "user_chips.parquet")
+    assert len(chips_post) == 1
+    assert int(chips_post.iloc[0]["chip_set"]) == 2
+    assert chips_post.iloc[0]["status"] == "played"

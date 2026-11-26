@@ -8,6 +8,7 @@ from solver.planning import (
     MIN_PLANNING_HORIZON,
     available_chips,
     chip_set_for_gw,
+    chip_set_from_row,
     clamp_planning_horizon,
     planning_gameweeks,
     planning_window,
@@ -199,3 +200,59 @@ def test_resolve_default_target_gw_falls_back_to_first_unfinished(tmp_path: Path
 
 def test_resolve_default_target_gw_missing_file_defaults_to_one(tmp_path: Path) -> None:
     assert resolve_default_target_gw(tmp_path / "nonexistent") == 1
+
+
+def test_chip_set_from_row_prefers_event_bounds_over_number() -> None:
+    assert chip_set_from_row({"name": "freehit", "number": 1, "start_event": 20, "stop_event": 38}) == 2
+    assert chip_set_from_row({"name": "freehit", "number": 1, "start_event": 2, "stop_event": 19}) == 1
+    assert chip_set_from_row({"name": "freehit", "number": 2, "start_event": float("nan"), "stop_event": None}) == 2
+
+
+def test_solver_options_accepts_multi_set_booked_chips_and_rejects_same_set() -> None:
+    planning_gws = list(range(12, 22))
+    available = available_chips(
+        planning_gws,
+        [
+            {"chip": "fh", "chip_set": 1, "status": "available"},
+            {"chip": "fh", "chip_set": 2, "status": "available"},
+        ],
+    )
+    options = solver_options_from_plan(
+        booked_chips={"use_wc": [], "use_bb": [], "use_fh": [14, 20], "use_tc": []},
+        enabled_chips=[],
+        force_keep=[],
+        force_ban=[],
+        planning_gws=planning_gws,
+        available=available,
+        horizon=10,
+    )
+    assert options["use_fh"] == [14, 20]
+
+    try:
+        solver_options_from_plan(
+            booked_chips={"use_wc": [], "use_bb": [], "use_fh": [14, 16], "use_tc": []},
+            enabled_chips=[],
+            force_keep=[],
+            force_ban=[],
+            planning_gws=planning_gws,
+            available=available,
+            horizon=10,
+        )
+        raise AssertionError("expected ValueError")
+    except ValueError as exc:
+        assert "booked more than once" in str(exc)
+
+
+def test_available_chips_respects_status_for_entry_and_active() -> None:
+    chips = available_chips(
+        [14, 20],
+        [
+            {"chip": "fh", "chip_set": 1, "status_for_entry": "active"},
+            {"chip": "wc", "chip_set": 1, "status": None, "status_for_entry": "played"},
+            {"chip": "fh", "chip_set": 2, "status": "available"},
+        ],
+    )
+    keys = {(c["chip"], c["chip_set"]) for c in chips}
+    assert ("fh", 1) in keys
+    assert ("fh", 2) in keys
+    assert ("wc", 1) not in keys
