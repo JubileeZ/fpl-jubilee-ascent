@@ -48,6 +48,26 @@ def test_role_receipts_require_published_and_relevant_evidence(tmp_path: Path) -
     path.write_text(json.dumps([{**event, "source": "file:///local"}]), encoding="utf-8")
     with pytest.raises(ValueError, match="Invalid role receipt"):
         load_events(path, cutoff, 12, 4)
+    for invalid_impact in (-1, 91, "30", True):
+        path.write_text(json.dumps([{**event, "minutes_impact": invalid_impact}]), encoding="utf-8")
+        with pytest.raises(ValueError, match="Invalid role receipt"):
+            load_events(path, cutoff, 12, 4)
+
+
+def test_review_queue_prioritizes_sourced_minutes_impact_then_projection_order() -> None:
+    market = pd.DataFrame([
+        dict(id=pid, position_id=1, projected_points=points, club_id=1, web_name=f"GK {pid}",
+             now_cost=45, status="a", next_minutes=0, next_gw=0, short=0)
+        for pid, points in ((1, 12), (2, 10), (3, 8), (4, 0), (5, 0))
+    ]).set_index("id")
+    events = {
+        5: [{"minutes_impact": 10}, {"minutes_impact": 75}],
+        4: [{"minutes_impact": 45}],
+        3: [{"minutes_impact": 45}],
+    }
+    result = review_queue(market, pd.DataFrame(), events, position_quotas=True)
+    assert [row["player_id"] for row in result] == [5, 3, 4, 1]
+    assert [row["reason"] for row in result] == ["role_evidence"] * 3 + ["points"]
 
 
 def test_minutes_sensitivity_flags_a_first_start_for_review() -> None:
