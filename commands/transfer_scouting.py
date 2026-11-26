@@ -40,9 +40,11 @@ def load_events(path: Path | None, as_of: pd.Timestamp, gw: int, horizon: int) -
         source = urlparse(record["source"])
         start, end = record["first_gw"], record["last_gw"]
         note = record["detail"]
+        impact = record.get("minutes_impact", 0)
         if (type(pid) is not int or pid <= 0 or kind not in KINDS or source.scheme != "https" or not source.hostname
                 or pd.isna(published) or published.tzinfo is None or type(start) is not int or type(end) is not int
-                or not 1 <= start <= end <= 38 or not isinstance(note, str) or not note.strip()):
+                or not 1 <= start <= end <= 38 or not isinstance(note, str) or not note.strip()
+                or type(impact) not in (int, float) or not 0 <= impact <= 90):
             raise ValueError(f"Invalid role receipt for player {pid}")
         if published <= as_of and start < gw + horizon and end >= gw:
             events.setdefault(pid, []).append(record)
@@ -113,8 +115,13 @@ def review_queue(
         points = list(pool.index[pool["projected_points"].gt(0)])
         # Sources may justify a review even if a player currently projects for zero points.
         evidence = [int(pid) for pid in pool.index if pid in events]
-        timely = [int(pid) for pid in roles.index if pid in pool.index]
-        role_ids = list(dict.fromkeys([*evidence, *timely]))[:budget // 2]
+        if position_quotas:
+            # Stable sort retains projection order for equal impacts and older receipts.
+            evidence.sort(key=lambda pid: max(event.get("minutes_impact", 0) for event in events[pid]), reverse=True)
+            role_ids = evidence
+        else:
+            timely = [int(pid) for pid in roles.index if pid in pool.index]
+            role_ids = list(dict.fromkeys([*evidence, *timely]))[:budget // 2]
         for pid in list(dict.fromkeys([*role_ids, *points]))[:budget]:
             item = pool.loc[pid]
             role = roles.loc[pid] if pid in roles.index else None

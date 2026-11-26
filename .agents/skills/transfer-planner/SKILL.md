@@ -135,17 +135,20 @@ Before solving, apply the protective guard layer on top of all baselines:
    - **Flagged Market Players (`market_flagged_by_tier`)**: Extracts flagged market candidates segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
 
 2. **Market review queue**:
-   - Scan deadline-dated club news and confirmed lineups across competitions for signings, direct replacements, returns, and rotations. Check both players when a role transfers between teammates. Prioritize explicit vacancies and players likely to affect affordable moves, lineup, or chip.
-   - Save sourced leads as JSON list. Fields: `player_id`, `kind` (`new_signing`, `replacement`, `return`, `rotation`), `source` (HTTPS URL), `published_at` (timezone-aware ISO timestamp), `first_gw`, `last_gw`, `detail` (name direct competitor and outstanding uncertainty). Omit file when no sourced leads.
-   - Run `uv run python -m commands.transfer_scouting --target-gw <gw> --horizon <h> [--model <effective_model>] [--base-csv <path>] [--role-evidence <json>]`. Use known Step 2 model choice. Default Confirmed Champion while live preference unresolved. Record model in preflight.
-   - Review up to 30 additional market Players once per deadline: 4 GKP, 10 DEF, 10 MID, 6 FWD. User Squad and existing flagged market triage sit outside quota. Helper reserves up to half of each position for sourced leads and minutes sensitivity. Fill vacant seats by short- and longer-window projected points across price bands.
-   - Check each shortlisted Player's recent starts, substitution pattern, direct competitor, and dated club news. Record verdict `adjust`, `keep`, or `unresolved` with reason and source. Single start or speculative upside opens review. Require role evidence and bounded affected GWs for adjustment. Preserve baseline for mixed or missing evidence.
+   - Scan each Premier League Club before deadline for signings, direct replacements, returns, and rotations. Use dated club news and confirmed lineups. Check both Players when role moves between teammates. Club scan surfaces leads. Individual minutes review limited to shortlisted Players, User Squad, and existing flagged market triage.
+   - Save sourced leads as JSON list. Fields: `player_id`, `kind` (`new_signing`, `replacement`, `return`, `rotation`), `source` (HTTPS URL), `published_at` (timezone-aware ISO timestamp), `first_gw`, `last_gw`, `detail` (direct competitor and uncertainty), `minutes_impact` (absolute estimated change per affected fixture, 0–90; omit if unclear). Use same receipts for model comparisons at same deadline. Omit file when no sourced leads.
+   - Run `uv run python -m commands.transfer_scouting --target-gw <gw> --horizon <h> [--base-csv <path>] [--role-evidence <json>]`. Omit `--model` so shortlist uses Confirmed Champion regardless of Step 2 solve model. Record both models in preflight.
+   - Review up to 30 additional market Players once per deadline: 4 GKP, 10 DEF, 10 MID, 6 FWD. User Squad and flagged market triage sit outside quota. Within position, take sourced leads in descending minutes impact, then fill slots using Champion projected points across price bands. Use recent starts and minutes sensitivity to inform reviews.
+   - Record `adjust`, `keep`, or `unresolved` with reason and source. Single start or uncertain role opens review. Apply following criteria before proposing one-fixture overrides:
+     - **Outfield return:** Establish usual role from at least five starts in last six fit, eligible league fixtures before injury. Include fit benchings. Exclude documented absences and injury-onset fixture. Match-fit reference = median minutes from starts in window. Cleared flag alone opens review. After comeback appearance, propose up to 60 minutes when manager confirms start readiness with uncertain workload, or 65 minutes when fresh readiness evidence supports progression without reported setback. Cap at match-fit reference. Fit loss of place blocks injury restoration.
+     - **Goalkeeper role:** Review both keepers after explicit manager backing for next fixture or two consecutive league starts ahead of rival available for both. Injury cover and uncertain availability leave role unresolved. Propose paired minutes based on selection certainty (75/15 for plausible starter, 90/0 when source supports clear selection).
+     - **Scope:** Reassess next deadline. For a Blank Gameweek or Double Gameweek with fixture-specific evidence, show unresolved instead of applying one-fixture evidence to Gameweek-total CSV.
    - Shadow comparison: append `--shadow` for shared 18-player baseline plus 30-player queue on same inputs. Review union once. Attribute evidence-backed curves to eligible queues. Use scratch outputs for triage, curves and paired plans. Log queue changes, forecast changes, first-action delta, and elapsed review time. Carry only separately confirmed curves into live plan.
 
    Also review **flagged User Squad Players**, **unflagged `squad_rotation_risk` Players**, and relevant **flagged market Players** for injury severity, suspension dates, tactical benchings, and expected return Gameweek.
 
 3. **Formulate Non-Linear Curves & Squad Adjustments**:
-   Synthesize realistic minutes trajectory for each supported change:
+   Use the one-fixture criteria above for newly cleared returns and goalkeeper role changes. Existing injury-guard and confirmed manager-specific curves follow:
    - **Pre-Return GWs**: `0.0 xMins` ($100\% P(\text{DNP})$).
    - **Suspensions**: `0.0 xMins` before `return_gw`, then immediate full baseline on `return_gw+`.
    - **Injury Return GW (Cameo / Sub-in)**: `15–30 xMins` (multi-week absences) or `40–55 xMins` (minor knocks / 50-50 tests).
@@ -155,7 +158,7 @@ Before solving, apply the protective guard layer on top of all baselines:
    - **Reviewed Market Players**: Limit override to supported GWs. Recheck when role, fitness, or competitor changes. Use `--set-gw <pid>:<gw>:<minutes>` for individual cells.
 
 4. **Present Compact Injury & Squad Minutes Triage Table**:
-   Show per-position reviewed counts and proposed changes. Tag `[Squad]` and market Players. Include proposed minutes, affected GWs, and sources. Summarize unresolved decisions that matter to plausible moves.
+   Show per-position reviewed counts and proposed changes. Tag `[Squad]` and market Players. Include current projected minutes and source model or external input, proposed minutes, affected fixture or GWs, and dated evidence. Summarize unresolved decisions that matter to plausible moves.
    ```markdown
    🏥 **Injury & Squad Minutes Triage (Layer 3 Guard on Top)**:
    | Player | Pos | Price | Status / News / Audit Trigger | Web Intel / Manager Update | Proposed xMins Curve (GW{start}–GW{end}) |
@@ -193,7 +196,7 @@ Present consolidated preflight card to user:
 • Solver Mode: Strategic (`--arm strategic`, default) | Unconstrained | No Hit | 3-Arm Scenarios
 • Effective Strategic Controls (H={horizon}, scale {scale:.2f}x): {effective_hit_hurdle:.1f} xP hit hurdle · 65m starter floor · 65m bench cover · max 2 DEF/GK per Club · {effective_gk_friction:.2f} pt GK friction
 • Minutes Stack: Layer 1 (Weekly Preflight: {effective_model} · {selection_reason} · {freshness_status}) + Layer 2 ({External CSV | None}) + Layer 3 (Broad Pool Shield, Squad Minutes Audit & Confirmed Curves)
-• Market review: {GKP/DEF/MID/FWD counts} · {proposed changes and affected GWs} · {material unresolved roles}
+• Market review: {Confirmed Champion scouting model} · {GKP/DEF/MID/FWD counts} · {current → proposed xMins, fixture, source} · {material unresolved roles}
 • Settled Prefix: Local GW{latest_settled_gw} · Verified Scorecard GW1..GW{verified_prefix_end_gw} · Scores: {comparable_scores}
 • Overrides: One-plan override available via `--champion` or `--model <eligible_model>` (manual edit never mutates `config/model_selection.json`).
 • Booked Chips: {None | e.g. Free Hit on GW14}
@@ -211,7 +214,7 @@ Wait for user confirmation or adjustments before invoking solver:
 ### Step 5: Execution & Solve
 
 1. **Synthesize Final Override CSV**:
-   Compile confirmed curves and Broad Pool Shield into `data/planner/xmins_override.csv`:
+   Compile only confirmed targeted changes and existing Broad Pool Shield into `data/planner/xmins_override.csv`. Use sparse `--set-gw` cells for confirmed one-fixture overrides:
    ```bash
    uv run python -m commands.injury_triage \
      --target_gw <target_gw> \
