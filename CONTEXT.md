@@ -136,6 +136,10 @@ _Avoid_: Realized Points, Projection, underlying xG alone, Solio xP, Poisson-xGC
 Diagnostic clean-sheet / goals-conceded actuals from Official per-player on-pitch `expected_goals_conceded` pushed through a Poisson scoring link (`e^{-λ}` CS; `−E[⌊GC/2⌋]` conceded for GK/D). Not an Official outcome. Not a primary eval target. Not Extended Process Points.
 _Avoid_: Official xCS field, Process Points, ranking `mse_share` on the twin, Extended Process Points
 
+**Oracle Participation State**:
+Diagnostic fixture-grain conditioning injecting exact realized `(Start, Sub-in, DNP)` (`starts == 1`, else `minutes >= 60`), exact `actual_minutes`, and `p_60` (`minutes >= 60`) for split Event Component backtesting, bypassing `scale_states_to_target` and ADR 0056 overrides so `xp_minutes` error is `0.0`. Strictly diagnostic; prohibited from promotion authority or evidence forecasts (ADR 0066, ADR 0072).
+_Avoid_: Scalar `external_xmins` oracle leakage through `scale_states_to_target`, promotion justification from oracle minutes, evidence forecasts with oracle states
+
 **Extended Process Points**:
 Deferred joint-process evaluation replacing Realized defense/bonus/etc. with $E[\text{scoring}\mid\text{underlying}]$. Not implemented. Not Process Points. Not Poisson-xGC Twin.
 _Avoid_: Process Points, Poisson-xGC Twin as full Extended Process, Blended Eval Target
@@ -268,7 +272,7 @@ An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
 **Minutes Cascade**:
-Ground-up three-tier minutes resolution precedence: Layer 3 (Injury Guard on top: Targeted Availability Override & Soft Empirical Broad Pool Shield) $\to$ Layer 2 (Optional External Projections CSV, else Internal Minutes Baseline sparse GKP + soft curves) $\to$ Layer 1 (Native In-House Champion fallback). Omitted/blank cells inherit lower-tier projections; unlisted healthy outfielders retain Native Champion expectation and state uncertainty via `scale_states_to_target`.
+Ground-up three-tier minutes resolution precedence: Layer 3 (Injury Guard on top: Targeted Availability Override & Soft Empirical Broad Pool Shield) $\to$ Layer 2 (Optional External Projections CSV, else Internal Minutes Baseline sparse GKP + soft curves) $\to$ Layer 1 (Native In-House Champion fallback). Default across Dashboard export and CLI solve via `SP_Soft_Shield_M1`; omitted/blank cells inherit lower-tier projections; unlisted healthy outfielders retain Native Champion expectation and state uncertainty via `scale_states_to_target`. `ADR 0069` validation captures stay strictly pure Layer 1 (ADR 0072).
 _Avoid_: Zeroing unlisted players, single-tier overrides, uncomposable projection sources, saturating `target_to_states` on healthy outfielders
 
 **External Projection Archive**:
@@ -276,7 +280,7 @@ Gitignored local directory `data/external/<provider>/<season>/` (default `data/e
 _Avoid_: Storing third-party CSVs in `data/archive/`, committing external provider files, discarding external CSVs after one solve
 
 **Internal Minutes Baseline**:
-Pre-deadline Layer 2 fallback (`SP_Soft_Shield_M1`, `features/internal_xmins.py`) used when `--base-csv` is omitted. Emits sparse `M1` club GKP allocation (`89m`/`1m`, 2-start available-rival handover, injured/doubtful GK backup promotion) while leaving healthy outfielders blank so `65m` starter-floor separation and Champion conditional states remain intact.
+Pre-deadline Layer 2 fallback (`SP_Soft_Shield_M1`, `features/internal_xmins.py`) used when `--base-csv` / `--xmins_override` is omitted. Emits sparse `M1` club GKP allocation (`89m`/`1m`, 2-start available-rival handover, injured/doubtful GK backup promotion) while leaving healthy outfielders blank so `65m` starter-floor separation and Champion conditional states remain intact.
 _Avoid_: Full-pool `M4` club outfield inflation (`890m` reconciliation), blind `M2` unflagged absence recovery
 
 **Targeted Availability Override**:
@@ -284,8 +288,8 @@ Sparse player-gameweek minute trajectory for injury recovery ramps or tactical r
 _Avoid_: Manual points editing, flat 90-minute return assumptions, modifying core model scoring rates
 
 **Broad Pool Shield**:
-Automated fixture-date & `S-1`-calibrated Soft Empirical Shield over official FPL API `news`, `status`, and `chance_of_playing_next_round`. Suspensions (`status='s'`) enforce `0.0` before `return_gw`; known injuries (`status='i'`) enforce `0.0` before `return_gw` + `20m → 65m` ramp; `status='u'` zeroes horizon; `status='n'` parent-club zeroes `t=0`; unknown-return `i`/`n` and `d` (`75/50/25`) apply calibrated `S-1` recovery curves instead of 6-GW hard zeros.
-_Avoid_: Point-in-time backtest leakage, searching internet for all 100+ pool injuries, 6-GW hard-zeroing unknown-return knocks or loan flags, overwriting positive Layer 2 steady-state minutes post-return
+Automated fixture-date & `S-1`-calibrated Soft Empirical Shield over official FPL API `news`, `status`, and `chance_of_playing_next_round`. Suspensions (`status='s'`) enforce `0.0` before `return_gw`; known injuries (`status='i'`) enforce `0.0` before `return_gw` + `20m → 65m` ramp; `status='u'` zeroes horizon; `status='n'` parent-club zeroes `t=0`; unknown-return `i`/`n` and `d` (`75/50/25`) `soft_curve` multipliers are bounded strictly to calibrated `step = 0..5` and revert to native Layer 1 for `step >= 6` (ADR 0072).
+_Avoid_: Point-in-time backtest leakage, searching internet for all 100+ pool injuries, 6-GW hard-zeroing unknown-return knocks or loan flags, overwriting positive Layer 2 steady-state minutes post-return, clamping uncalibrated `soft_curve` multipliers past `step = 5`
 
 **Squad Minutes Audit**:
 Mandatory Layer 3 inspection of all 15 User Squad Players (flagged and unflagged) before solve and post-solve. Flags unflagged rotation/drop risks via recent `< 60m` or non-start appearances, material gaps between recent minutes and Layer 2 External CSV `xMins`, or multi-week Layer 2 cliffs for web-intel check and Targeted Availability Override.
@@ -390,8 +394,8 @@ A model abstraction treating goals conceded and clean sheets as team-level prope
 _Avoid_: Per-player goal conceded rate, individual clean sheet rate
 
 **Dashboard Data Contract**:
-Exported player metadata, historical rates, per-gameweek Event Component projections, fixtures (opponent / H|A / Modified FDR), availability (status / chance / news), and Champion Trust for Explorer + Transfer Plan Surface chrome. Includes User Squad identity, ITB, Selling Price, Free Transfer Bank, and Transfer Plan Available Chips. Export grain covers unfinished Gameweeks through Season End (`resolve_horizon_start` to `SEASON_END_GW = 38`); Explorer ranking band is the Planning Horizon slice. Projection Parity Invariant (ADR 0052): for every unfinished Gameweek, projected points and minutes in `dashboard_data.json` and `data/{model}.csv` are strictly identical. Not Transfer Plan JSON (`data/transfer_plan_scenarios.json` is separate). Not Dream Team IDs.
-_Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed, prefilled_squad_ids, Dream Team persist, projection drift between CLI and dashboard
+Exported player metadata, historical rates, per-gameweek Event Component projections, fixtures (opponent / H|A / Modified FDR), availability (status / chance / news), active `minutes_cascade` mode metadata, and Champion Trust for Explorer + Transfer Plan Surface chrome. Includes User Squad identity, ITB, Selling Price, Free Transfer Bank, and Transfer Plan Available Chips. Export grain covers unfinished Gameweeks through Season End (`resolve_horizon_start` to `SEASON_END_GW = 38`); Explorer ranking band is the Planning Horizon slice. Applies automated `SP_Soft_Shield_M1` by default across every exported model (`step = 0..5` `soft_curve` tail guard; explicit `--xmins_override` / `--no-minutes-cascade` flags; never silently reads `data/planner/xmins_override.csv`). Projection Parity Invariant (ADR 0052, ADR 0072): for every unfinished Gameweek, projected points and minutes in `dashboard_data.json` and `data/{model}.csv` are strictly identical. `ADR 0069` validation captures stay pure Layer 1. Not Transfer Plan JSON (`data/transfer_plan_scenarios.json` is separate). Not Dream Team IDs.
+_Avoid_: UI state, solver export, Full-Season Window as the product slice, Transfer Plan embed, prefilled_squad_ids, Dream Team persist, projection drift between CLI and dashboard, auto-loading `data/planner/xmins_override.csv` on refresh
 
 **Dashboard Refresh**:
 In-page FPL ingest plus Primary Projection Model rewrite of the Dashboard Data Contract (Champion if none selected). Charts reload without restarting the server. Exclusive with Dream Team Solve and Transfer Plan Solve. `commands.dashboard` does not ingest on process start. When processed tables are newer than dashboard JSON (or JSON is missing), Open projects Primary from disk then serves. Else paints last JSON. `--models` still exports Comparison Slate. Does not scrape lineups. Does not require `commands.run_model` or a prior `refresh_data` before opening the dashboard. Does not Solve a Dream Team or Transfer Plan Scenarios.

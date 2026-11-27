@@ -17,11 +17,18 @@ load_env()
 configure_utf8_stdio()
 
 from features.builder import (
+    _archive_processed_dir,
     _attach_fixture_clubs,
+    attach_external_xmins,
     build_features,
     completed_performance_rows,
     load_fit_history,
+    load_xmins_override,
     resolve_operational_processed_dir,
+)
+from features.internal_xmins import (
+    SOFT_CURVE_MAX_STEP,
+    build_internal_minutes_baseline,
 )
 from models import get_default_model_name, get_model, list_model_names, resolve_model_or_champion
 from models.planner_selection import (
@@ -407,6 +414,7 @@ def build_dashboard_dataset(
     selection_path: Optional[Path] = None,
     *,
     preflight_override: PlannerSelectionPreflight | None = None,
+    minutes_cascade_meta: dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     """Compiles player metadata, historical rates, and per-GW projections across models into JSON format."""
     horizon = clamp_planning_horizon(horizon)
@@ -787,6 +795,7 @@ def build_dashboard_dataset(
             "dual_tier_active": trust["dual_tier_active"],
             "active_transfer_plan_model": active_tp_model,
             "planner_preflight": preflight.to_dict(),
+            "minutes_cascade": minutes_cascade_meta or {"mode": "off", "profile": "layer1_native"},
             "catalog_models": list_model_names(),
             "owned_squad_ids": owned_squad_ids,
             "owned_captain_id": owned_captain_id,
@@ -852,6 +861,8 @@ def run_dashboard_export(
     output_path: Path | None = None,
     with_squad: bool = False,
     config_path: Path | None = None,
+    minutes_cascade: bool = True,
+    xmins_override: Path | str | None = None,
 ) -> Path:
     processed_dir = resolve_operational_processed_dir(PROJECT_ROOT)
     if not (processed_dir / "players.parquet").exists():
@@ -901,12 +912,66 @@ def run_dashboard_export(
     model_preds: Dict[str, pd.DataFrame] = {}
     fit_history = load_fit_history(processed_dir, feature_start)
 
+    df_feat_override: pd.DataFrame | None = None
+    seed_dir: Path | None = None
+    shield_start = target_start
+    shield_horizon = max(1, SEASON_END_GW - shield_start + 1)
+
+    if xmins_override is not None:
+        override_path = Path(xmins_override)
+        if not override_path.is_absolute():
+            override_path = PROJECT_ROOT / override_path
+        override_map = load_xmins_override(override_path, list(range(feature_start, SEASON_END_GW + 1)))
+        df_feat_override = attach_external_xmins(df_feat, override_map)
+        minutes_cascade_meta: dict[str, Any] = {
+            "mode": "external_override",
+            "profile": "custom_override",
+            "source": override_path.name,
+        }
+    elif minutes_cascade:
+        seed_dir = _archive_processed_dir(processed_dir, None)
+        minutes_cascade_meta = {
+            "mode": "internal_baseline",
+            "profile": "SP_Soft_Shield_M1",
+            "soft_curve_max_step": SOFT_CURVE_MAX_STEP,
+        }
+    else:
+        minutes_cascade_meta = {
+            "mode": "off",
+            "profile": "layer1_native",
+        }
+
     for m_name in names:
         logger.info(f"Generating projections using model '{m_name}'...")
         model = get_model(m_name)
         if hasattr(model, "fit") and fit_history is not None:
             model.fit(fit_history)
-        model_preds[m_name] = model.predict(df_feat, remaining_horizon)
+        if df_feat_override is not None:
+            model_preds[m_name] = model.predict(df_feat_override, remaining_horizon)
+            continue
+        native_preds = model.predict(df_feat, remaining_horizon)
+        if not minutes_cascade:
+            model_preds[m_name] = native_preds
+            continue
+        native_mins_map: dict[tuple[int, int], float] = {}
+        if not native_preds.empty and {"player_id", "gameweek_id", "projected_minutes"}.issubset(native_preds.columns):
+            grouped_native = native_preds.groupby(["player_id", "gameweek_id"], as_index=False)["projected_minutes"].sum()
+            native_mins_map = {
+                (int(r["player_id"]), int(r["gameweek_id"])): float(r["projected_minutes"])
+                for _, r in grouped_native.iterrows()
+            }
+        cascade_map = build_internal_minutes_baseline(
+            processed_dir,
+            target_gw=shield_start,
+            horizon=shield_horizon,
+            native_mins_map=native_mins_map,
+            seed_processed_dir=seed_dir,
+        )
+        model_preds[m_name] = (
+            model.predict(attach_external_xmins(df_feat, cascade_map), remaining_horizon)
+            if cascade_map
+            else native_preds
+        )
 
     dataset = build_dashboard_dataset(
         processed_dir,
@@ -917,6 +982,7 @@ def run_dashboard_export(
         with_squad=with_squad,
         selection_path=config_path,
         preflight_override=preflight,
+        minutes_cascade_meta=minutes_cascade_meta,
     )
     dataset["meta"]["primary_model_explicit"] = explicit_primary or bool(model_names)
     df_players = pd.read_parquet(processed_dir / "players.parquet")
@@ -968,6 +1034,20 @@ def main() -> None:
         default=False,
         help="Include personal User Squad picks in exported dataset (default: False)",
     )
+    parser.add_argument(
+        "--xmins_override",
+        "--xmins-override",
+        type=Path,
+        default=None,
+        dest="xmins_override",
+        help="Optional explicit external xMins CSV override path (disabled by default)",
+    )
+    parser.add_argument(
+        "--no-minutes-cascade",
+        action="store_true",
+        default=False,
+        help="Disable default SP_Soft_Shield_M1 Minutes Cascade and export pure Layer 1 projections",
+    )
     args = parser.parse_args()
 
     run_dashboard_export(
@@ -977,6 +1057,8 @@ def main() -> None:
         model_names=args.models,
         output_path=args.output,
         with_squad=args.with_squad,
+        minutes_cascade=not args.no_minutes_cascade,
+        xmins_override=args.xmins_override,
     )
 
 
