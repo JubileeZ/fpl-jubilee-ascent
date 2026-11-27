@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from features.builder import (
+    attach_external_xmins,
     build_features,
     load_xmins_override,
     resolve_operational_processed_dir,
@@ -324,3 +325,39 @@ def test_participation_state_model_override_scales_native_states_and_preserves_u
     n101 = native_preds.loc[101]
     assert abs(float(p101["projected_points"]) - float(n101["projected_points"])) < 1e-9
     assert abs(float(p101["projected_minutes"]) - float(n101["projected_minutes"])) < 1e-9
+
+
+def test_attach_external_xmins_handles_dgw_bgw_clamps_and_non_mutation() -> None:
+    df = pd.DataFrame([
+        {"player_id": 1, "gameweek_id": 7, "fixture_id": 10},
+        {"player_id": 1, "gameweek_id": 7, "fixture_id": 11},  # DGW splits 160 -> 80 per fixture
+        {"player_id": 2, "gameweek_id": 7, "fixture_id": -1},  # Blank GW -> 0.0
+        {"player_id": 3, "gameweek_id": 7, "fixture_id": 12},  # Listed > 90 -> clamped to 90.0
+        {"player_id": 4, "gameweek_id": 7, "fixture_id": 13},  # Unlisted -> NaN
+        {"player_id": 5, "gameweek_id": 7, "fixture_id": 14},  # Listed < 0 -> clamped to 0.0
+        {"player_id": 6, "gameweek_id": 7, "fixture_id": 15},  # Listed NaN -> preserved as NaN
+    ])
+    df_orig = df.copy()
+    out = attach_external_xmins(df, {(1, 7): 160.0, (2, 7): 80.0, (3, 7): 120.0, (5, 7): -15.0, (6, 7): float("nan")})
+    assert "external_xmins" not in df_orig.columns
+    assert "external_xmins" not in df.columns
+    vals = list(out["external_xmins"])
+    assert vals[0] == pytest.approx(80.0)
+    assert vals[1] == pytest.approx(80.0)
+    assert vals[2] == pytest.approx(0.0)
+    assert vals[3] == pytest.approx(90.0)
+    assert pd.isna(vals[4])
+    assert vals[5] == pytest.approx(0.0)
+    assert pd.isna(vals[6])
+
+    # Empty map preserves native fallback without adding/overwriting external_xmins
+    empty_out = attach_external_xmins(df, {})
+    assert "external_xmins" not in empty_out.columns
+    pd.testing.assert_frame_equal(empty_out, df)
+
+    # Missing required columns returns copy safely without KeyError
+    missing_cols = pd.DataFrame([{"player_id": 1}])
+    missing_out = attach_external_xmins(missing_cols, {(1, 7): 50.0})
+    assert "external_xmins" not in missing_out.columns
+    pd.testing.assert_frame_equal(missing_out, missing_cols)
+

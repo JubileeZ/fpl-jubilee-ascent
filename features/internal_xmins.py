@@ -33,6 +33,7 @@ DEFAULT_CHANCE_MULTIPLIERS: tuple[tuple[int, float], ...] = (
 )
 
 # S-1 (2025-26) calibrated empirical recovery curves relative to healthy a_100 at horizon step t=0..5
+SOFT_CURVE_MAX_STEP: int = 5
 SOFT_UNKNOWN_CURVE: tuple[float, ...] = (0.00, 0.08, 0.20, 0.33, 0.48, 0.55)
 SOFT_SUSPENDED_N_CURVE: tuple[float, ...] = (0.00, 0.20, 0.35, 0.58, 0.81, 1.00)
 SOFT_DOUBTFUL_CURVES: tuple[tuple[int, tuple[float, ...]], ...] = (
@@ -95,7 +96,7 @@ def _chance_multiplier(chance: float, status: str, config: InternalXminsConfig) 
 
 def soft_doubtful_multiplier(chance: float, step: int) -> float:
     """Interpolate S-1 calibrated availability multiplier for ``status='d'/'a'`` with ``chance < 100``."""
-    idx = min(max(int(step), 0), 5)
+    idx = min(max(int(step), 0), SOFT_CURVE_MAX_STEP)
     if chance <= 0.0:
         return SOFT_DOUBTFUL_CURVES[0][1][idx]
     if chance >= 100.0:
@@ -660,7 +661,7 @@ def build_soft_shield_layers(
             if n_fix == 0:
                 continue
             step = gw - int(target_gw)
-            s_idx = min(max(step, 0), 5)
+            s_idx = min(max(step, 0), SOFT_CURVE_MAX_STEP)
             base_m = float(native_mins_map[(pid, gw)]) if native_mins_map is not None and (pid, gw) in native_mins_map else fit_mins * n_fix
 
             if status == "u":
@@ -669,7 +670,7 @@ def build_soft_shield_layers(
                 if "parent club" in news.lower():
                     if step == 0:
                         hard_guard[(pid, gw)] = 0.0
-                else:
+                elif step <= SOFT_CURVE_MAX_STEP:
                     mult = SOFT_SUSPENDED_N_CURVE[s_idx]
                     if mult <= 0.0:
                         hard_guard[(pid, gw)] = 0.0
@@ -693,7 +694,7 @@ def build_soft_shield_layers(
                         hard_guard[(pid, gw)] = min(65.0, fit_mins) * n_fix
                     elif has_tenure:
                         post_return_fallback[(pid, gw)] = fit_mins * n_fix
-                else:
+                elif step <= SOFT_CURVE_MAX_STEP:
                     mult = SOFT_UNKNOWN_CURVE[s_idx]
                     if mult <= 0.0:
                         hard_guard[(pid, gw)] = 0.0
@@ -702,7 +703,7 @@ def build_soft_shield_layers(
             elif chance < 100.0:
                 if step == 0 and chance <= 0.0:
                     hard_guard[(pid, gw)] = 0.0
-                else:
+                elif step <= SOFT_CURVE_MAX_STEP:
                     mult = soft_doubtful_multiplier(chance, step)
                     if mult <= 0.0:
                         hard_guard[(pid, gw)] = 0.0
@@ -820,8 +821,12 @@ def build_internal_minutes_baseline(
     config: InternalXminsConfig | None = None,
 ) -> dict[tuple[int, int], float]:
     """Convenience wrapper loading Parquet tables from processed_dir."""
-    df_players = pd.read_parquet(processed_dir / "players.parquet")
-    df_fixtures = pd.read_parquet(processed_dir / "fixtures.parquet")
+    players_path = processed_dir / "players.parquet"
+    fixtures_path = processed_dir / "fixtures.parquet"
+    if not players_path.exists() or not fixtures_path.exists():
+        return {}
+    df_players = pd.read_parquet(players_path)
+    df_fixtures = pd.read_parquet(fixtures_path)
     perfs_path = processed_dir / "player_performances.parquet"
     df_perfs = pd.read_parquet(perfs_path) if perfs_path.exists() else pd.DataFrame()
 

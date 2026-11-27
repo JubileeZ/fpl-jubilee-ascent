@@ -19,12 +19,12 @@ Core data structures, official rules, and model registries.
 
 Immutable records of technical decisions, trade-offs, and design agreements.
 
-- **[ADR Master Index](adr/README.md)**: Complete catalog of all 71 ADRs organized by functional subsystem and lifecycle status:
+- **[ADR Master Index](adr/README.md)**: Complete catalog of all 72 ADRs organized by functional subsystem and lifecycle status:
   - **Modeling & Score Projections**: ADRs 0001, 0003, 0005, 0006, 0007, 0010, 0013, 0014, 0015, 0022, 0024, 0025, 0026, 0035, 0037, 0039, 0040, 0041, 0045, 0048, 0050, 0051, 0055, 0056, 0063.
   - **Optimization, Scenarios & Solver**: ADRs 0020, 0029, 0030, 0031, 0033, 0042, 0043, 0053, 0057, 0061, 0065, 0067.
-  - **Dashboard, UI & Product**: ADRs 0008, 0011, 0017, 0018, 0021, 0027, 0028, 0034, 0052, 0058, 0059, 0060.
+  - **Dashboard, UI & Product**: ADRs 0008, 0011, 0017, 0018, 0021, 0027, 0028, 0034, 0052, 0058, 0059, 0060, 0072.
   - **Data Ingestion & Pipeline**: ADRs 0002, 0004, 0012, 0019, 0023, 0032, 0036.
-  - **Evaluation & Promotion Gates**: ADRs 0038, 0044, 0046, 0047, 0049, 0054, 0062, 0064, 0066, 0068, 0069, 0070, 0071.
+  - **Evaluation & Promotion Gates**: ADRs 0038, 0044, 0046, 0047, 0049, 0054, 0062, 0064, 0066, 0068, 0069, 0070, 0071, 0072.
 
 ---
 

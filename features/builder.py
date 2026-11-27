@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict
@@ -751,6 +752,47 @@ def load_xmins_override(csv_path: Path | str, planning_gws: list[int]) -> dict[t
     return out
 
 
+def attach_external_xmins(
+    df_feat: pd.DataFrame,
+    xmins_map: Mapping[tuple[int, int], float],
+) -> pd.DataFrame:
+    """Attach sparse `(player_id, gameweek_id) -> external_xmins` onto a copy of `df_feat`."""
+    out = df_feat.copy()
+    if out.empty or not xmins_map or not {"player_id", "gameweek_id"}.issubset(out.columns):
+        return out
+    fix_ids = (
+        out["fixture_id"].fillna(-1).astype(int)
+        if "fixture_id" in out.columns
+        else pd.Series(0, index=out.index, dtype=int)
+    )
+    valid_fix = fix_ids >= 0
+    fix_counts = pd.Series(1, index=out.index, dtype=int)
+    if valid_fix.any():
+        fix_counts.loc[valid_fix] = (
+            out.assign(_fid=fix_ids)[valid_fix]
+            .groupby(["player_id", "gameweek_id"])["_fid"]
+            .transform("count")
+            .astype(int)
+        )
+    ext_vals: list[float] = []
+    for pid, gw, fid, n_fix in zip(
+        out["player_id"].astype(int),
+        out["gameweek_id"].astype(int),
+        fix_ids,
+        fix_counts,
+        strict=True,
+    ):
+        val = xmins_map.get((pid, gw))
+        if val is None or pd.isna(val):
+            ext_vals.append(float("nan"))
+        elif fid < 0:
+            ext_vals.append(0.0)
+        else:
+            ext_vals.append(min(90.0, max(0.0, float(val) / max(1, int(n_fix)))))
+    out["external_xmins"] = ext_vals
+    return out
+
+
 def build_features(
     processed_dir: Path,
     target_gw: int,
@@ -1192,31 +1234,5 @@ def build_features(
     if xmins_override is not None:
         planning_gws = sorted(df_feat["gameweek_id"].unique().tolist())
         xmins_map = load_xmins_override(xmins_override, planning_gws)
-        # Count valid fixtures per (player_id, gameweek_id) for DGW handling
-        valid_fix = df_feat["fixture_id"].fillna(-1).astype(int) >= 0
-        gw_fix_counts = (
-            df_feat[valid_fix]
-            .groupby(["player_id", "gameweek_id"])["fixture_id"]
-            .transform("count")
-        )
-        df_feat["_fix_count"] = 1
-        df_feat.loc[valid_fix, "_fix_count"] = gw_fix_counts
-
-        ext_vals: list[float] = []
-        for pid, gw, fid, n_fix in zip(
-            df_feat["player_id"].astype(int),
-            df_feat["gameweek_id"].astype(int),
-            df_feat["fixture_id"].fillna(-1).astype(int),
-            df_feat["_fix_count"].astype(int),
-        ):
-            if (pid, gw) in xmins_map:
-                if fid < 0:
-                    ext_vals.append(0.0)
-                else:
-                    per_fix = float(xmins_map[(pid, gw)]) / max(1, n_fix)
-                    ext_vals.append(min(90.0, max(0.0, per_fix)))
-            else:
-                ext_vals.append(float("nan"))
-        df_feat["external_xmins"] = ext_vals
-        df_feat.drop(columns=["_fix_count"], inplace=True)
+        df_feat = attach_external_xmins(df_feat, xmins_map)
     return assert_feature_contract(df_feat)

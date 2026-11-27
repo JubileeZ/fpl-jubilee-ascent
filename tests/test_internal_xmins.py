@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from features.internal_xmins import (
+    SOFT_CURVE_MAX_STEP,
     SOFT_DOUBTFUL_CURVES,
     SOFT_SUSPENDED_N_CURVE,
     SOFT_UNKNOWN_CURVE,
@@ -284,3 +285,48 @@ def test_empty_columnless_fixtures_and_perfs_handled_safely() -> None:
     assert h == {} and s == {} and p == {}
     assert build_sparse_gkp_baseline(players, empty, empty, 7, 2) == {}
     assert compute_internal_xmins_from_tables(players, empty, empty, 7, 2, reference_date=date(2025, 10, 10)) == {}
+
+
+def test_soft_curve_bounded_to_calibrated_steps_while_hard_guards_and_gkp_span_horizon() -> None:
+    assert SOFT_CURVE_MAX_STEP == 5
+    players, fixtures, perfs = _sample_tables()
+    extra = pd.DataFrame([
+        {"id": 9, "web_name": "LeftClub", "club_id": 1, "position_id": 3, "now_cost": 55, "status": "u", "chance_of_playing_next_round": 0.0, "news": "Transferred", "code": 109},
+        {"id": 11, "web_name": "IneligOther", "club_id": 1, "position_id": 3, "now_cost": 50, "status": "n", "chance_of_playing_next_round": 0.0, "news": "Not available", "code": 111},
+        {"id": 12, "web_name": "UnknownInj", "club_id": 1, "position_id": 3, "now_cost": 75, "status": "i", "chance_of_playing_next_round": 0.0, "news": "Knee injury - Unknown return date", "code": 112},
+        {"id": 13, "web_name": "Doubt25", "club_id": 1, "position_id": 4, "now_cost": 70, "status": "d", "chance_of_playing_next_round": 25.0, "news": "Knock - 25% chance", "code": 113},
+    ])
+    p_all = pd.concat([players, extra], ignore_index=True)
+    more_fix = pd.DataFrame([
+        {"id": gw, "gameweek_id": gw, "home_club_id": 1, "away_club_id": 2, "kickoff_time": f"2025-11-{gw:02d}T14:00:00Z"}
+        for gw in range(11, 19)
+    ])
+    fix_all = pd.concat([fixtures, more_fix], ignore_index=True)
+    native = {(pid, gw): 80.0 for pid in p_all["id"] for gw in range(7, 19)}
+
+    hard_guard, soft_curve, post_fallback = build_soft_shield_layers(
+        p_all, fix_all, perfs, target_gw=7, horizon=12, native_mins_map=native, reference_date=date(2025, 10, 10)
+    )
+    # Unknown-return 'i' (12) and Doubt25 (13) emit soft_curve at steps 1..5 / 0..5 and revert to native (omitted) at steps 6..11
+    assert hard_guard[(12, 7)] == 0.0
+    for step in range(1, 6):
+        assert (12, 7 + step) in soft_curve
+    for step in range(0, 6):
+        assert (13, 7 + step) in soft_curve
+    for gw in range(13, 19):
+        assert (12, gw) not in soft_curve
+        assert (12, gw) not in hard_guard
+        assert (13, gw) not in soft_curve
+        assert (11, gw) not in soft_curve
+        assert hard_guard[(9, gw)] == 0.0  # status='u' stays 0 across full horizon
+        assert post_fallback[(5, gw)] >= 60.0  # parsed return_gw stays active across full horizon
+
+    frozen = build_frozen_internal_minutes_baseline(
+        p_all, fix_all, perfs, target_gw=7, horizon=12, native_mins_map=native, reference_date=date(2025, 10, 10)
+    )
+    for gw in range(13, 19):
+        assert frozen[(1, gw)] == pytest.approx(89.0)
+        assert frozen[(2, gw)] == pytest.approx(1.0)
+        assert (12, gw) not in frozen
+        assert (13, gw) not in frozen
+
