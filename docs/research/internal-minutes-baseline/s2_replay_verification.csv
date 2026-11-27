@@ -1,0 +1,5 @@
+season,arm,t0_mins_mae,t0_mins_bias,t02_mins_mae,t0_xp_mae,t0_xp_rmse,cumulative_gross,cumulative_hits,cumulative_net,delta_net_vs_native,delta_net_vs_shield,total_transfers,hit_count,final_bank,gw1_4_net,gw5_19_net,gw20_38_net,optimal_gws,runtime_seconds
+2024-25,L1_native,13.2645,-2.7116,15.7977,0.9225,1.9211,2372,36,2336,0,130,71,9,39,251,826,1259,38,788.65
+2024-25,SP_Soft_Shield_M1,12.6709,-3.0876,14.604,0.9133,1.9268,2356,48,2308,-28,102,75,12,33,227,865,1216,38,794.42
+2024-25,Sparse_M1_M3,12.6599,-3.0861,14.4598,0.9147,1.9248,2245,60,2185,-151,-21,78,15,29,215,818,1152,38,801.33
+2024-25,SP_Soft_M1_M3_M4,11.6234,-0.1366,13.8841,0.944,1.9199,2296,36,2260,-76,54,71,9,5,222,840,1198,38,781.43

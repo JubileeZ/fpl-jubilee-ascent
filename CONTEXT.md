@@ -268,16 +268,24 @@ An explicit, source-attributed and time-limited `xmins_cap` when the FPL API has
 _Avoid_: Expert guess, manual prediction, live `xmins_cap` as default data-only path
 
 **Minutes Cascade**:
-Ground-up three-tier minutes resolution precedence: Layer 3 (Injury Guard on top: Targeted Availability Override & Broad Pool Shield) $\to$ Layer 2 (Baseline External Projections CSV) $\to$ Layer 1 (Native In-House Champion fallback). Broad Pool Shield insulates solver against stale external minutes. Omitted/blank cells inherit lower-tier projections; unlisted assets retain Native Champion expectation.
-_Avoid_: Zeroing unlisted players, single-tier overrides, uncomposable projection sources
+Ground-up three-tier minutes resolution precedence: Layer 3 (Injury Guard on top: Targeted Availability Override & Soft Empirical Broad Pool Shield) $\to$ Layer 2 (Optional External Projections CSV, else Internal Minutes Baseline sparse GKP + soft curves) $\to$ Layer 1 (Native In-House Champion fallback). Omitted/blank cells inherit lower-tier projections; unlisted healthy outfielders retain Native Champion expectation and state uncertainty via `scale_states_to_target`.
+_Avoid_: Zeroing unlisted players, single-tier overrides, uncomposable projection sources, saturating `target_to_states` on healthy outfielders
+
+**External Projection Archive**:
+Gitignored local directory `data/external/<provider>/<season>/` (default `data/external/solio/<season>/`) storing timestamped copies of user-supplied Layer 2 external projection CSVs for offline diagnostics. Strictly outside `Season Archive` (`data/archive/`) and `Operational Dataset`; never committed to git.
+_Avoid_: Storing third-party CSVs in `data/archive/`, committing external provider files, discarding external CSVs after one solve
+
+**Internal Minutes Baseline**:
+Pre-deadline Layer 2 fallback (`SP_Soft_Shield_M1`, `features/internal_xmins.py`) used when `--base-csv` is omitted. Emits sparse `M1` club GKP allocation (`89m`/`1m`, 2-start available-rival handover, injured/doubtful GK backup promotion) while leaving healthy outfielders blank so `65m` starter-floor separation and Champion conditional states remain intact.
+_Avoid_: Full-pool `M4` club outfield inflation (`890m` reconciliation), blind `M2` unflagged absence recovery
 
 **Targeted Availability Override**:
-Sparse player-gameweek minute trajectory for injury recovery ramps or tactical rotation. Top cascade precedence; maps to participation state probabilities ($p_{\text{start}}, p_{\text{sub}}, p_{\text{dnp}}$) via `target_to_states`.
-_Avoid_: Manual points editing, flat 90-minute return assumptions, modifying core model files
+Sparse player-gameweek minute trajectory for injury recovery ramps or tactical rotation. Top cascade precedence; scales native participation states ($p_{\text{start}}, p_{\text{sub}}, p_{\text{dnp}}, \text{xmins\_if\_start}, p_{60}$) via `scale_states_to_target` (fallback `target_to_states` when native minutes $< 5.0$).
+_Avoid_: Manual points editing, flat 90-minute return assumptions, modifying core model scoring rates
 
 **Broad Pool Shield**:
-Automated fixture-date filtering of official FPL API `news` and status flags. Suspensions (`status='s'`) enforce `0.0` xMins before `return_gw` then restore immediately; injuries (`status='i'`) enforce `0.0` before `return_gw` and apply a `20m → 65m` Injury Return Curve. Unknown-return flags (`i`, `s`, `u`, `n`) zero the horizon. Post-return steady-state cells defer to positive Layer 2 External CSV projections before falling back to healthy historical baselines.
-_Avoid_: Point-in-time backtest leakage, searching internet for all 100+ pool injuries, ignoring fixture calendar dates, applying cameo ramps to suspensions, overwriting positive Layer 2 steady-state minutes post-return
+Automated fixture-date & `S-1`-calibrated Soft Empirical Shield over official FPL API `news`, `status`, and `chance_of_playing_next_round`. Suspensions (`status='s'`) enforce `0.0` before `return_gw`; known injuries (`status='i'`) enforce `0.0` before `return_gw` + `20m → 65m` ramp; `status='u'` zeroes horizon; `status='n'` parent-club zeroes `t=0`; unknown-return `i`/`n` and `d` (`75/50/25`) apply calibrated `S-1` recovery curves instead of 6-GW hard zeros.
+_Avoid_: Point-in-time backtest leakage, searching internet for all 100+ pool injuries, 6-GW hard-zeroing unknown-return knocks or loan flags, overwriting positive Layer 2 steady-state minutes post-return
 
 **Squad Minutes Audit**:
 Mandatory Layer 3 inspection of all 15 User Squad Players (flagged and unflagged) before solve and post-solve. Flags unflagged rotation/drop risks via recent `< 60m` or non-start appearances, material gaps between recent minutes and Layer 2 External CSV `xMins`, or multi-week Layer 2 cliffs for web-intel check and Targeted Availability Override.

@@ -1,0 +1,5 @@
+season,arm,cumulative_gross,cumulative_hits,cumulative_net,delta_net_vs_shield,total_transfers,hit_count,final_bank,gw1_4_net,gw5_19_net,gw20_38_net,optimal_gws,runtime_seconds
+2024-25,Internal_M1_M3_M4,2169,32,2137,-69,70,8,37,222,788,1127,38,857.73
+2024-25,L1_L3b_shield,2246,40,2206,0,72,10,24,237,765,1204,38,935.6
+2025-26,Internal_M1_M3_M4,2100,32,2068,-39,85,8,20,229,856,983,38,302.69
+2025-26,L1_L3b_shield,2123,16,2107,0,79,4,4,217,859,1031,38,538.39

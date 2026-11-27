@@ -112,87 +112,36 @@ def _build_broad_pool_shield_layers(
     target_gw: int,
     horizon: int,
     reference_date: date | None = None,
-) -> tuple[dict[tuple[int, int], float], dict[tuple[int, int], float]]:
+    *,
+    native_mins_map: Mapping[tuple[int, int], float] | None = None,
+) -> tuple[dict[tuple[int, int], float], dict[tuple[int, int], float], dict[tuple[int, int], float]]:
     """
-    Construct Broad Pool Shield split into:
-    - hard_guard: pre-return 0.0 zeros and injury 20m -> 65m return ramps (beats Layer 2)
-    - post_return_fallback: healthy baseline fallback once recovered or ban expires
-      (yields to positive Layer 2 steady-state projections, beats Layer 1/zeroed Layer 2).
+    Construct Soft Empirical Broad Pool Shield split into:
+    - hard_guard: pre-return 0.0 zeros, status='u' horizon 0.0, t=0 loan/hard-DNP, injury 20m -> 65m ramps
+    - soft_curve: S-1 calibrated recovery curves (unknown-return injuries, non-loan 'n', doubtfuls < 100%)
+    - post_return_fallback: healthy starter baseline fallback once recovered or ban expires
     """
     players_path = processed_dir / "players.parquet"
     fixtures_path = processed_dir / "fixtures.parquet"
     if not players_path.exists() or not fixtures_path.exists():
-        return {}, {}
+        return {}, {}, {}
+
+    from features.internal_xmins import build_soft_shield_layers
 
     df_players = pd.read_parquet(players_path)
     df_fixtures = pd.read_parquet(fixtures_path)
     perfs_path = processed_dir / "player_performances.parquet"
-    df_perfs = pd.read_parquet(perfs_path) if perfs_path.exists() else None
-
-    healthy_baselines = compute_healthy_baseline_xmins(df_players, df_perfs)
-    flagged = get_flagged_players(df_players)
-
-    planning_gws = list(range(target_gw, target_gw + horizon))
-    fixture_sub = df_fixtures[df_fixtures["gameweek_id"].isin(planning_gws)].copy()
-    fixture_sub["kickoff_date"] = pd.to_datetime(fixture_sub["kickoff_time"], utc=True, errors="coerce").dt.date
-
-    club_gw_dates: dict[tuple[int, int], date] = {}
-    for _, fix_row in fixture_sub.iterrows():
-        gw = int(fix_row["gameweek_id"])
-        k_date = fix_row["kickoff_date"]
-        if pd.isna(k_date):
-            continue
-        for cid_col in ("home_club_id", "away_club_id"):
-            cid = int(fix_row[cid_col])
-            key = (cid, gw)
-            if key not in club_gw_dates or k_date < club_gw_dates[key]:
-                club_gw_dates[key] = k_date
-
+    df_perfs = pd.read_parquet(perfs_path) if perfs_path.exists() else pd.DataFrame()
     ref = reference_date or resolve_gw_reference_date(processed_dir, target_gw)
-    hard_guard: dict[tuple[int, int], float] = {}
-    post_return_fallback: dict[tuple[int, int], float] = {}
-
-    for _, player in flagged.iterrows():
-        pid = int(player["id"])
-        cid = int(player["club_id"])
-        status = str(player.get("status", "")).lower()
-        raw_chance = player.get("chance_of_playing_next_round")
-        chance = 100.0 if raw_chance is None or pd.isna(raw_chance) else float(raw_chance)
-        news = str(player.get("news") or "")
-        ret_date = parse_fpl_return_date(news, ref)
-
-        return_gw: int | None = None
-        if ret_date is not None:
-            for gw in planning_gws:
-                f_date = club_gw_dates.get((cid, gw))
-                if f_date is not None and f_date >= ret_date:
-                    return_gw = gw
-                    break
-
-        if return_gw is not None:
-            for gw in planning_gws:
-                if gw < return_gw:
-                    hard_guard[(pid, gw)] = 0.0
-                elif status == "s":
-                    # Suspensions restore match-fit immediately on return_gw (no cameo ramp)
-                    post_return_fallback[(pid, gw)] = healthy_baselines.get(pid, 80.0)
-                elif gw == return_gw:
-                    # Immediate target GW Hard DNP (ADR 0056) if chance <= 0 on return_gw
-                    if gw == target_gw and chance <= 0.0:
-                        hard_guard[(pid, gw)] = 0.0
-                    else:
-                        hard_guard[(pid, gw)] = 20.0
-                elif gw == return_gw + 1:
-                    hard_guard[(pid, gw)] = 65.0
-                else:
-                    post_return_fallback[(pid, gw)] = healthy_baselines.get(pid, 80.0)
-        elif status in {"i", "s", "u", "n"}:
-            for gw in planning_gws:
-                hard_guard[(pid, gw)] = 0.0
-        elif chance <= 0.0:
-            hard_guard[(pid, target_gw)] = 0.0
-
-    return hard_guard, post_return_fallback
+    return build_soft_shield_layers(
+        df_players,
+        df_fixtures,
+        df_perfs,
+        target_gw,
+        horizon,
+        native_mins_map=native_mins_map,
+        reference_date=ref,
+    )
 
 
 def build_broad_pool_shield(
@@ -200,17 +149,34 @@ def build_broad_pool_shield(
     target_gw: int,
     horizon: int,
     reference_date: date | None = None,
+    *,
+    native_mins_map: Mapping[tuple[int, int], float] | None = None,
+    filter_depressed_only: bool = False,
 ) -> dict[tuple[int, int], float]:
     """
-    Construct Broad Pool Shield across all flagged players.
+    Construct Soft Empirical Broad Pool Shield across all flagged players.
 
     Suspensions (`status == 's'`) enforce 0.0 xMins prior to `return_gw` and restore full
-    fitness immediately upon return; injuries (`status == 'i'`) apply a 20m -> 65m ramp.
+    fitness immediately upon return; injuries (`status == 'i'`) apply a 20m -> 65m ramp when a
+    return date is known or empirical S-1 recovery curves when unknown; doubtfuls apply S-1
+    calibrated curves.
     """
-    hard_guard, post_return_fallback = _build_broad_pool_shield_layers(
-        processed_dir, target_gw, horizon, reference_date=reference_date
+    hard_guard, soft_curve, post_return_fallback = _build_broad_pool_shield_layers(
+        processed_dir, target_gw, horizon, reference_date=reference_date, native_mins_map=native_mins_map
     )
-    return {**post_return_fallback, **hard_guard}
+    if filter_depressed_only and native_mins_map is not None and post_return_fallback:
+        from features.internal_xmins import filter_depressed_post_return
+
+        df_players = pd.read_parquet(processed_dir / "players.parquet")
+        df_fixtures = pd.read_parquet(processed_dir / "fixtures.parquet")
+        post_return_fallback = filter_depressed_post_return(
+            df_players,
+            df_fixtures,
+            list(range(int(target_gw), int(target_gw) + max(1, int(horizon)))),
+            post_return_fallback,
+            native_mins_map,
+        )
+    return {**post_return_fallback, **soft_curve, **hard_guard}
 
 
 def audit_squad_minutes(
@@ -428,16 +394,19 @@ def synthesize_xmins_override(
     output_path: Path | str | None = None,
     include_broad_pool_shield: bool = True,
     reference_date: date | None = None,
+    native_mins_map: Mapping[tuple[int, int], float] | None = None,
+    include_internal_gkp_baseline: bool = True,
 ) -> Path:
     """
     Synthesize consolidated 3-tier xMins override CSV.
 
     Precedence per (player_id, gw):
-    1. Layer 3a (Top Guard): Targeted Overrides (--set curves / web intel)
-    2. Layer 3b (Top Guard): Broad Pool Shield hard guards (0.0m pre-return + injury 20m/65m ramp)
-    3. Layer 2 (Middle): Base External CSV (wins post-return steady-state when > 0.0m)
-    4. Layer 3b (Fallback): Healthy baseline fallback when Layer 2 absent or zeroed post-return
-    5. Layer 1 (Base Foundation): Blank cells fall back to Native In-House Champion.
+    1. Layer 3a (Top Guard): Targeted Overrides (--set / --set-gw curves & web intel)
+    2. Layer 3b (Top Guard): Soft Empirical Shield hard guards (pre-return 0.0m, status='u', 20m/65m ramp)
+    3. Layer 2 (Middle, when --base-csv given): External CSV (wins post-return steady-state when > 0.0m)
+    4. Layer 2 (Internal, when --base-csv omitted): Sparse M1 GKP allocation + Soft Empirical recovery curves
+    5. Layer 3b (Fallback): Healthy baseline fallback when Layer 2 absent or depressed post-return
+    6. Layer 1 (Base Foundation): Blank cells stay NaN -> Native In-House Champion (outfielders).
     """
     players_path = processed_dir / "players.parquet"
     if not players_path.exists():
@@ -458,12 +427,33 @@ def synthesize_xmins_override(
         base_map = load_xmins_override(base_csv_path, planning_gws)
 
     hard_guard: dict[tuple[int, int], float] = {}
+    soft_curve: dict[tuple[int, int], float] = {}
     post_return_fallback: dict[tuple[int, int], float] = {}
-    if include_broad_pool_shield:
+    gkp_baseline: dict[tuple[int, int], float] = {}
+
+    if include_broad_pool_shield or (base_csv_path is None and include_internal_gkp_baseline):
+        from features.internal_xmins import build_sparse_gkp_baseline, filter_depressed_post_return
+
         ref = reference_date or resolve_gw_reference_date(processed_dir, target_gw)
-        hard_guard, post_return_fallback = _build_broad_pool_shield_layers(
-            processed_dir, target_gw, horizon, reference_date=ref
-        )
+        if include_broad_pool_shield:
+            hard_guard, soft_curve, post_return_fallback = _build_broad_pool_shield_layers(
+                processed_dir, target_gw, horizon, reference_date=ref, native_mins_map=native_mins_map
+            )
+        fixtures_path = processed_dir / "fixtures.parquet"
+        perfs_path = processed_dir / "player_performances.parquet"
+        df_fixtures = pd.read_parquet(fixtures_path) if fixtures_path.exists() else pd.DataFrame()
+
+        if base_csv_path is None and native_mins_map is not None and post_return_fallback:
+            post_return_fallback = filter_depressed_post_return(
+                df_players, df_fixtures, planning_gws, post_return_fallback, native_mins_map
+            )
+
+        if base_csv_path is None and include_internal_gkp_baseline and not df_fixtures.empty:
+            df_perfs = pd.read_parquet(perfs_path) if perfs_path.exists() else pd.DataFrame()
+            soft_all = {**post_return_fallback, **soft_curve, **hard_guard}
+            gkp_baseline = build_sparse_gkp_baseline(
+                df_players, df_fixtures, df_perfs, target_gw, horizon, soft_overrides=soft_all
+            )
 
     target_map = dict(targeted_overrides or {})
 
@@ -474,10 +464,19 @@ def synthesize_xmins_override(
             key = (int(pid), int(gw))
             if key in target_map:
                 vals.append(float(target_map[key]))
+            elif base_csv_path is None and key in gkp_baseline:
+                vals.append(float(gkp_baseline[key]))
             elif key in hard_guard:
                 vals.append(float(hard_guard[key]))
-            elif key in base_map and (key not in post_return_fallback or float(base_map[key]) > 0.0):
-                vals.append(float(base_map[key]))
+            elif base_csv_path is not None:
+                if key in base_map and (key not in post_return_fallback or float(base_map[key]) > 0.0):
+                    vals.append(float(base_map[key]))
+                elif key in post_return_fallback:
+                    vals.append(float(post_return_fallback[key]))
+                else:
+                    vals.append("")
+            elif key in soft_curve:
+                vals.append(float(soft_curve[key]))
             elif key in post_return_fallback:
                 vals.append(float(post_return_fallback[key]))
             else:

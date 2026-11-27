@@ -70,6 +70,36 @@ def test_build_broad_pool_shield(tmp_path: Path):
             "chance_of_playing_next_round": 0.0,
             "news": "Thigh injury - Unknown return date",
         },
+        {
+            "id": 99,
+            "web_name": "LeftClub",
+            "club_id": 1,
+            "position_id": 2,
+            "now_cost": 45,
+            "status": "u",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Transferred",
+        },
+        {
+            "id": 100,
+            "web_name": "LoanParent",
+            "club_id": 2,
+            "position_id": 2,
+            "now_cost": 45,
+            "status": "n",
+            "chance_of_playing_next_round": 0.0,
+            "news": "Ineligible to face parent club",
+        },
+        {
+            "id": 101,
+            "web_name": "Doubt75",
+            "club_id": 1,
+            "position_id": 4,
+            "now_cost": 80,
+            "status": "d",
+            "chance_of_playing_next_round": 75.0,
+            "news": "Knock - 75% chance of playing",
+        },
     ])
     df_players.to_parquet(tmp_path / "players.parquet")
 
@@ -107,12 +137,20 @@ def test_build_broad_pool_shield(tmp_path: Path):
     assert shield.get((516, 10)) is not None and shield[(516, 10)] >= 60.0
     assert shield.get((516, 11)) is not None and shield[(516, 11)] >= 60.0
 
-    # Unknown return date + status 'i' (Saka ID 12)
-    # Zeroed out across the entire planning horizon
+    # Unknown return date + status 'i' (Saka ID 12): Soft Empirical Shield
+    # 0.0 at t=0 (GW8), then strictly increasing positive recovery across GW9-GW11
     assert shield.get((12, 8)) == 0.0
-    assert shield.get((12, 9)) == 0.0
-    assert shield.get((12, 10)) == 0.0
-    assert shield.get((12, 11)) == 0.0
+    assert 0.0 < shield[(12, 9)] < shield[(12, 10)] < shield[(12, 11)]
+
+    # status='u' (ID 99) stays 0.0 across all GWs
+    assert all(shield.get((99, gw)) == 0.0 for gw in (8, 9, 10, 11))
+
+    # status='n' parent-club loanee (ID 100): 0.0 at t=0 (GW8) only, omitted GW9+
+    assert shield.get((100, 8)) == 0.0
+    assert all((100, gw) not in shield for gw in (9, 10, 11))
+
+    # status='d' 75% (ID 101): discounted below steady baseline at t=0 and recovering at GW9-GW10
+    assert 0.0 < shield[(101, 8)] < shield[(101, 9)] < shield[(101, 10)]
 
 
 def test_select_scouting_targets():
@@ -363,3 +401,61 @@ def test_audit_squad_minutes_and_solution_audit_fh_and_rotation(tmp_path: Path):
     assert 1 not in fh_by_id
     rot_ids = {p["id"] for p in audit_res["held_rotation_risk"]}
     assert {2, 3}.issubset(rot_ids)
+
+
+def test_synthesize_xmins_override_without_base_csv_applies_sparse_m1_gkp_and_soft_shield(tmp_path: Path) -> None:
+    ref = date(2026, 10, 20)
+    df_players = pd.DataFrame([
+        {"id": 1, "web_name": "GK1", "club_id": 1, "position_id": 1, "now_cost": 55, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 2, "web_name": "GK2", "club_id": 1, "position_id": 1, "now_cost": 40, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 6, "web_name": "GK3Inj", "club_id": 1, "position_id": 1, "now_cost": 40, "status": "i", "chance_of_playing_next_round": 0.0, "news": "Back injury - Expected back 24 Oct"},
+        {"id": 3, "web_name": "HealthyOut", "club_id": 1, "position_id": 3, "now_cost": 80, "status": "a", "chance_of_playing_next_round": 100.0, "news": ""},
+        {"id": 4, "web_name": "DoubtOut", "club_id": 1, "position_id": 4, "now_cost": 75, "status": "d", "chance_of_playing_next_round": 50.0, "news": "Knock - 50% chance"},
+        {"id": 5, "web_name": "UnkInjOut", "club_id": 1, "position_id": 2, "now_cost": 55, "status": "i", "chance_of_playing_next_round": 0.0, "news": "Knock - Unknown return date"},
+    ])
+    df_players.to_parquet(tmp_path / "players.parquet")
+
+    df_fixtures = pd.DataFrame([
+        {"id": 1, "gameweek_id": 7, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-10-17T14:00:00Z"},
+        {"id": 2, "gameweek_id": 8, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-10-24T14:00:00Z"},
+        {"id": 3, "gameweek_id": 9, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-10-31T14:00:00Z"},
+        {"id": 4, "gameweek_id": 10, "home_club_id": 1, "away_club_id": 2, "kickoff_time": "2026-11-07T14:00:00Z"},
+    ])
+    df_fixtures.to_parquet(tmp_path / "fixtures.parquet")
+
+    df_perfs = pd.DataFrame([
+        {"player_id": 1, "fixture_id": 1, "gameweek_id": 7, "minutes": 90, "starts": 1},
+        {"player_id": 2, "fixture_id": 1, "gameweek_id": 7, "minutes": 0, "starts": 0},
+        {"player_id": 3, "fixture_id": 1, "gameweek_id": 7, "minutes": 85, "starts": 1},
+        {"player_id": 4, "fixture_id": 1, "gameweek_id": 7, "minutes": 80, "starts": 1},
+        {"player_id": 5, "fixture_id": 1, "gameweek_id": 7, "minutes": 90, "starts": 1},
+    ])
+    df_perfs.to_parquet(tmp_path / "player_performances.parquet")
+
+    out_csv = tmp_path / "out_internal.csv"
+    native_map = {(3, 8): 84.0, (3, 9): 84.0, (4, 8): 80.0, (4, 9): 80.0, (5, 8): 88.0, (5, 9): 88.0}
+    synthesize_xmins_override(
+        processed_dir=tmp_path,
+        target_gw=8,
+        horizon=2,
+        targeted_overrides={(4, 8): 42.0},
+        base_csv_path=None,
+        output_path=out_csv,
+        reference_date=ref,
+        native_mins_map=native_map,
+    )
+    res = pd.read_csv(out_csv).set_index("ID")
+
+    # (a) Sparse M1 GKPs (returning injured 3rd GK does not add 20m/65m on top of active GK1's 89m)
+    assert res.loc[1, "8_xMins"] == 89.0
+    assert res.loc[2, "8_xMins"] == 1.0
+    assert res.loc[6, "8_xMins"] == 0.0
+    assert res.loc[6, "9_xMins"] == 0.0
+    # (b) Healthy outfielder stays absent (Native Champion fallback)
+    assert 3 not in res.index
+    # (c) Doubtful & unknown-return outfielders receive Soft Shield curves
+    assert res.loc[4, "9_xMins"] == 80.0 * 0.64
+    assert res.loc[5, "8_xMins"] == 0.0
+    assert res.loc[5, "9_xMins"] == 88.0 * 0.08
+    # (d) Targeted override still wins on top
+    assert res.loc[4, "8_xMins"] == 42.0

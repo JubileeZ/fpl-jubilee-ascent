@@ -13,17 +13,18 @@ Plan optimal transfers and starting lineups across upcoming Gameweeks for the us
 ```
 ┌────────────────────────────────────────────────────────┐
 │  Layer 3 (Top Guard Layer): Injury Guard & Overwrites   │
-│  • Broad Pool Shield (auto 0.0m on injured assets)     │
+│  • Soft Empirical Broad Pool Shield (0m pre-ret, S-1   │
+│    recovery & doubtful curves, 20m→65m injury ramp)    │
 │  • Targeted Injury Return Curves (e.g. Saka recovery)  │
-│  👉 Overwrites everything below it                      │
+│  👉 Overwrites everything below via scale_states_to_target│
 ├────────────────────────────────────────────────────────┤
-│  Layer 2 (Middle Layer): External Minutes Override     │
-│  • External CSV (e.g., FPL Review {gw}_xMins)          │
-│  👉 Overwrites Layer 1 for players in the file         │
+│  Layer 2 (Middle Layer): External CSV OR Internal GKP  │
+│  • External CSV (Solio {gw}_xMins) if supplied, OR     │
+│  • Internal Minutes Baseline sparse M1 GKP (89m/1m)    │
 ├────────────────────────────────────────────────────────┤
 │  Layer 1 (Base Foundation): Native In-House Champion   │
 │  • Zero-leakage causal panel / Ridge rates & duration   │
-│  👉 Default foundation for every player in the league  │
+│  👉 Unlisted healthy outfielders keep Native Champion   │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -106,11 +107,11 @@ Always refresh data first to ensure planning operates on the true real-world sta
 
 Check the user's prompt for an external minutes CSV path (e.g. `/path/to/projection.csv`).
 
-1. **Path provided**: Validate file exists and contains `ID` and `{gw}_xMins` (or `{gw}_mins`) columns. Activates **Layer 2 (External Minutes Override)** on top of Layer 1.
+1. **Path provided**: Validate file exists and contains `ID` and `{gw}_xMins` (or `{gw}_mins`) columns. Archive a timestamped local copy to gitignored `data/external/<provider>/<season>/` (default `data/external/solio/<season>/`, e.g., `gw{target_gw:02d}_{YYYY-MM-DDTHHMM}.csv`, skipping if an identical SHA-256 already exists; never place in `data/archive/` or commit to git) for future diagnostics. Activates **Layer 2 (External Minutes Override)** on top of Layer 1.
 2. **Path omitted**: Ask once:
-   > *"Do you have an external xMins CSV to apply on top of the base? (Reply with file path, or reply 'skip' / 'no' to use native Champion minutes)."*
+   > *"Do you have an external xMins CSV to apply on top of the base? (Reply with file path, or reply 'skip' / 'no' to use Internal Minutes Baseline + Native Champion)."*
    - If user provides path: wire file into Layer 2.
-   - If user skips or provides no file: proceed with **Layer 1 (Weekly Planner Model Preflight)** resolved automatically by `commands.solve` (`resolve_weekly_planner_model`):
+   - If user skips or provides no file: proceed with **Layer 1 (Weekly Planner Model Preflight)** + **Internal Minutes Baseline (`M1` sparse GKP + Soft Empirical Shield)** resolved automatically when `commands.injury_triage` runs without `--base-csv` (`commands.solve` calls `resolve_weekly_planner_model`):
      - Checks remote protected `origin/main` first; if remote Champion changed, stops with `StaleCheckoutError` requiring manual `git pull` (auto-pull is disabled).
      - Syncs read-only `validation-evidence` scorecards and `ExclusionLedger`.
      - If offline (`unverified`), serves only locally recorded Confirmed Champion (`selection.champion`).
@@ -127,10 +128,11 @@ Before solving, apply the protective guard layer on top of all baselines:
    ```bash
    uv run python -m commands.injury_triage --target_gw <target_gw> --horizon <horizon> [--base-csv <path>] --json
    ```
-   - **Broad Pool Shield (Layer 3 Top)**: Automatically parses official FPL API return dates across all 600+ Players:
-     - **Suspensions (`status == 's'`)**: Enforces `0.0` xMins strictly prior to `return_gw`, then restores match-fit minutes immediately upon `return_gw` (no cameo ramp).
-     - **Injuries (`status == 'i'`)**: Enforces `0.0` xMins prior to `return_gw`, applies a `20m -> 65m` **Injury Return Curve** on `return_gw` / `return_gw + 1`, and defers post-recovery steady-state weeks (`return_gw + 2+`) to positive Layer 2 External CSV projections before falling back to healthy historical baselines.
-     - **Unknown-return flags (`i`, `s`, `u`, `n`)**: Zeroed across the horizon unless overridden via `--set`.
+   - **Soft Empirical Broad Pool Shield + Sparse M1 GKP (Layer 3 / Internal Layer 2)**: Parses official FPL API return dates, status, and chance of playing across all 600+ Players (scaling native Champion states cleanly via `scale_states_to_target`):
+     - **Suspensions (`status == 's'`)**: Enforces `0.0` xMins strictly prior to `return_gw`, then restores match-fit minutes immediately upon `return_gw`.
+     - **Injuries (`status == 'i'`) with return date**: Enforces `0.0` xMins prior to `return_gw`, applies `20m -> 65m` **Injury Return Curve** on `return_gw` / `return_gw + 1`, and defers steady-state weeks to positive Layer 2 External CSV (or native Champion if already healthy `>= 45m`).
+     - **Unknown-return (`i`, `n`), `u`, and doubtfuls (`75/50/25`)**: `status='u'` zeroes horizon; `status='n'` parent-club zeroes `t=0` only; unknown-return `i`/`n` and `d` (`75/50/25`) apply `S-1`-calibrated empirical recovery curves when `--base-csv` is omitted (instead of 6-GW hard zeros).
+     - **Internal `M1` GKP baseline (when `--base-csv` omitted)**: Allocates `89m`/`1m` across club GKPs (2-start available-rival handover, doubtful/injured shift to backup GKP); healthy outfielders stay blank on Layer 1 Native Champion.
    - **Squad Minutes Audit (`squad_rotation_risk`)**: Inspects all 15 **User Squad** Players—even unflagged `status == 'a'` Players—for: (a) recent `< 60m` or non-start appearances, (b) material gaps (`> 25m`) between recent minutes and Layer 2 External CSV `xMins`, or (c) multi-week Layer 2 cliffs (`>= 25m` drop below `65m`).
    - **Flagged Market Players (`market_flagged_by_tier`)**: Extracts flagged market candidates segmented across **Position $\times$ Price Brackets** (Budget, Mid-price, Premium).
 
@@ -289,6 +291,8 @@ Once `data/solution.json` is generated, execute a focused audit specifically on 
 ---
 
 ### Step 7: Presentation & Ledger
+
+Deliver rendered report. Codex desktop with inline visualization support → embed report using Visualize content reference. Save self-contained HTML to `data/planner/` for browser access. Codex CLI or unsupported preview → lead with next transfer, chip, captain and free transfers in plain text, then give absolute HTML path and platform browser-open command. Use `.canvas.tsx` only when target client renders Canvas. Verify report opens, Gameweek selection works, and all ledger rows and lineups appear before linking.
 
 Render all six sections by default on every run:
 
