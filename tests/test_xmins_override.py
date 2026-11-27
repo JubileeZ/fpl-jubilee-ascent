@@ -11,6 +11,7 @@ from features.builder import (
 )
 from models.participation_state_hybrid import (
     ParticipationStateHybridModel,
+    scale_states_to_target,
     target_to_states,
 )
 
@@ -219,3 +220,107 @@ def test_dgw_and_bgw_xmins_override_grain(tmp_path: Path):
     assert p100["20_Pts"] == 9.0
     assert p200["20_xMins"] == 0.0
     assert p200["20_Pts"] == 0.0
+
+
+def test_scale_states_to_target_preserves_conditional_uncertainty() -> None:
+    # (a) Scaling down reduces p_start & p_sub proportionally into p_dnp while keeping conditional start mins & p60
+    pdnp, ps, psub, sm, subm, p60s, p60sub = scale_states_to_target(
+        0.10, 0.70, 0.20, 76.0, 18.0, 0.80, 0.0, 38.0
+    )
+    assert sm == pytest.approx(76.0)
+    assert subm == pytest.approx(18.0)
+    assert p60s == pytest.approx(0.80)
+    assert p60sub == pytest.approx(0.0)
+    assert ps * sm + psub * subm == pytest.approx(38.0, abs=1e-4)
+    assert pdnp + ps + psub == pytest.approx(1.0, abs=1e-6)
+    assert psub > 0.0
+
+    # (b) Moderate scaling up (68m -> 72m) moves p_dnp -> p_start while retaining non-zero sub uncertainty
+    nat_pdnp, nat_ps, nat_psub = 0.20, 0.66, 0.14
+    nat_sm, nat_subm = 80.0, 18.0
+    u_pdnp, u_ps, u_psub, u_sm, u_subm, u_p60s, _ = scale_states_to_target(
+        nat_pdnp, nat_ps, nat_psub, nat_sm, nat_subm, 0.88, 0.0, 72.0
+    )
+    assert u_ps < 0.90
+    assert u_psub > 0.05
+    assert u_sm == pytest.approx(nat_sm)
+    assert u_p60s == pytest.approx(0.88)
+    assert u_ps * u_sm + u_psub * u_subm == pytest.approx(72.0, abs=1e-4)
+    assert u_pdnp + u_ps + u_psub == pytest.approx(1.0, abs=1e-6)
+
+    # (c) Zero target collapses safely to DNP
+    assert scale_states_to_target(0.2, 0.7, 0.1, 80.0, 18.0, 0.9, 0.0, 0.0) == (1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+    # (d) Near-zero native (< 5.0m) falls back to target_to_states
+    fb = scale_states_to_target(0.98, 0.01, 0.01, 78.0, 18.0, 0.8, 0.0, 89.0)
+    assert fb[1] * fb[3] + fb[2] * fb[4] == pytest.approx(89.0, abs=0.05)
+
+    # (e) Minutes recovery sweep including full 90.0m and pure sub-in (start_mins=0.0) rows
+    for tgt in (0.0, 10.0, 20.0, 45.0, 65.0, 72.0, 80.0, 89.0, 90.0):
+        res = scale_states_to_target(0.15, 0.72, 0.13, 78.0, 18.0, 0.85, 0.0, tgt)
+        assert 0.0 <= res[0] <= 1.0 and 0.0 <= res[1] <= 1.0 and 0.0 <= res[2] <= 1.0
+        assert res[0] + res[1] + res[2] == pytest.approx(1.0, abs=1e-6)
+        assert res[1] * res[3] + res[2] * res[4] == pytest.approx(tgt, abs=0.05)
+
+    sub_only = scale_states_to_target(0.20, 0.0, 0.80, 0.0, 18.0, 0.0, 0.0, 65.0)
+    assert sub_only[0] + sub_only[1] + sub_only[2] == pytest.approx(1.0, abs=1e-6)
+    assert sub_only[1] * sub_only[3] + sub_only[2] * sub_only[4] == pytest.approx(65.0, abs=0.05)
+
+
+def test_participation_state_model_override_scales_native_states_and_preserves_unlisted() -> None:
+    model = ParticipationStateHybridModel()
+    base_rows = pd.DataFrame([
+        {
+            "player_id": 100,
+            "gameweek_id": 7,
+            "fixture_id": 1,
+            "position_id": 3,
+            "p_dnp": 0.15,
+            "p_start": 0.75,
+            "p_sub_in": 0.10,
+            "xmins_if_start": 76.0,
+            "xmins_if_sub_in": 18.0,
+            "p_60_if_start": 0.82,
+            "p_60_if_sub_in": 0.0,
+            "per90_xg": 0.4,
+            "per90_xa": 0.3,
+            "per90_goals_conceded": 1.1,
+            "is_home": True,
+        },
+        {
+            "player_id": 101,
+            "gameweek_id": 7,
+            "fixture_id": 2,
+            "position_id": 2,
+            "p_dnp": 0.08,
+            "p_start": 0.88,
+            "p_sub_in": 0.04,
+            "xmins_if_start": 86.0,
+            "xmins_if_sub_in": 15.0,
+            "p_60_if_start": 0.94,
+            "p_60_if_sub_in": 0.0,
+            "per90_xg": 0.08,
+            "per90_xa": 0.12,
+            "per90_goals_conceded": 1.0,
+            "is_home": True,
+        },
+    ])
+    native_preds = model.predict(base_rows, horizon=1).set_index("player_id")
+
+    over_rows = base_rows.copy()
+    # Apply 75% doubtful factor on player 100, leave player 101 NaN
+    target_100 = 0.57 * float(native_preds.loc[100, "projected_minutes"])
+    over_rows["external_xmins"] = [target_100, float("nan")]
+    over_preds = model.predict(over_rows, horizon=1).set_index("player_id")
+
+    p100 = over_preds.loc[100]
+    assert p100["projected_minutes"] == pytest.approx(target_100, abs=1e-4)
+    assert p100["xmins_if_start"] == pytest.approx(76.0)
+    assert p100["p_60_if_start"] == pytest.approx(0.82)
+    assert p100["p_start"] < float(native_preds.loc[100, "p_start"])
+
+    # Unlisted player 101 stays identical to native baseline (< 1e-9)
+    p101 = over_preds.loc[101]
+    n101 = native_preds.loc[101]
+    assert abs(float(p101["projected_points"]) - float(n101["projected_points"])) < 1e-9
+    assert abs(float(p101["projected_minutes"]) - float(n101["projected_minutes"])) < 1e-9

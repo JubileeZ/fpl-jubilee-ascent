@@ -21,6 +21,28 @@ from solver.utils import DEFAULT_PLANNING_HORIZON
 logger = logging.getLogger(__name__)
 
 
+def _compute_native_mins_map(proc: Path, target_gw: int, horizon: int) -> dict[tuple[int, int], float] | None:
+    """Project Model Champion native GW xMins for Soft Shield & Internal Baseline scaling."""
+    required = ("clubs.parquet", "gameweeks.parquet", "player_performances.parquet")
+    if not all((proc / fname).exists() for fname in required):
+        return None
+    try:
+        from features.builder import build_features, load_fit_history
+        from models import get_model, resolve_model_or_champion
+
+        feat = build_features(proc, target_gw, horizon=horizon)
+        model = get_model(resolve_model_or_champion("champion"))
+        hist = load_fit_history(proc, target_gw)
+        if hist is not None and hasattr(model, "fit"):
+            model.fit(hist)
+        preds = model.predict(feat, horizon)
+        agg = preds.groupby(["player_id", "gameweek_id"])["projected_minutes"].sum()
+        return {(int(pid), int(gw)): float(val) for (pid, gw), val in agg.items()}
+    except Exception as exc:  # pragma: no cover - defensive fallback for incomplete dirs
+        logger.warning("Native Champion projection failed during triage (%s); using healthy baseline fallback.", exc)
+        return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="FPL Injury & Availability Triage")
     parser.add_argument("--target_gw", type=int, default=None, help="Target gameweek")
@@ -134,8 +156,16 @@ def main() -> None:
             parser.error(f"--set-gw requires a positive player ID, a planning Gameweek and 0–270 minutes: {item!r}")
         targeted_map[(pid, gw)] = minutes
 
-    # 1. Broad Pool Shield
-    shield = build_broad_pool_shield(proc, target_gw=target_gw, horizon=horizon)
+    native_mins_map = _compute_native_mins_map(proc, target_gw=target_gw, horizon=horizon)
+
+    # 1. Soft Empirical Broad Pool Shield
+    shield = build_broad_pool_shield(
+        proc,
+        target_gw=target_gw,
+        horizon=horizon,
+        native_mins_map=native_mins_map,
+        filter_depressed_only=args.base_csv is None,
+    )
     unique_shield_pids = {pid for (pid, _gw) in shield.keys()}
 
     # 2. Scouting Targets
@@ -164,6 +194,7 @@ def main() -> None:
         base_csv_path=args.base_csv,
         output_path=out_path,
         include_broad_pool_shield=True,
+        native_mins_map=native_mins_map,
     )
 
     if args.json:
@@ -213,8 +244,10 @@ def main() -> None:
             items_str = ", ".join([f"{p['web_name']} (£{p['price']:.1f}m, {p['status']})" for p in p_list])
             print(f"  • {tier:12s}: {items_str}")
 
-    print("\n[BROAD POOL SHIELD]")
-    print(f"  ✓ {len(unique_shield_pids)} flagged players automatically shielded (assigned 0.0 xMins before return date).")
+    print("\n[SOFT EMPIRICAL BROAD POOL SHIELD & INTERNAL MINUTES BASELINE]")
+    print(f"  ✓ {len(unique_shield_pids)} flagged players shielded (Soft Empirical Shield curves + 0m pre-return).")
+    if args.base_csv is None:
+        print("  ✓ Internal M1 GKP baseline enabled (outfielders retain Native Champion state probabilities).")
     print(f"  ✓ Synthesized override file saved to: {saved_path}")
     print("=" * 65 + "\n")
 

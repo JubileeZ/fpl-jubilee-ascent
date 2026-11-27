@@ -36,6 +36,7 @@ data/session_token.json
 data/*.csv
 data/*.json
 data/planner/
+data/external/
 .streamlit/secrets.toml
 dashboard/*.json
 

@@ -46,6 +46,85 @@ def target_to_states(xmins: float) -> tuple[float, float, float, float, float]:
         return p_start, p_sub, p_dnp, start_mins, sub_mins
 
 
+def _clamp01(value: float) -> float:
+    return min(1.0, max(0.0, float(value)))
+
+
+def _normalize_probs(p_dnp: float, p_start: float, p_sub_in: float) -> tuple[float, float, float]:
+    total = p_dnp + p_start + p_sub_in
+    if total > 0.0 and abs(total - 1.0) > 1e-9:
+        return p_dnp / total, p_start / total, p_sub_in / total
+    return p_dnp, p_start, p_sub_in
+
+
+def scale_states_to_target(
+    p_dnp: float,
+    p_start: float,
+    p_sub_in: float,
+    start_mins: float,
+    sub_mins: float,
+    p60_start: float,
+    p60_sub: float,
+    target_mins: float,
+) -> tuple[float, float, float, float, float, float, float]:
+    """Scale native participation states to ``target_mins`` while preserving conditional uncertainty."""
+    target = max(0.0, float(target_mins))
+    if target <= 0.0:
+        return 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    native_mins = p_start * start_mins + p_sub_in * sub_mins
+    if abs(target - native_mins) <= 1e-6:
+        return p_dnp, p_start, p_sub_in, start_mins, sub_mins, p60_start, p60_sub
+
+    if native_mins < 5.0 or (target > native_mins and start_mins <= 1e-6):
+        ps, psub, pd, sm, subm = target_to_states(target)
+        return pd, ps, psub, sm, subm, _clamp01((sm - 45.0) / 30.0), _clamp01((subm - 45.0) / 30.0)
+
+    if target < native_mins:
+        alpha = target / native_mins
+        new_start = p_start * alpha
+        new_sub = p_sub_in * alpha
+        new_dnp = max(0.0, 1.0 - new_start - new_sub)
+        new_dnp, new_start, new_sub = _normalize_probs(new_dnp, new_start, new_sub)
+        return new_dnp, new_start, new_sub, start_mins, sub_mins, p60_start, p60_sub
+
+    cur_dnp, cur_start, cur_sub = p_dnp, p_start, p_sub_in
+    cur_sm, cur_p60_s = start_mins, p60_start
+    cur_mins = native_mins
+
+    if cur_sm > 1e-6 and cur_dnp > 0.0:
+        dp = min(cur_dnp, max(0.0, 0.99 - cur_start), (target - cur_mins) / cur_sm)
+        cur_start += dp
+        cur_dnp -= dp
+        cur_mins = cur_start * cur_sm + cur_sub * sub_mins
+
+    if cur_mins < target - 1e-6 and cur_sub > 0.0 and cur_sm > sub_mins + 1e-6:
+        dp = min(cur_sub, max(0.0, 0.99 - cur_start), (target - cur_mins) / (cur_sm - sub_mins))
+        cur_start += dp
+        cur_sub -= dp
+        cur_mins = cur_start * cur_sm + cur_sub * sub_mins
+
+    if cur_mins < target - 1e-6 and cur_start > 1e-6:
+        cur_sm = min(90.0, max(cur_sm, (target - cur_sub * sub_mins) / cur_start))
+        cur_p60_s = max(cur_p60_s, _clamp01((cur_sm - 45.0) / 30.0))
+        cur_mins = cur_start * cur_sm + cur_sub * sub_mins
+
+    # Reach targets in (89.1, 90.0] by finishing the final 0.99 -> 1.00 probability shift
+    if cur_mins < target - 1e-6 and cur_sm > 1e-6:
+        need = (target - cur_mins) / cur_sm
+        take_dnp = min(cur_dnp, max(0.0, 1.0 - cur_start), need)
+        cur_start += take_dnp
+        cur_dnp -= take_dnp
+        cur_mins = cur_start * cur_sm + cur_sub * sub_mins
+        if cur_mins < target - 1e-6 and cur_sub > 0.0 and cur_sm > sub_mins + 1e-6:
+            take_sub = min(cur_sub, max(0.0, 1.0 - cur_start), (target - cur_mins) / (cur_sm - sub_mins))
+            cur_start += take_sub
+            cur_sub -= take_sub
+
+    cur_dnp, cur_start, cur_sub = _normalize_probs(cur_dnp, cur_start, cur_sub)
+    return cur_dnp, cur_start, cur_sub, cur_sm, sub_mins, cur_p60_s, p60_sub
+
+
 class ParticipationStateHybridModel(MetricsComponentHybridModel):
     """Project fixture outcomes through mutually exclusive participation states."""
 
@@ -110,46 +189,47 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
                 })
                 continue
 
+            p_dnp, p_start, p_sub_in = self._state_probabilities(row)
+            is_immediate = bool(row.get("is_immediate_next_gw", False))
+            has_snapshot = bool(row.get("has_availability_snapshot", False))
+            chance = _number(row, "chance_of_playing", 100.0)
+            status = str(row.get("status", "")).lower()
+
+            # Hard DNP for immediate next GW:
+            # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
+            # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
+            if is_immediate and (
+                (has_snapshot and chance <= 0.0)
+                or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
+            ):
+                p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
+
+            start_minutes = self._conditional_minutes(row, "start", 78.0)
+            sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
+            p60_start = _clamp01(_number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0))
+            p60_sub = _clamp01(_number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0))
+
+            raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
+            expected_minutes = cap_projected_minutes(row, raw_minutes)
+            if raw_minutes > 0 and expected_minutes < raw_minutes:
+                scale = expected_minutes / raw_minutes
+                start_minutes *= scale
+                sub_minutes *= scale
+
             ext_mins = row.get("external_xmins")
             if ext_mins is not None and pd.notna(ext_mins):
                 target_mins = max(0.0, float(ext_mins))
-                p_start, p_sub_in, p_dnp, start_minutes, sub_minutes = target_to_states(target_mins)
-                p60_start = min(1.0, max(0.0, (start_minutes - 45.0) / 30.0))
-                p60_sub = min(1.0, max(0.0, (sub_minutes - 45.0) / 30.0))
+                p_dnp, p_start, p_sub_in, start_minutes, sub_minutes, p60_start, p60_sub = scale_states_to_target(
+                    p_dnp,
+                    p_start,
+                    p_sub_in,
+                    start_minutes,
+                    sub_minutes,
+                    p60_start,
+                    p60_sub,
+                    target_mins,
+                )
                 expected_minutes = target_mins
-            else:
-                p_dnp, p_start, p_sub_in = self._state_probabilities(row)
-                is_immediate = bool(row.get("is_immediate_next_gw", False))
-                has_snapshot = bool(row.get("has_availability_snapshot", False))
-                chance = _number(row, "chance_of_playing", 100.0)
-                status = str(row.get("status", "")).lower()
-
-                # Hard DNP for immediate next GW:
-                # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
-                # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
-                if is_immediate and (
-                    (has_snapshot and chance <= 0.0)
-                    or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
-                ):
-                    p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
-
-                start_minutes = self._conditional_minutes(row, "start", 78.0)
-                sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
-                p60_start = min(
-                    1.0,
-                    max(0.0, _number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0)),
-                )
-                p60_sub = min(
-                    1.0,
-                    max(0.0, _number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0)),
-                )
-
-                raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
-                expected_minutes = cap_projected_minutes(row, raw_minutes)
-                if raw_minutes > 0 and expected_minutes < raw_minutes:
-                    scale = expected_minutes / raw_minutes
-                    start_minutes *= scale
-                    sub_minutes *= scale
 
             position = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
             start_events = self._project_event_components(
