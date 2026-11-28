@@ -280,8 +280,16 @@ Gitignored local directory `data/external/<provider>/<season>/` (default `data/e
 _Avoid_: Storing third-party CSVs in `data/archive/`, committing external provider files, discarding external CSVs after one solve
 
 **Internal Minutes Baseline**:
-Pre-deadline Layer 2 fallback (`SP_Soft_Shield_M1`, `features/internal_xmins.py`) used when `--base-csv` / `--xmins_override` is omitted. Emits sparse `M1` club GKP allocation (`89m`/`1m`, 2-start available-rival handover, injured/doubtful GK backup promotion) while leaving healthy outfielders blank so `65m` starter-floor separation and Champion conditional states remain intact.
+Pre-deadline Layer 2 fallback (`SP_Soft_Shield_M1`, `features/internal_xmins.py`; planned `v2` under `ADR 0073`) used when `--base-csv` / `--xmins_override` omitted. Emits sparse `M1` club GKP allocation (`89m`/`1m`, 2-start available-rival handover, injured/doubtful GK backup promotion) while leaving healthy outfielders on Layer 1; `v2` adds `Causal Availability History`-aware selective outfield starter floors, documented-injury return recovery, Shield fixes, and optional `Downward Overflow Cap`.
 _Avoid_: Full-pool `M4` club outfield inflation (`890m` reconciliation), blind `M2` unflagged absence recovery
+
+**Causal Availability History**:
+Point-in-time pre-deadline FPL availability timeline (`status`, `chance_of_playing_next_round`, `news` strictly `< target_gw`) built from empirical mirrors or local snapshot cache (`data/processed/availability_history.parquet`), separating documented injury/suspension absences from tactical benchings (`ADR 0073`).
+_Avoid_: Future/terminal `status` leakage, conflating unflagged benchings with injury recovery
+
+**Downward Overflow Cap**:
+Isolated Layer 2 `v2` toggle that never inflates clubs `<= 900m` outfield minutes/fixture, trimming only physically impossible `> 900m` club outfield surplus downward off lower-tenure same-position stand-ins when returning incumbents raise club totals (`ADR 0073`).
+_Avoid_: Upward `M4` `890m` club inflation, hard 11-start conservation (`pos_cap_*`)
 
 **Targeted Availability Override**:
 Sparse player-gameweek minute trajectory for injury recovery ramps or tactical rotation. Top cascade precedence; scales native participation states ($p_{\text{start}}, p_{\text{sub}}, p_{\text{dnp}}, \text{xmins\_if\_start}, p_{60}$) via `scale_states_to_target` (fallback `target_to_states` when native minutes $< 5.0$).
