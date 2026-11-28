@@ -26,6 +26,15 @@ _LEDGER_COMPONENTS = (
     "xp_defcon",
     "xp_bonus",
 )
+_NEGATIVE_LEDGER_COMPONENTS = frozenset(
+    {
+        "xp_conceded",
+        "xp_penalties_missed",
+        "xp_own_goals",
+        "xp_yellow_cards",
+        "xp_red_cards",
+    }
+)
 
 
 _POS_GKP = 1
@@ -575,6 +584,137 @@ def _validate_component_ledger(df_eval: pd.DataFrame) -> None:
             raise ValueError("Actual component ledger does not reconcile to actual_points")
 
 
+def poisson_deviance(
+    y_true: Iterable[float] | np.ndarray | pd.Series,
+    y_pred: Iterable[float] | np.ndarray | pd.Series,
+    *,
+    eps: float = 1e-12,
+) -> float:
+    """Compute mean Poisson deviance 2 * mean(y * log(y / mu) - (y - mu)) over non-negative inputs."""
+    y = np.maximum(np.asarray(list(y_true) if not isinstance(y_true, (np.ndarray, pd.Series)) else y_true, dtype=float), 0.0)
+    mu = np.maximum(np.asarray(list(y_pred) if not isinstance(y_pred, (np.ndarray, pd.Series)) else y_pred, dtype=float), 0.0)
+    if y.size == 0:
+        return 0.0
+    mu_safe = np.maximum(mu, eps)
+    y_safe = np.maximum(y, eps)
+    term = np.where(y > 0.0, y * np.log(y_safe / mu_safe) - (y - mu), mu)
+    return float(2.0 * np.mean(term))
+
+
+def _compute_component_metrics(
+    df_eval: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+) -> dict[str, dict[str, float]]:
+    """Compute per-component MAE/RMSE/Bias, Realized MSE share, and Poisson deviance."""
+    if df_eval.empty:
+        return {}
+    realized_col = "actual_points" if "actual_points" in df_eval.columns else target_column
+    e_total = (df_eval["projected_points"] - df_eval[realized_col]).to_numpy(dtype=float)
+    denom = float(np.mean(np.square(e_total))) if e_total.size else 0.0
+
+    component_metrics: dict[str, dict[str, float]] = {}
+    for comp in _LEDGER_COMPONENTS:
+        act_col = f"actual_{comp}"
+        if comp in df_eval.columns and act_col in df_eval.columns:
+            proj_vals = df_eval[comp].to_numpy(dtype=float)
+            act_vals = df_eval[act_col].to_numpy(dtype=float)
+            comp_errors = proj_vals - act_vals
+            mse_contrib = float(np.mean(comp_errors * e_total))
+            mse_share = mse_contrib / denom if denom > 0.0 else 0.0
+            sign = -1.0 if comp in _NEGATIVE_LEDGER_COMPONENTS else 1.0
+            component_metrics[comp] = {
+                "mean_projected": float(np.mean(proj_vals)),
+                "mean_actual": float(np.mean(act_vals)),
+                "mae": float(np.mean(np.abs(comp_errors))),
+                "bias": float(np.mean(comp_errors)),
+                "rmse": float(np.sqrt(np.mean(np.square(comp_errors)))),
+                "mse_contrib": mse_contrib,
+                "mse_share": float(mse_share),
+                "poisson_deviance": poisson_deviance(sign * act_vals, sign * proj_vals),
+            }
+    return component_metrics
+
+
+def evaluate_component_pool(
+    df_pool: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+    precomputed_formation_regret: float | None = None,
+    precomputed_captain_regret: float | None = None,
+) -> dict[str, Any]:
+    """Evaluate component errors, Poisson deviance, and formation regret on one player pool."""
+    if df_pool.empty:
+        return {
+            "sample_count": 0,
+            "mae": None,
+            "rmse": None,
+            "bias": None,
+            "event_poisson_deviance": None,
+            "oracle_formation_xi_regret": None,
+            "oracle_captain_regret": None,
+            "component_metrics": {},
+        }
+    errors = (df_pool["projected_points"] - df_pool[target_column]).to_numpy(dtype=float)
+    comp_metrics = _compute_component_metrics(df_pool, target_column=target_column)
+    event_deviance = (
+        float(np.mean([m["poisson_deviance"] for m in comp_metrics.values()]))
+        if comp_metrics
+        else None
+    )
+    formation_regret = precomputed_formation_regret
+    captain_regret = precomputed_captain_regret
+    if formation_regret is None:
+        if "position_id" in df_pool.columns:
+            regrets: list[float] = []
+            cap_regrets: list[float] = []
+            for _, group in df_pool.groupby("gameweek"):
+                if len(group) > 0:
+                    _, regret, cap_regret = _formation_xi_stats(group, target_column=target_column)
+                    regrets.append(regret)
+                    cap_regrets.append(cap_regret)
+            formation_regret = float(np.mean(regrets)) if regrets else None
+            captain_regret = float(np.mean(cap_regrets)) if cap_regrets else None
+        else:
+            regret_series = top_k_regret_by_gameweek(df_pool, 11, target_column=target_column)
+            formation_regret = float(regret_series.mean()) if len(regret_series) > 0 else None
+    return {
+        "sample_count": int(len(df_pool)),
+        "mae": float(np.mean(np.abs(errors))),
+        "rmse": float(np.sqrt(np.mean(np.square(errors)))),
+        "bias": float(np.mean(errors)),
+        "event_poisson_deviance": event_deviance,
+        "oracle_formation_xi_regret": formation_regret,
+        "oracle_captain_regret": captain_regret,
+        "component_metrics": comp_metrics,
+    }
+
+
+def evaluate_dual_pool_event_metrics(
+    df_eval: pd.DataFrame,
+    *,
+    target_column: str = "actual_points",
+    all_players_formation_regret: float | None = None,
+    all_players_captain_regret: float | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Report Oracle Event component metrics across both ``all_players`` and ``appeared`` pools."""
+    all_pool = evaluate_component_pool(
+        df_eval,
+        target_column=target_column,
+        precomputed_formation_regret=all_players_formation_regret,
+        precomputed_captain_regret=all_players_captain_regret,
+    )
+    if "actual_minutes" in df_eval.columns:
+        appeared_df = df_eval[pd.to_numeric(df_eval["actual_minutes"], errors="coerce").fillna(0.0) > 0.0]
+    else:
+        appeared_df = df_eval.iloc[0:0]
+    appeared_pool = evaluate_component_pool(appeared_df, target_column=target_column)
+    return {
+        "all_players": all_pool,
+        "appeared": appeared_pool,
+    }
+
+
 def evaluate_predictions(
     df_eval: pd.DataFrame,
     top_k_values: Iterable[int] = (11, 15),
@@ -654,19 +794,7 @@ def evaluate_predictions(
             "by_actual_band": by_actual_band,
         }
 
-    component_metrics: dict[str, dict[str, float]] = {}
-    component_keys = list(_LEDGER_COMPONENTS)
-    for comp in component_keys:
-        act_col = f"actual_{comp}"
-        if comp in df_eval.columns and act_col in df_eval.columns:
-            comp_errors = df_eval[comp] - df_eval[act_col]
-            component_metrics[comp] = {
-                "mean_projected": float(df_eval[comp].mean()),
-                "mean_actual": float(df_eval[act_col].mean()),
-                "mae": float(comp_errors.abs().mean()),
-                "bias": float(comp_errors.mean()),
-                "rmse": float(np.sqrt(np.mean(comp_errors**2))),
-            }
+    component_metrics = _compute_component_metrics(df_eval, target_column=target_column)
 
     metrics: dict[str, object] = {
         "sample_count": int(len(df_eval)),

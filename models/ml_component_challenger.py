@@ -37,7 +37,12 @@ from models.ml_panel_features import (
     build_causal_panel,
     compute_continuous_neff_alpha,
 )
-from models.participation_state_hybrid import target_to_states
+from models.participation_state_hybrid import (
+    ORACLE_STATE_COLUMNS,
+    _validate_oracle_state_columns,
+    extract_oracle_state_row,
+    target_to_states,
+)
 
 
 _DEFAULT_SEED_ROW_COUNT: int = 7600
@@ -217,7 +222,8 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
         else:
             w_ml = min(1.0, max(0.0, (target_gw - 3.0) / self.ramp_span))
 
-        # 2. Check for Oracle Minutes bypass
+        # 2. Check for Oracle Participation State / external_xmins bypass
+        has_oracle_state = _validate_oracle_state_columns(features_df)
         has_external_xmins = "external_xmins" in features_df.columns and features_df["external_xmins"].notna().any()
 
         # 3. Base Champion prediction (provides anchor priors and components)
@@ -346,7 +352,7 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
             final_xmins[i] = cap_projected_minutes(row, raw_xmins[i])
 
         # Deterministic external override / Oracle bypass on specified rows
-        if has_external_xmins:
+        if has_external_xmins and not has_oracle_state:
             for i, (_, row) in enumerate(features_df.iterrows()):
                 ext = row.get("external_xmins")
                 fid = int(row.get("fixture_id", -1))
@@ -361,6 +367,24 @@ class MLComponentChallengerModel(DefXgShrinkChallengerModel):
                     final_p60_start[i] = min(1.0, max(0.0, (st_m - 45.0) / 30.0))
                     final_p60_sub[i] = min(1.0, max(0.0, (sb_m - 45.0) / 30.0))
                     final_xmins[i] = target_m
+
+        if has_oracle_state:
+            for i, (_, row) in enumerate(features_df.iterrows()):
+                if not all(pd.notna(row.get(col)) for col in ORACLE_STATE_COLUMNS):
+                    continue
+                fid = int(row.get("fixture_id", -1))
+                if fid < 0:
+                    p_dn, p_st, p_sb, st_m, sb_m, p60_s, p60_sb, o_mins = 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                else:
+                    p_dn, p_st, p_sb, st_m, sb_m, p60_s, p60_sb, o_mins = extract_oracle_state_row(row)
+                final_p_start[i] = p_st
+                final_p_sub[i] = p_sb
+                final_p_dnp[i] = p_dn
+                final_start_m[i] = st_m
+                final_sub_m[i] = sb_m
+                final_p60_start[i] = p60_s
+                final_p60_sub[i] = p60_sb
+                final_xmins[i] = o_mins
 
         # 6. --- M_events: 4-Group Scoring Models ---
         out_df = champ_proj.copy().reset_index(drop=True)

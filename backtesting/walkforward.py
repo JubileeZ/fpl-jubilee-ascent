@@ -9,13 +9,14 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from backtesting.metrics import evaluate_predictions
+from backtesting.metrics import evaluate_dual_pool_event_metrics, evaluate_predictions
 from backtesting.process_points import aggregate_process_points, blended_points
 from backtesting.season_rules import get_rules
 from features.builder import build_features, history_before_target
 from features.contracts import assert_projection_contract
 from models import get_model
 from models.native_scoring_context import native_scoring_context
+from models.participation_state_hybrid import ORACLE_STATE_COLUMNS
 from models.scoring_matrix import event_points
 
 LEDGER_COMPONENTS = (
@@ -121,28 +122,128 @@ def _build_actual_components(gw_perf: pd.DataFrame, df_feat: pd.DataFrame) -> pd
     return gw_perf
 
 
+def extract_realized_participation_states(df_perf: pd.DataFrame, target_gw: int) -> pd.DataFrame:
+    """Derive deduplicated fixture-grain realized participation outcomes for ``target_gw``."""
+    gw_perf = df_perf[df_perf["gameweek_id"] == target_gw].drop_duplicates(
+        subset=["player_id", "gameweek_id", "fixture_id"]
+    )
+    mins = pd.to_numeric(gw_perf["minutes"], errors="coerce").fillna(0.0).clip(lower=0.0)
+    if "starts" in gw_perf.columns:
+        starts_num = pd.to_numeric(gw_perf["starts"], errors="coerce")
+        started = np.where(starts_num.notna(), (starts_num == 1) & (mins > 0.0), mins >= 60.0)
+    else:
+        started = (mins >= 60.0).to_numpy()
+    mins_arr = mins.to_numpy(dtype=float)
+    return pd.DataFrame({
+        "player_id": gw_perf["player_id"].to_numpy(),
+        "gameweek_id": gw_perf["gameweek_id"].to_numpy(),
+        "fixture_id": gw_perf["fixture_id"].to_numpy(),
+        "minutes": mins_arr,
+        "started": started.astype(float),
+        "sub_in": ((~started) & (mins_arr > 0.0)).astype(float),
+        "dnp": (mins_arr <= 0.0).astype(float),
+        "p_60": (mins_arr >= 60.0).astype(float),
+    })
+
+
+def inject_oracle_participation_state(
+    df_feat: pd.DataFrame,
+    df_perf: pd.DataFrame,
+    target_gw: int,
+) -> pd.DataFrame:
+    """Inject fixture-grain realized Oracle Participation State into ``df_feat``."""
+    df_feat = df_feat.copy()
+    realized = extract_realized_participation_states(df_perf, target_gw)
+    oracle_table = realized.rename(
+        columns={
+            "started": "oracle_p_start",
+            "sub_in": "oracle_p_sub_in",
+            "dnp": "oracle_p_dnp",
+            "minutes": "oracle_minutes",
+            "p_60": "oracle_p_60",
+        }
+    )
+    drop_cols = [c for c in ("external_xmins", *ORACLE_STATE_COLUMNS) if c in df_feat.columns]
+    if drop_cols:
+        df_feat = df_feat.drop(columns=drop_cols)
+    df_feat = df_feat.merge(
+        oracle_table,
+        on=["player_id", "gameweek_id", "fixture_id"],
+        how="left",
+    )
+    blank_mask = df_feat["fixture_id"].isna() | (pd.to_numeric(df_feat["fixture_id"], errors="coerce").fillna(-1) < 0)
+    defaults = {
+        "oracle_p_start": 0.0,
+        "oracle_p_sub_in": 0.0,
+        "oracle_p_dnp": 1.0,
+        "oracle_minutes": 0.0,
+        "oracle_p_60": 0.0,
+    }
+    for col, val in defaults.items():
+        df_feat[col] = pd.to_numeric(df_feat[col], errors="coerce").fillna(val).astype(float)
+        if blank_mask.any():
+            df_feat.loc[blank_mask, col] = val
+    df_feat.attrs["oracle_participation_state"] = True
+    df_feat.attrs["oracle_minutes"] = True
+    return df_feat
+
+
 def inject_oracle_minutes(
     df_feat: pd.DataFrame,
     df_perf: pd.DataFrame,
     target_gw: int,
 ) -> pd.DataFrame:
-    """Inject realized match minutes into df_feat['external_xmins'] on (player_id, gameweek_id, fixture_id)."""
-    df_feat = df_feat.copy()
-    gw_perf = df_perf[df_perf["gameweek_id"] == target_gw]
-    perf_minutes = (
-        gw_perf[["player_id", "gameweek_id", "fixture_id", "minutes"]]
-        .rename(columns={"minutes": "external_xmins"})
-        .drop_duplicates(subset=["player_id", "gameweek_id", "fixture_id"])
+    """Inject realized fixture-grain Oracle Participation State into ``df_feat``."""
+    return inject_oracle_participation_state(df_feat, df_perf, target_gw)
+
+
+def _assert_oracle_participation_parity(
+    df_feat: pd.DataFrame,
+    df_proj: pd.DataFrame,
+    target_gw: int,
+    *,
+    atol: float = 1e-6,
+) -> None:
+    """Assert projected_minutes and xp_minutes match fixture-grain Oracle Participation State."""
+    feat_gw = df_feat[df_feat["gameweek_id"] == target_gw]
+    proj_gw = df_proj[df_proj["gameweek_id"] == target_gw]
+    join_keys = (
+        ["player_id", "gameweek_id", "fixture_id"]
+        if "fixture_id" in proj_gw.columns
+        else ["player_id", "gameweek_id"]
     )
-    if "external_xmins" in df_feat.columns:
-        df_feat = df_feat.drop(columns=["external_xmins"])
-    df_feat = df_feat.merge(
-        perf_minutes,
-        on=["player_id", "gameweek_id", "fixture_id"],
-        how="left",
-    )
-    df_feat["external_xmins"] = df_feat["external_xmins"].fillna(0.0).astype(float)
-    return df_feat
+    if join_keys == ["player_id", "gameweek_id"]:
+        exp_df = feat_gw[join_keys].copy()
+        mins_col = feat_gw["oracle_minutes"].to_numpy(dtype=float)
+        exp_df["expected_xp_minutes"] = np.where(mins_col >= 60.0, 2.0, np.where(mins_col > 0.0, 1.0, 0.0))
+        expected = pd.concat(
+            [
+                feat_gw.groupby(join_keys, as_index=False)["oracle_minutes"].sum(),
+                exp_df.groupby(join_keys, as_index=False)["expected_xp_minutes"].sum()[["expected_xp_minutes"]],
+            ],
+            axis=1,
+        )
+    else:
+        expected = feat_gw[[*join_keys, "oracle_minutes"]].copy()
+        expected["expected_xp_minutes"] = np.where(
+            expected["oracle_minutes"] >= 60.0,
+            2.0,
+            np.where(expected["oracle_minutes"] > 0.0, 1.0, 0.0),
+        )
+    merged = expected.merge(proj_gw, on=join_keys, how="inner")
+    if len(merged) != len(expected):
+        raise ValueError(f"Oracle Participation State parity mismatch: missing rows at GW {target_gw}")
+    mins_diff = np.abs(merged["projected_minutes"].to_numpy(dtype=float) - merged["oracle_minutes"].to_numpy(dtype=float))
+    if mins_diff.size and float(np.max(mins_diff)) > atol:
+        raise ValueError(
+            f"Oracle Participation State parity breach on projected_minutes at GW {target_gw}: max diff {float(np.max(mins_diff)):.6g}"
+        )
+    if "xp_minutes" in merged.columns:
+        xp_diff = np.abs(merged["xp_minutes"].to_numpy(dtype=float) - merged["expected_xp_minutes"].to_numpy(dtype=float))
+        if xp_diff.size and float(np.max(xp_diff)) > atol:
+            raise ValueError(
+                f"Oracle Participation State parity breach on xp_minutes at GW {target_gw}: max diff {float(np.max(xp_diff)):.6g}"
+            )
 
 
 def load_gameweek_deadlines(data_dir: Path) -> dict[int, Any]:
@@ -260,6 +361,8 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
 
         df_proj = model.predict(df_feat, horizon=1)
         assert_projection_contract(df_proj)
+        if config.oracle_minutes:
+            _assert_oracle_participation_parity(df_feat, df_proj, gw)
         comp_cols = [column for column in LEDGER_COMPONENTS if column in df_proj.columns]
         proj_group_cols = ["projected_points", "projected_minutes"] + comp_cols
         df_proj_gw = (
@@ -308,8 +411,16 @@ def run_walkforward_backtest(config: WalkforwardConfig) -> WalkforwardResult:
         metrics["oracle_formation_xi_regret"] = metrics.get("formation_xi_regret")
         metrics["oracle_captain_regret"] = metrics.get("captain_regret")
         metrics["oracle_minutes_enabled"] = True
+        metrics["oracle_participation_state_enabled"] = True
+        metrics["oracle_event_pools"] = evaluate_dual_pool_event_metrics(
+            df_eval,
+            target_column=target,
+            all_players_formation_regret=metrics.get("formation_xi_regret"),
+            all_players_captain_regret=metrics.get("captain_regret"),
+        )
     else:
         metrics["oracle_minutes_enabled"] = False
+        metrics["oracle_participation_state_enabled"] = False
     snapshot_backed = bool(snapshot_ids) and len(snapshot_ids) == (config.end_gw - config.start_gw + 1)
     return WalkforwardResult(
         model_name=config.model_name,
