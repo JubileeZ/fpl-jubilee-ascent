@@ -1,6 +1,6 @@
 # Candidate Ledger (tried / untried levers)
 
-**Updated**: 2026-11-24 (+07:00)
+**Updated**: 2026-11-28 (+07:00)
 
 **Data stamp**: Evidence dates per row (source note `Updated`); gate data 2025-26 archive GW1–38 seed 2024-25  
 **Season**: 2025/26 gate window  
@@ -152,6 +152,7 @@ Baseline HC = former Champion `hold_chase_challenger`; FV = former Champion `fac
 | Goalkeeper save-count dispersion | `EXT-05_1` (`ext_05_1_r3`, `ext_05_1_r8`) | DXS | S-1 FAIL `delta 0` both variants (`2,167` vs `2,167`, `0 / 0 / 0`, `15/15` guards, `21/21` GW1–7 parity; no S-2 look) | 2026-11-22 | 2027-11-22 | `prototypes/ext_05_1/s1/summary.json` |
 | Direct fixture-score ridge on issue-time Champion components, projected BPS/ICT, minutes, and position | `component_score_head` | DXS | Certified S-1 PASS `+70`, frozen S-2 FAIL `−139`. All projection guards and independent prefix checks passed. S-2 GW5–19 missed floor (`−5.60` pts/GW) | 2026-11-23 | 2027-11-23 | [#205 assessment](../candidate-ideation/component-score-head.md) |
 | Static prior-trained categorical goal counts at λ=0.03 | `static_goals_a` | DXS | Certified S-1 PASS `+5`. Frozen S-2 FAIL `−138`. GW5–19 floor missed (`−5.27` pts/GW). Paired interval excludes zero | 2026-11-24 | 2027-11-24 | [Qualification](../candidate-ideation/static-attack-qualification.md#goals) |
+| Pure-history discrete club GKP `#1`/`#2` allocation (`89m`/`1m`, 2-start handover via `scale_states_to_target`; zero status/chance/news) | `m1_gkp_solo` (`#252` Track C) | DXS | S-1 FAIL (`14/15` guards: `saves_points_mse` INCONCLUSIVE `+0.000549`, 95% upper `0.000794 > 0.000618`): `+71` net (`2,191` vs `2,120`), `3/3` segs, `14/14` GW1–7 parity; Track B GKP overall MAE `4.25m` vs `8.05m`, active MAE `10.33m` vs `8.20m`. No S-2 look | 2026-11-28 | 2027-11-28 | [Track C Qualification](../candidate-ideation/m1-gkp-solo-qualification.md) · `prototypes/m1_gkp_solo/s1/summary.json` |
 
 ## Open (next-lever pool; not proven dead)
 
