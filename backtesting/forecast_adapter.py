@@ -36,6 +36,36 @@ _OPTIONAL_PERF_COLUMNS = (
     "influence",
     "ict_index",
 )
+_FORBIDDEN_ACTUAL_ORACLE_COLUMNS = frozenset(
+    {
+        "actual_start",
+        "actual_sub_in",
+        "actual_dnp",
+        "actual_p_60",
+        "actual_minutes",
+    }
+)
+
+
+def assert_no_oracle_inputs(features: pd.DataFrame) -> None:
+    """Reject oracle minutes or Oracle Participation State inputs in evidence forecasts."""
+    forbidden_cols = [
+        col
+        for col in features.columns
+        if col == "external_xmins"
+        or col.startswith("oracle_")
+        or col in _FORBIDDEN_ACTUAL_ORACLE_COLUMNS
+    ]
+    raw_attr = None if "oracle_minutes" in features.columns else getattr(features, "oracle_minutes", None)
+    has_oracle_attr = bool(
+        (raw_attr is not None and not isinstance(raw_attr, pd.Series) and raw_attr)
+        or features.attrs.get("oracle_minutes")
+        or features.attrs.get("oracle_participation_state")
+    )
+    if forbidden_cols or has_oracle_attr:
+        raise ValueError(
+            "Oracle minutes and Oracle Participation State prohibited in evidence forecasts"
+        )
 
 
 def _coerce_perf_number(key: str, raw: Any) -> int | float:
@@ -191,8 +221,7 @@ def predict_issue(
             raise ValueError("Source outside snapshot capture window")
         horizon = min(6, 39 - capability.gw)
         features = build_features(processed, capability.gw, horizon, seed_processed_dir=seed_dir, use_archive_seed=False, as_of_gw=capability.gw, history_before_gw=capability.gw, target_deadline=origin["deadline"], availability_snapshot_root=snapshots, season=capability.season, require_availability_snapshot=True, minutes_prior_source="seed_state")
-        if "external_xmins" in features.columns or getattr(features, "oracle_minutes", False):
-            raise ValueError("Oracle minutes prohibited in evidence forecasts")
+        assert_no_oracle_inputs(features)
         features["native_rules_version"] = rules.version
         features.attrs["issue_gameweek"] = capability.gw
         model = get_model(get_default_model_name() if model_name is None else model_name)

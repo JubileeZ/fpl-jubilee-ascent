@@ -357,6 +357,96 @@ def test_captain_regret_falls_back_to_vice_captain_when_captain_plays_zero_minut
     assert metrics["captain_regret"] == pytest.approx(0.0)
 
 
+def test_poisson_deviance_and_component_mse_share() -> None:
+    from backtesting.metrics import poisson_deviance
+
+    # Exact predictions give 0 deviance (including 0==0)
+    assert poisson_deviance([0.0, 1.0, 2.0], [0.0, 1.0, 2.0]) == pytest.approx(0.0)
+    # y_true == 0 -> 2 * mean(mu)
+    assert poisson_deviance([0.0, 0.0], [0.5, 1.5]) == pytest.approx(2.0)
+    # y_true > 0, mu == 0 -> finite positive penalty
+    dev_zero_mu = poisson_deviance([1.0], [0.0])
+    assert dev_zero_mu > 0.0 and pd.notna(dev_zero_mu)
+
+    row1 = {
+        "player_id": 1,
+        "gameweek": 1,
+        "actual_minutes": 90.0,
+        **{c: 0.0 for c in _LEDGER_COMPONENTS},
+        **{f"actual_{c}": 0.0 for c in _LEDGER_COMPONENTS},
+    }
+    row1["xp_goals"] = 2.0
+    row1["actual_xp_goals"] = 0.0
+    row1["xp_conceded"] = -0.5
+    row1["actual_xp_conceded"] = -1.0
+    row1["projected_points"] = 1.5
+    row1["actual_points"] = -1.0
+
+    row2 = {
+        "player_id": 2,
+        "gameweek": 1,
+        "actual_minutes": 0.0,
+        **{c: 0.0 for c in _LEDGER_COMPONENTS},
+        **{f"actual_{c}": 0.0 for c in _LEDGER_COMPONENTS},
+        "projected_points": 0.0,
+        "actual_points": 0.0,
+    }
+    df = pd.DataFrame([row1, row2])
+    df["blended_points"] = [0.5, 0.0]
+
+    # Even under blended_points, mse_share uses Realized projected_points - actual_points so shares sum to 1.0
+    metrics = evaluate_predictions(df, target_column="blended_points")
+    comp = metrics["component_metrics"]
+    total_share = sum(v["mse_share"] for v in comp.values())
+    assert total_share == pytest.approx(1.0, abs=1e-9)
+    assert comp["xp_goals"]["poisson_deviance"] > 0.0
+    assert comp["xp_conceded"]["poisson_deviance"] > 0.0
+
+
+def test_dual_pool_event_metrics_separates_appeared_from_dnp() -> None:
+    from backtesting.metrics import evaluate_dual_pool_event_metrics
+
+    df = _base_15_player_pool()
+    # Add 5 DNP players with zero forecast error that would dilute all_players MAE/bias
+    dnps = [
+        {
+            "player_id": 100 + i,
+            "gameweek": 1,
+            "position_id": 2,
+            "club_id": 10 + i,
+            "now_cost": 40.0,
+            "projected_points": 0.0,
+            "actual_points": 0.0,
+            "actual_minutes": 0.0,
+            "xp_goals": 0.0,
+            "actual_xp_goals": 0.0,
+        }
+        for i in range(5)
+    ]
+    for col in ("xp_goals", "actual_xp_goals"):
+        if col not in df.columns:
+            df[col] = 0.2 if col == "xp_goals" else 0.0
+    combined = pd.concat([df, pd.DataFrame(dnps)], ignore_index=True)
+
+    pools = evaluate_dual_pool_event_metrics(combined, target_column="actual_points")
+    assert set(pools) == {"all_players", "appeared"}
+    # player 13 in _base_15_player_pool also has actual_minutes=0 -> 14 appeared out of 20 total
+    assert pools["all_players"]["sample_count"] == 20
+    assert pools["appeared"]["sample_count"] == 14
+    assert pools["appeared"]["mae"] > pools["all_players"]["mae"]
+    assert pools["appeared"]["component_metrics"]["xp_goals"]["mae"] > pools["all_players"]["component_metrics"]["xp_goals"]["mae"]
+    assert pools["appeared"]["oracle_formation_xi_regret"] is not None
+    assert pools["appeared"]["event_poisson_deviance"] is not None
+
+    # Empty appeared pool handled gracefully with None metrics (JSON safe)
+    dnp_only = combined[combined["actual_minutes"] == 0.0].copy()
+    empty_pools = evaluate_dual_pool_event_metrics(dnp_only, target_column="actual_points")
+    assert empty_pools["appeared"]["sample_count"] == 0
+    assert empty_pools["appeared"]["mae"] is None
+    assert empty_pools["appeared"]["oracle_formation_xi_regret"] is None
+
+
+
 
 
 

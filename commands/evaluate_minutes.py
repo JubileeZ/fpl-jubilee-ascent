@@ -22,7 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field, replace
 import json
 import logging
 from pathlib import Path
@@ -44,7 +44,7 @@ from backtesting.promotion import (
     _filter_active_gw_deltas,
     block_bootstrap_win_probability,
 )
-from backtesting.walkforward import load_gameweek_deadlines
+from backtesting.walkforward import extract_realized_participation_states, load_gameweek_deadlines
 from clients.env_loader import configure_utf8_stdio, load_env
 from features.builder import build_features, history_before_target
 from models import get_model
@@ -57,6 +57,8 @@ MINUTES_BRIER_REL_TOL = 0.002
 MINUTES_RECALL_TOL = 0.005
 MINUTES_BIAS_ABS_TOL = 0.50
 MINUTES_AUC_TOL = 0.010
+
+_POSITION_NAMES: dict[int, str] = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
 
 
 @dataclass(frozen=True)
@@ -86,6 +88,7 @@ class MinutesMetrics:
     # Mean predictions
     mean_projected: float
     mean_actual: float
+    stratified: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -101,6 +104,8 @@ class MinutesGateVerdict:
     auc_delta: float
     candidate_metrics: MinutesMetrics
     champion_metrics: MinutesMetrics
+    horizon: int = 1
+    horizon_decay: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -111,6 +116,8 @@ class MinutesGateVerdict:
             "brier_delta": self.brier_delta,
             "recall_delta": self.recall_delta,
             "auc_delta": self.auc_delta,
+            "horizon": self.horizon,
+            "horizon_decay": self.horizon_decay,
             "candidate": asdict(self.candidate_metrics),
             "champion": asdict(self.champion_metrics),
         }
@@ -156,6 +163,174 @@ def compute_roc_auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
     return float(u_stat / (n_pos * n_neg))
 
 
+def _normalize_state_probs(df_eval: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Normalize (p_dnp, p_start, p_sub_in) defensively to sum to 1.0."""
+    p_dnp = df_eval["p_dnp"].fillna(0.0).clip(lower=0.0)
+    p_start = df_eval["p_start"].fillna(0.0).clip(lower=0.0)
+    p_sub = df_eval["p_sub_in"].fillna(0.0).clip(lower=0.0)
+    p_sum = p_dnp + p_start + p_sub
+
+    zero_mask = p_sum <= 1e-9
+    p_dnp = p_dnp.where(~zero_mask, 1.0)
+    p_sum = p_sum.where(~zero_mask, 1.0)
+    return (
+        (p_dnp / p_sum).to_numpy(dtype=float),
+        (p_start / p_sum).to_numpy(dtype=float),
+        (p_sub / p_sum).to_numpy(dtype=float),
+    )
+
+
+def _conditional_duration_summary(
+    pred_mins: np.ndarray,
+    act_mins: np.ndarray,
+    mask: np.ndarray,
+) -> dict[str, Any]:
+    count = int(np.sum(mask))
+    if count == 0:
+        return {
+            "sample_count": 0,
+            "mean_projected": None,
+            "mean_actual": None,
+            "mae": None,
+            "rmse": None,
+            "bias": None,
+        }
+    p_sub = pred_mins[mask]
+    a_sub = act_mins[mask]
+    err = p_sub - a_sub
+    return {
+        "sample_count": count,
+        "mean_projected": float(np.mean(p_sub)),
+        "mean_actual": float(np.mean(a_sub)),
+        "mae": float(np.mean(np.abs(err))),
+        "rmse": float(np.sqrt(np.mean(np.square(err)))),
+        "bias": float(np.mean(err)),
+    }
+
+
+def _compute_stratified_core(df_eval: pd.DataFrame) -> dict[str, Any]:
+    p_dnp, p_start, p_sub = _normalize_state_probs(df_eval)
+    y_start_f = df_eval["actual_start"].to_numpy(dtype=float)
+    y_sub_f = df_eval["actual_sub_in"].to_numpy(dtype=float)
+    y_dnp_f = df_eval["actual_dnp"].to_numpy(dtype=float)
+
+    states: dict[str, dict[str, Any]] = {}
+    for state_name, y_arr, p_arr in (
+        ("start", y_start_f, p_start),
+        ("sub_in", y_sub_f, p_sub),
+        ("dnp", y_dnp_f, p_dnp),
+    ):
+        mask = y_arr >= 0.5
+        count = int(np.sum(mask))
+        actual_rate = float(np.mean(y_arr))
+        mean_pred = float(np.mean(p_arr))
+        states[state_name] = {
+            "sample_count": count,
+            "actual_rate": actual_rate,
+            "mean_predicted_prob": mean_pred,
+            "calibration_error": mean_pred - actual_rate,
+            "brier": float(np.mean(np.square(p_arr - y_arr))),
+            "mean_prob_when_actual": float(np.mean(p_arr[mask])) if count > 0 else None,
+        }
+
+    y_start = y_start_f >= 0.5
+    y_sub = y_sub_f >= 0.5
+    y_dnp = y_dnp_f >= 0.5
+    pred_start = p_start >= 0.5
+    tp = int(np.sum(pred_start & y_start))
+    fp = int(np.sum(pred_start & ~y_start))
+    fn = int(np.sum(~pred_start & y_start))
+
+    proj_mins = df_eval["projected_minutes"].to_numpy(dtype=float)
+    act_mins = df_eval["actual_minutes"].to_numpy(dtype=float)
+    pred_start_mins = (
+        pd.to_numeric(df_eval["xmins_if_start"], errors="coerce")
+        .fillna(df_eval["projected_minutes"])
+        .to_numpy(dtype=float)
+        if "xmins_if_start" in df_eval.columns
+        else proj_mins
+    )
+    pred_sub_mins = (
+        pd.to_numeric(df_eval["xmins_if_sub_in"], errors="coerce")
+        .fillna(df_eval["projected_minutes"])
+        .to_numpy(dtype=float)
+        if "xmins_if_sub_in" in df_eval.columns
+        else proj_mins
+    )
+
+    dnp_dur = _conditional_duration_summary(proj_mins, act_mins, y_dnp)
+    dnp_dur["mean_p_dnp"] = float(np.mean(p_dnp[y_dnp])) if int(np.sum(y_dnp)) > 0 else None
+
+    if "p_60_if_start" in df_eval.columns:
+        p60_s = (
+            pd.to_numeric(df_eval["p_60_if_start"], errors="coerce")
+            .fillna(df_eval["p_60_plus"])
+            .to_numpy(dtype=float)
+        )
+    else:
+        p60_plus = df_eval["p_60_plus"].to_numpy(dtype=float)
+        p60_s = np.where(p_start > 1e-6, np.clip(p60_plus / np.maximum(p_start, 1e-6), 0.0, 1.0), 0.0)
+
+    start_count = int(np.sum(y_start))
+    if start_count > 0:
+        p60_sub = p60_s[y_start]
+        y60_sub = (act_mins[y_start] >= 60.0).astype(float)
+        p60_mean = float(np.mean(p60_sub))
+        p60_actual = float(np.mean(y60_sub))
+        p60_summary: dict[str, Any] = {
+            "sample_count": start_count,
+            "mean_predicted": p60_mean,
+            "actual_rate": p60_actual,
+            "calibration_error": p60_mean - p60_actual,
+            "brier": float(np.mean(np.square(p60_sub - y60_sub))),
+        }
+    else:
+        p60_summary = {
+            "sample_count": 0,
+            "mean_predicted": None,
+            "actual_rate": None,
+            "calibration_error": None,
+            "brier": None,
+        }
+
+    return {
+        "states": states,
+        "false_start_rate": float(fp / (tp + fp)) if (tp + fp) > 0 else None,
+        "missed_starter_rate": float(fn / (tp + fn)) if (tp + fn) > 0 else None,
+        "conditional_duration": {
+            "start": _conditional_duration_summary(pred_start_mins, act_mins, y_start),
+            "sub_in": _conditional_duration_summary(pred_sub_mins, act_mins, y_sub),
+            "dnp": dnp_dur,
+        },
+        "p_60_if_start": p60_summary,
+    }
+
+
+def compute_stratified_minutes_metrics(df_eval: pd.DataFrame) -> dict[str, Any]:
+    """Stratify minutes metrics across Start/Sub-in/DNP, conditional durations, p_60|Start, and positions."""
+    if df_eval.empty:
+        raise ValueError("Cannot compute stratified metrics on empty evaluation DataFrame")
+    core = _compute_stratified_core(df_eval)
+    by_position: dict[str, dict[str, Any]] = {}
+    if "position_id" in df_eval.columns:
+        pos_series = pd.to_numeric(df_eval["position_id"], errors="coerce")
+        for pos_id, pos_name in _POSITION_NAMES.items():
+            sub = df_eval[pos_series == pos_id]
+            if sub.empty:
+                continue
+            active_mask = (sub["projected_minutes"] > 0) | (sub["actual_minutes"] > 0)
+            df_act = sub[active_mask] if active_mask.any() else sub
+            err = df_act["projected_minutes"] - df_act["actual_minutes"]
+            by_position[pos_name] = {
+                "sample_count": int(len(sub)),
+                "active_count": int(active_mask.sum()),
+                "mae": float(err.abs().mean()),
+                "bias": float(err.mean()),
+                **_compute_stratified_core(sub),
+            }
+    return {**core, "by_position": by_position}
+
+
 def compute_minutes_metrics(df_eval: pd.DataFrame) -> MinutesMetrics:
     """Calculate comprehensive minutes and participation metrics on an evaluation DataFrame.
 
@@ -185,23 +360,11 @@ def compute_minutes_metrics(df_eval: pd.DataFrame) -> MinutesMetrics:
     overall_bias = float(all_err.mean())
 
     # Multiclass Brier score across participation states
-    # Normalize probabilities defensively to guarantee partition of unity (sum=1.0)
-    p_dnp = df_eval["p_dnp"].fillna(0.0).clip(lower=0.0)
-    p_start = df_eval["p_start"].fillna(0.0).clip(lower=0.0)
-    p_sub = df_eval["p_sub_in"].fillna(0.0).clip(lower=0.0)
-    p_sum = p_dnp + p_start + p_sub
+    p_dnp, p_start, p_sub = _normalize_state_probs(df_eval)
 
-    zero_mask = p_sum <= 1e-9
-    p_dnp = p_dnp.where(~zero_mask, 1.0)
-    p_sum = p_sum.where(~zero_mask, 1.0)
-
-    p_dnp = p_dnp / p_sum
-    p_start = p_start / p_sum
-    p_sub = p_sub / p_sum
-
-    brier_start = float(np.mean((p_start - df_eval["actual_start"]) ** 2))
-    brier_sub = float(np.mean((p_sub - df_eval["actual_sub_in"]) ** 2))
-    brier_dnp = float(np.mean((p_dnp - df_eval["actual_dnp"]) ** 2))
+    brier_start = float(np.mean((p_start - df_eval["actual_start"].to_numpy(dtype=float)) ** 2))
+    brier_sub = float(np.mean((p_sub - df_eval["actual_sub_in"].to_numpy(dtype=float)) ** 2))
+    brier_dnp = float(np.mean((p_dnp - df_eval["actual_dnp"].to_numpy(dtype=float)) ** 2))
     brier_score = brier_start + brier_sub + brier_dnp
 
     # Starter discrimination (60+ minutes)
@@ -239,6 +402,7 @@ def compute_minutes_metrics(df_eval: pd.DataFrame) -> MinutesMetrics:
         starter_f1=f1,
         mean_projected=float(df_eval["projected_minutes"].mean()),
         mean_actual=float(df_eval["actual_minutes"].mean()),
+        stratified=compute_stratified_minutes_metrics(df_eval),
     )
 
 
@@ -401,12 +565,15 @@ def extract_minutes_prediction_frame(
     model: Any,
     features_df: pd.DataFrame,
     horizon: int = 1,
+    *,
+    issue_gw: int | None = None,
 ) -> pd.DataFrame:
     """Extract standard minutes and participation columns from model predictions.
 
     Guarantees the presence of:
         'player_id', 'gameweek_id', 'fixture_id', 'projected_minutes',
-        'p_dnp', 'p_start', 'p_sub_in', 'p_60_plus'
+        'p_dnp', 'p_start', 'p_sub_in', 'p_60_plus',
+        'xmins_if_start', 'xmins_if_sub_in', 'p_60_if_start', 'p_60_if_sub_in'
     """
     if hasattr(model, "predict_minutes"):
         preds = model.predict_minutes(features_df, horizon=horizon)
@@ -422,6 +589,18 @@ def extract_minutes_prediction_frame(
         out["fixture_id"] = features_df["fixture_id"].to_numpy().astype(int)
     else:
         out["fixture_id"] = 0
+
+    if "position_id" in preds.columns:
+        out["position_id"] = pd.to_numeric(preds["position_id"], errors="coerce").fillna(0).astype(int)
+    elif "position_id" in features_df.columns:
+        pos_map = features_df[["player_id", "position_id"]].drop_duplicates("player_id")
+        out["position_id"] = (
+            out[["player_id"]]
+            .merge(pos_map, on="player_id", how="left")["position_id"]
+            .fillna(0)
+            .astype(int)
+            .to_numpy()
+        )
 
     out["projected_minutes"] = preds["projected_minutes"].to_numpy().astype(float)
 
@@ -440,12 +619,34 @@ def extract_minutes_prediction_frame(
         out["p_sub_in"] = p_sub / norm
         out["p_dnp"] = p_dnp / norm
 
+    # Conditional duration & p_60_if_*
+    out["xmins_if_start"] = (
+        preds["xmins_if_start"].to_numpy().astype(float)
+        if "xmins_if_start" in preds.columns
+        else np.where(out["p_start"] > 0.0, np.clip(out["projected_minutes"], 60.0, 90.0), 0.0)
+    )
+    out["xmins_if_sub_in"] = (
+        preds["xmins_if_sub_in"].to_numpy().astype(float)
+        if "xmins_if_sub_in" in preds.columns
+        else np.where(out["p_sub_in"] > 0.0, 18.0, 0.0)
+    )
+    out["p_60_if_start"] = (
+        preds["p_60_if_start"].fillna(0.0).to_numpy().astype(float)
+        if "p_60_if_start" in preds.columns
+        else np.clip((out["xmins_if_start"] - 45.0) / 30.0, 0.0, 1.0)
+    )
+    out["p_60_if_sub_in"] = (
+        preds["p_60_if_sub_in"].fillna(0.0).to_numpy().astype(float)
+        if "p_60_if_sub_in" in preds.columns
+        else np.clip((out["xmins_if_sub_in"] - 45.0) / 30.0, 0.0, 1.0)
+    )
+
     # P(60+ minutes)
     if "p_60_plus" in preds.columns:
         out["p_60_plus"] = preds["p_60_plus"].to_numpy().astype(float)
     elif {"p_60_if_start", "p_60_if_sub_in"}.issubset(preds.columns):
-        p_60_start = preds["p_60_if_start"].fillna(0.0).to_numpy()
-        p_60_sub = preds["p_60_if_sub_in"].fillna(0.0).to_numpy()
+        p_60_start = out["p_60_if_start"].to_numpy()
+        p_60_sub = out["p_60_if_sub_in"].to_numpy()
         out["p_60_plus"] = (
             out["p_start"].to_numpy() * p_60_start
             + out["p_sub_in"].to_numpy() * p_60_sub
@@ -453,6 +654,9 @@ def extract_minutes_prediction_frame(
     else:
         # Logistic approximation around 60 minutes
         out["p_60_plus"] = 1.0 / (1.0 + np.exp(-(out["projected_minutes"] - 50.0) / 10.0))
+
+    if issue_gw is not None:
+        out["horizon_step"] = (out["gameweek_id"] - int(issue_gw)).astype(int)
 
     return out
 
@@ -463,27 +667,19 @@ def build_minutes_evaluation_frame(
     target_gw: int,
 ) -> pd.DataFrame:
     """Merge predictions with actual performances for target gameweek with ground truth participation."""
-    gw_perf = df_perf[df_perf["gameweek_id"] == target_gw].copy()
+    preds_gw = preds_df[preds_df["gameweek_id"] == target_gw].copy()
+    perf_cols = extract_realized_participation_states(df_perf, target_gw)[
+        ["player_id", "gameweek_id", "fixture_id", "minutes", "started", "sub_in", "dnp"]
+    ].rename(
+        columns={
+            "minutes": "actual_minutes",
+            "started": "actual_start",
+            "sub_in": "actual_sub_in",
+            "dnp": "actual_dnp",
+        }
+    )
 
-    # Ground truth participation states
-    has_starts = "starts" in gw_perf.columns
-    if has_starts:
-        actual_start = (gw_perf["starts"] == 1).astype(float)
-        actual_sub_in = ((gw_perf["starts"] == 0) & (gw_perf["minutes"] > 0)).astype(float)
-        actual_dnp = ((gw_perf["starts"] == 0) & (gw_perf["minutes"] == 0)).astype(float)
-    else:
-        # Fallback when starts column unavailable
-        actual_start = (gw_perf["minutes"] >= 60).astype(float)
-        actual_sub_in = ((gw_perf["minutes"] > 0) & (gw_perf["minutes"] < 60)).astype(float)
-        actual_dnp = (gw_perf["minutes"] == 0).astype(float)
-
-    perf_cols = gw_perf[["player_id", "gameweek_id", "fixture_id", "minutes"]].copy()
-    perf_cols["actual_start"] = actual_start
-    perf_cols["actual_sub_in"] = actual_sub_in
-    perf_cols["actual_dnp"] = actual_dnp
-    perf_cols = perf_cols.rename(columns={"minutes": "actual_minutes"})
-
-    merged = preds_df.merge(
+    merged = preds_gw.merge(
         perf_cols,
         on=["player_id", "gameweek_id", "fixture_id"],
         how="left",
@@ -497,6 +693,33 @@ def build_minutes_evaluation_frame(
     return merged
 
 
+def compute_horizon_minutes_decay(
+    cand_frames_by_step: dict[int, list[pd.DataFrame]],
+    champ_frames_by_step: dict[int, list[pd.DataFrame]],
+) -> dict[str, dict[str, Any]]:
+    """Aggregate state-stratified minutes metrics per horizon step (t+0, t+1, ...)."""
+    decay: dict[str, dict[str, Any]] = {}
+    for step in sorted(cand_frames_by_step):
+        c_list = cand_frames_by_step.get(step, [])
+        ch_list = champ_frames_by_step.get(step, [])
+        if not c_list or not ch_list:
+            continue
+        c_df = pd.concat(c_list, ignore_index=True)
+        ch_df = pd.concat(ch_list, ignore_index=True)
+        if c_df.empty or ch_df.empty:
+            continue
+        c_metrics = compute_minutes_metrics(c_df)
+        ch_metrics = compute_minutes_metrics(ch_df)
+        decay[f"t+{step}"] = {
+            "step": int(step),
+            "delta_mae": float(ch_metrics.mae - c_metrics.mae),
+            "brier_delta": float(c_metrics.brier_score - ch_metrics.brier_score),
+            "candidate": asdict(c_metrics),
+            "champion": asdict(ch_metrics),
+        }
+    return decay
+
+
 def run_minutes_walkforward_evaluation(
     *,
     candidate_model_name: str,
@@ -504,8 +727,11 @@ def run_minutes_walkforward_evaluation(
     data_dir: Path,
     start_gw: int | None = None,
     end_gw: int | None = None,
+    horizon: int = 1,
 ) -> MinutesGateVerdict:
     """Execute walk-forward minutes evaluation comparing candidate to champion across gameweeks."""
+    if horizon < 1:
+        raise ValueError("horizon must be >= 1")
     perf_path = data_dir / "player_performances.parquet"
     if not perf_path.exists():
         raise FileNotFoundError(f"Missing player_performances.parquet in {data_dir}")
@@ -514,23 +740,26 @@ def run_minutes_walkforward_evaluation(
     completed_gws = sorted(df_perf["gameweek_id"].dropna().unique().astype(int).tolist())
     if not completed_gws:
         raise ValueError(f"No completed gameweeks found in {perf_path}")
+    completed_gw_set = set(completed_gws)
+    completed_max_gw = completed_gws[-1]
 
     first_gw = completed_gws[0] if start_gw is None else max(start_gw, completed_gws[0])
-    last_gw = completed_gws[-1] if end_gw is None else min(end_gw, completed_gws[-1])
+    last_gw = completed_max_gw if end_gw is None else min(end_gw, completed_max_gw)
     target_gws = [gw for gw in completed_gws if first_gw <= gw <= last_gw]
 
     cand_model = get_model(candidate_model_name)
     champ_model = get_model(champion_model_name)
 
-    cand_frames: list[pd.DataFrame] = []
-    champ_frames: list[pd.DataFrame] = []
+    cand_frames_by_step: dict[int, list[pd.DataFrame]] = {step: [] for step in range(horizon)}
+    champ_frames_by_step: dict[int, list[pd.DataFrame]] = {step: [] for step in range(horizon)}
     per_gw_deltas: list[float] = []
 
     gameweek_deadlines = load_gameweek_deadlines(data_dir)
 
     for gw in target_gws:
         deadline = gameweek_deadlines.get(gw)
-        df_feat = build_features(data_dir, gw, as_of_gw=gw, target_deadline=deadline)
+        eff_horizon = min(horizon, completed_max_gw - gw + 1)
+        df_feat = build_features(data_dir, gw, horizon=eff_horizon, as_of_gw=gw, target_deadline=deadline)
         hist_before = history_before_target(
             df_perf,
             gw,
@@ -541,14 +770,21 @@ def run_minutes_walkforward_evaluation(
         cand_model.fit(hist_before)
         champ_model.fit(hist_before)
 
-        cand_preds = extract_minutes_prediction_frame(cand_model, df_feat, horizon=1)
-        champ_preds = extract_minutes_prediction_frame(champ_model, df_feat, horizon=1)
+        cand_preds = extract_minutes_prediction_frame(cand_model, df_feat, horizon=eff_horizon, issue_gw=gw)
+        champ_preds = extract_minutes_prediction_frame(champ_model, df_feat, horizon=eff_horizon, issue_gw=gw)
 
-        cand_eval = build_minutes_evaluation_frame(cand_preds, df_perf, gw)
-        champ_eval = build_minutes_evaluation_frame(champ_preds, df_perf, gw)
+        for step in range(eff_horizon):
+            eval_gw = gw + step
+            if eval_gw not in completed_gw_set:
+                continue
+            c_step = build_minutes_evaluation_frame(cand_preds, df_perf, eval_gw)
+            ch_step = build_minutes_evaluation_frame(champ_preds, df_perf, eval_gw)
+            if not c_step.empty and not ch_step.empty:
+                cand_frames_by_step[step].append(c_step)
+                champ_frames_by_step[step].append(ch_step)
 
-        cand_frames.append(cand_eval)
-        champ_frames.append(champ_eval)
+        cand_eval = cand_frames_by_step[0][-1]
+        champ_eval = champ_frames_by_step[0][-1]
 
         # Symmetric active pool: player was projected by candidate OR projected by champion OR actually played
         active_mask = (
@@ -570,13 +806,80 @@ def run_minutes_walkforward_evaluation(
         ).abs().mean()
         per_gw_deltas.append(float(ch_mae - c_mae))
 
-    full_cand = pd.concat(cand_frames, ignore_index=True)
-    full_champ = pd.concat(champ_frames, ignore_index=True)
+    full_cand = pd.concat(cand_frames_by_step[0], ignore_index=True)
+    full_champ = pd.concat(champ_frames_by_step[0], ignore_index=True)
 
     cand_metrics = compute_minutes_metrics(full_cand)
     champ_metrics = compute_minutes_metrics(full_champ)
+    horizon_decay = compute_horizon_minutes_decay(cand_frames_by_step, champ_frames_by_step)
 
-    return evaluate_minutes_gate(cand_metrics, champ_metrics, per_gw_deltas)
+    verdict = evaluate_minutes_gate(cand_metrics, champ_metrics, per_gw_deltas)
+    return replace(verdict, horizon=horizon, horizon_decay=horizon_decay)
+
+
+def _fmt_opt(val: float | None, fmt: str = ".3f") -> str:
+    return "n/a" if val is None else format(val, fmt)
+
+
+def _print_stratified_tables(verdict: MinutesGateVerdict) -> None:
+    c_strat = verdict.candidate_metrics.stratified
+    ch_strat = verdict.champion_metrics.stratified
+    if c_strat and ch_strat:
+        print("\n State-Stratified xMins (t+0):")
+        print(
+            f"  False-Start %:       Cand {_fmt_opt(c_strat.get('false_start_rate'), '.1%')} | "
+            f"Champ {_fmt_opt(ch_strat.get('false_start_rate'), '.1%')}"
+        )
+        print(
+            f"  Missed-Starter %:    Cand {_fmt_opt(c_strat.get('missed_starter_rate'), '.1%')} | "
+            f"Champ {_fmt_opt(ch_strat.get('missed_starter_rate'), '.1%')}"
+        )
+        for state in ("start", "sub_in", "dnp"):
+            cs = c_strat["states"][state]
+            chs = ch_strat["states"][state]
+            cd = c_strat["conditional_duration"][state]
+            chd = ch_strat["conditional_duration"][state]
+            print(
+                f"  {state:7s} (n={cs['sample_count']:4d}): "
+                f"Brier {cs['brier']:.4f}/{chs['brier']:.4f} | "
+                f"CalErr {cs['calibration_error']:+.3f}/{chs['calibration_error']:+.3f} | "
+                f"CondMAE {_fmt_opt(cd['mae'], '.2f')}/{_fmt_opt(chd['mae'], '.2f')}"
+            )
+        cp60 = c_strat["p_60_if_start"]
+        chp60 = ch_strat["p_60_if_start"]
+        print(
+            f"  p_60 | Start (n={cp60['sample_count']}): "
+            f"Pred {_fmt_opt(cp60['mean_predicted'])}/{_fmt_opt(chp60['mean_predicted'])} "
+            f"vs Actual {_fmt_opt(cp60['actual_rate'])} | "
+            f"Brier {_fmt_opt(cp60['brier'], '.4f')}/{_fmt_opt(chp60['brier'], '.4f')}"
+        )
+
+        by_pos = c_strat.get("by_position", {})
+        ch_by_pos = ch_strat.get("by_position", {})
+        if by_pos:
+            print("\n Position Splits (Cand / Champ):")
+            for pos_name in ("GKP", "DEF", "MID", "FWD"):
+                if pos_name not in by_pos:
+                    continue
+                cp = by_pos[pos_name]
+                chp = ch_by_pos.get(pos_name, {})
+                print(
+                    f"  {pos_name}: n={cp['sample_count']:4d} | "
+                    f"MAE {cp['mae']:.2f}/{_fmt_opt(chp.get('mae'), '.2f')} | "
+                    f"Bias {cp['bias']:+.2f}/{_fmt_opt(chp.get('bias'), '+.2f')} | "
+                    f"FalseStart {_fmt_opt(cp.get('false_start_rate'), '.1%')} | "
+                    f"MissedStart {_fmt_opt(cp.get('missed_starter_rate'), '.1%')}"
+                )
+
+    if verdict.horizon > 1 and verdict.horizon_decay:
+        print(f"\n Multi-Horizon Decay (horizon={verdict.horizon}):")
+        for key, entry in verdict.horizon_decay.items():
+            cm = entry["candidate"]
+            chm = entry["champion"]
+            print(
+                f"  {key}: Active MAE Cand {cm['mae']:.3f} vs Champ {chm['mae']:.3f} "
+                f"(Δ {entry['delta_mae']:+.3f}) | Brier Δ {entry['brier_delta']:+.4f}"
+            )
 
 
 def main() -> None:
@@ -591,10 +894,13 @@ def main() -> None:
     parser.add_argument("--data-dir", default="data/processed", help="Path to processed data directory")
     parser.add_argument("--start-gw", type=int, default=None, help="Starting gameweek for evaluation")
     parser.add_argument("--end-gw", type=int, default=None, help="Ending gameweek for evaluation")
+    parser.add_argument("--horizon", type=int, default=1, help="Multi-horizon decay steps (e.g., 1..6 for t+0..t+5)")
     parser.add_argument("--output-json", default=None, help="Path to write structured JSON evaluation output")
     parser.add_argument("--format", choices=["table", "json"], default="table", help="Console output format")
 
     args = parser.parse_args()
+    if args.horizon < 1:
+        parser.error("--horizon must be >= 1")
 
     data_dir = Path(args.data_dir)
     if not data_dir.is_absolute():
@@ -606,10 +912,11 @@ def main() -> None:
         champ_name = selection.champion
 
     logger.info(
-        "Evaluating Standalone Minutes Gate: %s (Cand) vs %s (Champ) on %s",
+        "Evaluating Standalone Minutes Gate: %s (Cand) vs %s (Champ) on %s (horizon=%d)",
         args.model,
         champ_name,
         data_dir,
+        args.horizon,
     )
 
     verdict = run_minutes_walkforward_evaluation(
@@ -618,6 +925,7 @@ def main() -> None:
         data_dir=data_dir,
         start_gw=args.start_gw,
         end_gw=args.end_gw,
+        horizon=args.horizon,
     )
 
     result_dict = verdict.to_dict()
@@ -628,11 +936,11 @@ def main() -> None:
             out_path = PROJECT_ROOT / out_path
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(result_dict, f, indent=2)
+            json.dump(result_dict, f, indent=2, allow_nan=False)
         logger.info("Saved evaluation JSON to %s", out_path)
 
     if args.format == "json":
-        print(json.dumps(result_dict, indent=2))
+        print(json.dumps(result_dict, indent=2, allow_nan=False))
         return
 
     # Table format
@@ -647,6 +955,8 @@ def main() -> None:
     print(f" Brier Score:        Cand {verdict.candidate_metrics.brier_score:.4f} | Champ {verdict.champion_metrics.brier_score:.4f} | Δ {verdict.brier_delta:+.4f}")
     print(f" Starter Recall 60+: Cand {verdict.candidate_metrics.starter_recall:.4f} | Champ {verdict.champion_metrics.starter_recall:.4f} | Δ {verdict.recall_delta:+.4f}")
     print(f" Starter ROC-AUC:    Cand {verdict.candidate_metrics.starter_auc:.4f} | Champ {verdict.champion_metrics.starter_auc:.4f} | Δ {verdict.auc_delta:+.4f}")
+
+    _print_stratified_tables(verdict)
 
     if verdict.reasons:
         print("\n Failure Reasons:")

@@ -18,6 +18,42 @@ from models.metrics_component_hybrid import (
 )
 
 
+ORACLE_STATE_COLUMNS: tuple[str, ...] = (
+    "oracle_p_start",
+    "oracle_p_sub_in",
+    "oracle_p_dnp",
+    "oracle_minutes",
+    "oracle_p_60",
+)
+
+
+def _validate_oracle_state_columns(features_df: pd.DataFrame) -> bool:
+    """Return True if all Oracle Participation State columns are present, False if none, else raise."""
+    present = [col for col in ORACLE_STATE_COLUMNS if col in features_df.columns]
+    if not present:
+        return False
+    if len(present) != len(ORACLE_STATE_COLUMNS):
+        missing = [col for col in ORACLE_STATE_COLUMNS if col not in features_df.columns]
+        raise ValueError(f"Partial Oracle state columns provided; missing: {missing}")
+    return True
+
+
+def extract_oracle_state_row(
+    row: pd.Series,
+) -> tuple[float, float, float, float, float, float, float, float]:
+    """Return clamped Oracle Participation State tuple ``(p_dnp, p_start, p_sub_in, start_mins, sub_mins, p60_start, p60_sub, expected_mins)``."""
+    p_start = _clamp01(float(row["oracle_p_start"]))
+    p_sub_in = _clamp01(float(row["oracle_p_sub_in"]))
+    p_dnp = _clamp01(float(row["oracle_p_dnp"]))
+    oracle_mins = max(0.0, float(row["oracle_minutes"]))
+    oracle_p60 = _clamp01(float(row["oracle_p_60"]))
+    start_minutes = oracle_mins if p_start > 0.0 else 0.0
+    sub_minutes = oracle_mins if p_sub_in > 0.0 else 0.0
+    p60_start = oracle_p60 if p_start > 0.0 else 0.0
+    p60_sub = oracle_p60 if p_sub_in > 0.0 else 0.0
+    return p_dnp, p_start, p_sub_in, start_minutes, sub_minutes, p60_start, p60_sub, oracle_mins
+
+
 def target_to_states(xmins: float) -> tuple[float, float, float, float, float]:
     """Convert external xmins into (p_start, p_sub_in, p_dnp, start_minutes, sub_minutes)."""
     if xmins <= 0.0:
@@ -156,6 +192,7 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
 
     def predict(self, features_df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         native_scoring_context(features_df)
+        has_oracle_cols = _validate_oracle_state_columns(features_df)
         components: list[dict[str, object]] = []
         bonus_groups: defaultdict[int, list[int]] = defaultdict(list)
         component_columns = (
@@ -189,47 +226,52 @@ class ParticipationStateHybridModel(MetricsComponentHybridModel):
                 })
                 continue
 
-            p_dnp, p_start, p_sub_in = self._state_probabilities(row)
-            is_immediate = bool(row.get("is_immediate_next_gw", False))
-            has_snapshot = bool(row.get("has_availability_snapshot", False))
-            chance = _number(row, "chance_of_playing", 100.0)
-            status = str(row.get("status", "")).lower()
-
-            # Hard DNP for immediate next GW:
-            # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
-            # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
-            if is_immediate and (
-                (has_snapshot and chance <= 0.0)
-                or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
-            ):
-                p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
-
-            start_minutes = self._conditional_minutes(row, "start", 78.0)
-            sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
-            p60_start = _clamp01(_number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0))
-            p60_sub = _clamp01(_number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0))
-
-            raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
-            expected_minutes = cap_projected_minutes(row, raw_minutes)
-            if raw_minutes > 0 and expected_minutes < raw_minutes:
-                scale = expected_minutes / raw_minutes
-                start_minutes *= scale
-                sub_minutes *= scale
-
-            ext_mins = row.get("external_xmins")
-            if ext_mins is not None and pd.notna(ext_mins):
-                target_mins = max(0.0, float(ext_mins))
-                p_dnp, p_start, p_sub_in, start_minutes, sub_minutes, p60_start, p60_sub = scale_states_to_target(
-                    p_dnp,
-                    p_start,
-                    p_sub_in,
-                    start_minutes,
-                    sub_minutes,
-                    p60_start,
-                    p60_sub,
-                    target_mins,
+            if has_oracle_cols and all(pd.notna(row.get(col)) for col in ORACLE_STATE_COLUMNS):
+                p_dnp, p_start, p_sub_in, start_minutes, sub_minutes, p60_start, p60_sub, expected_minutes = (
+                    extract_oracle_state_row(row)
                 )
-                expected_minutes = target_mins
+            else:
+                p_dnp, p_start, p_sub_in = self._state_probabilities(row)
+                is_immediate = bool(row.get("is_immediate_next_gw", False))
+                has_snapshot = bool(row.get("has_availability_snapshot", False))
+                chance = _number(row, "chance_of_playing", 100.0)
+                status = str(row.get("status", "")).lower()
+
+                # Hard DNP for immediate next GW:
+                # 1. In snapshot-backed backtests: chance <= 0.0 (ADR 0010)
+                # 2. In live operational runs: chance <= 0.0 or status in {'i', 's', 'u', 'n'} (ADR 0056)
+                if is_immediate and (
+                    (has_snapshot and chance <= 0.0)
+                    or (not has_snapshot and (chance <= 0.0 or status in {"i", "s", "u", "n"}))
+                ):
+                    p_dnp, p_start, p_sub_in = 1.0, 0.0, 0.0
+
+                start_minutes = self._conditional_minutes(row, "start", 78.0)
+                sub_minutes = self._conditional_minutes(row, "sub_in", 18.0)
+                p60_start = _clamp01(_number(row, "p_60_if_start", (start_minutes - 45.0) / 30.0))
+                p60_sub = _clamp01(_number(row, "p_60_if_sub_in", (sub_minutes - 45.0) / 30.0))
+
+                raw_minutes = p_start * start_minutes + p_sub_in * sub_minutes
+                expected_minutes = cap_projected_minutes(row, raw_minutes)
+                if raw_minutes > 0 and expected_minutes < raw_minutes:
+                    scale = expected_minutes / raw_minutes
+                    start_minutes *= scale
+                    sub_minutes *= scale
+
+                ext_mins = row.get("external_xmins")
+                if ext_mins is not None and pd.notna(ext_mins):
+                    target_mins = max(0.0, float(ext_mins))
+                    p_dnp, p_start, p_sub_in, start_minutes, sub_minutes, p60_start, p60_sub = scale_states_to_target(
+                        p_dnp,
+                        p_start,
+                        p_sub_in,
+                        start_minutes,
+                        sub_minutes,
+                        p60_start,
+                        p60_sub,
+                        target_mins,
+                    )
+                    expected_minutes = target_mins
 
             position = _POS_CODE.get(int(_number(row, "position_id", 3.0)), "M")
             start_events = self._project_event_components(
