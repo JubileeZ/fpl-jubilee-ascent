@@ -117,10 +117,11 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | [0070](0070-weekly-planner-selection-and-champion-adoption.md) | Weekly Transfer Planner Selection and Champion Adoption | Accepted | Weekly points-based model selection, sparse GW15/GW30/GW38 certification, GitHub-native Adoption Review Issue + Environment approval, App reserved merge, and $0 public parity (live rollout disabled). |
 | [0071](0071-certified-solver-budget-and-milp-qualification-calibration.md) | Certified Solver Budget & Rolling-MILP Qualification Calibration | Accepted | Raises certified solver ceiling/default to `600s` (closing `#207`), calibrates `z = -1.50 SE` MILP segment floors (`-8.9/-4.7/-4.2` pts/GW) + strict key validation, switches podium ranking to `0.3*S1 + 0.7*S2`, and mandates batch-before-freeze / `M=1` slate discipline. |
 | [0072](0072-dashboard-minutes-cascade-and-split-backtesting.md) | Dashboard Minutes Cascade Parity & Split Backtesting | Accepted | Aligns Dashboard/CSV/CLI on default `SP_Soft_Shield_M1` (`step = 0..5` tail boundary, `--xmins_override`/`--no-minutes-cascade`, `ADR 0052`); defines fixture-grain `Oracle Participation State` + state-stratified `xMins` diagnostics feeding `ADR 0071` gate; keeps `Soft Empirical Shield` in Layer 3b and scopes pure-history `M1` GKP Candidate (`#249`–`#252`). |
+| [0073](0073-internal-minutes-baseline-v2-and-causal-availability-history.md) | Internal Minutes Baseline v2, Causal Availability History & Layer 1 Pure-History Screen | Proposed | Path 1 sequence (`#256`–`#259`): causal `< target_gw` availability history cache, `SP_Soft_Shield` Bucket C fixes, selective healthy outfield starter floor (A), documented-injury return ramp (B), optional downward-only `>900m` overflow cap (D-lite) under Two-Stage Dual-Win Gate, plus Phase 2 Layer 1 pure-history screen. |
 
 ---
 
-## Chronological Index (0001–0072)
+## Chronological Index (0001–0073)
 
 | Number | Identifier | Status | Subsystem |
 |--------|------------|--------|-----------|
@@ -196,3 +197,4 @@ Authoritative architectural and design decisions governing FPL-Jubilee-Ascent.
 | 0070 | [weekly-planner-selection-and-champion-adoption](0070-weekly-planner-selection-and-champion-adoption.md) | Accepted | Evaluation |
 | 0071 | [certified-solver-budget-and-milp-qualification-calibration](0071-certified-solver-budget-and-milp-qualification-calibration.md) | Accepted | Evaluation |
 | 0072 | [dashboard-minutes-cascade-and-split-backtesting](0072-dashboard-minutes-cascade-and-split-backtesting.md) | Accepted | Evaluation |
+| 0073 | [internal-minutes-baseline-v2-and-causal-availability-history](0073-internal-minutes-baseline-v2-and-causal-availability-history.md) | Proposed | Evaluation |
